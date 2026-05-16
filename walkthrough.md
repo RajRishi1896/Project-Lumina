@@ -7,7 +7,14 @@ The app utilizes a "Digital Scholar" aesthetic with high-contrast elements and z
 
 - **Typography**: Atkinson Hyperlegible Next (800 for Headers, 400 for Body).
 - **Theme**: Tonal layering using Surface (#FDF7FF) and Primary Deep Blue (#1A2B44).
+- **Dark Mode**: Integrated a high-fidelity Dark Mode using the Catppuccin Mocha palette, featuring smooth **0.3s fade animations** during transitions.
+- **Branding**: Primary actions (like the Download App button) use **Academic Teal** (#007083) for high visibility and brand consistency.
 - **Touch Compliance**: All interactive elements are strictly 48x48px or larger.
+
+## 🏢 Hub Web Infrastructure
+The Hub now features a dual-portal system:
+- **Welcome Portal (`/`)**: A landing page for students to download the APK and view Hub health vitals.
+- **Teacher Dashboard (`/dashboard`)**: A professional administration panel with SVG icons, real-time resource management, and security controls.
 
 ## 📦 Feature Breakdown
 

@@ -42,7 +42,7 @@ Before deploying the server, you need to compile the Android App so you can load
 ### 👨‍🏫 For Teachers (Managing the Hub)
 As a teacher or administrator, you manage the network from any connected device (phone, tablet, or PC).
 1. Connect to the Hub's Wi-Fi network.
-2. Open a web browser and navigate to: `http://lumina.hub:8000`
+2. Open a web browser and navigate to: `http://lumina.hub:8000/dashboard`
 3. Log in using the default credentials:
    - **Username**: `admin`
    - **Password**: `lumina2026`
