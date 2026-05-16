@@ -73,3 +73,5 @@ app.*.map.json
  
 # UI design assets (large, optional)
 assets/UI-Inspo/
+
+edge_cases_fixed.md

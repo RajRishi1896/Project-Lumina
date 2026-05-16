@@ -17,6 +17,30 @@ class Resource {
     this.isDownloaded = false,
   });
 
+  factory Resource.fromJson(Map<String, dynamic> json) {
+    return Resource(
+      id: json['id'].toString(),
+      title: json['title'],
+      url: json['url'],
+      type: _mapType(json['type']),
+    );
+  }
+
+  static ResourceType _mapType(String type) {
+    switch (type.toLowerCase()) {
+      case 'khan':
+        return ResourceType.khan;
+      case 'textbook':
+        return ResourceType.textbook;
+      case 'pyq':
+        return ResourceType.pyq;
+      case 'kiwix':
+        return ResourceType.kiwix;
+      default:
+        return ResourceType.textbook;
+    }
+  }
+
   Resource copyWith({
     String? localPath,
     bool? isDownloaded,

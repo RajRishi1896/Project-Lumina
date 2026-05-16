@@ -1,50 +1,75 @@
-# Project Lumina: EduMesh-Android
+# Project Lumina: EduMesh
+**The Offline-First Educational Mesh Network**
 
-**Project Lumina** is a high-fidelity, offline-first educational ecosystem designed for the **EduMesh** network. It provides scholars in low-connectivity or zero-internet environments with a premium, secure, and performant learning experience.
+## 🌍 About the Project
+EduMesh is a military-grade, fully offline educational ecosystem designed to operate in low-resource environments, developing nations, and disaster zones. It consists of two main components:
+1. **The Hub (Debian Server)**: A headless server that acts as a local Wi-Fi router, database, and file host.
+2. **The Scholar App (Android/Flutter)**: A companion mobile application that allows students to download textbooks, watch educational videos, and sync their progress locally—without ever touching the global internet.
 
-![Project Status](https://img.shields.io/badge/Status-Active-success)
-![Platform](https://img.shields.io/badge/Platform-Android-blue)
-![Privacy](https://img.shields.io/badge/Privacy-Zero--Cloud-brightgreen)
-
-## 🏛️ Core Philosophies
-
-### 1. The "Digital Scholar" Aesthetic
-The UI is built on the **Atkinson Hyperlegible** typography system, ensuring maximum readability for students with varying visual needs. The design language uses a sophisticated "Bento-style" card system and an academic palette of Deep Navy, Scholar Yellow, and Academic Teal.
-
-### 2. Zero-Cloud Guard
-Project Lumina is physically incapable of "phoning home." We strictly forbid dependencies on Google Play Services, Firebase, or external CDNs.
-*   **100% Data Sovereignty**: All user data stays on the device and the local mesh.
-*   **Battery Hardening**: No background sync loops or cloud retries, maximizing device life in remote areas.
-
-### 3. Performance for All
-Engineered to run smoothly on budget Android hardware (1GB-2GB RAM):
-*   **Memory Safety**: Universal use of `ListView.builder` with `prototypeItem` to prevent memory spikes.
-*   **Optimized Assets**: Exclusively uses SVGs and WebP assets to minimize APK and RAM overhead.
-*   **Live Hardware Monitoring**: Real-time tracking of disk space, including APK size, for total transparency.
-
-## 🛠️ Tech Stack
-*   **Core**: Flutter (Material 3)
-*   **State Management**: Riverpod
-*   **Security**: SHA-256 Hashing & Flutter Secure Storage
-*   **Typography**: Google Fonts (Atkinson Hyperlegible)
-*   **Responsive UI**: Flutter ScreenUtil
-
-## 🚀 Getting Started
-
-### Prerequisites
-*   Flutter SDK `^3.0.0`
-*   Android Studio / VS Code
-*   **No Internet Required** (once dependencies are fetched)
-
-### Build Optimized APK
-To generate a production-ready, tree-shaken binary:
-```bash
-flutter analyze
-flutter build apk --release
-```
-
-## 🔐 Security & Identity
-Identity is anchored to the local Mesh Hub. Scholar IDs follow the deterministic pattern of `HubID_UserSuffix`, ensuring a secure, locally-verifiable identity without requiring global cloud authentication.
+The system is heavily fortified against power losses, hardware storage limits, memory leaks, and concurrent network stress, making it capable of running unattended for years.
 
 ---
-*Built for the scholars of tomorrow, powered by the mesh of today.*
+
+## ⚙️ How to Set it All Up
+
+### Step 1: Build the Android App
+Before deploying the server, you need to compile the Android App so you can load it onto the Hub.
+1. Ensure the Flutter SDK is installed on your computer.
+2. Open the `EduMesh-Android` folder in your terminal.
+3. Fetch dependencies and build the release APK:
+   ```bash
+   flutter pub get
+   flutter build apk --release
+   ```
+4. Find the compiled APK at `build/app/outputs/flutter-apk/app-release.apk`. Rename this file to `EduMesh.apk`.
+
+### Step 2: Deploy the Hub (Debian Server)
+1. Install a fresh copy of **Debian 12 (Bookworm)** on a dedicated laptop or mini-PC.
+2. Transfer the `Debian Server` folder onto the laptop via a USB flash drive.
+3. Open the terminal, navigate to the folder, and run the setup script:
+   ```bash
+   cd "Debian Server"
+   chmod +x setup_hub.sh
+   sudo ./setup_hub.sh
+   ```
+4. Once the setup completes, **reboot the laptop**. The laptop is now broadcasting the EduMesh Wi-Fi network!
+5. *Important*: Copy the `EduMesh.apk` file you built in Step 1 and place it inside the `Debian Server/uploads/` directory on the Hub.
+
+---
+
+## 🚀 How to Use It
+
+### 👨‍🏫 For Teachers (Managing the Hub)
+As a teacher or administrator, you manage the network from any connected device (phone, tablet, or PC).
+1. Connect to the Hub's Wi-Fi network.
+2. Open a web browser and navigate to: `http://lumina.hub:8000`
+3. Log in using the default credentials:
+   - **Username**: `admin`
+   - **Password**: `lumina2026`
+4. **Upload Resources**: Go to the "Uploads" tab to add PDFs, Videos, or Kiwix archives. These files are instantly made available to all students on the mesh.
+5. **Change Password**: Go to the "Security" tab to change the default password.
+   * *Emergency Reset*: If you forget your password, you can plug a monitor/keyboard into the Hub and run `sudo ./reset_admin.sh` to reset it back to `lumina2026`.
+
+### 🎒 For Students (Getting & Using the App)
+Students do not need internet access or a Google Play Store account to get the app. They simply download it directly from the Hub!
+
+**How to Install the App:**
+1. Turn on Wi-Fi and connect to the Hub's local network.
+2. Open Google Chrome (or any web browser) on the Android phone.
+3. Type the following exact address into the URL bar and press Enter:
+   ```
+   http://lumina.hub:8000/files/EduMesh.apk
+   ```
+4. The phone will download the APK file. Open it and click "Install" (You may need to allow "Install from Unknown Sources" in Android Settings).
+
+**How to Use the App:**
+1. Open the EduMesh app.
+2. Wait for the Connection Gatekeeper to turn **Green** (`🟢 Hub Connected`), indicating the phone has found the offline network.
+3. Type in your name to register. (The Hub will remember your unique ID forever).
+4. Browse the available resources and click "Download" to save Textbooks and Videos directly to your phone.
+5. Even if you walk away from the Wi-Fi network, you can still read and watch all downloaded materials. The next time you reconnect to the Hub, the app will automatically sync your offline reading activity to the Teacher Dashboard!
+
+---
+
+## 🛡️ Hardening & Edge Cases
+This ecosystem has been engineered to survive extreme conditions. For a full list of all 20+ edge cases mitigated in this architecture (including Database Spam, Flash Memory Burnout, Network DHCP Exhaustion, and File System Corruption), please read the `edge_cases_fixed.md` log in the repository.
