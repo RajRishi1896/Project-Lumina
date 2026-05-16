@@ -1,0 +1,37 @@
+#!/bin/bash
+# Lumina Hub - Pre-boot Health Check
+
+PROJECT_DIR="/root/Debian-Server"
+cd $PROJECT_DIR
+
+echo "🔍 Running Hub Integrity Check..."
+
+# Required files and directories
+REQUIRED_FILES=("main.py" "requirements.txt" "app/api.py" "static/index.html")
+REQUIRED_DIRS=("uploads" "data" "app" "static")
+
+MISSING=0
+
+# Check Directories
+for dir in "${REQUIRED_DIRS[@]}"; do
+    if [ ! -d "$dir" ]; then
+        echo "❌ Missing directory: $dir. Creating it..."
+        mkdir -p "$dir"
+    fi
+done
+
+# Check Files
+for file in "${REQUIRED_FILES[@]}"; do
+    if [ ! -f "$file" ]; then
+        echo "❌ CRITICAL: Missing $file. Hub cannot start."
+        MISSING=1
+    fi
+done
+
+if [ $MISSING -eq 1 ]; then
+    echo "🚨 Boot aborted due to missing critical files."
+    exit 1
+fi
+
+echo "✅ Health check passed. Launching Lumina Hub..."
+/usr/bin/python3 main.py

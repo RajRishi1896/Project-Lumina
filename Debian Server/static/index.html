@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina Hub | Teacher Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* === Design Tokens (from LuminaColors) === */
+        :root {
+            --surface: #FDF7FF;
+            --primary: #1A2B44;
+            --teal: #007083;
+            --saffron: #FFD300;
+            --success: #38A169;
+            --outline: #E2E8F0;
+            --on-surface: #1D1B20;
+            --on-primary: #FFFFFF;
+            --danger: #E53E3E;
+            --bg-sidebar: #1A2B44;
+            --bg-page: #F8FAFC;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.3s ease;
+        }
+
+        /* === Dark Mode === */
+        [data-theme="dark"] {
+            --surface: #1E1E2E;
+            --primary: #CDD6F4;
+            --on-surface: #CDD6F4;
+            --bg-sidebar: #11111B;
+            --bg-page: #181825;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.4);
+            --teal: #007083; /* Reverted to original teal */
+        }
+        [data-theme="dark"] .card { background: #1E1E2E; }
+        [data-theme="dark"] tbody tr:hover { background: #252538; }
+        [data-theme="dark"] .form-group input,
+        [data-theme="dark"] .form-group select { background: #181825; color: #CDD6F4; border-color: #313244; }
+        [data-theme="dark"] .card-title { color: #6C7086; }
+        [data-theme="dark"] .page-header p { color: #6C7086; }
+        [data-theme="dark"] thead th { color: #6C7086; border-color: #313244; }
+        [data-theme="dark"] tbody td { border-color: #252538; }
+        [data-theme="dark"] .type-default { background: #313244; color: #A6ADC8; }
+        [data-theme="dark"] .help-section ul,
+        [data-theme="dark"] .help-section ol { color: #A6ADC8; }
+        [data-theme="dark"] .help-section code { background: #313244; color: var(--teal); }
+        [data-theme="dark"] .btn-outline { border-color: #313244; }
+        [data-theme="dark"] .empty-state { color: #6C7086; }
+
+        /* === Reset & Base === */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-page);
+            color: var(--on-surface);
+            display: flex;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            transition: background-color var(--transition), color var(--transition);
+        }
+
+        /* === Sidebar === */
+        aside {
+            width: 260px;
+            background: var(--bg-sidebar);
+            color: var(--on-primary);
+            height: 100vh;
+            padding: 2rem 1.5rem;
+            position: fixed;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            transition: background-color var(--transition);
+        }
+        .sidebar-brand {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.25rem;
+        }
+        .sidebar-subtitle {
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .sidebar-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+            margin: 1.75rem 0;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: rgba(255,255,255,0.65);
+            transition: all var(--transition);
+            margin-bottom: 0.25rem;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .nav-item.active { background: var(--teal); color: #fff; font-weight: 600; }
+        .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .nav-spacer { flex: 1; }
+        .nav-logout {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: rgba(255,255,255,0.65);
+            transition: all var(--transition);
+        }
+        .nav-logout svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .nav-logout:hover { color: var(--danger); background: rgba(229,62,62,0.08); }
+
+        /* === Theme Toggle === */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: rgba(255,255,255,0.65);
+            transition: all var(--transition);
+            margin-bottom: 0.5rem;
+        }
+        .theme-toggle:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .theme-toggle svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+        /* === Main Content === */
+        main {
+            margin-left: 260px;
+            padding: 2.5rem 3rem;
+            width: calc(100% - 260px);
+            max-width: 960px;
+        }
+
+        /* === Page Header === */
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        .page-header h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.025em;
+        }
+        .page-header p {
+            font-size: 0.875rem;
+            color: #64748B;
+            margin-top: 0.25rem;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.25rem 0.75rem;
+            background: rgba(56,161,105,0.1);
+            color: var(--success);
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 100px;
+            margin-top: 0.5rem;
+        }
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* === Cards === */
+        .card {
+            background: #fff;
+            border: 1px solid var(--outline);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--card-shadow);
+            transition: box-shadow var(--transition), background-color var(--transition), border-color var(--transition);
+        }
+        .card:hover { box-shadow: var(--card-shadow-hover); }
+        .card-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #94A3B8;
+            margin-bottom: 1rem;
+        }
+
+        /* === Upload Form === */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748B;
+            margin-bottom: 0.375rem;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.625rem 0.75rem;
+            border: 1px solid var(--outline);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.875rem;
+            color: var(--on-surface);
+            background: var(--surface);
+            transition: border-color var(--transition), box-shadow var(--transition);
+            outline: none;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--teal);
+            box-shadow: 0 0 0 3px rgba(0,112,131,0.1);
+        }
+
+        /* === Buttons === */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: var(--teal);
+            color: #fff;
+        }
+        .btn-primary:hover { background: #005A6A; transform: translateY(-1px); }
+        .btn-outline {
+            background: transparent;
+            color: var(--teal);
+            border: 1.5px solid var(--outline);
+        }
+        .btn-outline:hover { border-color: var(--teal); background: rgba(0,112,131,0.04); }
+        .btn-dark {
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn-dark:hover { background: #0F1D31; }
+
+        /* === Table === */
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #94A3B8;
+            border-bottom: 1px solid var(--outline);
+        }
+        tbody td {
+            padding: 0.875rem 1rem;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #F1F5F9;
+            vertical-align: middle;
+        }
+        tbody tr:hover { background: #FAFBFD; }
+        .type-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .type-textbook { background: rgba(0,112,131,0.1); color: var(--teal); }
+        .type-khan { background: rgba(255,211,0,0.15); color: #B8860B; }
+        .type-default { background: #F1F5F9; color: #64748B; }
+
+        /* === Security Form === */
+        .security-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 380px;
+        }
+
+        /* === Help Section === */
+        .help-section h3 {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+        }
+        .help-section ul, .help-section ol {
+            padding-left: 1.25rem;
+            line-height: 1.85;
+            font-size: 0.875rem;
+            color: #475569;
+        }
+        .help-section li { margin-bottom: 0.375rem; }
+        .help-section code {
+            background: #F1F5F9;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8125rem;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            color: var(--teal);
+        }
+
+        /* === Utility === */
+        .hidden { display: none; }
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #94A3B8;
+            font-size: 0.875rem;
+        }
+
+        /* === Responsive === */
+        @media (max-width: 768px) {
+            aside { width: 220px; padding: 1.5rem 1rem; }
+            main { margin-left: 220px; padding: 1.5rem; width: calc(100% - 220px); }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside>
+        <div class="sidebar-brand">Lumina Hub</div>
+        <div class="sidebar-subtitle">Teacher Dashboard</div>
+        <div class="sidebar-divider"></div>
+
+        <nav>
+            <div class="nav-item active" id="nav-content" onclick="showTab('content')">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Content Manager
+            </div>
+            <div class="nav-item" id="nav-security" onclick="showTab('security')">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Security
+            </div>
+            <div class="nav-item" id="nav-help" onclick="showTab('help')">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                Help
+            </div>
+        </nav>
+
+        <div class="nav-spacer"></div>
+
+        <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+            <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <span id="themeLabel">Dark Mode</span>
+        </div>
+
+        <div class="nav-logout" onclick="location.href='/'">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+            Log out
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+
+        <!-- CONTENT TAB -->
+        <div id="contentTab">
+            <div class="page-header">
+                <h1>Content Manager</h1>
+                <p>Upload and manage educational resources for your students.</p>
+                <div class="status-badge"><div class="status-dot"></div> Hub Active</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Upload Resource</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" id="title" placeholder="e.g. Physics 101">
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Category</label>
+                        <select id="type">
+                            <option value="textbook">Textbook</option>
+                            <option value="khan">Video</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="file">File</label>
+                        <input type="file" id="file">
+                    </div>
+                    <button onclick="upload()" class="btn btn-primary">Upload</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Mesh Library</div>
+                <table>
+                    <thead>
+                        <tr><th>Title</th><th>Type</th><th style="text-align: right;">Action</th></tr>
+                    </thead>
+                    <tbody id="resourceTable">
+                        <tr><td colspan="3" class="empty-state">No resources uploaded yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECURITY TAB -->
+        <div id="securityTab" class="hidden">
+            <div class="page-header">
+                <h1>Security</h1>
+                <p>Update your administrator credentials.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Change Password</div>
+                <div class="security-form">
+                    <div class="form-group">
+                        <label for="oldPwd">Current Password</label>
+                        <input type="password" id="oldPwd" placeholder="Enter current password">
+                    </div>
+                    <div class="form-group">
+                        <label for="newPwd">New Password</label>
+                        <input type="password" id="newPwd" placeholder="Enter new password">
+                    </div>
+                    <button onclick="changePassword()" class="btn btn-dark">Update Password</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- HELP TAB -->
+        <div id="helpTab" class="hidden">
+            <div class="page-header">
+                <h1>Help & Instructions</h1>
+                <p>Everything you need to operate the EduMesh Hub.</p>
+            </div>
+
+            <div class="card help-section">
+                <div class="card-title">For Teachers</div>
+                <ul>
+                    <li><strong>Upload resources</strong> — Go to the Content Manager tab, select a PDF or video, give it a title, and click Upload. It is instantly available to all students on the network.</li>
+                    <li><strong>Change your password</strong> — Go to Security and update your credentials. If you forget your password, plug a keyboard into the Hub and run <code>sudo ./reset_admin.sh</code>.</li>
+                    <li><strong>Host the Android app</strong> — Upload the compiled <code>EduMesh.apk</code> file so students can download it directly from the Mesh Library or via <code>http://lumina.hub:8000/files/EduMesh.apk</code>.</li>
+                    <li><strong>Monitor usage</strong> — The Hub automatically logs every student's activity (downloads, views) to help you track engagement across the classroom.</li>
+                </ul>
+            </div>
+
+            <div class="card help-section">
+                <div class="card-title">For Students — Installing the App</div>
+                <p style="margin-bottom: 0.75rem; color: #475569; font-size: 0.875rem;">Share these instructions with your students:</p>
+                <ol>
+                    <li>Turn on Wi-Fi and connect to the <strong>EduMesh</strong> network.</li>
+                    <li>Open any browser (Chrome, Firefox, etc.) on the phone.</li>
+                    <li>Type this address into the URL bar: <code>http://lumina.hub:8000/files/EduMesh.apk</code></li>
+                    <li>Tap the downloaded file and click <strong>Install</strong>. If prompted, enable "Install from Unknown Sources" in Android Settings.</li>
+                </ol>
+            </div>
+
+            <div class="card help-section">
+                <div class="card-title">For Students — Using the App</div>
+                <p style="margin-bottom: 0.75rem; color: #475569; font-size: 0.875rem;">Once the app is installed, students can use it like this:</p>
+                <ol>
+                    <li>Open the <strong>EduMesh</strong> app. Wait for the connection indicator to turn green.</li>
+                    <li>Enter your name to register. The Hub will assign you a unique student ID that stays with you forever.</li>
+                    <li>Browse the available <strong>Textbooks</strong> and <strong>Videos</strong> in the resource library.</li>
+                    <li>Tap <strong>Download</strong> on any resource to save it to your phone. You can read textbooks and watch videos even after disconnecting from the Wi-Fi.</li>
+                    <li>If you switch phones or reinstall the app, your reading history and downloads are automatically restored the next time you connect to the Hub.</li>
+                </ol>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Tab Navigation ---
+        function showTab(tab) {
+            document.getElementById('contentTab').className = tab === 'content' ? '' : 'hidden';
+            document.getElementById('securityTab').className = tab === 'security' ? '' : 'hidden';
+            document.getElementById('helpTab').className = tab === 'help' ? '' : 'hidden';
+
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('nav-' + tab).classList.add('active');
+        }
+
+        // --- Load Resources ---
+        async function loadResources() {
+            try {
+                const res = await fetch('/resources');
+                const data = await res.json();
+                if (data.length === 0) {
+                    document.getElementById('resourceTable').innerHTML =
+                        '<tr><td colspan="3" class="empty-state">No resources uploaded yet.</td></tr>';
+                    return;
+                }
+                document.getElementById('resourceTable').innerHTML = data.map(r => {
+                    let badgeClass = 'type-default';
+                    if (r.type === 'textbook') badgeClass = 'type-textbook';
+                    else if (r.type === 'khan') badgeClass = 'type-khan';
+                    return `
+                    <tr>
+                        <td><strong>${r.title}</strong></td>
+                        <td><span class="type-badge ${badgeClass}">${r.type}</span></td>
+                        <td style="text-align: right;"><a href="${r.url}" class="btn btn-outline" download>Download</a></td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                document.getElementById('resourceTable').innerHTML =
+                    '<tr><td colspan="3" class="empty-state">Could not load resources.</td></tr>';
+            }
+        }
+
+        // --- Upload ---
+        async function upload() {
+            const file = document.getElementById('file').files[0];
+            const title = document.getElementById('title').value;
+            const type = document.getElementById('type').value;
+            if (!file || !title) return alert('Please enter a title and select a file.');
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch(`/teacher/upload?title=${encodeURIComponent(title)}&type=${type}`, {
+                method: 'POST',
+                body: formData
+            });
+            if (res.ok) {
+                document.getElementById('title').value = '';
+                document.getElementById('file').value = '';
+                loadResources();
+            } else {
+                const err = await res.json();
+                alert(err.detail || 'Upload failed.');
+            }
+        }
+
+        // --- Change Password ---
+        async function changePassword() {
+            const oldPwd = document.getElementById('oldPwd').value;
+            const newPwd = document.getElementById('newPwd').value;
+            if (!oldPwd || !newPwd) return alert('Please fill in both fields.');
+            const res = await fetch('/teacher/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', old_password: oldPwd, new_password: newPwd })
+            });
+            if (res.ok) {
+                alert('Password updated.');
+                location.href = '/';
+            } else {
+                alert('Error: check your current password.');
+            }
+        }
+
+        // --- Dark Mode ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            localStorage.setItem('lumina-theme', isDark ? 'light' : 'dark');
+            updateThemeUI(!isDark);
+        }
+        function updateThemeUI(isDark) {
+            document.getElementById('themeLabel').textContent = isDark ? 'Light Mode' : 'Dark Mode';
+            document.getElementById('themeIcon').innerHTML = isDark
+                ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+                : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+        }
+        // Restore saved theme
+        (function() {
+            const saved = localStorage.getItem('lumina-theme');
+            if (saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                updateThemeUI(true);
+            }
+        })();
+
+        loadResources();
+    </script>
+</body>
+</html>
