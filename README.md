@@ -68,8 +68,3 @@ Students do not need internet access or a Google Play Store account to get the a
 3. Type in your name to register. (The Hub will remember your unique ID forever).
 4. Browse the available resources and click "Download" to save Textbooks and Videos directly to your phone.
 5. Even if you walk away from the Wi-Fi network, you can still read and watch all downloaded materials. The next time you reconnect to the Hub, the app will automatically sync your offline reading activity to the Teacher Dashboard!
-
----
-
-## 🛡️ Hardening & Edge Cases
-This ecosystem has been engineered to survive extreme conditions. For a full list of all 20+ edge cases mitigated in this architecture (including Database Spam, Flash Memory Burnout, Network DHCP Exhaustion, and File System Corruption), please read the `edge_cases_fixed.md` log in the repository.
