@@ -39,11 +39,14 @@ sudo nmcli con up "$INTERFACE"
 
 # 6. Configure Local DNS (lumina.hub) & Fake Captive Portal
 echo "🏷️  Configuring Local DNS & Captive Portal..."
+WIFI_IF=$(nmcli -t -f DEVICE,TYPE device | awk -F: '$2=="wifi" {print $1; exit}')
+if [ -z "$WIFI_IF" ]; then WIFI_IF="wlan0"; fi
+
 sudo bash -c "cat > /etc/dnsmasq.d/lumina.conf <<EOF
 address=/lumina.hub/192.168.1.1
 address=/#/192.168.1.1
 interface=lo
-interface=wlan0
+interface=$WIFI_IF
 dhcp-range=192.168.1.10,192.168.1.250,2h
 bind-interfaces
 EOF"

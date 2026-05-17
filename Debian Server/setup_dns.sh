@@ -10,11 +10,18 @@ echo "🏷️ Setting up local domain: $DOMAIN -> $HUB_IP..."
 sudo apt update
 sudo apt install -y dnsmasq
 
-# 2. Configure dnsmasq to resolve our domain
+# 2. Dynamically detect Wi-Fi interface
+WIFI_IF=$(nmcli -t -f DEVICE,TYPE device | awk -F: '$2=="wifi" {print $1; exit}')
+if [ -z "$WIFI_IF" ]; then
+    WIFI_IF="wlan0" # fallback
+fi
+echo "📡 Detected Wi-Fi interface: $WIFI_IF"
+
+# 3. Configure dnsmasq to resolve our domain
 sudo bash -c "cat > /etc/dnsmasq.d/lumina.conf <<EOF
 address=/$DOMAIN/$HUB_IP
 interface=lo
-interface=wlan0  # Assuming WiFi mesh, change if ethernet
+interface=$WIFI_IF
 bind-interfaces
 EOF"
 
