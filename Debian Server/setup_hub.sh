@@ -29,10 +29,15 @@ sudo ufw allow 53/udp   # DNS (Required for Captive Portal routing)
 sudo ufw allow 53/tcp   # DNS
 sudo ufw --force enable
 
-# 5. Disable System-Wide dnsmasq to prevent conflicts with NetworkManager
-echo "🏷️  Disabling system-wide dnsmasq to allow NetworkManager AP mode..."
+# 5. Configure Captive Portal DNS via NetworkManager
+echo "🏷️  Configuring Captive Portal DNS..."
 sudo systemctl disable dnsmasq 2>/dev/null
 sudo systemctl stop dnsmasq 2>/dev/null
+sudo mkdir -p /etc/NetworkManager/dnsmasq-shared.d
+sudo bash -c "cat > /etc/NetworkManager/dnsmasq-shared.d/lumina.conf <<EOF
+address=/lumina.hub/10.42.0.1
+address=/#/10.42.0.1
+EOF"
 
 # 7. Install & Enable the Systemd Service
 echo "⚙️  Configuring Auto-Start Service..."
