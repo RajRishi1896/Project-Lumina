@@ -273,6 +273,7 @@ async def get_welcome():
     return FileResponse("static/welcome.html")
 
 @app.get("/dashboard")
+@app.get("/index.html")
 async def get_dashboard():
     return FileResponse("static/index.html")
 
