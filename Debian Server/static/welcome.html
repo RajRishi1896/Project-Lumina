@@ -330,6 +330,22 @@
             width: 18px;
             height: 18px;
         }
+        .login-error {
+            background: rgba(229, 62, 62, 0.1);
+            color: #E53E3E;
+            border: 1px solid rgba(229, 62, 62, 0.2);
+            padding: 0.625rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            text-align: center;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .login-btn {
             width: 100%;
             padding: 0.7rem;
@@ -415,6 +431,7 @@
             <h2>Teacher Login</h2>
             <p class="subtitle">Manage resources and monitor the mesh network.</p>
             <form id="loginForm">
+                <div id="loginError" class="login-error hidden">Invalid credentials. Please try again.</div>
                 <input type="text" id="username" placeholder="Username" required>
                 <div class="password-container">
                     <input type="password" id="password" placeholder="Password" required>
@@ -471,8 +488,19 @@
             formData.append('username', document.getElementById('username').value);
             formData.append('password', document.getElementById('password').value);
             const res = await fetch('/token', { method: 'POST', body: formData });
-            if (res.ok) window.location.href = 'index.html';
-            else alert('Invalid credentials. Please try again.');
+            if (res.ok) {
+                window.location.href = 'index.html';
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        };
+
+        // Clear error when user starts typing again
+        document.getElementById('username').oninput = () => {
+            document.getElementById('loginError').classList.add('hidden');
+        };
+        document.getElementById('password').oninput = () => {
+            document.getElementById('loginError').classList.add('hidden');
         };
 
         function togglePasswordVisibility() {
