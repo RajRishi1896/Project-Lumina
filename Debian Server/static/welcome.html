@@ -433,11 +433,11 @@
             <div class="card-label">Educator Access</div>
             <h2>Teacher Login</h2>
             <p class="subtitle">Manage resources and monitor the mesh network.</p>
-            <form id="loginForm">
+            <form id="loginForm" autocomplete="off">
                 <div id="loginError" class="login-error hidden">Invalid credentials. Please try again.</div>
-                <input type="text" id="username" placeholder="Username" required>
+                <input type="text" id="username" placeholder="Username" required autocomplete="off">
                 <div class="password-container">
-                    <input type="password" id="password" placeholder="Password" required>
+                    <input type="password" id="password" placeholder="Password" required autocomplete="off">
                     <button type="button" class="toggle-password" id="togglePasswordBtn" onclick="togglePasswordVisibility()" title="Show Password">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eyeIcon">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -547,6 +547,16 @@
 
         fetchStats();
         setInterval(fetchStats, 10000);
+
+        // Force clear inputs on page load to prevent browser caching/autofill
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const userField = document.getElementById('username');
+                const passField = document.getElementById('password');
+                if (userField) userField.value = '';
+                if (passField) passField.value = '';
+            }, 50); // slight delay to override aggressive browser autofill
+        });
     </script>
 </body>
 </html>
