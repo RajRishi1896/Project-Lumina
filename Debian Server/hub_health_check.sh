@@ -1,7 +1,7 @@
 #!/bin/bash
 # Lumina Hub - Pre-boot Health Check
 
-PROJECT_DIR="/root/Debian-Server"
+PROJECT_DIR="/home/project-lumina/Debian-Server"
 cd $PROJECT_DIR
 
 echo "🔍 Running Hub Integrity Check..."

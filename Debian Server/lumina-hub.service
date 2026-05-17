@@ -3,8 +3,8 @@ Description=Lumina EduMesh Hub Service (With Health Check)
 After=network.target
 
 [Service]
-User=root
-WorkingDirectory=/root/Debian-Server
+User=project-lumina
+WorkingDirectory=/home/project-lumina/Debian-Server
 # Point to the health check script instead of python directly
 ExecStart=/bin/bash hub_health_check.sh
 Restart=always
