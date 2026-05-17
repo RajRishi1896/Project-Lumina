@@ -23,8 +23,13 @@ if [ -z "$WIFI_IF" ]; then
 fi
 echo "📡 Found Wi-Fi interface: $WIFI_IF"
 
-# 5. Explicitly set to managed and create hotspot
-sudo nmcli device set "$WIFI_IF" managed yes
-sudo nmcli device wifi hotspot ifname "$WIFI_IF" ssid "Lumina Hub" password "lumina2026"
+# 5. Create a bulletproof Hotspot Connection Profile
+echo "⚙️ Creating Hotspot Profile..."
+sudo nmcli connection delete LuminaHub 2>/dev/null
+sudo nmcli connection add type wifi ifname "$WIFI_IF" con-name LuminaHub autoconnect yes ssid "Lumina Hub"
+sudo nmcli connection modify LuminaHub 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared
+sudo nmcli connection modify LuminaHub wifi-sec.key-mgmt wpa-psk wifi-sec.psk "lumina2026"
 
+echo "🚀 Starting Hotspot (SSH will drop now!)..."
+sudo nmcli connection up LuminaHub
 echo "✅ Hotspot 'Lumina Hub' is now active!"
