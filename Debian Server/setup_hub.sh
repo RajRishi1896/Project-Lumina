@@ -59,14 +59,20 @@ sudo systemctl daemon-reload
 sudo systemctl enable lumina-hub
 sudo systemctl start lumina-hub
 
-# 8. Nightly Reboot to clear RAM leaks (3:00 AM)
+# 8. Prevent Sleep on Lid Close (Headless Laptop Mode)
+echo "💻 Disabling Sleep on Lid Close..."
+sudo sed -i 's/#HandleLidSwitch=suspend/HandleLidSwitch=ignore/g' /etc/systemd/logind.conf
+sudo sed -i 's/#HandleLidSwitchExternalPower=suspend/HandleLidSwitchExternalPower=ignore/g' /etc/systemd/logind.conf
+sudo systemctl restart systemd-logind
+
+# 9. Nightly Reboot to clear RAM leaks (3:00 AM)
 (crontab -l 2>/dev/null | grep -v "/sbin/shutdown -r now"; echo "0 3 * * * /sbin/shutdown -r now") | sudo crontab -
 
-# 9. Auto-Repair File System on Power Loss
+# 10. Auto-Repair File System on Power Loss
 grep -q "fsck.repair=yes" /etc/default/grub || sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="fsck.repair=yes /' /etc/default/grub
 sudo update-grub
 
-# 10. Unlimited File Descriptor Patch (Massive Concurrency)
+# 11. Unlimited File Descriptor Patch (Massive Concurrency)
 echo "🚀 Unlocking Maximum Server Capacity..."
 grep -q "root hard nofile 65535" /etc/security/limits.conf || sudo bash -c "cat >> /etc/security/limits.conf <<EOF
 * soft nofile 65535
