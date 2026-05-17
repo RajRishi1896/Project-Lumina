@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Request, Response
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Request, Response, Form
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -102,6 +102,11 @@ class SyncActivity(BaseModel):
     scholar_id: str
     action: str
     resource_id: str
+
+class ChangePasswordRequest(BaseModel):
+    username: str
+    old_password: str
+    new_password: str
 
 def auto_register_if_new(scholar_id: str, name: str = "Roaming Scholar"):
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
@@ -223,6 +228,42 @@ async def upload_resource(title: str, type: str, file: UploadFile = File(...)):
     
     with open(file_path, "wb") as buffer: buffer.write(await file.read())
     c.execute("INSERT INTO resources (title, file_path, type) VALUES (?, ?, ?)", (title, file_path, type))
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
+
+@app.post("/token")
+async def login(username: str = Form(...), password: str = Form(...)):
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    c = conn.cursor()
+    c.execute("SELECT hashed_password FROM users WHERE username = ?", (username,))
+    row = c.fetchone()
+    conn.close()
+    
+    if not row or not pwd_context.verify(password, row[0]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials. Please try again."
+        )
+    
+    return {"access_token": "dummy_token", "token_type": "bearer"}
+
+@app.post("/teacher/change-password")
+async def change_password(data: ChangePasswordRequest):
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    c = conn.cursor()
+    c.execute("SELECT hashed_password FROM users WHERE username = ?", (data.username,))
+    row = c.fetchone()
+    
+    if not row or not pwd_context.verify(data.old_password, row[0]):
+        conn.close()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect current password."
+        )
+        
+    new_hash = pwd_context.hash(data.new_password)
+    c.execute("UPDATE users SET hashed_password = ? WHERE username = ?", (new_hash, data.username))
     conn.commit()
     conn.close()
     return {"status": "success"}
