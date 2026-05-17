@@ -26,31 +26,10 @@ sudo ufw allow 22/tcp   # SSH
 sudo ufw allow 8000/tcp # Lumina API
 sudo ufw --force enable
 
-# 5. Configure Static IP (192.168.1.1)
-echo "🌐 Configuring Static IP (192.168.1.1)..."
-INTERFACE=$(ip route get 8.8.8.8 | awk -- '{print $5}')
-if [ -z "$INTERFACE" ]; then
-    INTERFACE=$(nmcli -t -f DEVICE,TYPE device | grep ethernet | head -n1 | cut -d: -f1)
-fi
-sudo nmcli con modify "$INTERFACE" ipv4.addresses "192.168.1.1/24"
-sudo nmcli con modify "$INTERFACE" ipv4.gateway "192.168.1.1"
-sudo nmcli con modify "$INTERFACE" ipv4.method manual
-sudo nmcli con up "$INTERFACE"
-
-# 6. Configure Local DNS (lumina.hub) & Fake Captive Portal
-echo "🏷️  Configuring Local DNS & Captive Portal..."
-WIFI_IF=$(nmcli -t -f DEVICE,TYPE device | awk -F: '$2=="wifi" {print $1; exit}')
-if [ -z "$WIFI_IF" ]; then WIFI_IF="wlan0"; fi
-
-sudo bash -c "cat > /etc/dnsmasq.d/lumina.conf <<EOF
-address=/lumina.hub/192.168.1.1
-address=/#/192.168.1.1
-interface=lo
-interface=$WIFI_IF
-dhcp-range=192.168.1.10,192.168.1.250,2h
-bind-interfaces
-EOF"
-sudo systemctl restart dnsmasq
+# 5. Disable System-Wide dnsmasq to prevent conflicts with NetworkManager
+echo "🏷️  Disabling system-wide dnsmasq to allow NetworkManager AP mode..."
+sudo systemctl disable dnsmasq 2>/dev/null
+sudo systemctl stop dnsmasq 2>/dev/null
 
 # 7. Install & Enable the Systemd Service
 echo "⚙️  Configuring Auto-Start Service..."
