@@ -5,7 +5,7 @@ import logging
 class MeshBeacon:
     def __init__(self, port=8000):
         self.port = port
-        self.zeroconf = Zeroconf(ip_version=IPVersion.V4ONLY)
+        self.zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
         self.service_name = "EduMeshHub._http._tcp.local."
         self.host_ip = self._get_ip()
         
