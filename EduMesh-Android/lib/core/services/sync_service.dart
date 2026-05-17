@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
-import '../services/auth_service.dart';
+import '../../features/auth/data/auth_service.dart';
 
 class SyncService {
   final AuthService _authService = AuthService();

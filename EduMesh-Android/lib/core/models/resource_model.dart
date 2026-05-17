@@ -1,4 +1,4 @@
-enum ResourceType { kiwix, khan, textbook, pyq }
+enum ResourceType { kiwix, khan, textbook, pyq, notes }
 
 class Resource {
   final String id;
@@ -36,6 +36,8 @@ class Resource {
         return ResourceType.pyq;
       case 'kiwix':
         return ResourceType.kiwix;
+      case 'notes':
+        return ResourceType.notes;
       default:
         return ResourceType.textbook;
     }

@@ -11,9 +11,8 @@ The project is organized into three primary pillars:
 
 | Component | Location | Description |
 | :--- | :--- | :--- |
-| **Debian Server** | `[Debian Server/](file:///c:/Users/Rajri/Desktop/Idea%20Lab/Project%20Lumina/Debian%20Server/)` | The Hub backend, Wi-Fi management scripts, and Web Dashboard. |
-| **App Source** | `[EduMesh-Android/](file:///c:/Users/Rajri/Desktop/Idea%20Lab/Project%20Lumina/EduMesh-Android/)` | The Flutter source code for the student mobile application. |
-| **Documentation** | `[Markdown files/](file:///c:/Users/Rajri/Desktop/Idea%20Lab/Project%20Lumina/Markdown%20files/)` | Technical logs, architecture plans, and edge-case fixes. |
+| **Debian Server** | `[Debian Server/](file:///Project%20Lumina/Debian%20Server/)` | The Hub backend, Wi-Fi management scripts, and Web Dashboard. |
+| **App Source** | `[EduMesh-Android/](file:////Project%20Lumina/EduMesh-Android/)` | The Flutter source code for the student mobile application. |
 
 ---
 

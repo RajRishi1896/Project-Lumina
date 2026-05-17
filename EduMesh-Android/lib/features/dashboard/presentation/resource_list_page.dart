@@ -94,6 +94,7 @@ class _ResourceListItem extends StatelessWidget {
         break;
       case ResourceType.textbook:
       case ResourceType.pyq:
+      case ResourceType.notes:
         page = PdfView(path: resource.url, title: resource.title);
         break;
     }

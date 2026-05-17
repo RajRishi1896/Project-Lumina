@@ -38,6 +38,7 @@ class _DashboardPageState extends State<DashboardPage> {
     ('History', Icons.history_edu, ResourceType.textbook),
     ('Exams', Icons.quiz, ResourceType.pyq),
     ('Library', Icons.local_library, ResourceType.kiwix),
+    ('Notes', Icons.description, ResourceType.notes),
   ];
 
   @override
