@@ -24,6 +24,9 @@ sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow 22/tcp   # SSH
 sudo ufw allow 8000/tcp # Lumina API
+sudo ufw allow 67/udp   # DHCP (Required for clients to get IPs)
+sudo ufw allow 53/udp   # DNS (Required for Captive Portal routing)
+sudo ufw allow 53/tcp   # DNS
 sudo ufw --force enable
 
 # 5. Disable System-Wide dnsmasq to prevent conflicts with NetworkManager
