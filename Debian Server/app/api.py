@@ -1,8 +1,9 @@
+# Fixed api.py for Lumina EduMesh Hub
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Request, Response, Form
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import os
 import sqlite3
@@ -28,33 +29,24 @@ app = FastAPI(title="Lumina EduMesh Hub")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# --- Anti-Spam Rate Limiter ---
+# --- Anti‑Spam Rate Limiter ---
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
         self.ip_records = {}
 
     async def dispatch(self, request: Request, call_next):
-        # Protect open student endpoints
         protected_paths = ["/register", "/sync/activity", "/sync/downloads"]
-        
         if any(request.url.path.startswith(p) for p in protected_paths):
             client_ip = request.client.host
-            current_time = time.time()
-            
-            if client_ip in self.ip_records:
-                # Remove requests older than 60 seconds
-                self.ip_records[client_ip] = [t for t in self.ip_records[client_ip] if current_time - t < 60]
-                
-                # Limit: Max 20 requests per minute per IP
-                if len(self.ip_records[client_ip]) >= 20:
-                    logging.warning(f"BLOCKED: Rate limit exceeded by IP {client_ip}")
-                    return Response(content="Rate limit exceeded", status_code=429)
-                
-                self.ip_records[client_ip].append(current_time)
-            else:
-                self.ip_records[client_ip] = [current_time]
-
+            now = time.time()
+            records = self.ip_records.get(client_ip, [])
+            records = [t for t in records if now - t < 60]
+            if len(records) >= 20:
+                logging.warning(f"BLOCKED: Rate limit exceeded by IP {client_ip}")
+                return Response(content="Rate limit exceeded", status_code=429)
+            records.append(now)
+            self.ip_records[client_ip] = records
         return await call_next(request)
 
 app.add_middleware(RateLimitMiddleware)
@@ -74,18 +66,15 @@ def init_db():
     c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, hashed_password TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS activity_logs (scholar_id TEXT, action TEXT, resource_id TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)')
     c.execute('CREATE TABLE IF NOT EXISTS scholar_downloads (scholar_id TEXT, resource_id TEXT, PRIMARY KEY(scholar_id, resource_id))')
-    
     try:
         default_pwd = pwd_context.hash("lumina2026")
         c.execute("INSERT INTO users (username, hashed_password) VALUES (?, ?)", ("admin", default_pwd))
-    except sqlite3.IntegrityError: pass
-    
-    # EDGE CASE: Force a WAL checkpoint on startup to prevent infinite disk bloat
+    except sqlite3.IntegrityError:
+        pass
     try:
         c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
     except sqlite3.OperationalError:
-        pass # Reloader or other worker holds the lock, ignore
-    
+        pass
     conn.commit()
     conn.close()
 
@@ -108,6 +97,7 @@ class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str
 
+# Helper
 def auto_register_if_new(scholar_id: str, name: str = "Roaming Scholar"):
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
@@ -115,7 +105,27 @@ def auto_register_if_new(scholar_id: str, name: str = "Roaming Scholar"):
     conn.commit()
     conn.close()
 
+# Root redirect to welcome page (handles GET and HEAD)
+@app.api_route("/", methods=["GET", "HEAD"])
+async def root_redirect():
+    return RedirectResponse(url="/welcome.html")
+
 # --- Endpoints ---
+
+@app.get("/ping")
+async def ping_server():
+    return {"status": "pong"}
+
+@app.get("/files")
+async def list_files():
+    if not os.path.exists(UPLOAD_DIR):
+        return []
+    files = []
+    for f in os.listdir(UPLOAD_DIR):
+        fp = os.path.join(UPLOAD_DIR, f)
+        if os.path.isfile(fp):
+            files.append({"name": f, "size": os.path.getsize(fp)})
+    return files
 
 @app.get("/system/stats")
 @app.post("/system/sync-time")
@@ -124,25 +134,27 @@ async def sync_time(data: TimeSync):
         os.system(f"date -s '{data.current_time}'")
         logging.info(f"Time Synced: {data.current_time}")
         return {"status": "ok"}
-    except: return {"status": "failed"}
+    except:
+        return {"status": "failed"}
 
-# --- Captive Portal Interceptor ---
+# Captive portal helper
 @app.get("/generate_204")
 async def generate_204():
     """Tricks Android into thinking it has internet so it doesn't switch to cellular."""
     return Response(status_code=204)
 
+# Sync activity
 @app.post("/sync/activity")
 async def sync_activity(data: SyncActivity):
     auto_register_if_new(data.scholar_id)
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
-    c.execute("INSERT INTO activity_logs (scholar_id, action, resource_id) VALUES (?, ?, ?)", 
-              (data.scholar_id, data.action, data.resource_id))
+    c.execute("INSERT INTO activity_logs (scholar_id, action, resource_id) VALUES (?, ?, ?)", (data.scholar_id, data.action, data.resource_id))
     conn.commit()
     conn.close()
     return {"status": "synced"}
 
+# Sync downloads
 @app.post("/sync/downloads")
 async def sync_downloads(scholar_id: str, resource_ids: List[str]):
     auto_register_if_new(scholar_id)
@@ -154,6 +166,7 @@ async def sync_downloads(scholar_id: str, resource_ids: List[str]):
     conn.close()
     return {"status": "ok"}
 
+# Restore profile
 @app.get("/sync/restore/{scholar_id}")
 async def restore_profile(scholar_id: str):
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
@@ -165,6 +178,7 @@ async def restore_profile(scholar_id: str):
     conn.close()
     return {"recent_activity": recent, "download_history": downloads}
 
+# Register scholar
 @app.post("/register")
 async def register_scholar(scholar: ScholarReg):
     unique_suffix = str(uuid.uuid4())[:8].upper()
@@ -175,9 +189,12 @@ async def register_scholar(scholar: ScholarReg):
         c.execute("INSERT INTO scholars (id, name) VALUES (?, ?)", (full_id, scholar.name))
         conn.commit()
         return {"id": full_id}
-    except: raise HTTPException(status_code=400, detail="Error")
-    finally: conn.close()
+    except:
+        raise HTTPException(status_code=400, detail="Error")
+    finally:
+        conn.close()
 
+# Teacher API examples
 @app.get("/teacher/scholars")
 async def get_scholars():
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
@@ -195,10 +212,12 @@ async def get_stats():
         if os.path.exists("/sys/class/power_supply/BAT0/capacity"):
             with open("/sys/class/power_supply/BAT0/capacity", "r") as f:
                 battery_percent = int(f.read().strip())
-    except: pass
+    except:
+        pass
     return {"storage_percent": (used / total) * 100, "battery_percent": battery_percent}
 
 @app.get("/resources")
+@app.get("/api/catalog")
 async def list_resources():
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
@@ -211,22 +230,16 @@ async def list_resources():
 async def upload_resource(title: str, type: str, file: UploadFile = File(...)):
     total, used, free = shutil.disk_usage("/")
     free_gb = free // (2**30)
-    
     if free_gb < 2:
         logging.error("Upload rejected: Hub storage critically low (< 2GB free).")
         raise HTTPException(status_code=507, detail="Hub storage is full. Please delete older files before uploading.")
-
     safe_filename = re.sub(r'[^A-Za-z0-9_.-]', '_', file.filename)
-    
     file_path = os.path.join(UPLOAD_DIR, safe_filename)
-    
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
-    
-    # EDGE CASE: Overwrite Duplicate Files to save space
     c.execute("DELETE FROM resources WHERE file_path = ?", (file_path,))
-    
-    with open(file_path, "wb") as buffer: buffer.write(await file.read())
+    with open(file_path, "wb") as buffer:
+        buffer.write(await file.read())
     c.execute("INSERT INTO resources (title, file_path, type) VALUES (?, ?, ?)", (title, file_path, type))
     conn.commit()
     conn.close()
@@ -239,13 +252,8 @@ async def login(username: str = Form(...), password: str = Form(...)):
     c.execute("SELECT hashed_password FROM users WHERE username = ?", (username,))
     row = c.fetchone()
     conn.close()
-    
     if not row or not pwd_context.verify(password, row[0]):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials. Please try again."
-        )
-    
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")
     return {"access_token": "dummy_token", "token_type": "bearer"}
 
 @app.post("/teacher/change-password")
@@ -254,22 +262,18 @@ async def change_password(data: ChangePasswordRequest):
     c = conn.cursor()
     c.execute("SELECT hashed_password FROM users WHERE username = ?", (data.username,))
     row = c.fetchone()
-    
     if not row or not pwd_context.verify(data.old_password, row[0]):
         conn.close()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect current password."
-        )
-        
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password.")
     new_hash = pwd_context.hash(data.new_password)
     c.execute("UPDATE users SET hashed_password = ? WHERE username = ?", (new_hash, data.username))
     conn.commit()
     conn.close()
     return {"status": "success"}
 
-@app.get("/")
-async def get_welcome():
+# Static routes
+@app.get("/welcome.html")
+async def welcome_page():
     return FileResponse("static/welcome.html")
 
 @app.get("/dashboard")
@@ -277,5 +281,6 @@ async def get_welcome():
 async def get_dashboard():
     return FileResponse("static/index.html")
 
+# Mount static directories
 app.mount("/files", StaticFiles(directory="uploads"), name="files")
 app.mount("/static", StaticFiles(directory="static"), name="public_static")

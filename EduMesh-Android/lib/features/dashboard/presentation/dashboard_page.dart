@@ -26,6 +26,12 @@ class _DashboardPageState extends State<DashboardPage> {
   String _totalStorageUsedStr = 'Calculating...';
   String _totalCapacityStr = 'Calculating...';
   double _totalStorageProgress = 0.0;
+  String _appUsedStr = 'Calculating...';
+  String _otherUsedStr = 'Calculating...';
+  String _freeRemainingStr = 'Calculating...';
+  int _appFlex = 1;
+  int _otherFlex = 1;
+  int _freeFlex = 1;
   
   final StorageService _storageService = StorageService();
 
@@ -71,28 +77,56 @@ class _DashboardPageState extends State<DashboardPage> {
         }
       }
       final apkSize = await AuthService().getApkSize();
-      final totalUsedBytes = appDataSize + apkSize;
+      final appUsedBytes = appDataSize + apkSize;
       
       final storageInfo = await _storageService.getStorageInfo();
       final totalBytes = storageInfo['totalBytes'] ?? (128 * 1024 * 1024 * 1024);
+      final availableBytes = storageInfo['availableBytes'] ?? (64 * 1024 * 1024 * 1024);
+      final otherUsedBytes = (totalBytes - availableBytes - appUsedBytes).clamp(0, totalBytes);
       
       if (mounted) {
         setState(() {
-          final usedMb = totalUsedBytes / (1024 * 1024);
-          if (usedMb < 1024) {
-            _totalStorageUsedStr = '${usedMb.toStringAsFixed(1)} MB used';
+          // Format App Used
+          final appMb = appUsedBytes / (1024 * 1024);
+          if (appMb < 1024) {
+            _appUsedStr = '${appMb.toStringAsFixed(1)} MB';
           } else {
-            _totalStorageUsedStr = '${(usedMb / 1024).toStringAsFixed(1)} GB used';
+            _appUsedStr = '${(appMb / 1024).toStringAsFixed(1)} GB';
           }
-          
+
+          // Format Other Used
+          final otherGb = otherUsedBytes / (1024 * 1024 * 1024);
+          if (otherGb < 1.0) {
+            _otherUsedStr = '${(otherUsedBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+          } else {
+            _otherUsedStr = '${otherGb.toStringAsFixed(1)} GB';
+          }
+
+          // Format Free Remaining
+          final freeGb = availableBytes / (1024 * 1024 * 1024);
+          _freeRemainingStr = '${freeGb.toStringAsFixed(1)} GB';
+
+          // Format Total
           final totalGb = totalBytes / (1024 * 1024 * 1024);
           _totalCapacityStr = '${totalGb.toStringAsFixed(0)} GB Total';
+
+          // Calculate Flex proportions
+          _appFlex = (appUsedBytes / totalBytes * 1000).toInt().clamp(1, 1000);
+          _otherFlex = (otherUsedBytes / totalBytes * 1000).toInt().clamp(1, 1000);
+          _freeFlex = (availableBytes / totalBytes * 1000).toInt().clamp(1, 1000);
           
-          _totalStorageProgress = (totalUsedBytes / totalBytes).clamp(0.0, 1.0);
+          _totalStorageProgress = ((appUsedBytes + otherUsedBytes) / totalBytes).clamp(0.0, 1.0);
+          _totalStorageUsedStr = '${((appUsedBytes + otherUsedBytes) / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB used';
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _totalStorageUsedStr = 'Unknown');
+      if (mounted) {
+        setState(() {
+          _appUsedStr = 'Unknown';
+          _otherUsedStr = 'Unknown';
+          _freeRemainingStr = 'Unknown';
+        });
+      }
     }
   }
 
@@ -123,7 +157,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 ],
               ),
             ),
-            _buildBottomNav(),
           ],
         ),
       ),
@@ -213,8 +246,8 @@ class _DashboardPageState extends State<DashboardPage> {
             _isChecking
                 ? 'Checking...'
                 : (_isConnected
-                    ? 'Local Server: Connected'
-                    : 'Local Server: Disconnected'),
+                    ? 'Connected'
+                    : 'Disconnected'),
             style: TextStyle(
               fontSize: 12.sp,
               fontWeight: FontWeight.w600,
@@ -385,15 +418,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 ],
               ),
               SizedBox(height: 12.h),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: _totalStorageProgress,
-                  minHeight: 12.h,
-                  backgroundColor: cs.surfaceContainerHighest,
-                  valueColor: const AlwaysStoppedAnimation<Color>(LuminaColors.academicTeal),
-                ),
-              ),
+              _buildMultiColorBar(12.h),
+              _buildStorageLegend(),
             ],
           ),
         ),
@@ -603,15 +629,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 ],
               ),
               SizedBox(height: 8.h),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: _totalStorageProgress,
-                  minHeight: 16.h,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  valueColor: const AlwaysStoppedAnimation<Color>(LuminaColors.academicTeal),
-                ),
-              ),
+              _buildMultiColorBar(16.h),
+              _buildStorageLegend(),
               SizedBox(height: 24.h),
               SizedBox(
                 width: double.infinity,
@@ -636,39 +655,48 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildBottomNav() {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 8.h),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+  Widget _buildMultiColorBar(double minHeight) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: SizedBox(
+        height: minHeight,
+        child: Row(
+          children: [
+            Flexible(flex: _appFlex, child: Container(color: LuminaColors.academicTeal)),
+            Flexible(flex: _otherFlex, child: Container(color: LuminaColors.saffron)),
+            Flexible(flex: _freeFlex, child: Container(color: Theme.of(context).colorScheme.surfaceContainerHighest)),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildStorageLegend() {
+    return Padding(
+      padding: EdgeInsets.only(top: 16.h),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildNavItem(Icons.dashboard, 'Portal', true),
-          _buildNavItem(Icons.menu_book, 'Subjects', false),
-          _buildNavItem(Icons.download_for_offline, 'Saved', false),
-          _buildNavItem(Icons.person, 'Profile', false),
+          _buildLegendItem(LuminaColors.academicTeal, 'EduMesh', _appUsedStr),
+          _buildLegendItem(LuminaColors.saffron, 'Other Apps', _otherUsedStr),
+          _buildLegendItem(Theme.of(context).colorScheme.outline, 'Free', _freeRemainingStr),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool active) {
-    final color = active ? LuminaColors.academicTeal : Colors.grey.shade400;
-    return Column(
+  Widget _buildLegendItem(Color color, String label, String value) {
+    return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: color, size: 24.sp),
-        SizedBox(height: 4.h),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10.sp,
-            fontWeight: active ? FontWeight.bold : FontWeight.normal,
-            color: color,
-          ),
+        Container(width: 8.w, height: 8.w, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        SizedBox(width: 6.w),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 10.sp, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
+            Text(value, style: TextStyle(fontSize: 11.sp, color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
+          ],
         ),
       ],
     );

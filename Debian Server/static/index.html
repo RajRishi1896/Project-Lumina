@@ -382,15 +382,84 @@
             font-size: 0.875rem;
         }
 
+        /* === Mobile Header & Overlay === */
+        .mobile-header {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background: var(--bg-sidebar);
+            color: var(--on-primary);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            width: 100%;
+        }
+        .mobile-brand {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+        }
+        .menu-toggle {
+            background: none;
+            border: none;
+            color: var(--on-primary);
+            cursor: pointer;
+            padding: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .menu-toggle svg { width: 24px; height: 24px; }
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 15;
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
         /* === Responsive === */
         @media (max-width: 768px) {
-            aside { width: 220px; padding: 1.5rem 1rem; }
-            main { margin-left: 220px; padding: 1.5rem; width: calc(100% - 220px); }
-            .form-grid { grid-template-columns: 1fr; }
+            body { flex-direction: column; }
+            .mobile-header { display: flex; }
+            aside {
+                width: 260px;
+                padding: 2rem 1.5rem;
+                transform: translateX(-100%);
+                z-index: 30;
+                box-shadow: 4px 0 16px rgba(0,0,0,0.2);
+                transition: transform var(--transition), background-color var(--transition);
+            }
+            aside.open { transform: translateX(0); }
+            .mobile-overlay.active { display: block; opacity: 1; }
+            main { margin-left: 0; padding: 1.5rem 1rem; width: 100%; }
+            .page-header h1 { font-size: 1.5rem; }
+            .form-grid { grid-template-columns: 1fr; align-items: stretch; }
+            .form-grid .btn { width: 100%; margin-top: 0.5rem; }
+            .card { padding: 1.25rem; }
+            table { display: block; width: 100%; overflow-x: auto; white-space: nowrap; }
         }
     </style>
 </head>
 <body>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <div class="mobile-brand">Lumina Hub</div>
+        <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+    </header>
+
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
 
     <!-- Sidebar -->
     <aside>
@@ -558,6 +627,14 @@
     </main>
 
     <script>
+        // --- Mobile Sidebar Toggle ---
+        function toggleSidebar() {
+            const sidebar = document.querySelector('aside');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
         // --- Tab Navigation ---
         function showTab(tab) {
             document.getElementById('contentTab').className = tab === 'content' ? '' : 'hidden';
@@ -566,6 +643,15 @@
 
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById('nav-' + tab).classList.add('active');
+
+            if (window.innerWidth <= 768) {
+                const sidebar = document.querySelector('aside');
+                const overlay = document.getElementById('mobileOverlay');
+                if (sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                }
+            }
         }
 
         // --- Load Resources ---

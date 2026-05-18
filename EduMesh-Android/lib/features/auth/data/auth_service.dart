@@ -16,6 +16,11 @@ class AuthService {
   static const String _usernameKey = 'lumina_username';
   static const String _usersListKey = 'lumina_users_list_secure';
 
+  // --- Demo Mode Configuration ---
+  static const bool isDemoMode = true; // Set to true to skip login and use test profile
+  static const String demoUserId = 'LUMINA_01-TESTDEMO';
+  static const String demoUsername = 'test';
+
   String _hashPassword(String password) {
     final bytes = utf8.encode(password);
     final digest = sha256.convert(bytes);
@@ -23,11 +28,13 @@ class AuthService {
   }
 
   Future<String?> getUniqueUserId() async {
+    if (isDemoMode) return demoUserId;
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_userIdKey);
   }
 
   Future<String?> getLoggedUsername() async {
+    if (isDemoMode) return demoUsername;
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_usernameKey);
   }
@@ -138,6 +145,7 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    if (isDemoMode) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userIdKey);
     await prefs.remove(_usernameKey);

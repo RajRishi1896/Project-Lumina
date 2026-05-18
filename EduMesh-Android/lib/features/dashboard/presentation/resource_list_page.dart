@@ -53,7 +53,7 @@ class ResourceListPage extends StatelessWidget {
                 children: [
                   Icon(Icons.library_books_outlined, size: 64.sp, color: Colors.grey.shade300),
                   SizedBox(height: 16.h),
-                  Text('No resources found on Hub', style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
+                  Text('There is nothing here', style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
                 ],
               ),
             );
