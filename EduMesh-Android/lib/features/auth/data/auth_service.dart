@@ -46,6 +46,7 @@ class AuthService {
     try {
       final response = await ApiClient.post('/register', data: {
         'name': username,
+        'password': password,
       });
 
       if (response.statusCode != 200) return false;
@@ -66,6 +67,8 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_userIdKey, hubGeneratedId);
       await prefs.setString(_usernameKey, username);
+      await prefs.setBool('lumina_is_teacher', false);
+      await prefs.setInt('lumina_student_reset_required', 0);
       
       return true;
     } catch (e) {
@@ -73,12 +76,84 @@ class AuthService {
     }
   }
 
-  /// NEW: Hub-Verified Login for New Devices
+  /// Hub-Verified Login with teacher/student separation
   Future<bool> login({
     required String username,
     required String password,
   }) async {
     try {
+      // First, check if this is a Teacher login by verifying with Hub /token endpoint
+      try {
+        final tokenResp = await ApiClient.post('/token', data: {
+          'username': username,
+          'password': password,
+        });
+        if (tokenResp.statusCode == 200 && tokenResp.data['is_teacher'] == true) {
+          final String hubId = tokenResp.data['scholar_id'] ?? 'LUMINA_01-TEACHER';
+          final String name = tokenResp.data['name'] ?? username;
+          final String dept = tokenResp.data['department'] ?? 'General';
+          final int resetReq = tokenResp.data['reset_required'] ?? 0;
+
+          // Save session as teacher
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_userIdKey, hubId);
+          await prefs.setString(_usernameKey, username);
+          await prefs.setBool('lumina_is_teacher', true);
+          await prefs.setString('lumina_teacher_name', name);
+          await prefs.setString('lumina_teacher_dept', dept);
+          await prefs.setInt('lumina_teacher_reset_required', resetReq);
+
+          // Also save to secure storage
+          List<Map<String, dynamic>> users = await _getUsers();
+          users.removeWhere((u) => u['username'] == username);
+          users.add({
+            'username': username,
+            'password': _hashPassword(password),
+            'userId': hubId,
+            'isTeacher': true,
+          });
+          await _secureStorage.write(key: _usersListKey, value: jsonEncode(users));
+
+          return true;
+        }
+      } catch (_) {
+        // Not a teacher or invalid teacher creds, fall through to student check
+      }
+
+      // Second, verify student login on the Hub
+      try {
+        final studentResp = await ApiClient.post('/student/token', data: {
+          'username': username,
+          'password': password,
+        });
+
+        if (studentResp.statusCode == 200 && studentResp.data['scholar_id'] != null) {
+          final String hubId = studentResp.data['scholar_id'];
+          final int resetReq = studentResp.data['reset_required'] ?? 0;
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_userIdKey, hubId);
+          await prefs.setString(_usernameKey, username);
+          await prefs.setBool('lumina_is_teacher', false);
+          await prefs.setInt('lumina_student_reset_required', resetReq);
+
+          // Update local secure storage
+          List<Map<String, dynamic>> users = await _getUsers();
+          users.removeWhere((u) => u['username'] == username);
+          users.add({
+            'username': username,
+            'password': _hashPassword(password),
+            'userId': hubId,
+            'isTeacher': false,
+          });
+          await _secureStorage.write(key: _usersListKey, value: jsonEncode(users));
+
+          return true;
+        }
+      } catch (_) {
+        // Student login failed
+      }
+
       final hashedInput = _hashPassword(password);
       
       // 1. Try Local First
@@ -89,40 +164,58 @@ class AuthService {
       );
       
       if (localUser.isNotEmpty) {
-        _saveSession(localUser['userId'], username);
+        final bool isT = localUser['isTeacher'] == true;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_userIdKey, localUser['userId']);
+        await prefs.setString(_usernameKey, username);
+        await prefs.setBool('lumina_is_teacher', isT);
         return true;
-      }
-
-      // 2. If not local, check the Hub (New Device Scenario)
-      // Note: We search the scholar list on the Hub for a matching name
-      final response = await ApiClient.get('/teacher/scholars');
-      if (response.statusCode == 200) {
-        final List<dynamic> hubScholars = response.data;
-        final matchingScholar = hubScholars.firstWhere(
-          (s) => s['name'] == username,
-          orElse: () => null,
-        );
-
-        if (matchingScholar != null) {
-          final String hubId = matchingScholar['id'];
-          
-          // Save to local secure storage for next time
-          users.add({
-            'username': username,
-            'password': hashedInput,
-            'userId': hubId,
-          });
-          await _secureStorage.write(key: _usersListKey, value: jsonEncode(users));
-          
-          _saveSession(hubId, username);
-          return true;
-        }
       }
       
       return false;
     } catch (e) {
       return false;
     }
+  }
+
+  Future<bool> changeStudentPassword(String newPassword) async {
+    try {
+      final String? scholarId = await getUniqueUserId();
+      final String? username = await getLoggedUsername();
+      if (scholarId == null || username == null) return false;
+
+      final response = await ApiClient.post('/student/change-password', data: {
+        'scholar_id': scholarId,
+        'new_password': newPassword,
+      });
+
+      if (response.statusCode == 200) {
+        // Update local secure storage hash
+        List<Map<String, dynamic>> users = await _getUsers();
+        users.removeWhere((u) => u['username'] == username);
+        users.add({
+          'username': username,
+          'password': _hashPassword(newPassword),
+          'userId': scholarId,
+          'isTeacher': false,
+        });
+        await _secureStorage.write(key: _usersListKey, value: jsonEncode(users));
+
+        // Clear local reset flag
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('lumina_student_reset_required', 0);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> isTeacher() async {
+    if (isDemoMode) return true;
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('lumina_is_teacher') ?? false;
   }
 
   Future<void> _saveSession(String id, String username) async {
@@ -137,8 +230,6 @@ class AuthService {
       if (usersJson == null) return [];
       return List<Map<String, dynamic>>.from(jsonDecode(usersJson));
     } catch (e) { 
-      // EDGE CASE: If Android Keystore is corrupted (e.g. user removed lock screen PIN),
-      // read() throws an exception. We must wipe the corrupted storage to prevent a permanent crash loop.
       await _secureStorage.deleteAll();
       return []; 
     }
@@ -149,6 +240,8 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userIdKey);
     await prefs.remove(_usernameKey);
+    await prefs.remove('lumina_student_reset_required');
+    await prefs.remove('lumina_teacher_reset_required');
   }
 
   Future<int> getApkSize() async {

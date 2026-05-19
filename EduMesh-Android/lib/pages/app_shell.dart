@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'browse_node.dart';
+import 'teacher_upload_panel.dart';
 import '../features/dashboard/presentation/dashboard_page.dart' as feat;
 import '../shared/services/mock_data_service.dart';
 import '../widgets/connection_gate.dart';
@@ -152,6 +153,29 @@ class _ScholarProfileView extends StatelessWidget {
                       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
                       builder: (_) => const LuminaSettingsSheet(),
                     );
+                  },
+                ),
+                Divider(height: 1, color: cs.outlineVariant),
+                ListTile(
+                  leading: const Icon(Icons.upload_file, color: LuminaColors.academicTeal),
+                  title: Text('Teacher Upload Panel', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp)),
+                  subtitle: Text('Manage Hub resources (Educators only)', style: TextStyle(fontSize: 12.sp)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    final isT = await AuthService().isTeacher();
+                    if (!isT) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Access Denied: Only teachers connected to the Hub can access this panel.')),
+                        );
+                      }
+                      return;
+                    }
+                    if (context.mounted) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ConnectionGate(child: TeacherUploadPanel())),
+                      );
+                    }
                   },
                 ),
               ],

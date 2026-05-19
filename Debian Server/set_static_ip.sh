@@ -5,7 +5,7 @@ STATIC_IP="192.168.1.1/24"
 GATEWAY="192.168.1.1"
 DNS="8.8.8.8"
 
-echo "🌐 Configuring Static IP: $STATIC_IP..."
+echo "[INFO] Configuring Static IP: $STATIC_IP..."
 
 # Get the name of the primary ethernet or wifi interface
 INTERFACE=$(ip route get 8.8.8.8 | awk -- '{print $5}')
@@ -23,4 +23,4 @@ sudo nmcli con modify "$INTERFACE" ipv4.dns "$DNS"
 sudo nmcli con modify "$INTERFACE" ipv4.method manual
 sudo nmcli con up "$INTERFACE"
 
-echo "✅ Static IP applied! The Hub is now at $STATIC_IP"
+echo "[SUCCESS] Static IP applied! The Hub is now at $STATIC_IP"

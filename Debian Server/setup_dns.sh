@@ -4,7 +4,7 @@
 DOMAIN="lumina.hub"
 HUB_IP="192.168.1.1"
 
-echo "🏷️ Setting up local domain: $DOMAIN -> $HUB_IP..."
+echo "[INFO] Setting up local domain: $DOMAIN -> $HUB_IP..."
 
 # 1. Install dnsmasq
 sudo apt update
@@ -15,7 +15,7 @@ WIFI_IF=$(nmcli -t -f DEVICE,TYPE device | awk -F: '$2=="wifi" {print $1; exit}'
 if [ -z "$WIFI_IF" ]; then
     WIFI_IF="wlan0" # fallback
 fi
-echo "📡 Detected Wi-Fi interface: $WIFI_IF"
+echo "[INFO] Detected Wi-Fi interface: $WIFI_IF"
 
 # 3. Configure dnsmasq to resolve our domain
 sudo bash -c "cat > /etc/dnsmasq.d/lumina.conf <<EOF
@@ -31,4 +31,4 @@ sudo bash -c "echo '$HUB_IP $DOMAIN' >> /etc/hosts"
 # 4. Restart service
 sudo systemctl restart dnsmasq
 
-echo "✅ Success! You can now access the Hub at http://$DOMAIN:8000"
+echo "[SUCCESS] You can now access the Hub at http://$DOMAIN:8000"

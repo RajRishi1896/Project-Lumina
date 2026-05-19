@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/lumina_colors.dart';
 import '../../../core/models/resource_model.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../shared/widgets/lumina_card.dart';
 import '../../../shared/widgets/lumina_settings_sheet.dart';
+import '../../../core/network/api_client.dart';
 import '../../auth/data/auth_service.dart';
 import 'resource_list_page.dart';
 import 'video_view.dart';
@@ -52,6 +54,147 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     _checkServer();
     _calcTotalStorage();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForceResetRequired());
+  }
+
+  Future<void> _checkForceResetRequired() async {
+    if (AuthService.isDemoMode) return;
+    final prefs = await SharedPreferences.getInstance();
+    final isStudentReset = prefs.getInt('lumina_student_reset_required') ?? 0;
+    final isTeacherReset = prefs.getInt('lumina_teacher_reset_required') ?? 0;
+
+    if ((isStudentReset == 1 || isTeacherReset == 1) && mounted) {
+      _showForceResetDialog(isTeacherReset == 1);
+    }
+  }
+
+  void _showForceResetDialog(bool isTeacher) {
+    final TextEditingController newPasswordController = TextEditingController();
+    final TextEditingController confirmPasswordController = TextEditingController();
+    String? dialogError;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Force password change
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return WillPopScope(
+              onWillPop: () async => false, // Prevent back button exit
+              child: AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                title: Row(
+                  children: [
+                    const Icon(Icons.lock_reset, color: Color(0xFFF8BC4B)),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'Password Reset Required',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'A teacher or administrator has forced a password reset on your account. You must set a new password to continue.',
+                      style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade700),
+                    ),
+                    SizedBox(height: 16.h),
+                    TextField(
+                      controller: newPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'New Password',
+                        labelStyle: TextStyle(fontSize: 12.sp),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    TextField(
+                      controller: confirmPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm New Password',
+                        labelStyle: TextStyle(fontSize: 12.sp),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                    if (dialogError != null) ...[
+                      SizedBox(height: 8.h),
+                      Text(
+                        dialogError!,
+                        style: TextStyle(color: Colors.red, fontSize: 11.sp),
+                      ),
+                    ],
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      final newPwd = newPasswordController.text;
+                      final confirmPwd = confirmPasswordController.text;
+                      if (newPwd.isEmpty || confirmPwd.isEmpty) {
+                        setDialogState(() => dialogError = 'Please fill all fields');
+                        return;
+                      }
+                      if (newPwd != confirmPwd) {
+                        setDialogState(() => dialogError = 'Passwords do not match');
+                        return;
+                      }
+
+                      bool success = false;
+                      if (isTeacher) {
+                        try {
+                          final prefs = await SharedPreferences.getInstance();
+                          final username = prefs.getString('lumina_username') ?? '';
+                          final res = await ApiClient.post('/teacher/change-password', data: {
+                            'username': username,
+                            'old_password': 'lumina2026',
+                            'new_password': newPwd,
+                          });
+                          if (res.statusCode == 200) {
+                            await prefs.setInt('lumina_teacher_reset_required', 0);
+                            success = true;
+                          }
+                        } catch (e) {
+                          setDialogState(() => dialogError = 'Could not update password.');
+                        }
+                      } else {
+                        success = await AuthService().changeStudentPassword(newPwd);
+                      }
+
+                      if (success) {
+                        Navigator.of(dialogContext).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Password updated successfully!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        setDialogState(() => dialogError = 'Error updating password. Check connection.');
+                      }
+                    },
+                    child: const Text('Update & Sync', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _checkServer() async {

@@ -30,7 +30,7 @@ class MeshBeacon:
             properties={'version': '1.0', 'hub_id': 'LUMINA_HUB_01'},
             server="lumina-hub.local.",
         )
-        print(f"📡 Broadcasting Mesh Beacon at {self.host_ip}:{self.port}...")
+        print(f"[INFO] Broadcasting Mesh Beacon at {self.host_ip}:{self.port}...")
         self.zeroconf.register_service(info)
 
     def stop(self):

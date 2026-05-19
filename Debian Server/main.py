@@ -16,7 +16,7 @@ def start_beacon():
         beacon.stop()
 
 if __name__ == "__main__":
-    print("🚀 Starting EduMesh Hub...")
+    print("[INFO] Starting EduMesh Hub...")
     
     # Start the Discovery Beacon in a background thread
     beacon_thread = threading.Thread(target=start_beacon, daemon=True)
