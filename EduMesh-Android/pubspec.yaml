@@ -1,7 +1,6 @@
 name: edumesh_android
 description: "A self-hosted, offline educational ecosystem for Project Lumina."
 publish_to: 'none'
-
 version: 1.0.0+1
 
 environment:
@@ -11,24 +10,16 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  
-  # Styling & Typography
   google_fonts: ^6.1.0
   flutter_screenutil: ^5.9.0
-  
-  # Networking & Persistence
   dio: ^5.4.0
   path_provider: ^2.1.2
   sqflite: ^2.3.0
   shared_preferences: ^2.5.5
-  
-  # Content Rendering
   webview_flutter: ^4.4.2
   video_player: ^2.8.2
   chewie: ^1.7.1
   flutter_pdfview: ^1.3.2
-  
-  # State Management
   flutter_riverpod: ^2.4.9
   flutter_svg: ^2.3.0
   package_info_plus: ^10.1.0
