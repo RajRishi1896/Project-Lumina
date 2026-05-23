@@ -1,15 +1,28 @@
-import '../models/resource_model.dart';
+
 import '../network/api_client.dart';
 
 class ResourceService {
-  Future<List<Resource>> fetchResources(ResourceType type) async {
+  // Updated to return List<ResourceModel>
+  Future<List<ResourceModel>> fetchResources(
+    ResourceType type, {
+    String? grade,
+    String? subject,
+  }) async {
     try {
       final response = await ApiClient.get('/resources');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
+        
+        // Updated to map to ResourceModel
         return data
-            .map((json) => Resource.fromJson(json))
-            .where((resource) => resource.type == type)
+            .map((json) => ResourceModel.fromJson(json))
+            .where((resource) {
+              bool matchesType = resource.type == type;
+              bool matchesGrade = grade == null || resource.grade == grade;
+              bool matchesSubject = subject == null || resource.subject == subject;
+              
+              return matchesType && matchesGrade && matchesSubject;
+            })
             .toList();
       }
       return [];
@@ -19,12 +32,14 @@ class ResourceService {
     }
   }
 
-  Future<List<Resource>> fetchAllResources() async {
+  // Updated to return List<ResourceModel>
+  Future<List<ResourceModel>> fetchAllResources() async {
     try {
       final response = await ApiClient.get('/resources');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        return data.map((json) => Resource.fromJson(json)).toList();
+        // Updated to map to ResourceModel
+        return data.map((json) => ResourceModel.fromJson(json)).toList();
       }
       return [];
     } catch (e) {
