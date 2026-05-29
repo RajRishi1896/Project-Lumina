@@ -40,7 +40,7 @@ class _LoginPageState extends State<LoginPage> {
   void _startGatekeeper() {
     // Check immediately, then every 3 seconds
     _checkHub();
-    _pingTimer = Timer.periodic(const Duration(seconds: 3), (_) => _checkHub());
+    _pingTimer = Timer.periodic(const Duration(seconds: 15), (_) => _checkHub());
   }
 
   Future<void> _checkHub() async {

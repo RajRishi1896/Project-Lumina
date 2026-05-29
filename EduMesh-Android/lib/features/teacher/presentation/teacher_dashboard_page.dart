@@ -37,8 +37,27 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Teacher Dashboard',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18.sp)),
+        title: Row(
+          children: [
+            Text('Teacher Dashboard',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18.sp)),
+            if (AuthService.isDemoMode) ...[
+              SizedBox(width: 8.w),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text('Demo',
+                    style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w600,
+                        color: cs.primary)),
+              ),
+            ],
+          ],
+        ),
         backgroundColor: cs.surface,
         foregroundColor: cs.onSurface,
         elevation: 0,

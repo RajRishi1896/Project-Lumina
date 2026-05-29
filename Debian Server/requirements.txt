@@ -1,7 +1,6 @@
 fastapi
 uvicorn
 python-multipart
-sqlalchemy
 zeroconf
 passlib
 bcrypt==3.2.2

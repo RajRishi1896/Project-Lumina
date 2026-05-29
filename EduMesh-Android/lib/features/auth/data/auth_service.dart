@@ -21,7 +21,11 @@ class AuthService {
   static const String demoUserId = 'LUMINA_01-TESTDEMO';
   static const String demoUsername = 'test';
 
-  static bool isAdmin() => isDemoMode;
+  static bool _demoRoleIsAdmin = true;
+
+  static bool isAdmin() => isDemoMode ? _demoRoleIsAdmin : false;
+  static bool isDemoAdmin() => _demoRoleIsAdmin;
+  static void setDemoAdminRole(bool value) { _demoRoleIsAdmin = value; }
 
   String _hashPassword(String password) {
     final bytes = utf8.encode(password);

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # Lumina Hub - Local DNS Configuration (Domain Setup)
 
 DOMAIN="lumina.hub"

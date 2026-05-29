@@ -12,7 +12,7 @@ os.makedirs(ZIM_PAGES_DIR, exist_ok=True)
 @router.get("/zim/search")
 def search_zim(query: str) -> List[Dict[str, str]]:
     """Search ZIM articles by title substring.
-    Returns a list of objects with 'id' and 'title'.
+    Returns a list of objects with 'article_id' and 'title'.
     """
     results: List[Dict[str, str]] = []
     if not query:
@@ -25,7 +25,7 @@ def search_zim(query: str) -> List[Dict[str, str]]:
                 article_id, title_part = parts
                 title = title_part.rsplit('.html', 1)[0]
                 if query.lower() in title.lower():
-                    results.append({"id": article_id, "title": title})
+                    results.append({"article_id": article_id, "title": title})
     return results
 
 @router.get("/zim/page")

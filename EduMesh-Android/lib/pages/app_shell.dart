@@ -7,6 +7,7 @@ import 'package:edumesh_android/widgets/connection_gate.dart';
 // Import your new file here
 // Change this line in app_shell.dart:
 import 'package:edumesh_android/features/dashboard/presentation/saved_resource_page.dart';
+import 'package:edumesh_android/shared/widgets/demo_banner.dart';
 
 
 class AppShell extends StatefulWidget {
@@ -39,7 +40,12 @@ class _AppShellState extends State<AppShell> {
 
   Widget _buildShell() {
     return Scaffold(
-      body: IndexedStack(index: _index, children: _pages),
+      body: Column(
+        children: [
+          if (AuthService.isDemoMode) const DemoBanner(),
+          Expanded(child: IndexedStack(index: _index, children: _pages)),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
         onTap: (val) => setState(() => _index = val),

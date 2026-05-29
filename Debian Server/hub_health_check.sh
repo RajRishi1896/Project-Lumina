@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # Lumina Hub - Pre-boot Health Check
 
 PROJECT_DIR="/home/project-lumina/Debian-Server"

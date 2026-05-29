@@ -6,9 +6,6 @@ from datetime import datetime
 # Import the settings helper for cache size limit
 from .zim_settings import get_max_pages
 
-# Import the settings helper (relative import assuming this file is in app/)
-from .zim_settings import get_max_pages
-
 # Directory where ZIM HTML pages are stored (must match zim_handler)
 ZIM_PAGES_DIR = os.path.join(os.path.dirname(__file__), 'zim_pages')
 os.makedirs(ZIM_PAGES_DIR, exist_ok=True)

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import '../../../auth/data/auth_service.dart';
+import '../../../shared/services/mock_data_service.dart';
 import '../../data/teacher_repository.dart';
 
 class ContentManagerTab extends StatefulWidget {
@@ -393,6 +395,8 @@ class _ContentManagerTabState extends State<ContentManagerTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (AuthService.isDemoMode) _buildDemoActions(cs),
+          SizedBox(height: 16.h),
           _buildUploadSection(cs),
           SizedBox(height: 24.h),
           _buildAddSubjectSection(cs),
@@ -673,6 +677,71 @@ class _ContentManagerTabState extends State<ContentManagerTab> {
               },
               icon: const Icon(Icons.cloud_download),
               label: const Text('Browse Server Files'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDemoActions(ColorScheme cs) {
+    return Card(
+      color: cs.primary.withValues(alpha: 0.05),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: cs.primary.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.science_rounded, size: 18.sp, color: cs.primary),
+                SizedBox(width: 8.w),
+                Text('Demo Actions',
+                    style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: cs.primary)),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _subjects = MockDataService.getSampleSubjects();
+                        _resources = MockDataService.getSampleResources();
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Sample subjects & resources loaded')),
+                      );
+                    },
+                    icon: const Icon(Icons.playlist_add, size: 18),
+                    label: const Text('Load Sample Data'),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _subjects = [];
+                        _resources = [];
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Demo data cleared')),
+                      );
+                    },
+                    icon: const Icon(Icons.clear_all, size: 18),
+                    label: const Text('Clear'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

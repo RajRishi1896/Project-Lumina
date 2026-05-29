@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import os
+import subprocess
 from .zim_auto_cleaner import start_zim_auto_cleaner
 import sqlite3
 import shutil
@@ -187,6 +188,7 @@ def init_db():
         pass
     c.execute('CREATE TABLE IF NOT EXISTS activity_logs (scholar_id TEXT, action TEXT, resource_id TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)')
     c.execute('CREATE TABLE IF NOT EXISTS scholar_downloads (scholar_id TEXT, resource_id TEXT, PRIMARY KEY(scholar_id, resource_id))')
+    c.execute('CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, username TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
     
     # Check subjects table cols to migrate to name + class_name primary key
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='subjects'")
@@ -323,10 +325,17 @@ async def list_files():
     return files
 
 @app.get("/system/stats")
+async def system_stats():
+    return {"status": "healthy"}
+
 @app.post("/system/sync-time")
 async def sync_time(data: TimeSync):
     try:
-        os.system(f"date -s '{data.current_time}'")
+        if not data.current_time or len(data.current_time) >= 64:
+            return {"status": "failed"}
+        if not re.match(r'^[\d\-:\s\+]+$', data.current_time):
+            return {"status": "failed"}
+        result = subprocess.run(["date", "-s", data.current_time], capture_output=True, text=True)
         logging.info(f"Time Synced: {data.current_time}")
         return {"status": "ok"}
     except:
@@ -454,20 +463,6 @@ async def get_subjects():
     finally:
         conn.close()
 
-@app.post("/teacher/subjects")
-async def create_subject(subject: SubjectCreate, teacher_user: str = Depends(verify_teacher)):
-    conn = sqlite3.connect(DB_PATH, timeout=5.0)
-    c = conn.cursor()
-    try:
-        class_val = subject.class_name or "All Classes"
-        c.execute("INSERT OR REPLACE INTO subjects (name, symbol, class_name) VALUES (?, ?, ?)", (subject.name, subject.symbol, class_val))
-        conn.commit()
-        return {"status": "success", "name": subject.name, "symbol": subject.symbol, "class_name": class_val}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Could not create subject: {e}")
-    finally:
-        conn.close()
-
 # Teacher Profile Management API
 def _extract_user(request: Request) -> dict:
     """Return a dict with ``username`` and ``role`` extracted from the session token.
@@ -480,7 +475,8 @@ def _extract_user(request: Request) -> dict:
     token = cookie or (auth.split(" ")[1] if auth else None)
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     cur = conn.cursor()
-    cur.execute("SELECT username, role FROM users WHERE username = ?", (token,))
+    cur.execute("DELETE FROM sessions WHERE created_at < datetime('now', '-24 hours')")
+    cur.execute("SELECT s.username, u.role FROM sessions s JOIN users u ON s.username = u.username WHERE s.token = ?", (token,))
     row = cur.fetchone()
     conn.close()
     if not row:
@@ -501,6 +497,20 @@ def verify_admin(request: Request) -> str:
     if user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin privilege required.")
     return user["username"]
+
+@app.post("/teacher/subjects")
+async def create_subject(subject: SubjectCreate, teacher_user: str = Depends(verify_teacher)):
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    c = conn.cursor()
+    try:
+        class_val = subject.class_name or "All Classes"
+        c.execute("INSERT OR REPLACE INTO subjects (name, symbol, class_name) VALUES (?, ?, ?)", (subject.name, subject.symbol, class_val))
+        conn.commit()
+        return {"status": "success", "name": subject.name, "symbol": subject.symbol, "class_name": class_val}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not create subject: {e}")
+    finally:
+        conn.close()
 
 @app.get("/teachers")
 async def get_teachers(teacher_user: str = Depends(verify_teacher)):
@@ -568,7 +578,7 @@ async def delete_teacher_profile(username: str, teacher_user: str = Depends(veri
 
 # Teacher API examples
 @app.get("/teacher/scholars")
-async def get_scholars():
+async def get_scholars(teacher_user: str = Depends(verify_teacher)):
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
     try:
@@ -661,7 +671,7 @@ async def upload_zim(
         shutil.rmtree(tmp_dir, ignore_errors=True)
         raise HTTPException(status_code=400, detail="Invalid ZIM/ZIP archive.")
     imported = []
-    zim_target_dir = os.path.join(os.path.dirname(__file__), "zim_pages")
+    zim_target_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "zim_pages")
     for root, _, files in os.walk(tmp_dir):
         for fname in files:
             if not fname.lower().endswith('.html'):
@@ -714,9 +724,16 @@ async def login(response: Response, username: str = Form(...), password: str = F
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")
     
     user_role = row[5] if (row and len(row) > 5) else ("admin" if username == "admin" else "teacher")
-    response.set_cookie(key="lumina_session", value=username, httponly=True, max_age=86400, samesite="lax")
+    session_token = f"LUMINA_HUB-{uuid.uuid4().hex}"
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    c = conn.cursor()
+    c.execute("DELETE FROM sessions WHERE created_at < datetime('now', '-24 hours')")
+    c.execute("INSERT INTO sessions (token, username) VALUES (?, ?)", (session_token, username))
+    conn.commit()
+    conn.close()
+    response.set_cookie(key="lumina_session", value=session_token, httponly=True, max_age=86400, samesite="lax")
     return {
-        "access_token": username,
+        "access_token": session_token,
         "token_type": "bearer",
         "username": username,
         "name": row[1] or username,
@@ -958,3 +975,6 @@ async def download_admin_logs(duration: str = "all", admin_user: str = Depends(v
 # Mount static directories
 app.mount("/files", StaticFiles(directory="uploads"), name="files")
 app.mount("/static", StaticFiles(directory="static"), name="public_static")
+
+from zim_handler import router as zim_router
+app.include_router(zim_router, prefix="/zim")

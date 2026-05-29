@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # Lumina Hub - Emergency Admin Reset
 # Double-click or run this script to reset the dashboard password to 'lumina2026'
 

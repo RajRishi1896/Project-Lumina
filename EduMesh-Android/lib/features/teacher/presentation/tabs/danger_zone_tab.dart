@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../auth/data/auth_service.dart';
+import '../../../shared/services/mock_data_service.dart';
 import '../../data/teacher_repository.dart';
 
 class DangerZoneTab extends StatefulWidget {
@@ -203,6 +205,8 @@ class _DangerZoneTabState extends State<DangerZoneTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (AuthService.isDemoMode) _buildDemoActions(cs),
+          SizedBox(height: 16.h),
           _buildStudentSection(cs),
           SizedBox(height: 24.h),
           _buildTeacherSection(cs),
@@ -355,6 +359,89 @@ class _DangerZoneTabState extends State<DangerZoneTab> {
                   ),
                 );
               }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDemoActions(ColorScheme cs) {
+    return Card(
+      color: cs.primary.withValues(alpha: 0.05),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: cs.primary.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.science_rounded, size: 18.sp, color: cs.primary),
+                SizedBox(width: 8.w),
+                Text('Demo Actions',
+                    style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: cs.primary)),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _scholars = MockDataService.getSampleScholars();
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Sample students loaded')),
+                      );
+                    },
+                    icon: const Icon(Icons.people, size: 18),
+                    label: const Text('Load Students'),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _teachers = MockDataService.getSampleTeachers();
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Sample teachers loaded')),
+                      );
+                    },
+                    icon: const Icon(Icons.school, size: 18),
+                    label: const Text('Load Teachers'),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _scholars = [];
+                        _teachers = [];
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Demo data cleared')),
+                      );
+                    },
+                    icon: const Icon(Icons.clear_all, size: 18),
+                    label: const Text('Clear All'),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

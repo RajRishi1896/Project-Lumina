@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # Lumina Hub - MASTER SETUP SCRIPT (Hardened Edition)
 
 echo "[INFO] Initializing Hardened Hub Setup..."
@@ -16,7 +17,10 @@ chmod +x hub_health_check.sh
 
 # 3. Install Python requirements
 echo "[INFO] Installing Python requirements..."
-pip3 install -r requirements.txt --break-system-packages
+# Create and use virtual environment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
 # 4. Configure Firewall (Secure Lockdown)
 echo "[INFO] Configuring Firewall (UFW)..."
@@ -49,7 +53,7 @@ After=network.target
 [Service]
 User=root
 WorkingDirectory=$(pwd)
-ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
+ExecStart=$(pwd)/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
 Restart=always
 
 [Install]

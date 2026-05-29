@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # Lumina Hub - Static IP Configuration
 
 STATIC_IP="192.168.1.1/24"

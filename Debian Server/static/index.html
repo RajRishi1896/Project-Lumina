@@ -1049,6 +1049,7 @@
     </div>
 
     <script>
+        function esc(str) { return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
         // --- Mobile Sidebar Toggle ---
         function toggleSidebar() {
             const sidebar = document.querySelector('aside');
@@ -1284,7 +1285,7 @@
                                 <td>${sub.class_name || 'All Classes'}</td>
                                 <td><span style="display: inline-flex; color: var(--teal);">${getSymbolSvg(sub.symbol)}</span></td>
                                 <td style="text-align: right;">
-                                    <button onclick="promptDeleteSubject('${sub.name}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
+                                    <button onclick="promptDeleteSubject('${esc(sub.name)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
                                 </td>
                             </tr>
                         `).join('');
@@ -1391,7 +1392,7 @@
                     <td><span class="type-badge ${badgeClass}">${r.type}</span></td>
                     <td style="text-align: right;">
                         <a href="${r.url}" class="btn btn-outline" download>Download</a>
-                        <button onclick="deleteResource(${r.id}, '${r.title}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger); margin-left: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.75rem;">Delete</button>
+                        <button onclick="deleteResource(${r.id}, '${esc(r.title)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger); margin-left: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.75rem;">Delete</button>
                     </td>
                 </tr>`;
             }).join('');
@@ -1530,7 +1531,7 @@
                         <td>${t.name}</td>
                         <td><span class="type-badge type-default">${t.department}</span></td>
                         <td style="text-align: right;">
-                            <button onclick="deleteTeacherProfile('${t.username}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
+                            <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
                         </td>
                     </tr>
                 `).join('');
@@ -1543,7 +1544,7 @@
                             <td>${t.name}</td>
                             <td><span class="type-badge type-default">${t.department}</span></td>
                             <td style="text-align: right;">
-                                <button onclick="deleteTeacherProfile('${t.username}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
+                                <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
                             </td>
                         </tr>
                     `).join('');
@@ -1721,8 +1722,8 @@
                     <td><code>${s.id}</code></td>
                     <td>${s.reset_required ? '<span style="color: #F59E0B; font-weight: bold;">Reset Pending</span>' : '<span style="color: #10B981;">Active</span>'}</td>
                     <td style="text-align: right;">
-                        <button onclick="resetStudentPassword('${s.id}', '${s.name}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #F59E0B; color: #F59E0B; margin-right: 0.5rem;">Force Reset Pwd</button>
-                        <button onclick="deleteStudentAccount('${s.id}', '${s.name}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
+                        <button onclick="resetStudentPassword('${esc(s.id)}', '${esc(s.name)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #F59E0B; color: #F59E0B; margin-right: 0.5rem;">Force Reset Pwd</button>
+                        <button onclick="deleteStudentAccount('${esc(s.id)}', '${esc(s.name)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
                     </td>
                 </tr>
             `).join('');
@@ -1747,8 +1748,8 @@
                     <td>${t.department}</td>
                     <td>${t.reset_required ? '<span style="color: #F59E0B; font-weight: bold;">Reset Pending</span>' : '<span style="color: #10B981;">Active</span>'}</td>
                     <td style="text-align: right;">
-                        <button onclick="resetTeacherPassword('${t.username}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #F59E0B; color: #F59E0B; margin-right: 0.5rem;">Force Reset Pwd</button>
-                        <button onclick="deleteTeacherProfile('${t.username}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
+                        <button onclick="resetTeacherPassword('${esc(t.username)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #F59E0B; color: #F59E0B; margin-right: 0.5rem;">Force Reset Pwd</button>
+                        <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
                     </td>
                 </tr>
             `).join('');
@@ -1772,7 +1773,7 @@
                     <td>${r.subject}</td>
                     <td><code>${r.type}</code></td>
                     <td style="text-align: right;">
-                        <button onclick="deleteResource(${r.id}, '${r.title}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
+                        <button onclick="deleteResource(${r.id}, '${esc(r.title)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
                     </td>
                 </tr>
             `).join('');

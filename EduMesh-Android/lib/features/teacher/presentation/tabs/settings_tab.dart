@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../auth/data/auth_service.dart';
+import '../../../shared/services/mock_data_service.dart';
 import '../../data/teacher_repository.dart';
 
 class SettingsTab extends StatefulWidget {
@@ -118,6 +120,8 @@ class _SettingsTabState extends State<SettingsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (AuthService.isDemoMode) _buildDemoActions(cs),
+          SizedBox(height: 16.h),
           _buildRetentionCard(cs),
           SizedBox(height: 24.h),
           _buildAuditLogCard(cs),
@@ -221,6 +225,48 @@ class _SettingsTabState extends State<SettingsTab> {
                   },
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDemoActions(ColorScheme cs) {
+    return Card(
+      color: cs.primary.withValues(alpha: 0.05),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: cs.primary.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.science_rounded, size: 18.sp, color: cs.primary),
+                SizedBox(width: 8.w),
+                Text('Demo Actions',
+                    style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: cs.primary)),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _auditLog = MockDataService.getSampleAuditLog();
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Sample audit log entries loaded')),
+                );
+              },
+              icon: const Icon(Icons.history, size: 18),
+              label: const Text('Generate Sample Audit Log'),
+            ),
           ],
         ),
       ),
