@@ -251,8 +251,6 @@ class _WelcomePageState extends State<WelcomePage> {
   }
 
   Widget _buildCTA(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(

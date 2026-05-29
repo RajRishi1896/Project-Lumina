@@ -1,18 +1,11 @@
-import '../network/api_client.dart';
+import '../../core/network/api_client.dart';
 
 class ZimApiService {
-  final ApiClient _apiClient;
-  String _baseUrl = 'https://your.server.com';
-
-  ZimApiService(this._apiClient);
-
-  void setBaseUrl(String url) {
-    _baseUrl = url;
-  }
+  ZimApiService();
 
   Future<List<Map<String, dynamic>>> search(String query,
       {int offset = 0, int limit = 20}) async {
-    final response = await _apiClient.get('/zim/search', queryParameters: {
+    final response = await ApiClient.get('/zim/search', queryParameters: {
       'q': query,
       'offset': offset.toString(),
       'limit': limit.toString(),
@@ -23,7 +16,7 @@ class ZimApiService {
   }
 
   Future<Map<String, dynamic>> fetchPage(String id) async {
-    final response = await _apiClient.get('/zim/page', queryParameters: {
+    final response = await ApiClient.get('/zim/page', queryParameters: {
       'id': id,
     });
     final decoded = response.data as Map<String, dynamic>;

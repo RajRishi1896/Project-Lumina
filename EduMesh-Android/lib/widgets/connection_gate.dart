@@ -1,15 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/services/connection_service.dart';
-import '../core/services/storage_service.dart';
-import '../core/constants/lumina_colors.dart';
 import '../shared/widgets/lumina_settings_sheet.dart';
-import '../features/auth/data/auth_service.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 
 class ConnectionGate extends StatefulWidget {
   final Widget child;
@@ -29,11 +22,7 @@ class _ConnectionGateState extends State<ConnectionGate> {
   bool _isConnected = true;
   bool _isChecking = true;
   final ConnectionService _connectionService = ConnectionService();
-  final StorageService _storageService = StorageService();
 
-  String _totalStorageUsedStr = 'Calculating...';
-  String _totalCapacityStr = 'Calculating...';
-  double _totalStorageProgress = 0.0;
   String _lastSyncStr = 'Never';
 
   @override
@@ -49,7 +38,6 @@ class _ConnectionGateState extends State<ConnectionGate> {
   }
 
   Future<void> _fetchStats() async {
-    await _calcTotalStorage();
     await _fetchSyncStatus();
   }
 
@@ -77,34 +65,6 @@ class _ConnectionGateState extends State<ConnectionGate> {
         _isConnected = connected;
         _isChecking = false;
       });
-    }
-  }
-
-  Future<void> _calcTotalStorage() async {
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      int appDataSize = 0;
-      if (await dir.exists()) {
-        await for (final entity in dir.list(recursive: true, followLinks: false)) {
-          if (entity is File) appDataSize += await entity.length();
-        }
-      }
-      final apkSize = await AuthService().getApkSize();
-      final totalUsedBytes = (appDataSize + apkSize).toDouble();
-      final Map<String, dynamic>? storageInfo = await _storageService.getStorageInfo();
-      final dynamic rawBytes = storageInfo?['totalBytes'];
-      final double totalBytes = (rawBytes != null) ? (rawBytes as num).toDouble() : 134217728000.0;
-
-      if (mounted) {
-        setState(() {
-          final usedMb = totalUsedBytes / 1048576;
-          _totalStorageUsedStr = usedMb < 1024 ? '${usedMb.toStringAsFixed(1)} MB used' : '${(usedMb / 1024).toStringAsFixed(1)} GB used';
-          _totalCapacityStr = '${(totalBytes / 1073741824).toStringAsFixed(0)} GB Total';
-          _totalStorageProgress = (totalUsedBytes / totalBytes).clamp(0.0, 1.0);
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _totalStorageUsedStr = 'Unknown');
     }
   }
 

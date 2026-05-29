@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../auth/data/auth_service.dart';
-import '../../../core/network/api_client.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../shared/services/mock_data_service.dart';
 import '../../data/teacher_repository.dart';
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../core/constants/lumina_colors.dart';
 import 'resource_detail_page.dart';
 
 class ResourcePage extends StatefulWidget {

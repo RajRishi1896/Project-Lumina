@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:edumesh_android/core/models/resource_model.dart';
-import 'package:edumesh_android/shared/services/mock_data_service.dart' hide ResourceModel;
+import 'package:edumesh_android/shared/services/mock_data_service.dart';
 import 'package:edumesh_android/shared/services/save_resource_service.dart';
 
 // Assuming you have a real service class, if not, create a placeholder
@@ -23,7 +22,7 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
   List<Map<String, dynamic>> _searchIndex = [];
-  // ADDED: Missing list for your refresh logic
+  // ignore: unused_field
   List<dynamic> _savedResources = [];
 
   @override
