@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../features/auth/data/auth_service.dart';
 import '../core/services/connection_service.dart';
 import '../shared/widgets/lumina_settings_sheet.dart';
 
@@ -29,8 +30,8 @@ class _ConnectionGateState extends State<ConnectionGate> {
   void initState() {
     super.initState();
     _fetchStats();
-    if (widget.forceOffline) {
-      _isConnected = false;
+    if (widget.forceOffline || AuthService.isDemoMode) {
+      _isConnected = widget.forceOffline ? false : true;
       _isChecking = false;
     } else {
       _checkConnection();
@@ -73,7 +74,7 @@ class _ConnectionGateState extends State<ConnectionGate> {
     if (_isChecking) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     
     // Check for null or empty strings before passing to widget
-    if (_isConnected && !widget.forceOffline) return widget.child;
+    if (_isConnected && !widget.forceOffline || AuthService.isDemoMode) return widget.child;
 
     return _ErrorStateScreen(
       isConnected: _isConnected,

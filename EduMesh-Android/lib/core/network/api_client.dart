@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/auth/data/auth_service.dart';
+import '../demo/demo_data.dart';
 
 class ApiClient {
   // Now using the official Mesh Domain we set up on Debian
@@ -56,16 +58,28 @@ class ApiClient {
 
 
   static Future<Response<T>> get<T>(String path, {Map<String, dynamic>? queryParameters}) async {
+    if (AuthService.isDemoMode) {
+      final demoResp = DemoData.response<T>(path, queryParameters);
+      if (demoResp != null) return demoResp;
+    }
     await _ensureInitialized();
     return _dio.get<T>(path, queryParameters: queryParameters);
   }
 
   static Future<Response<T>> post<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
+    if (AuthService.isDemoMode) {
+      final demoResp = DemoData.response<T>(path, queryParameters);
+      if (demoResp != null) return demoResp;
+    }
     await _ensureInitialized();
     return _dio.post<T>(path, data: data, queryParameters: queryParameters);
   }
 
   static Future<Response<T>> delete<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
+    if (AuthService.isDemoMode) {
+      final demoResp = DemoData.response<T>(path, queryParameters);
+      if (demoResp != null) return demoResp;
+    }
     await _ensureInitialized();
     return _dio.delete<T>(path, data: data, queryParameters: queryParameters);
   }
