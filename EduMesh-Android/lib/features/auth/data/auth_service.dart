@@ -21,6 +21,8 @@ class AuthService {
   static const String demoUserId = 'LUMINA_01-TESTDEMO';
   static const String demoUsername = 'test';
 
+  static bool isAdmin() => isDemoMode;
+
   String _hashPassword(String password) {
     final bytes = utf8.encode(password);
     final digest = sha256.convert(bytes);

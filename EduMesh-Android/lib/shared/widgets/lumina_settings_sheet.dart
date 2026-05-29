@@ -5,6 +5,7 @@ import 'package:app_settings/app_settings.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../features/auth/data/auth_service.dart';
 import '../../../features/auth/presentation/welcome_page.dart';
+import '../../../features/teacher/presentation/teacher_dashboard_page.dart';
 
 class LuminaSettingsSheet extends ConsumerWidget {
   final VoidCallback? onManageStorage;
@@ -64,6 +65,21 @@ class LuminaSettingsSheet extends ConsumerWidget {
               },
             ),
             
+            // Teacher Dashboard (admin only)
+            if (AuthService.isAdmin())
+              ListTile(
+                leading: Icon(Icons.admin_panel_settings, color: cs.primary),
+                title: const Text('Teacher Dashboard'),
+                subtitle: const Text('Manage content, users, and settings'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TeacherDashboardPage()),
+                  );
+                },
+              ),
+
             // Network
             ListTile(
               leading: Icon(Icons.wifi, color: cs.primary),

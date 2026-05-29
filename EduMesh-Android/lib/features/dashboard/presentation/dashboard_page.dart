@@ -155,7 +155,7 @@ class _DashboardPageState extends State<DashboardPage> {
       decoration: BoxDecoration(color: cs.surface, border: Border(bottom: BorderSide(color: cs.outlineVariant, width: 1))),
       child: Row(
         children: [
-          Icon(Icons.menu, color: cs.primary, size: 24.sp),
+                  Icon(Icons.school, color: cs.primary, size: 24.sp), // App icon
           SizedBox(width: 12.w),
           Text('Project Lumina', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700, color: cs.primary)),
           const Spacer(),

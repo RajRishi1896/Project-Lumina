@@ -11,7 +11,7 @@ sudo apt install -y python3 python3-pip python3-venv dnsmasq network-manager ufw
 
 # 2. Create Directory Structure
 echo "[INFO] Creating Hub structure..."
-mkdir -p uploads data static app
+mkdir -p uploads data static app zim_pages
 chmod +x hub_health_check.sh
 
 # 3. Install Python requirements
@@ -39,12 +39,44 @@ address=/lumina.hub/10.42.0.1
 address=/#/10.42.0.1
 EOF"
 
-# 7. Install & Enable the Systemd Service
-echo "[INFO] Configuring Auto-Start Service..."
-sudo cp lumina-hub.service /etc/systemd/system/
+# 6. Install & Enable the Systemd Service
+
+sudo bash -c "cat > /etc/systemd/system/lumina-hub.service <<EOF
+[Unit]
+Description=Lumina Hub FastAPI Service
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=$(pwd)
+ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF"
+
 sudo systemctl daemon-reload
 sudo systemctl enable lumina-hub
 sudo systemctl start lumina-hub
+# 7. Install & Enable the Hotspot Systemd Service
+echo "[INFO] Creating hotspot systemd service..."
+sudo bash -c 'cat > /etc/systemd/system/lumina-hotspot.service <<EOF
+[Unit]
+Description=Lumina Hotspot Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=$(pwd)/start_hotspot.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF'
+sudo systemctl daemon-reload
+sudo systemctl enable lumina-hotspot
+sudo systemctl start lumina-hotspot
 
 # 8. Prevent Sleep on Lid Close (Headless Laptop Mode)
 echo "[INFO] Disabling Sleep on Lid Close..."

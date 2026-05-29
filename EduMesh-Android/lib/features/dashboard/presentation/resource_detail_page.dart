@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
 import 'package:edumesh_android/shared/services/mock_data_service.dart';
 import 'package:edumesh_android/shared/services/save_resource_service.dart';
+import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
 
 class ResourceDetailPage extends StatefulWidget {
   final String title;
@@ -58,7 +59,16 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
           return Card(
             margin: EdgeInsets.only(bottom: 16.h),
             child: ListTile(
-              title: Text(item.title),
+              onTap: () {
+                if (item.pdfUrl != null) {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => PdfViewerPage(
+                      title: item.title,
+                      pdfUrl: item.pdfUrl!,
+                    ),
+                  ));
+                }
+              },
               subtitle: Text("${item.subject} • ${item.grade}"),
               trailing: IconButton(
                 icon: Icon(

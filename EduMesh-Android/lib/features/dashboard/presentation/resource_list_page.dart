@@ -106,6 +106,7 @@ class _ResourcePageState extends State<ResourcePage> {
                           title: item['title'],
                           subject: widget.subject,
                           grade: widget.grade,
+                          resourceId: item['id']?.toString() ?? '',
                         ),
                       ),
                     );

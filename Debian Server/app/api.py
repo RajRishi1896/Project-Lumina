@@ -6,10 +6,21 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import os
+from .zim_auto_cleaner import start_zim_auto_cleaner
 import sqlite3
 import shutil
 import logging
 import uuid
+import zipfile
+
+try:
+    _disk = shutil.disk_usage("/")
+    # Set ZIM_UPLOAD_MAX_SIZE to less than the system size (total capacity minus 1 GiB buffer)
+    ZIM_UPLOAD_MAX_SIZE = max(0, _disk.total - 1024 * 1024 * 1024)
+except Exception:
+    ZIM_UPLOAD_MAX_SIZE = 5000 * 1024 * 1024  # Fallback to 500 MiB if disk check fails
+
+
 import re
 import time
 from pydantic import BaseModel
@@ -22,8 +33,78 @@ from logging.handlers import RotatingFileHandler
 os.makedirs("data", exist_ok=True)
 log_handler = RotatingFileHandler('data/hub.log', maxBytes=5*1024*1024, backupCount=3)
 logging.basicConfig(handlers=[log_handler], level=logging.INFO, format='%(asctime)s - %(message)s')
+# Admin‑action logger (tiny rotating file, ~2 MiB max, 3 backups)
+admin_handler = RotatingFileHandler('data/admin_actions.log', maxBytes=2*1024*1024, backupCount=3)
+admin_logger = logging.getLogger('admin_actions')
+admin_logger.setLevel(logging.INFO)
+admin_logger.addHandler(admin_handler)
+
+def log_admin_action(action_msg: str):
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=5.0)
+        c = conn.cursor()
+        c.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
+        c.execute('INSERT OR IGNORE INTO settings (key, value) VALUES ("log_retention", "30d")')
+        c.execute("SELECT value FROM settings WHERE key = 'log_retention'")
+        row = c.fetchone()
+        retention = row[0] if row else "30d"
+        conn.close()
+    except Exception as e:
+        retention = "30d"
+
+    if retention == "none":
+        return
+
+    now = datetime.now()
+    log_line = f"{now.isoformat()} - {action_msg}\n"
+    try:
+        with open("data/admin_actions.log", "a") as f:
+            f.write(log_line)
+    except Exception as e:
+        logging.error(f"Could not write admin action log: {e}")
+
+    if retention == "never":
+        return
+
+    try:
+        delta = None
+        if retention == "24h":
+            delta = 24 * 3600
+        elif retention == "7d":
+            delta = 7 * 24 * 3600
+        elif retention == "30d":
+            delta = 30 * 24 * 3600
+        elif retention == "3m":
+            delta = 90 * 24 * 3600
+        elif retention == "6m":
+            delta = 180 * 24 * 3600
+
+        if delta is not None:
+            cutoff = datetime.now().timestamp() - delta
+            kept_lines = []
+            if os.path.exists("data/admin_actions.log"):
+                with open("data/admin_actions.log", "r") as f:
+                    for line in f:
+                        parts = line.split(" - ", 1)
+                        if parts:
+                            try:
+                                log_time = datetime.fromisoformat(parts[0])
+                                if log_time.timestamp() >= cutoff:
+                                    kept_lines.append(line)
+                            except:
+                                kept_lines.append(line)
+                with open("data/admin_actions.log", "w") as f:
+                    f.writelines(kept_lines)
+    except Exception as e:
+        logging.error(f"Error pruning logs: {e}")
 
 app = FastAPI(title="Lumina EduMesh Hub")
+
+@app.on_event("startup")
+async def startup_services():
+    # Start ZIM cache auto‑cleaner (default 1‑hour interval)
+    start_zim_auto_cleaner(interval_seconds=3600)
+    # You could add other background services here
 
 # Security
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -73,7 +154,8 @@ def init_db():
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS scholars (id TEXT PRIMARY KEY, name TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS resources (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, file_path TEXT, type TEXT)')
-    c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, hashed_password TEXT)')
+    c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, hashed_password TEXT, name TEXT, department TEXT, scholar_id TEXT, reset_required INTEGER DEFAULT 0, role TEXT NOT NULL DEFAULT "teacher")')
+    # Existing columns added in newer schema – keep for backward compatibility
     try:
         c.execute('ALTER TABLE users ADD COLUMN name TEXT')
     except sqlite3.OperationalError:
@@ -84,6 +166,11 @@ def init_db():
         pass
     try:
         c.execute('ALTER TABLE users ADD COLUMN scholar_id TEXT')
+    except sqlite3.OperationalError:
+        pass
+    # New role column (default teacher). Ignore if already present.
+    try:
+        c.execute('ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT "teacher"')
     except sqlite3.OperationalError:
         pass
     try:
@@ -144,6 +231,12 @@ def init_db():
         c.executemany("INSERT INTO subjects (name, symbol, class_name) VALUES (?, ?, ?)", defaults)
         
     try:
+        c.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
+        c.execute('INSERT OR IGNORE INTO settings (key, value) VALUES ("log_retention", "30d")')
+    except Exception as e:
+        logging.error(f"Could not create settings table: {e}")
+
+    try:
         c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
     except sqlite3.OperationalError:
         pass
@@ -151,6 +244,12 @@ def init_db():
     conn.close()
 
 init_db()
+# Ensure admin has admin role (idempotent)
+conn = sqlite3.connect(DB_PATH, timeout=5.0)
+cur = conn.cursor()
+cur.execute('UPDATE users SET role = "admin" WHERE username = "admin"')
+conn.commit()
+conn.close()
 
 # Models
 class TimeSync(BaseModel):
@@ -370,20 +469,38 @@ async def create_subject(subject: SubjectCreate, teacher_user: str = Depends(ver
         conn.close()
 
 # Teacher Profile Management API
-def verify_teacher(request: Request):
+def _extract_user(request: Request) -> dict:
+    """Return a dict with ``username`` and ``role`` extracted from the session token.
+    The token is either a ``lumina_session`` cookie or a ``Bearer`` token.
+    """
     auth = request.headers.get("Authorization")
     cookie = request.cookies.get("lumina_session")
     if not cookie and not (auth and auth.startswith("Bearer ")):
-        raise HTTPException(status_code=401, detail="Unauthorized: Teacher session required.")
+        raise HTTPException(status_code=401, detail="Unauthorized: Session required.")
     token = cookie or (auth.split(" ")[1] if auth else None)
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
-    c = conn.cursor()
-    c.execute("SELECT username FROM users WHERE username = ?", (token,))
-    row = c.fetchone()
+    cur = conn.cursor()
+    cur.execute("SELECT username, role FROM users WHERE username = ?", (token,))
+    row = cur.fetchone()
     conn.close()
     if not row:
-        raise HTTPException(status_code=401, detail="Unauthorized: Invalid teacher session.")
-    return token
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid session.")
+    username, role = row
+    return {"username": username, "role": role}
+
+def verify_teacher(request: Request) -> str:
+    """Return the username if the caller is a teacher (role == 'teacher')."""
+    user = _extract_user(request)
+    if user["role"] not in ("teacher", "admin"):
+        raise HTTPException(status_code=403, detail="Teacher privilege required.")
+    return user["username"]
+
+def verify_admin(request: Request) -> str:
+    """Return the username if the caller is an admin (role == 'admin')."""
+    user = _extract_user(request)
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin privilege required.")
+    return user["username"]
 
 @app.get("/teachers")
 async def get_teachers(teacher_user: str = Depends(verify_teacher)):
@@ -463,6 +580,10 @@ async def get_scholars():
     conn.close()
     return [{"id": r[0], "name": r[1], "reset_required": r[2] or 0} for r in rows]
 
+@app.get("/api/limits")
+async def get_limits():
+    return {"zim_upload_max_size": ZIM_UPLOAD_MAX_SIZE}
+
 @app.get("/stats")
 async def get_stats():
     total, used, free = shutil.disk_usage("/")
@@ -509,7 +630,55 @@ async def upload_resource(title: str, type: str, subject: str = "General", file:
     conn.commit()
     conn.close()
     return {"status": "success"}
+@app.post("/teacher/upload-zim")
+async def upload_zim(
+    file: UploadFile = File(...),
+    teacher_user: str = Depends(verify_teacher)
+):
+    # Storage space check (minimum 2 GB free)
+    total, used, free = shutil.disk_usage("/")
+    free_gb = free // (2**30)
+    if free_gb < 2:
+        raise HTTPException(status_code=507, detail="Insufficient storage space for ZIM upload.")
+    contents = await file.read()
+    if len(contents) > ZIM_UPLOAD_MAX_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"ZIM upload exceeds maximum size limit of {ZIM_UPLOAD_MAX_SIZE // (1024 * 1024)} MiB."
+        )
 
+    # Write to temporary directory
+    tmp_dir = os.path.join(UPLOAD_DIR, f"tmp_{uuid.uuid4().hex}")
+    os.makedirs(tmp_dir, exist_ok=True)
+    archive_path = os.path.join(tmp_dir, file.filename)
+    with open(archive_path, "wb") as f:
+        f.write(contents)
+    # Extract archive (ZIP compatible)
+    try:
+        with zipfile.ZipFile(archive_path, "r") as zip_ref:
+            zip_ref.extractall(tmp_dir)
+    except zipfile.BadZipFile:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise HTTPException(status_code=400, detail="Invalid ZIM/ZIP archive.")
+    imported = []
+    zim_target_dir = os.path.join(os.path.dirname(__file__), "zim_pages")
+    for root, _, files in os.walk(tmp_dir):
+        for fname in files:
+            if not fname.lower().endswith('.html'):
+                continue
+            src = os.path.join(root, fname)
+            if "__" not in fname:
+                article_id = uuid.uuid4().hex[:8].upper()
+                title = os.path.splitext(fname)[0]
+                dest_name = f"{article_id}__{title}.html"
+            else:
+                dest_name = fname
+            dest_path = os.path.join(zim_target_dir, dest_name)
+            shutil.move(src, dest_path)
+            imported.append(dest_name)
+    # Cleanup temporary files
+    shutil.rmtree(tmp_dir, ignore_errors=True)
+    return {"status": "success", "imported": imported}
 @app.post("/teacher/import-server-file")
 async def import_server_file(filename: str, title: str, type: str, subject: str = "General", teacher_user: str = Depends(verify_teacher)):
     file_path = os.path.join(UPLOAD_DIR, filename)
@@ -531,7 +700,7 @@ async def login(response: Response, username: str = Form(...), password: str = F
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
     try:
-        c.execute("SELECT hashed_password, name, department, scholar_id, reset_required FROM users WHERE username = ?", (username,))
+        c.execute("SELECT hashed_password, name, department, scholar_id, reset_required, role FROM users WHERE username = ?", (username,))
         row = c.fetchone()
         reset_req = row[4] if row else 0
         if username == "admin":
@@ -544,6 +713,7 @@ async def login(response: Response, username: str = Form(...), password: str = F
     if not row or not pwd_context.verify(password, row[0]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")
     
+    user_role = row[5] if (row and len(row) > 5) else ("admin" if username == "admin" else "teacher")
     response.set_cookie(key="lumina_session", value=username, httponly=True, max_age=86400, samesite="lax")
     return {
         "access_token": username,
@@ -552,7 +722,7 @@ async def login(response: Response, username: str = Form(...), password: str = F
         "name": row[1] or username,
         "department": row[2] or "General",
         "scholar_id": row[3] or f"LUMINA_01-T_{username.upper()}",
-        "is_teacher": True,
+        "role": user_role,
         "reset_required": reset_req or 0
     }
 
@@ -578,7 +748,7 @@ async def change_password(data: ChangePasswordRequest, teacher_user: str = Depen
     return {"status": "success"}
 
 @app.post("/teacher/disable-default-admin")
-async def disable_default_admin(teacher_user: str = Depends(verify_teacher)):
+async def disable_default_admin(admin_user: str = Depends(verify_admin)):
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
     c.execute("SELECT count(*) FROM users WHERE username != 'admin'")
@@ -589,6 +759,7 @@ async def disable_default_admin(teacher_user: str = Depends(verify_teacher)):
     c.execute("UPDATE users SET hashed_password = 'DISABLED' WHERE username = 'admin'")
     conn.commit()
     conn.close()
+    log_admin_action(f"Admin {admin_user} disabled the default admin account")
     return {"status": "success"}
 
 # Danger Zone Endpoints
@@ -622,8 +793,8 @@ async def teacher_delete_student(scholar_id: str, teacher_user: str = Depends(ve
         conn.close()
 
 @app.post("/teacher/reset-password/{username}")
-async def force_reset_teacher_password(username: str, teacher_user: str = Depends(verify_teacher)):
-    if username == "admin" and teacher_user != "admin":
+async def force_reset_teacher_password(username: str, admin_user: str = Depends(verify_admin)):
+    if username == "admin" and admin_user != "admin":
         raise HTTPException(status_code=400, detail="Only the main admin can reset the default admin account.")
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
@@ -631,6 +802,7 @@ async def force_reset_teacher_password(username: str, teacher_user: str = Depend
         hashed = pwd_context.hash("lumina2026")
         c.execute("UPDATE users SET hashed_password = ?, reset_required = 1 WHERE username = ?", (hashed, username))
         conn.commit()
+        log_admin_action(f"Admin {admin_user} reset password for teacher {username}")
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not reset password: {e}")
@@ -703,6 +875,85 @@ async def get_dashboard(request: Request):
     if not request.cookies.get("lumina_session"):
         return RedirectResponse(url="/welcome.html")
     return FileResponse("static/index.html")
+
+# WhoAmI endpoint – tells the client its role
+@app.get("/whoami")
+async def whoami(user: dict = Depends(_extract_user)):
+    return {"username": user["username"], "role": user["role"]}
+
+# Admin audit log (last N entries, default 20)
+@app.get("/admin/log")
+async def admin_log(limit: int = 20, admin_user: str = Depends(verify_admin)):
+    try:
+        with open("data/admin_actions.log", "r") as f:
+            lines = f.readlines()[-limit:]
+        return {"log": [line.strip() for line in lines]}
+    except FileNotFoundError:
+        return {"log": []}
+
+class LogRetentionUpdate(BaseModel):
+    policy: str # e.g. "24h", "7d", "30d", "3m", "6m", "never", "none"
+
+@app.get("/api/admin/settings")
+async def get_admin_settings(admin_user: str = Depends(verify_admin)):
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    c = conn.cursor()
+    c.execute("SELECT value FROM settings WHERE key = 'log_retention'")
+    row = c.fetchone()
+    conn.close()
+    return {"log_retention": row[0] if row else "30d"}
+
+@app.post("/api/admin/settings")
+async def set_admin_settings(data: LogRetentionUpdate, admin_user: str = Depends(verify_admin)):
+    if data.policy not in ("24h", "7d", "30d", "3m", "6m", "never", "none"):
+        raise HTTPException(status_code=400, detail="Invalid log retention policy.")
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('log_retention', ?)", (data.policy,))
+    conn.commit()
+    conn.close()
+    log_admin_action(f"Admin {admin_user} changed log retention policy to {data.policy}")
+    return {"status": "success"}
+
+@app.get("/api/admin/logs/download")
+async def download_admin_logs(duration: str = "all", admin_user: str = Depends(verify_admin)):
+    if not os.path.exists("data/admin_actions.log"):
+        return Response(content="No logs found.", media_type="text/plain")
+
+    cutoff = None
+    now = datetime.now().timestamp()
+    if duration == "24h":
+        cutoff = now - 24 * 3600
+    elif duration == "7d":
+        cutoff = now - 7 * 24 * 3600
+    elif duration == "30d":
+        cutoff = now - 30 * 24 * 3600
+    elif duration == "3m":
+        cutoff = now - 90 * 24 * 3600
+    elif duration == "6m":
+        cutoff = now - 180 * 24 * 3600
+
+    filtered_lines = []
+    with open("data/admin_actions.log", "r") as f:
+        for line in f:
+            if cutoff is None:
+                filtered_lines.append(line)
+            else:
+                parts = line.split(" - ", 1)
+                if parts:
+                    try:
+                        log_time = datetime.fromisoformat(parts[0])
+                        if log_time.timestamp() >= cutoff:
+                            filtered_lines.append(line)
+                    except:
+                        filtered_lines.append(line)
+
+    content = "".join(filtered_lines)
+    return Response(
+        content=content,
+        media_type="text/plain",
+        headers={"Content-Disposition": f"attachment; filename=admin_logs_{duration}.txt"}
+    )
 
 # Mount static directories
 app.mount("/files", StaticFiles(directory="uploads"), name="files")

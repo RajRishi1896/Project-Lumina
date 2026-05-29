@@ -1,0 +1,63 @@
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:pdfx/pdfx.dart';
+
+class PdfViewerPage extends StatefulWidget {
+  final String title;
+  final String pdfUrl;
+
+  const PdfViewerPage({
+    super.key,
+    required this.title,
+    required this.pdfUrl,
+  });
+
+  @override
+  State<PdfViewerPage> createState() => _PdfViewerPageState();
+}
+
+class _PdfViewerPageState extends State<PdfViewerPage> {
+  late final PdfControllerPinch _pdfController;
+
+  Future<PdfDocument> _openPdf() async {
+    if (widget.pdfUrl.startsWith('http')) {
+      final response = await http.get(Uri.parse(widget.pdfUrl));
+      if (response.statusCode != 200) {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+      return PdfDocument.openData(response.bodyBytes);
+    }
+    return PdfDocument.openFile(widget.pdfUrl);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _pdfController = PdfControllerPinch(document: _openPdf());
+  }
+
+  @override
+  void dispose() {
+    _pdfController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      backgroundColor: cs.surface,
+      appBar: AppBar(
+        title: Text(widget.title),
+        backgroundColor: cs.surface,
+      ),
+      body: PdfViewPinch(
+        controller: _pdfController,
+        scrollDirection: Axis.vertical,
+        onDocumentError: (error) {
+          if (mounted) setState(() {});
+        },
+      ),
+    );
+  }
+}
