@@ -1266,7 +1266,7 @@
                 
                 let optionsHtml = allSubjects.map(s => {
                     const display = s.class_name ? `${s.name} (${s.class_name})` : s.name;
-                    return `<option value="${display}">${display}</option>`;
+                    return `<option value="${esc(s.name)}">${display}</option>`;
                 }).join('');
                 subjectSelect.innerHTML = optionsHtml || '<option value="General">General</option>';
                 
@@ -1481,7 +1481,7 @@
             const res = await fetch('/teacher/change-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: 'admin', old_password: oldPwd, new_password: newPwd })
+                body: JSON.stringify({ username: loggedInUser, old_password: oldPwd, new_password: newPwd })
             });
             if (res.ok) {
                 showNotification('securityNotif', 'Password updated.', false);
@@ -1755,29 +1755,7 @@
             `).join('');
         }
 
-        function filterDangerResources() {
-            const query = (document.getElementById('resourceDangerSearch').value || '').toLowerCase().trim();
-            const tbody = document.getElementById('resourceDangerTable');
-            const filtered = activeDangerResources.filter(r => 
-                r.title.toLowerCase().includes(query) || 
-                (r.subject && r.subject.toLowerCase().includes(query)) || 
-                r.type.toLowerCase().includes(query)
-            );
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No matching resources found.</td></tr>';
-                return;
-            }
-            tbody.innerHTML = filtered.map(r => `
-                <tr>
-                    <td><strong>${r.title}</strong></td>
-                    <td>${r.subject}</td>
-                    <td><code>${r.type}</code></td>
-                    <td style="text-align: right;">
-                        <button onclick="deleteResource(${r.id}, '${esc(r.title)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
+
 
         async function resetStudentPassword(id, name) {
             const confirmed = await showConfirm('Force Password Reset', `Are you sure you want to force password reset on student "${name}"? They will be forced to change their password to continue using the mobile application.`, false);
@@ -1853,7 +1831,7 @@
             if (!confirmed) return;
             if (IS_DEMO) {
                 demoResources = demoResources.filter(r => r.id !== id);
-                showNotification('resourceDangerNotif', `Resource "${title}" deleted.`, false);
+                showNotification('uploadNotif', `Resource "${title}" deleted.`, false);
                 loadDangerZone();
                 loadResources();
                 return;
@@ -1861,14 +1839,14 @@
             try {
                 const res = await fetch(`/teacher/resources/${id}`, { method: 'DELETE' });
                 if (res.ok) {
-                    showNotification('resourceDangerNotif', `Resource "${title}" deleted.`, false);
+                    showNotification('uploadNotif', `Resource "${title}" deleted.`, false);
                     loadDangerZone();
                     loadResources();
                 } else {
-                    showNotification('resourceDangerNotif', 'Could not delete resource.', true);
+                    showNotification('uploadNotif', 'Could not delete resource.', true);
                 }
             } catch (e) {
-                showNotification('resourceDangerNotif', 'Network error.', true);
+                showNotification('uploadNotif', 'Network error.', true);
             }
         }
 

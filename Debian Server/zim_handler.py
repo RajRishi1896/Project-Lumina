@@ -9,7 +9,7 @@ router = APIRouter()
 ZIM_PAGES_DIR = os.path.join(os.path.dirname(__file__), "zim_pages")
 os.makedirs(ZIM_PAGES_DIR, exist_ok=True)
 
-@router.get("/zim/search")
+@router.get("/search")
 def search_zim(query: str) -> List[Dict[str, str]]:
     """Search ZIM articles by title substring.
     Returns a list of objects with 'article_id' and 'title'.
@@ -28,7 +28,7 @@ def search_zim(query: str) -> List[Dict[str, str]]:
                     results.append({"article_id": article_id, "title": title})
     return results
 
-@router.get("/zim/page")
+@router.get("/page")
 def get_zim_page(article_id: str):
     """Return the HTML content of a ZIM article as JSON.
     The server looks for a file named "<id>__*.html" and returns its HTML string.

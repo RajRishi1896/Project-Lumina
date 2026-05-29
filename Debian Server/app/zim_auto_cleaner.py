@@ -7,7 +7,7 @@ from datetime import datetime
 from .zim_settings import get_max_pages
 
 # Directory where ZIM HTML pages are stored (must match zim_handler)
-ZIM_PAGES_DIR = os.path.join(os.path.dirname(__file__), 'zim_pages')
+ZIM_PAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'zim_pages')
 os.makedirs(ZIM_PAGES_DIR, exist_ok=True)
 
 def _clean_old_pages():

@@ -329,7 +329,7 @@ async def system_stats():
     return {"status": "healthy"}
 
 @app.post("/system/sync-time")
-async def sync_time(data: TimeSync):
+async def sync_time(data: TimeSync, admin_user: str = Depends(verify_admin)):
     try:
         if not data.current_time or len(data.current_time) >= 64:
             return {"status": "failed"}
@@ -475,7 +475,6 @@ def _extract_user(request: Request) -> dict:
     token = cookie or (auth.split(" ")[1] if auth else None)
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     cur = conn.cursor()
-    cur.execute("DELETE FROM sessions WHERE created_at < datetime('now', '-24 hours')")
     cur.execute("SELECT s.username, u.role FROM sessions s JOIN users u ON s.username = u.username WHERE s.token = ?", (token,))
     row = cur.fetchone()
     conn.close()
@@ -656,6 +655,8 @@ async def upload_zim(
             status_code=413,
             detail=f"ZIM upload exceeds maximum size limit of {ZIM_UPLOAD_MAX_SIZE // (1024 * 1024)} MiB."
         )
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Uploaded file has no filename.")
 
     # Write to temporary directory
     tmp_dir = os.path.join(UPLOAD_DIR, f"tmp_{uuid.uuid4().hex}")
@@ -672,6 +673,7 @@ async def upload_zim(
         raise HTTPException(status_code=400, detail="Invalid ZIM/ZIP archive.")
     imported = []
     zim_target_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "zim_pages")
+    os.makedirs(zim_target_dir, exist_ok=True)
     for root, _, files in os.walk(tmp_dir):
         for fname in files:
             if not fname.lower().endswith('.html'):

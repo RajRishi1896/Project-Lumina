@@ -28,6 +28,8 @@ dependencies:
   app_settings: ^7.0.0
   wakelock_plus: ^1.6.1
   google_fonts: ^8.1.0
+  http: ^1.2.0
+  flutter_pdfview: ^1.0.0
 
 
 

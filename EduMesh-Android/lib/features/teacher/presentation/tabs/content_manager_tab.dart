@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../auth/data/auth_service.dart';
+import '../../../core/network/api_client.dart';
 import '../../../../shared/services/mock_data_service.dart';
 import '../../data/teacher_repository.dart';
 
@@ -87,14 +88,14 @@ class _ContentManagerTabState extends State<ContentManagerTab> {
   }
 
   Future<String> _downloadToTemp(String url) async {
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode != 200) {
-      throw Exception('Download failed: HTTP ${response.statusCode}');
-    }
+    final response = await ApiClient.dio.get(
+      url,
+      options: Options(responseType: ResponseType.bytes),
+    );
     final dir = await getTemporaryDirectory();
     final name = url.split('/').last.split('?').first;
     final file = File('${dir.path}/$name');
-    await file.writeAsBytes(response.bodyBytes);
+    await file.writeAsBytes(response.data);
     return file.path;
   }
 
@@ -136,16 +137,18 @@ class _ContentManagerTabState extends State<ContentManagerTab> {
     final url = _zimUrlCtrl.text.trim();
     if (url.isEmpty) return;
     if (_zimUploadMaxSize != null) {
-      final headResp = await http.head(Uri.parse(url));
-      final size = headResp.contentLength ?? 0;
-      if (size > _zimUploadMaxSize!) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(
-                  'File exceeds maximum ZIM upload size of ${_zimUploadMaxSize! ~/ (1024 * 1024)} MiB')));
+      try {
+        final headResp = await ApiClient.dio.head(url);
+        final size = int.tryParse(headResp.headers.value('content-length') ?? '0') ?? 0;
+        if (size > _zimUploadMaxSize!) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(
+                    'File exceeds maximum ZIM upload size of ${_zimUploadMaxSize! ~/ (1024 * 1024)} MiB')));
+          }
+          return;
         }
-        return;
-      }
+      } catch (_) {}
     }
     setState(() => _uploading = true);
     try {
