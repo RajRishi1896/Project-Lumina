@@ -312,7 +312,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildStorageLegend() {
     return Padding(
       padding: EdgeInsets.only(top: 16.h),
-      child: Wrap(spacing: 12.w, runSpacing: 12.h, children: [_buildLegendItem(LuminaColors.academicTeal, 'EduMesh', _appUsedStr), _buildLegendItem(LuminaColors.saffron, 'Other Apps', _otherUsedStr), _buildLegendItem(Theme.of(context).colorScheme.outline, 'Free', _freeRemainingStr)]),
+      child: Wrap(spacing: 12.w, runSpacing: 12.h, children: [_buildLegendItem(LuminaColors.academicTeal, 'EduMesh', _appUsedStr), _buildLegendItem(LuminaColors.saffron, 'Other Apps', _otherUsedStr), _buildLegendItem(Theme.of(context).colorScheme.surfaceContainerHighest, 'Free', _freeRemainingStr)]),
     );
   }
 
