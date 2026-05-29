@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import '../../../auth/data/auth_service.dart';
-import '../../../shared/services/mock_data_service.dart';
+import '../../../../shared/services/mock_data_service.dart';
 import '../../data/teacher_repository.dart';
 
 class ContentManagerTab extends StatefulWidget {

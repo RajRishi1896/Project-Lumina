@@ -70,6 +70,14 @@ class ApiClient {
     return _dio.delete<T>(path, data: data, queryParameters: queryParameters);
   }
   
+  static Dio get dio {
+    // Intentionally not calling _ensureInitialized here — caller
+    // should call ensureInitialized() if they need base URL resolution.
+    return _dio;
+  }
+
+  static Future<void> ensureInitialized() => _ensureInitialized();
+
   static void setBaseUrl(String url) {
     _dio.options.baseUrl = url;
   }

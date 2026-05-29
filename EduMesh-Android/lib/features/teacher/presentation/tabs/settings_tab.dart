@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../auth/data/auth_service.dart';
-import '../../../shared/services/mock_data_service.dart';
+import '../../../../shared/services/mock_data_service.dart';
 import '../../data/teacher_repository.dart';
 
 class SettingsTab extends StatefulWidget {

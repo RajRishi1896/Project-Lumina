@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/lumina_colors.dart';
-import 'resource_page.dart';
+import 'resource_list_page.dart';
 
 class GradePage extends StatelessWidget {
   final String subject;
