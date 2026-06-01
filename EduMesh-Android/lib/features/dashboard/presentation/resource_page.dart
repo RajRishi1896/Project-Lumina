@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/lumina_colors.dart';
+import '../../../core/services/activity_tracker.dart';
 
 import 'package:edumesh_android/features/dashboard/presentation/resource_detail_page.dart';
 
@@ -97,6 +98,7 @@ class _ResourcePageState extends State<ResourcePage> {
                       
                       GestureDetector(
                         onTap: () {
+                          ActivityTracker().logAction('view', resourceId: item['id'] as String, metadata: widget.subject).catchError((_) {});
                           Navigator.push(context, MaterialPageRoute(builder: (_) => ResourceDetailPage(
                             title: item['title'] as String,
                             subject: widget.subject,

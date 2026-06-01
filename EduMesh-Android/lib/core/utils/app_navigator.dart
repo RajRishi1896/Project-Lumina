@@ -13,7 +13,7 @@ class AppNavigator {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ResourcePage(
+        builder: (context) => ResourceCategoryPage(
           subject: subject ?? 'General',
           grade: grade ?? 'All',
         ),

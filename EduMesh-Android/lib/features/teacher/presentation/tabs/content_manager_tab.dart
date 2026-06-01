@@ -1,3 +1,4 @@
+import 'dart:async' as async;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -114,7 +115,7 @@ class _ContentManagerTabState extends State<ContentManagerTab> {
         filePath: filePath,
         fileName: fileName,
       );
-      File(filePath).delete().ignore();
+      async.unawaited(File(filePath).delete());
       if (mounted) {
         _titleCtrl.clear();
         _fileUrlCtrl.clear();
@@ -155,7 +156,7 @@ class _ContentManagerTabState extends State<ContentManagerTab> {
       final filePath = await _downloadToTemp(url);
       final fileName = url.split('/').last.split('?').first;
       final resp = await TeacherRepository.uploadZim(filePath, fileName);
-      File(filePath).delete().ignore();
+      async.unawaited(File(filePath).delete());
       if (mounted) {
         final imported = (resp['imported'] as List?)?.length ?? 0;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -612,7 +613,7 @@ class _ContentManagerTabState extends State<ContentManagerTab> {
                   subtitle: Text('${r['subject'] ?? 'General'}  -  $type'),
                   trailing: IconButton(
                     icon: Icon(Icons.delete_outline, color: cs.error),
-                    onPressed: () => _deleteResource(r['id'] is int ? r['id'] : int.parse(r['id'].toString())),
+                    onPressed: () => _deleteResource(r['id'] is int ? r['id'] : int.tryParse(r['id']?.toString() ?? '') ?? 0),
                   ),
                 );
               }),

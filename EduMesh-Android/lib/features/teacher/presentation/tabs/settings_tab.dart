@@ -147,7 +147,7 @@ class _SettingsTabState extends State<SettingsTab> {
               const LinearProgressIndicator()
             else
               DropdownButtonFormField<String>(
-                value: _retentionPolicy,
+                initialValue: _retentionPolicy,
                 decoration: const InputDecoration(border: OutlineInputBorder()),
                 items: ['24h', '7d', '30d', '3m', '6m', 'never', 'none']
                     .map((v) => DropdownMenuItem(value: v, child: Text(_retentionLabel(v))))
@@ -285,7 +285,7 @@ class _SettingsTabState extends State<SettingsTab> {
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: cs.onSurface)),
             SizedBox(height: 12.h),
             DropdownButtonFormField<String>(
-              value: _downloadDuration,
+              initialValue: _downloadDuration,
               decoration: const InputDecoration(labelText: 'Duration', border: OutlineInputBorder()),
               items: [
                 const DropdownMenuItem(value: 'all', child: Text('All Time')),

@@ -1,12 +1,12 @@
 # EduMesh Infrastructure Hub: Debian Server Internals & Architectural Specification
 
-This specification documents the core system architecture, network daemons, and administrative runbooks for the **EduMesh Infrastructure Hub**, a headless, autonomous micro-server deployed on Debian 12 (Bookworm).
+This document covers the system architecture, network services, and administrative procedures for the **EduMesh Hub** — a headless Debian 12 server.
 
 ---
 
 ## System Architecture & Core Daemons
 
-The Infrastructure Hub operates as a highly resilient, standalone educational appliance combining network routing, RESTful microservices, and persistent data storage:
+The Hub combines network routing, RESTful APIs, and persistent storage in a single appliance:
 
 - **DHCP & DNS Management (`dnsmasq`)**: Operates as the local gateway daemon, issuing IP addresses, managing DNS resolution, and executing captive portal DNS hijacking (`address=/#/192.168.1.1`).
 - **RESTful API Backend (`FastAPI` / `Uvicorn`)**: Serves the core microservices layer on port `8000`, handling student authentication, telemetry synchronization, resource distribution, and the captive portal `204 No Content` interceptor.
@@ -27,8 +27,8 @@ The Infrastructure Hub operates as a highly resilient, standalone educational ap
 
 | Automation Script | Operational Purpose & Execution Contract |
 | :--- | :--- |
-| **`setup_hub.sh`** | Master idempotent provisioning script. Configures `NetworkManager` Wi-Fi hotspot broadcasting, establishes `iptables` captive portal redirection rules, elevates kernel file descriptor limits (`ulimit`), and installs the `lumina-hub.service` systemd daemon. |
-| **`reset_admin.sh`** | Emergency administrative failsafe. Resets the teacher administration password back to the default cryptographic hash (`lumina2026`) via direct SQLite transaction. |
+| **`setup_hub.sh`** | Automated provisioning script. Configures `NetworkManager` Wi-Fi hotspot broadcasting, establishes `iptables` captive portal redirection rules, elevates kernel file descriptor limits (`ulimit`), and installs the `lumina-hub.service` systemd daemon. |
+| **`reset_admin.sh`** | Utility script. Resets the teacher administration password back to the default cryptographic hash (`lumina2026`) via direct SQLite transaction. |
 | **`hub_health_check.sh`** | Diagnostic utility for monitoring system vitals, validating `dnsmasq` leases, verifying `iptables` forwarding rules, and checking disk capacity thresholds. |
 | **`set_static_ip.sh`** | Configures the primary wireless interface (`wlan0`) with a persistent static IP (`192.168.1.1`) to ensure stable mesh routing. |
 
@@ -49,11 +49,11 @@ The Uvicorn ASGI server binds to `0.0.0.0:8000` and exposes the following primar
 
 ---
 
-## Enterprise Maintenance & Resilience Engineering
+## Reliability Features
 
-- **Automated Filesystem Repair**: The Linux kernel boot parameters are permanently configured with `fsck.repair=yes`, guaranteeing unattended recovery from sector corruption following sudden power outages.
-- **Nightly RAM & Buffer Flush**: A scheduled systemd/cron job performs an automated system reboot every night at 03:00 AM, eliminating memory fragmentation and resetting wireless driver queues.
-- **WAL-Mode Database Tuning**: SQLite is explicitly tuned with Write-Ahead Logging (`PRAGMA journal_mode=WAL`) and a 5,000ms busy timeout to eliminate transaction locks during concurrent classroom syncs.
+- **Filesystem Repair**: The Linux kernel boot parameters are permanently configured with `fsck.repair=yes`, enabling unattended recovery from sector corruption following sudden power outages.
+- **Nightly Cleanup**: A scheduled systemd/cron job performs an automated system reboot every night at 03:00 AM, clears memory and resets wireless driver state.
+- **Database Tuning**: SQLite is configured with Write-Ahead Logging (`PRAGMA journal_mode=WAL`) and a 5,000ms busy timeout to eliminate transaction locks during concurrent classroom syncs.
 
 ---
 *For the root infrastructure overview and client compilation instructions, refer to the master README in the root directory.*

@@ -2,24 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'resource_detail_page.dart';
 
-class ResourcePage extends StatefulWidget {
+class ResourceCategoryPage extends StatefulWidget {
   final String subject;
   final String grade;
 
-  const ResourcePage({
+  const ResourceCategoryPage({
     super.key,
     required this.subject,
     required this.grade,
   });
 
   @override
-  State<ResourcePage> createState() => _ResourcePageState();
+  State<ResourceCategoryPage> createState() => _ResourceCategoryPageState();
 }
 
-class _ResourcePageState extends State<ResourcePage> {
+class _ResourceCategoryPageState extends State<ResourceCategoryPage> {
   // Your resource categories structure
   final List<Map<String, dynamic>> resources = [
     {
+      'id': 'cat_0',
       "title": "Textbooks",
       "subtitle": "Chapter-wise PDFs and study material",
       "icon": Icons.menu_book_rounded,
@@ -27,6 +28,7 @@ class _ResourcePageState extends State<ResourcePage> {
       "iconColor": Colors.orange,
     },
     {
+      'id': 'cat_1',
       "title": "Videos",
       "subtitle": "Watch lessons and concept explanations",
       "icon": Icons.play_circle_fill_rounded,
@@ -34,6 +36,7 @@ class _ResourcePageState extends State<ResourcePage> {
       "iconColor": Colors.blue,
     },
     {
+      'id': 'cat_2',
       "title": "Question Papers",
       "subtitle": "Previous year papers and practice sets",
       "icon": Icons.description_rounded,
@@ -77,7 +80,7 @@ class _ResourcePageState extends State<ResourcePage> {
                     Container(
                       padding: EdgeInsets.all(12.w),
                       decoration: BoxDecoration(
-                        color: (item['color'] as Color).withOpacity(0.5),
+                        color: (item['color'] as Color).withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(14.r),
                       ),
                       child: Icon(item['icon'], color: item['iconColor'], size: 28.sp),
@@ -87,7 +90,7 @@ class _ResourcePageState extends State<ResourcePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(item['title'], style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16.sp)),
+                          Text(item['title']?.toString() ?? '', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16.sp)),
                           Text(item['subtitle'], style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600)),
                         ],
                       ),
@@ -113,7 +116,7 @@ class _ResourcePageState extends State<ResourcePage> {
                   child: Container(
                     padding: EdgeInsets.symmetric(vertical: 10.h),
                     decoration: BoxDecoration(
-                      color: (item['iconColor'] as Color).withOpacity(0.10),
+                      color: (item['iconColor'] as Color).withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(14.r),
                     ),
                     child: Row(

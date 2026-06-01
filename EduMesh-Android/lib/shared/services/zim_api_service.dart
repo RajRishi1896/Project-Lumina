@@ -10,8 +10,9 @@ class ZimApiService {
       'offset': offset.toString(),
       'limit': limit.toString(),
     });
-    final decoded = response.data as Map<String, dynamic>;
-    final List results = decoded['results'] as List;
+    final data = response.data;
+    if (data == null || data is! Map<String, dynamic>) return [];
+    final List results = data['results'] as List;
     return results.cast<Map<String, dynamic>>();
   }
 
@@ -19,7 +20,8 @@ class ZimApiService {
     final response = await ApiClient.get('/zim/page', queryParameters: {
       'id': id,
     });
-    final decoded = response.data as Map<String, dynamic>;
-    return decoded;
+    final data = response.data;
+    if (data == null || data is! Map<String, dynamic>) return {};
+    return data;
   }
 }

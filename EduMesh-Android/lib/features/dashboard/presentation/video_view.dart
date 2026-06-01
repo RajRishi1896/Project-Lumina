@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/constants/lumina_colors.dart';
+import '../../../core/services/activity_tracker.dart';
 
 class VideoView extends StatefulWidget {
   final String url;
@@ -25,36 +26,36 @@ class _VideoViewState extends State<VideoView> {
   @override
   void initState() {
     super.initState();
+    ActivityTracker().logAction('watch', resourceId: widget.url, metadata: widget.url).catchError((_) {});
     _initializePlayer();
   }
 
   Future<void> _initializePlayer() async {
-    if (widget.isLocal) {
-      _videoPlayerController = VideoPlayerController.file(File(widget.url));
-    } else {
-      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    try {
+      if (widget.isLocal) {
+        _videoPlayerController = VideoPlayerController.file(File(widget.url));
+      } else {
+        _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+      }
+      await _videoPlayerController.initialize();
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController,
+        autoPlay: true,
+        looping: false,
+        aspectRatio: _videoPlayerController.value.aspectRatio,
+        materialProgressColors: ChewieProgressColors(
+          playedColor: LuminaColors.academicTeal,
+          handleColor: LuminaColors.academicTeal,
+          backgroundColor: LuminaColors.outline,
+          bufferedColor: LuminaColors.academicTeal.withValues(alpha: 0.3),
+        ),
+        placeholder: Container(color: Colors.black),
+        autoInitialize: true,
+      );
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Video initialization error: $e');
     }
-
-    await _videoPlayerController.initialize();
-
-    _chewieController = ChewieController(
-      videoPlayerController: _videoPlayerController,
-      autoPlay: true,
-      looping: false,
-      aspectRatio: _videoPlayerController.value.aspectRatio,
-      materialProgressColors: ChewieProgressColors(
-        playedColor: LuminaColors.academicTeal,
-        handleColor: LuminaColors.academicTeal,
-        backgroundColor: LuminaColors.outline,
-        bufferedColor: LuminaColors.academicTeal.withOpacity(0.3),
-      ),
-      placeholder: Container(
-        color: Colors.black,
-      ),
-      autoInitialize: true,
-    );
-
-    setState(() {});
   }
 
   @override

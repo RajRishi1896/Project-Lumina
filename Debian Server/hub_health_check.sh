@@ -2,8 +2,7 @@
 set -e
 # Lumina Hub - Pre-boot Health Check
 
-PROJECT_DIR="/home/project-lumina/Debian-Server"
-cd $PROJECT_DIR
+cd "$(dirname "$0")"
 
 echo "[INFO] Running Hub Integrity Check..."
 
@@ -35,4 +34,4 @@ if [ $MISSING -eq 1 ]; then
 fi
 
 echo "[SUCCESS] Health check passed. Launching Lumina Hub..."
-/usr/bin/python3 main.py
+./venv/bin/python3 main.py

@@ -33,7 +33,7 @@ class _PdfViewState extends State<PdfView> {
 
   void _onPdfChanged() {
     final pages = _pdfController.pagesCount;
-    final page = _pdfController.page.round();
+    final page = _pdfController.page.isFinite ? _pdfController.page.round() : 0;
     if (pages == null) return;
     if (pages != _totalPages || page != _currentPage || !_isReady) {
       setState(() {

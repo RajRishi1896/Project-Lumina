@@ -31,7 +31,9 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
   @override
   void initState() {
     super.initState();
-    _loadResources();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadResources();
+    });
   }
 
   void _loadResources() {
@@ -77,7 +79,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                 ),
                 onPressed: () async {
                   await SaveResourceService.toggleSaveStatus(item.id);
-                  setState(() {}); 
+                  if (mounted) setState(() {}); 
                 },
               ),
             ),

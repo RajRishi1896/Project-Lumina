@@ -10,17 +10,16 @@ cd "$(dirname "$0")"
 
 python3 -c '
 import sqlite3
-from passlib.context import CryptContext
+import bcrypt
 
 print("Generating secure hash...")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-default_hash = pwd_context.hash("lumina2026")
+hashed = bcrypt.hashpw(b"lumina2026", bcrypt.gensalt()).decode()
 
 try:
     print("Connecting to Hub Database...")
     conn = sqlite3.connect("data/hub.db")
     c = conn.cursor()
-    c.execute("UPDATE users SET hashed_password = ? WHERE username = ?", (default_hash, "admin"))
+    c.execute("UPDATE users SET hashed_password = ? WHERE username = ?", (hashed, "admin"))
     conn.commit()
     conn.close()
     print("\n[SUCCESS] The Admin password has been reset to: lumina2026")

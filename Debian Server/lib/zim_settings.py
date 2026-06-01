@@ -13,15 +13,18 @@ def _ensure_config():
             json.dump({"retention_days": 7, "max_pages": 500}, f)
 
 def get_retention_days() -> int:
-    _ensure_config()
     with _lock:
-        with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        _ensure_config()
+        try:
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return 7
     return int(data.get('retention_days', 7))
 
 def set_retention_days(days: int):
-    _ensure_config()
     with _lock:
+        _ensure_config()
         with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
             data = json.load(f)
         data['retention_days'] = days
@@ -29,15 +32,18 @@ def set_retention_days(days: int):
             json.dump(data, f)
 
 def get_max_pages() -> int:
-    _ensure_config()
     with _lock:
-        with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        _ensure_config()
+        try:
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return 500
     return int(data.get('max_pages', 500))
 
 def set_max_pages(limit: int):
-    _ensure_config()
     with _lock:
+        _ensure_config()
         with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
             data = json.load(f)
         data['max_pages'] = limit

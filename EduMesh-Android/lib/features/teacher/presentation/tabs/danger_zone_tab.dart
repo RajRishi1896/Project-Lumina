@@ -118,7 +118,7 @@ class _DangerZoneTabState extends State<DangerZoneTab> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Reset "${username}" password?'),
+        title: Text('Reset "$username" password?'),
         content: const Text('Password will be reset to "lumina2026".'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),

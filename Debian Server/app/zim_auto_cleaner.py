@@ -4,7 +4,7 @@ import threading
 from datetime import datetime
 
 # Import the settings helper for cache size limit
-from .zim_settings import get_max_pages
+from lib.zim_settings import get_max_pages
 
 # Directory where ZIM HTML pages are stored (must match zim_handler)
 ZIM_PAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'zim_pages')
@@ -33,10 +33,18 @@ def _clean_old_pages():
         except Exception as e:
             print(f"[ZIM Cleaner] Failed to delete {old_file}: {e}")
 
+_cleaner_lock = threading.Lock()
+_cleaner_started = False
+
 def start_zim_auto_cleaner(interval_seconds: int = 3600):
     """Start a background thread that cleans the ZIM cache every `interval_seconds`.
     Default is 1 hour.
     """
+    global _cleaner_started
+    with _cleaner_lock:
+        if _cleaner_started:
+            return
+        _cleaner_started = True
     def _run():
         while True:
             _clean_old_pages()

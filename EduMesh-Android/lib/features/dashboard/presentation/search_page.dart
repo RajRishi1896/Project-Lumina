@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/shared/services/mock_data_service.dart';
 import 'package:edumesh_android/shared/services/save_resource_service.dart';
+import '../../../core/services/activity_tracker.dart';
 
 // Assuming you have a real service class, if not, create a placeholder
 class MyRealDatabaseService {
@@ -22,8 +23,7 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
   List<Map<String, dynamic>> _searchIndex = [];
-  // ignore: unused_field
-  List<dynamic> _savedResources = [];
+  Map<dynamic, bool> _savedStatuses = {};
 
   @override
   void initState() {
@@ -32,13 +32,16 @@ class _SearchPageState extends State<SearchPage> {
     _refreshSavedResources(); 
   }
 
-  void _refreshSavedResources() async {
-    // Added 'async' because SaveResourceService methods are usually Future-based
+  Future<void> _refreshSavedResources() async {
     final results = await SaveResourceService.getAllSavedResources();
     if (mounted) {
-      setState(() {
-        _savedResources = results;
-      });
+      final savedIds = results.map((r) => r.id.toString()).toSet();
+      final statusMap = <dynamic, bool>{};
+      for (final item in _searchIndex) {
+        final original = item["originalObject"];
+        statusMap[original.id] = savedIds.contains(original.id.toString());
+      }
+      setState(() => _savedStatuses = statusMap);
     }
   }
 
@@ -93,7 +96,10 @@ class _SearchPageState extends State<SearchPage> {
               decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(16.r), border: Border.all(color: cs.outlineVariant)),
               child: TextField(
                 controller: _searchController,
-                onChanged: (value) => setState(() => _searchQuery = value),
+                onChanged: (value) {
+                  ActivityTracker().logAction('search', metadata: value).catchError((_) {});
+                  setState(() => _searchQuery = value);
+                },
                 style: TextStyle(color: cs.onSurface),
                 decoration: InputDecoration(icon: Icon(Icons.search_rounded, color: cs.onSurfaceVariant), hintText: "Search by title, subject, or grade...", border: InputBorder.none),
               ),
@@ -114,26 +120,20 @@ class _SearchPageState extends State<SearchPage> {
                             return Card(
                               color: cs.surfaceContainer,
                               margin: EdgeInsets.only(bottom: 10.h),
-                              child: FutureBuilder<bool>(
-                                future: SaveResourceService.isSaved(original.id),
-                                builder: (context, snapshot) {
-                                  bool isSaved = snapshot.data ?? false;
-                                  return ListTile(
-                                    title: Text(item["title"], style: TextStyle(color: cs.onSurface)),
-                                    trailing: IconButton(
-                                      icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border, color: cs.primary),
-                                      onPressed: () async {
-                                        await SaveResourceService.toggleSaveStatus(original.id);
-                                        setState(() {});
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(isSaved ? "Removed from Saved" : "Added to Saved"), duration: const Duration(milliseconds: 600)));
-                                        }
-                                      },
-                                    ),
-                                  );
+                              child: ListTile(
+                              title: Text(item["title"], style: TextStyle(color: cs.onSurface)),
+                              trailing: IconButton(
+                                icon: Icon(_savedStatuses[original.id] ?? false ? Icons.bookmark : Icons.bookmark_border, color: cs.primary),
+                                onPressed: () async {
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  final wasSaved = _savedStatuses[original.id] ?? false;
+                                  await SaveResourceService.toggleSaveStatus(original.id);
+                                  if (mounted) setState(() => _savedStatuses[original.id] = !wasSaved);
+                                  messenger.hideCurrentSnackBar();
+                                  messenger.showSnackBar(SnackBar(content: Text(wasSaved ? "Removed from Saved" : "Added to Saved"), duration: const Duration(milliseconds: 600)));
                                 },
                               ),
+                            ),
                             );
                           },
                         ),

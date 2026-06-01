@@ -18,7 +18,11 @@ def search_zim(query: str) -> List[Dict[str, str]]:
     if not query:
         return results
     # Simple filename based search; assume files are named "<id>__<title>.html"
-    for fname in os.listdir(ZIM_PAGES_DIR):
+    try:
+        entries = os.listdir(ZIM_PAGES_DIR)
+    except FileNotFoundError:
+        return results
+    for fname in entries:
         if fname.endswith('.html'):
             parts = fname.rsplit('__', 1)
             if len(parts) == 2:
@@ -33,11 +37,17 @@ def get_zim_page(article_id: str):
     """Return the HTML content of a ZIM article as JSON.
     The server looks for a file named "<id>__*.html" and returns its HTML string.
     """
-    for fname in os.listdir(ZIM_PAGES_DIR):
+    try:
+        entries = os.listdir(ZIM_PAGES_DIR)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail='Article not found')
+    for fname in entries:
         if fname.startswith(f"{article_id}__") and fname.endswith('.html'):
             file_path = os.path.join(ZIM_PAGES_DIR, fname)
-            if os.path.exists(file_path):
+            try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     html_content = f.read()
-                return JSONResponse(content={'id': article_id, 'html': html_content})
+            except FileNotFoundError:
+                continue
+            return JSONResponse(content={'id': article_id, 'html': html_content})
     raise HTTPException(status_code=404, detail='Article not found')

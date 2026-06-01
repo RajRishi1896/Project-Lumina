@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/auth/data/auth_service.dart';
 import '../demo/demo_data.dart';
@@ -19,8 +20,8 @@ class ApiClient {
   ))
     ..interceptors.add(LogInterceptor(requestBody: false, responseBody: false));
 
-  static void setAuth(String username) {
-    _dio.options.headers['Authorization'] = 'Bearer $username';
+  static void setAuth(String token) {
+    _dio.options.headers['Authorization'] = 'Bearer $token';
   }
 
   static void clearAuth() {
@@ -35,23 +36,23 @@ class ApiClient {
       final fallbackIp = prefs.getString('server_fallback_ip');
       if (fallbackIp != null && fallbackIp.isNotEmpty) {
         _baseUrl = 'http://$fallbackIp:8000';
-        print('ApiClient: Using fallback IP $fallbackIp');
+        debugPrint('ApiClient: Using fallback IP $fallbackIp');
       } else {
         // Try DNS/mDNS resolution
         try {
           final result = await InternetAddress.lookup('lumina.hub');
           if (result.isNotEmpty) {
             _baseUrl = _defaultDomain;
-            print('ApiClient: DNS lookup succeeded, using default domain');
+            debugPrint('ApiClient: DNS lookup succeeded, using default domain');
           }
         } catch (_) {
           // DNS failed, keep default (which may be unreachable)
-          print('ApiClient: DNS lookup failed, keeping default domain');
+          debugPrint('ApiClient: DNS lookup failed, keeping default domain');
         }
       }
       _dio.options.baseUrl = _baseUrl;
     } catch (e) {
-      print('ApiClient initialization error: $e');
+      debugPrint('ApiClient initialization error: $e');
     }
     _initialized = true;
   }

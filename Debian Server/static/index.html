@@ -1049,7 +1049,8 @@
     </div>
 
     <script>
-        function esc(str) { return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function esc(str) { return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/`/g,'&#96;'); }
+        function safeUrl(url) { if (!url) return '#'; if (url.startsWith('/')||url.startsWith('http://')||url.startsWith('https://')) return url; return '/files/'+encodeURIComponent(url); }
         // --- Mobile Sidebar Toggle ---
         function toggleSidebar() {
             const sidebar = document.querySelector('aside');
@@ -1266,7 +1267,7 @@
                 
                 let optionsHtml = allSubjects.map(s => {
                     const display = s.class_name ? `${s.name} (${s.class_name})` : s.name;
-                    return `<option value="${esc(s.name)}">${display}</option>`;
+                    return `<option value="${esc(s.name)}">${esc(display)}</option>`;
                 }).join('');
                 subjectSelect.innerHTML = optionsHtml || '<option value="General">General</option>';
                 
@@ -1281,8 +1282,8 @@
                     } else {
                         tbody.innerHTML = allSubjects.map(sub => `
                             <tr>
-                                <td><strong>${sub.name}</strong></td>
-                                <td>${sub.class_name || 'All Classes'}</td>
+                                <td><strong>${esc(sub.name)}</strong></td>
+                                <td>${esc(sub.class_name || 'All Classes')}</td>
                                 <td><span style="display: inline-flex; color: var(--teal);">${getSymbolSvg(sub.symbol)}</span></td>
                                 <td style="text-align: right;">
                                     <button onclick="promptDeleteSubject('${esc(sub.name)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
@@ -1378,20 +1379,20 @@
                 else if (r.type === 'notes') badgeClass = 'type-notes';
                 
                 // Find subject symbol safely
-                const subj = allSubjects.find(s => r.subject.startsWith(s.name));
+                const subj = allSubjects.find(s => r.subject === s.name);
                 const symbolSvg = getSymbolSvg(subj ? subj.symbol : 'folder');
                 
                 return `
                 <tr>
-                    <td><strong>${r.title}</strong></td>
+                    <td><strong>${esc(r.title)}</strong></td>
                     <td>
                         <div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: var(--teal);">
-                            ${symbolSvg} ${r.subject || 'General'}
+                            ${symbolSvg} ${esc(r.subject || 'General')}
                         </div>
                     </td>
-                    <td><span class="type-badge ${badgeClass}">${r.type}</span></td>
+                    <td><span class="type-badge ${badgeClass}">${esc(r.type)}</span></td>
                     <td style="text-align: right;">
-                        <a href="${r.url}" class="btn btn-outline" download>Download</a>
+                        <a href="${safeUrl(r.url)}" class="btn btn-outline" download>Download</a>
                         <button onclick="deleteResource(${r.id}, '${esc(r.title)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger); margin-left: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.75rem;">Delete</button>
                     </td>
                 </tr>`;
@@ -1527,9 +1528,9 @@
                 if (disableContainer) disableContainer.style.display = 'block';
                 tbody.innerHTML = teachers.map(t => `
                     <tr>
-                        <td><strong>${t.username}</strong></td>
-                        <td>${t.name}</td>
-                        <td><span class="type-badge type-default">${t.department}</span></td>
+                        <td><strong>${esc(t.username)}</strong></td>
+                        <td>${esc(t.name)}</td>
+                        <td><span class="type-badge type-default">${esc(t.department)}</span></td>
                         <td style="text-align: right;">
                             <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
                         </td>
@@ -1540,9 +1541,9 @@
                     const tbody = document.getElementById('teacherTable');
                     tbody.innerHTML = demoTeachers.map(t => `
                         <tr>
-                            <td><strong>${t.username}</strong></td>
-                            <td>${t.name}</td>
-                            <td><span class="type-badge type-default">${t.department}</span></td>
+                            <td><strong>${esc(t.username)}</strong></td>
+                            <td>${esc(t.name)}</td>
+                            <td><span class="type-badge type-default">${esc(t.department)}</span></td>
                             <td style="text-align: right;">
                                 <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
                             </td>
@@ -1701,7 +1702,6 @@
                     const res = await fetch('/resources');
                     activeDangerResources = await res.json();
                 }
-                filterDangerResources();
             } catch (e) { console.error(e); }
         }
 
@@ -1718,8 +1718,8 @@
             }
             tbody.innerHTML = filtered.map(s => `
                 <tr>
-                    <td><strong>${s.name}</strong></td>
-                    <td><code>${s.id}</code></td>
+                    <td><strong>${esc(s.name)}</strong></td>
+                    <td><code>${esc(s.id)}</code></td>
                     <td>${s.reset_required ? '<span style="color: #F59E0B; font-weight: bold;">Reset Pending</span>' : '<span style="color: #10B981;">Active</span>'}</td>
                     <td style="text-align: right;">
                         <button onclick="resetStudentPassword('${esc(s.id)}', '${esc(s.name)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #F59E0B; color: #F59E0B; margin-right: 0.5rem;">Force Reset Pwd</button>
@@ -1743,9 +1743,9 @@
             }
             tbody.innerHTML = filtered.map(t => `
                 <tr>
-                    <td><strong>${t.username}</strong></td>
-                    <td>${t.name}</td>
-                    <td>${t.department}</td>
+                    <td><strong>${esc(t.username)}</strong></td>
+                    <td>${esc(t.name)}</td>
+                    <td>${esc(t.department)}</td>
                     <td>${t.reset_required ? '<span style="color: #F59E0B; font-weight: bold;">Reset Pending</span>' : '<span style="color: #10B981;">Active</span>'}</td>
                     <td style="text-align: right;">
                         <button onclick="resetTeacherPassword('${esc(t.username)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #F59E0B; color: #F59E0B; margin-right: 0.5rem;">Force Reset Pwd</button>
@@ -1868,7 +1868,7 @@
                 if (otherSubs.length === 0) {
                     select.innerHTML = '<option value="">No other subjects available</option>';
                 } else {
-                    select.innerHTML = otherSubs.map(s => `<option value="${s.name}">${s.name} (${s.class_name})</option>`).join('');
+                    select.innerHTML = otherSubs.map(s => `<option value="${esc(s.name)}">${esc(s.name)} (${esc(s.class_name)})</option>`).join('');
                 }
             } catch (e) { console.error(e); }
 
@@ -2021,7 +2021,7 @@
 
             toast.innerHTML = `
                 <div style="display: flex; align-items: center; flex-shrink: 0;">${icon}</div>
-                <div style="flex-grow: 1; line-height: 1.4;">${message}</div>
+                <div style="flex-grow: 1; line-height: 1.4;">${esc(message)}</div>
                 <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: color 0.2s;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             `;
 
@@ -2094,7 +2094,7 @@
 
         let userRole = 'admin'; // default for demo mode
         let currentViewMode = localStorage.getItem('lumina-view-mode') || 'teacher'; // student, teacher
-        const IS_APP = /Android|iPhone|iPad/.test(navigator.userAgent); // Detect mobile app environment
+        const IS_APP = /Android|iPhone|iPad/.test(navigator.userAgent); // Detects mobile browsers (Android Chrome, iPhone Safari, iPad Safari) — not just the native app
 
         async function loadWhoAmI() {
             try {
@@ -2113,7 +2113,7 @@
                 // Show username in sidebar and role badge in the top right
                 const userInfo = document.getElementById('userInfo');
                 if (userInfo) {
-                    userInfo.innerHTML = `<div style="font-weight: 800; font-size: 1rem; color: #fff; letter-spacing: -0.015em;">${loggedInUser}</div>`;
+                    userInfo.innerHTML = `<div style="font-weight: 800; font-size: 1rem; color: #fff; letter-spacing: -0.015em;">${esc(loggedInUser)}</div>`;
                 }
 
 
@@ -2287,10 +2287,10 @@
             }
             tbody.innerHTML = resources.map(r => `
                 <tr>
-                    <td><strong>${r.title}</strong></td>
-                    <td><span style="font-size:0.8rem; font-weight:600; color:var(--teal);">${r.subject || 'General'}</span></td>
-                    <td><span class="type-badge type-default">${r.type}</span></td>
-                    <td style="text-align: right;"><a href="${r.url || '#'}" class="btn btn-primary" style="padding:0.4rem 0.75rem; font-size:0.75rem;" download>Download</a></td>
+                    <td><strong>${esc(r.title)}</strong></td>
+                    <td><span style="font-size:0.8rem; font-weight:600; color:var(--teal);">${esc(r.subject || 'General')}</span></td>
+                    <td><span class="type-badge type-default">${esc(r.type)}</span></td>
+                    <td style="text-align: right;"><a href="${safeUrl(r.url)}" class="btn btn-primary" style="padding:0.4rem 0.75rem; font-size:0.75rem;" download>Download</a></td>
                 </tr>
             `).join('');
         }
@@ -2359,8 +2359,8 @@
 
             tbody.innerHTML = pageItems.map(item =>
                 `<tr>
-                    <td style="white-space: nowrap; color: var(--text-muted); font-size: 0.8rem;">${item.t}</td>
-                    <td style="color: var(--on-surface);">${item.msg}</td>
+                    <td style="white-space: nowrap; color: var(--text-muted); font-size: 0.8rem;">${esc(item.t)}</td>
+                    <td style="color: var(--on-surface);">${esc(item.msg)}</td>
                 </tr>`
             ).join('');
 
@@ -2457,7 +2457,6 @@
             initCustomDropdown();
             await loadSubjects();
             await loadResources();
-            await loadTeachers();
             await checkSelfResetRequired();
             await loadWhoAmI();
         }

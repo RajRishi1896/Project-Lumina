@@ -4,7 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
-import '../../../core/network/api_client.dart';
+import '../../core/network/api_client.dart';
 
 class DownloadService {
 

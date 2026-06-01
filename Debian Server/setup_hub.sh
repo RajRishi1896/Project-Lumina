@@ -1,4 +1,5 @@
 #!/bin/bash
+cd "$(dirname "$0")" || exit 1
 set -e
 # Lumina Hub - MASTER SETUP SCRIPT (Hardened Edition)
 
@@ -31,12 +32,19 @@ sudo ufw allow 8000/tcp # Lumina API
 sudo ufw allow 67/udp   # DHCP (Required for clients to get IPs)
 sudo ufw allow 53/udp   # DNS (Required for Captive Portal routing)
 sudo ufw allow 53/tcp   # DNS
+sudo ufw allow 5353/udp   # mDNS/Zeroconf Discovery
 sudo ufw --force enable
+
+# 4a. Install fail2ban for rate limiting
+echo "[INFO] Installing fail2ban for rate limiting..."
+if ! command -v fail2ban-client &>/dev/null; then
+    sudo apt install -y fail2ban 2>/dev/null || true
+fi
 
 # 5. Configure Captive Portal DNS via NetworkManager
 echo "[INFO] Configuring Captive Portal DNS..."
-sudo systemctl disable dnsmasq 2>/dev/null
-sudo systemctl stop dnsmasq 2>/dev/null
+sudo systemctl stop dnsmasq 2>/dev/null || true
+sudo systemctl disable dnsmasq 2>/dev/null || true
 sudo mkdir -p /etc/NetworkManager/dnsmasq-shared.d
 sudo bash -c "cat > /etc/NetworkManager/dnsmasq-shared.d/lumina.conf <<EOF
 address=/lumina.hub/10.42.0.1
@@ -53,7 +61,7 @@ After=network.target
 [Service]
 User=root
 WorkingDirectory=$(pwd)
-ExecStart=$(pwd)/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+ExecStart=$(pwd)/venv/bin/uvicorn app.api:app --host 0.0.0.0 --port 8000
 Restart=always
 
 [Install]
@@ -89,11 +97,16 @@ sudo sed -i 's/#HandleLidSwitchExternalPower=suspend/HandleLidSwitchExternalPowe
 sudo systemctl restart systemd-logind
 
 # 9. Nightly Reboot to clear RAM leaks (3:00 AM)
-(crontab -l 2>/dev/null | grep -v "/sbin/shutdown -r now"; echo "0 3 * * * /sbin/shutdown -r now") | sudo crontab -
+(sudo crontab -l 2>/dev/null || true; echo "0 3 * * * /sbin/shutdown -r now") | sudo crontab -
 
 # 10. Auto-Repair File System on Power Loss
-grep -q "fsck.repair=yes" /etc/default/grub || sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="fsck.repair=yes /' /etc/default/grub
-sudo update-grub
+if grep -q "fsck.repair=yes" /etc/default/grub; then
+    echo "[INFO] fsck.repair=yes already set in GRUB_CMDLINE_LINUX_DEFAULT"
+else
+    echo "[INFO] Setting fsck.repair=yes in GRUB_CMDLINE_LINUX_DEFAULT"
+    sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 fsck.repair=yes"/' /etc/default/grub
+    sudo update-grub
+fi
 
 # 11. Unlimited File Descriptor Patch (Massive Concurrency)
 echo "[INFO] Unlocking Maximum Server Capacity..."

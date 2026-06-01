@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/lumina_colors.dart';
 
 class LuminaCard extends StatelessWidget {
   final Widget child;
@@ -19,16 +18,17 @@ class LuminaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: padding ?? const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: borderColor ?? LuminaColors.outline,
+            color: borderColor ?? cs.outlineVariant,
             width: borderWidth,
           ),
         ),

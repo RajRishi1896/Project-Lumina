@@ -333,12 +333,12 @@ class _LanguageButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isEnabled ? Colors.white : cs.surfaceContainerHighest.withOpacity(0.3),
+        color: isEnabled ? Colors.white : cs.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8.r),
         border: Border.all(
           color: isSelected 
               ? cs.primary 
-              : (isEnabled ? cs.outlineVariant : cs.outlineVariant.withOpacity(0.5)),
+              : (isEnabled ? cs.outlineVariant : cs.outlineVariant.withValues(alpha: 0.5)),
           width: isSelected ? 2 : 1,
         ),
       ),
@@ -353,7 +353,7 @@ class _LanguageButton extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: isSelected 
                   ? cs.primary 
-                  : (isEnabled ? cs.onSurfaceVariant : cs.onSurfaceVariant.withOpacity(0.4)),
+                  : (isEnabled ? cs.onSurfaceVariant : cs.onSurfaceVariant.withValues(alpha: 0.4)),
             ),
           ),
           if (isSelected)

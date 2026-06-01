@@ -56,7 +56,7 @@ class GradePage extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: LuminaColors.academicTeal.withOpacity(0.25),
+                      color: LuminaColors.academicTeal.withValues(alpha: 0.25),
                       blurRadius: 18,
                       offset: const Offset(0, 10),
                     ),
@@ -68,7 +68,7 @@ class GradePage extends StatelessWidget {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.18),
+                        color: Colors.white.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(50.r),
                       ),
                       child: Text('SMART LEARNING',
@@ -78,7 +78,7 @@ class GradePage extends StatelessWidget {
                     Text('$subject Learning Hub', style: TextStyle(color: Colors.white, fontSize: 25.sp, fontWeight: FontWeight.w900, height: 1.2)),
                     SizedBox(height: 10.h),
                     Text('Access textbooks, PYQs, chapter videos and learning resources organized by grade.',
-                        style: TextStyle(color: Colors.white.withOpacity(0.92), fontSize: 13.sp, height: 1.5)),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.92), fontSize: 13.sp, height: 1.5)),
                     SizedBox(height: 18.h),
                     Row(
                       children: [
@@ -137,7 +137,7 @@ class GradePage extends StatelessWidget {
                             padding: EdgeInsets.all(16.w),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: cs.primary.withOpacity(0.1),
+                              color: cs.primary.withValues(alpha: 0.1),
                             ),
                             child: Icon(Icons.school_rounded, color: cs.primary, size: 34.sp),
                           ),
@@ -160,7 +160,7 @@ class GradePage extends StatelessWidget {
   Widget _miniStat(IconData icon, String text) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.14), borderRadius: BorderRadius.circular(14.r)),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(14.r)),
       child: Row(
         children: [
           Icon(icon, color: Colors.white, size: 14.sp),
