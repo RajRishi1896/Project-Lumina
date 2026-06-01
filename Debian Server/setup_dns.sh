@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # Lumina Hub - Local DNS Configuration (Domain Setup)
 
 DOMAIN="lumina.hub"
@@ -26,7 +27,7 @@ bind-interfaces
 EOF"
 
 # 3. Add to local hosts file for good measure
-sudo bash -c "echo '$HUB_IP $DOMAIN' >> /etc/hosts"
+grep -q "$HUB_IP $DOMAIN" /etc/hosts || sudo bash -c "echo '$HUB_IP $DOMAIN' >> /etc/hosts"
 
 # 4. Restart service
 sudo systemctl restart dnsmasq

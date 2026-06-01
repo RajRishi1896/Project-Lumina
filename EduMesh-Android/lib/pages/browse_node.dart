@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import '../core/network/api_client.dart';
 
 class BrowseNodePage extends StatefulWidget {
@@ -15,21 +14,21 @@ class _BrowseNodePageState extends State<BrowseNodePage> {
   String? _error;
 
   Future<void> _fetch() async {
-    setState(() { _loading = true; _error = null; });
+    if (mounted) setState(() { _loading = true; _error = null; });
     try {
       final resp = await ApiClient.get('/api/catalog');
       final data = resp.data;
       if (data is List) {
-        setState(() => _items = data);
+        if (mounted) setState(() => _items = data);
       } else if (data is Map && data['items'] is List) {
-        setState(() => _items = data['items']);
+        if (mounted) setState(() => _items = data['items']);
       } else {
-        setState(() => _error = 'Unexpected catalog format');
+        if (mounted) setState(() => _error = 'Unexpected catalog format');
       }
     } catch (e) {
-      setState(() => _error = 'Failed to fetch catalog');
+      if (mounted) setState(() => _error = 'Failed to fetch catalog');
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 

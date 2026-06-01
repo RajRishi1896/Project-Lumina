@@ -21,18 +21,26 @@ class DiscoveryService {
       final RawDatagramSocket socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 8888);
       debugPrint('Listening for Lumina Beacon on port 8888...');
 
-      socket.listen((RawSocketEvent event) {
+      socket.listen((RawSocketEvent event) async {
         if (event == RawSocketEvent.read) {
           final Datagram? dg = socket.receive();
           if (dg != null) {
             final String message = utf8.decode(dg.data);
             if (message.startsWith('LUMINA_SERVER_IP:')) {
               final String ip = message.split(':')[1];
-              debugPrint('Lumina Server Found: $ip');
-              _serverIp = ip;
-              _isSearching = false;
-              socket.close();
-              if (onFound != null) onFound(ip);
+              try {
+                final request = await HttpClient().getUrl(Uri.parse('http://$ip:8000/generate_204'));
+                final response = await request.close();
+                if (response.statusCode == 204) {
+                  debugPrint('Lumina Server Verified: $ip');
+                  _serverIp = ip;
+                  _isSearching = false;
+                  socket.close();
+                  if (onFound != null) onFound(ip);
+                }
+              } catch (_) {
+                debugPrint('Ignored invalid hub at $ip');
+              }
             }
           }
         }

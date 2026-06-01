@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # Lumina Hub - Start Offline Hotspot
 # This script forcefully takes control of the Wi-Fi card and creates the Hub network.
 

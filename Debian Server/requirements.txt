@@ -1,8 +1,5 @@
-fastapi
-uvicorn
-python-multipart
-sqlalchemy
-zeroconf
-passlib
-bcrypt==3.2.2
-python-jose[cryptography]
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+bcrypt==4.2.0
+zeroconf==0.132.2

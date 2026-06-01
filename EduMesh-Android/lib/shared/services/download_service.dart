@@ -4,8 +4,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../core/network/api_client.dart';
+
 class DownloadService {
-  final Dio _dio = Dio();
 
   Future<String> get _localPath async {
     final directory = await getApplicationDocumentsDirectory();
@@ -43,11 +44,13 @@ class DownloadService {
     try {
       await WakelockPlus.enable(); // EDGE CASE: Prevent Pocket Sleep WiFi Drops
       
+      await ApiClient.ensureInitialized();
+      
       final baseDir = await _localPath;
       savePath = '$baseDir/$fileName';
       partPath = '$savePath.part';
       
-      await _dio.download(
+      await ApiClient.dio.download(
         url,
         partPath, // Download to the temporary .part file
         onReceiveProgress: onProgress,

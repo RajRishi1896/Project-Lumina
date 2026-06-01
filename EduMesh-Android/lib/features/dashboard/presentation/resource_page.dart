@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/lumina_colors.dart';
-import '../../../core/services/recent_files_service.dart'; // Import this
+import '../../../core/services/activity_tracker.dart';
 
 import 'package:edumesh_android/features/dashboard/presentation/resource_detail_page.dart';
 
@@ -20,16 +20,15 @@ class _ResourcePageState extends State<ResourcePage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     
-    // Define resources inside build so we can use theme colors dynamically
     final resources = [
-  {"id": "textbooks", "title": "Textbooks", "name": "Textbooks", "subtitle": "Chapter-wise PDFs and study materials", "icon": Icons.menu_book_rounded, "color": cs.primary.withOpacity(0.1), "iconColor": cs.primary},
-  {"id": "videos", "title": "Videos", "name": "Videos", "subtitle": "Watch lessons and concept explanations", "icon": Icons.play_circle_fill_rounded, "color": cs.secondary.withOpacity(0.1), "iconColor": cs.secondary},
-  {"id": "pyqs", "title": "PYQs", "name": "PYQs", "subtitle": "Previous year papers and practice sets", "icon": Icons.description_rounded, "color": cs.error.withOpacity(0.1), "iconColor": cs.error},
-  {"id": "notes", "title": "Notes", "name": "Notes", "subtitle": "Quick revision notes and summaries", "icon": Icons.sticky_note_2_rounded, "color": cs.tertiary.withOpacity(0.1), "iconColor": cs.tertiary},
+  {"id": "textbooks", "title": "Textbooks", "name": "Textbooks", "subtitle": "Chapter-wise PDFs and study materials", "icon": Icons.menu_book_rounded, "color": cs.primary.withValues(alpha: 0.1), "iconColor": cs.primary},
+  {"id": "videos", "title": "Videos", "name": "Videos", "subtitle": "Watch lessons and concept explanations", "icon": Icons.play_circle_fill_rounded, "color": cs.secondary.withValues(alpha: 0.1), "iconColor": cs.secondary},
+  {"id": "pyqs", "title": "PYQs", "name": "PYQs", "subtitle": "Previous year papers and practice sets", "icon": Icons.description_rounded, "color": cs.error.withValues(alpha: 0.1), "iconColor": cs.error},
+  {"id": "notes", "title": "Notes", "name": "Notes", "subtitle": "Quick revision notes and summaries", "icon": Icons.sticky_note_2_rounded, "color": cs.tertiary.withValues(alpha: 0.1), "iconColor": cs.tertiary},
 ];
 
     return Scaffold(
-      backgroundColor: cs.surface, // Theme-aware background
+      backgroundColor: cs.surface,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: cs.surface,
@@ -47,7 +46,6 @@ class _ResourcePageState extends State<ResourcePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// HERO SECTION
             Container(
               width: double.infinity,
               padding: EdgeInsets.all(22.w),
@@ -61,15 +59,14 @@ class _ResourcePageState extends State<ResourcePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("SMART LEARNING", style: TextStyle(color: Colors.white.withOpacity(0.8), fontWeight: FontWeight.w700, fontSize: 10.sp, letterSpacing: 1)),
+                  Text("SMART LEARNING", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontWeight: FontWeight.w700, fontSize: 10.sp, letterSpacing: 1)),
                   SizedBox(height: 18.h),
-                  Text("${widget.subject} • ${widget.grade}", style: TextStyle(color: Colors.white, fontSize: 24.sp, fontWeight: FontWeight.w900)),
+                  Text("${widget.subject} \u2022 ${widget.grade}", style: TextStyle(color: Colors.white, fontSize: 24.sp, fontWeight: FontWeight.w900)),
                 ],
               ),
             ),
             SizedBox(height: 30.h),
             
-            /// GRID
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -82,7 +79,7 @@ class _ResourcePageState extends State<ResourcePage> {
                 return Container(
                   padding: EdgeInsets.all(20.w),
                   decoration: BoxDecoration(
-                    color: cs.surfaceContainerHigh, // Theme-aware card color
+                    color: cs.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(24.r),
                     border: Border.all(color: cs.outlineVariant),
                   ),
@@ -99,24 +96,21 @@ class _ResourcePageState extends State<ResourcePage> {
                       SizedBox(height: 12.h),
                       Expanded(child: Text(item['subtitle'] as String, style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant))),
                       
-                      /// OPEN BUTTON WITH TRIGGER
                       GestureDetector(
                         onTap: () {
-  
-  // 2. Navigate
- // Ensure this matches the updated constructor
-Navigator.push(context, MaterialPageRoute(builder: (_) => ResourceDetailPage(
-  title: item['title'] as String,
-  subject: widget.subject,
-  grade: widget.grade,
-  resourceId: item['id'] as String,
-  isInitiallySaved: false, 
-)));
-},
+                          ActivityTracker().logAction('view', resourceId: item['id'] as String, metadata: widget.subject).catchError((_) {});
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => ResourceDetailPage(
+                            title: item['title'] as String,
+                            subject: widget.subject,
+                            grade: widget.grade,
+                            resourceId: item['id'] as String,
+                            isInitiallySaved: false,
+                          )));
+                        },
                         child: Container(
                           width: double.infinity,
                           padding: EdgeInsets.symmetric(vertical: 12.h),
-                          decoration: BoxDecoration(color: (item['iconColor'] as Color).withOpacity(0.1), borderRadius: BorderRadius.circular(14.r)),
+                          decoration: BoxDecoration(color: (item['iconColor'] as Color).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14.r)),
                           child: Center(child: Text('Open', style: TextStyle(color: item['iconColor'] as Color, fontWeight: FontWeight.w800))),
                         ),
                       ),

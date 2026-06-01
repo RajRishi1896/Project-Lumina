@@ -1,6 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:pdfx/pdfx.dart';
 import '../../../core/constants/lumina_colors.dart';
 
 class PdfView extends StatefulWidget {
@@ -18,9 +17,39 @@ class PdfView extends StatefulWidget {
 }
 
 class _PdfViewState extends State<PdfView> {
+  late final PdfControllerPinch _pdfController;
   int _totalPages = 0;
   int _currentPage = 0;
   bool _isReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pdfController = PdfControllerPinch(
+      document: PdfDocument.openFile(widget.path),
+    );
+    _pdfController.addListener(_onPdfChanged);
+  }
+
+  void _onPdfChanged() {
+    final pages = _pdfController.pagesCount;
+    final page = _pdfController.page.isFinite ? _pdfController.page.round() : 0;
+    if (pages == null) return;
+    if (pages != _totalPages || page != _currentPage || !_isReady) {
+      setState(() {
+        _totalPages = pages;
+        _currentPage = page;
+        _isReady = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _pdfController.removeListener(_onPdfChanged);
+    _pdfController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,23 +77,9 @@ class _PdfViewState extends State<PdfView> {
       ),
       body: Stack(
         children: [
-          PDFView(
-            filePath: widget.path,
-            enableSwipe: true,
-            swipeHorizontal: true,
-            autoSpacing: false,
-            pageFling: false,
-            onRender: (pages) {
-              setState(() {
-                _totalPages = pages!;
-                _isReady = true;
-              });
-            },
-            onPageChanged: (page, total) {
-              setState(() {
-                _currentPage = page!;
-              });
-            },
+          PdfViewPinch(
+            controller: _pdfController,
+            scrollDirection: Axis.horizontal,
           ),
           if (!_isReady)
             const Center(

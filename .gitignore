@@ -3,7 +3,6 @@
 # Flutter/Dart
 .dart_tool/
 .packages
-pubspec.lock
 build/
 .flutter-plugins
 .flutter-plugins-dependencies

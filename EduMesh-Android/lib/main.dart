@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -24,7 +25,9 @@ void initializeAppData() {
 
 void main() async { 
   WidgetsFlutterBinding.ensureInitialized();
-  initializeAppData();
+  if (kDebugMode) {
+    initializeAppData();
+  }
 
   final authService = AuthService();
   final userId = await authService.getUniqueUserId();

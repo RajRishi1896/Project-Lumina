@@ -2,19 +2,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
-import '../../features/auth/data/auth_service.dart';
 
 class SyncService {
-  final AuthService _authService = AuthService();
   static const String _queueKey = 'lumina_sync_queue';
 
   /// Logs a scholar's action. If offline, saves to a local queue.
   Future<void> logActivity(String action, String resourceId) async {
-    final scholarId = await _authService.getUniqueUserId();
-    if (scholarId == null) return;
-
     final activity = {
-      'scholar_id': scholarId,
       'action': action,
       'resource_id': resourceId,
       'timestamp': DateTime.now().toIso8601String(),
@@ -51,8 +45,8 @@ class SyncService {
       await ApiClient.post('/system/sync-time', data: {
         'current_time': isoString,
       });
-    } catch (e) {
-      debugPrint('Time sync failed: $e');
+    } catch (_) {
+      // Silently fail - time sync is a best-effort operation
     }
   }
 
@@ -92,20 +86,17 @@ class SyncService {
 
   Future<void> syncDownloadHistory(List<String> resourceIds) async {
     try {
-      final scholarId = await _authService.getUniqueUserId();
-      if (scholarId == null) return;
       await ApiClient.post('/sync/downloads', data: {
-        'scholar_id': scholarId,
         'resource_ids': resourceIds,
       });
-    } catch (e) {}
+    } catch (e) {
+      // Silently handle sync failure
+    }
   }
 
   Future<Map<String, dynamic>?> restoreProfile() async {
     try {
-      final scholarId = await _authService.getUniqueUserId();
-      if (scholarId == null) return null;
-      final response = await ApiClient.get('/sync/restore/$scholarId');
+      final response = await ApiClient.get('/sync/restore');
       if (response.statusCode == 200) return response.data;
       return null;
     } catch (e) { return null; }

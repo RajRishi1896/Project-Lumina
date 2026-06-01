@@ -9,6 +9,7 @@ import '../../../pages/app_shell.dart';
 import '../data/auth_service.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/services/connection_service.dart';
+import '../../../core/network/api_client.dart';
 import '../../../widgets/connection_gate.dart';
 
 class LoginPage extends StatefulWidget {
@@ -40,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
   void _startGatekeeper() {
     // Check immediately, then every 3 seconds
     _checkHub();
-    _pingTimer = Timer.periodic(const Duration(seconds: 3), (_) => _checkHub());
+    _pingTimer = Timer.periodic(const Duration(seconds: 15), (_) => _checkHub());
   }
 
   Future<void> _checkHub() async {
@@ -72,25 +73,45 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     final auth = AuthService();
-    final sync = SyncService();
 
-    final success = _isRegisterMode
-        ? await auth.register(
-            username: _usernameController.text,
-            password: _passwordController.text,
-          )
-        : await auth.login(
-            username: _usernameController.text,
-            password: _passwordController.text,
+    if (_isRegisterMode) {
+      final success = await auth.register(
+        username: _usernameController.text,
+        password: _passwordController.text,
+      );
+      if (mounted) {
+        if (success) {
+          setState(() => _isLoading = false);
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => const ConnectionGate(child: AppShell()),
+            ),
           );
+        } else {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = 'Registration failed. Check Hub connection.';
+          });
+        }
+      }
+      return;
+    }
+
+    final result = await auth.login(
+      username: _usernameController.text,
+      password: _passwordController.text,
+    );
 
     if (mounted) {
-      if (success) {
-        if (!_isRegisterMode) {
-          await sync.restoreProfile();
-        }
-        
+      if (result == 'reset_required') {
         setState(() => _isLoading = false);
+        _showResetPasswordDialog();
+      } else if (result == 'ok') {
+        final sync = SyncService();
+        await sync.restoreProfile();
+        setState(() => _isLoading = false);
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => const ConnectionGate(child: AppShell()),
@@ -99,11 +120,104 @@ class _LoginPageState extends State<LoginPage> {
       } else {
         setState(() {
           _isLoading = false;
-          _errorMessage = _isRegisterMode 
-              ? 'Registration failed. Check Hub connection.' 
-              : 'Login failed. Invalid name or password.';
+          _errorMessage = 'Login failed. Invalid name or password.';
         });
       }
+    }
+  }
+
+  Future<void> _showResetPasswordDialog() async {
+    final oldPwdController = TextEditingController();
+    final newPwdController = TextEditingController();
+    final confirmPwdController = TextEditingController();
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text('Password Reset Required', style: GoogleFonts.atkinsonHyperlegible()),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Your password was reset by a teacher. Enter your current password and set a new one.'),
+              SizedBox(height: 16.h),
+              TextField(
+                controller: oldPwdController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Current Password',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 12.h),
+              TextField(
+                controller: newPwdController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'New Password',
+                  hintText: '8+ chars, upper + lower + digit',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 12.h),
+              TextField(
+                controller: confirmPwdController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm Password',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final old = oldPwdController.text;
+                final pwd = newPwdController.text;
+                if (old.isEmpty || pwd.length < 8 || pwd != confirmPwdController.text) return;
+                Navigator.of(ctx).pop({'old': old, 'new': pwd});
+              },
+              child: Text('Set Password'),
+            ),
+          ],
+        );
+      },
+    );
+
+    oldPwdController.dispose();
+    newPwdController.dispose();
+    confirmPwdController.dispose();
+
+    if (result == null || !mounted) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await ApiClient.post('/student/change-password', data: {
+        'old_password': result['old'],
+        'new_password': result['new'],
+      });
+      if (!mounted) return;
+      final sync = SyncService();
+      await sync.restoreProfile();
+      setState(() => _isLoading = false);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const ConnectionGate(child: AppShell()),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to set password. Try again.';
+      });
     }
   }
 
@@ -222,7 +336,7 @@ class _LoginPageState extends State<LoginPage> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: _isConnected ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+        color: _isConnected ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: _isConnected ? Colors.green : Colors.red,

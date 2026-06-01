@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../core/constants/lumina_colors.dart';
-import '../../../core/models/resource_model.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/recent_files_service.dart'; // Ensure this import is correct
 import '../../../shared/widgets/lumina_card.dart';
@@ -12,13 +12,6 @@ import '../../../shared/widgets/lumina_settings_sheet.dart';
 import '../../auth/data/auth_service.dart';
 import 'grade_page.dart';
 import 'search_page.dart';
-
-class SubjectCategory {
-  final String name;
-  final IconData icon;
-  final ResourceType type;
-  SubjectCategory(this.name, this.icon, this.type);
-}
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -45,19 +38,15 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final StorageService _storageService = StorageService();
 
-  final List<SubjectCategory> _subjectCategories = [
-    SubjectCategory('Math', Icons.calculate, ResourceType.textbook),
-    SubjectCategory('Science', Icons.biotech, ResourceType.textbook),
-    SubjectCategory('English', Icons.translate, ResourceType.textbook),
-    SubjectCategory('History', Icons.history_edu, ResourceType.textbook),
-    SubjectCategory('Computer', Icons.computer, ResourceType.textbook),
-  ];
+  List<Map<String, dynamic>> _subjects = [];
+  bool _subjectsLoading = true;
 
   @override
   void initState() {
     super.initState();
     _checkServer();
     _calcTotalStorage();
+    _loadSubjects();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _recentService.addListener(_updateUI);
     });
@@ -118,6 +107,38 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  IconData _iconForSubject(String name) {
+    const iconMap = {
+      'Mathematics': Icons.calculate,
+      'Science': Icons.biotech,
+      'History': Icons.history_edu,
+      'Literature': Icons.translate,
+      'English': Icons.translate,
+      'Computer Science': Icons.computer,
+      'Physics': Icons.science,
+      'Chemistry': Icons.science,
+      'Biology': Icons.biotech,
+      'General': Icons.folder,
+    };
+    return iconMap[name] ?? Icons.book;
+  }
+
+  Future<void> _loadSubjects() async {
+    try {
+      final response = await ApiClient.get('/subjects');
+      if (mounted && response.statusCode == 200 && response.data is List) {
+        setState(() {
+          _subjects = (response.data as List).cast<Map<String, dynamic>>();
+          _subjectsLoading = false;
+        });
+      } else if (mounted) {
+        setState(() => _subjectsLoading = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _subjectsLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -155,7 +176,7 @@ class _DashboardPageState extends State<DashboardPage> {
       decoration: BoxDecoration(color: cs.surface, border: Border(bottom: BorderSide(color: cs.outlineVariant, width: 1))),
       child: Row(
         children: [
-          Icon(Icons.menu, color: cs.primary, size: 24.sp),
+                  Icon(Icons.school, color: cs.primary, size: 24.sp), // App icon
           SizedBox(width: 12.w),
           Text('Project Lumina', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700, color: cs.primary)),
           const Spacer(),
@@ -193,7 +214,7 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Container(
         margin: EdgeInsets.only(top: 16.h),
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(16.r), border: Border.all(color: cs.outlineVariant), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))]),
+        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(16.r), border: Border.all(color: cs.outlineVariant), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))]),
         child: Row(
           children: [
             Icon(Icons.search_rounded, color: cs.onSurfaceVariant, size: 22.sp),
@@ -252,20 +273,26 @@ class _DashboardPageState extends State<DashboardPage> {
       children: [
         Text('Subject Categories', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700, color: cs.onSurface)),
         SizedBox(height: 12.h),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12.w, mainAxisSpacing: 12.w, childAspectRatio: 1.2),
-          itemCount: _subjectCategories.length,
-          itemBuilder: (context, index) {
-            final cat = _subjectCategories[index];
-            return _SubjectCategoryCard(
-              label: cat.name,
-              icon: cat.icon,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => GradePage(subject: cat.name))),
-            );
-          },
-        ),
+        if (_subjectsLoading && _subjects.isEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 32.h),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 3.w)),
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12.w, mainAxisSpacing: 12.w, childAspectRatio: 1.2),
+            itemCount: _subjects.length,
+            itemBuilder: (context, index) {
+              final sub = _subjects[index];
+              return _SubjectCategoryCard(
+                label: sub['name'] as String,
+                icon: _iconForSubject(sub['name'] as String),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => GradePage(subject: sub['name'] as String))),
+              );
+            },
+          ),
       ],
     );
   }
@@ -302,17 +329,16 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildMultiColorBar(double minHeight) {
-    final cs = Theme.of(context).colorScheme;
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
-      child: SizedBox(height: minHeight, child: Row(children: [Flexible(flex: _appFlex, child: Container(color: LuminaColors.academicTeal)), Flexible(flex: _otherFlex, child: Container(color: LuminaColors.saffron)), Flexible(flex: _freeFlex, child: Container(color: cs.surfaceContainerHighest))])),
+      child: SizedBox(height: minHeight, child: Row(children: [Flexible(flex: _appFlex, child: Container(color: LuminaColors.academicTeal)), Flexible(flex: _otherFlex, child: Container(color: LuminaColors.saffron)), Flexible(flex: _freeFlex, child: Container(color: Colors.grey))])),
     );
   }
 
   Widget _buildStorageLegend() {
     return Padding(
       padding: EdgeInsets.only(top: 16.h),
-      child: Wrap(spacing: 12.w, runSpacing: 12.h, children: [_buildLegendItem(LuminaColors.academicTeal, 'EduMesh', _appUsedStr), _buildLegendItem(LuminaColors.saffron, 'Other Apps', _otherUsedStr), _buildLegendItem(Theme.of(context).colorScheme.outline, 'Free', _freeRemainingStr)]),
+      child: Wrap(spacing: 12.w, runSpacing: 12.h, children: [_buildLegendItem(LuminaColors.academicTeal, 'EduMesh', _appUsedStr), _buildLegendItem(LuminaColors.saffron, 'Other Apps', _otherUsedStr), _buildLegendItem(Colors.grey, 'Free', _freeRemainingStr)]),
     );
   }
 
@@ -345,12 +371,12 @@ class _SubjectCategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(20.r), border: Border.all(color: cs.outlineVariant), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 3))]),
+        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(20.r), border: Border.all(color: cs.outlineVariant), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 3))]),
         padding: EdgeInsets.all(12.w),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(padding: EdgeInsets.all(12.w), decoration: BoxDecoration(color: LuminaColors.academicTeal.withOpacity(0.12), borderRadius: BorderRadius.circular(16.r)), child: Icon(icon, color: LuminaColors.academicTeal, size: 28.sp)),
+            Container(padding: EdgeInsets.all(12.w), decoration: BoxDecoration(color: LuminaColors.academicTeal.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(16.r)), child: Icon(icon, color: LuminaColors.academicTeal, size: 28.sp)),
             SizedBox(height: 10.h),
             Text(label, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: cs.onSurface)),
           ],

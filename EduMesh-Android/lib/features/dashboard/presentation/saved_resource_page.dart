@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
 import 'package:edumesh_android/shared/services/mock_data_service.dart';
 import 'package:edumesh_android/shared/services/save_resource_service.dart';
@@ -22,9 +23,7 @@ class SavedResourcesPage extends StatelessWidget {
             style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold),
           ),
           bottom: TabBar(
-            isScrollable: true,
-            // These properties ensure the text is visible in both modes
-            labelColor: cs.primary, 
+            labelColor: cs.primary,
             unselectedLabelColor: cs.onSurfaceVariant,
             indicatorColor: cs.primary,
             indicatorWeight: 3.0,
@@ -77,21 +76,47 @@ class _SavedListByTypeState extends State<_SavedListByType> {
     }
 
     return ListView.builder(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       itemCount: savedItems.length,
       itemBuilder: (context, index) {
         final item = savedItems[index];
-        return ListTile(
-          title: Text(item.title, style: TextStyle(color: cs.onSurface)),
-          subtitle: Text(
-            "${item.subject} • ${item.grade}", 
-            style: TextStyle(color: cs.onSurfaceVariant)
+        return Container(
+          margin: EdgeInsets.only(bottom: 10.h),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: cs.outlineVariant),
           ),
-          trailing: IconButton(
-            icon: Icon(Icons.bookmark_remove, color: cs.error),
-            onPressed: () async {
-              await SaveResourceService.toggleSaveStatus(item.id);
-              setState(() {}); 
-            },
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.title,
+                        style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: cs.onSurface),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                    SizedBox(height: 4.h),
+                    Text("${item.subject} • ${item.grade}",
+                        style: TextStyle(
+                            fontSize: 12.sp, color: cs.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              IconButton(
+                icon: Icon(Icons.bookmark_remove, color: cs.error),
+                onPressed: () async {
+                  await SaveResourceService.toggleSaveStatus(item.id);
+                  if (mounted) setState(() {});
+                },
+              ),
+            ],
           ),
         );
       },

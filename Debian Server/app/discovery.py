@@ -27,11 +27,14 @@ class MeshBeacon:
             self.service_name,
             addresses=[socket.inet_aton(self.host_ip)],
             port=self.port,
-            properties={'version': '1.0', 'hub_id': 'LUMINA_HUB_01'},
+            properties={'version': '1.0'},
             server="lumina-hub.local.",
         )
         print(f"[INFO] Broadcasting Mesh Beacon at {self.host_ip}:{self.port}...")
-        self.zeroconf.register_service(info)
+        try:
+            self.zeroconf.register_service(info)
+        except Exception as e:
+            print(f"[ERROR] Beacon registration failed: {e}")
 
     def stop(self):
         self.zeroconf.unregister_all_services()

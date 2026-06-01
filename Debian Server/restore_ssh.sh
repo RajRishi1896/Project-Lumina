@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # Lumina Hub - Restore Home Wi-Fi & SSH Access
 # This script shuts down the Hotspot and reconnects to your known Home Wi-Fi
 

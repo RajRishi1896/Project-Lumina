@@ -432,7 +432,7 @@
 
         /* === Responsive === */
         @media (max-width: 768px) {
-            body { flex-direction: column; }
+            body { flex-direction: column; padding-bottom: 64px; }
             .mobile-header { display: flex; }
             aside {
                 width: 260px;
@@ -450,10 +450,13 @@
             .form-grid .btn { width: 100%; margin-top: 0.5rem; }
             .card { padding: 1.25rem; }
             table { display: block; width: 100%; overflow-x: auto; white-space: nowrap; }
+            #bottomNav { display: flex !important; }
         }
+
     </style>
 </head>
 <body>
+    
 
     <!-- Mobile Header -->
     <header class="mobile-header">
@@ -468,9 +471,9 @@
 
     <!-- Sidebar -->
     <aside>
-        <div class="sidebar-brand">Lumina Hub</div>
-        <div class="sidebar-subtitle">Teacher Dashboard</div>
-        <div class="sidebar-divider"></div>
+    <div class="sidebar-brand">Lumina Hub</div>
+    <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
+    <div class="sidebar-divider"></div>
 
         <nav>
             <div class="nav-item active" id="nav-content" onclick="showTab('content')">
@@ -512,7 +515,6 @@
             <div class="page-header">
                 <h1>Content Manager</h1>
                 <p>Upload and manage educational resources for your students.</p>
-                <div class="status-badge"><div class="status-dot"></div> Hub Active</div>
             </div>
 
             <div class="card">
@@ -581,14 +583,44 @@
                 </div>
             </div>
 
+            <!-- Manage Subjects Card (Teachers and Admins) -->
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                    <div class="card-title" style="margin-bottom: 0;">Manage Subjects &amp; Syllabus</div>
+                    <div style="position: relative; width: 200px;">
+                        <input type="text" id="subjectSearch" placeholder="Search subjects..." oninput="filterManageSubjects()" onfocus="this.style.borderColor='var(--teal)';" onblur="this.style.borderColor='var(--outline)';" style="width: 100%; padding: 0.35rem 0.5rem 0.35rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
+                        <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #94A3B8; display: flex; align-items: center; pointer-events: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr><th>Subject Name</th><th>Class/Grade</th><th>Icon</th><th style="text-align: right;">Action</th></tr>
+                    </thead>
+                    <tbody id="subjectManageTable">
+                        <tr><td colspan="4" class="empty-state">No subjects created yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
                     <div class="card-title" style="margin-bottom: 0;">Mesh Library</div>
-                    <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0;">
-                        <label for="filterSubject" style="margin-bottom: 0; white-space: nowrap; font-size: 0.8rem;">Filter Subject:</label>
-                        <select id="filterSubject" onchange="filterResources()" style="padding: 0.35rem 0.5rem; width: auto; min-width: 150px;">
-                            <option value="ALL">All Subjects</option>
-                        </select>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0;">
+                            <label for="filterSubject" style="margin-bottom: 0; white-space: nowrap; font-size: 0.8rem;">Filter Subject:</label>
+                            <select id="filterSubject" onchange="filterResources()" style="padding: 0.35rem 0.5rem; width: auto; min-width: 130px; font-size: 0.8rem;">
+                                <option value="ALL">All Subjects</option>
+                            </select>
+                        </div>
+                        <div style="position: relative; width: 200px;">
+                            <input type="text" id="resourceSearch" placeholder="Search resources..." oninput="filterResources()" onfocus="this.style.borderColor='var(--teal)';" onblur="this.style.borderColor='var(--outline)';" style="width: 100%; padding: 0.35rem 0.5rem 0.35rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
+                            <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #94A3B8; display: flex; align-items: center; pointer-events: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <table>
@@ -655,18 +687,6 @@
                     </div>
                     <button onclick="addTeacherProfile()" class="btn btn-primary">Create Profile</button>
                 </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">Active Teacher Profiles</div>
-                <table>
-                    <thead>
-                        <tr><th>Username</th><th>Full Name</th><th>Department</th><th style="text-align: right;">Action</th></tr>
-                    </thead>
-                    <tbody id="teacherTable">
-                        <tr><td colspan="4" class="empty-state">No teacher profiles created yet.</td></tr>
-                    </tbody>
-                </table>
             </div>
         </div>
 
@@ -770,41 +790,177 @@
                 </div>
             </div>
 
-            <!-- Manage Subjects -->
-            <div class="card" style="border-left: 4px solid #EF4444;">
-                <div class="card-title" style="color: #EF4444; font-weight: 800;">Manage Subjects</div>
-                <div id="subjectDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-                <table>
-                    <thead>
-                        <tr><th>Subject Name</th><th>Class/Grade</th><th>Icon</th><th style="text-align: right;">Action</th></tr>
-                    </thead>
-                    <tbody id="subjectDangerTable">
-                        <tr><td colspan="4" class="empty-state">No subjects created yet.</td></tr>
-                    </tbody>
-                </table>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="settingsTab" class="hidden">
+            <div class="page-header">
+                <h1>Settings & System Setup</h1>
+                <p>Manage system preferences and configure log retention policies.</p>
             </div>
 
-            <!-- Manage Resources -->
-            <div class="card" style="border-left: 4px solid #EF4444;">
-                <div class="card-title" style="color: #EF4444; font-weight: 800;">Manage Resources</div>
-                <div id="resourceDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-                
-                <!-- Resource Search Bar -->
-                <div style="margin-bottom: 1rem; position: relative;">
-                    <input type="text" id="resourceDangerSearch" placeholder="Search by title, subject or type..." oninput="filterDangerResources()" onfocus="this.style.borderColor='var(--teal)';" onblur="this.style.borderColor='var(--outline)';" style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
-                    <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: #94A3B8; display: flex; align-items: center; pointer-events: none;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+
+
+            <!-- Log Retention Policy (Admin Only) -->
+            <div class="card" id="logRetentionCard" style="display: none;">
+                <div class="card-title">Log Retention Policy</div>
+                <div id="retentionNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-align: center; border: 1px solid transparent;"></div>
+                <div class="form-group" style="max-width: 320px; margin-bottom: 1.25rem;">
+                    <label for="logRetentionSelect">Retention Duration</label>
+                    <select id="logRetentionSelect" onchange="saveRetentionPolicy(this.value)">
+                        <option value="24h">24 Hours</option>
+                        <option value="7d">7 Days</option>
+                        <option value="30d">30 Days (Default)</option>
+                        <option value="3m">3 Months</option>
+                        <option value="6m">6 Months</option>
+                        <option value="never">Never Delete</option>
+                        <option value="none">Don't Take Logs (Disabled)</option>
+                    </select>
+                </div>
+                <p style="font-size: 0.8rem; color: #64748B; line-height: 1.4;">
+                    Configures how long admin audit logs are stored on the hub server. Pruning is completed automatically with low overhead.
+                </p>
+            </div>
+
+            <!-- Live Admin Audit Log (Admin Only) -->
+            <div class="card" id="adminLogCard" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                    <div class="card-title" style="margin-bottom: 0;">Live Admin Audit Log</div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                        <div style="position: relative; width: 220px;">
+                            <input type="text" id="adminLogSearch" placeholder="Search logs..." oninput="filterAdminLogs()" onfocus="this.style.borderColor='var(--teal)';" onblur="this.style.borderColor='var(--outline)';" style="width: 100%; padding: 0.35rem 0.5rem 0.35rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
+                            <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #94A3B8; display: flex; align-items: center; pointer-events: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </span>
+                        </div>
+                        <button onclick="loadAdminLogs()" class="btn btn-outline" style="padding: 0.35rem 0.85rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+                <div style="border: 1px solid var(--outline); border-radius: var(--radius-sm);">
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr><th style="width: 180px; position: sticky; top: 0; background: var(--surface); z-index: 1;">Timestamp</th><th style="position: sticky; top: 0; background: var(--surface); z-index: 1;">Action</th></tr>
+                            </thead>
+                            <tbody id="adminLogTable">
+                                <tr><td colspan="2" class="empty-state">Loading logs...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="adminLogPagination" style="display: none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--outline); flex-wrap: wrap;">
+                    <button id="adminLogPrevBtn" onclick="adminLogsPrevPage()" class="btn btn-outline" style="padding: 0.35rem 0.85rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        Previous
+                    </button>
+                    <span id="adminLogPageInfo" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Page 1 of 1</span>
+                    <button id="adminLogNextBtn" onclick="adminLogsNextPage()" class="btn btn-outline" style="padding: 0.35rem 0.85rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
+                        Next
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                        Per page:
+                        <select id="adminLogPerPageSelect" onchange="adminLogsChangePerPage(this.value)" style="padding: 0.25rem 0.4rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; cursor: pointer;">
+                            <option value="5">5</option>
+                            <option value="8">8</option>
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
                     </span>
                 </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-top: 0.75rem;">
+                    Showing admin actions with pagination. Auto-prunes based on retention policy above.
+                </p>
+            </div>
 
+            <!-- Download Logs (Admin Only) -->
+            <div class="card" id="downloadLogsCard" style="display: none;">
+                <div class="card-title">Download Audit Logs</div>
+                <div class="form-grid" style="grid-template-columns: 1fr auto; max-width: 450px; align-items: flex-end;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="downloadDurationSelect">Select Duration to Download</label>
+                        <select id="downloadDurationSelect">
+                            <option value="24h">Last 24 Hours</option>
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                            <option value="all">All Logs (Entire History)</option>
+                        </select>
+                    </div>
+                    <button onclick="downloadLogs()" class="btn btn-primary" style="padding: 0.65rem 1.25rem; font-size: 0.95rem;">Download Logs (.txt)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STUDENT DASHBOARD -->
+        <div id="studentDashboardTab" class="hidden">
+            <div class="page-header">
+                <h1>Student Dashboard</h1>
+                <p>Welcome back! Explore your personalized workspace.</p>
+            </div>
+            <div class="card" style="background: linear-gradient(135deg, #1A2B44 0%, #007083 100%); color: #fff; border: none; padding: 2.25rem; box-shadow: var(--card-shadow-hover);">
+                <h2 style="font-weight: 800; font-size: 1.6rem; margin-bottom: 0.5rem; color: #fff;">Connect and Learn</h2>
+                <p style="opacity: 0.9; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.75rem; max-width: 600px;">Access high-quality textbooks, videos, and worksheets directly from the Lumina local server network. No internet connection needed.</p>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button onclick="showTab('student-browse')" class="btn btn-primary" style="background: #fff; color: var(--teal); border: 1px solid #fff;">Browse Library</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STUDENT BROWSE -->
+        <div id="studentBrowseTab" class="hidden">
+            <div class="page-header">
+                <h1>Browse Resources</h1>
+                <p>Find textbooks, course materials, and videos.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">All Educational Materials</div>
                 <table>
                     <thead>
                         <tr><th>Title</th><th>Subject</th><th>Type</th><th style="text-align: right;">Action</th></tr>
                     </thead>
-                    <tbody id="resourceDangerTable">
-                        <tr><td colspan="4" class="empty-state">No resources uploaded yet.</td></tr>
+                    <tbody id="studentResourceTable">
+                        <tr><td colspan="4" class="empty-state">No resources available.</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- STUDENT SAVED -->
+        <div id="studentSavedTab" class="hidden">
+            <div class="page-header">
+                <h1>Saved Resources</h1>
+                <p>Access your saved files offline.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">Offline Downloads</div>
+                <div class="empty-state">No saved resources found yet. Browse and download files to build your local library.</div>
+            </div>
+        </div>
+
+        <!-- STUDENT PROFILE -->
+        <div id="studentProfileTab" class="hidden">
+            <div class="page-header">
+                <h1>Student Profile</h1>
+                <p>Manage your account settings and preferences.</p>
+            </div>
+            <div class="card">
+                <div class="card-title">Account Details</div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; background: var(--teal); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.25rem;">S</div>
+                    <div>
+                        <h3 id="studentProfileName" style="font-size: 1.05rem; margin-top: 0; margin-bottom: 0.25rem;">Scholar</h3>
+                        <span class="role-badge" style="background: var(--teal); color: #fff; font-size: 0.65rem; font-weight: bold; padding: 0.15rem 0.5rem; border-radius: 9999px; display: inline-block;">STUDENT VIEW</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card" id="studentModeSwitcherCard">
+                <div class="card-title">Mode Selection</div>
+                <button onclick="toggleViewMode('teacher')" class="btn btn-dark">Return to Teacher/Admin Mode</button>
             </div>
         </div>
 
@@ -893,6 +1049,8 @@
     </div>
 
     <script>
+        function esc(str) { return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/`/g,'&#96;'); }
+        function safeUrl(url) { if (!url) return '#'; if (url.startsWith('/')||url.startsWith('http://')||url.startsWith('https://')) return url; return '/files/'+encodeURIComponent(url); }
         // --- Mobile Sidebar Toggle ---
         function toggleSidebar() {
             const sidebar = document.querySelector('aside');
@@ -903,13 +1061,38 @@
 
         // --- Tab Navigation ---
         function showTab(tab) {
-            document.getElementById('contentTab').className = tab === 'content' ? '' : 'hidden';
-            document.getElementById('securityTab').className = tab === 'security' ? '' : 'hidden';
-            document.getElementById('helpTab').className = tab === 'help' ? '' : 'hidden';
-            document.getElementById('dangerTab').className = tab === 'danger' ? '' : 'hidden';
+            // Hide all tabs
+            const allTabIds = [
+                'contentTab', 'securityTab', 'helpTab', 'dangerTab', 'settingsTab',
+                'studentDashboardTab', 'studentBrowseTab', 'studentSavedTab', 'studentProfileTab'
+            ];
+            allTabIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.className = 'hidden';
+            });
+
+            // Map tab to its element ID
+            const tabElMap = {
+                'content': 'contentTab',
+                'security': 'securityTab',
+                'help': 'helpTab',
+                'danger': 'dangerTab',
+                'settings': 'settingsTab',
+                'student-dashboard': 'studentDashboardTab',
+                'student-browse': 'studentBrowseTab',
+                'student-saved': 'studentSavedTab',
+                'student-profile': 'studentProfileTab'
+            };
+
+            const targetId = tabElMap[tab];
+            if (targetId) {
+                const target = document.getElementById(targetId);
+                if (target) target.className = '';
+            }
 
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            document.getElementById('nav-' + tab).classList.add('active');
+            const activeNav = document.getElementById('nav-' + tab);
+            if (activeNav) activeNav.classList.add('active');
 
             if (tab === 'danger') {
                 loadDangerZone();
@@ -918,10 +1101,21 @@
             if (window.innerWidth <= 768) {
                 const sidebar = document.querySelector('aside');
                 const overlay = document.getElementById('mobileOverlay');
-                if (sidebar.classList.contains('open')) {
+                if (sidebar && sidebar.classList.contains('open')) {
                     sidebar.classList.remove('open');
                     overlay.classList.remove('active');
                 }
+            }
+
+            // Sync Bottom Nav Active State
+            document.querySelectorAll('.bottom-nav-item').forEach(el => {
+                el.style.color = 'rgba(255,255,255,0.6)';
+                el.style.fontWeight = '500';
+            });
+            const activeBottom = document.getElementById('bottom-nav-' + tab);
+            if (activeBottom) {
+                activeBottom.style.color = 'var(--teal)';
+                activeBottom.style.fontWeight = '600';
             }
         }
 
@@ -930,7 +1124,7 @@
 
         // --- Offline Demo Mode Configuration ---
         // Automatically activated when running on file:/// or explicitly requested
-        const IS_DEMO = window.location.protocol === 'file:' || true;
+        const IS_DEMO = window.location.protocol === 'file:';
 
         let demoStudents = [
             { id: "LUMINA_01-S01", name: "Alice Johnson", reset_required: 0 },
@@ -956,9 +1150,26 @@
         ];
 
         let demoLogs = [
-            { scholar_id: "LUMINA_01-S01", action: "Download", resource_title: "Algebra Basics.pdf", timestamp: "2026-05-19 14:23" },
-            { scholar_id: "LUMINA_01-S02", action: "View", resource_title: "Newtonian Mechanics.mp4", timestamp: "2026-05-19 15:45" },
-            { scholar_id: "LUMINA_01-S03", action: "Download", resource_title: "World Map Reference.pdf", timestamp: "2026-05-19 16:12" }
+            { timestamp: "2026-05-27T08:12:00", action: "Admin admin changed log retention policy to 7d" },
+            { timestamp: "2026-05-27T08:15:30", action: "Admin admin reset password for teacher jsmith" },
+            { timestamp: "2026-05-27T09:00:12", action: "Admin admin logged in from dashboard" },
+            { timestamp: "2026-05-27T09:45:55", action: "Teacher jsmith uploaded resource \"Calculus Notes.pdf\"" },
+            { timestamp: "2026-05-27T10:12:33", action: "Admin admin created teacher profile mdoe (Mathematics)" },
+            { timestamp: "2026-05-27T10:30:07", action: "Student LUMINA_01-S01 (Alice Johnson) registered" },
+            { timestamp: "2026-05-27T11:00:00", action: "Admin admin changed log retention policy to 30d" },
+            { timestamp: "2026-05-27T11:22:18", action: "Teacher mdoe uploaded resource \"Physics Lab Manual.mp4\"" },
+            { timestamp: "2026-05-27T12:05:44", action: "Admin admin reset password for scholar LUMINA_01-S02" },
+            { timestamp: "2026-05-27T12:45:09", action: "Student LUMINA_01-S02 (Bob Smith) changed password" },
+            { timestamp: "2026-05-27T13:10:22", action: "Teacher jsmith created subject \"Advanced Mathematics\"" },
+            { timestamp: "2026-05-27T13:55:37", action: "Admin admin deleted teacher profile jdoe (inactive)" },
+            { timestamp: "2026-05-27T14:20:15", action: "Teacher mdoe uploaded resource \"World History Timeline.pdf\"" },
+            { timestamp: "2026-05-27T14:50:48", action: "Admin admin disabled default admin login" },
+            { timestamp: "2026-05-27T15:15:00", action: "Admin admin re-enabled default admin login via reset_admin.sh" },
+            { timestamp: "2026-05-27T15:45:30", action: "Teacher jsmith deleted resource \"Old Syllabus.pdf\"" },
+            { timestamp: "2026-05-27T16:10:12", action: "Admin admin downloaded audit logs (duration: 7d)" },
+            { timestamp: "2026-05-27T16:40:55", action: "Student LUMINA_01-S03 (Charlie Brown) registered" },
+            { timestamp: "2026-05-27T17:05:20", action: "Teacher mdoe reset password for scholar LUMINA_01-S03" },
+            { timestamp: "2026-05-27T17:30:45", action: "Admin admin changed log retention policy to never" }
         ];
 
         function getSymbolSvg(symbol) {
@@ -1056,12 +1267,31 @@
                 
                 let optionsHtml = allSubjects.map(s => {
                     const display = s.class_name ? `${s.name} (${s.class_name})` : s.name;
-                    return `<option value="${display}">${display}</option>`;
+                    return `<option value="${esc(s.name)}">${esc(display)}</option>`;
                 }).join('');
                 subjectSelect.innerHTML = optionsHtml || '<option value="General">General</option>';
                 
                 let filterOptionsHtml = '<option value="ALL">All Subjects</option>' + optionsHtml;
                 filterSubject.innerHTML = filterOptionsHtml;
+
+                // Also populate the active subjects table in Content Manager
+                const tbody = document.getElementById('subjectManageTable');
+                if (tbody) {
+                    if (allSubjects.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No subjects created yet.</td></tr>';
+                    } else {
+                        tbody.innerHTML = allSubjects.map(sub => `
+                            <tr>
+                                <td><strong>${esc(sub.name)}</strong></td>
+                                <td>${esc(sub.class_name || 'All Classes')}</td>
+                                <td><span style="display: inline-flex; color: var(--teal);">${getSymbolSvg(sub.symbol)}</span></td>
+                                <td style="text-align: right;">
+                                    <button onclick="promptDeleteSubject('${esc(sub.name)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                }
             } catch (e) {
                 console.error("Could not load subjects", e);
             }
@@ -1123,9 +1353,17 @@
 
         function filterResources() {
             const filterVal = document.getElementById('filterSubject').value;
+            const searchVal = (document.getElementById('resourceSearch')?.value || '').toLowerCase().trim();
             let filtered = allResources;
             if (filterVal !== 'ALL') {
-                filtered = allResources.filter(r => r.subject === filterVal);
+                filtered = filtered.filter(r => r.subject === filterVal);
+            }
+            if (searchVal) {
+                filtered = filtered.filter(r =>
+                    (r.title || '').toLowerCase().includes(searchVal) ||
+                    (r.subject || '').toLowerCase().includes(searchVal) ||
+                    (r.type || '').toLowerCase().includes(searchVal)
+                );
             }
             if (filtered.length === 0) {
                 document.getElementById('resourceTable').innerHTML =
@@ -1141,21 +1379,57 @@
                 else if (r.type === 'notes') badgeClass = 'type-notes';
                 
                 // Find subject symbol safely
-                const subj = allSubjects.find(s => r.subject.startsWith(s.name));
+                const subj = allSubjects.find(s => r.subject === s.name);
                 const symbolSvg = getSymbolSvg(subj ? subj.symbol : 'folder');
                 
                 return `
                 <tr>
-                    <td><strong>${r.title}</strong></td>
+                    <td><strong>${esc(r.title)}</strong></td>
                     <td>
                         <div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: var(--teal);">
-                            ${symbolSvg} ${r.subject || 'General'}
+                            ${symbolSvg} ${esc(r.subject || 'General')}
                         </div>
                     </td>
-                    <td><span class="type-badge ${badgeClass}">${r.type}</span></td>
-                    <td style="text-align: right;"><a href="${r.url}" class="btn btn-outline" download>Download</a></td>
+                    <td><span class="type-badge ${badgeClass}">${esc(r.type)}</span></td>
+                    <td style="text-align: right;">
+                        <a href="${safeUrl(r.url)}" class="btn btn-outline" download>Download</a>
+                        <button onclick="deleteResource(${r.id}, '${esc(r.title)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger); margin-left: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.75rem;">Delete</button>
+                    </td>
                 </tr>`;
             }).join('');
+        }
+
+        function filterManageSubjects() {
+            const query = (document.getElementById('subjectSearch')?.value || '').toLowerCase().trim();
+            const tbody = document.getElementById('subjectManageTable');
+            if (!tbody) return;
+            const rows = tbody.querySelectorAll('tr');
+            let visibleCount = 0;
+            rows.forEach(row => {
+                // Skip the empty-state row
+                if (row.querySelector('.empty-state')) return;
+                const cells = row.querySelectorAll('td');
+                const name = (cells[0]?.textContent || '').toLowerCase();
+                const cls = (cells[1]?.textContent || '').toLowerCase();
+                if (!query || name.includes(query) || cls.includes(query)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            // Show no-results message if all rows are hidden
+            const noResultRow = tbody.querySelector('#subjectNoResults');
+            if (query && visibleCount === 0 && !tbody.querySelector('.empty-state')) {
+                if (!noResultRow) {
+                    const tr = document.createElement('tr');
+                    tr.id = 'subjectNoResults';
+                    tr.innerHTML = '<td colspan="4" class="empty-state">No subjects match your search.</td>';
+                    tbody.appendChild(tr);
+                }
+            } else if (noResultRow) {
+                noResultRow.remove();
+            }
         }
 
         async function upload() {
@@ -1208,7 +1482,7 @@
             const res = await fetch('/teacher/change-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: 'admin', old_password: oldPwd, new_password: newPwd })
+                body: JSON.stringify({ username: loggedInUser, old_password: oldPwd, new_password: newPwd })
             });
             if (res.ok) {
                 showNotification('securityNotif', 'Password updated.', false);
@@ -1244,6 +1518,7 @@
                     teachers = await res.json();
                 }
                 const tbody = document.getElementById('teacherTable');
+                if (!tbody) return;
                 const disableContainer = document.getElementById('disableAdminContainer');
                 if (teachers.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No teacher profiles created yet.</td></tr>';
@@ -1253,11 +1528,11 @@
                 if (disableContainer) disableContainer.style.display = 'block';
                 tbody.innerHTML = teachers.map(t => `
                     <tr>
-                        <td><strong>${t.username}</strong></td>
-                        <td>${t.name}</td>
-                        <td><span class="type-badge type-default">${t.department}</span></td>
+                        <td><strong>${esc(t.username)}</strong></td>
+                        <td>${esc(t.name)}</td>
+                        <td><span class="type-badge type-default">${esc(t.department)}</span></td>
                         <td style="text-align: right;">
-                            <button onclick="deleteTeacherProfile('${t.username}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
+                            <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
                         </td>
                     </tr>
                 `).join('');
@@ -1266,11 +1541,11 @@
                     const tbody = document.getElementById('teacherTable');
                     tbody.innerHTML = demoTeachers.map(t => `
                         <tr>
-                            <td><strong>${t.username}</strong></td>
-                            <td>${t.name}</td>
-                            <td><span class="type-badge type-default">${t.department}</span></td>
+                            <td><strong>${esc(t.username)}</strong></td>
+                            <td>${esc(t.name)}</td>
+                            <td><span class="type-badge type-default">${esc(t.department)}</span></td>
                             <td style="text-align: right;">
-                                <button onclick="deleteTeacherProfile('${t.username}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
+                                <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
                             </td>
                         </tr>
                     `).join('');
@@ -1418,31 +1693,6 @@
                 filterDangerTeachers();
             } catch (e) { console.error(e); }
 
-            // 3. Subjects
-            try {
-                let data = [];
-                if (IS_DEMO) {
-                    data = [...demoSubjects];
-                } else {
-                    const res = await fetch('/subjects');
-                    data = await res.json();
-                }
-                const tbody = document.getElementById('subjectDangerTable');
-                if (data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No subjects created yet.</td></tr>';
-                } else {
-                    tbody.innerHTML = data.map(sub => `
-                        <tr>
-                            <td><strong>${sub.name}</strong></td>
-                            <td>${sub.class_name}</td>
-                            <td><span style="display: inline-flex; color: var(--primary);">${getSymbolSvg(sub.symbol)}</span></td>
-                            <td style="text-align: right;">
-                                <button onclick="promptDeleteSubject('${sub.name}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
-                            </td>
-                        </tr>
-                    `).join('');
-                }
-            } catch (e) { console.error(e); }
 
             // 4. Resources
             try {
@@ -1452,7 +1702,6 @@
                     const res = await fetch('/resources');
                     activeDangerResources = await res.json();
                 }
-                filterDangerResources();
             } catch (e) { console.error(e); }
         }
 
@@ -1469,12 +1718,12 @@
             }
             tbody.innerHTML = filtered.map(s => `
                 <tr>
-                    <td><strong>${s.name}</strong></td>
-                    <td><code>${s.id}</code></td>
+                    <td><strong>${esc(s.name)}</strong></td>
+                    <td><code>${esc(s.id)}</code></td>
                     <td>${s.reset_required ? '<span style="color: #F59E0B; font-weight: bold;">Reset Pending</span>' : '<span style="color: #10B981;">Active</span>'}</td>
                     <td style="text-align: right;">
-                        <button onclick="resetStudentPassword('${s.id}', '${s.name}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #F59E0B; color: #F59E0B; margin-right: 0.5rem;">Force Reset Pwd</button>
-                        <button onclick="deleteStudentAccount('${s.id}', '${s.name}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
+                        <button onclick="resetStudentPassword('${esc(s.id)}', '${esc(s.name)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #F59E0B; color: #F59E0B; margin-right: 0.5rem;">Force Reset Pwd</button>
+                        <button onclick="deleteStudentAccount('${esc(s.id)}', '${esc(s.name)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
                     </td>
                 </tr>
             `).join('');
@@ -1494,41 +1743,19 @@
             }
             tbody.innerHTML = filtered.map(t => `
                 <tr>
-                    <td><strong>${t.username}</strong></td>
-                    <td>${t.name}</td>
-                    <td>${t.department}</td>
+                    <td><strong>${esc(t.username)}</strong></td>
+                    <td>${esc(t.name)}</td>
+                    <td>${esc(t.department)}</td>
                     <td>${t.reset_required ? '<span style="color: #F59E0B; font-weight: bold;">Reset Pending</span>' : '<span style="color: #10B981;">Active</span>'}</td>
                     <td style="text-align: right;">
-                        <button onclick="resetTeacherPassword('${t.username}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #F59E0B; color: #F59E0B; margin-right: 0.5rem;">Force Reset Pwd</button>
-                        <button onclick="deleteTeacherProfile('${t.username}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
+                        <button onclick="resetTeacherPassword('${esc(t.username)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #F59E0B; color: #F59E0B; margin-right: 0.5rem;">Force Reset Pwd</button>
+                        <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
                     </td>
                 </tr>
             `).join('');
         }
 
-        function filterDangerResources() {
-            const query = (document.getElementById('resourceDangerSearch').value || '').toLowerCase().trim();
-            const tbody = document.getElementById('resourceDangerTable');
-            const filtered = activeDangerResources.filter(r => 
-                r.title.toLowerCase().includes(query) || 
-                (r.subject && r.subject.toLowerCase().includes(query)) || 
-                r.type.toLowerCase().includes(query)
-            );
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No matching resources found.</td></tr>';
-                return;
-            }
-            tbody.innerHTML = filtered.map(r => `
-                <tr>
-                    <td><strong>${r.title}</strong></td>
-                    <td>${r.subject}</td>
-                    <td><code>${r.type}</code></td>
-                    <td style="text-align: right;">
-                        <button onclick="deleteResource(${r.id}, '${r.title}')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
+
 
         async function resetStudentPassword(id, name) {
             const confirmed = await showConfirm('Force Password Reset', `Are you sure you want to force password reset on student "${name}"? They will be forced to change their password to continue using the mobile application.`, false);
@@ -1604,7 +1831,7 @@
             if (!confirmed) return;
             if (IS_DEMO) {
                 demoResources = demoResources.filter(r => r.id !== id);
-                showNotification('resourceDangerNotif', `Resource "${title}" deleted.`, false);
+                showNotification('uploadNotif', `Resource "${title}" deleted.`, false);
                 loadDangerZone();
                 loadResources();
                 return;
@@ -1612,14 +1839,14 @@
             try {
                 const res = await fetch(`/teacher/resources/${id}`, { method: 'DELETE' });
                 if (res.ok) {
-                    showNotification('resourceDangerNotif', `Resource "${title}" deleted.`, false);
+                    showNotification('uploadNotif', `Resource "${title}" deleted.`, false);
                     loadDangerZone();
                     loadResources();
                 } else {
-                    showNotification('resourceDangerNotif', 'Could not delete resource.', true);
+                    showNotification('uploadNotif', 'Could not delete resource.', true);
                 }
             } catch (e) {
-                showNotification('resourceDangerNotif', 'Network error.', true);
+                showNotification('uploadNotif', 'Network error.', true);
             }
         }
 
@@ -1641,7 +1868,7 @@
                 if (otherSubs.length === 0) {
                     select.innerHTML = '<option value="">No other subjects available</option>';
                 } else {
-                    select.innerHTML = otherSubs.map(s => `<option value="${s.name}">${s.name} (${s.class_name})</option>`).join('');
+                    select.innerHTML = otherSubs.map(s => `<option value="${esc(s.name)}">${esc(s.name)} (${esc(s.class_name)})</option>`).join('');
                 }
             } catch (e) { console.error(e); }
 
@@ -1682,7 +1909,7 @@
                 }
                 demoSubjects = demoSubjects.filter(s => s.name !== activeDeleteSubjectName);
                 closeDeleteSubjectModal();
-                showNotification('subjectDangerNotif', `Subject "${activeDeleteSubjectName}" deleted successfully.`, false);
+                showNotification('subjectNotif', `Subject "${activeDeleteSubjectName}" deleted successfully.`, false);
                 loadDangerZone();
                 loadSubjects();
                 loadResources();
@@ -1698,7 +1925,7 @@
 
                 if (res.ok) {
                     closeDeleteSubjectModal();
-                    showNotification('subjectDangerNotif', `Subject "${activeDeleteSubjectName}" deleted successfully.`, false);
+                    showNotification('subjectNotif', `Subject "${activeDeleteSubjectName}" deleted successfully.`, false);
                     loadDangerZone();
                     loadSubjects();
                     loadResources();
@@ -1794,7 +2021,7 @@
 
             toast.innerHTML = `
                 <div style="display: flex; align-items: center; flex-shrink: 0;">${icon}</div>
-                <div style="flex-grow: 1; line-height: 1.4;">${message}</div>
+                <div style="flex-grow: 1; line-height: 1.4;">${esc(message)}</div>
                 <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: color 0.2s;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             `;
 
@@ -1865,16 +2092,382 @@
             });
         }
 
+        let userRole = 'admin'; // default for demo mode
+        let currentViewMode = localStorage.getItem('lumina-view-mode') || 'teacher'; // student, teacher
+        const IS_APP = /Android|iPhone|iPad/.test(navigator.userAgent); // Detects mobile browsers (Android Chrome, iPhone Safari, iPad Safari) — not just the native app
+
+        async function loadWhoAmI() {
+            try {
+                if (IS_DEMO) {
+                    loggedInUser = 'admin';
+                    userRole = 'admin';
+                } else {
+                    const res = await fetch('/whoami');
+                    if (res.ok) {
+                        const data = await res.json();
+                        loggedInUser = data.username;
+                        userRole = data.role; // e.g. admin or teacher
+                    }
+                }
+                
+                // Show username in sidebar and role badge in the top right
+                const userInfo = document.getElementById('userInfo');
+                if (userInfo) {
+                    userInfo.innerHTML = `<div style="font-weight: 800; font-size: 1rem; color: #fff; letter-spacing: -0.015em;">${esc(loggedInUser)}</div>`;
+                }
+
+
+                const sProfileName = document.getElementById('studentProfileName');
+                if (sProfileName) {
+                    sProfileName.innerText = loggedInUser || 'Scholar';
+                }
+                
+                // Sync the UI visibility based on the view mode and user role
+                updateUIForRole();
+            } catch (e) {
+                console.error("Error loading whoami info", e);
+            }
+        }
+
+        function updateUIForRole() {
+            const nav = document.querySelector('aside nav');
+            const bottomNav = document.getElementById('bottomNav');
+            
+            // Log retention visibility: Admin only
+            const logRetentionCard = document.getElementById('logRetentionCard');
+            const adminLogCard = document.getElementById('adminLogCard');
+            const downloadLogsCard = document.getElementById('downloadLogsCard');
+            if (userRole === 'admin') {
+                if (logRetentionCard) logRetentionCard.style.display = 'block';
+                if (adminLogCard) adminLogCard.style.display = 'block';
+                if (downloadLogsCard) downloadLogsCard.style.display = 'block';
+            } else {
+                if (logRetentionCard) logRetentionCard.style.display = 'none';
+                if (adminLogCard) adminLogCard.style.display = 'none';
+                if (downloadLogsCard) downloadLogsCard.style.display = 'none';
+            }
+
+            // Load saved settings if admin
+            if (userRole === 'admin') {
+                loadRetentionSetting();
+                loadAdminLogs();
+            }
+
+            if (IS_APP && currentViewMode === 'student') {
+                // STUDENT VIEW (only in app)
+                nav.innerHTML = `
+                    <div class="nav-item" id="nav-student-dashboard" onclick="showTab('student-dashboard')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                        Dashboard
+                    </div>
+                    <div class="nav-item" id="nav-student-browse" onclick="showTab('student-browse')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Browse
+                    </div>
+                    <div class="nav-item" id="nav-student-saved" onclick="showTab('student-saved')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                        Saved
+                    </div>
+                    <div class="nav-item" id="nav-student-profile" onclick="showTab('student-profile')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Profile
+                    </div>
+                `;
+
+                if (bottomNav) {
+                    bottomNav.innerHTML = `
+                        <div class="bottom-nav-item" id="bottom-nav-student-dashboard" onclick="showTab('student-dashboard')" style="display:flex; flex-direction:column; align-items:center; cursor:pointer; color:rgba(255,255,255,0.6); font-size:0.7rem; font-weight:500; gap:0.25rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px;"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                            Dashboard
+                        </div>
+                        <div class="bottom-nav-item" id="bottom-nav-student-browse" onclick="showTab('student-browse')" style="display:flex; flex-direction:column; align-items:center; cursor:pointer; color:rgba(255,255,255,0.6); font-size:0.7rem; font-weight:500; gap:0.25rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            Browse
+                        </div>
+                        <div class="bottom-nav-item" id="bottom-nav-student-saved" onclick="showTab('student-saved')" style="display:flex; flex-direction:column; align-items:center; cursor:pointer; color:rgba(255,255,255,0.6); font-size:0.7rem; font-weight:500; gap:0.25rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px;"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                            Saved
+                        </div>
+                        <div class="bottom-nav-item" id="bottom-nav-student-profile" onclick="showTab('student-profile')" style="display:flex; flex-direction:column; align-items:center; cursor:pointer; color:rgba(255,255,255,0.6); font-size:0.7rem; font-weight:500; gap:0.25rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            Profile
+                        </div>
+                    `;
+                }
+
+                showTab('student-dashboard');
+            } else {
+                // TEACHER/ADMIN VIEW
+                let dangerNavItem = '';
+                if (userRole === 'admin') {
+                    dangerNavItem = `
+                        <div class="nav-item" id="nav-danger" onclick="showTab('danger')" style="color: #EF4444;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #EF4444; width: 18px; height: 18px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                            Danger Zone
+                        </div>
+                    `;
+                }
+                let settingsNavItem = '';
+                if (userRole === 'admin') {
+                    settingsNavItem = `
+                        <div class="nav-item" id="nav-settings" onclick="showTab('settings')">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            Settings
+                        </div>
+                    `;
+                }
+                nav.innerHTML = `
+                    <div class="nav-item" id="nav-content" onclick="showTab('content')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        Content Manager
+                    </div>
+                    <div class="nav-item" id="nav-security" onclick="showTab('security')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Security
+                    </div>
+                    <div class="nav-item" id="nav-help" onclick="showTab('help')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                        Help
+                    </div>
+                    ${dangerNavItem}
+                    ${settingsNavItem}
+                `;
+
+                if (bottomNav) {
+                    let bottomDangerNavItem = '';
+                    if (userRole === 'admin') {
+                        bottomDangerNavItem = `
+                            <div class="bottom-nav-item" id="bottom-nav-danger" onclick="showTab('danger')" style="display:flex; flex-direction:column; align-items:center; cursor:pointer; color:rgba(255,255,255,0.6); font-size:0.7rem; font-weight:500; gap:0.25rem;">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px; color:#EF4444;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                                Danger
+                            </div>
+                        `;
+                    }
+                    bottomNav.innerHTML = `
+                        <div class="bottom-nav-item" id="bottom-nav-content" onclick="showTab('content')" style="display:flex; flex-direction:column; align-items:center; cursor:pointer; color:rgba(255,255,255,0.6); font-size:0.7rem; font-weight:500; gap:0.25rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Content
+                        </div>
+                        <div class="bottom-nav-item" id="bottom-nav-security" onclick="showTab('security')" style="display:flex; flex-direction:column; align-items:center; cursor:pointer; color:rgba(255,255,255,0.6); font-size:0.7rem; font-weight:500; gap:0.25rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            Security
+                        </div>
+                        <div class="bottom-nav-item" id="bottom-nav-help" onclick="showTab('help')" style="display:flex; flex-direction:column; align-items:center; cursor:pointer; color:rgba(255,255,255,0.6); font-size:0.7rem; font-weight:500; gap:0.25rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                            Help
+                        </div>
+                        ${bottomDangerNavItem}
+                    `;
+                }
+
+                showTab('content');
+            }
+
+            // Sync student resource list
+            loadStudentBrowseResources();
+        }
+
+        function toggleViewMode(mode) {
+            currentViewMode = mode;
+            localStorage.setItem('lumina-view-mode', mode);
+            const sel = document.getElementById('viewModeSelect');
+            if (sel) sel.value = mode;
+            updateUIForRole();
+            showAlert(`Switched view mode to: ${mode === 'student' ? 'Student View' : 'Teacher/Admin View'}`, false);
+        }
+
+        function loadStudentBrowseResources() {
+            const tbody = document.getElementById('studentResourceTable');
+            if (!tbody) return;
+
+            let resources = IS_DEMO ? demoResources : allResources;
+            if (resources.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No resources available.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = resources.map(r => `
+                <tr>
+                    <td><strong>${esc(r.title)}</strong></td>
+                    <td><span style="font-size:0.8rem; font-weight:600; color:var(--teal);">${esc(r.subject || 'General')}</span></td>
+                    <td><span class="type-badge type-default">${esc(r.type)}</span></td>
+                    <td style="text-align: right;"><a href="${safeUrl(r.url)}" class="btn btn-primary" style="padding:0.4rem 0.75rem; font-size:0.75rem;" download>Download</a></td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadRetentionSetting() {
+            if (IS_DEMO) return;
+            try {
+                const res = await fetch('/api/admin/settings');
+                if (res.ok) {
+                    const data = await res.json();
+                    const sel = document.getElementById('logRetentionSelect');
+                    if (sel) sel.value = data.log_retention;
+                }
+            } catch (e) {
+                console.error("Error loading log retention policy", e);
+            }
+        }
+
+        async function saveRetentionPolicy(policy) {
+            if (IS_DEMO) {
+                showNotification('retentionNotif', `Retention policy saved to "${policy}" (Demo Mode).`, false);
+                return;
+            }
+            try {
+                const res = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ policy: policy })
+                });
+                if (res.ok) {
+                    showNotification('retentionNotif', `Retention policy successfully updated to "${policy}".`, false);
+                } else {
+                    const err = await res.json();
+                    showNotification('retentionNotif', err.detail || 'Could not update policy.', true);
+                }
+            } catch (e) {
+                showNotification('retentionNotif', 'Connection error.', true);
+            }
+        }
+
+        let _adminLogsAll = [];
+        let _adminLogsFiltered = [];
+        let _adminLogsPage = 1;
+        let _adminLogsPerPage = 20;
+
+        function _renderAdminLogsPage() {
+            const tbody = document.getElementById('adminLogTable');
+            const pagination = document.getElementById('adminLogPagination');
+            const pageInfo = document.getElementById('adminLogPageInfo');
+            const prevBtn = document.getElementById('adminLogPrevBtn');
+            const nextBtn = document.getElementById('adminLogNextBtn');
+            if (!tbody) return;
+
+            const data = _adminLogsFiltered;
+            const totalPages = Math.max(1, Math.ceil(data.length / _adminLogsPerPage));
+            if (_adminLogsPage > totalPages) _adminLogsPage = totalPages;
+
+            const start = (_adminLogsPage - 1) * _adminLogsPerPage;
+            const pageItems = data.slice(start, start + _adminLogsPerPage);
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No admin actions recorded yet.</td></tr>';
+                if (pagination) pagination.style.display = 'none';
+                return;
+            }
+
+            tbody.innerHTML = pageItems.map(item =>
+                `<tr>
+                    <td style="white-space: nowrap; color: var(--text-muted); font-size: 0.8rem;">${esc(item.t)}</td>
+                    <td style="color: var(--on-surface);">${esc(item.msg)}</td>
+                </tr>`
+            ).join('');
+
+            const hasMultiple = totalPages > 1;
+            if (pagination) {
+                pagination.style.display = 'flex';
+            }
+            if (pageInfo) pageInfo.textContent = `Page ${_adminLogsPage} of ${totalPages}`;
+            if (prevBtn) { prevBtn.disabled = _adminLogsPage <= 1; prevBtn.style.opacity = _adminLogsPage <= 1 ? '0.4' : '1'; }
+            if (nextBtn) { nextBtn.disabled = _adminLogsPage >= totalPages; nextBtn.style.opacity = _adminLogsPage >= totalPages ? '0.4' : '1'; }
+        }
+
+        function adminLogsPrevPage() {
+            if (_adminLogsPage > 1) { _adminLogsPage--; _renderAdminLogsPage(); }
+        }
+
+        function adminLogsNextPage() {
+            const totalPages = Math.ceil(_adminLogsFiltered.length / _adminLogsPerPage);
+            if (_adminLogsPage < totalPages) { _adminLogsPage++; _renderAdminLogsPage(); }
+        }
+
+        function adminLogsChangePerPage(val) {
+            _adminLogsPerPage = parseInt(val, 10) || 8;
+            _adminLogsPage = 1;
+            _renderAdminLogsPage();
+        }
+
+        function filterAdminLogs() {
+            const query = (document.getElementById('adminLogSearch').value || '').toLowerCase().trim();
+            if (!query) {
+                _adminLogsFiltered = [..._adminLogsAll];
+            } else {
+                _adminLogsFiltered = _adminLogsAll.filter(item =>
+                    item.t.toLowerCase().includes(query) || item.msg.toLowerCase().includes(query)
+                );
+            }
+            _adminLogsPage = 1;
+            _renderAdminLogsPage();
+        }
+
+        async function loadAdminLogs() {
+            const tbody = document.getElementById('adminLogTable');
+            if (!tbody) return;
+
+            // Clear search field on reload
+            const searchInput = document.getElementById('adminLogSearch');
+            if (searchInput) searchInput.value = '';
+
+            if (IS_DEMO) {
+                _adminLogsAll = demoLogs.map(l => ({ t: l.timestamp, msg: l.action }));
+                _adminLogsFiltered = [..._adminLogsAll];
+                _adminLogsPage = 1;
+                _renderAdminLogsPage();
+                return;
+            }
+
+            try {
+                const res = await fetch('/admin/log?limit=50');
+                if (!res.ok) {
+                    tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Failed to load logs.</td></tr>';
+                    return;
+                }
+                const data = await res.json();
+                const logs = data.log || [];
+                _adminLogsAll = logs.map(line => {
+                    const match = line.match(/^(\S+T\S+) - (.*)/);
+                    if (match) return { t: match[1], msg: match[2] };
+                    return { t: '', msg: line };
+                });
+                _adminLogsFiltered = [..._adminLogsAll];
+                _adminLogsPage = 1;
+                _renderAdminLogsPage();
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Connection error loading logs.</td></tr>';
+            }
+        }
+
+        function downloadLogs() {
+            const duration = document.getElementById('downloadDurationSelect').value;
+            if (IS_DEMO) {
+                const demoLogTxt = demoLogs.map(l => `${l.timestamp} - ${l.action}`).join('\n');
+                const blob = new Blob([demoLogTxt], { type: 'text/plain' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `admin_logs_demo_${duration}.txt`;
+                link.click();
+                showAlert("Downloaded logs (Demo Mode)", false);
+                return;
+            }
+            window.open(`/api/admin/logs/download?duration=${duration}`);
+        }
+
         async function initDashboard() {
             initCustomDropdown();
             await loadSubjects();
             await loadResources();
-            await loadTeachers();
             await checkSelfResetRequired();
+            await loadWhoAmI();
         }
         initDashboard();
     </script>
     
+    <!-- Mobile Bottom Navigation (App View) -->
+    <div id="bottomNav" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-sidebar); border-top: 1px solid rgba(255,255,255,0.08); z-index: 100; height: 64px; justify-content: space-around; align-items: center; padding: 0 1rem; box-shadow: 0 -2px 10px rgba(0,0,0,0.15); pointer-events: auto;">
+        <!-- Dynamically filled with tabs based on currentViewMode -->
+    </div>
+
     <!-- Global Toast Notification Container -->
     <div id="globalToastContainer" style="position: fixed; top: 1.5rem; right: 1.5rem; z-index: 99999; display: flex; flex-direction: column; gap: 0.75rem; max-width: 380px; width: 100%; pointer-events: none;"></div>
 </body>

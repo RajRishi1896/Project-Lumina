@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/network/api_client.dart';
 
 class AuthService {
@@ -15,28 +13,29 @@ class AuthService {
   static const String _userIdKey = 'lumina_unique_user_id';
   static const String _usernameKey = 'lumina_username';
   static const String _usersListKey = 'lumina_users_list_secure';
+  static const String _sessionTokenKey = 'session_token';
 
   // --- Demo Mode Configuration ---
-  static const bool isDemoMode = true; // Set to true to skip login and use test profile
+  static const bool isDemoMode = false;
   static const String demoUserId = 'LUMINA_01-TESTDEMO';
   static const String demoUsername = 'test';
 
-  String _hashPassword(String password) {
-    final bytes = utf8.encode(password);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
+  static bool _demoRoleIsAdmin = true;
+
+  static bool isAdmin() => isDemoMode ? _demoRoleIsAdmin : false;
+  static bool isDemoAdmin() => _demoRoleIsAdmin;
+  static void setDemoAdminRole(bool value) { _demoRoleIsAdmin = value; }
+
+  String _hashPassword(String password) => sha256.convert(utf8.encode(password)).toString();
 
   Future<String?> getUniqueUserId() async {
     if (isDemoMode) return demoUserId;
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_userIdKey);
+    return _secureStorage.read(key: _userIdKey);
   }
 
   Future<String?> getLoggedUsername() async {
     if (isDemoMode) return demoUsername;
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_usernameKey);
+    return _secureStorage.read(key: _usernameKey);
   }
 
   Future<bool> register({
@@ -49,7 +48,10 @@ class AuthService {
       });
 
       if (response.statusCode != 200) return false;
-      final String hubGeneratedId = response.data['id'];
+      if (response.data == null || response.data is! Map) return false;
+      final Map data = response.data;
+      final String hubGeneratedId = data['id']?.toString() ?? '';
+      final String? token = data['token']?.toString();
       
       List<Map<String, dynamic>> users = await _getUsers();
       if (users.any((u) => u['username'] == username)) return false;
@@ -63,9 +65,13 @@ class AuthService {
       users.add(newUser);
       await _secureStorage.write(key: _usersListKey, value: jsonEncode(users));
       
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_userIdKey, hubGeneratedId);
-      await prefs.setString(_usernameKey, username);
+      await _secureStorage.write(key: _userIdKey, value: hubGeneratedId);
+      await _secureStorage.write(key: _usernameKey, value: username);
+
+      if (token != null) {
+        await _secureStorage.write(key: _sessionTokenKey, value: token);
+        ApiClient.setAuth(token);
+      }
       
       return true;
     } catch (e) {
@@ -74,61 +80,70 @@ class AuthService {
   }
 
   /// NEW: Hub-Verified Login for New Devices
-  Future<bool> login({
+  Future<String?> login({
     required String username,
     required String password,
   }) async {
     try {
-      final hashedInput = _hashPassword(password);
-      
+      final rawInput = _hashPassword(password);
+
       // 1. Try Local First
       List<Map<String, dynamic>> users = await _getUsers();
       final localUser = users.firstWhere(
-        (u) => u['username'] == username && u['password'] == hashedInput,
+        (u) => u['username'] == username && u['password'] == rawInput,
         orElse: () => {},
       );
-      
+
       if (localUser.isNotEmpty) {
         _saveSession(localUser['userId'], username);
-        return true;
+        try {
+          final loginResp = await ApiClient.post('/student/token', data: {'username': username, 'password': password});
+          final Map respData = loginResp.data;
+          final String token = respData['token']?.toString() ?? '';
+          final String scholarId = respData['scholar_id']?.toString() ?? '';
+          final bool resetReq = respData['reset_required'] == true;
+          if (token.isNotEmpty) {
+            await _secureStorage.write(key: _sessionTokenKey, value: token);
+            await _secureStorage.write(key: _userIdKey, value: scholarId);
+            ApiClient.setAuth(token);
+          }
+          return resetReq ? 'reset_required' : 'ok';
+        } catch (_) {}
+        return 'ok';
       }
 
-      // 2. If not local, check the Hub (New Device Scenario)
-      // Note: We search the scholar list on the Hub for a matching name
-      final response = await ApiClient.get('/teacher/scholars');
-      if (response.statusCode == 200) {
-        final List<dynamic> hubScholars = response.data;
-        final matchingScholar = hubScholars.firstWhere(
-          (s) => s['name'] == username,
-          orElse: () => null,
-        );
-
-        if (matchingScholar != null) {
-          final String hubId = matchingScholar['id'];
-          
-          // Save to local secure storage for next time
-          users.add({
-            'username': username,
-            'password': hashedInput,
-            'userId': hubId,
-          });
-          await _secureStorage.write(key: _usersListKey, value: jsonEncode(users));
-          
-          _saveSession(hubId, username);
-          return true;
+      // On new device, try to get student info from server
+      try {
+        final loginResp = await ApiClient.post('/student/token', data: {
+          'username': username,
+          'password': password,
+        });
+        if (loginResp.statusCode == 200 && loginResp.data is Map) {
+          final respData = loginResp.data as Map;
+          final String? token = respData['token']?.toString();
+          final String? scholarId = respData['scholar_id']?.toString();
+          final String? name = respData['name']?.toString();
+          final bool resetReq = respData['reset_required'] == true;
+          if (token != null && scholarId != null) {
+            await _secureStorage.write(key: _sessionTokenKey, value: token);
+            await _secureStorage.write(key: _userIdKey, value: scholarId);
+            if (name != null) await _secureStorage.write(key: _usernameKey, value: name);
+            ApiClient.setAuth(token);
+            return resetReq ? 'reset_required' : 'ok';
+          }
         }
+      } catch (_) {
       }
-      
-      return false;
+
+      return null;
     } catch (e) {
-      return false;
+      return null;
     }
   }
 
   Future<void> _saveSession(String id, String username) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userIdKey, id);
-    await prefs.setString(_usernameKey, username);
+    await _secureStorage.write(key: _userIdKey, value: id);
+    await _secureStorage.write(key: _usernameKey, value: username);
   }
 
   Future<List<Map<String, dynamic>>> _getUsers() async {
@@ -146,9 +161,10 @@ class AuthService {
 
   Future<void> logout() async {
     if (isDemoMode) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userIdKey);
-    await prefs.remove(_usernameKey);
+    try {
+      await ApiClient.post('/logout');
+    } catch (_) {}
+    await _secureStorage.deleteAll();
   }
 
   Future<int> getApkSize() async {

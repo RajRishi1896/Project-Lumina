@@ -7,6 +7,7 @@ import 'package:edumesh_android/widgets/connection_gate.dart';
 // Import your new file here
 // Change this line in app_shell.dart:
 import 'package:edumesh_android/features/dashboard/presentation/saved_resource_page.dart';
+import 'package:edumesh_android/features/dashboard/presentation/student_profile_page.dart';
 
 
 class AppShell extends StatefulWidget {
@@ -24,7 +25,7 @@ class _AppShellState extends State<AppShell> {
     const feat.DashboardPage(),
     const Center(child: Text('Browse Learning Directory')), 
     const SavedResourcesPage(), 
-    const Center(child: Text('Scholar Profile')),
+    const StudentProfilePage(),
   ];
 
   @override
