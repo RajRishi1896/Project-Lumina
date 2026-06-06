@@ -1,0 +1,101 @@
+import 'package:flutter/foundation.dart';
+import '../../core/services/activity_tracker.dart';
+import 'download_service.dart';
+import 'notification_service.dart';
+import 'connectivity_service.dart';
+
+class _QueuedDownload {
+  final String resourceId;
+  final String url;
+  final String fileName;
+  final String title;
+  final String subject;
+  final String grade;
+  final String type;
+  final double mtime;
+
+  _QueuedDownload(this.resourceId, this.url, this.fileName, {
+    this.title = '',
+    this.subject = '',
+    this.grade = '',
+    this.type = '',
+    this.mtime = 0,
+  });
+}
+
+/// Singleton queue that manages sequential file downloads with offline support.
+///
+/// When online, downloads are processed one at a time. When offline, items are
+/// persisted to a pending-download table via [DownloadService] and flushed
+/// automatically once connectivity is restored. Extends [ChangeNotifier] so
+/// the UI can observe queue state changes.
+class DownloadQueue extends ChangeNotifier {
+  static final DownloadQueue _instance = DownloadQueue._internal();
+  factory DownloadQueue() => _instance;
+  DownloadQueue._internal();
+
+  final List<_QueuedDownload> _queue = [];
+  bool _processing = false;
+
+  /// The set of resource IDs currently in the queue.
+  Set<String> get queuedIds => _queue.map((d) => d.resourceId).toSet();
+
+  /// The resource ID currently being downloaded, or `null` if idle.
+  String? get active => _processing && _queue.isNotEmpty ? _queue.first.resourceId : null;
+
+  /// Whether a download for [id] is already in the queue.
+  bool contains(String id) => _queue.any((d) => d.resourceId == id);
+
+  /// Adds a download to the queue.
+  ///
+  /// When online the item is queued in-memory and processed immediately.
+  /// When offline it is persisted via [DownloadService.addPendingDownload]
+  /// for later flushing. Duplicate [resourceId] values are ignored.
+  Future<void> enqueue(String resourceId, String url, String fileName, {
+    String title = '',
+    String subject = '',
+    String grade = '',
+    String type = '',
+    double mtime = 0,
+  }) async {
+    if (_queue.any((d) => d.resourceId == resourceId)) return;
+    if (ConnectivityService().isOnline) {
+      _queue.add(_QueuedDownload(resourceId, url, fileName,
+        title: title, subject: subject, grade: grade, type: type, mtime: mtime));
+      notifyListeners();
+      if (!_processing) _processNext();
+    } else {
+      await DownloadService().addPendingDownload(resourceId, url, fileName,
+        title: title, subject: subject, grade: grade, type: type, mtime: mtime);
+      notifyListeners();
+    }
+  }
+
+  Future<void> _processNext() async {
+    if (_queue.isEmpty) return;
+    _processing = true;
+    notifyListeners();
+
+    final task = _queue.first;
+    final path = await DownloadService().downloadAndTrack(
+      task.resourceId, task.url, task.fileName,
+      title: task.title, subject: task.subject, grade: task.grade,
+      type: task.type, mtime: task.mtime,
+    );
+    if (path != null) {
+      if (task.title.isNotEmpty) {
+        NotificationService().showDownloadComplete(task.title);
+      }
+      ActivityTracker().logKeyAction('download', resourceId: task.resourceId, metadata: task.title);
+    }
+    _queue.removeAt(0);
+    notifyListeners();
+
+    if (_queue.isNotEmpty) {
+      _processNext();
+    } else {
+      _processing = false;
+      notifyListeners();
+    }
+  }
+}

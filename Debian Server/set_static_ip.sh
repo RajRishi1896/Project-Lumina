@@ -1,6 +1,12 @@
 #!/bin/bash
+# Purpose: Applies a static IPv4 address to the primary network interface
+#          (ethernet or Wi-Fi) using NetworkManager's nmcli.
+# Usage:   sudo ./set_static_ip.sh
+# Args:    None (uses defaults: STATIC_IP="192.168.1.1/24", GATEWAY="192.168.1.1",
+#          DNS="8.8.8.8")
+# Idempotent: Yes — overwrites the existing connection profile's IPv4 settings
+#             on each run.
 set -e
-# Lumina Hub - Static IP Configuration
 
 STATIC_IP="192.168.1.1/24"
 GATEWAY="192.168.1.1"

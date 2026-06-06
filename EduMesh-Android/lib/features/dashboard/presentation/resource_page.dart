@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/lumina_colors.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../core/services/activity_tracker.dart';
 
 import 'package:edumesh_android/features/dashboard/presentation/resource_detail_page.dart';
 
+/// A page that shows resource categories (Textbooks, Videos, PYQs, Notes) for
+/// a specific subject and grade.
+///
+/// Tapping a category navigates to [ResourceDetailPage] filtered by that
+/// subject, grade, and resource type.
 class ResourcePage extends StatefulWidget {
+  /// The subject name used to filter resources.
   final String subject;
+
+  /// The grade level used to filter resources.
   final String grade;
 
   const ResourcePage({super.key, required this.subject, required this.grade});
 
+  /// Creates the state for the [ResourcePage].
   @override
   State<ResourcePage> createState() => _ResourcePageState();
 }
@@ -36,64 +46,57 @@ class _ResourcePageState extends State<ResourcePage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.subject, style: TextStyle(color: cs.primary, fontSize: 22.sp, fontWeight: FontWeight.w900)),
-            Text(widget.grade, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13.sp, fontWeight: FontWeight.w600)),
+            Text(widget.subject, style: TextStyle(color: cs.primary, fontSize: 22.sp, fontWeight: AppSpacing.weightDisplay)),
+            Text(widget.grade, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13.sp, fontWeight: AppSpacing.weightStrong)),
           ],
         ),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(18.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          padding: EdgeInsets.all(AppSpacing.lg.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Container(
               width: double.infinity,
-              padding: EdgeInsets.all(22.w),
+              padding: EdgeInsets.all(AppSpacing.xxl.w),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(26.r),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0F766E), LuminaColors.academicTeal, Color(0xFF14B8A6)],
-                  begin: Alignment.topLeft, end: Alignment.bottomRight,
-                ),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXl.r),
+                color: LuminaColors.academicTeal,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("SMART LEARNING", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontWeight: FontWeight.w700, fontSize: 10.sp, letterSpacing: 1)),
-                  SizedBox(height: 18.h),
-                  Text("${widget.subject} \u2022 ${widget.grade}", style: TextStyle(color: Colors.white, fontSize: 24.sp, fontWeight: FontWeight.w900)),
+                  Text(widget.subject.toUpperCase(), style: TextStyle(color: cs.onPrimary, fontWeight: AppSpacing.weightStrong, fontSize: 10.sp, letterSpacing: 1)),
+                  SizedBox(height: AppSpacing.lg.h),
+                  Text("${widget.subject} \u2022 ${widget.grade}", style: TextStyle(color: cs.onPrimary, fontSize: 24.sp, fontWeight: AppSpacing.weightDisplay)),
                 ],
               ),
             ),
-            SizedBox(height: 30.h),
+            SizedBox(height: AppSpacing.section.h),
             
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: resources.length,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, crossAxisSpacing: 16.w, mainAxisSpacing: 16.h, childAspectRatio: 0.5,
+                crossAxisCount: 2, crossAxisSpacing: 16.w, mainAxisSpacing: 16.h, childAspectRatio: 0.75,
               ),
               itemBuilder: (context, index) {
                 final item = resources[index];
                 return Container(
-                  padding: EdgeInsets.all(20.w),
+                  padding: EdgeInsets.all(AppSpacing.xl.w),
                   decoration: BoxDecoration(
                     color: cs.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(24.r),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusXl.r),
                     border: Border.all(color: cs.outlineVariant),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: EdgeInsets.all(18.w),
-                        decoration: BoxDecoration(color: item['color'] as Color, borderRadius: BorderRadius.circular(22.r)),
-                        child: Icon(item['icon'] as IconData, color: item['iconColor'] as Color, size: 34.sp),
-                      ),
-                      SizedBox(height: 18.h),
-                      Text(item['title'] as String, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800, color: cs.onSurface)),
-                      SizedBox(height: 12.h),
+                      Icon(item['icon'] as IconData, color: item['iconColor'] as Color, size: 30.sp),
+                      SizedBox(height: AppSpacing.md.h),
+                      Text(item['title'] as String, style: TextStyle(fontSize: 14.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+                      SizedBox(height: AppSpacing.sm.h),
                       Expanded(child: Text(item['subtitle'] as String, style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant))),
                       
                       GestureDetector(
@@ -103,15 +106,15 @@ class _ResourcePageState extends State<ResourcePage> {
                             title: item['title'] as String,
                             subject: widget.subject,
                             grade: widget.grade,
-                            resourceId: item['id'] as String,
+                            resourceType: item['id'] as String,
                             isInitiallySaved: false,
                           )));
                         },
                         child: Container(
                           width: double.infinity,
-                          padding: EdgeInsets.symmetric(vertical: 12.h),
-                          decoration: BoxDecoration(color: (item['iconColor'] as Color).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14.r)),
-                          child: Center(child: Text('Open', style: TextStyle(color: item['iconColor'] as Color, fontWeight: FontWeight.w800))),
+                          padding: EdgeInsets.symmetric(vertical: AppSpacing.md.h),
+                          decoration: BoxDecoration(color: (item['iconColor'] as Color).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r)),
+                          child: Center(child: Text('Open', style: TextStyle(color: item['iconColor'] as Color, fontWeight: AppSpacing.weightDisplay))),
                         ),
                       ),
                     ],

@@ -2,25 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
+import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../../core/services/activity_tracker.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../core/network/api_client.dart';
 
+/// The student profile and analytics page.
+///
+/// Displays the user's name, grade, student ID, profile icon, study stats
+/// (today / week / saved / streak), a subject-breakdown bar chart, and a
+/// recent-activity timeline. Profile data is loaded from [AuthService] first
+/// (offline-capable) then refreshed from the server. The profile icon is
+/// persisted to the app documents directory for offline display.
 class StudentProfilePage extends StatefulWidget {
   const StudentProfilePage({super.key});
 
+  /// Creates the state for the [StudentProfilePage].
   @override
   State<StudentProfilePage> createState() => _StudentProfilePageState();
 }
 
 class _StudentProfilePageState extends State<StudentProfilePage> {
   final ActivityTracker _tracker = ActivityTracker();
-  String _studentName = 'Alex Rivera';
-  final String _studentId = 'LUMINA_01-A1B2C3D4';
-  String _grade = 'Grade 11';
+  String _studentName = '';
+  String _studentId = '';
+  String _grade = '';
   int _studyMinutesToday = 0;
   int _studyMinutesThisWeek = 0;
   int _resourcesSaved = 0;
@@ -35,10 +47,64 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   @override
   void initState() {
     super.initState();
+    _loadLocalProfile();
     _loadData();
   }
 
+  /// The persistent file path for a scholar's profile icon.
+  ///
+  /// Stores the icon under `{appDocumentsDir}/profile_icons/{scholarId}_icon.png`
+  /// so it survives app restarts and is available offline.
+  Future<String> _iconPath(String scholarId) async {
+    final dir = await getApplicationDocumentsDirectory();
+    return '${dir.path}/profile_icons/${scholarId}_icon.png';
+  }
+
+  /// Persists profile icon bytes to local storage.
+  ///
+  /// Creates the `profile_icons/` directory if needed and writes the decoded
+  /// image data to the path returned by [_iconPath].
+  Future<void> _saveIconLocally(String scholarId, Uint8List bytes) async {
+    final path = await _iconPath(scholarId);
+    final file = File(path);
+    await file.create(recursive: true);
+    await file.writeAsBytes(bytes);
+  }
+
+  /// Loads cached profile fields and icon from local storage.
+  ///
+  /// Reads [AuthService] for the cached name, id, and grade so the profile
+  /// card is populated immediately even when offline. Also checks for a
+  /// previously saved icon at [_iconPath] and displays it if found.
+  Future<void> _loadLocalProfile() async {
+    final auth = AuthService();
+    final name = await auth.getLoggedUsername();
+    final id = await auth.getUniqueUserId();
+    final grade = await auth.getStudentGrade();
+    if (mounted) {
+      setState(() {
+        _studentName = name ?? _studentName;
+        _studentId = id ?? _studentId;
+        _grade = grade ?? _grade;
+      });
+    }
+    if (id != null && id.isNotEmpty) {
+      final iconFile = File(await _iconPath(id));
+      if (await iconFile.exists()) {
+        if (mounted) setState(() => _profileImage = iconFile);
+      }
+    }
+  }
+
+  /// Fetches analytics and profile data from the server.
+  ///
+  /// Calls [ActivityTracker.sync], then retrieves analytics and activity history.
+  /// Separately fetches `/student/profile` for name, scholar id, and grade, and
+  /// `/student/profile/icon/{id}` for the profile picture. Server responses
+  /// override the local defaults set by [_loadLocalProfile]. The fetched icon
+  /// is saved to persistent storage via [_saveIconLocally].
   Future<void> _loadData() async {
+    await _tracker.sync();
     try {
       final analytics = await _tracker.getAnalytics();
       final history = await _tracker.getActivityHistory(limit: 25);
@@ -61,6 +127,44 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+    try {
+      final profile = await ApiClient.get('/student/profile');
+      if (mounted && profile.data is Map) {
+        final p = profile.data as Map;
+        setState(() {
+          _studentName = p['name']?.toString() ?? _studentName;
+          _studentId = p['scholar_id']?.toString() ?? _studentId;
+          _grade = p['grade']?.toString() ?? _grade;
+        });
+        final scholarId = p['scholar_id']?.toString() ?? '';
+        if (scholarId.isNotEmpty) {
+          try {
+            final iconResponse = await ApiClient.get('/student/profile/icon/$scholarId');
+            if (iconResponse.statusCode == 200 && iconResponse.data != null) {
+              final bytes = iconResponse.data is List<int>
+                  ? Uint8List.fromList(List<int>.from(iconResponse.data))
+                  : Uint8List(0);
+              if (bytes.isNotEmpty) {
+                await _saveIconLocally(scholarId, bytes);
+                final iconFile = File(await _iconPath(scholarId));
+                if (mounted) {
+                  setState(() => _profileImage = iconFile);
+                }
+              }
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+  }
+
+  String _getInitials(String name) {
+    if (name.trim().isEmpty) return '?';
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
   }
 
   Color _colorForSubject(String name) {
@@ -110,7 +214,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             : '';
     }
     if (resourceId.isEmpty) return verb;
-    return '$verb $resourceId';
+    final title = activity['resource_title']?.toString() ?? activity['title']?.toString() ?? '';
+    if (title.isNotEmpty) return '$verb $title';
+    return '$verb a resource';
   }
 
   String _formatRelativeTime(dynamic timestamp) {
@@ -143,6 +249,12 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         return Icons.download_rounded;
       case 'watch':
         return Icons.play_circle_rounded;
+      case 'save':
+        return Icons.bookmark_rounded;
+      case 'open':
+        return Icons.open_in_new_rounded;
+      case 'complete':
+        return Icons.check_circle_rounded;
       default:
         return Icons.circle;
     }
@@ -160,7 +272,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 children: [
                   _buildHeader(cs),
                   Expanded(
-                    child: ListView(
+                    child: RefreshIndicator(
+                      onRefresh: _loadData,
+                      child: ListView(
                       padding: EdgeInsets.symmetric(horizontal: 16.w),
                       children: [
                         _buildProfileCard(cs),
@@ -174,15 +288,16 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
       ),
     );
   }
 
   Widget _buildHeader(ColorScheme cs) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
       decoration: BoxDecoration(
         color: cs.surface,
         border: Border(bottom: BorderSide(color: cs.outlineVariant, width: 1)),
@@ -190,62 +305,73 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       child: Row(
         children: [
           Icon(Icons.person_rounded, color: cs.primary, size: 24.sp),
-          SizedBox(width: 12.w),
+          SizedBox(width: AppSpacing.md.w),
           Text('My Profile',
               style: GoogleFonts.atkinsonHyperlegible(
                   fontSize: 20.sp,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppSpacing.weightDisplay,
                   color: cs.primary)),
           const Spacer(),
           Icon(Icons.bar_chart_rounded, color: cs.primary, size: 20.sp),
-          SizedBox(width: 4.w),
+          SizedBox(width: AppSpacing.xs.w),
           Text('Analytics',
               style: GoogleFonts.atkinsonHyperlegible(
                   fontSize: 13.sp,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppSpacing.weightStrong,
                   color: cs.onSurfaceVariant)),
         ],
       ),
     );
   }
 
+  /// Opens the image picker and uploads the selected icon to the server.
+  ///
+  /// Picks a square image (max 256px) from the gallery, base64-encodes it,
+  /// and sends it to `POST /student/profile/icon`. On success the icon is
+  /// persisted locally via [_saveIconLocally] and displayed immediately.
+  /// Acquires a [WakelockPlus] wakelock during upload to prevent sleep.
   Future<void> _pickAndUploadIcon() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 256, maxHeight: 256);
     if (picked == null) return;
     setState(() => _uploadingIcon = true);
+    await WakelockPlus.enable();
     try {
       final bytes = await picked.readAsBytes();
       final b64 = base64Encode(bytes);
       final ext = picked.path.split('.').last;
       final scholarId = await AuthService().getUniqueUserId();
       if (scholarId == null) {
+        await WakelockPlus.disable();
         if (mounted) setState(() => _uploadingIcon = false);
         return;
       }
       await ApiClient.post('/student/profile/icon', data: {
-        'scholar_id': scholarId,
         'image_data': b64,
         'image_ext': ext,
       });
+      await _saveIconLocally(scholarId, bytes);
+      final iconFile = File(await _iconPath(scholarId));
       if (mounted) {
         setState(() {
-          _profileImage = File(picked.path);
+          _profileImage = iconFile;
           _uploadingIcon = false;
         });
       }
     } catch (_) {
       if (mounted) setState(() => _uploadingIcon = false);
+    } finally {
+      await WakelockPlus.disable();
     }
   }
 
   Widget _buildProfileCard(ColorScheme cs) {
     return Container(
-      margin: EdgeInsets.only(top: 16.h),
-      padding: EdgeInsets.all(20.w),
+      margin: EdgeInsets.only(top: AppSpacing.lg.h),
+      padding: EdgeInsets.all(AppSpacing.xl.w),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg.r),
         border: Border.all(color: cs.outlineVariant),
       ),
       child: Row(
@@ -259,25 +385,25 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   backgroundColor: LuminaColors.academicTeal,
                   backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
                   child: _profileImage == null
-                      ? Text('AR',
+                      ? Text(_getInitials(_studentName),
                           style: GoogleFonts.atkinsonHyperlegible(
                               fontSize: 22.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white))
+                              fontWeight: AppSpacing.weightStrong,
+                              color: cs.onPrimary))
                       : null,
                 ),
                 if (_uploadingIcon)
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black26,
+                        color: cs.scrim.withValues(alpha: 0.3),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
                         child: SizedBox(
                           width: 20.sp,
                           height: 20.sp,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                         ),
                       ),
                     ),
@@ -286,12 +412,12 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   bottom: 0,
                   right: 0,
                   child: Container(
-                    padding: EdgeInsets.all(4.w),
+                    padding: EdgeInsets.all(AppSpacing.xs.w),
                     decoration: BoxDecoration(
                       color: cs.primary,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.camera_alt, size: 12.sp, color: Colors.white),
+                    child: Icon(Icons.camera_alt, size: 12.sp, color: cs.onPrimary),
                   ),
                 ),
               ],
@@ -305,7 +431,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 Text(_studentName,
                     style: GoogleFonts.atkinsonHyperlegible(
                         fontSize: 20.sp,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: AppSpacing.weightStrong,
                         color: cs.onSurface)),
                 SizedBox(height: 4.h),
                 Row(
@@ -321,14 +447,14 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                           style: TextStyle(
                               fontSize: 11.sp,
                               color: LuminaColors.academicTeal,
-                              fontWeight: FontWeight.w600)),
+                              fontWeight: AppSpacing.weightStrong)),
                     ),
                     SizedBox(width: 8.w),
                     Text(_grade,
                         style: TextStyle(
                             fontSize: 13.sp,
                             color: cs.onSurfaceVariant,
-                            fontWeight: FontWeight.w500)),
+                            fontWeight: AppSpacing.weightBody)),
                   ],
                 ),
                 SizedBox(height: 4.h),
@@ -349,7 +475,24 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
 
   void _showEditProfileSheet(ColorScheme cs) {
     final nameController = TextEditingController(text: _studentName);
-    final gradeController = TextEditingController(text: _grade);
+    String selectedGrade = _grade;
+    List<String> availableGrades = [];
+    bool loadingGrades = true;
+
+    ApiClient.get('/grades').then((res) {
+      if (res.data is List) {
+        final grades = (res.data as List)
+            .map((g) => (g is Map ? g['name']?.toString() ?? '' : g.toString()))
+            .where((n) => n.isNotEmpty)
+            .toList();
+        if (grades.isNotEmpty && !grades.contains(selectedGrade)) {
+          selectedGrade = grades[0];
+        }
+        availableGrades = grades;
+      }
+      loadingGrades = false;
+      if (mounted) setState(() {});
+    });
 
     showModalBottomSheet(
       context: context,
@@ -376,7 +519,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       Text('Edit Profile',
                           style: GoogleFonts.atkinsonHyperlegible(
                               fontSize: 20.sp,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: AppSpacing.weightStrong,
                               color: cs.primary)),
                       const Spacer(),
                       IconButton(
@@ -389,7 +532,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   Text('Full Name',
                       style: GoogleFonts.atkinsonHyperlegible(
                           fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppSpacing.weightStrong,
                           color: cs.onSurfaceVariant)),
                   SizedBox(height: 6.h),
                   TextField(
@@ -410,13 +553,13 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   Text('Grade',
                       style: GoogleFonts.atkinsonHyperlegible(
                           fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppSpacing.weightStrong,
                           color: cs.onSurfaceVariant)),
                   SizedBox(height: 6.h),
-                  TextField(
-                    controller: gradeController,
-                    style: GoogleFonts.atkinsonHyperlegible(
-                        fontSize: 15.sp, color: cs.onSurface),
+                  DropdownButtonFormField<String>(
+                    initialValue: availableGrades.contains(selectedGrade) ? selectedGrade : null,
+                    items: availableGrades.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                    onChanged: (v) => selectedGrade = v ?? selectedGrade,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: cs.surfaceContainerHighest,
@@ -426,12 +569,15 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       ),
                       contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
                     ),
+                    hint: loadingGrades
+                        ? SizedBox(width: 16.sp, height: 16.sp, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Text('Select grade', style: TextStyle(color: cs.onSurfaceVariant)),
                   ),
                   SizedBox(height: 16.h),
                   Text('Student ID',
                       style: GoogleFonts.atkinsonHyperlegible(
                           fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppSpacing.weightStrong,
                           color: cs.onSurfaceVariant)),
                   SizedBox(height: 6.h),
                   TextField(
@@ -453,16 +599,35 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _studentName = nameController.text.trim().isNotEmpty
-                              ? nameController.text.trim()
-                              : _studentName;
-                          _grade = gradeController.text.trim().isNotEmpty
-                              ? gradeController.text.trim()
-                              : _grade;
-                        });
-                        Navigator.pop(ctx);
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final newName = nameController.text.trim();
+                        if (newName.isNotEmpty || selectedGrade.isNotEmpty) {
+                          try {
+                            await ApiClient.post('/student/profile/update', data: {
+                              if (newName.isNotEmpty) 'name': newName,
+                              if (selectedGrade.isNotEmpty) 'grade': selectedGrade,
+                            });
+                            final auth = AuthService();
+                            if (newName.isNotEmpty) {
+                              await auth.saveUsername(newName);
+                            }
+                            if (selectedGrade.isNotEmpty) {
+                              await auth.saveGrade(selectedGrade);
+                            }
+                            if (mounted) {
+                              setState(() {
+                                _studentName = newName.isNotEmpty ? newName : _studentName;
+                                _grade = selectedGrade.isNotEmpty ? selectedGrade : _grade;
+                              });
+                              if (ctx.mounted) Navigator.pop(ctx);
+                            }
+                          } catch (e) {
+                            messenger.showSnackBar(
+                              SnackBar(content: Text('Failed to update profile: $e')),
+                            );
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: cs.primary,
@@ -475,7 +640,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       child: Text('Save Changes',
                           style: GoogleFonts.atkinsonHyperlegible(
                               fontSize: 15.sp,
-                              fontWeight: FontWeight.w700)),
+                              fontWeight: AppSpacing.weightStrong)),
                     ),
                   ),
                 ],
@@ -486,7 +651,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       },
     ).then((_) {
       nameController.dispose();
-      gradeController.dispose();
     });
   }
 
@@ -495,7 +659,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       children: [
         Expanded(child: _buildStatCard(cs, 'Today', '${_studyMinutesToday}m', Icons.today_rounded, LuminaColors.academicTeal)),
         SizedBox(width: 10.w),
-        Expanded(child: _buildStatCard(cs, 'This Week', '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}h', Icons.date_range_rounded, const Color(0xFF7C3AED))),
+        Expanded(child: _buildStatCard(cs, 'This Week', _studyMinutesThisWeek < 60 ? '${_studyMinutesThisWeek}m' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}h', Icons.date_range_rounded, const Color(0xFF7C3AED))),
         SizedBox(width: 10.w),
         Expanded(child: _buildStatCard(cs, 'Saved', '$_resourcesSaved', Icons.bookmark_rounded, const Color(0xFF059669))),
         SizedBox(width: 10.w),
@@ -519,7 +683,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           Text(value,
               style: GoogleFonts.atkinsonHyperlegible(
                   fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppSpacing.weightStrong,
                   color: cs.onSurface)),
           SizedBox(height: 2.h),
           Text(label,
@@ -537,7 +701,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         Text('Study Time by Subject',
             style: GoogleFonts.atkinsonHyperlegible(
                 fontSize: 18.sp,
-                fontWeight: FontWeight.w700,
+                fontWeight: AppSpacing.weightStrong,
                 color: cs.onSurface)),
         SizedBox(height: 12.h),
         Container(
@@ -549,7 +713,23 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           ),
           child: Column(
             children: [
-              ...List.generate(_subjectBreakdown.length, (i) {
+              if (_subjectBreakdown.isEmpty)
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24.h),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.bar_chart_rounded, size: 36.sp, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                        SizedBox(height: 8.h),
+                        Text('No study data yet.\nYour subject time will appear here as you use the app.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 13.sp, color: cs.onSurfaceVariant)),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ...List.generate(_subjectBreakdown.length, (i) {
                 final sub = _subjectBreakdown[i];
                 final pct = total > 0
                     ? sub.minutes / total
@@ -565,7 +745,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                             child: Text(sub.name,
                                 style: TextStyle(
                                     fontSize: 13.sp,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: AppSpacing.weightStrong,
                                     color: cs.onSurface)),
                           ),
                           Text(hours,
@@ -608,7 +788,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         Text('Recent Activity',
             style: GoogleFonts.atkinsonHyperlegible(
                 fontSize: 18.sp,
-                fontWeight: FontWeight.w700,
+                fontWeight: AppSpacing.weightStrong,
                 color: cs.onSurface)),
         SizedBox(height: 12.h),
         Container(
@@ -620,7 +800,23 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           ),
           child: Column(
             children: [
-              ListView.separated(
+              if (_activityHistory.isEmpty)
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32.h),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.history_rounded, size: 40.sp, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                        SizedBox(height: 12.h),
+                        Text('No recent activity yet.\nStart browsing resources to see your activity here.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 13.sp, color: cs.onSurfaceVariant)),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: displayCount,
@@ -641,7 +837,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                     title: Text(_formatActivityTitle(act),
                         style: TextStyle(
                             fontSize: 13.sp,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: AppSpacing.weightBody,
                             color: cs.onSurface)),
                     trailing: Text(_formatRelativeTime(act['timestamp']),
                         style: TextStyle(
@@ -672,7 +868,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                               : 'Show All (${_activityHistory.length})',
                           style: TextStyle(
                             fontSize: 13.sp,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: AppSpacing.weightStrong,
                             color: cs.primary,
                           ),
                         ),

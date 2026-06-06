@@ -1,7 +1,11 @@
 #!/bin/bash
+# Purpose: Emergency admin password reset. Resets the dashboard admin
+#          password to "lumina2026" by directly updating the SQLite database.
+# Usage:   sudo ./reset_admin.sh
+# Args:    None
+# Idempotent: Yes — always resets to the same password regardless of the
+#             current state.
 set -e
-# Lumina Hub - Emergency Admin Reset
-# Double-click or run this script to reset the dashboard password to 'lumina2026'
 
 echo "[WARNING] Initiating Emergency Password Reset..."
 

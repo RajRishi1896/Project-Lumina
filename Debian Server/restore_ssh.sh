@@ -1,7 +1,12 @@
 #!/bin/bash
+# Purpose: Shuts down the Lumina Hub hotspot and restores the normal Wi-Fi
+#          connection so the device can be accessed via SSH on the home
+#          network.
+# Usage:   sudo ./restore_ssh.sh
+# Args:    None
+# Idempotent: Yes — gracefully handles cases where the hotspot is already
+#             down.
 set -e
-# Lumina Hub - Restore Home Wi-Fi & SSH Access
-# This script shuts down the Hotspot and reconnects to your known Home Wi-Fi
 
 echo "[INFO] Shutting down Lumina Hub Hotspot..."
 sudo nmcli connection down LuminaHub 2>/dev/null

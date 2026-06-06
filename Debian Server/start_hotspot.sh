@@ -1,7 +1,12 @@
 #!/bin/bash
+# Purpose: Forcefully creates and activates the "Lumina Hub" Wi-Fi hotspot.
+#          Takes control of the Wi-Fi card, kills conflicting processes,
+#          and configures NetworkManager with a WPA2-PSK profile.
+# Usage:   sudo ./start_hotspot.sh
+# Args:    None
+# Idempotent: Yes — deletes any existing LuminaHub connection profile before
+#             recreating it.
 set -e
-# Lumina Hub - Start Offline Hotspot
-# This script forcefully takes control of the Wi-Fi card and creates the Hub network.
 
 echo "[INFO] Initializing Wi-Fi Hotspot (Lumina Hub)..."
 

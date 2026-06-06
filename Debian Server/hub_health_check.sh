@@ -1,6 +1,13 @@
 #!/bin/bash
+# Purpose: Pre-boot integrity check for the Lumina Hub. Verifies that all
+#          required files and directories exist before launching the server.
+#          Creates missing directories automatically; aborts on missing
+#          critical files.
+# Usage:   ./hub_health_check.sh
+# Args:    None
+# Idempotent: Yes — creates missing directories if needed, then launches
+#             the server.
 set -e
-# Lumina Hub - Pre-boot Health Check
 
 cd "$(dirname "$0")"
 

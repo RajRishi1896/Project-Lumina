@@ -1,20 +1,29 @@
+"""Background ZIM HTML cache cleaner.
+
+Periodically removes the oldest cached HTML pages (generated from ZIM
+archives) when the total number exceeds the configured ``max_pages``
+limit. Runs on a daemon thread started at server startup.
+"""
+
 import os
 import time
 import threading
 from datetime import datetime
 
-# Import the settings helper for cache size limit
 from lib.zim_settings import get_max_pages
 
 # Directory where ZIM HTML pages are stored (must match zim_handler)
 ZIM_PAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'zim_pages')
 os.makedirs(ZIM_PAGES_DIR, exist_ok=True)
 
+
 def _clean_old_pages():
     """Enforce the hard cache page limit.
+
     The most recently saved pages are kept; the oldest files are removed
     when the total number of cached HTML pages exceeds the configured
-    `max_pages` value (default 500)."""
+    ``max_pages`` value (default 500).
+    """
     try:
         max_pages = get_max_pages()
     except Exception as e:
@@ -33,22 +42,36 @@ def _clean_old_pages():
         except Exception as e:
             print(f"[ZIM Cleaner] Failed to delete {old_file}: {e}")
 
+
 _cleaner_lock = threading.Lock()
 _cleaner_started = False
 
+
 def start_zim_auto_cleaner(interval_seconds: int = 3600):
-    """Start a background thread that cleans the ZIM cache every `interval_seconds`.
-    Default is 1 hour.
+    """Start a background daemon thread that prunes the ZIM cache.
+
+    The cleaner runs indefinitely every ``interval_seconds`` (default
+    1 hour). It is safe to call multiple times — only the first call
+    starts the thread.
+
+    Args:
+        interval_seconds: Seconds between cleanup runs (default 3600).
+
+    Returns:
+        The spawned :class:`threading.Thread` instance, or ``None`` if
+        the cleaner was already running.
     """
     global _cleaner_started
     with _cleaner_lock:
         if _cleaner_started:
             return
         _cleaner_started = True
+
     def _run():
         while True:
             _clean_old_pages()
             time.sleep(interval_seconds)
+
     thread = threading.Thread(target=_run, daemon=True)
     thread.start()
     return thread

@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/constants/app_spacing.dart';
 
+/// A horizontal step indicator used in the welcome/onboarding flow.
+///
+/// Displays three labelled steps (Welcome, Login/Register, Access) as
+/// numbered circles connected by lines. Completed steps show a checkmark
+/// and are highlighted with the primary colour.
 class LuminaStepper extends StatelessWidget {
+  /// The index of the current active step (0-based).
   final int currentStep;
+
   const LuminaStepper({super.key, required this.currentStep});
 
   @override
@@ -25,24 +33,24 @@ class LuminaStepper extends StatelessWidget {
                 width: 24.w,
                 height: 24.w,
                 decoration: BoxDecoration(
-                  color: isActive ? cs.primary : Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isActive ? cs.primary : cs.outlineVariant,
-                    width: 2,
+              color: isActive ? cs.primary : cs.surface,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isActive ? cs.primary : cs.outlineVariant,
+                width: 2,
+              ),
+            ),
+            child: Center(
+              child: isPast 
+                ? Icon(Icons.check, color: cs.onPrimary, size: 14.sp)
+                : Text(
+                    '${stepIndex + 1}',
+                    style: GoogleFonts.atkinsonHyperlegible(
+                      fontSize: 12.sp,
+                      fontWeight: AppSpacing.weightStrong,
+                      color: isActive ? cs.onPrimary : cs.onSurfaceVariant,
+                    ),
                   ),
-                ),
-                child: Center(
-                  child: isPast 
-                    ? Icon(Icons.check, color: Colors.white, size: 14.sp)
-                    : Text(
-                        '${stepIndex + 1}',
-                        style: GoogleFonts.atkinsonHyperlegible(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.bold,
-                          color: isActive ? Colors.white : cs.onSurfaceVariant,
-                        ),
-                      ),
                 ),
               ),
               SizedBox(height: 4.h),

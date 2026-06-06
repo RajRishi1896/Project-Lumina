@@ -1,6 +1,11 @@
 #!/bin/bash
+# Purpose: Configures local DNS resolution for lumina.hub on a Debian-based
+#          system using dnsmasq. Also adds a static /etc/hosts entry.
+# Usage:   sudo ./setup_dns.sh
+# Args:    None (uses hardcoded DOMAIN="lumina.hub" and HUB_IP="192.168.1.1")
+# Idempotent: Yes — overwrites /etc/dnsmasq.d/lumina.conf on each run and
+#             skips /etc/hosts if the entry already exists.
 set -e
-# Lumina Hub - Local DNS Configuration (Domain Setup)
 
 DOMAIN="lumina.hub"
 HUB_IP="192.168.1.1"

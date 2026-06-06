@@ -1,20 +1,31 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../core/constants/lumina_colors.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/connection_service.dart';
 import '../../../core/services/storage_service.dart';
-import '../../../core/services/recent_files_service.dart'; // Ensure this import is correct
+import '../../../core/services/recent_files_service.dart';
+import '../../../shared/services/save_resource_service.dart';
 import '../../../shared/widgets/lumina_card.dart';
 import '../../../shared/widgets/lumina_settings_sheet.dart';
 import '../../auth/data/auth_service.dart';
-import 'grade_page.dart';
 import 'search_page.dart';
+import 'resource_page.dart';
 
+/// The main dashboard page displayed after login.
+///
+/// Shows a search bar, recently-viewed resources, subject category grid, and a
+/// local storage usage section. Periodically pings the server to display
+/// connection status.
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  /// Creates the state for the [DashboardPage].
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
@@ -22,8 +33,9 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   bool _isConnected = false;
   bool _isChecking = true;
+  Timer? _pingTimer;
+  final ConnectionService _connectionService = ConnectionService();
   
-  // Use the Service for Recent Files
   final RecentFilesService _recentService = RecentFilesService();
 
   String _totalStorageUsedStr = 'Calculating...';
@@ -38,6 +50,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final StorageService _storageService = StorageService();
 
+  String? _myGrade;
+
   List<Map<String, dynamic>> _subjects = [];
   bool _subjectsLoading = true;
 
@@ -45,8 +59,10 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _checkServer();
+    _pingTimer = Timer.periodic(const Duration(seconds: 60), (_) => _checkServer());
     _calcTotalStorage();
     _loadSubjects();
+    AuthService().getStudentGrade().then((g) { if (mounted) setState(() => _myGrade = g); });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _recentService.addListener(_updateUI);
     });
@@ -57,16 +73,16 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   void dispose() {
+    _pingTimer?.cancel();
     _recentService.removeListener(_updateUI);
     super.dispose();
   }
 
   Future<void> _checkServer() async {
-    setState(() => _isChecking = true);
-    await Future.delayed(const Duration(seconds: 1));
+    final connected = await _connectionService.ping(timeout: const Duration(seconds: 10));
     if (mounted) {
       setState(() {
-        _isConnected = true;
+        _isConnected = connected;
         _isChecking = false;
       });
     }
@@ -84,7 +100,8 @@ class _DashboardPageState extends State<DashboardPage> {
       final apkSize = await AuthService().getApkSize();
       final appUsedBytes = appDataSize + apkSize;
       final storageInfo = await _storageService.getStorageInfo();
-      final totalBytes = storageInfo['totalBytes'] ?? (128 * 1024 * 1024 * 1024);
+      var totalBytes = (storageInfo['totalBytes'] ?? (128 * 1024 * 1024 * 1024)) as num;
+      if (totalBytes == 0) totalBytes = 128 * 1024 * 1024 * 1024;
       final availableBytes = storageInfo['availableBytes'] ?? (64 * 1024 * 1024 * 1024);
       final otherUsedBytes = (totalBytes - availableBytes - appUsedBytes).clamp(0, totalBytes);
 
@@ -110,14 +127,14 @@ class _DashboardPageState extends State<DashboardPage> {
   IconData _iconForSubject(String name) {
     const iconMap = {
       'Mathematics': Icons.calculate,
-      'Science': Icons.biotech,
+      'Biology': Icons.biotech,
+      'Science': Icons.science,
       'History': Icons.history_edu,
       'Literature': Icons.translate,
       'English': Icons.translate,
       'Computer Science': Icons.computer,
-      'Physics': Icons.science,
-      'Chemistry': Icons.science,
-      'Biology': Icons.biotech,
+      'Physics': Icons.functions,
+      'Chemistry': Icons.science_outlined,
       'General': Icons.folder,
     };
     return iconMap[name] ?? Icons.book;
@@ -131,8 +148,16 @@ class _DashboardPageState extends State<DashboardPage> {
           _subjects = (response.data as List).cast<Map<String, dynamic>>();
           _subjectsLoading = false;
         });
-      } else if (mounted) {
-        setState(() => _subjectsLoading = false);
+        return;
+      }
+    } catch (_) {}
+    try {
+      final local = await SaveResourceService.getDistinctSubjects();
+      if (mounted) {
+        setState(() {
+          _subjects = local;
+          _subjectsLoading = false;
+        });
       }
     } catch (_) {
       if (mounted) setState(() => _subjectsLoading = false);
@@ -150,16 +175,16 @@ class _DashboardPageState extends State<DashboardPage> {
             _buildAppBar(context),
             Expanded(
               child: ListView(
-                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
                 children: [
                   _buildSearchBar(context),
-                  SizedBox(height: 24.h),
+                  SizedBox(height: AppSpacing.xxl.h),
                   _buildRecentlyViewedSection(context),
-                  if (_recentService.recentFiles.isNotEmpty) SizedBox(height: 24.h),
+                  if (_recentService.recentFiles.isNotEmpty) SizedBox(height: AppSpacing.xxl.h),
                   _buildCategories(context),
-                  SizedBox(height: 24.h),
+                  SizedBox(height: AppSpacing.xxl.h),
                   _buildStorageSection(context),
-                  SizedBox(height: 24.h),
+                  SizedBox(height: AppSpacing.xxl.h),
                 ],
               ),
             ),
@@ -172,16 +197,16 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildAppBar(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
       decoration: BoxDecoration(color: cs.surface, border: Border(bottom: BorderSide(color: cs.outlineVariant, width: 1))),
       child: Row(
         children: [
-                  Icon(Icons.school, color: cs.primary, size: 24.sp), // App icon
-          SizedBox(width: 12.w),
-          Text('Project Lumina', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700, color: cs.primary)),
+                  Icon(Icons.school, color: cs.primary, size: 24.sp),
+          SizedBox(width: AppSpacing.md.w),
+          Text('Project Lumina', style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
           const Spacer(),
           _buildServerStatusBadge(),
-          SizedBox(width: 8.w),
+          SizedBox(width: AppSpacing.sm.w),
           GestureDetector(onTap: () => _showSettings(context), child: Icon(Icons.settings, color: cs.primary, size: 24.sp)),
         ],
       ),
@@ -192,18 +217,11 @@ class _DashboardPageState extends State<DashboardPage> {
     final cs = Theme.of(context).colorScheme;
     Color bgColor = _isChecking ? cs.surfaceContainerHighest.withAlpha(128) : (_isConnected ? cs.secondaryContainer : cs.errorContainer);
     Color textColor = _isChecking ? cs.outline : (_isConnected ? cs.onSecondaryContainer : cs.onErrorContainer);
-    Color dotColor = _isChecking ? cs.outline : (_isConnected ? const Color(0xFF16A34A) : const Color(0xFFDC2626));
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(100), border: Border.all(color: textColor, width: 1)),
-      child: Row(
-        children: [
-          Container(width: 8.w, height: 8.w, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
-          SizedBox(width: 6.w),
-          Text(_isChecking ? 'Checking...' : (_isConnected ? 'Connected' : 'Disconnected'), style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: textColor)),
-        ],
-      ),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(AppSpacing.radiusFull), border: Border.all(color: textColor, width: 1)),
+      child: Text(_isChecking ? 'Checking...' : (_isConnected ? 'Connected' : 'Disconnected'), style: TextStyle(fontSize: 12.sp, fontWeight: AppSpacing.weightBody, color: textColor)),
     );
   }
 
@@ -212,15 +230,20 @@ class _DashboardPageState extends State<DashboardPage> {
     return GestureDetector(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPage())),
       child: Container(
-        margin: EdgeInsets.only(top: 16.h),
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(16.r), border: Border.all(color: cs.outlineVariant), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))]),
+        margin: EdgeInsets.only(top: AppSpacing.lg.h),
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(AppSpacing.radiusLg.r), border: Border.all(color: cs.outlineVariant)),
         child: Row(
           children: [
             Icon(Icons.search_rounded, color: cs.onSurfaceVariant, size: 22.sp),
-            SizedBox(width: 12.w),
-            Expanded(child: Text('Search all resources...', style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant, fontWeight: FontWeight.w500))),
-            Icon(Icons.tune_rounded, color: cs.primary, size: 20.sp),
+            SizedBox(width: AppSpacing.md.w),
+            Expanded(child: Text('Search all resources...', style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant, fontWeight: AppSpacing.weightBody))),
+            GestureDetector(
+              onTap: () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => SearchPage(initialGrade: _myGrade ?? '', openFilters: true),
+              )),
+              child: Icon(Icons.tune_rounded, color: cs.primary, size: 20.sp),
+            ),
           ],
         ),
       ),
@@ -234,27 +257,27 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Recently Viewed", style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700, color: cs.onSurface)),
-        SizedBox(height: 12.h),
+        Text("Recently Viewed", style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        SizedBox(height: AppSpacing.md.h),
         SizedBox(
           height: 130.h,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
             itemCount: recentFiles.length,
-            separatorBuilder: (_, __) => SizedBox(width: 12.w),
+            separatorBuilder: (_, __) => SizedBox(width: AppSpacing.md.w),
             itemBuilder: (context, index) {
               final file = recentFiles[index];
               return Container(
                 width: 150.w,
-                padding: EdgeInsets.all(12.w),
-                decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(16.r), border: Border.all(color: cs.outlineVariant)),
+                padding: EdgeInsets.all(AppSpacing.md.w),
+                decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(AppSpacing.radiusLg.r), border: Border.all(color: cs.outlineVariant)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(file.icon, color: file.color, size: 24.sp),
-                    SizedBox(height: 8.h),
-                    Text(file.title, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    SizedBox(height: AppSpacing.sm.h),
+                    Text(file.title, style: TextStyle(fontSize: 12.sp, fontWeight: AppSpacing.weightStrong), maxLines: 1, overflow: TextOverflow.ellipsis),
                     Text(file.time, style: TextStyle(fontSize: 10.sp, color: cs.onSurfaceVariant)),
                   ],
                 ),
@@ -271,25 +294,33 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Subject Categories', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700, color: cs.onSurface)),
-        SizedBox(height: 12.h),
+        Text('Subject Categories', style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        SizedBox(height: AppSpacing.md.h),
         if (_subjectsLoading && _subjects.isEmpty)
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 32.h),
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.section.h),
             child: Center(child: CircularProgressIndicator(strokeWidth: 3.w)),
+          )
+        else if (!_subjectsLoading && _subjects.isEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.section.h),
+            child: Center(
+              child: Text('No subjects available',
+                  style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant)),
+            ),
           )
         else
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12.w, mainAxisSpacing: 12.w, childAspectRatio: 1.2),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: AppSpacing.md.w, mainAxisSpacing: AppSpacing.md.w, childAspectRatio: 1.2),
             itemCount: _subjects.length,
             itemBuilder: (context, index) {
               final sub = _subjects[index];
               return _SubjectCategoryCard(
                 label: sub['name'] as String,
                 icon: _iconForSubject(sub['name'] as String),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => GradePage(subject: sub['name'] as String))),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ResourcePage(subject: sub['name'] as String, grade: _myGrade ?? ''))),
               );
             },
           ),
@@ -302,24 +333,21 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Local Storage', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700, color: cs.onSurface)),
-        SizedBox(height: 12.h),
+        Text('Local Storage', style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        SizedBox(height: AppSpacing.md.h),
         LuminaCard(
-          padding: EdgeInsets.all(16.w),
+          padding: EdgeInsets.all(AppSpacing.lg.w),
           borderColor: cs.outlineVariant,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Only show these if the calculation has finished
               if (_totalStorageUsedStr != 'Calculating...') ...[
-                Text(_totalStorageUsedStr, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: cs.onSurface)),
-                SizedBox(height: 4.h),
-                Text(_totalCapacityStr, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700, color: LuminaColors.academicTeal)),
-                SizedBox(height: 12.h),
+                Text(_totalStorageUsedStr, style: TextStyle(fontSize: 14.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
+                SizedBox(height: AppSpacing.xs.h),
+                Text(_totalCapacityStr, style: TextStyle(fontSize: 12.sp, fontWeight: AppSpacing.weightDisplay, color: LuminaColors.academicTeal)),
+                SizedBox(height: AppSpacing.md.h),
               ],
-              
-              // Always show the bar and legend
-              _buildMultiColorBar(12.h),
+              _buildMultiColorBar(AppSpacing.md.h),
               _buildStorageLegend(),
             ],
           ),
@@ -329,35 +357,34 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildMultiColorBar(double minHeight) {
+    final cs = Theme.of(context).colorScheme;
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
-      child: SizedBox(height: minHeight, child: Row(children: [Flexible(flex: _appFlex, child: Container(color: LuminaColors.academicTeal)), Flexible(flex: _otherFlex, child: Container(color: LuminaColors.saffron)), Flexible(flex: _freeFlex, child: Container(color: Colors.grey))])),
+      child: SizedBox(height: minHeight, child: Row(children: [Flexible(flex: _appFlex, child: Container(color: LuminaColors.academicTeal)), Flexible(flex: _otherFlex, child: Container(color: LuminaColors.saffron)), Flexible(flex: _freeFlex, child: Container(color: cs.outlineVariant))])),
     );
   }
 
   Widget _buildStorageLegend() {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: EdgeInsets.only(top: 16.h),
-      child: Wrap(spacing: 12.w, runSpacing: 12.h, children: [_buildLegendItem(LuminaColors.academicTeal, 'EduMesh', _appUsedStr), _buildLegendItem(LuminaColors.saffron, 'Other Apps', _otherUsedStr), _buildLegendItem(Colors.grey, 'Free', _freeRemainingStr)]),
+      padding: EdgeInsets.only(top: AppSpacing.lg.h),
+      child: Wrap(spacing: AppSpacing.md.w, runSpacing: AppSpacing.md.h, children: [_buildLegendItem(LuminaColors.academicTeal, 'EduMesh', _appUsedStr), _buildLegendItem(LuminaColors.saffron, 'Other Apps', _otherUsedStr), _buildLegendItem(cs.outlineVariant, 'Free', _freeRemainingStr)]),
     );
   }
 
   Widget _buildLegendItem(Color color, String label, String value) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-      decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(14.r), border: Border.all(color: cs.outlineVariant)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 10.w, height: 10.w, decoration: BoxDecoration(color: color, shape: BoxShape.circle)), SizedBox(width: 8.w), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)), SizedBox(height: 2.h), Text(value, style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: cs.onSurface))])]),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.sm.h),
+      decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r), border: Border.all(color: cs.outlineVariant)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [Container(width: AppSpacing.sm.w, height: AppSpacing.sm.w, decoration: BoxDecoration(color: color, shape: BoxShape.circle)), SizedBox(width: AppSpacing.sm.w), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(fontSize: 10.sp, fontWeight: AppSpacing.weightBody, color: cs.onSurfaceVariant)), SizedBox(height: AppSpacing.xs.h), Text(value, style: TextStyle(fontSize: 11.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface))])]),
     );
   }
 
   void _showSettings(BuildContext context) {
-    showModalBottomSheet(context: context, isScrollControlled: true, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))), builder: (_) => LuminaSettingsSheet(onManageStorage: () => _showOfflineStorage(context)));
+    showModalBottomSheet(context: context, isScrollControlled: true, shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg))), builder: (_) => const LuminaSettingsSheet());
   }
 
-  void _showOfflineStorage(BuildContext context) {
-    showModalBottomSheet(context: context, isScrollControlled: true, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12))), builder: (_) => SafeArea(child: Padding(padding: EdgeInsets.all(24.w), child: Column(mainAxisSize: MainAxisSize.min, children: [Text('Offline Storage', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w700)), SizedBox(height: 20.h), _buildMultiColorBar(16.h), _buildStorageLegend()]))));
-  }
 }
 
 class _SubjectCategoryCard extends StatelessWidget {
@@ -371,14 +398,14 @@ class _SubjectCategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(20.r), border: Border.all(color: cs.outlineVariant), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 3))]),
-        padding: EdgeInsets.all(12.w),
+        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(AppSpacing.radiusXl.r), border: Border.all(color: cs.outlineVariant)),
+        padding: EdgeInsets.all(AppSpacing.md.w),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(padding: EdgeInsets.all(12.w), decoration: BoxDecoration(color: LuminaColors.academicTeal.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(16.r)), child: Icon(icon, color: LuminaColors.academicTeal, size: 28.sp)),
-            SizedBox(height: 10.h),
-            Text(label, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: cs.onSurface)),
+            Icon(icon, color: LuminaColors.academicTeal, size: 28.sp),
+            SizedBox(height: AppSpacing.sm.h),
+            Text(label, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
           ],
         ),
       ),

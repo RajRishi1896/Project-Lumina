@@ -74,7 +74,9 @@ app.*.map.json
 assets/UI-Inspo/
 
 # AI Agent / Workspace Artifacts
+AGENTS.md
 **/Agent System Prompt.md
 **/walkthrough.md
 **/task.md
 **/Implementation Plan.md
+Markdown files/DESIGN.md

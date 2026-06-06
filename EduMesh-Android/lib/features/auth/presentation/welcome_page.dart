@@ -5,10 +5,16 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'login_page.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../core/services/connection_service.dart';
 import '../../../shared/widgets/lumina_stepper.dart';
 import '../data/auth_service.dart';
 
+/// The initial landing screen shown on first app launch.
+///
+/// Displays an illustration, a language selection grid, device status
+/// indicators (hub strength and local storage usage), and a call-to-action
+/// button that navigates to [LoginPage].
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
 
@@ -128,11 +134,11 @@ class _WelcomePageState extends State<WelcomePage> {
       width: 312.w,
       height: 312.w,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg.r),
         border: Border.all(color: cs.outlineVariant),
       ),
-      padding: EdgeInsets.all(24.w),
+      padding: EdgeInsets.all(AppSpacing.xxl.w),
       child: Stack(
         children: [
           Center(
@@ -173,7 +179,7 @@ class _WelcomePageState extends State<WelcomePage> {
                       'No Internet Connection Required!',
                       style: GoogleFonts.atkinsonHyperlegible(
                         fontSize: 12.sp,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppSpacing.weightStrong,
                         color: cs.onSurfaceVariant,
                       ),
                     ),
@@ -276,7 +282,7 @@ class _WelcomePageState extends State<WelcomePage> {
               'Enter Portal',
               style: GoogleFonts.atkinsonHyperlegible(
                 fontSize: 20.sp,
-                fontWeight: FontWeight.w600,
+                fontWeight: AppSpacing.weightStrong,
               ),
             ),
             SizedBox(width: 8.w),
@@ -350,10 +356,10 @@ class _LanguageButton extends StatelessWidget {
             label,
             style: GoogleFonts.atkinsonHyperlegible(
               fontSize: 14.sp,
-              fontWeight: FontWeight.bold,
+              fontWeight: AppSpacing.weightStrong,
               color: isSelected 
                   ? cs.primary 
-                  : (isEnabled ? cs.onSurfaceVariant : cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                  : (isEnabled ? cs.onSurfaceVariant : cs.outline),
             ),
           ),
           if (isSelected)
@@ -390,15 +396,15 @@ class _StatusItem extends StatelessWidget {
               label,
               style: GoogleFonts.atkinsonHyperlegible(
                 fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-                color: cs.onSurface,
+                fontWeight: AppSpacing.weightBody,
+                color: cs.onSurfaceVariant,
               ),
             ),
             Text(
               value.toUpperCase(),
               style: GoogleFonts.atkinsonHyperlegible(
                 fontSize: 10.sp,
-                fontWeight: FontWeight.w800,
+                fontWeight: AppSpacing.weightDisplay,
                 color: cs.onSurfaceVariant,
               ),
             ),

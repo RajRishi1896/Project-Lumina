@@ -2,14 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/constants/lumina_colors.dart';
 
+/// A full-screen WebView wrapper for displaying Kiwix / ZIM content.
+///
+/// Accepts either an [initialUrl] to load remotely or [initialHtml] to render
+/// inline. At least one must be provided.
 class KiwixView extends StatefulWidget {
-  final String initialUrl;
+  /// A remote URL to load in the WebView.
+  final String? initialUrl;
+
+  /// An HTML string to render directly in the WebView.
+  final String? initialHtml;
+
+  /// An optional title shown in the app bar.
+  final String? title;
 
   const KiwixView({
     super.key,
-    required this.initialUrl,
-  });
+    this.initialUrl,
+    this.initialHtml,
+    this.title,
+  }) : assert(initialUrl != null || initialHtml != null,
+            'Either initialUrl or initialHtml must be provided');
 
+  /// Creates the state for the [KiwixView].
   @override
   State<KiwixView> createState() => _KiwixViewState();
 }
@@ -32,8 +47,13 @@ class _KiwixViewState extends State<KiwixView> {
             debugPrint('Webview Error: ${error.description}');
           },
         ),
-      )
-      ..loadRequest(Uri.parse(widget.initialUrl));
+      );
+
+    if (widget.initialHtml != null) {
+      _controller.loadHtmlString(widget.initialHtml!);
+    } else if (widget.initialUrl != null) {
+      _controller.loadRequest(Uri.parse(widget.initialUrl!));
+    }
   }
 
   @override
@@ -41,7 +61,7 @@ class _KiwixViewState extends State<KiwixView> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'KNOWLEDGE BASE',
+          widget.title ?? 'KNOWLEDGE BASE',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 letterSpacing: 1.5,
                 fontWeight: FontWeight.w800,

@@ -1,5 +1,12 @@
+"""ZIM article router — serves cached HTML pages extracted from ZIM archives.
+
+Provides three endpoints under the ``/zim`` prefix for listing, searching,
+and retrieving individual ZIM articles. Articles are stored as flat HTML
+files in ``zim_pages/`` using the naming convention ``<id>__<title>.html``.
+"""
+
 import os
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from typing import List, Dict
 
@@ -9,10 +16,69 @@ router = APIRouter()
 ZIM_PAGES_DIR = os.path.join(os.path.dirname(__file__), "zim_pages")
 os.makedirs(ZIM_PAGES_DIR, exist_ok=True)
 
-@router.get("/search")
-def search_zim(query: str) -> List[Dict[str, str]]:
+
+@router.get(
+    "/articles",
+    summary="List ZIM articles with pagination",
+    description="Returns a paginated list of all cached ZIM articles. Each entry "
+                "contains an ``article_id`` and a human-readable ``title`` derived "
+                "from the filename.",
+    tags=["ZIM"],
+    response_model=List[Dict[str, str]],
+    responses={
+        200: {"description": "Paginated list of articles"},
+    },
+)
+def list_zim_articles(offset: int = Query(default=0, ge=0), limit: int = Query(default=20, ge=1, le=200)) -> List[Dict[str, str]]:
+    """List all ZIM articles with pagination.
+
+    Scans the ``zim_pages`` directory for ``.html`` files and parses
+    each filename to extract the article ID and title.
+
+    Args:
+        offset: Number of articles to skip (for pagination).
+        limit: Maximum number of articles to return (default 20, max 200).
+
+    Returns:
+        A list of dicts with keys ``article_id`` and ``title``.
+    """
+    results: List[Dict[str, str]] = []
+    try:
+        entries = sorted(os.listdir(ZIM_PAGES_DIR))
+    except FileNotFoundError:
+        return results
+    for fname in entries:
+        if fname.endswith('.html'):
+            parts = fname.rsplit('__', 1)
+            if len(parts) == 2:
+                article_id, title_part = parts
+                title = title_part.rsplit('.html', 1)[0]
+                results.append({"article_id": article_id, "title": title})
+    return results[offset:offset + limit]
+
+
+@router.get(
+    "/search",
+    summary="Search ZIM articles by title",
+    description="Performs a case-insensitive substring search against cached ZIM "
+                "article titles. Returns matching articles with their ID and title.",
+    tags=["ZIM"],
+    response_model=List[Dict[str, str]],
+    responses={
+        200: {"description": "Matching articles"},
+    },
+)
+def search_zim(query: str = Query(..., min_length=1, description="Search term to match against article titles")) -> List[Dict[str, str]]:
     """Search ZIM articles by title substring.
-    Returns a list of objects with 'article_id' and 'title'.
+
+    Returns a list of objects with ``article_id`` and ``title``.
+
+    Args:
+        query: The search term (case-insensitive substring match).
+
+    Returns:
+        A list of matching article dicts, or an empty list if no matches
+        or the directory is missing.
     """
     results: List[Dict[str, str]] = []
     if not query:
@@ -32,10 +98,33 @@ def search_zim(query: str) -> List[Dict[str, str]]:
                     results.append({"article_id": article_id, "title": title})
     return results
 
-@router.get("/page")
-def get_zim_page(article_id: str):
+
+@router.get(
+    "/page",
+    summary="Get a ZIM article's HTML content",
+    description="Returns the full HTML content of a single ZIM article as a JSON "
+                "object. The server looks up the file by ``article_id`` using the "
+                "``<id>__*.html`` naming pattern.",
+    tags=["ZIM"],
+    responses={
+        200: {"description": "Article HTML wrapped in JSON", "content": {"application/json": {}}},
+        404: {"description": "Article not found"},
+    },
+)
+def get_zim_page(article_id: str = Query(..., description="The unique ID of the article to retrieve")):
     """Return the HTML content of a ZIM article as JSON.
-    The server looks for a file named "<id>__*.html" and returns its HTML string.
+
+    The server looks for a file named ``<id>__*.html`` on disk and
+    returns its raw HTML string inside a JSON body.
+
+    Args:
+        article_id: The unique identifier for the article.
+
+    Returns:
+        JSON with keys ``id`` and ``html``.
+
+    Raises:
+        HTTPException 404: If no file matching the ID is found.
     """
     try:
         entries = os.listdir(ZIM_PAGES_DIR)

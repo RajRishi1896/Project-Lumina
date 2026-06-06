@@ -3,15 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../shared/widgets/lumina_button.dart';
-import '../../../shared/widgets/lumina_card.dart';
 import '../../../shared/widgets/lumina_stepper.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../pages/app_shell.dart';
 import '../data/auth_service.dart';
-import '../../../core/services/sync_service.dart';
 import '../../../core/services/connection_service.dart';
 import '../../../core/network/api_client.dart';
 import '../../../widgets/connection_gate.dart';
+import 'profile_setup_page.dart';
 
+/// A page for student registration and login.
+///
+/// Provides toggling between register and login modes, form validation
+/// (password strength checks), a hub-connection badge, and a password-reset
+/// dialog flow. On successful auth it navigates to [ProfileSetupPage] (new
+/// users) or [AppShell] (returning users).
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -26,6 +32,7 @@ class _LoginPageState extends State<LoginPage> {
   
   bool _isLoading = false;
   bool _isRegisterMode = true;
+  bool _obscurePassword = true;
   String? _errorMessage;
   
   // Gatekeeper state
@@ -39,9 +46,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _startGatekeeper() {
-    // Check immediately, then every 3 seconds
+    // Check immediately, then every 60 seconds
     _checkHub();
-    _pingTimer = Timer.periodic(const Duration(seconds: 15), (_) => _checkHub());
+    _pingTimer = Timer.periodic(const Duration(seconds: 60), (_) => _checkHub());
   }
 
   Future<void> _checkHub() async {
@@ -66,6 +73,13 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _errorMessage = 'Please fill all fields');
       return;
     }
+    if (_isRegisterMode) {
+      final pwd = _passwordController.text;
+      if (pwd.length < 8 || !pwd.contains(RegExp(r'[A-Z]')) || !pwd.contains(RegExp(r'[a-z]')) || !pwd.contains(RegExp(r'[0-9]'))) {
+        setState(() => _errorMessage = 'Password must be 8+ chars with uppercase, lowercase, and digit');
+        return;
+      }
+    }
 
     setState(() {
       _isLoading = true;
@@ -85,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
           if (!mounted) return;
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (_) => const ConnectionGate(child: AppShell()),
+              builder: (_) => ProfileSetupPage(username: _usernameController.text),
             ),
           );
         } else {
@@ -108,10 +122,23 @@ class _LoginPageState extends State<LoginPage> {
         setState(() => _isLoading = false);
         _showResetPasswordDialog();
       } else if (result == 'ok') {
-        final sync = SyncService();
-        await sync.restoreProfile();
         setState(() => _isLoading = false);
         if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const ConnectionGate(child: AppShell()),
+          ),
+        );
+      } else if (result == 'local_only') {
+        setState(() => _isLoading = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Logged in offline — server sync unavailable'),
+            backgroundColor: Theme.of(context).colorScheme.tertiary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => const ConnectionGate(child: AppShell()),
@@ -127,6 +154,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _showResetPasswordDialog() async {
+    final cs = Theme.of(context).colorScheme;
     final oldPwdController = TextEditingController();
     final newPwdController = TextEditingController();
     final confirmPwdController = TextEditingController();
@@ -135,57 +163,103 @@ class _LoginPageState extends State<LoginPage> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
-        return AlertDialog(
-          title: Text('Password Reset Required', style: GoogleFonts.atkinsonHyperlegible()),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Your password was reset by a teacher. Enter your current password and set a new one.'),
-              SizedBox(height: 16.h),
-              TextField(
-                controller: oldPwdController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Current Password',
-                  border: OutlineInputBorder(),
-                ),
+        bool obscureOld = true;
+        bool obscureNew = true;
+        bool obscureConfirm = true;
+        String? dialogError;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('Password Reset Required', style: GoogleFonts.atkinsonHyperlegible()),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Your password was reset by a teacher. Enter your current password and set a new one.'),
+                  SizedBox(height: 16.h),
+                  TextField(
+                    controller: oldPwdController,
+                    obscureText: obscureOld,
+                    decoration: InputDecoration(
+                      labelText: 'Current Password',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureOld ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                        onPressed: () => setDialogState(() => obscureOld = !obscureOld),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextField(
+                    controller: newPwdController,
+                    obscureText: obscureNew,
+                    decoration: InputDecoration(
+                      labelText: 'New Password',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                        onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(top: 4.h),
+                    child: Text(
+                      '8+ characters, with uppercase, lowercase, and a digit',
+                      style: TextStyle(color: cs.outline, fontSize: 11.sp),
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextField(
+                    controller: confirmPwdController,
+                    obscureText: obscureConfirm,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                        onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                      ),
+                    ),
+                  ),
+                  if (dialogError != null)
+                    Padding(
+                      padding: EdgeInsets.only(top: 8.h),
+                      child: Text(dialogError!, style: TextStyle(color: cs.error, fontSize: 13.sp)),
+                    ),
+                ],
               ),
-              SizedBox(height: 12.h),
-              TextField(
-                controller: newPwdController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'New Password',
-                  hintText: '8+ chars, upper + lower + digit',
-                  border: OutlineInputBorder(),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(null),
+                  child: Text('Cancel'),
                 ),
-              ),
-              SizedBox(height: 12.h),
-              TextField(
-                controller: confirmPwdController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Confirm Password',
-                  border: OutlineInputBorder(),
+                ElevatedButton(
+                  onPressed: () {
+                    final old = oldPwdController.text;
+                    final pwd = newPwdController.text;
+                    if (old.isEmpty) {
+                      setDialogState(() => dialogError = 'Current password is required.');
+                      return;
+                    }
+                    if (pwd.length < 8) {
+                      setDialogState(() => dialogError = 'Password must be at least 8 characters.');
+                      return;
+                    }
+                    if (pwd != confirmPwdController.text) {
+                      setDialogState(() => dialogError = 'Passwords do not match.');
+                      return;
+                    }
+                    if (!pwd.contains(RegExp(r'[A-Z]')) || !pwd.contains(RegExp(r'[a-z]')) || !pwd.contains(RegExp(r'[0-9]'))) {
+                      setDialogState(() => dialogError = 'Password must contain upper, lower, and digit.');
+                      return;
+                    }
+                    Navigator.of(ctx).pop({'old': old, 'new': pwd});
+                  },
+                  child: Text('Set Password'),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(null),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final old = oldPwdController.text;
-                final pwd = newPwdController.text;
-                if (old.isEmpty || pwd.length < 8 || pwd != confirmPwdController.text) return;
-                Navigator.of(ctx).pop({'old': old, 'new': pwd});
-              },
-              child: Text('Set Password'),
-            ),
-          ],
+              ],
+            );
+          },
         );
       },
     );
@@ -203,8 +277,6 @@ class _LoginPageState extends State<LoginPage> {
         'new_password': result['new'],
       });
       if (!mounted) return;
-      final sync = SyncService();
-      await sync.restoreProfile();
       setState(() => _isLoading = false);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
@@ -232,8 +304,9 @@ class _LoginPageState extends State<LoginPage> {
         elevation: 0,
         leading: BackButton(color: cs.primary),
         actions: [
+          SizedBox(width: AppSpacing.sm.w),
           _buildConnectionBadge(),
-          SizedBox(width: 16.w),
+          SizedBox(width: AppSpacing.lg.w),
         ],
       ),
       body: SafeArea(
@@ -244,17 +317,17 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 LuminaStepper(currentStep: 1),
-                SizedBox(height: 32.h),
+                SizedBox(height: AppSpacing.section.h),
                 Text(
                   _isRegisterMode ? 'Create Scholar\nIdentity' : 'Scholar\nLogin',
                   style: GoogleFonts.atkinsonHyperlegible(
                     fontSize: 36.sp,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: AppSpacing.weightDisplay,
                     color: cs.primary,
                     height: 1.1,
                   ),
                 ),
-                SizedBox(height: 8.h),
+                SizedBox(height: AppSpacing.sm.h),
                 Text(
                   _isRegisterMode 
                     ? 'Start your journey on the Lumina Mesh' 
@@ -264,50 +337,56 @@ class _LoginPageState extends State<LoginPage> {
                     color: cs.onSurfaceVariant,
                   ),
                 ),
-                SizedBox(height: 48.h),
-                LuminaCard(
-                  padding: EdgeInsets.all(24.w),
+                SizedBox(height: AppSpacing.touchTarget.h),
+                Padding(
+                  padding: EdgeInsets.zero,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildTextField(
                         controller: _usernameController,
-                        label: 'Full Name',
-                        hint: 'e.g. John Doe',
+                        label: 'Username',
+                        hint: 'e.g. john_doe',
                         icon: Icons.person_outline,
                         enabled: _isConnected,
                       ),
-                      SizedBox(height: 20.h),
+                      SizedBox(height: AppSpacing.xl.h),
                       _buildTextField(
                         controller: _passwordController,
                         label: 'Password',
-                        hint: '••••••••',
+                        hint: 'Password',
                         icon: Icons.lock_outline,
                         isPassword: true,
+                        obscureText: _obscurePassword,
+                        onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
                         enabled: _isConnected,
                       ),
+                      if (_isRegisterMode) ...[
+                        SizedBox(height: AppSpacing.xs.h),
+                        Text(
+                          '8+ characters, with uppercase, lowercase, and a digit',
+                          style: TextStyle(color: cs.outline, fontSize: 11.sp),
+                        ),
+                      ],
                       if (_errorMessage != null) ...[
-                        SizedBox(height: 16.h),
+                        SizedBox(height: AppSpacing.lg.h),
                         Text(
                           _errorMessage!,
                           style: TextStyle(color: cs.error, fontSize: 12.sp),
                         ),
                       ],
-                      SizedBox(height: 32.h),
+                      SizedBox(height: AppSpacing.section.h),
                       if (_isLoading)
-                        const Center(child: CircularProgressIndicator(color: Color(0xFFF8BC4B)))
+                        Center(child: CircularProgressIndicator(color: cs.tertiary))
                       else
-                        Opacity(
-                          opacity: _isConnected ? 1.0 : 0.5,
-                          child: LuminaButton(
-                            label: _isRegisterMode ? 'Register & Sync' : 'Login & Sync',
-                            onPressed: _isConnected ? _handleAuth : () {},
-                          ),
+                        LuminaButton(
+                          label: _isRegisterMode ? 'Register & Sync' : 'Login & Sync',
+                          onPressed: _isConnected ? _handleAuth : () {},
                         ),
                     ],
                   ),
                 ),
-                SizedBox(height: 24.h),
+                SizedBox(height: AppSpacing.xxl.h),
                 Center(
                   child: TextButton(
                     onPressed: _isConnected 
@@ -318,8 +397,8 @@ class _LoginPageState extends State<LoginPage> {
                           ? 'Already have an account? Login'
                           : "Don't have an account? Register",
                       style: GoogleFonts.atkinsonHyperlegible(
-                        color: _isConnected ? cs.secondary : Colors.grey,
-                        fontWeight: FontWeight.w700,
+                        color: _isConnected ? cs.secondary : cs.outline,
+                        fontWeight: AppSpacing.weightStrong,
                       ),
                     ),
                   ),
@@ -333,36 +412,23 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildConnectionBadge() {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.xs.h),
       decoration: BoxDecoration(
-        color: _isConnected ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16.r),
+        color: _isConnected ? cs.tertiaryContainer.withValues(alpha: 0.1) : cs.errorContainer.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg.r),
         border: Border.all(
-          color: _isConnected ? Colors.green : Colors.red,
+          color: _isConnected ? cs.tertiary : cs.error,
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8.w,
-            height: 8.w,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _isConnected ? Colors.green : Colors.red,
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Text(
-            _isConnected ? 'Hub Connected' : 'Waiting for Hub...',
-            style: TextStyle(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w600,
-              color: _isConnected ? Colors.green.shade700 : Colors.red.shade700,
-            ),
-          ),
-        ],
+      child: Text(
+        _isConnected ? 'Hub Connected' : 'Waiting for Hub...',
+        style: TextStyle(
+          fontSize: 12.sp,
+          fontWeight: AppSpacing.weightBody,
+          color: _isConnected ? cs.onTertiaryContainer : cs.onErrorContainer,
+        ),
       ),
     );
   }
@@ -373,6 +439,8 @@ class _LoginPageState extends State<LoginPage> {
     required String hint,
     required IconData icon,
     bool isPassword = false,
+    bool obscureText = true,
+    VoidCallback? onToggleObscure,
     bool enabled = true,
   }) {
     final cs = Theme.of(context).colorScheme;
@@ -383,20 +451,26 @@ class _LoginPageState extends State<LoginPage> {
           label,
           style: GoogleFonts.atkinsonHyperlegible(
             fontSize: 14.sp,
-            fontWeight: FontWeight.w700,
-            color: enabled ? cs.onSurface : Colors.grey,
+            fontWeight: AppSpacing.weightStrong,
+            color: enabled ? cs.onSurface : cs.outline,
           ),
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: AppSpacing.sm.h),
         TextField(
           controller: controller,
-          obscureText: isPassword,
+          obscureText: isPassword ? obscureText : false,
           enabled: enabled,
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: Icon(icon, color: enabled ? cs.primary : Colors.grey, size: 20.sp),
+            prefixIcon: Icon(icon, color: enabled ? cs.primary : cs.outline, size: 20.sp),
+            suffixIcon: isPassword && onToggleObscure != null
+                ? IconButton(
+                    icon: Icon(obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                    onPressed: onToggleObscure,
+                  )
+                : null,
             filled: true,
-            fillColor: enabled ? Colors.white : Colors.grey.shade100,
+            fillColor: enabled ? cs.surface : cs.surfaceContainerHighest,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8.r),
               borderSide: BorderSide(color: cs.outlineVariant),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Ensure these imports match your project structure exactly
 import 'package:edumesh_android/core/theme/lumina_lite_theme.dart';
@@ -10,38 +10,64 @@ import 'package:edumesh_android/features/auth/presentation/welcome_page.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'package:edumesh_android/widgets/connection_gate.dart';
 import 'package:edumesh_android/pages/app_shell.dart';
-import 'package:edumesh_android/core/models/resource_model.dart';
-import 'package:edumesh_android/shared/services/mock_data_service.dart';
+import 'package:edumesh_android/core/network/api_client.dart';
+import 'package:edumesh_android/shared/services/notification_service.dart';
+import 'package:edumesh_android/shared/services/connectivity_service.dart';
+import 'package:edumesh_android/core/services/activity_tracker.dart';
 
-void initializeAppData() {
-  MockDataService.seedIncomingResources([
-    ResourceModel(id: '1', title: 'Calculus Textbook', subject: 'Math', grade: '12', type: ResourceType.textbook),
-    ResourceModel(id: '2', title: 'Physics Notes', subject: 'Science', grade: '11', type: ResourceType.notes),
-    ResourceModel(id: '3', title: 'Organic Chem Video', subject: 'Science', grade: '12', type: ResourceType.videos),
-    ResourceModel(id: '4', title: 'Math 2024 PYQ', subject: 'Math', grade: '12', type: ResourceType.pyq),
-    ResourceModel(id: '5', title: 'Bio PYQ 2025', subject: 'Science', grade: '12', type: ResourceType.pyq),
-  ]);
-}
+/// The global [NavigatorState] key used for out-of-widget navigation.
+///
+/// Referenced by [ApiClient.onForceLogout] to navigate to the [WelcomePage]
+/// when the session expires.
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+/// The application entry point.
+///
+/// Initialises [NotificationService], reads the persisted theme preference,
+/// resolves the user's authentication status, starts [ConnectivityService]
+/// and [ActivityTracker], and finally runs the [LuminaApp] widget inside a
+/// [ProviderScope].
 void main() async { 
   WidgetsFlutterBinding.ensureInitialized();
-  if (kDebugMode) {
-    initializeAppData();
-  }
+  NotificationService().init();
+
+  final prefs = await SharedPreferences.getInstance();
+  final isDark = prefs.getBool('dark_mode') ?? false;
+  final initialThemeMode = isDark ? ThemeMode.dark : ThemeMode.light;
 
   final authService = AuthService();
   final userId = await authService.getUniqueUserId();
   final bool isLoggedIn = userId != null;
 
+  ApiClient.onForceLogout = () {
+    navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const WelcomePage()),
+      (route) => false,
+    );
+  };
+
+  ConnectivityService().start();
+  ActivityTracker().startAutoSync();
+
   runApp(
     ProviderScope(
+      overrides: [
+        initialThemeProvider.overrideWithValue(initialThemeMode),
+      ],
       child: LuminaApp(isLoggedIn: isLoggedIn),
     ),
   );
 }
 
+/// The root MaterialApp widget for Edu-Mesh Scholar.
+///
+/// Configures light and dark themes via [LuminaLiteTheme], sets up
+/// [ScreenUtilInit] for responsive sizing, and displays either the
+/// main [AppShell] or the [WelcomePage] based on [isLoggedIn].
 class LuminaApp extends ConsumerWidget {
+  /// Whether the user has an active session.
   final bool isLoggedIn;
+
   const LuminaApp({super.key, required this.isLoggedIn});
 
   @override
@@ -54,6 +80,7 @@ class LuminaApp extends ConsumerWidget {
       splitScreenMode: true,
       builder: (context, child) {
         return MaterialApp(
+          navigatorKey: navigatorKey,
           title: 'Edu-Mesh Scholar',
           theme: LuminaLiteTheme.lightTheme,
           darkTheme: LuminaLiteTheme.darkTheme,

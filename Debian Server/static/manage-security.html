@@ -1,0 +1,448 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina Hub | Security</title>
+    <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
+<link rel="stylesheet" href="/static/css/lumina.css">
+</head>
+<body>
+
+    <header class="mobile-header">
+        <div class="mobile-brand">Lumina Hub</div>
+        <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+    </header>
+
+    <div class="mobile-overlay" onclick="toggleMobileMenu()"></div>
+
+    <aside>
+        <a href="/static/index" class="sidebar-brand">Lumina Hub</a>
+        <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
+        <div class="sidebar-divider"></div>
+        <nav>
+            <a href="/static/index" class="nav-item" id="nav-home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Home
+            </a>
+            <a href="/static/manage-content" class="nav-item" id="nav-content">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Content Manager
+            </a>
+            <a href="/static/manage-security" class="nav-item active" id="nav-security">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Security
+            </a>
+            <a href="/static/students" class="nav-item" id="nav-students">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Students
+            </a>
+            <a href="/static/manage-help" class="nav-item" id="nav-help">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                Help
+            </a>
+            <a href="/static/manage-danger" class="nav-item" id="nav-danger" style="color: var(--danger);">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                Danger Zone
+            </a>
+            <a href="/static/manage-settings" class="nav-item" id="nav-settings">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Settings
+            </a>
+        </nav>
+        <div class="nav-spacer"></div>
+        <div class="theme-toggle" onclick="toggleTheme()">
+            <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <span id="themeLabel">Dark Mode</span>
+        </div>
+        <a href="/static/index" class="nav-logout">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+            Log out
+        </a>
+    </aside>
+
+    <main>
+
+        <div class="page-header">
+            <h1>Security & Teacher Profiles</h1>
+            <p>Update administrator credentials and manage teacher accounts for mobile app uploading.</p>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Change Admin Password</div>
+            <div id="securityNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
+            <div class="security-form">
+                <div class="form-group">
+                    <label for="oldPwd">Current Password</label>
+                    <div class="password-container">
+                        <input type="password" id="oldPwd" placeholder="Enter current password">
+                        <button type="button" class="toggle-password" id="toggleOldPwdBtn" onclick="togglePasswordVisibility('oldPwd', 'eyeIconOld', 'toggleOldPwdBtn')" title="Show Password">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eyeIconOld">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="newPwd">New Password</label>
+                    <div class="password-container">
+                        <input type="password" id="newPwd" placeholder="Enter new password">
+                        <button type="button" class="toggle-password" id="toggleNewPwdBtn" onclick="togglePasswordVisibility('newPwd', 'eyeIconNew', 'toggleNewPwdBtn')" title="Show Password">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eyeIconNew">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>
+                <button onclick="changePassword()" class="btn btn-dark">Update Password</button>
+            </div>
+        </div>
+
+
+
+    </main>
+
+    <div id="bottomNav">
+        <a href="/static/index" class="bottom-nav-item" id="bottom-nav-home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Home
+        </a>
+        <a href="/static/manage-content" class="bottom-nav-item" id="bottom-nav-content">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Content
+        </a>
+        <a href="/static/manage-security" class="bottom-nav-item active" id="bottom-nav-security">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Security
+        </a>
+        <a href="/static/students" class="bottom-nav-item" id="bottom-nav-students">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Students
+        </a>
+        <a href="/static/manage-help" class="bottom-nav-item" id="bottom-nav-help">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+            Help
+        </a>
+        <a href="/static/manage-settings" class="bottom-nav-item" id="bottom-nav-settings">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+        </a>
+    </div>
+
+    <div id="forceResetModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20000;">
+        <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.5rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
+            <div style="width: 64px; height: 64px; background: rgba(245, 158, 11, 0.1); color: #F59E0B; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Password Reset Required</h3>
+            <p style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.5rem;">An administrator has forced a password reset on your account. You must change your password before you can proceed.</p>
+
+            <div id="forceResetNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-align: center;"></div>
+
+            <div class="form-group" style="text-align: left; margin-bottom: 1rem;">
+                <label for="forceNewPwd" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--on-surface); opacity: 0.7; margin-bottom: 0.375rem;">New Password</label>
+                <input type="password" id="forceNewPwd" placeholder="Enter new password" style="width: 100%; padding: 0.65rem; border: 1px solid var(--outline); border-radius: 6px; background: var(--surface); color: var(--on-surface);">
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>
+            </div>
+            <div class="form-group" style="text-align: left; margin-bottom: 1.5rem;">
+                <label for="forceConfirmPwd" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--on-surface); opacity: 0.7; margin-bottom: 0.375rem;">Confirm New Password</label>
+                <input type="password" id="forceConfirmPwd" placeholder="Confirm new password" style="width: 100%; padding: 0.65rem; border: 1px solid var(--outline); border-radius: 6px; background: var(--surface); color: var(--on-surface);">
+            </div>
+
+            <button onclick="submitForcePasswordReset()" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-size: 0.875rem;">Update and Continue</button>
+        </div>
+    </div>
+
+    <div id="globalConfirmModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 30000; transition: all 0.3s ease;">
+        <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.25rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
+            <div id="confirmModalIcon" style="width: 56px; height: 56px; background: rgba(239, 68, 68, 0.1); color: #EF4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+            </div>
+            <h3 id="confirmModalTitle" style="font-size: 1.25rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Confirm Action</h3>
+            <p id="confirmModalText" style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.75rem;">Are you sure you want to proceed?</p>
+
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end; border-top: 1px solid var(--outline); padding-top: 1.25rem;">
+                <button id="confirmCancelBtn" class="btn btn-outline" style="border-color: var(--outline); color: var(--on-surface); background: transparent; padding: 0.625rem 1.25rem;">Cancel</button>
+                <button id="confirmConfirmBtn" class="btn" style="background: #EF4444; color: #fff; padding: 0.625rem 1.25rem;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="globalToastContainer" style="position: fixed; top: 1.5rem; right: 1.5rem; z-index: 99999; display: flex; flex-direction: column; gap: 0.75rem; max-width: 380px; width: 100%; pointer-events: none;"></div>
+
+    <script src="/static/js/lumina.js"></script>
+    <script>
+        let demoTeachers = [
+            { username: "jsmith", name: "John Smith", department: "Science", reset_required: 0 },
+            { username: "mdoe", name: "Mary Doe", department: "Mathematics", reset_required: 1 }
+        ];
+
+        function togglePasswordVisibility(inputId, eyeIconId, btnId) {
+            const pwdInput = document.getElementById(inputId);
+            const eyeIcon = document.getElementById(eyeIconId);
+            const toggleBtn = document.getElementById(btnId);
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                toggleBtn.title = 'Hide Password';
+                eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+            } else {
+                pwdInput.type = 'password';
+                toggleBtn.title = 'Show Password';
+                eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+            }
+        }
+
+        async function changePassword() {
+            const oldPwd = document.getElementById('oldPwd').value;
+            const newPwd = document.getElementById('newPwd').value;
+            if (!oldPwd || !newPwd) return showNotification('securityNotif', 'Please fill in both fields.', true);
+            if (newPwd.length < 8) return showNotification('securityNotif', 'Password must be at least 8 characters long.', true);
+            if (!/[A-Z]/.test(newPwd)) return showNotification('securityNotif', 'Password must contain at least one uppercase letter.', true);
+            if (!/[a-z]/.test(newPwd)) return showNotification('securityNotif', 'Password must contain at least one lowercase letter.', true);
+            if (!/\d/.test(newPwd)) return showNotification('securityNotif', 'Password must contain at least one digit.', true);
+            if (IS_DEMO) {
+                showNotification('securityNotif', 'Password updated (Demo Mode).', false);
+                return;
+            }
+            try {
+                const res = await fetch('/teacher/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ old_password: oldPwd, new_password: newPwd })
+                });
+                if (res.ok) {
+                    showNotification('securityNotif', 'Password updated.', false);
+                    setTimeout(() => location.href = '/', 1500);
+                } else {
+                    let msg = 'Error: check your current password.';
+                    try { const err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    showNotification('securityNotif', msg, true);
+                }
+            } catch (e) {
+                let msg = 'Error connecting to server.';
+                try { const err = await e.json?.(); if (err?.detail) msg = err.detail; } catch (_) {}
+                showNotification('securityNotif', msg, true);
+            }
+        }
+
+        async function loadTeachers() {
+            try {
+                let teachers = [];
+                if (IS_DEMO) {
+                    teachers = [...demoTeachers];
+                } else {
+                    const res = await fetch('/teachers');
+                    teachers = await res.json();
+                }
+                const tbody = document.getElementById('teacherTable');
+                if (!tbody) return;
+                const disableContainer = document.getElementById('disableAdminContainer');
+                if (teachers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No teacher profiles created yet.</td></tr>';
+                    if (disableContainer) disableContainer.style.display = 'none';
+                    return;
+                }
+                if (disableContainer) disableContainer.style.display = 'block';
+                tbody.innerHTML = teachers.map(t => `
+                    <tr>
+                        <td><strong>${esc(t.username)}</strong></td>
+                        <td>${esc(t.name)}</td>
+                        <td><span class="type-badge type-default">${esc(t.department)}</span></td>
+                        <td style="text-align: right;">
+                            <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                if (IS_DEMO) {
+                    const tbody = document.getElementById('teacherTable');
+                    if (!tbody) return;
+                    tbody.innerHTML = demoTeachers.map(t => `
+                        <tr>
+                            <td><strong>${esc(t.username)}</strong></td>
+                            <td>${esc(t.name)}</td>
+                            <td><span class="type-badge type-default">${esc(t.department)}</span></td>
+                            <td style="text-align: right;">
+                                <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
+
+        async function addTeacherProfile() {
+            const username = document.getElementById('teacherUsername').value.trim();
+            const password = document.getElementById('teacherPwd').value;
+
+            if (!username || !password) {
+                return showNotification('teacherNotif', 'Please fill in Username and Password.', true);
+            }
+
+            if (IS_DEMO) {
+                demoTeachers.push({ username, name: username, department: 'General', reset_required: 0 });
+                document.getElementById('teacherUsername').value = '';
+                document.getElementById('teacherPwd').value = '';
+                showNotification('teacherNotif', 'Teacher profile "' + username + '" created successfully.', false);
+                loadTeachers();
+                if (typeof loadDangerZone === 'function') loadDangerZone();
+                return;
+            }
+            try {
+                const res = await fetch('/teacher/profiles', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                if (res.ok) {
+                    document.getElementById('teacherUsername').value = '';
+                    document.getElementById('teacherPwd').value = '';
+                    showNotification('teacherNotif', 'Teacher profile "' + username + '" created successfully.', false);
+                    loadTeachers();
+                } else {
+                    const err = await res.json();
+                    showNotification('teacherNotif', err.detail || 'Could not create profile.', true);
+                }
+            } catch (e) {
+                showNotification('teacherNotif', 'Error connecting to server.', true);
+            }
+        }
+
+        async function deleteTeacherProfile(username) {
+            const confirmed = await showConfirm('Delete Teacher Profile', 'Are you sure you want to delete teacher profile "' + username + '"?', true);
+            if (!confirmed) return;
+            if (IS_DEMO) {
+                demoTeachers = demoTeachers.filter(t => t.username !== username);
+                loadTeachers();
+                if (typeof loadDangerZone === 'function') loadDangerZone();
+                return;
+            }
+            try {
+                const res = await fetch('/teacher/profiles/' + encodeURIComponent(username), { method: 'DELETE' });
+                if (res.ok) {
+                    loadTeachers();
+                } else {
+                    showAlert('Could not delete profile.', true);
+                }
+            } catch (e) {
+                showAlert('Error connecting to server.', true);
+            }
+        }
+
+        function showConfirm(title, message, isDanger) {
+            if (isDanger === undefined) isDanger = true;
+            return new Promise((resolve) => {
+                const modal = document.getElementById('globalConfirmModal');
+                const titleEl = document.getElementById('confirmModalTitle');
+                const textEl = document.getElementById('confirmModalText');
+                const confirmBtn = document.getElementById('confirmConfirmBtn');
+                const cancelBtn = document.getElementById('confirmCancelBtn');
+                const iconEl = document.getElementById('confirmModalIcon');
+
+                if (!modal || !titleEl || !textEl || !confirmBtn || !cancelBtn) {
+                    resolve(false);
+                    return;
+                }
+
+                titleEl.innerText = title;
+                textEl.innerText = message;
+
+                if (isDanger) {
+                    confirmBtn.style.background = '#EF4444';
+                    confirmBtn.style.borderColor = '#EF4444';
+                    confirmBtn.innerText = 'Delete';
+                    iconEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>';
+                    iconEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                    iconEl.style.color = '#EF4444';
+                } else {
+                    confirmBtn.style.background = 'var(--teal)';
+                    confirmBtn.style.borderColor = 'var(--teal)';
+                    confirmBtn.innerText = 'Confirm';
+                    iconEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 16 16 12 12 8"></polyline><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
+                    iconEl.style.background = 'rgba(0, 112, 131, 0.1)';
+                    iconEl.style.color = 'var(--teal)';
+                }
+
+                modal.classList.remove('hidden');
+
+                const cleanup = function(value) {
+                    modal.classList.add('hidden');
+                    confirmBtn.onclick = null;
+                    cancelBtn.onclick = null;
+                    resolve(value);
+                };
+
+                confirmBtn.onclick = function() { cleanup(true); };
+                cancelBtn.onclick = function() { cleanup(false); };
+            });
+        }
+
+        async function checkSelfResetRequired() {
+            if (IS_DEMO) {
+                loggedInUser = 'admin';
+                return;
+            }
+            try {
+                const res = await fetch('/teacher/me');
+                if (res.ok) {
+                    const me = await res.json();
+                    loggedInUser = me.username;
+                    if (me.reset_required === 1) {
+                        document.getElementById('forceResetModal').classList.remove('hidden');
+                    }
+                }
+            } catch (e) {
+                console.error("Error checking reset state", e);
+            }
+        }
+
+        async function submitForcePasswordReset() {
+            const newPwd = document.getElementById('forceNewPwd').value;
+            const confirmPwd = document.getElementById('forceConfirmPwd').value;
+            if (!newPwd || !confirmPwd) {
+                return showNotification('forceResetNotif', 'Please fill in both fields.', true);
+            }
+            if (newPwd !== confirmPwd) {
+                return showNotification('forceResetNotif', 'Passwords do not match.', true);
+            }
+            if (IS_DEMO) {
+                showNotification('forceResetNotif', 'Password updated successfully. Reloading...', false);
+                setTimeout(function() { location.reload(); }, 1500);
+                return;
+            }
+            try {
+                const res = await fetch('/teacher/force-change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_password: newPwd })
+                });
+                if (res.ok) {
+                    showNotification('forceResetNotif', 'Password updated successfully. Reloading...', false);
+                    setTimeout(function() { location.reload(); }, 1500);
+                } else {
+                    const err = await res.json();
+                    showNotification('forceResetNotif', err.detail || 'Could not update password.', true);
+                }
+            } catch (e) {
+                showNotification('forceResetNotif', 'Connection error.', true);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setActiveNav('nav-security');
+            loadWhoAmI();
+            loadTeachers();
+            checkSelfResetRequired();
+        });
+    </script>
+
+</body>
+</html>
+
+
+
