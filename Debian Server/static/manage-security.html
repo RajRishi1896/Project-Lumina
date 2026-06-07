@@ -39,9 +39,9 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Students
             </a>
-            <a href="/static/manage-help" class="nav-item" id="nav-help">
+            <a href="/static/manage-help#teacher-guide" class="nav-item" id="nav-help">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                Help
+                Teacher Guide
             </a>
             <a href="/static/manage-danger" class="nav-item" id="nav-danger" style="color: var(--danger);">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
@@ -57,7 +57,7 @@
             <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             <span id="themeLabel">Dark Mode</span>
         </div>
-        <a href="/static/index" class="nav-logout">
+        <a href="/logout" class="nav-logout">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
             Log out
         </a>
@@ -72,7 +72,7 @@
 
         <div class="card">
             <div class="card-title">Change Admin Password</div>
-            <div id="securityNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
+            <div id="securityNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
             <div class="security-form">
                 <div class="form-group">
                     <label for="oldPwd">Current Password</label>
@@ -96,14 +96,32 @@
                                 <circle cx="12" cy="12" r="3"></circle>
                             </svg>
                         </button>
+                        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>
                     </div>
                 </div>
-                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>
                 <button onclick="changePassword()" class="btn btn-dark">Update Password</button>
             </div>
         </div>
 
-
+        <div class="card">
+            <div class="card-title">My Profile</div>
+            <div id="profileNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
+            <div class="security-form" id="profileForm">
+                <div class="form-group">
+                    <label for="profileUsername">Username</label>
+                    <input type="text" id="profileUsername" readonly style="opacity: 0.7; cursor: not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label for="profileName">Name</label>
+                    <input type="text" id="profileName" readonly style="opacity: 0.7; cursor: not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label for="profileDepartment">Department</label>
+                    <input type="text" id="profileDepartment" placeholder="Enter your department">
+                </div>
+                <button onclick="saveMyProfile()" class="btn btn-dark">Save</button>
+            </div>
+        </div>
 
     </main>
 
@@ -124,9 +142,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             Students
         </a>
-        <a href="/static/manage-help" class="bottom-nav-item" id="bottom-nav-help">
+        <a href="/static/manage-help#teacher-guide" class="bottom-nav-item" id="bottom-nav-help">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-            Help
+            Guide
         </a>
         <a href="/static/manage-settings" class="bottom-nav-item" id="bottom-nav-settings">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -136,13 +154,13 @@
 
     <div id="forceResetModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20000;">
         <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.5rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
-            <div style="width: 64px; height: 64px; background: rgba(245, 158, 11, 0.1); color: #F59E0B; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div style="margin: 0 auto 1.5rem; text-align: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </div>
             <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Password Reset Required</h3>
             <p style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.5rem;">An administrator has forced a password reset on your account. You must change your password before you can proceed.</p>
 
-            <div id="forceResetNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-align: center;"></div>
+            <div id="forceResetNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center;"></div>
 
             <div class="form-group" style="text-align: left; margin-bottom: 1rem;">
                 <label for="forceNewPwd" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--on-surface); opacity: 0.7; margin-bottom: 0.375rem;">New Password</label>
@@ -160,15 +178,15 @@
 
     <div id="globalConfirmModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 30000; transition: all 0.3s ease;">
         <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.25rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
-            <div id="confirmModalIcon" style="width: 56px; height: 56px; background: rgba(239, 68, 68, 0.1); color: #EF4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+            <div id="confirmModalIcon" style="margin: 0 auto 1.25rem; text-align: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--danger)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
             </div>
             <h3 id="confirmModalTitle" style="font-size: 1.25rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Confirm Action</h3>
             <p id="confirmModalText" style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.75rem;">Are you sure you want to proceed?</p>
 
             <div style="display: flex; gap: 0.75rem; justify-content: flex-end; border-top: 1px solid var(--outline); padding-top: 1.25rem;">
                 <button id="confirmCancelBtn" class="btn btn-outline" style="border-color: var(--outline); color: var(--on-surface); background: transparent; padding: 0.625rem 1.25rem;">Cancel</button>
-                <button id="confirmConfirmBtn" class="btn" style="background: #EF4444; color: #fff; padding: 0.625rem 1.25rem;">Confirm</button>
+                <button id="confirmConfirmBtn" class="btn" style="background: var(--danger); color: #fff; padding: 0.625rem 1.25rem;">Confirm</button>
             </div>
         </div>
     </div>
@@ -353,12 +371,12 @@
                 textEl.innerText = message;
 
                 if (isDanger) {
-                    confirmBtn.style.background = '#EF4444';
-                    confirmBtn.style.borderColor = '#EF4444';
+                    confirmBtn.style.background = 'var(--danger)';
+                    confirmBtn.style.borderColor = 'var(--danger)';
                     confirmBtn.innerText = 'Delete';
                     iconEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>';
                     iconEl.style.background = 'rgba(239, 68, 68, 0.1)';
-                    iconEl.style.color = '#EF4444';
+                    iconEl.style.color = 'var(--danger)';
                 } else {
                     confirmBtn.style.background = 'var(--teal)';
                     confirmBtn.style.borderColor = 'var(--teal)';
@@ -433,16 +451,65 @@
             }
         }
 
+        async function loadMyProfile() {
+            if (IS_DEMO) {
+                document.getElementById('profileUsername').value = loggedInUser || 'admin';
+                document.getElementById('profileName').value = 'Administrator';
+                document.getElementById('profileDepartment').value = 'System';
+                return;
+            }
+            try {
+                const res = await fetch('/teacher/me');
+                if (res.ok) {
+                    const me = await res.json();
+                    document.getElementById('profileUsername').value = me.username || '';
+                    document.getElementById('profileName').value = me.name || '';
+                    document.getElementById('profileDepartment').value = me.department || '';
+                }
+            } catch (e) {
+                console.error("Error loading profile", e);
+            }
+        }
+
+        async function saveMyProfile() {
+            const department = document.getElementById('profileDepartment').value.trim();
+            if (!department) {
+                return showNotification('profileNotif', 'Department cannot be empty.', true);
+            }
+            if (IS_DEMO) {
+                showNotification('profileNotif', 'Department updated (Demo Mode).', false);
+                return;
+            }
+            try {
+                const res = await fetch('/teacher/profile/department', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ department })
+                });
+                if (res.ok) {
+                    showNotification('profileNotif', 'Department updated successfully.', false);
+                } else {
+                    let msg = 'Could not update department.';
+                    try { const err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    showNotification('profileNotif', msg, true);
+                }
+            } catch (e) {
+                showNotification('profileNotif', 'Error connecting to server.', true);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             setActiveNav('nav-security');
             loadWhoAmI();
             loadTeachers();
             checkSelfResetRequired();
+            loadMyProfile();
         });
     </script>
 
 </body>
 </html>
+
 
 
 

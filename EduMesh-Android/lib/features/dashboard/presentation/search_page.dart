@@ -658,13 +658,12 @@ class _SearchPageState extends State<SearchPage> {
 
                           final isOfflineUnavailable = !ConnectivityService().isOnline && !_downloadedIds.contains(original.id.toString());
 
-                          return Card(
-                            color: isKiwix
-                                ? cs.primaryContainer
-                                : cs.surfaceContainer,
-                            margin: EdgeInsets.only(bottom: 10.h),
-                            child: Opacity(
-                              opacity: isOfflineUnavailable ? 0.45 : 1.0,
+                          return Opacity(
+                            opacity: isOfflineUnavailable ? 0.45 : 1.0,
+                            child: Container(
+                              color: isKiwix
+                                  ? cs.primaryContainer
+                                  : Colors.transparent,
                               child: ListTile(
                             leading: ResourceThumbnail(resource: original, size: 48),
                             onTap: () {

@@ -7,7 +7,7 @@
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
     <style>
-        .type-khan { background: rgba(255,211,0,0.15); color: #B8860B; }
+        .type-khan { background: rgba(255,211,0,0.15); color: var(--warning); }
         .form-grid { grid-template-columns: 1fr auto 1fr auto; }
         #subjectManageTable td:nth-child(3) svg { display: inline; }
     </style>
@@ -47,9 +47,9 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Students
             </a>
-            <a href="/static/manage-help" class="nav-item" id="nav-help">
+            <a href="/static/manage-help#teacher-guide" class="nav-item" id="nav-help">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                Help
+                Teacher Guide
             </a>
             <a href="/static/manage-danger" class="nav-item" id="nav-danger" style="color: var(--danger);">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
@@ -65,7 +65,7 @@
             <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             <span id="themeLabel">Dark Mode</span>
         </div>
-        <a href="/static/index" class="nav-logout">
+        <a href="/logout" class="nav-logout">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
             Log out
         </a>
@@ -81,7 +81,7 @@
 
             <div class="card">
                 <div class="card-title">Upload Resource</div>
-                <div id="uploadNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
+                <div id="uploadNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr auto;">
                     <div class="form-group">
                         <label for="title">Title</label>
@@ -113,7 +113,7 @@
 
             <div class="card">
                 <div class="card-title">Add New Subject</div>
-                <div id="subjectNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
+                <div id="subjectNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr auto;">
                     <div class="form-group">
                         <label for="newSubjectName">Subject Name</label>
@@ -151,7 +151,7 @@
                     <div class="card-title" style="margin-bottom: 0;">Manage Subjects &amp; Syllabus</div>
                     <div style="position: relative; width: 200px;">
                         <input type="text" id="subjectSearch" placeholder="Search subjects..." oninput="filterManageSubjects()" onfocus="this.style.borderColor='var(--teal)';" onblur="this.style.borderColor='var(--outline)';" style="width: 100%; padding: 0.35rem 0.5rem 0.35rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
-                        <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #94A3B8; display: flex; align-items: center; pointer-events: none;">
+                        <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </span>
                     </div>
@@ -179,7 +179,7 @@
                         </div>
                         <div style="position: relative; width: 200px;">
                             <input type="text" id="resourceSearch" placeholder="Search resources..." oninput="filterResources()" onfocus="this.style.borderColor='var(--teal)';" onblur="this.style.borderColor='var(--outline)';" style="width: 100%; padding: 0.35rem 0.5rem 0.35rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
-                            <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: #94A3B8; display: flex; align-items: center; pointer-events: none;">
+                            <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </span>
                         </div>
@@ -215,9 +215,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             Students
         </a>
-        <a href="/static/manage-help" class="bottom-nav-item" id="bottom-nav-help">
+        <a href="/static/manage-help#teacher-guide" class="bottom-nav-item" id="bottom-nav-help">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-            Help
+            Guide
         </a>
         <a href="/static/manage-settings" class="bottom-nav-item" id="bottom-nav-settings">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -228,7 +228,7 @@
     <!-- Subject Delete Modal -->
     <div id="subjectDeleteModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 10000; transition: all 0.3s ease;">
         <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2rem; max-width: 480px; width: 95%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline);">
-            <h3 style="color: #EF4444; margin-top: 0; font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+            <h3 style="color: var(--danger); margin-top: 0; font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
                 Delete Subject
             </h3>
@@ -262,7 +262,7 @@
 
             <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--outline); padding-top: 1.25rem;">
                 <button onclick="closeDeleteSubjectModal()" class="btn btn-outline" style="border-color: var(--outline); color: var(--on-surface); background: transparent;">Cancel</button>
-                <button onclick="confirmDeleteSubject()" class="btn" style="background: #EF4444; color: #fff;">Confirm Deletion</button>
+                <button onclick="confirmDeleteSubject()" class="btn" style="background: var(--danger); color: #fff;">Confirm Deletion</button>
             </div>
         </div>
     </div>
@@ -270,13 +270,13 @@
     <!-- Force Password Reset Modal -->
     <div id="forceResetModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20000;">
         <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.5rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
-            <div style="width: 64px; height: 64px; background: rgba(245, 158, 11, 0.1); color: #F59E0B; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div style="margin: 0 auto 1.5rem; text-align: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </div>
             <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Password Reset Required</h3>
             <p style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.5rem;">An administrator has forced a password reset on your account. You must change your password before you can proceed.</p>
 
-            <div id="forceResetNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-align: center;"></div>
+            <div id="forceResetNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center;"></div>
 
             <div class="form-group" style="text-align: left; margin-bottom: 1rem;">
                 <label for="forceNewPwd" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--on-surface); opacity: 0.7; margin-bottom: 0.375rem;">New Password</label>
@@ -295,15 +295,15 @@
     <!-- Global Confirm Modal -->
     <div id="globalConfirmModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 30000; transition: all 0.3s ease;">
         <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.25rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
-            <div id="confirmModalIcon" style="width: 56px; height: 56px; background: rgba(239, 68, 68, 0.1); color: #EF4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+            <div id="confirmModalIcon" style="margin: 0 auto 1.25rem; text-align: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--danger)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
             </div>
             <h3 id="confirmModalTitle" style="font-size: 1.25rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Confirm Action</h3>
             <p id="confirmModalText" style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.75rem;">Are you sure you want to proceed?</p>
 
             <div style="display: flex; gap: 0.75rem; justify-content: flex-end; border-top: 1px solid var(--outline); padding-top: 1.25rem;">
                 <button id="confirmCancelBtn" class="btn btn-outline" style="border-color: var(--outline); color: var(--on-surface); background: transparent; padding: 0.625rem 1.25rem;">Cancel</button>
-                <button id="confirmConfirmBtn" class="btn" style="background: #EF4444; color: #fff; padding: 0.625rem 1.25rem;">Confirm</button>
+                <button id="confirmConfirmBtn" class="btn" style="background: var(--danger); color: #fff; padding: 0.625rem 1.25rem;">Confirm</button>
             </div>
         </div>
     </div>
@@ -426,7 +426,7 @@
                                 '<td><strong>' + esc(sub.name) + '</strong></td>' +
                                 '<td>' + esc(sub.class_name || 'All Classes') + '</td>' +
                                 '<td><span style="display: inline-flex; color: var(--teal);">' + getSymbolSvg(sub.symbol) + '</span></td>' +
-                                '<td style="text-align: right;"><button onclick="promptDeleteSubject(\'' + esc(sub.name) + '\')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: #EF4444; color: #EF4444;">Delete</button></td>' +
+                                '<td style="text-align: right;"><button onclick="promptDeleteSubject(\'' + esc(sub.name) + '\')" class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);">Delete</button></td>' +
                                 '</tr>';
                         }).join('');
                     }
@@ -523,7 +523,7 @@
 
                 return '<tr>' +
                     '<td><strong>' + esc(r.title) + '</strong></td>' +
-                    '<td><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: var(--teal);">' + symbolSvg + ' ' + esc(r.subject || 'General') + '</div></td>' +
+                    '<td><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--teal);">' + symbolSvg + ' ' + esc(r.subject || 'General') + '</div></td>' +
                     '<td><span class="type-badge ' + badgeClass + '">' + esc(r.type) + '</span></td>' +
                     '<td style="text-align: right;">' +
                     '<a href="' + safeUrl(r.url) + '" class="btn btn-outline" download style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">Download</a> ' +
@@ -779,13 +779,13 @@
             if (!container) return;
 
             var toast = document.createElement('div');
-            toast.style.cssText = 'padding: 0.85rem 1.15rem; border-radius: var(--radius-sm); background: var(--surface); color: var(--on-surface); border: 1px solid var(--outline); border-left: 4px solid ' + (isError ? 'var(--danger)' : 'var(--success)') + '; box-shadow: var(--card-shadow-hover); font-size: 0.875rem; font-weight: 500; display: flex; align-items: center; gap: 0.75rem; pointer-events: auto; transform: translateX(120%); opacity: 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); backdrop-filter: blur(8px); margin-top: 0.5rem;';
+            toast.style.cssText = 'padding: 0.85rem 1.15rem; border-radius: var(--radius-sm); background: var(--surface); color: var(--on-surface); border: 1px solid var(--outline); border-left: 4px solid ' + (isError ? 'var(--danger)' : 'var(--success)') + '; box-shadow: var(--card-shadow-hover); font-size: 0.875rem; font-weight: 400; display: flex; align-items: center; gap: 0.75rem; pointer-events: auto; transform: translateX(120%); opacity: 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); backdrop-filter: blur(8px); margin-top: 0.5rem;';
 
             var icon = isError
                 ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>'
                 : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 
-            toast.innerHTML = '<div style="display: flex; align-items: center; flex-shrink: 0;">' + icon + '</div><div style="flex-grow: 1; line-height: 1.4;">' + esc(message) + '</div><button onclick="this.parentElement.remove()" style="background: none; border: none; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: color 0.2s;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>';
+            toast.innerHTML = '<div style="display: flex; align-items: center; flex-shrink: 0;">' + icon + '</div><div style="flex-grow: 1; line-height: 1.4;">' + esc(message) + '</div><button onclick="this.parentElement.remove()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: color 0.2s;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>';
 
             container.appendChild(toast);
 
@@ -819,12 +819,12 @@
                 textEl.innerText = message;
 
                 if (isDanger) {
-                    confirmBtn.style.background = '#EF4444';
-                    confirmBtn.style.borderColor = '#EF4444';
+                    confirmBtn.style.background = 'var(--danger)';
+                    confirmBtn.style.borderColor = 'var(--danger)';
                     confirmBtn.innerText = 'Delete';
                     iconEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>';
                     iconEl.style.background = 'rgba(239, 68, 68, 0.1)';
-                    iconEl.style.color = '#EF4444';
+                    iconEl.style.color = 'var(--danger)';
                 } else {
                     confirmBtn.style.background = 'var(--teal)';
                     confirmBtn.style.borderColor = 'var(--teal)';
@@ -861,6 +861,8 @@
 
 </body>
 </html>
+
+
 
 
 

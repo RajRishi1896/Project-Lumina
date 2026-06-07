@@ -11,17 +11,20 @@
         .filter-row .form-group { margin-bottom: 0; }
         .grade-filter { min-width: 180px; }
         .search-wrap { position: relative; flex: 1; min-width: 220px; }
-        .search-wrap input { width: 100%; padding: 0.5rem 0.75rem 0.5rem 2rem; font-size: 0.85rem; }
-        .search-wrap svg { position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-        .student-card { cursor: pointer; }
-        .student-card:hover { box-shadow: var(--card-shadow-hover); }
-        .student-row { display: flex; align-items: center; gap: 1rem; }
+        .search-inner { position: relative; }
+        .search-inner input { width: 100%; padding: 0.5rem 0.75rem 0.5rem 2rem; font-size: 0.85rem; }
+        .search-inner svg { position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+        .student-card { cursor: pointer; padding: 1.5rem; }
         .student-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0; }
-        .student-body { flex: 1; min-width: 0; }
+        .student-row { display: flex; align-items: center; gap: 0.625rem; }
+        .student-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+        .student-name-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
         .student-name { font-weight: 700; font-size: 0.9rem; color: var(--teal); text-decoration: none; }
-        .student-name:hover { text-decoration: underline; }
-        .student-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; }
+        .student-meta { font-size: 0.75rem; color: var(--text-muted); }
         .scholar-id { font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.7rem; color: var(--text-muted); background: var(--outline); padding: 0.1rem 0.4rem; border-radius: 4px; }
+        .student-stats { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+        .stat-pill { display: flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+        .stat-pill-value { font-size: 0.9rem; font-weight: 800; color: var(--primary); letter-spacing: -0.01em; }
         @media (max-width: 768px) {
             .filter-row .form-group { width: 100%; }
             .grade-filter { min-width: 100%; }
@@ -62,9 +65,9 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Students
             </a>
-            <a href="/static/manage-help" class="nav-item" id="nav-help">
+            <a href="/static/manage-help#teacher-guide" class="nav-item" id="nav-help">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                Help
+                Teacher Guide
             </a>
             <a href="/static/manage-danger" class="nav-item" id="nav-danger" style="color: var(--danger);">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
@@ -80,7 +83,7 @@
             <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             <span id="themeLabel">Dark Mode</span>
         </div>
-        <a href="/static/index" class="nav-logout">
+        <a href="/logout" class="nav-logout">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
             Log out
         </a>
@@ -101,8 +104,10 @@
             </div>
             <div class="form-group search-wrap">
                 <label for="searchInput">Search</label>
-                <input type="text" id="searchInput" placeholder="Search by name or ID..." oninput="applyFilters()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <div class="search-inner">
+                    <input type="text" id="searchInput" placeholder="Search by name or ID..." oninput="applyFilters()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
             </div>
             <button onclick="loadStudents()" class="btn btn-outline" style="padding:0.5rem 0.75rem; font-size:0.8rem; display:flex; align-items:center; gap:0.5rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -141,9 +146,9 @@
             </a>
         </div>
         <div class="bottom-nav-item" id="bottom-nav-help">
-            <a href="/static/manage-help">
+            <a href="/static/manage-help#teacher-guide">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px; height:22px;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                Help
+                Guide
             </a>
         </div>
         <div class="bottom-nav-item" id="bottom-nav-danger">
@@ -162,17 +167,28 @@
         var allGrades = [];
 
         var demoStudents = [
-            { id: 'demo-1', name: 'Ananya Sharma', grade: 'Grade 10', avatar: 'AS' },
-            { id: 'demo-2', name: 'Rohit Kumar', grade: 'Grade 9', avatar: 'RK' },
-            { id: 'demo-3', name: 'Priya Patel', grade: 'Grade 10', avatar: 'PP' },
-            { id: 'demo-4', name: 'Arjun Singh', grade: 'Grade 8', avatar: 'AS' },
-            { id: 'demo-5', name: 'Meera Reddy', grade: 'Grade 9', avatar: 'MR' },
-            { id: 'demo-6', name: 'Vikram Joshi', grade: 'Grade 11', avatar: 'VJ' },
-            { id: 'demo-7', name: 'Kavita Nair', grade: 'Grade 10', avatar: 'KN' },
-            { id: 'demo-8', name: 'Rahul Verma', grade: 'Grade 7', avatar: 'RV' },
-            { id: 'demo-9', name: 'Sneha Gupta', grade: 'Grade 9', avatar: 'SG' },
-            { id: 'demo-10', name: 'Amit Tiwari', grade: 'Grade 11', avatar: 'AT' }
+            { id: 'demo-1', name: 'Ananya Sharma', grade: 'Grade 10', avatar: 'AS', last_active: new Date(Date.now()-1800000).toISOString(), week_minutes: 320, streak: 12, downloads: 18 },
+            { id: 'demo-2', name: 'Rohit Kumar', grade: 'Grade 9', avatar: 'RK', last_active: new Date(Date.now()-7200000).toISOString(), week_minutes: 195, streak: 3, downloads: 7 },
+            { id: 'demo-3', name: 'Priya Patel', grade: 'Grade 10', avatar: 'PP', last_active: new Date(Date.now()-300000).toISOString(), week_minutes: 425, streak: 18, downloads: 24 },
+            { id: 'demo-4', name: 'Arjun Singh', grade: 'Grade 8', avatar: 'AS', last_active: new Date(Date.now()-3600000).toISOString(), week_minutes: 160, streak: 5, downloads: 4 },
+            { id: 'demo-5', name: 'Meera Reddy', grade: 'Grade 9', avatar: 'MR', last_active: new Date(Date.now()-600000).toISOString(), week_minutes: 300, streak: 10, downloads: 15 },
+            { id: 'demo-6', name: 'Vikram Joshi', grade: 'Grade 11', avatar: 'VJ', last_active: new Date(Date.now()-10800000).toISOString(), week_minutes: 228, streak: 7, downloads: 9 },
+            { id: 'demo-7', name: 'Kavita Nair', grade: 'Grade 10', avatar: 'KN', last_active: new Date(Date.now()-900000).toISOString(), week_minutes: 330, streak: 14, downloads: 20 },
+            { id: 'demo-8', name: 'Rahul Verma', grade: 'Grade 7', avatar: 'RV', last_active: new Date(Date.now()-86400000).toISOString(), week_minutes: 90, streak: 1, downloads: 2 },
+            { id: 'demo-9', name: 'Sneha Gupta', grade: 'Grade 9', avatar: 'SG', last_active: new Date(Date.now()-2700000).toISOString(), week_minutes: 517, streak: 25, downloads: 32 },
+            { id: 'demo-10', name: 'Amit Tiwari', grade: 'Grade 11', avatar: 'AT', last_active: new Date(Date.now()-7200000).toISOString(), week_minutes: 205, streak: 4, downloads: 6 }
         ];
+
+        function timeAgo(iso) {
+            if (!iso) return 'Never';
+            var diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+            if (diff < 60) return 'Just now';
+            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+            if (diff < 172800) return 'Yesterday';
+            if (diff < 2592000) return Math.floor(diff / 86400) + 'd ago';
+            return new Date(iso).toLocaleDateString();
+        }
 
         function applyFilters() {
             var grade = document.getElementById('gradeFilter').value;
@@ -218,7 +234,11 @@
                         id: s.id || s.scholar_id || '',
                         name: s.name || 'Unknown',
                         grade: s.grade || '',
-                        avatar: initials
+                        avatar: initials,
+                        last_active: s.last_active || '',
+                        week_minutes: (s.study_minutes_this_week || 0) * 60,
+                        streak: s.streak_days || 0,
+                        downloads: s.resources_saved || 0
                     };
                 });
                 allGrades = [];
@@ -240,15 +260,23 @@
                 return;
             }
             container.innerHTML = list.map(function(s) {
-                var detailUrl = '/static/student-detail?id=' + encodeURIComponent(s.id);
+                var detailUrl = '/static/student-detail?id=' + encodeURIComponent(s.id) + '&name=' + encodeURIComponent(s.name) + '&grade=' + encodeURIComponent(s.grade) + '&avatar=' + encodeURIComponent(s.avatar) + '&last=' + encodeURIComponent(s.last_active || '');
+                var wh = ((s.week_minutes || 0) / 60).toFixed(1).replace(/\.0$/, '');
+                var st = s.streak || 0;
+                var dl = s.downloads || 0;
                 return '<div class="card student-card" onclick="window.location.href=\'' + detailUrl + '\'">' +
                     '<div class="student-row">' +
                     '<div class="student-avatar">' + esc(s.avatar) + '</div>' +
                     '<div class="student-body">' +
                     '<a href="' + detailUrl + '" class="student-name">' + esc(s.name) + '</a>' +
                     '<div class="student-meta">' +
-                    esc(s.grade) + ' &middot; <span class="scholar-id">' + esc(s.id) + '</span>' +
+                    esc(s.grade) + ' &middot; <span class="scholar-id">' + esc(s.id) + '</span> &middot; Last updated ' + timeAgo(s.last_active) +
                     '</div>' +
+                    '</div>' +
+                    '<div class="student-stats">' +
+                    '<span class="stat-pill"><span class="stat-pill-value">' + wh + '<span style="font-weight:400;font-size:0.65rem;color:var(--text-muted);margin-left:0.1rem;">h</span></span></span>' +
+                    '<span class="stat-pill"><span class="stat-pill-value">' + st + '<span style="font-weight:400;font-size:0.65rem;color:var(--text-muted);margin-left:0.1rem;">d</span></span></span>' +
+                    '<span class="stat-pill"><span class="stat-pill-value">' + dl + '</span></span>' +
                     '</div>' +
                     '</div></div>';
             }).join('');
@@ -257,9 +285,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadStudents();
             loadWhoAmI();
+
         });
     </script>
 </body>
 </html>
+
 
 

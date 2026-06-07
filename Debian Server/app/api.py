@@ -168,6 +168,14 @@ async def start_pruning():
 
 # --- Anti‑Spam Rate Limiter ---
 class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Per-IP rate limiter that blocks excessive requests within a 60-second window.
+
+    Two tiers:
+    - Strict paths (auth/teacher/logout): 200 req/min
+    - General paths: 1000 req/min
+    Stale records are pruned every 60 seconds.
+    """
+
     def __init__(self, app):
         super().__init__(app)
         self.ip_records = {}
@@ -175,6 +183,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         asyncio.create_task(self.cleanup_stale())
 
     async def cleanup_stale(self):
+        """Remove IP records older than 60 seconds to prevent memory leaks."""
         while True:
             await asyncio.sleep(60)
             async with self._lock:
@@ -185,6 +194,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 }
 
     async def dispatch(self, request: Request, call_next):
+        """Inspect each request, apply per-IP rate limits, and return 429 if exceeded."""
         client_ip = request.client.host if request.client else request.headers.get("X-Forwarded-For", "unknown")
         path = request.url.path
         async with self._lock:
@@ -194,11 +204,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
             strict_paths = ["/token", "/teacher", "/register", "/logout", "/student/token"]
             if any(path.startswith(p) for p in strict_paths):
-                if len(timestamps) >= 50:
+                if len(timestamps) >= 200:
                     logging.warning(f"BLOCKED: Strict rate limit exceeded by IP {client_ip} on {path}")
                     return Response(content="Rate limit exceeded. Please wait 60 seconds.", status_code=429)
 
-            if len(timestamps) >= 300:
+            if len(timestamps) >= 1000:
                 logging.warning(f"BLOCKED: General flood limit exceeded by IP {client_ip}")
                 return Response(content="Too many requests. Please slow down.", status_code=429)
 
@@ -283,7 +293,11 @@ def init_db():
         c.execute('CREATE INDEX IF NOT EXISTS idx_scholars_name ON scholars(name)')
     except:
         pass
-    c.execute('CREATE TABLE IF NOT EXISTS activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, scholar_id TEXT, action TEXT, resource_id TEXT, metadata TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)')
+    c.execute('CREATE TABLE IF NOT EXISTS weekly_study (scholar_id TEXT PRIMARY KEY, total_seconds INTEGER DEFAULT 0, streak_days INTEGER DEFAULT 0, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
+    try:
+        c.execute('ALTER TABLE weekly_study ADD COLUMN streak_days INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass
     c.execute('CREATE TABLE IF NOT EXISTS scholar_downloads (scholar_id TEXT, resource_id TEXT, PRIMARY KEY(scholar_id, resource_id))')
     c.execute('CREATE TABLE IF NOT EXISTS study_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, scholar_id TEXT, start_time DATETIME, end_time DATETIME, duration_seconds INTEGER)')
     c.execute('CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, username TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
@@ -291,6 +305,7 @@ def init_db():
         c.execute('ALTER TABLE sessions ADD COLUMN role TEXT')
     except sqlite3.OperationalError:
         pass
+    c.execute('CREATE TABLE IF NOT EXISTS subject_minutes (scholar_id TEXT NOT NULL, subject_name TEXT NOT NULL, minutes INTEGER DEFAULT 0, PRIMARY KEY (scholar_id, subject_name))')
     try:
         c.execute('ALTER TABLE sessions ADD COLUMN last_accessed DATETIME')
     except sqlite3.OperationalError:
@@ -363,6 +378,9 @@ def init_db():
     except Exception as e:
         logging.error(f"Could not create settings table: {e}")
 
+    # Prune weekly_study older than 7 days (keep only current week data)
+    c.execute("DELETE FROM weekly_study WHERE updated_at < datetime('now', '-7 days')")
+
     try:
         c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
     except sqlite3.OperationalError:
@@ -401,10 +419,6 @@ class SubjectDeleteRequest(BaseModel):
     name: Optional[str] = Field(default=None, max_length=100)
     transfer_to: Optional[str] = Field(default=None, max_length=100)
 
-class SyncActivity(BaseModel):
-    action: str
-    resource_id: str
-
 class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str
@@ -423,6 +437,9 @@ class TeacherCreate(BaseModel):
     name: Optional[str] = Field(default=None, max_length=100)
     department: Optional[str] = Field(default="General", max_length=100)
 
+class DepartmentUpdate(BaseModel):
+    department: str = Field(..., min_length=1, max_length=100)
+
 # Helper
 def auto_register_if_new(scholar_id: str, name: str = "Roaming Scholar"):
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
@@ -431,10 +448,10 @@ def auto_register_if_new(scholar_id: str, name: str = "Roaming Scholar"):
     conn.commit()
     conn.close()
 
-# Root redirect to welcome page (handles GET and HEAD)
+# Root redirect to welcome / captive portal page
 @app.api_route("/", methods=["GET", "HEAD"])
 async def root_redirect():
-    return RedirectResponse(url="/dashboard")
+    return RedirectResponse(url="/welcome")
 
 # --- Auth Functions ---
 
@@ -556,16 +573,6 @@ async def generate_204():
     return Response(status_code=204)
 
 # Sync activity
-@app.post("/sync/activity")
-async def sync_activity(data: SyncActivity, student_id: str = Depends(verify_student)):
-    auto_register_if_new(student_id)
-    conn = sqlite3.connect(DB_PATH, timeout=5.0)
-    c = conn.cursor()
-    c.execute("INSERT INTO activity_logs (scholar_id, action, resource_id) VALUES (?, ?, ?)", (student_id, data.action, data.resource_id))
-    conn.commit()
-    conn.close()
-    return {"status": "synced"}
-
 # Sync downloads
 @app.post("/sync/downloads")
 async def sync_downloads(resource_ids: List[str], student_id: str = Depends(verify_student)):
@@ -583,63 +590,44 @@ async def sync_downloads(resource_ids: List[str], student_id: str = Depends(veri
 async def restore_profile(student_id: str = Depends(verify_student)):
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
-    c.execute("SELECT action, resource_id, timestamp FROM activity_logs WHERE scholar_id = ? ORDER BY timestamp DESC LIMIT 10", (student_id,))
-    recent = [{"action": r[0], "resource_id": r[1], "time": r[2]} for r in c.fetchall()]
     c.execute("SELECT resource_id FROM scholar_downloads WHERE scholar_id = ?", (student_id,))
     downloads = [r[0] for r in c.fetchall()]
     conn.close()
-    return {"recent_activity": recent, "download_history": downloads}
+    return {"download_history": downloads}
 
-# ---- Student Activity & Analytics API ----
+# ---- Student Study Time Sync ----
 
-class ActivityLog(BaseModel):
-    action: str = Field(..., max_length=255)
-    resource_id: str = Field(default="", max_length=255)
-    metadata: str = Field(default="", max_length=255)
+class StudyTimeSync(BaseModel):
+    total_seconds: int = Field(..., ge=0, le=604800)
+    streak_days: int = Field(default=0, ge=0, le=365)
 
-@app.post("/student/activity")
-async def log_activity(data: ActivityLog, student_id: str = Depends(verify_student)):
+@app.post("/student/sync-study-time")
+async def sync_study_time(data: StudyTimeSync, student_id: str = Depends(verify_student)):
     auto_register_if_new(student_id)
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
-    c.execute("INSERT INTO activity_logs (scholar_id, action, resource_id, metadata) VALUES (?, ?, ?, ?)",
-              (student_id, data.action, data.resource_id, data.metadata))
+    c.execute("INSERT INTO weekly_study (scholar_id, total_seconds, streak_days, updated_at) VALUES (?, ?, ?, datetime('now')) ON CONFLICT(scholar_id) DO UPDATE SET total_seconds = ?, streak_days = ?, updated_at = datetime('now')",
+              (student_id, data.total_seconds, data.streak_days, data.total_seconds, data.streak_days))
     conn.commit()
     conn.close()
     return {"status": "ok"}
 
-@app.get("/student/activity")
-async def get_activity(student_id: str = Depends(verify_student), limit: int = Query(default=25, ge=1, le=1000), offset: int = Query(default=0, ge=0)):
-    conn = sqlite3.connect(DB_PATH, timeout=5.0)
-    c = conn.cursor()
-    c.execute("SELECT rowid AS id, action, resource_id, metadata, timestamp FROM activity_logs WHERE scholar_id = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?",
-              (student_id, limit, offset))
-    rows = c.fetchall()
-    conn.close()
-    return [{"id": r[0], "action": r[1], "resource_id": r[2], "metadata": r[3], "timestamp": r[4]} for r in rows]
+class SubjectTimeItem(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    minutes: int = Field(..., ge=0, le=10080)
 
-class StudyEnd(BaseModel):
-    session_id: int
-    duration_seconds: int
+class SubjectTimeSync(BaseModel):
+    subjects: list[SubjectTimeItem] = Field(default_factory=list)
 
-@app.post("/student/study/start")
-async def start_study_session(student_id: str = Depends(verify_student)):
+@app.post("/student/sync-subject-time")
+async def sync_subject_time(data: SubjectTimeSync, student_id: str = Depends(verify_student)):
     auto_register_if_new(student_id)
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
-    c.execute("INSERT INTO study_sessions (scholar_id, start_time) VALUES (?, datetime('now'))",
-              (student_id,))
-    session_id = c.lastrowid
-    conn.commit()
-    conn.close()
-    return {"status": "ok", "session_id": session_id}
-
-@app.post("/student/study/end")
-async def end_study_session(data: StudyEnd, student_id: str = Depends(verify_student)):
-    conn = sqlite3.connect(DB_PATH, timeout=5.0)
-    c = conn.cursor()
-    c.execute("UPDATE study_sessions SET end_time = datetime('now'), duration_seconds = ? WHERE id = ? AND scholar_id = ?",
-              (data.duration_seconds, data.session_id, student_id))
+    c.execute("DELETE FROM subject_minutes WHERE scholar_id = ?", (student_id,))
+    for subj in data.subjects:
+        c.execute("INSERT INTO subject_minutes (scholar_id, subject_name, minutes) VALUES (?, ?, ?)",
+                  (student_id, subj.name, subj.minutes))
     conn.commit()
     conn.close()
     return {"status": "ok"}
@@ -648,40 +636,20 @@ async def end_study_session(data: StudyEnd, student_id: str = Depends(verify_stu
 async def get_analytics(student_id: str = Depends(verify_student)):
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
-    # Total study minutes today
-    c.execute("SELECT COALESCE(SUM(duration_seconds), 0) FROM study_sessions WHERE scholar_id = ? AND date(start_time) = date('now')", (student_id,))
-    today_secs = c.fetchone()[0]
-    # Total study minutes this week (ISO week)
-    c.execute("SELECT COALESCE(SUM(duration_seconds), 0) FROM study_sessions WHERE scholar_id = ? AND start_time >= datetime('now', '-7 days')", (student_id,))
-    week_secs = c.fetchone()[0]
-    # Total study minutes this month
-    c.execute("SELECT COALESCE(SUM(duration_seconds), 0) FROM study_sessions WHERE scholar_id = ? AND strftime('%Y-%m', start_time) = strftime('%Y-%m', 'now')", (student_id,))
-    month_secs = c.fetchone()[0]
-    # Subject breakdown from activity logs (views by action)
-    c.execute("SELECT metadata, COUNT(*) as cnt FROM activity_logs WHERE scholar_id = ? AND action = 'view' AND metadata != '' GROUP BY metadata ORDER BY cnt DESC", (student_id,))
-    subject_rows = c.fetchall()
-    # Streak: count consecutive days with activity
-    c.execute("SELECT DISTINCT date(timestamp) as d FROM activity_logs WHERE scholar_id = ? ORDER BY d DESC", (student_id,))
-    active_days = [r[0] for r in c.fetchall()]
-    streak = 0
-    today = datetime.now().date()
-    for i, d in enumerate(active_days):
-        expected = today - timedelta(days=i)
-        if datetime.strptime(d, "%Y-%m-%d").date() == expected:
-            streak += 1
-        else:
-            break
-    # Total resources saved
+    c.execute("SELECT total_seconds, streak_days FROM weekly_study WHERE scholar_id = ?", (student_id,))
+    row = c.fetchone()
+    week_secs = row[0] if row else 0
+    streak = row[1] if row and len(row) > 1 else 0
     c.execute("SELECT COUNT(*) FROM scholar_downloads WHERE scholar_id = ?", (student_id,))
     saved = c.fetchone()[0]
+    c.execute("SELECT subject_name, minutes FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC", (student_id,))
+    subjects = [{"name": row[0], "minutes": row[1]} for row in c.fetchall()]
     conn.close()
     return {
-        "study_minutes_today": today_secs // 60,
         "study_minutes_this_week": week_secs // 60,
-        "study_minutes_this_month": month_secs // 60,
         "streak_days": streak,
         "resources_saved": saved,
-        "subjects": [{"name": r[0], "minutes": r[1] * 5} for r in subject_rows]
+        "subjects": subjects,
     }
 
 import base64
@@ -900,13 +868,13 @@ async def get_teachers(teacher_user: str = Depends(verify_teacher)):
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
     try:
-        c.execute("SELECT username, name, department, reset_required FROM users WHERE username != 'admin' ORDER BY name ASC")
+        c.execute("SELECT username, name, department, scholar_id, reset_required FROM users WHERE username != 'admin' ORDER BY name ASC")
         rows = c.fetchall()
     except sqlite3.OperationalError:
-        c.execute("SELECT username, name, department FROM users WHERE username != 'admin' ORDER BY name ASC")
+        c.execute("SELECT username, name, department, scholar_id FROM users WHERE username != 'admin' ORDER BY name ASC")
         rows = [(*r, 0) for r in c.fetchall()]
     conn.close()
-    return [{"username": r[0], "name": r[1] or r[0], "department": r[2] or "General", "reset_required": r[3] or 0} for r in rows]
+    return [{"username": r[0], "name": r[1] or r[0], "department": r[2] or "General", "scholar_id": r[3] or "", "reset_required": r[4] or 0} for r in rows]
 
 @app.get("/teacher/me")
 async def get_teacher_me(teacher_user: str = Depends(verify_teacher)):
@@ -921,6 +889,15 @@ async def get_teacher_me(teacher_user: str = Depends(verify_teacher)):
             reset_val = 0
         return {"username": teacher_user, "name": row[0] or teacher_user, "department": row[1] or "General", "scholar_id": row[2], "reset_required": reset_val}
     return {"username": teacher_user, "reset_required": 0}
+
+@app.post("/teacher/profile/department")
+async def update_teacher_department(data: DepartmentUpdate, teacher_user: str = Depends(verify_teacher)):
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    c = conn.cursor()
+    c.execute("UPDATE users SET department = ? WHERE username = ?", (data.department.strip(), teacher_user))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
 
 @app.post("/teacher/profiles")
 async def create_teacher_profile(teacher: TeacherCreate, admin_user: str = Depends(verify_admin)):
@@ -978,8 +955,31 @@ async def get_scholars(teacher_user: str = Depends(verify_teacher)):
 async def get_limits(teacher_user: str = Depends(verify_teacher)):
     return {"zim_upload_max_size": await get_zim_upload_max_size()}
 
-@app.get("/stats")
-async def get_stats(teacher_user: str = Depends(verify_teacher)):
+@app.get("/stats", summary="Dashboard stats", description="Returns student/resource/subject counts, storage usage, battery percentage, and uptime for the dashboard home page.", tags=["Dashboard"])
+async def get_stats():
+    """Return dashboard statistics including DB counts, disk, battery, and uptime.
+
+    Returns:
+        dict with scholars, resources, subjects counts, storage_percent, battery_percent, uptime, and disk_usage.
+    """
+    conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    c = conn.cursor()
+    try:
+        c.execute("SELECT COUNT(*) FROM scholars")
+        scholar_count = c.fetchone()[0]
+    except Exception:
+        scholar_count = 0
+    try:
+        c.execute("SELECT COUNT(*) FROM resources")
+        resource_count = c.fetchone()[0]
+    except Exception:
+        resource_count = 0
+    try:
+        c.execute("SELECT COUNT(*) FROM subjects")
+        subject_count = c.fetchone()[0]
+    except Exception:
+        subject_count = 0
+    conn.close()
     total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
     battery_percent = 100
     try:
@@ -988,7 +988,20 @@ async def get_stats(teacher_user: str = Depends(verify_teacher)):
                 battery_percent = int(f.read().strip())
     except Exception:
         pass
-    return {"storage_percent": (used / total) * 100, "battery_percent": battery_percent}
+    uptime_secs = int(time.time() - _startup_time)
+    hours, rem = divmod(uptime_secs, 3600)
+    mins, secs = divmod(rem, 60)
+    uptime_str = f"{hours}h {mins}m" if hours else f"{mins}m {secs}s"
+    du = used
+    dt = total
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if du < 1024:
+            used_str = f"{du:.1f} {unit}"
+            total_str = f"{dt:.1f} {unit}"
+            break
+        du /= 1024
+        dt /= 1024
+    return {"scholars": scholar_count, "resources": resource_count, "subjects": subject_count, "storage": f"{used_str} / {total_str}", "storage_percent": (used / total) * 100, "battery_percent": battery_percent, "uptime": uptime_str, "disk_usage": f"{used_str} / {total_str}"}
 
 @app.get("/resources")
 @app.get("/api/catalog")
@@ -1774,8 +1787,7 @@ async def teacher_list_students(teacher_user: str = Depends(verify_teacher), gra
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     c = conn.cursor()
     try:
-        # Get distinct grades that have students
-        grade_filter = "WHERE grade = ?" if grade else ""
+        grade_filter = "WHERE s.grade = ?" if grade else ""
         params = (grade,) if grade else ()
         c.execute(f"""
             SELECT
@@ -1783,47 +1795,27 @@ async def teacher_list_students(teacher_user: str = Depends(verify_teacher), gra
                 s.name,
                 s.username,
                 s.grade,
-                COALESCE(t.today_secs, 0) AS today_secs,
-                COALESCE(w.week_secs, 0) AS week_secs,
+                COALESCE(w.total_seconds, 0) AS week_secs,
+                COALESCE(w.streak_days, 0) AS streak_days,
                 COALESCE(sv.saved, 0) AS saved,
-                COALESCE(sd.downloaded, 0) AS downloaded,
-                la.last_active
+                w.updated_at AS last_active
             FROM scholars s
-            LEFT JOIN (SELECT scholar_id, SUM(duration_seconds) AS today_secs FROM study_sessions WHERE date(start_time) = date('now') GROUP BY scholar_id) t ON t.scholar_id = s.id
-            LEFT JOIN (SELECT scholar_id, SUM(duration_seconds) AS week_secs FROM study_sessions WHERE start_time >= datetime('now', '-7 days') GROUP BY scholar_id) w ON w.scholar_id = s.id
+            LEFT JOIN weekly_study w ON w.scholar_id = s.id
             LEFT JOIN (SELECT scholar_id, COUNT(*) AS saved FROM scholar_downloads GROUP BY scholar_id) sv ON sv.scholar_id = s.id
-            LEFT JOIN (SELECT scholar_id, COUNT(*) AS downloaded FROM activity_logs WHERE action = 'download' GROUP BY scholar_id) sd ON sd.scholar_id = s.id
-            LEFT JOIN (SELECT scholar_id, MAX(timestamp) AS last_active FROM activity_logs GROUP BY scholar_id) la ON la.scholar_id = s.id
             {grade_filter}
-            ORDER BY la.last_active DESC NULLS LAST, s.name ASC
+            ORDER BY last_active DESC NULLS LAST, s.name ASC
         """, params)
         students = []
         for row in c.fetchall():
-            sid, name, username, sgrade, today_secs, week_secs, saved, downloaded, last_active = row
-            # Calculate streak for each student
-            c.execute("SELECT DISTINCT date(timestamp) as d FROM activity_logs WHERE scholar_id = ? ORDER BY d DESC", (sid,))
-            active_days = [r[0] for r in c.fetchall()]
-            streak = 0
-            today_d = datetime.now().date()
-            for i, d in enumerate(active_days):
-                expected = today_d - timedelta(days=i)
-                try:
-                    if datetime.strptime(d, "%Y-%m-%d").date() == expected:
-                        streak += 1
-                    else:
-                        break
-                except ValueError:
-                    break
+            sid, name, username, sgrade, week_secs, streak_days, saved, last_active = row
             students.append({
                 "id": sid,
                 "name": name or username or "",
                 "username": username or "",
                 "grade": sgrade or "",
-                "study_minutes_today": today_secs // 60,
                 "study_minutes_this_week": week_secs // 60,
-                "streak_days": streak,
+                "streak_days": streak_days,
                 "resources_saved": saved,
-                "resources_downloaded": downloaded,
                 "last_active": last_active or "",
             })
     except sqlite3.OperationalError as e:
@@ -1835,23 +1827,24 @@ async def teacher_list_students(teacher_user: str = Depends(verify_teacher), gra
         demo = []
         now = datetime.now()
         demo_students = [
-            ("LUMINA_DEMO_01", "Ananya Sharma", "ananya", "Grade 10", 35, 210, 5, 18, 12),
-            ("LUMINA_DEMO_02", "Rohit Kumar", "rohit", "Grade 10", 12, 95, 2, 8, 6),
-            ("LUMINA_DEMO_03", "Priya Patel", "priya", "Grade 9", 48, 310, 7, 22, 15),
-            ("LUMINA_DEMO_04", "Arjun Singh", "arjun", "Grade 11", 20, 150, 3, 14, 9),
-            ("LUMINA_DEMO_05", "Sneha Reddy", "sneha", "Grade 9", 55, 380, 10, 25, 18),
-            ("LUMINA_DEMO_06", "Vikram Joshi", "vikram", "Grade 12", 5, 45, 1, 6, 3),
-            ("LUMINA_DEMO_07", "Kavita Nair", "kavita", "Grade 10", 28, 175, 4, 15, 11),
-            ("LUMINA_DEMO_08", "Divya Menon", "divya", "Grade 11", 40, 260, 6, 20, 14),
-            ("LUMINA_DEMO_09", "Rahul Verma", "rahul", "Grade 9", 18, 130, 3, 10, 7),
-            ("LUMINA_DEMO_10", "Meera Iyer", "meera", "Grade 12", 30, 200, 5, 16, 10),
+            ("LUMINA_DEMO_01", "Ananya Sharma", "ananya", "Grade 10", 210, 12, 18),
+            ("LUMINA_DEMO_02", "Rohit Kumar", "rohit", "Grade 10", 95, 3, 8),
+            ("LUMINA_DEMO_03", "Priya Patel", "priya", "Grade 9", 310, 18, 22),
+            ("LUMINA_DEMO_04", "Arjun Singh", "arjun", "Grade 11", 150, 5, 14),
+            ("LUMINA_DEMO_05", "Sneha Reddy", "sneha", "Grade 9", 380, 10, 25),
+            ("LUMINA_DEMO_06", "Vikram Joshi", "vikram", "Grade 12", 45, 1, 6),
+            ("LUMINA_DEMO_07", "Kavita Nair", "kavita", "Grade 10", 175, 14, 15),
+            ("LUMINA_DEMO_08", "Divya Menon", "divya", "Grade 11", 260, 7, 20),
+            ("LUMINA_DEMO_09", "Rahul Verma", "rahul", "Grade 9", 130, 3, 10),
+            ("LUMINA_DEMO_10", "Meera Iyer", "meera", "Grade 12", 200, 5, 16),
         ]
-        for sid, name, uname, grd, td, wk, st, sv, dl in demo_students:
+        for sid, name, uname, grd, wk, st, sv in demo_students:
             demo.append({
                 "id": sid, "name": name, "username": uname, "grade": grd,
-                "study_minutes_today": td, "study_minutes_this_week": wk,
-                "streak_days": st, "resources_saved": sv, "resources_downloaded": dl,
-                "last_active": (now - timedelta(minutes=td * 3)).isoformat(),
+                "study_minutes_this_week": wk // 60,
+                "streak_days": st,
+                "resources_saved": sv,
+                "last_active": (now - timedelta(hours=wk // 60)).isoformat(),
             })
         if grade:
             demo = [s for s in demo if s["grade"] == grade]
@@ -1870,104 +1863,41 @@ async def teacher_student_analytics(scholar_id: str, teacher_user: str = Depends
         # TEMP DEMO: return fake analytics when student not found
         if scholar_id.startswith("LUMINA_DEMO"):
             demo_analytics = {
-                "LUMINA_DEMO_01": (35, 210, 900, 5, 18, [("Mathematics", 80), ("Science", 60), ("English", 40), ("History", 30)]),
-                "LUMINA_DEMO_02": (12, 95, 400, 2, 8, [("Mathematics", 30), ("Science", 25), ("English", 20), ("Geography", 20)]),
-                "LUMINA_DEMO_03": (48, 310, 1200, 7, 22, [("Science", 100), ("Mathematics", 90), ("English", 60), ("Hindi", 60)]),
-                "LUMINA_DEMO_04": (20, 150, 650, 3, 14, [("Physics", 50), ("Chemistry", 40), ("Mathematics", 35), ("Biology", 25)]),
-                "LUMINA_DEMO_05": (55, 380, 1500, 10, 25, [("Mathematics", 120), ("Science", 100), ("English", 80), ("History", 50), ("Geography", 30)]),
-                "LUMINA_DEMO_06": (5, 45, 200, 1, 6, [("Physics", 15), ("Chemistry", 15), ("Mathematics", 15)]),
-                "LUMINA_DEMO_07": (28, 175, 750, 4, 15, [("Mathematics", 60), ("Science", 45), ("English", 40), ("History", 30)]),
-                "LUMINA_DEMO_08": (40, 260, 1100, 6, 20, [("Chemistry", 70), ("Physics", 65), ("Mathematics", 60), ("Biology", 45), ("English", 20)]),
-                "LUMINA_DEMO_09": (18, 130, 550, 3, 10, [("Science", 45), ("Mathematics", 40), ("English", 25), ("Geography", 20)]),
-                "LUMINA_DEMO_10": (30, 200, 850, 5, 16, [("Physics", 55), ("Mathematics", 50), ("Chemistry", 45), ("English", 30), ("Biology", 20)]),
+                "LUMINA_DEMO_01": (210, 12, 18),
+                "LUMINA_DEMO_02": (95, 3, 8),
+                "LUMINA_DEMO_03": (310, 18, 22),
+                "LUMINA_DEMO_04": (150, 5, 14),
+                "LUMINA_DEMO_05": (380, 10, 25),
+                "LUMINA_DEMO_06": (45, 1, 6),
+                "LUMINA_DEMO_07": (175, 14, 20),
+                "LUMINA_DEMO_08": (260, 7, 15),
+                "LUMINA_DEMO_09": (130, 3, 10),
+                "LUMINA_DEMO_10": (200, 5, 16),
             }
             if scholar_id in demo_analytics:
-                td, wk, mo, st, sv, subs = demo_analytics[scholar_id]
+                wk, st, sv = demo_analytics[scholar_id]
                 return {
-                    "study_minutes_today": td, "study_minutes_this_week": wk,
-                    "study_minutes_this_month": mo, "streak_days": st,
+                    "study_minutes_this_week": wk // 60,
+                    "streak_days": st,
                     "resources_saved": sv,
-                    "subjects": [{"name": n, "minutes": m} for n, m in subs],
                 }
         raise HTTPException(status_code=404, detail="Student not found")
-    c.execute("SELECT COALESCE(SUM(duration_seconds), 0) FROM study_sessions WHERE scholar_id = ? AND date(start_time) = date('now')", (scholar_id,))
-    today_secs = c.fetchone()[0]
-    c.execute("SELECT COALESCE(SUM(duration_seconds), 0) FROM study_sessions WHERE scholar_id = ? AND start_time >= datetime('now', '-7 days')", (scholar_id,))
-    week_secs = c.fetchone()[0]
-    c.execute("SELECT COALESCE(SUM(duration_seconds), 0) FROM study_sessions WHERE scholar_id = ? AND strftime('%Y-%m', start_time) = strftime('%Y-%m', 'now')", (scholar_id,))
-    month_secs = c.fetchone()[0]
-    c.execute("SELECT metadata, COUNT(*) as cnt FROM activity_logs WHERE scholar_id = ? AND action = 'view' AND metadata != '' GROUP BY metadata ORDER BY cnt DESC", (scholar_id,))
-    subject_rows = c.fetchall()
-    c.execute("SELECT DISTINCT date(timestamp) as d FROM activity_logs WHERE scholar_id = ? ORDER BY d DESC", (scholar_id,))
-    active_days = [r[0] for r in c.fetchall()]
-    streak = 0
-    today_d = datetime.now().date()
-    for i, d in enumerate(active_days):
-        expected = today_d - timedelta(days=i)
-        try:
-            if datetime.strptime(d, "%Y-%m-%d").date() == expected:
-                streak += 1
-            else:
-                break
-        except ValueError:
-            break
+    c.execute("SELECT total_seconds, streak_days FROM weekly_study WHERE scholar_id = ?", (scholar_id,))
+    row = c.fetchone()
+    week_secs = row[0] if row else 0
+    streak = row[1] if row and len(row) > 1 else 0
     c.execute("SELECT COUNT(*) FROM scholar_downloads WHERE scholar_id = ?", (scholar_id,))
     saved = c.fetchone()[0]
+    c.execute("SELECT subject_name, minutes FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC", (scholar_id,))
+    subjects = [{"name": row[0], "minutes": row[1]} for row in c.fetchall()]
     conn.close()
     return {
-        "study_minutes_today": today_secs // 60,
         "study_minutes_this_week": week_secs // 60,
-        "study_minutes_this_month": month_secs // 60,
         "streak_days": streak,
         "resources_saved": saved,
-        "subjects": [{"name": r[0], "minutes": r[1] * 5} for r in subject_rows],
+        "subjects": subjects,
     }
 
-
-@app.get("/teacher/student/{scholar_id}/activity")
-async def teacher_student_activity(scholar_id: str, teacher_user: str = Depends(verify_teacher), limit: int = Query(default=50, ge=1, le=500), offset: int = Query(default=0, ge=0)):
-    conn = sqlite3.connect(DB_PATH, timeout=5.0)
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM activity_logs WHERE scholar_id = ?", (scholar_id,))
-    total = c.fetchone()[0]
-    c.execute("SELECT rowid AS id, action, resource_id, metadata, timestamp FROM activity_logs WHERE scholar_id = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?",
-              (scholar_id, limit, offset))
-    rows = c.fetchall()
-    conn.close()
-    # TEMP DEMO: return fake activity when no real data exists for demo IDs
-    if total == 0 and rows == [] and scholar_id.startswith("LUMINA_DEMO"):
-        now = datetime.now()
-        demo_actions = [
-            ("view", "Ch1", "Chapter 1: Real Numbers"),
-            ("view", "Ch2", "Chapter 2: Polynomials"),
-            ("download", "Ch1", "Chapter 1: Real Numbers"),
-            ("search", "", "algebra equations"),
-            ("view", "Ch3", "Chapter 3: Linear Equations"),
-            ("save", "Ch2", "Chapter 2: Polynomials"),
-            ("view", "Ch4", "Chapter 4: Quadratic Equations"),
-            ("search", "", "trigonometry basics"),
-            ("view", "Ch5", "Chapter 5: Arithmetic Progressions"),
-            ("download", "Ch3", "Chapter 3: Linear Equations"),
-            ("view", "Ch6", "Chapter 6: Triangles"),
-            ("search", "", "probability problems"),
-            ("view", "Ch7", "Chapter 7: Coordinate Geometry"),
-            ("save", "Ch5", "Chapter 5: Arithmetic Progressions"),
-            ("view", "Ch8", "Chapter 8: Introduction to Trigonometry"),
-        ]
-        activity = []
-        for i, (action, rid, meta) in enumerate(demo_actions):
-            ts = now - timedelta(minutes=i * 15, seconds=i * 7)
-            activity.append({
-                "id": i + 1, "action": action, "resource_id": rid,
-                "metadata": meta, "timestamp": ts.isoformat(),
-            })
-        return {"activity": activity, "total": len(activity), "limit": limit, "offset": offset}
-    return {
-        "activity": [{"id": r[0], "action": r[1], "resource_id": r[2], "metadata": r[3], "timestamp": r[4]} for r in rows],
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-    }
 
 
 # Mount file uploads directory (no auth — files are accessed by download links)

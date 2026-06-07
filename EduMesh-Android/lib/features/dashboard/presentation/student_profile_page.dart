@@ -370,9 +370,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       margin: EdgeInsets.only(top: AppSpacing.lg.h),
       padding: EdgeInsets.all(AppSpacing.xl.w),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg.r),
-        border: Border.all(color: cs.outlineVariant),
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
       ),
       child: Row(
         children: [
@@ -655,41 +654,36 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   Widget _buildStatsRow(ColorScheme cs) {
-    return Row(
-      children: [
-        Expanded(child: _buildStatCard(cs, 'Today', '${_studyMinutesToday}m', Icons.today_rounded, LuminaColors.academicTeal)),
-        SizedBox(width: 10.w),
-        Expanded(child: _buildStatCard(cs, 'This Week', _studyMinutesThisWeek < 60 ? '${_studyMinutesThisWeek}m' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}h', Icons.date_range_rounded, const Color(0xFF7C3AED))),
-        SizedBox(width: 10.w),
-        Expanded(child: _buildStatCard(cs, 'Saved', '$_resourcesSaved', Icons.bookmark_rounded, const Color(0xFF059669))),
-        SizedBox(width: 10.w),
-        Expanded(child: _buildStatCard(cs, 'Streak', '$_streakDays d', Icons.local_fire_department_rounded, const Color(0xFFD97706))),
-      ],
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg.w),
+        child: Column(
+          children: [
+            _statRow(cs, 'Today', '${_studyMinutesToday}m', 'This Week', _studyMinutesThisWeek < 60 ? '${_studyMinutesThisWeek}m' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}h'),
+            SizedBox(height: AppSpacing.md.h),
+            _statRow(cs, 'Saved', '$_resourcesSaved', 'Streak', '$_streakDays d'),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildStatCard(ColorScheme cs, String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 8.w),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: cs.outlineVariant),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 22.sp),
-          SizedBox(height: 8.h),
-          Text(value,
-              style: GoogleFonts.atkinsonHyperlegible(
-                  fontSize: 16.sp,
-                  fontWeight: AppSpacing.weightStrong,
-                  color: cs.onSurface)),
-          SizedBox(height: 2.h),
-          Text(label,
-              style: TextStyle(fontSize: 10.sp, color: cs.onSurfaceVariant)),
-        ],
-      ),
+  Widget _statRow(ColorScheme cs, String label1, String value1, String label2, String value2) {
+    return Row(
+      children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(value1, style: GoogleFonts.atkinsonHyperlegible(fontSize: 20.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
+          Text(label1, style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant)),
+        ])),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(value2, style: GoogleFonts.atkinsonHyperlegible(fontSize: 20.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
+          Text(label2, style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant)),
+        ])),
+      ],
     );
   }
 
@@ -705,11 +699,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 color: cs.onSurface)),
         SizedBox(height: 12.h),
         Container(
-          padding: EdgeInsets.all(16.w),
+          padding: EdgeInsets.all(AppSpacing.lg.w),
           decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: cs.outlineVariant),
+            color: cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
           ),
           child: Column(
             children: [
@@ -719,7 +712,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(Icons.bar_chart_rounded, size: 36.sp, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                        Icon(Icons.bar_chart_rounded, size: 36.sp, color: cs.onSurfaceVariant),
                         SizedBox(height: 8.h),
                         Text('No study data yet.\nYour subject time will appear here as you use the app.',
                             textAlign: TextAlign.center,
@@ -792,11 +785,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 color: cs.onSurface)),
         SizedBox(height: 12.h),
         Container(
-          padding: EdgeInsets.symmetric(vertical: 8.h),
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.sm.h),
           decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: cs.outlineVariant),
+            color: cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
           ),
           child: Column(
             children: [
@@ -806,7 +798,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(Icons.history_rounded, size: 40.sp, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                        Icon(Icons.history_rounded, size: 40.sp, color: cs.onSurfaceVariant),
                         SizedBox(height: 12.h),
                         Text('No recent activity yet.\nStart browsing resources to see your activity here.',
                             textAlign: TextAlign.center,

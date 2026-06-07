@@ -124,22 +124,6 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  IconData _iconForSubject(String name) {
-    const iconMap = {
-      'Mathematics': Icons.calculate,
-      'Biology': Icons.biotech,
-      'Science': Icons.science,
-      'History': Icons.history_edu,
-      'Literature': Icons.translate,
-      'English': Icons.translate,
-      'Computer Science': Icons.computer,
-      'Physics': Icons.functions,
-      'Chemistry': Icons.science_outlined,
-      'General': Icons.folder,
-    };
-    return iconMap[name] ?? Icons.book;
-  }
-
   Future<void> _loadSubjects() async {
     try {
       final response = await ApiClient.get('/subjects');
@@ -232,7 +216,7 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Container(
         margin: EdgeInsets.only(top: AppSpacing.lg.h),
         padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
-        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(AppSpacing.radiusLg.r), border: Border.all(color: cs.outlineVariant)),
+        decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r)),
         child: Row(
           children: [
             Icon(Icons.search_rounded, color: cs.onSurfaceVariant, size: 22.sp),
@@ -294,7 +278,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Subject Categories', style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        Text('Subjects', style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         if (_subjectsLoading && _subjects.isEmpty)
           Padding(
@@ -310,19 +294,21 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           )
         else
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: AppSpacing.md.w, mainAxisSpacing: AppSpacing.md.w, childAspectRatio: 1.2),
-            itemCount: _subjects.length,
-            itemBuilder: (context, index) {
-              final sub = _subjects[index];
-              return _SubjectCategoryCard(
-                label: sub['name'] as String,
-                icon: _iconForSubject(sub['name'] as String),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ResourcePage(subject: sub['name'] as String, grade: _myGrade ?? ''))),
+          Wrap(
+            spacing: AppSpacing.sm.w,
+            runSpacing: AppSpacing.sm.h,
+            children: _subjects.map((sub) {
+              final name = sub['name'] as String;
+              return ActionChip(
+                label: Text(name, style: TextStyle(fontSize: 13.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ResourcePage(subject: name, grade: _myGrade ?? ''),
+                )),
+                backgroundColor: cs.surfaceContainerHighest,
+                side: BorderSide.none,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r)),
               );
-            },
+            }).toList(),
           ),
       ],
     );
@@ -387,28 +373,3 @@ class _DashboardPageState extends State<DashboardPage> {
 
 }
 
-class _SubjectCategoryCard extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-  const _SubjectCategoryCard({required this.label, required this.icon, required this.onTap});
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(AppSpacing.radiusXl.r), border: Border.all(color: cs.outlineVariant)),
-        padding: EdgeInsets.all(AppSpacing.md.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: LuminaColors.academicTeal, size: 28.sp),
-            SizedBox(height: AppSpacing.sm.h),
-            Text(label, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
-          ],
-        ),
-      ),
-    );
-  }
-}

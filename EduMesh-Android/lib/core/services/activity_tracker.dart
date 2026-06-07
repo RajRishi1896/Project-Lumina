@@ -1,124 +1,108 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
-import '../../features/auth/data/auth_service.dart';
+import '../../shared/services/connectivity_service.dart';
 
-/// Singleton that tracks user activity (study sessions, resource views, etc.)
-/// and syncs them to the server. Queues events in SharedPreferences when offline
-/// and flushes them on connectivity restoration.
 class ActivityTracker {
   static final ActivityTracker _instance = ActivityTracker._internal();
   factory ActivityTracker() => _instance;
   ActivityTracker._internal();
 
-  static const String _activityQueueKey = 'activity_queue';
+  static const String _localEventsKey = 'local_events';
   static const String _activeStudySessionKey = 'active_study_session';
   static const String _cachedAnalyticsKey = 'cached_analytics';
-  static const String _cachedHistoryKey = 'cached_activity_history';
+  static const int _maxLocalEvents = 500;
 
   DateTime? _studyStartTime;
   Timer? _autoSyncTimer;
-  int _lastSyncMs = 0;
 
-  /// Starts a periodic timer that syncs queued activity to the server every 60 seconds.
   void startAutoSync() {
     _autoSyncTimer?.cancel();
     _autoSyncTimer = Timer.periodic(const Duration(seconds: 60), (_) => sync());
   }
 
-  /// Cancels the periodic auto-sync timer.
   void stopAutoSync() {
     _autoSyncTimer?.cancel();
     _autoSyncTimer = null;
   }
 
-  /// Begins a new study session by recording the current time in SharedPreferences.
-  Future<void> startStudySession() async {
+  Future<void> startStudySession({String? subject}) async {
     _studyStartTime = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_activeStudySessionKey, jsonEncode({
       'start_time': _studyStartTime!.toIso8601String(),
+      'subject': subject,
     }));
   }
 
-  /// Ends the current study session, queues the duration, and immediately syncs.
   Future<void> endStudySession() async {
     if (_studyStartTime == null) return;
     final duration = DateTime.now().difference(_studyStartTime!);
-    _studyStartTime = null;
     final prefs = await SharedPreferences.getInstance();
+    final activeRaw = prefs.getString(_activeStudySessionKey);
+    String? subject;
+    if (activeRaw != null) {
+      try {
+        final activeData = jsonDecode(activeRaw);
+        subject = activeData['subject'] as String?;
+      } catch (_) {}
+    }
+    _studyStartTime = null;
     await prefs.remove(_activeStudySessionKey);
-    await _enqueue(prefs, {
+    final meta = <String, dynamic>{'duration_seconds': duration.inSeconds};
+    if (subject != null && subject.isNotEmpty) {
+      meta['subject'] = subject;
+    }
+    await _storeLocal(prefs, {
       'action': 'study_session',
       'resource_id': null,
-      'metadata': jsonEncode({'duration_seconds': duration.inSeconds}),
+      'metadata': jsonEncode(meta),
       'timestamp': DateTime.now().toIso8601String(),
     });
-    await _trySync(prefs);
+    await sync();
   }
 
-  /// Logs an [action] (e.g. "resource_view") with optional [resourceId] and [metadata].
-  /// Queues the event locally and syncs if at least 15 seconds have elapsed since the last sync.
   Future<void> logAction(String action, {String? resourceId, String? metadata}) async {
     final prefs = await SharedPreferences.getInstance();
-    await _enqueue(prefs, {
+    await _storeLocal(prefs, {
       'action': action,
       'resource_id': resourceId,
       'metadata': metadata,
       'timestamp': DateTime.now().toIso8601String(),
     });
-    await _trySync(prefs);
   }
 
-  Future<void> _enqueue(SharedPreferences prefs, Map<String, dynamic> event) async {
-    final queue = _decodeQueue(prefs.getString(_activityQueueKey));
-    queue.add(event);
-    await prefs.setString(_activityQueueKey, jsonEncode(queue));
+  Future<void> logKeyAction(String action, {String? resourceId, String? metadata}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await _storeLocal(prefs, {
+      'action': action,
+      'resource_id': resourceId,
+      'metadata': metadata,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
   }
 
-  List<Map<String, dynamic>> _decodeQueue(String? raw) {
-    if (raw == null) return [];
-    final decoded = jsonDecode(raw);
-    if (decoded is! List) return [];
-    return decoded.cast<Map<String, dynamic>>();
+  Future<void> _storeLocal(SharedPreferences prefs, Map<String, dynamic> event) async {
+    final raw = prefs.getString(_localEventsKey);
+    final list = raw != null ? (jsonDecode(raw) as List).cast<Map<String, dynamic>>() : <Map<String, dynamic>>[];
+    list.add(event);
+    if (list.length > _maxLocalEvents) list.removeAt(0);
+    await prefs.setString(_localEventsKey, jsonEncode(list));
   }
 
-  /// Sync only if at least 15 seconds have passed since last sync.
-  Future<void> _trySync(SharedPreferences prefs) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    if (now - _lastSyncMs < 15000) return;
-    _lastSyncMs = now;
-    await _doSync(prefs);
-  }
-
-  /// A paginated list of recent activity events fetched from the server or from cache.
   Future<List<Map<String, dynamic>>> getActivityHistory({int limit = 25, int offset = 0}) async {
     final prefs = await SharedPreferences.getInstance();
-    final scholarId = await AuthService().getUniqueUserId();
-    if (scholarId != null) {
-      try {
-        final response = await ApiClient.get('/student/activity', queryParameters: {
-          'limit': limit.toString(),
-          'offset': offset.toString(),
-        });
-        if (response.statusCode == 200 && response.data is List) {
-          final data = (response.data as List).map((e) => Map<String, dynamic>.from(e)).toList();
-          await prefs.setString(_cachedHistoryKey, jsonEncode(data));
-          return data;
-        }
-      } catch (_) {}
-    }
-    final cached = prefs.getString(_cachedHistoryKey);
-    if (cached != null) {
-      final decoded = jsonDecode(cached);
-      if (decoded is List) return decoded.cast<Map<String, dynamic>>();
-    }
-    return [];
+    final raw = prefs.getString(_localEventsKey);
+    if (raw == null) return [];
+    final all = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    all.sort((a, b) => (b['timestamp'] as String).compareTo(a['timestamp'] as String));
+    final end = offset + limit;
+    if (offset >= all.length) return [];
+    return all.sublist(offset, end > all.length ? all.length : end);
   }
 
-  /// The cached analytics summary (study minutes, streak, resources saved, etc.).
-  /// Returns default zero values if no cached data is available.
   Future<Map<String, dynamic>> getAnalytics() async {
     final prefs = await SharedPreferences.getInstance();
     final cached = prefs.getString(_cachedAnalyticsKey);
@@ -129,72 +113,108 @@ class ActivityTracker {
       } catch (_) {}
     }
     return {
-      'study_minutes_today': 0,
       'study_minutes_this_week': 0,
-      'study_minutes_this_month': 0,
       'streak_days': 0,
       'resources_saved': 0,
-      'subjects': [],
     };
   }
 
-  /// Forces an immediate sync of all queued activity events to the server.
   Future<void> sync() async {
+    if (!ConnectivityService().isOnline) return;
     final prefs = await SharedPreferences.getInstance();
-    await _doSync(prefs);
-  }
-
-  Future<void> _doSync(SharedPreferences prefs) async {
-    final raw = prefs.getString(_activityQueueKey);
+    final raw = prefs.getString(_localEventsKey);
     if (raw == null) return;
-    final queue = _decodeQueue(raw);
-    if (queue.isEmpty) return;
+    final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    if (list.isEmpty) return;
 
-    final List<Map<String, dynamic>> failed = [];
-    for (final event in queue) {
-      try {
-        final action = event['action'] as String;
-        if (action == 'study_session') {
-          final startResp = await ApiClient.post('/student/study/start');
-          final sessionId = (startResp.data is Map) ? (startResp.data as Map)['session_id'] : null;
-          final metadata = event['metadata'] != null
-              ? jsonDecode(event['metadata'] as String) as Map<String, dynamic>
-              : <String, dynamic>{};
-          await ApiClient.post('/student/study/end', data: {
-            'session_id': sessionId,
-            'duration_seconds': metadata['duration_seconds'],
-          });
-        } else {
-          await ApiClient.post('/student/activity', data: {
-            'action': action,
-            'resource_id': event['resource_id'],
-            'metadata': event['metadata'],
-          });
+    // Prune events older than 7 days
+    final cutoff = DateTime.now().subtract(const Duration(days: 7));
+    final before = list.length;
+    list.removeWhere((e) {
+      final ts = DateTime.tryParse(e['timestamp'] as String? ?? '');
+      return ts != null && ts.isBefore(cutoff);
+    });
+    final pruned = before - list.length;
+    if (pruned > 0) {
+      debugPrint('ActivityTracker: pruned $pruned old events');
+    }
+
+    // Compute total study seconds for the last 7 days
+    int totalSeconds = 0;
+    for (final event in list) {
+      if (event['action'] == 'study_session') {
+        final meta = event['metadata'] as String?;
+        if (meta != null) {
+          try {
+            final decoded = jsonDecode(meta);
+            totalSeconds += (decoded['duration_seconds'] as num?)?.toInt() ?? 0;
+          } catch (_) {}
         }
-      } catch (_) {
-        failed.add(event);
       }
     }
-    await prefs.setString(_activityQueueKey, jsonEncode(failed));
 
+    // Compute streak: consecutive days with activity going back from today
+    final activeDates = <String>{};
+    for (final event in list) {
+      final ts = DateTime.tryParse(event['timestamp'] as String? ?? '');
+      if (ts != null) activeDates.add(ts.toIso8601String().split('T')[0]);
+    }
+    int streak = 0;
+    final today = DateTime.now();
+    for (int i = 0; i < 365; i++) {
+      final d = today.subtract(Duration(days: i));
+      final key = d.toIso8601String().split('T')[0];
+      if (activeDates.contains(key)) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    // Sync to server
+    try {
+      await ApiClient.post('/student/sync-study-time', data: {
+        'total_seconds': totalSeconds,
+        'streak_days': streak,
+      });
+    } catch (_) {
+      return;
+    }
+
+    // Compute and sync per-subject minutes
+    final subjectMinutes = <String, int>{};
+    for (final event in list) {
+      if (event['action'] == 'study_session') {
+        final meta = event['metadata'] as String?;
+        if (meta != null) {
+          try {
+            final decoded = jsonDecode(meta);
+            final subj = decoded['subject'] as String?;
+            final secs = (decoded['duration_seconds'] as num?)?.toInt() ?? 0;
+            if (subj != null && subj.isNotEmpty && secs > 0) {
+              subjectMinutes[subj] = (subjectMinutes[subj] ?? 0) + secs;
+            }
+          } catch (_) {}
+        }
+      }
+    }
+    if (subjectMinutes.isNotEmpty) {
+      final subjects = subjectMinutes.entries.map((e) => {
+        'name': e.key,
+        'minutes': (e.value / 60).round().clamp(0, 10080),
+      }).toList();
+      try {
+        await ApiClient.post('/student/sync-subject-time', data: {'subjects': subjects});
+      } catch (_) {}
+    }
+
+    // Save pruned list and refresh cached analytics
+    await prefs.setString(_localEventsKey, jsonEncode(list));
     try {
       final response = await ApiClient.get('/student/analytics');
       if (response.statusCode == 200) {
         await prefs.setString(_cachedAnalyticsKey, jsonEncode(response.data));
       }
     } catch (_) {}
-  }
-
-  /// Logs a short-lived key action and triggers an immediate sync to the server.
-  Future<void> logKeyAction(String action, {String? resourceId, String? metadata}) async {
-    final prefs = await SharedPreferences.getInstance();
-    await _enqueue(prefs, {
-      'action': action,
-      'resource_id': resourceId,
-      'metadata': metadata,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-    _lastSyncMs = 0;
-    await _trySync(prefs);
   }
 }

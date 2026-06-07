@@ -17,11 +17,11 @@
         .student-info h1 { font-size: 1.5rem; font-weight: 800; color: var(--primary); letter-spacing: -0.025em; margin-bottom: 0.15rem; }
         .student-info .meta { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
         .meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-muted); }
-        .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.875rem; margin-bottom: 1.5rem; }
-        .stat-card { background: var(--bg-surface); border: 1px solid var(--outline); border-radius: var(--radius); padding: 1.125rem; box-shadow: var(--card-shadow); transition: box-shadow var(--transition), background-color var(--transition), border-color var(--transition); }
-        .stat-card:hover { box-shadow: var(--card-shadow-hover); }
-        .stat-card .stat-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.35rem; }
-        .stat-card .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--primary); letter-spacing: -0.02em; }
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.875rem; margin-bottom: 1.5rem; }
+        .stat-card { background: var(--bg-surface); border: 1px solid var(--outline); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--card-shadow); text-align: center; transition: box-shadow var(--transition), transform var(--transition); }
+        .stat-card:hover { box-shadow: var(--card-shadow-hover); transform: translateY(-2px); }
+        .stat-card .stat-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.25rem; }
+        .stat-card .stat-value { font-size: 1.125rem; font-weight: 800; color: var(--primary); letter-spacing: -0.02em; white-space: nowrap; }
         .stat-card .stat-unit { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); margin-left: 0.2rem; }
         .subject-list { display: flex; flex-direction: column; gap: 0.875rem; }
         .subject-row { display: flex; align-items: center; gap: 0.75rem; }
@@ -33,7 +33,7 @@
         .activity-list { display: flex; flex-direction: column; }
         .activity-item { display: flex; align-items: flex-start; gap: 0.875rem; padding: 0.875rem 0; border-bottom: 1px solid var(--outline); }
         .activity-item:last-child { border-bottom: none; }
-        .activity-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; background: var(--outline); }
+        .activity-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .activity-body { flex: 1; min-width: 0; }
         .activity-body .activity-action { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
         .activity-body .activity-detail { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.1rem; }
@@ -44,13 +44,14 @@
             .student-header { gap: 1rem; }
             .avatar-large { width: 48px; height: 48px; font-size: 1rem; }
             .student-info h1 { font-size: 1.25rem; }
-            .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 0.625rem; }
-            .stat-card { padding: 0.875rem; }
-            .stat-card .stat-value { font-size: 1.25rem; }
+            .stat-grid { grid-template-columns: repeat(3, 1fr); gap: 0.625rem; }
+            .stat-card { padding: 1rem; }
+            .stat-card .stat-value { font-size: 1rem; }
             .subject-name { min-width: 70px; font-size: 0.8rem; }
         }
         @media (max-width: 480px) {
             main { padding: 1rem 0.75rem; }
+            .stat-grid { grid-template-columns: 1fr; }
             .subject-name { min-width: 60px; font-size: 0.75rem; }
         }
     </style>
@@ -63,17 +64,12 @@
                 Back to Students
             </a>
             <div class="student-header" id="studentHeader"></div>
+            <!-- Section: Stat Cards -->
             <div class="stat-grid" id="statGrid"></div>
+            <!-- Section: Subject Breakdown -->
             <div class="card" id="subjectCard">
-                <div class="card-title">Subject Breakdown</div>
+                <div class="card-title" id="subjectCardTitle">Subject Breakdown</div>
                 <div class="subject-list" id="subjectList"></div>
-            </div>
-            <div class="card" id="activityCard">
-                <div class="card-title">Recent Activity</div>
-                <div id="activityList" class="activity-list"></div>
-                <div class="show-more-wrap" id="showMoreWrap">
-                    <button class="btn btn-outline" id="showMoreBtn" onclick="loadMoreActivities()">Show More</button>
-                </div>
             </div>
             <div id="loadingState" class="empty-state" style="display:none;">Loading student data...</div>
             <div id="errorState" class="empty-state" style="display:none; color: var(--danger);">Failed to load student data.</div>
@@ -85,120 +81,85 @@
         var studentId = params.get('id') || '';
         var studentName = params.get('name') || 'Student';
         var studentGrade = params.get('grade') || '';
-        var todayMinutes = parseInt(params.get('today')) || 0;
         var weekMinutes = parseInt(params.get('week')) || 0;
         var streakDays = parseInt(params.get('streak')) || 0;
-        var savedCount = parseInt(params.get('saved')) || 0;
         var dlCount = parseInt(params.get('dl')) || 0;
         var lastActive = params.get('last') || '';
         var avatarInitials = params.get('avatar') || studentName.split(' ').map(function(s){return s[0]}).join('').slice(0,2).toUpperCase();
 
-        var activityLimit = 20;
-        var allDemoActivities = [];
-        var totalActivities = 0;
-        var offset = 0;
-
         var subjectColors = ['#14b8a6','#6366f1','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981','#f97316'];
 
-        var actionIcons = { view:'ðŸ‘', download:'â¬‡', save:'â˜…', search:'ðŸ”', quiz:'âœ' };
-        var actionLabels = { view:'Viewed', download:'Downloaded', save:'Saved', search:'Searched', quiz:'Quiz' };
-
+        /* Section: Demo student data */
         var demoStudents = {
             'demo-1': {
-                subjects:[{name:'Math',minutes:85},{name:'Science',minutes:72},{name:'English',minutes:78},{name:'History',minutes:65}],
-                month:1280,
-                activities:[
-                    {action:'view',detail:'Viewed Mathematics - Algebra',timestamp:'2m ago'},
-                    {action:'download',detail:'Downloaded Science - Periodic Table',timestamp:'15m ago'},
-                    {action:'view',detail:'Watched Physics - Motion',timestamp:'1h ago'},
-                    {action:'save',detail:'Saved English - Grammar Guide',timestamp:'3h ago'},
-                    {action:'quiz',detail:'Completed Mathematics - Quiz 4',timestamp:'Yesterday'}
-                ]
+                last_active: new Date(Date.now()-1800000).toISOString(),
+                week_minutes: 320,
+                streak: 12,
+                downloads: 18,
+                subjects:[{name:'Math',minutes:95},{name:'Science',minutes:82},{name:'English',minutes:78},{name:'History',minutes:65}]
             },
             'demo-2': {
-                subjects:[{name:'Math',minutes:60},{name:'Science',minutes:80},{name:'English',minutes:55}],
-                month:720,
-                activities:[
-                    {action:'save',detail:'Saved Science - Biology Notes',timestamp:'10m ago'},
-                    {action:'view',detail:'Viewed Mathematics - Geometry',timestamp:'1h ago'},
-                    {action:'download',detail:'Downloaded English - Literature Guide',timestamp:'4h ago'}
-                ]
+                last_active: new Date(Date.now()-7200000).toISOString(),
+                week_minutes: 195,
+                streak: 3,
+                downloads: 7,
+                subjects:[{name:'Math',minutes:60},{name:'Science',minutes:80},{name:'English',minutes:55}]
             },
             'demo-3': {
-                subjects:[{name:'Math',minutes:92},{name:'Science',minutes:88},{name:'English',minutes:90},{name:'History',minutes:75},{name:'Geography',minutes:80}],
-                month:1680,
-                activities:[
-                    {action:'quiz',detail:'Started Science - Chemistry Quiz',timestamp:'1m ago'},
-                    {action:'view',detail:'Viewed Mathematics - Trigonometry',timestamp:'30m ago'},
-                    {action:'download',detail:'Downloaded Geography - Maps',timestamp:'2h ago'},
-                    {action:'view',detail:'Watched History - World War II',timestamp:'Yesterday'},
-                    {action:'save',detail:'Saved English - Essay Examples',timestamp:'2d ago'}
-                ]
+                last_active: new Date(Date.now()-300000).toISOString(),
+                week_minutes: 425,
+                streak: 18,
+                downloads: 24,
+                subjects:[{name:'Math',minutes:110},{name:'Science',minutes:98},{name:'English',minutes:92},{name:'History',minutes:75},{name:'Geography',minutes:50}]
             },
             'demo-4': {
-                subjects:[{name:'Math',minutes:45},{name:'Science',minutes:55},{name:'English',minutes:60}],
-                month:340,
-                activities:[
-                    {action:'download',detail:'Downloaded Mathematics - Basics',timestamp:'1h ago'},
-                    {action:'view',detail:'Viewed Science - Plants',timestamp:'5h ago'}
-                ]
+                last_active: new Date(Date.now()-3600000).toISOString(),
+                week_minutes: 160,
+                streak: 5,
+                downloads: 4,
+                subjects:[{name:'Math',minutes:45},{name:'Science',minutes:55},{name:'English',minutes:60}]
             },
             'demo-5': {
-                subjects:[{name:'Math',minutes:78},{name:'Science',minutes:70},{name:'English',minutes:82},{name:'History',minutes:68}],
-                month:1100,
-                activities:[
-                    {action:'view',detail:'Viewed English - Grammar',timestamp:'5m ago'},
-                    {action:'download',detail:'Downloaded Mathematics - Practice Set',timestamp:'45m ago'},
-                    {action:'view',detail:'Watched Science - Electricity',timestamp:'3h ago'},
-                    {action:'save',detail:'Saved History - Ancient India',timestamp:'Yesterday'}
-                ]
+                last_active: new Date(Date.now()-600000).toISOString(),
+                week_minutes: 300,
+                streak: 10,
+                downloads: 15,
+                subjects:[{name:'Math',minutes:88},{name:'Science',minutes:80},{name:'English',minutes:72},{name:'History',minutes:60}]
             },
             'demo-6': {
-                subjects:[{name:'Math',minutes:82},{name:'Physics',minutes:76},{name:'English',minutes:70}],
-                month:850,
-                activities:[
-                    {action:'download',detail:'Downloaded Physics - Optics',timestamp:'20m ago'},
-                    {action:'view',detail:'Viewed Mathematics - Calculus',timestamp:'2h ago'},
-                    {action:'save',detail:'Saved English - Writing Guide',timestamp:'6h ago'}
-                ]
+                last_active: new Date(Date.now()-10800000).toISOString(),
+                week_minutes: 228,
+                streak: 7,
+                downloads: 9,
+                subjects:[{name:'Math',minutes:82},{name:'Physics',minutes:76},{name:'English',minutes:70}]
             },
             'demo-7': {
-                subjects:[{name:'Math',minutes:88},{name:'Science',minutes:84},{name:'English',minutes:86},{name:'Geography',minutes:72}],
-                month:1400,
-                activities:[
-                    {action:'view',detail:'Viewed Geography - Climate',timestamp:'8m ago'},
-                    {action:'download',detail:'Downloaded Science - Biology Diagrams',timestamp:'1h ago'},
-                    {action:'quiz',detail:'Completed Mathematics - Geometry Quiz',timestamp:'3h ago'},
-                    {action:'view',detail:'Watched English - Poetry',timestamp:'Yesterday'}
-                ]
+                last_active: new Date(Date.now()-900000).toISOString(),
+                week_minutes: 330,
+                streak: 14,
+                downloads: 20,
+                subjects:[{name:'Math',minutes:98},{name:'Science',minutes:84},{name:'English',minutes:86},{name:'Geography',minutes:62}]
             },
             'demo-8': {
-                subjects:[{name:'Science',minutes:40},{name:'English',minutes:50}],
-                month:160,
-                activities:[
-                    {action:'download',detail:'Downloaded Science - Animals',timestamp:'2h ago'}
-                ]
+                last_active: new Date(Date.now()-86400000).toISOString(),
+                week_minutes: 90,
+                streak: 1,
+                downloads: 2,
+                subjects:[{name:'Science',minutes:40},{name:'English',minutes:50}]
             },
             'demo-9': {
-                subjects:[{name:'Math',minutes:95},{name:'Science',minutes:91},{name:'English',minutes:88},{name:'History',minutes:80},{name:'Geography',minutes:85},{name:'Sanskrit',minutes:78}],
-                month:1800,
-                activities:[
-                    {action:'save',detail:'Saving Science - Physics Quiz',timestamp:'Just now'},
-                    {action:'download',detail:'Downloaded Mathematics - Advanced Problems',timestamp:'5m ago'},
-                    {action:'view',detail:'Viewed Sanskrit - Grammar',timestamp:'20m ago'},
-                    {action:'view',detail:'Watched History - Mughal Empire',timestamp:'1h ago'},
-                    {action:'quiz',detail:'Completed English - Comprehension',timestamp:'3h ago'},
-                    {action:'save',detail:'Saved Geography - Rivers',timestamp:'Yesterday'}
-                ]
+                last_active: new Date(Date.now()-2700000).toISOString(),
+                week_minutes: 517,
+                streak: 25,
+                downloads: 32,
+                subjects:[{name:'Math',minutes:115},{name:'Science',minutes:105},{name:'English',minutes:98},{name:'History',minutes:85},{name:'Geography',minutes:72},{name:'Sanskrit',minutes:42}]
             },
             'demo-10': {
-                subjects:[{name:'Math',minutes:68},{name:'Science',minutes:72},{name:'English',minutes:65}],
-                month:560,
-                activities:[
-                    {action:'view',detail:'Viewed Chemistry - Organic',timestamp:'45m ago'},
-                    {action:'download',detail:'Downloaded Physics - Mechanics',timestamp:'3h ago'},
-                    {action:'save',detail:'Saved Mathematics - Formulas',timestamp:'Yesterday'}
-                ]
+                last_active: new Date(Date.now()-7200000).toISOString(),
+                week_minutes: 205,
+                streak: 4,
+                downloads: 6,
+                subjects:[{name:'Math',minutes:68},{name:'Science',minutes:72},{name:'English',minutes:65}]
             }
         };
 
@@ -223,24 +184,23 @@
                 '<h1>' + esc(studentName) + '</h1>' +
                 '<div class="meta">' +
                 '<span>' + esc(studentGrade) + '</span>' +
-                (lastActive ? '<span class="meta-dot"></span><span>Last active ' + esc(lastActive) + '</span>' : '') +
-                '<span class="meta-dot"></span><span class="status-badge" style="margin-top:0;"><span class="status-dot"></span>Active</span>' +
+                (lastActive ? '<span class="meta-dot"></span><span>Last updated ' + esc(timeAgo(lastActive)) + '</span>' : '') +
                 '</div></div>';
         }
 
-        function renderStats(monthVal) {
+        function renderStats(weekMin, streakVal, dlVal) {
+            var weekVal = (weekMin / 60).toFixed(1).replace(/\.0$/, '');
             var grid = document.getElementById('statGrid');
             var cards = [
-                { label:'Today', value:todayMinutes, unit:'min' },
-                { label:'This Week', value:weekMinutes, unit:'min' },
-                { label:'This Month', value:monthVal, unit:'min' },
-                { label:'Day Streak', value:streakDays, unit:'days' },
-                { label:'Saved', value:savedCount, unit:'' },
-                { label:'Downloads', value:dlCount, unit:'' }
+                { label:'Time This Week', value:weekVal, unit:'h' },
+                { label:'Day Streak', value:streakVal, unit:'days' },
+                { label:'Downloaded', value:dlVal, unit:'' }
             ];
             grid.innerHTML = cards.map(function(c){
                 var val = c.label === 'Day Streak' ? c.value : c.value + (c.unit ? ' <span class="stat-unit">' + c.unit + '</span>' : '');
-                return '<div class="stat-card"><div class="stat-label">' + c.label + '</div><div class="stat-value">' + val + '</div></div>';
+                return '<div class="stat-card">' +
+                    '<div class="stat-label">' + c.label + '</div>' +
+                    '<div class="stat-value">' + val + '</div></div>';
             }).join('');
         }
 
@@ -263,60 +223,30 @@
             }).join('');
         }
 
-        function renderActivityItem(a, idx) {
-            var ico = actionIcons[a.action] || 'ðŸ“„';
-            var label = actionLabels[a.action] || a.action;
-            var detail = a.detail || a.metadata || '';
-            var ts = a.timestamp || '';
-            if (ts.indexOf('T') !== -1) ts = timeAgo(ts);
-            return '<div class="activity-item">' +
-                '<div class="activity-icon">' + ico + '</div>' +
-                '<div class="activity-body">' +
-                '<div class="activity-action">' + esc(label) + '</div>' +
-                (detail ? '<div class="activity-detail">' + esc(detail) + '</div>' : '') +
-                '<div class="activity-time">' + esc(ts) + '</div>' +
-                '</div></div>';
-        }
-
-        function renderActivities(activities, append) {
-            var container = document.getElementById('activityList');
-            if (!append) container.innerHTML = '';
-            if (!activities || activities.length === 0) {
-                if (!append) container.innerHTML = '<div class="empty-state">No recent activity.</div>';
-                document.getElementById('showMoreWrap').style.display = 'none';
+        function renderSubjects(subjects) {
+            /* Set the card title with the student's grade */
+            var titleEl = document.getElementById('subjectCardTitle');
+            if (studentGrade) {
+                titleEl.innerHTML = esc(studentGrade) + ' &mdash; Subject Breakdown <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">(This Week)</span>';
+            } else {
+                titleEl.innerHTML = 'Subject Breakdown <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">(This Week)</span>';
+            }
+            if (!subjects || subjects.length === 0) {
+                document.getElementById('subjectList').innerHTML = '<div class="empty-state">No subject data available.</div>';
                 return;
             }
-            container.innerHTML += activities.map(function(a, i){ return renderActivityItem(a, i); }).join('');
-            if (offset >= totalActivities) {
-                document.getElementById('showMoreWrap').style.display = 'none';
-            } else {
-                document.getElementById('showMoreWrap').style.display = '';
-            }
-        }
-
-        function loadMoreActivities() {
-            if (IS_DEMO) {
-                var next = allDemoActivities.slice(offset, offset + activityLimit);
-                offset += next.length;
-                renderActivities(next, true);
-            } else {
-                var btn = document.getElementById('showMoreBtn');
-                btn.disabled = true;
-                btn.textContent = 'Loading...';
-                fetch('/teacher/student/' + encodeURIComponent(studentId) + '/activity?limit=' + activityLimit + '&offset=' + offset)
-                    .then(function(r){ return r.json(); })
-                    .then(function(data){
-                        offset += data.activity.length;
-                        totalActivities = data.total;
-                        renderActivities(data.activity, true);
-                        btn.disabled = false;
-                        btn.textContent = 'Show More';
-                    })
-                    .catch(function(){
-                        btn.disabled = false;
-                        btn.textContent = 'Show More';
-                    });
-            }
+            var maxMin = Math.max.apply(null, subjects.map(function(s){ return s.minutes; }));
+            var list = document.getElementById('subjectList');
+            list.innerHTML = subjects.map(function(s, i){
+                var pct = (s.minutes / maxMin) * 100;
+                var color = subjectColors[i % subjectColors.length];
+                return '<div class="subject-row">' +
+                    '<span class="subject-name">' + esc(s.name) + '</span>' +
+                    '<div class="subject-bar-wrap">' +
+                    '<div class="subject-bar-track"><div class="subject-bar-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>' +
+                    '<span class="subject-minutes">' + s.minutes + 'm</span>' +
+                    '</div></div>';
+            }).join('');
         }
 
         function init() {
@@ -326,38 +256,27 @@
                 document.getElementById('errorState').textContent = 'No student ID provided.';
                 return;
             }
+            if (IS_DEMO && !lastActive) {
+                var demoLookup = demoStudents[studentId];
+                if (demoLookup && demoLookup.last_active) lastActive = demoLookup.last_active;
+            }
             renderHeader();
             if (IS_DEMO) {
                 var demo = demoStudents[studentId];
                 if (!demo) {
                     document.getElementById('statGrid').innerHTML = '';
                     document.getElementById('subjectList').innerHTML = '<div class="empty-state">Demo data not available for this student.</div>';
-                    document.getElementById('activityList').innerHTML = '<div class="empty-state">No recent activity.</div>';
-                    document.getElementById('showMoreWrap').style.display = 'none';
                     document.getElementById('loadingState').style.display = 'none';
                     return;
                 }
-                renderStats(demo.month);
+                renderStats(demo.week_minutes, demo.streak, demo.downloads);
                 renderSubjects(demo.subjects);
-                allDemoActivities = demo.activities;
-                totalActivities = allDemoActivities.length;
-                offset = Math.min(activityLimit, totalActivities);
-                renderActivities(allDemoActivities.slice(0, activityLimit), false);
                 document.getElementById('loadingState').style.display = 'none';
             } else {
-                Promise.all([
-                    fetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); }),
-                    fetch('/teacher/student/' + encodeURIComponent(studentId) + '/activity?limit=' + activityLimit + '&offset=0').then(function(r){ return r.json(); })
-                ]).then(function(results){
-                    var analytics = results[0];
-                    var activityData = results[1];
-                    var monthVal = analytics.study_minutes_this_month || 0;
-                    renderStats(monthVal);
+                fetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); })
+                .then(function(analytics){
+                    renderStats((analytics.study_minutes_this_week || 0) * 60, analytics.streak_days || 0, analytics.resources_saved || 0);
                     renderSubjects(analytics.subjects || []);
-                    var acts = activityData.activity || [];
-                    totalActivities = activityData.total || acts.length;
-                    offset = acts.length;
-                    renderActivities(acts, false);
                     document.getElementById('loadingState').style.display = 'none';
                 }).catch(function(err){
                     document.getElementById('loadingState').style.display = 'none';
@@ -367,7 +286,9 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', function() {
+            init();
+        });
     </script>
 </body>
 </html>
