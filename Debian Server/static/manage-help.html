@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Section: Head — metadata, theme detection, and help-specific styles -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina Hub | Help & Documentation</title>
@@ -31,6 +32,7 @@
 </head>
 <body>
 
+    <!-- Section: Mobile Header — hamburger menu for small screens -->
     <header class="mobile-header">
         <div class="mobile-brand">Lumina Hub</div>
         <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
@@ -38,8 +40,10 @@
         </button>
     </header>
 
+    <!-- Section: Mobile Overlay — tap to close sidebar on mobile -->
     <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
 
+    <!-- Section: Sidebar — navigation links, user info, theme toggle, logout -->
     <aside>
         <a href="/static/index" class="sidebar-brand">Lumina Hub</a>
         <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
@@ -64,12 +68,14 @@
         </a>
     </aside>
 
+    <!-- Section: Main Content — hardcoded documentation cards -->
     <main>
         <div class="page-header">
             <h1>Help &amp; Instructions</h1>
             <p>How to use the Lumina Hub and EduMesh app.</p>
         </div>
 
+        <!-- Section: Getting Started — student onboarding steps -->
         <div class="card help-section" style="--accent: var(--primary);">
             <div class="section-title"><span class="icon-circle" style="background: var(--primary); color: var(--on-primary);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></span> Getting Started</div>
             <ul>
@@ -80,6 +86,7 @@
             </ul>
         </div>
 
+        <!-- Section: Teacher Guide — uploading, managing, analytics, passwords -->
         <div class="card help-section" style="--accent: #6366f1;" id="teacher-guide">
             <div class="section-title"><span class="icon-circle" style="background: #6366f1; color: #fff;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span> For Teachers</div>
             <ul>
@@ -91,6 +98,7 @@
             </ul>
         </div>
 
+        <!-- Section: Student Tracking — study time, streak, privacy -->
         <div class="card help-section" style="--accent: #f59e0b;">
             <div class="section-title"><span class="icon-circle" style="background: #f59e0b; color: #fff;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg></span> Student Tracking</div>
             <ul>
@@ -101,6 +109,7 @@
             </ul>
         </div>
 
+        <!-- Section: Troubleshooting — connectivity, passwords, performance -->
         <div class="card help-section" style="--accent: #ef4444;">
             <div class="section-title"><span class="icon-circle" style="background: #ef4444; color: #fff;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></span> Troubleshooting</div>
             <ul>
@@ -111,6 +120,7 @@
             </ul>
         </div>
 
+        <!-- Section: Admin Tasks — danger zone, settings, setup script -->
         <div class="card help-section" style="--accent: #14b8a6;">
             <div class="section-title"><span class="icon-circle" style="background: #14b8a6; color: #fff;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span> Admin Tasks</div>
             <ul>
@@ -121,6 +131,7 @@
         </div>
     </main>
 
+    <!-- Section: Bottom Navigation (Mobile) — icon + label tabs -->
     <div id="bottomNav">
         <a href="/static/index" class="bottom-nav-item" id="bottom-nav-home">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -152,11 +163,8 @@
         </a>
     </div>
 
+    <!-- Section: Scripts — lumina.js shared + empty init docready -->
     <script src="/static/js/lumina.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-        });
-    </script>
+
 </body>
 </html>
-

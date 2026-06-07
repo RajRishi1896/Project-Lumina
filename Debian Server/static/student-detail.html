@@ -1,12 +1,15 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+<!-- Section: Head — theme detection, metadata, detail page styles -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Detail - Lumina Hub</title>
+    <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
     <style>
+        /* === Layout and component styles for student detail page === */
         body { justify-content: center; }
         main { margin-left: 0; width: 100%; max-width: none; padding: 2.5rem 1rem; display: flex; justify-content: center; }
         .student-detail-container { width: 100%; max-width: 900px; }
@@ -57,25 +60,29 @@
     </style>
 </head>
 <body>
+    <!-- Section: Main Content — back link, student header, stat cards, subject breakdown, loading/error states -->
     <main>
         <div class="student-detail-container" id="app">
             <a href="/static/students" class="back-link">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 Back to Students
             </a>
+            <!-- Section: Student Header — avatar, name, grade, last active -->
             <div class="student-header" id="studentHeader"></div>
-            <!-- Section: Stat Cards -->
+            <!-- Section: Stat Cards — time this week, streak, downloads -->
             <div class="stat-grid" id="statGrid"></div>
-            <!-- Section: Subject Breakdown -->
+            <!-- Section: Subject Breakdown — horizontal bar chart per subject -->
             <div class="card" id="subjectCard">
                 <div class="card-title" id="subjectCardTitle">Subject Breakdown</div>
                 <div class="subject-list" id="subjectList"></div>
             </div>
+            <!-- Section: Loading / Error States -->
             <div id="loadingState" class="empty-state" style="display:none;">Loading student data...</div>
             <div id="errorState" class="empty-state" style="display:none; color: var(--danger);">Failed to load student data.</div>
         </div>
     </main>
     <script src="/static/js/lumina.js"></script>
+    <!-- Section: Inline Scripts — student analytics rendering, demo data fallback, API fetching -->
     <script>
         var params = new URLSearchParams(window.location.search);
         var studentId = params.get('id') || '';
@@ -89,7 +96,7 @@
 
         var subjectColors = ['#14b8a6','#6366f1','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981','#f97316'];
 
-        /* Section: Demo student data */
+        /* Section: Demo student analytics data — used when IS_DEMO is true */
         var demoStudents = {
             'demo-1': {
                 last_active: new Date(Date.now()-1800000).toISOString(),
@@ -163,6 +170,10 @@
             }
         };
 
+        /**
+         * @param {string} isoStr - ISO date string
+         * @returns {string} Human-friendly relative time label
+         */
         function timeAgo(isoStr) {
             var now = new Date();
             var d = new Date(isoStr);
@@ -176,6 +187,7 @@
             return d.toLocaleDateString();
         }
 
+        /** Renders the student avatar, name, grade, and last active into #studentHeader. */
         function renderHeader() {
             var el = document.getElementById('studentHeader');
             el.innerHTML =
@@ -188,6 +200,12 @@
                 '</div></div>';
         }
 
+        /**
+         * @param {number} weekMin - Total study minutes this week
+         * @param {number} streakVal - Consecutive day streak
+         * @param {number} dlVal - Number of downloads
+         * Renders three stat cards into #statGrid.
+         */
         function renderStats(weekMin, streakVal, dlVal) {
             var weekVal = (weekMin / 60).toFixed(1).replace(/\.0$/, '');
             var grid = document.getElementById('statGrid');
@@ -204,25 +222,10 @@
             }).join('');
         }
 
-        function renderSubjects(subjects) {
-            if (!subjects || subjects.length === 0) {
-                document.getElementById('subjectList').innerHTML = '<div class="empty-state">No subject data available.</div>';
-                return;
-            }
-            var maxMin = Math.max.apply(null, subjects.map(function(s){ return s.minutes; }));
-            var list = document.getElementById('subjectList');
-            list.innerHTML = subjects.map(function(s, i){
-                var pct = (s.minutes / maxMin) * 100;
-                var color = subjectColors[i % subjectColors.length];
-                return '<div class="subject-row">' +
-                    '<span class="subject-name">' + esc(s.name) + '</span>' +
-                    '<div class="subject-bar-wrap">' +
-                    '<div class="subject-bar-track"><div class="subject-bar-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>' +
-                    '<span class="subject-minutes">' + s.minutes + 'm</span>' +
-                    '</div></div>';
-            }).join('');
-        }
-
+        /**
+         * @param {Array} subjects - Array of {name, minutes} objects
+         * Renders subject breakdown into #subjectList with proportional bar fills.
+         */
         function renderSubjects(subjects) {
             /* Set the card title with the student's grade */
             var titleEl = document.getElementById('subjectCardTitle');
@@ -249,6 +252,7 @@
             }).join('');
         }
 
+        /** Entry point — reads URL params, renders header/stats/subjects from demo data or API. */
         function init() {
             if (!studentId) {
                 document.getElementById('loadingState').style.display = 'none';
@@ -273,7 +277,8 @@
                 renderSubjects(demo.subjects);
                 document.getElementById('loadingState').style.display = 'none';
             } else {
-                fetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); })
+                /* Auth flow: uses apiFetch with cookie-based session to call /teacher/student/{id}/analytics */
+                apiFetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); })
                 .then(function(analytics){
                     renderStats((analytics.study_minutes_this_week || 0) * 60, analytics.streak_days || 0, analytics.resources_saved || 0);
                     renderSubjects(analytics.subjects || []);
@@ -292,6 +297,3 @@
     </script>
 </body>
 </html>
-
-
-

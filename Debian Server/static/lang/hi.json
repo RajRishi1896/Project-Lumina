@@ -45,5 +45,7 @@
   "sidebar.danger": "खतरा क्षेत्र",
   "sidebar.settings": "सेटिंग्स",
   "sidebar.logout": "लॉग आउट",
-  "sidebar.dark_mode": "डार्क मोड"
+  "sidebar.dark_mode": "डार्क मोड",
+  "settings_language_title": "भाषा",
+  "settings_language_description": "डैशबोर्ड के लिए अपनी पसंदीदा भाषा चुनें।"
 }

@@ -7,10 +7,11 @@ import '../../../shared/widgets/lumina_stepper.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../pages/app_shell.dart';
 import '../data/auth_service.dart';
-import '../../../core/services/connection_service.dart';
+import '../../../shared/services/connectivity_service.dart';
 import '../../../core/network/api_client.dart';
 import '../../../widgets/connection_gate.dart';
 import 'profile_setup_page.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A page for student registration and login.
 ///
@@ -18,6 +19,10 @@ import 'profile_setup_page.dart';
 /// (password strength checks), a hub-connection badge, and a password-reset
 /// dialog flow. On successful auth it navigates to [ProfileSetupPage] (new
 /// users) or [AppShell] (returning users).
+///
+/// Connection state is tracked via the [ConnectivityService] singleton —
+/// inputs and buttons are disabled when the Hub is unreachable, and a
+/// guidance message is shown prompting the user to connect.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -28,7 +33,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final ConnectionService _connectionService = ConnectionService();
+  final _connectivity = ConnectivityService();
   
   bool _isLoading = false;
   bool _isRegisterMode = true;
@@ -37,30 +42,25 @@ class _LoginPageState extends State<LoginPage> {
   
   // Gatekeeper state
   bool _isConnected = false;
-  Timer? _pingTimer;
 
   @override
   void initState() {
     super.initState();
-    _startGatekeeper();
+    _isConnected = _connectivity.isOnline;
+    _connectivity.addListener(_onConnectivityChange);
   }
 
-  void _startGatekeeper() {
-    // Check immediately, then every 60 seconds
-    _checkHub();
-    _pingTimer = Timer.periodic(const Duration(seconds: 60), (_) => _checkHub());
-  }
-
-  Future<void> _checkHub() async {
-    final connected = await _connectionService.ping(timeout: const Duration(seconds: 2));
-    if (mounted && _isConnected != connected) {
-      setState(() => _isConnected = connected);
+  /// Updates [_isConnected] when the [ConnectivityService] reports a
+  /// change in Hub reachability.
+  void _onConnectivityChange() {
+    if (mounted) {
+      setState(() => _isConnected = _connectivity.isOnline);
     }
   }
 
   @override
   void dispose() {
-    _pingTimer?.cancel();
+    _connectivity.removeListener(_onConnectivityChange);
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -382,6 +382,15 @@ class _LoginPageState extends State<LoginPage> {
                         LuminaButton(
                           label: _isRegisterMode ? 'Register & Sync' : 'Login & Sync',
                           onPressed: _isConnected ? _handleAuth : () {},
+                        ),
+                      if (!_isConnected)
+                        Padding(
+                          padding: EdgeInsets.only(top: 12.h),
+                          child: Text(
+                            AppLocalizations.of(context)!.loginConnectToHub,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: cs.outline, fontSize: 12.sp),
+                          ),
                         ),
                     ],
                   ),

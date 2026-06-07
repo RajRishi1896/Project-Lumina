@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Section: Head — theme detection before paint, shared styles -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina Hub | Dashboard</title>
@@ -51,7 +52,7 @@
             <p>Welcome back. Your local education server is running.</p>
         </div>
 
-        <!-- Section: Stats Grid -->
+        <!-- Section: Stats Grid — 6 dashboard stat cards -->
         <div class="stat-grid" id="statsGrid">
             <div class="stat-card"><div class="stat-icon" style="background:#6366f122;color:#6366f1;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="stat-value" id="statStudents">—</div><div class="stat-label">Students</div></div>
             <div class="stat-card"><div class="stat-icon" style="background:#14b8a622;color:#14b8a6;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="stat-value" id="statResources">—</div><div class="stat-label">Resources</div></div>
@@ -105,13 +106,18 @@
         </a>
     </div>
 
-    <!-- Section: Scripts -->
+    <!-- Section: Scripts — shared JS + dashboard init -->
     <script src="/static/js/lumina.js"></script>
     <script>
         var _uptimeEl = document.getElementById('infoUptime');
         var _statUptimeEl = document.getElementById('statUptime');
         var _uptimeSeconds = 0;
 
+        /**
+         * Format uptime seconds into a long string (e.g. "3h 12m 5s").
+         * @param {number} secs
+         * @returns {string}
+         */
         function _formatUptime(secs) {
             var h = Math.floor(secs / 3600);
             var m = Math.floor((secs % 3600) / 60);
@@ -119,6 +125,11 @@
             return (h ? h + 'h ' : '') + m + 'm ' + s + 's';
         }
 
+        /**
+         * Format uptime seconds into a short string (e.g. "3h 12m").
+         * @param {number} secs
+         * @returns {string}
+         */
         function _formatUptimeShort(secs) {
             var h = Math.floor(secs / 3600);
             var m = Math.floor((secs % 3600) / 60);
@@ -126,9 +137,13 @@
             return m + 'm';
         }
 
+        /**
+         * Load dashboard stats from /stats endpoint.
+         * Populates the 6 stat cards and system info grid.
+         */
         async function loadStats() {
             try {
-                const res = await fetch('/stats');
+                const res = await apiFetch('/stats');
                 if (res.ok) {
                     const d = await res.json();
                     document.getElementById('statStudents').textContent = d.scholars ?? d.students ?? '—';
@@ -163,19 +178,7 @@
             }
         }, 1000);
 
-        async function checkOnline() {
-            try {
-                const res = await fetch('/ping');
-                const el = document.getElementById('onlineStatus');
-                el.innerHTML = '<div class="status-dot"></div> Online';
-            } catch (e) {
-                const el = document.getElementById('onlineStatus');
-                el.innerHTML = '<div class="status-dot" style="background:var(--danger)"></div> Offline';
-            }
-        }
-
         loadWhoAmI();
-        checkOnline();
         loadStats();
     </script>
 </body>

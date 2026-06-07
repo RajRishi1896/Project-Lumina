@@ -64,5 +64,8 @@
 
   "teacher.help.header": "Need help?",
   "teacher.help.body": "View setup guides, troubleshooting tips, and admin instructions.",
-  "teacher.help.link": "Teacher Guide"
+  "teacher.help.link": "Teacher Guide",
+
+  "settings_language_title": "Language",
+  "settings_language_description": "Choose your preferred language for the dashboard."
 }

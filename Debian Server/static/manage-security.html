@@ -1,14 +1,17 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+<!-- Section: Head — theme detection, metadata -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina Hub | Security</title>
+    <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
 </head>
 <body>
 
+    <!-- Section: Mobile Header — hamburger toggle + brand -->
     <header class="mobile-header">
         <div class="mobile-brand">Lumina Hub</div>
         <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
@@ -16,8 +19,10 @@
         </button>
     </header>
 
+    <!-- Section: Mobile Overlay — dark backdrop for sidebar on small screens -->
     <div class="mobile-overlay" onclick="toggleMobileMenu()"></div>
 
+    <!-- Section: Sidebar — nav links, user info, theme toggle, logout -->
     <aside>
         <a href="/static/index" class="sidebar-brand">Lumina Hub</a>
         <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
@@ -63,6 +68,7 @@
         </a>
     </aside>
 
+    <!-- Section: Main Content — password change, profile management -->
     <main>
 
         <div class="page-header">
@@ -70,6 +76,7 @@
             <p>Update administrator credentials and manage teacher accounts for mobile app uploading.</p>
         </div>
 
+        <!-- Section: Change Admin Password — current password, new password, toggle visibility -->
         <div class="card">
             <div class="card-title">Change Admin Password</div>
             <div id="securityNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
@@ -103,6 +110,7 @@
             </div>
         </div>
 
+        <!-- Section: My Profile — read-only username/name, editable department -->
         <div class="card">
             <div class="card-title">My Profile</div>
             <div id="profileNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
@@ -125,6 +133,7 @@
 
     </main>
 
+    <!-- Section: Bottom Nav (Mobile) — tab bar hidden by default, shown via media query -->
     <div id="bottomNav">
         <a href="/static/index" class="bottom-nav-item" id="bottom-nav-home">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -152,6 +161,7 @@
         </a>
     </div>
 
+    <!-- Section: Force Password Reset Modal — shown when admin sets reset_required=1 on current session -->
     <div id="forceResetModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20000;">
         <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.5rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
             <div style="margin: 0 auto 1.5rem; text-align: center;">
@@ -176,6 +186,7 @@
         </div>
     </div>
 
+    <!-- Section: Global Confirm Modal — reused by delete actions -->
     <div id="globalConfirmModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 30000; transition: all 0.3s ease;">
         <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.25rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
             <div id="confirmModalIcon" style="margin: 0 auto 1.25rem; text-align: center;">
@@ -191,15 +202,25 @@
         </div>
     </div>
 
+    <!-- Section: Toast Container — global notification area (top-right, fixed) -->
     <div id="globalToastContainer" style="position: fixed; top: 1.5rem; right: 1.5rem; z-index: 99999; display: flex; flex-direction: column; gap: 0.75rem; max-width: 380px; width: 100%; pointer-events: none;"></div>
 
     <script src="/static/js/lumina.js"></script>
+    <!-- Section: Inline Scripts — password change, teacher CRUD, force reset, confirm modal -->
     <script>
+        /** @type {Array<{username:string, name:string, department:string, reset_required:number}>} Demo teacher data for IS_DEMO mode */
         let demoTeachers = [
             { username: "jsmith", name: "John Smith", department: "Science", reset_required: 0 },
             { username: "mdoe", name: "Mary Doe", department: "Mathematics", reset_required: 1 }
         ];
 
+        /**
+         * Toggles password input visibility between text and password types.
+         * Updates the eye icon SVG accordingly.
+         * @param {string} inputId - The DOM id of the password input
+         * @param {string} eyeIconId - The DOM id of the eye icon SVG
+         * @param {string} btnId - The DOM id of the toggle button
+         */
         function togglePasswordVisibility(inputId, eyeIconId, btnId) {
             const pwdInput = document.getElementById(inputId);
             const eyeIcon = document.getElementById(eyeIconId);
@@ -215,6 +236,11 @@
             }
         }
 
+        /**
+         * Changes the admin password. Validates complexity requirements, then
+         * sends POST to /teacher/change-password with old and new passwords.
+         * On success, redirects to home after a short delay.
+         */
         async function changePassword() {
             const oldPwd = document.getElementById('oldPwd').value;
             const newPwd = document.getElementById('newPwd').value;
@@ -228,7 +254,7 @@
                 return;
             }
             try {
-                const res = await fetch('/teacher/change-password', {
+                const res = await apiFetch('/teacher/change-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ old_password: oldPwd, new_password: newPwd })
@@ -248,110 +274,20 @@
             }
         }
 
-        async function loadTeachers() {
-            try {
-                let teachers = [];
-                if (IS_DEMO) {
-                    teachers = [...demoTeachers];
-                } else {
-                    const res = await fetch('/teachers');
-                    teachers = await res.json();
-                }
-                const tbody = document.getElementById('teacherTable');
-                if (!tbody) return;
-                const disableContainer = document.getElementById('disableAdminContainer');
-                if (teachers.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No teacher profiles created yet.</td></tr>';
-                    if (disableContainer) disableContainer.style.display = 'none';
-                    return;
-                }
-                if (disableContainer) disableContainer.style.display = 'block';
-                tbody.innerHTML = teachers.map(t => `
-                    <tr>
-                        <td><strong>${esc(t.username)}</strong></td>
-                        <td>${esc(t.name)}</td>
-                        <td><span class="type-badge type-default">${esc(t.department)}</span></td>
-                        <td style="text-align: right;">
-                            <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (e) {
-                if (IS_DEMO) {
-                    const tbody = document.getElementById('teacherTable');
-                    if (!tbody) return;
-                    tbody.innerHTML = demoTeachers.map(t => `
-                        <tr>
-                            <td><strong>${esc(t.username)}</strong></td>
-                            <td>${esc(t.name)}</td>
-                            <td><span class="type-badge type-default">${esc(t.department)}</span></td>
-                            <td style="text-align: right;">
-                                <button onclick="deleteTeacherProfile('${esc(t.username)}')" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">Delete</button>
-                            </td>
-                        </tr>
-                    `).join('');
-                }
-            }
-        }
 
-        async function addTeacherProfile() {
-            const username = document.getElementById('teacherUsername').value.trim();
-            const password = document.getElementById('teacherPwd').value;
 
-            if (!username || !password) {
-                return showNotification('teacherNotif', 'Please fill in Username and Password.', true);
-            }
 
-            if (IS_DEMO) {
-                demoTeachers.push({ username, name: username, department: 'General', reset_required: 0 });
-                document.getElementById('teacherUsername').value = '';
-                document.getElementById('teacherPwd').value = '';
-                showNotification('teacherNotif', 'Teacher profile "' + username + '" created successfully.', false);
-                loadTeachers();
-                if (typeof loadDangerZone === 'function') loadDangerZone();
-                return;
-            }
-            try {
-                const res = await fetch('/teacher/profiles', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                if (res.ok) {
-                    document.getElementById('teacherUsername').value = '';
-                    document.getElementById('teacherPwd').value = '';
-                    showNotification('teacherNotif', 'Teacher profile "' + username + '" created successfully.', false);
-                    loadTeachers();
-                } else {
-                    const err = await res.json();
-                    showNotification('teacherNotif', err.detail || 'Could not create profile.', true);
-                }
-            } catch (e) {
-                showNotification('teacherNotif', 'Error connecting to server.', true);
-            }
-        }
 
-        async function deleteTeacherProfile(username) {
-            const confirmed = await showConfirm('Delete Teacher Profile', 'Are you sure you want to delete teacher profile "' + username + '"?', true);
-            if (!confirmed) return;
-            if (IS_DEMO) {
-                demoTeachers = demoTeachers.filter(t => t.username !== username);
-                loadTeachers();
-                if (typeof loadDangerZone === 'function') loadDangerZone();
-                return;
-            }
-            try {
-                const res = await fetch('/teacher/profiles/' + encodeURIComponent(username), { method: 'DELETE' });
-                if (res.ok) {
-                    loadTeachers();
-                } else {
-                    showAlert('Could not delete profile.', true);
-                }
-            } catch (e) {
-                showAlert('Error connecting to server.', true);
-            }
-        }
 
+
+        /**
+         * Shows a modal confirm dialog with configurable danger/teal styling.
+         * Returns a Promise that resolves to true (confirmed) or false (cancelled).
+         * @param {string} title - Modal title text
+         * @param {string} message - Modal body text
+         * @param {boolean} isDanger - If true, styles with danger (red); if false, teal
+         * @returns {Promise<boolean>}
+         */
         function showConfirm(title, message, isDanger) {
             if (isDanger === undefined) isDanger = true;
             return new Promise((resolve) => {
@@ -400,13 +336,18 @@
             });
         }
 
+        /**
+         * Checks whether the current session has reset_required=1.
+         * If so, shows the force password reset modal.
+         * Also sets loggedInUser from /teacher/me response.
+         */
         async function checkSelfResetRequired() {
             if (IS_DEMO) {
                 loggedInUser = 'admin';
                 return;
             }
             try {
-                const res = await fetch('/teacher/me');
+                const res = await apiFetch('/teacher/me');
                 if (res.ok) {
                     const me = await res.json();
                     loggedInUser = me.username;
@@ -419,6 +360,10 @@
             }
         }
 
+        /**
+         * Submits the force password reset. Validates passwords, then
+         * sends POST to /teacher/force-change-password. Reloads page on success.
+         */
         async function submitForcePasswordReset() {
             const newPwd = document.getElementById('forceNewPwd').value;
             const confirmPwd = document.getElementById('forceConfirmPwd').value;
@@ -434,7 +379,7 @@
                 return;
             }
             try {
-                const res = await fetch('/teacher/force-change-password', {
+                const res = await apiFetch('/teacher/force-change-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ new_password: newPwd })
@@ -451,6 +396,7 @@
             }
         }
 
+        /** Loads the current user's profile (username, name, department) into the profile form. */
         async function loadMyProfile() {
             if (IS_DEMO) {
                 document.getElementById('profileUsername').value = loggedInUser || 'admin';
@@ -459,7 +405,7 @@
                 return;
             }
             try {
-                const res = await fetch('/teacher/me');
+                const res = await apiFetch('/teacher/me');
                 if (res.ok) {
                     const me = await res.json();
                     document.getElementById('profileUsername').value = me.username || '';
@@ -471,6 +417,7 @@
             }
         }
 
+        /** Saves the user's department via POST /teacher/profile/department. */
         async function saveMyProfile() {
             const department = document.getElementById('profileDepartment').value.trim();
             if (!department) {
@@ -481,7 +428,7 @@
                 return;
             }
             try {
-                const res = await fetch('/teacher/profile/department', {
+                const res = await apiFetch('/teacher/profile/department', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ department })
@@ -501,7 +448,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             setActiveNav('nav-security');
             loadWhoAmI();
-            loadTeachers();
             checkSelfResetRequired();
             loadMyProfile();
         });
@@ -509,7 +455,3 @@
 
 </body>
 </html>
-
-
-
-

@@ -1,9 +1,11 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+<!-- Section: Head — theme detection, metadata, page-specific styles -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina Hub | Content Manager</title>
+    <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
     <style>
@@ -14,7 +16,7 @@
 </head>
 <body>
 
-    <!-- Mobile Header -->
+    <!-- Section: Mobile Header — hamburger toggle + brand -->
     <header class="mobile-header">
         <div class="mobile-brand">Lumina Hub</div>
         <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
@@ -22,10 +24,10 @@
         </button>
     </header>
 
-    <!-- Mobile Overlay -->
+    <!-- Section: Mobile Overlay — dark backdrop for sidebar on small screens -->
     <div class="mobile-overlay" onclick="toggleMobileMenu()"></div>
 
-    <!-- Sidebar -->
+    <!-- Section: Sidebar — nav links, user info, theme toggle, logout -->
     <aside>
         <a href="/static/index" class="sidebar-brand">Lumina Hub</a>
         <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
@@ -71,7 +73,7 @@
         </a>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Section: Main Content — upload form, add/manage subjects, resource library -->
     <main>
         <div id="contentTab">
             <div class="page-header">
@@ -79,6 +81,7 @@
                 <p>Upload and manage educational resources for your students.</p>
             </div>
 
+            <!-- Section: Upload Form — title, category, subject, file picker, upload button -->
             <div class="card">
                 <div class="card-title">Upload Resource</div>
                 <div id="uploadNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
@@ -111,6 +114,7 @@
                 </div>
             </div>
 
+            <!-- Section: Add New Subject — name, class/grade, symbol icon dropdown, create button -->
             <div class="card">
                 <div class="card-title">Add New Subject</div>
                 <div id="subjectNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
@@ -145,7 +149,7 @@
                 </div>
             </div>
 
-            <!-- Manage Subjects Card -->
+            <!-- Section: Manage Subjects & Syllabus — searchable table of subjects with delete -->
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
                     <div class="card-title" style="margin-bottom: 0;">Manage Subjects &amp; Syllabus</div>
@@ -167,6 +171,7 @@
                 </table>
             </div>
 
+            <!-- Section: Mesh Library — filterable resource table with download/delete actions -->
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
                     <div class="card-title" style="margin-bottom: 0;">Mesh Library</div>
@@ -197,7 +202,7 @@
         </div>
     </main>
 
-    <!-- Bottom Navigation (Mobile) -->
+    <!-- Section: Bottom Navigation (Mobile) — tab bar hidden by default, shown via media query -->
     <div id="bottomNav">
         <a href="/static/index" class="bottom-nav-item" id="bottom-nav-home">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -225,7 +230,7 @@
         </a>
     </div>
 
-    <!-- Subject Delete Modal -->
+    <!-- Section: Subject Delete Modal — radio options to delete resources or transfer to another subject -->
     <div id="subjectDeleteModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 10000; transition: all 0.3s ease;">
         <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2rem; max-width: 480px; width: 95%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline);">
             <h3 style="color: var(--danger); margin-top: 0; font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
@@ -267,7 +272,7 @@
         </div>
     </div>
 
-    <!-- Force Password Reset Modal -->
+    <!-- Section: Force Password Reset Modal — shown when admin sets reset_required=1 on current session -->
     <div id="forceResetModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20000;">
         <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.5rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
             <div style="margin: 0 auto 1.5rem; text-align: center;">
@@ -292,7 +297,7 @@
         </div>
     </div>
 
-    <!-- Global Confirm Modal -->
+    <!-- Section: Global Confirm Modal — reusable danger/confirm prompt used by all delete actions -->
     <div id="globalConfirmModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 30000; transition: all 0.3s ease;">
         <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.25rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
             <div id="confirmModalIcon" style="margin: 0 auto 1.25rem; text-align: center;">
@@ -308,28 +313,32 @@
         </div>
     </div>
 
-    <!-- Global Toast Container -->
+    <!-- Section: Toast Container — global notification area (top-right, fixed) -->
     <div id="globalToastContainer" style="position: fixed; top: 1.5rem; right: 1.5rem; z-index: 99999; display: flex; flex-direction: column; gap: 0.75rem; max-width: 380px; width: 100%; pointer-events: none;"></div>
 
     <script src="/static/js/lumina.js"></script>
+    <!-- Section: Inline Scripts — resource/subject CRUD, upload handler, custom dropdown, modals -->
     <script>
         let allResources = [];
         let allSubjects = [];
         let activeDeleteSubjectName = '';
 
         // --- Demo Data ---
+        /** @type {Array<{name:string, symbol:string, class_name:string}>} */
         const demoSubjects = [
             { name: "Mathematics", symbol: "calculator", class_name: "Grade 10" },
             { name: "Physics", symbol: "atom", class_name: "Grade 11" },
             { name: "Geography", symbol: "globe", class_name: "Grade 9" }
         ];
 
+        /** @type {Array<{id:number, title:string, file_path:string, type:string, subject:string}>} */
         const demoResources = [
             { id: 1, title: "Algebra Basics.pdf", file_path: "uploads/algebra_basics.pdf", type: "textbook", subject: "Mathematics" },
             { id: 2, title: "Newtonian Mechanics.mp4", file_path: "uploads/newton_mechanics.mp4", type: "khan", subject: "Physics" },
             { id: 3, title: "World Map Reference.pdf", file_path: "uploads/world_map.pdf", type: "notes", subject: "Geography" }
         ];
 
+        /** @type {Array<{value:string, label:string}>} Subject icon symbol picker options */
         const symbolOptions = [
             { value: 'calculator', label: 'Calculator' },
             { value: 'atom', label: 'Atom' },
@@ -342,6 +351,10 @@
             { value: 'folder', label: 'Folder' }
         ];
 
+        /**
+         * @param {string} symbol - The symbol key (e.g. 'calculator')
+         * @returns {string} SVG markup for the given subject icon symbol
+         */
         function getSymbolSvg(symbol) {
             const svgs = {
                 calculator: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8.01" y1="10" y2="10"/><line x1="12" x2="12.01" y1="10" y2="10"/><line x1="16" x2="16.01" y1="10" y2="10"/><line x1="8" x2="8.01" y1="14" y2="14"/><line x1="12" x2="12.01" y1="14" y2="14"/><line x1="16" x2="16.01" y1="14" y2="14"/><line x1="8" x2="8.01" y1="18" y2="18"/><line x1="12" x2="16" y1="18" y2="18"/></svg>',
@@ -357,6 +370,7 @@
             return svgs[symbol] || svgs.folder;
         }
 
+        /** Builds the custom symbol dropdown list and attaches a click-outside listener. */
         function initCustomDropdown() {
             const list = document.getElementById('dropdownList');
             if (!list) return;
@@ -376,6 +390,10 @@
             });
         }
 
+        /**
+         * Toggles the custom symbol dropdown on click.
+         * @param {Event} e - Click event
+         */
         function toggleCustomDropdown(e) {
             e.stopPropagation();
             const list = document.getElementById('dropdownList');
@@ -384,6 +402,11 @@
             }
         }
 
+        /**
+         * Selects a custom symbol option, updating the hidden input and display.
+         * @param {string} val - The symbol value key
+         * @param {string} label - The human-readable label
+         */
         function selectCustomOption(val, label) {
             document.getElementById('newSubjectSymbol').value = val;
             document.getElementById('selectedIcon').innerHTML = getSymbolSvg(val);
@@ -391,18 +414,24 @@
             document.getElementById('dropdownList').style.display = 'none';
         }
 
+        /**
+         * Ensures a URL string is absolute for linking resource files.
+         * @param {string} url - The raw URL or file path
+         * @returns {string} A safe absolute URL
+         */
         function safeUrl(url) {
             if (!url) return '#';
             if (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://')) return url;
             return '/files/' + encodeURIComponent(url);
         }
 
+        /** Fetches subjects from the server (or demo data) and populates the subject select, filter, and manage table. */
         async function loadSubjects() {
             try {
                 if (IS_DEMO) {
                     allSubjects = demoSubjects.map(function(s) { return { name: s.name, symbol: s.symbol, class_name: s.class_name }; });
                 } else {
-                    const res = await fetch('/subjects');
+                    const res = await apiFetch('/subjects');
                     allSubjects = await res.json();
                 }
                 const subjectSelect = document.getElementById('subjectSelect');
@@ -436,6 +465,10 @@
             }
         }
 
+        /**
+         * Creates a new subject via the server (or demo store).
+         * Validates the name, sends POST to /teacher/subjects, and refreshes the list.
+         */
         async function addSubject() {
             const name = document.getElementById('newSubjectName').value.trim();
             const class_name = document.getElementById('newSubjectClass').value.trim() || 'All Classes';
@@ -451,7 +484,7 @@
                 return;
             }
             try {
-                const res = await fetch('/teacher/subjects', {
+                const res = await apiFetch('/teacher/subjects', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: name, symbol: symbol, class_name: class_name })
@@ -470,12 +503,13 @@
             }
         }
 
+        /** Fetches resources from the server (or demo data) and triggers the resource table render. */
         async function loadResources() {
             try {
                 if (IS_DEMO) {
                     allResources = demoResources.map(function(r) { return { id: r.id, title: r.title, file_path: r.file_path, type: r.type, subject: r.subject, url: r.file_path }; });
                 } else {
-                    const res = await fetch('/resources');
+                    const res = await apiFetch('/resources');
                     allResources = await res.json();
                 }
                 filterResources();
@@ -489,6 +523,7 @@
             }
         }
 
+        /** Filters the resource table by subject and search query, then re-renders. */
         function filterResources() {
             const filterVal = document.getElementById('filterSubject').value;
             const searchVal = (document.getElementById('resourceSearch') ? document.getElementById('resourceSearch').value : '').toLowerCase().trim();
@@ -532,6 +567,7 @@
             }).join('');
         }
 
+        /** Filters the subject manage table rows by search query. */
         function filterManageSubjects() {
             const query = (document.getElementById('subjectSearch') ? document.getElementById('subjectSearch').value : '').toLowerCase().trim();
             const tbody = document.getElementById('subjectManageTable');
@@ -563,6 +599,10 @@
             }
         }
 
+        /**
+         * Upload a resource file with metadata. Uses FormData POST to /teacher/upload.
+         * Validates that both a title and a file are provided before sending.
+         */
         async function upload() {
             const file = document.getElementById('file').files[0];
             const title = document.getElementById('title').value;
@@ -587,7 +627,7 @@
             const formData = new FormData();
             formData.append('file', file);
             try {
-                const res = await fetch('/teacher/upload?title=' + encodeURIComponent(title) + '&type=' + type + '&subject=' + encodeURIComponent(subject), {
+                const res = await apiFetch('/teacher/upload?title=' + encodeURIComponent(title) + '&type=' + type + '&subject=' + encodeURIComponent(subject), {
                     method: 'POST',
                     body: formData
                 });
@@ -605,6 +645,11 @@
             }
         }
 
+        /**
+         * Delete a resource by ID after user confirmation.
+         * @param {number} id - Resource database ID
+         * @param {string} title - Resource title for display in confirmation
+         */
         async function deleteResource(id, title) {
             var confirmed = await showConfirm('Delete Resource', 'Are you sure you want to permanently delete the resource "' + title + '"?', true);
             if (!confirmed) return;
@@ -617,7 +662,7 @@
                 return;
             }
             try {
-                const res = await fetch('/teacher/resources/' + id, { method: 'DELETE' });
+                const res = await apiFetch('/teacher/resources/' + id, { method: 'DELETE' });
                 if (res.ok) {
                     showNotification('uploadNotif', 'Resource "' + title + '" deleted.', false);
                     loadResources();
@@ -629,6 +674,11 @@
             }
         }
 
+        /**
+         * Shows the subject delete modal with transfer/destroy options.
+         * Populates the transfer target dropdown with subjects other than the one being deleted.
+         * @param {string} name - The subject name to delete
+         */
         async function promptDeleteSubject(name) {
             activeDeleteSubjectName = name;
             document.getElementById('deleteSubjectModalText').innerText = 'You are deleting the subject "' + name + '". What would you like to do with the textbooks and files that belong to this subject?';
@@ -639,7 +689,7 @@
                 if (IS_DEMO) {
                     subs = demoSubjects.map(function(s) { return { name: s.name, class_name: s.class_name }; });
                 } else {
-                    const res = await fetch('/subjects');
+                    const res = await apiFetch('/subjects');
                     subs = await res.json();
                 }
                 var otherSubs = subs.filter(function(s) { return s.name !== name; });
@@ -654,6 +704,7 @@
             document.getElementById('subjectDeleteModal').classList.remove('hidden');
         }
 
+        /** Hides the subject delete modal and resets the radio selection to "delete". */
         function closeDeleteSubjectModal() {
             document.getElementById('subjectDeleteModal').classList.add('hidden');
             // Reset radio button
@@ -662,6 +713,10 @@
             toggleTransferSelect(false);
         }
 
+        /**
+         * Shows/hides the transfer target dropdown based on the radio selection.
+         * @param {boolean} show - Whether to show the transfer target container
+         */
         function toggleTransferSelect(show) {
             var container = document.getElementById('transferTargetContainer');
             if (show) {
@@ -671,6 +726,10 @@
             }
         }
 
+        /**
+         * Confirms and executes the subject deletion (with optional transfer).
+         * Calls /teacher/subjects/delete with the action choice.
+         */
         async function confirmDeleteSubject() {
             var action = document.querySelector('input[name="subjectAction"]:checked').value;
             var transferTo = action === 'transfer' ? document.getElementById('transferTarget').value : null;
@@ -701,7 +760,7 @@
             }
 
             try {
-                const res = await fetch('/teacher/subjects/delete', {
+                const res = await apiFetch('/teacher/subjects/delete', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: activeDeleteSubjectName, transfer_to: transferTo })
@@ -720,12 +779,16 @@
         }
 
         // --- Force Password Reset ---
+        /**
+         * Checks whether the current session has reset_required=1.
+         * If so, shows the force password reset modal.
+         */
         async function checkSelfResetRequired() {
             if (IS_DEMO) {
                 return;
             }
             try {
-                const res = await fetch('/teacher/me');
+                const res = await apiFetch('/teacher/me');
                 if (res.ok) {
                     var me = await res.json();
                     if (me.reset_required === 1) {
@@ -737,6 +800,10 @@
             }
         }
 
+        /**
+         * Submits the force password reset. Validates new password and
+         * sends POST to /teacher/change-password, then reloads on success.
+         */
         async function submitForcePasswordReset() {
             const newPwd = document.getElementById('forceNewPwd').value;
             const confirmPwd = document.getElementById('forceConfirmPwd').value;
@@ -752,7 +819,7 @@
                 return;
             }
             try {
-                const res = await fetch('/teacher/change-password', {
+                const res = await apiFetch('/teacher/change-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: loggedInUser || 'admin', old_password: 'lumina2026', new_password: newPwd })
@@ -770,10 +837,21 @@
         }
 
         // --- Global Confirm Modal ---
+        /**
+         * Alias for showGlobalToast — displays a toast notification.
+         * @param {string} message - The message text
+         * @param {boolean} isError - Whether this is an error toast
+         */
         function showAlert(message, isError) {
             showGlobalToast(message, isError);
         }
 
+        /**
+         * Creates and displays a slide-in toast notification in the global toast container.
+         * Auto-dismisses after 4.5s with a slide-out animation.
+         * @param {string} message - The message text
+         * @param {boolean} isError - Whether this is an error toast
+         */
         function showGlobalToast(message, isError) {
             var container = document.getElementById('globalToastContainer');
             if (!container) return;
@@ -801,6 +879,14 @@
             }, 4500);
         }
 
+        /**
+         * Shows a modal confirm dialog with configurable danger/warning styling.
+         * Returns a Promise that resolves to true (confirmed) or false (cancelled).
+         * @param {string} title - Modal title text
+         * @param {string} message - Modal body text
+         * @param {boolean} isDanger - If true, styles with danger (red); if false, warning (teal)
+         * @returns {Promise<boolean>}
+         */
         function showConfirm(title, message, isDanger) {
             return new Promise(function(resolve) {
                 var modal = document.getElementById('globalConfirmModal');
@@ -861,8 +947,3 @@
 
 </body>
 </html>
-
-
-
-
-

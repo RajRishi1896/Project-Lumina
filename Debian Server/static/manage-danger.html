@@ -1,14 +1,17 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+<!-- Section: Head — theme detection, metadata -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina Hub | Danger Zone</title>
+    <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
 </head>
 <body>
 
+    <!-- Section: Mobile Header — hamburger toggle + brand -->
     <header class="mobile-header">
         <div class="mobile-brand">Lumina Hub</div>
         <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
@@ -16,8 +19,10 @@
         </button>
     </header>
 
+    <!-- Section: Mobile Overlay — dark backdrop for sidebar on small screens -->
     <div class="mobile-overlay" onclick="toggleMobileMenu()"></div>
 
+    <!-- Section: Sidebar — nav links, user info, theme toggle, logout -->
     <aside>
         <a href="/static/index" class="sidebar-brand">Lumina Hub</a>
         <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
@@ -63,6 +68,7 @@
         </a>
     </aside>
 
+    <!-- Section: Main Content — student/teacher account management, force reset, account creation -->
     <main>
 
         <div id="dangerTab">
@@ -74,12 +80,11 @@
                 </div>
             </div>
 
-            <!-- Manage Student Accounts -->
+            <!-- Section: Manage Student Accounts — searchable table with force password reset and delete -->
             <div class="card" style="border-left: 4px solid var(--danger);">
                 <div class="card-title" style="color: var(--danger); font-weight: 800;">Manage Student Accounts</div>
                 <div id="studentDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
 
-                <!-- Student Search Bar -->
                 <div style="margin-bottom: 1rem; position: relative;">
                     <input type="text" id="studentDangerSearch" placeholder="Search by student name or scholar ID..." oninput="filterDangerStudents()" onfocus="this.style.borderColor='var(--teal)';" onblur="this.style.borderColor='var(--outline)';" style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
                     <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
@@ -100,12 +105,11 @@
                 </div>
             </div>
 
-            <!-- Manage Teacher Accounts -->
+            <!-- Section: Manage Teacher Accounts — searchable table with force password reset, delete, and default admin disable -->
             <div class="card" style="border-left: 4px solid var(--danger);">
                 <div class="card-title" style="color: var(--danger); font-weight: 800;">Manage Teacher Accounts</div>
                 <div id="teacherDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
 
-                <!-- Teacher Search Bar -->
                 <div style="margin-bottom: 1rem; position: relative;">
                     <input type="text" id="teacherDangerSearch" placeholder="Search by username, full name or department..." oninput="filterDangerTeachers()" onfocus="this.style.borderColor='var(--teal)';" onblur="this.style.borderColor='var(--outline)';" style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
                     <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
@@ -131,6 +135,7 @@
 
         </div>
 
+        <!-- Section: Global Confirm Modal — reused by delete/reset actions -->
         <div id="globalConfirmModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 30000; transition: all 0.3s ease;">
             <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.25rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
                 <div id="confirmModalIcon" style="margin: 0 auto 1.25rem; text-align: center;">
@@ -146,6 +151,7 @@
             </div>
         </div>
 
+        <!-- Section: Force Password Reset Modal — shown when admin sets reset_required=1 on current session -->
         <div id="forceResetModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20000;">
             <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.5rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">
                 <div style="margin: 0 auto 1.5rem; text-align: center;">
@@ -170,7 +176,7 @@
             </div>
         </div>
 
-        <!-- Create Account Modal -->
+        <!-- Section: Create Account Modal — dynamic form for teacher or admin creation -->
         <div id="createAccountModal" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:20000;">
             <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2.5rem;max-width:460px;width:90%;box-shadow:var(--card-shadow-hover);border:1px solid var(--outline);">
                 <h3 id="createModalTitle" style="font-size:1.25rem;font-weight:800;margin-top:0;margin-bottom:1.5rem;">Create Account</h3>
@@ -185,6 +191,7 @@
 
     </main>
 
+    <!-- Section: Bottom Nav (Mobile) — tab bar hidden by default, shown via media query -->
     <div id="bottomNav">
         <a href="/static/index" class="bottom-nav-item" id="bottom-nav-home">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -217,13 +224,16 @@
     </div>
 
     <script src="/static/js/lumina.js"></script>
+    <!-- Section: Inline Scripts — student/teacher CRUD, password reset, admin creation, confirm modal -->
     <script>
+        /** @type {Array<{id:string, name:string, reset_required:number}>} Demo student data for IS_DEMO mode */
         let demoStudents = [
             { id: "LUMINA_01-S01", name: "Alice Johnson", reset_required: 0 },
             { id: "LUMINA_01-S02", name: "Bob Smith", reset_required: 1 },
             { id: "LUMINA_01-S03", name: "Charlie Brown", reset_required: 0 }
         ];
 
+        /** @type {Array<{username:string, name:string, department:string, reset_required:number}>} Demo teacher data for IS_DEMO mode */
         let demoTeachers = [
             { username: "jsmith", name: "John Smith", department: "Science", reset_required: 0 },
             { username: "mdoe", name: "Mary Doe", department: "Mathematics", reset_required: 1 }
@@ -232,12 +242,13 @@
         let activeDangerScholars = [];
         let activeDangerTeachers = [];
 
+        /** Loads student and teacher lists from server (or demo), then renders filtered tables. */
         async function loadDangerZone() {
             try {
                 if (IS_DEMO) {
                     activeDangerScholars = [...demoStudents];
                 } else {
-                    const res = await fetch('/teacher/scholars');
+                    const res = await apiFetch('/teacher/scholars');
                     activeDangerScholars = await res.json();
                 }
                 filterDangerStudents();
@@ -247,7 +258,7 @@
                 if (IS_DEMO) {
                     activeDangerTeachers = [...demoTeachers];
                 } else {
-                    const res = await fetch('/teachers');
+                    const res = await apiFetch('/teachers');
                     activeDangerTeachers = await res.json();
                 }
                 const disableDangerContainer = document.getElementById('disableAdminDangerContainer');
@@ -260,6 +271,7 @@
             } catch (e) { console.error(e); }
         }
 
+        /** Filters and re-renders the student danger table by search query. */
         function filterDangerStudents() {
             const query = (document.getElementById('studentDangerSearch').value || '').toLowerCase().trim();
             const tbody = document.getElementById('studentDangerTable');
@@ -284,6 +296,7 @@
             }).join('');
         }
 
+        /** Filters and re-renders the teacher danger table by search query. */
         function filterDangerTeachers() {
             const query = (document.getElementById('teacherDangerSearch').value || '').toLowerCase().trim();
             const tbody = document.getElementById('teacherDangerTable');
@@ -311,20 +324,24 @@
             }).join('');
         }
 
+        /**
+         * Forces a password reset for a student — sets reset_required=1.
+         * Uses apiFetch with cookie-based auth to POST /teacher/scholars/reset-password/{id}.
+         */
         async function resetStudentPassword(id, name) {
             const confirmed = await showConfirm('Force Password Reset', 'Are you sure you want to force password reset on student "' + name + '"? They will be forced to change their password to continue using the mobile application.', false);
             if (!confirmed) return;
             if (IS_DEMO) {
                 var s = demoStudents.find(function(stud) { return stud.id === id; });
                 if (s) s.reset_required = 1;
-                showNotification('studentDangerNotif', 'Password for student "' + name + '" reset to default "lumina2026".', false);
+                showNotification('studentDangerNotif', 'Password for student "' + name + '" reset to default.', false);
                 loadDangerZone();
                 return;
             }
             try {
-                const res = await fetch('/teacher/scholars/reset-password/' + id, { method: 'POST' });
+                const res = await apiFetch('/teacher/scholars/reset-password/' + id, { method: 'POST' });
                 if (res.ok) {
-                    showNotification('studentDangerNotif', 'Password for student "' + name + '" reset to default "lumina2026".', false);
+                    showNotification('studentDangerNotif', 'Password for student "' + name + '" reset to default.', false);
                     loadDangerZone();
                 } else {
                     showNotification('studentDangerNotif', 'Could not reset student password.', true);
@@ -334,6 +351,10 @@
             }
         }
 
+        /**
+         * Permanently deletes a student account and all associated data.
+         * Uses apiFetch to DELETE /teacher/scholars/{id}.
+         */
         async function deleteStudentAccount(id, name) {
             const confirmed = await showConfirm('Delete Student Account', 'Are you sure you want to permanently delete student "' + name + '"? This will wipe all download history and sync records.', true);
             if (!confirmed) return;
@@ -344,7 +365,7 @@
                 return;
             }
             try {
-                const res = await fetch('/teacher/scholars/' + id, { method: 'DELETE' });
+                const res = await apiFetch('/teacher/scholars/' + id, { method: 'DELETE' });
                 if (res.ok) {
                     showNotification('studentDangerNotif', 'Student "' + name + '" deleted.', false);
                     loadDangerZone();
@@ -356,20 +377,24 @@
             }
         }
 
+        /**
+         * Forces a password reset for a teacher — sets reset_required=1.
+         * Uses apiFetch to POST /teacher/reset-password/{username}.
+         */
         async function resetTeacherPassword(username) {
             const confirmed = await showConfirm('Force Password Reset', 'Are you sure you want to force password reset on teacher "' + username + '"?', false);
             if (!confirmed) return;
             if (IS_DEMO) {
                 var t = demoTeachers.find(function(teach) { return teach.username === username; });
                 if (t) t.reset_required = 1;
-                showNotification('teacherDangerNotif', 'Teacher "' + username + '" password reset to default "lumina2026".', false);
+                showNotification('teacherDangerNotif', 'Teacher "' + username + '" password reset to default.', false);
                 loadDangerZone();
                 return;
             }
             try {
-                const res = await fetch('/teacher/reset-password/' + username, { method: 'POST' });
+                const res = await apiFetch('/teacher/reset-password/' + username, { method: 'POST' });
                 if (res.ok) {
-                    showNotification('teacherDangerNotif', 'Teacher "' + username + '" password reset to default "lumina2026".', false);
+                    showNotification('teacherDangerNotif', 'Teacher "' + username + '" password reset to default.', false);
                     loadDangerZone();
                 } else {
                     const err = await res.json();
@@ -380,6 +405,10 @@
             }
         }
 
+        /**
+         * Permanently deletes a teacher profile and all associated data.
+         * Uses apiFetch to DELETE /teacher/profiles/{username}.
+         */
         async function deleteTeacherProfile(username) {
             const confirmed = await showConfirm('Delete Teacher Profile', 'Are you sure you want to delete teacher profile "' + username + '"?', true);
             if (!confirmed) return;
@@ -389,7 +418,7 @@
                 return;
             }
             try {
-                const res = await fetch('/teacher/profiles/' + username, { method: 'DELETE' });
+                const res = await apiFetch('/teacher/profiles/' + username, { method: 'DELETE' });
                 if (res.ok) {
                     loadDangerZone();
                 } else {
@@ -400,6 +429,10 @@
             }
         }
 
+        /**
+         * Disables the default admin login ('admin') permanently.
+         * Uses apiFetch to POST /teacher/disable-default-admin.
+         */
         async function disableDefaultAdmin() {
             const confirmed = await showConfirm('Disable Default Admin', "Are you sure you want to disable the default admin login ('admin')? Make sure you have your teacher credentials saved! (To reset later, run ./reset_admin.sh)", true);
             if (!confirmed) return;
@@ -408,7 +441,7 @@
                 return;
             }
             try {
-                const res = await fetch('/teacher/disable-default-admin', { method: 'POST' });
+                const res = await apiFetch('/teacher/disable-default-admin', { method: 'POST' });
                 if (res.ok) {
                     showAlert("Default admin login disabled successfully.", false);
                 } else {
@@ -420,6 +453,7 @@
             }
         }
 
+        /** Creates a teacher account via the admin API. Validates fields, then POSTs to /api/admin/create-teacher. */
         async function dangerAddTeacherProfile() {
             const name = document.getElementById('modalTeacherName').value.trim();
             const department = document.getElementById('modalTeacherDept').value.trim();
@@ -440,7 +474,7 @@
                 return;
             }
             try {
-                const res = await fetch('/api/admin/create-teacher', {
+                const res = await apiFetch('/api/admin/create-teacher', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: username, password: password, name: name, department: department })
@@ -464,6 +498,7 @@
             }
         }
 
+        /** Creates an admin account via POST /api/admin/create. */
         async function dangerCreateAdmin() {
             const username = document.getElementById('modalAdminUsername').value.trim();
             const password = document.getElementById('modalAdminPwd').value;
@@ -481,7 +516,7 @@
                 return;
             }
             try {
-                const res = await fetch('/api/admin/create', {
+                const res = await apiFetch('/api/admin/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: username, password: password })
@@ -505,6 +540,7 @@
             }
         }
 
+        /** Opens the create teacher modal with name, department, username, and password fields. */
         function openCreateTeacherModal() {
             document.getElementById('createModalTitle').textContent = 'Create Teacher Account';
             document.getElementById('createModalFields').innerHTML = `
@@ -531,6 +567,7 @@
             document.getElementById('createAccountModal').classList.remove('hidden');
         }
 
+        /** Opens the create admin modal with username and password fields. */
         function openCreateAdminModal() {
             document.getElementById('createModalTitle').textContent = 'Create Admin Account';
             document.getElementById('createModalFields').innerHTML = `
@@ -549,17 +586,22 @@
             document.getElementById('createAccountModal').classList.remove('hidden');
         }
 
+        /** Hides the create account modal and resets the notification. */
         function closeCreateModal() {
             document.getElementById('createAccountModal').classList.add('hidden');
             document.getElementById('createModalNotif').style.display = 'none';
         }
 
+        /**
+         * Checks whether the current session has reset_required=1.
+         * If so, shows the force password reset modal.
+         */
         async function checkSelfResetRequired() {
             if (IS_DEMO) {
                 return;
             }
             try {
-                const res = await fetch('/teacher/me');
+                const res = await apiFetch('/teacher/me');
                 if (res.ok) {
                     const me = await res.json();
                     if (me.reset_required === 1) {
@@ -571,6 +613,10 @@
             }
         }
 
+        /**
+         * Submits the force password reset. Validates new password and
+         * sends POST to /teacher/force-change-password, then reloads on success.
+         */
         async function submitForcePasswordReset() {
             const newPwd = document.getElementById('forceNewPwd').value;
             const confirmPwd = document.getElementById('forceConfirmPwd').value;
@@ -586,7 +632,7 @@
                 return;
             }
             try {
-                const res = await fetch('/teacher/force-change-password', {
+                const res = await apiFetch('/teacher/force-change-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ new_password: newPwd })
@@ -603,6 +649,14 @@
             }
         }
 
+        /**
+         * Shows a modal confirm dialog with configurable danger/warning styling.
+         * Returns a Promise that resolves to true (confirmed) or false (cancelled).
+         * @param {string} title - Modal title text
+         * @param {string} message - Modal body text
+         * @param {boolean} isDanger - If true, styles with danger (red); if false, warning (amber)
+         * @returns {Promise<boolean>}
+         */
         function showConfirm(title, message, isDanger) {
             if (isDanger === undefined) isDanger = true;
             return new Promise(function(resolve) {
@@ -657,11 +711,8 @@
         });
     </script>
 
+    <!-- Section: Toast Container — global notification area (top-right, fixed) -->
     <div id="globalToastContainer" style="position: fixed; top: 1.5rem; right: 1.5rem; z-index: 99999; display: flex; flex-direction: column; gap: 0.75rem; max-width: 380px; width: 100%; pointer-events: none;"></div>
 
 </body>
 </html>
-
-
-
-

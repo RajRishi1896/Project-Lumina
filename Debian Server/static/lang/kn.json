@@ -45,5 +45,7 @@
   "sidebar.danger": "ಅಪಾಯ ವಲಯ",
   "sidebar.settings": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
   "sidebar.logout": "ಲಾಗ್ ಔಟ್",
-  "sidebar.dark_mode": "ಡಾರ್ಕ್ ಮೋಡ್"
+  "sidebar.dark_mode": "ಡಾರ್ಕ್ ಮೋಡ್",
+  "settings_language_title": "ಭಾಷೆ",
+  "settings_language_description": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗಾಗಿ ನಿಮ್ಮ ಆದ್ಯತೆಯ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ."
 }

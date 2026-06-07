@@ -313,6 +313,26 @@
   "@errorPasswordChangeFailed": {
     "description": "Error shown when the change-password API call fails"
   },
+  "dialogChangePasswordTitle": "Change Password",
+  "@dialogChangePasswordTitle": {
+    "description": "Title of the change-password dialog in account settings"
+  },
+  "dialogChangePasswordBody": "Enter your current password and a new one.",
+  "@dialogChangePasswordBody": {
+    "description": "Body text in the change-password dialog explaining what to do"
+  },
+  "buttonUpdatePassword": "Update Password",
+  "@buttonUpdatePassword": {
+    "description": "Submit button label in the change-password dialog"
+  },
+  "snackbarPasswordChanged": "Password changed successfully",
+  "@snackbarPasswordChanged": {
+    "description": "Success snackbar after a successful password change"
+  },
+  "loginConnectToHub": "Connect to the Lumina Hub to register or log in.",
+  "@loginConnectToHub": {
+    "description": "Offline guidance message shown below the form when the Hub is unreachable"
+  },
 
   "profileSetupTitle": "Welcome!",
   "@profileSetupTitle": {
@@ -852,6 +872,18 @@
   "logOutButtonLabel": "Log Out",
   "@logOutButtonLabel": {
     "description": "Red-colored ListTile title that triggers the logout flow"
+  },
+  "settingsAccountTitle": "Account Settings",
+  "@settingsAccountTitle": {
+    "description": "ListTile title for the account settings section in the settings sheet"
+  },
+  "settingsAccountSubtitleOnline": "Change your password",
+  "@settingsAccountSubtitleOnline": {
+    "description": "ListTile subtitle when the Hub is reachable, indicating password change is available"
+  },
+  "settingsAccountSubtitleOffline": "Connect to Hub to manage account",
+  "@settingsAccountSubtitleOffline": {
+    "description": "ListTile subtitle when the Hub is unreachable, prompting connection"
   },
 
   "offlineLibraryAppBarTitle": "Offline Library",

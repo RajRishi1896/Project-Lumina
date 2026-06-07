@@ -28,7 +28,7 @@ The Hub combines network routing, RESTful APIs, and persistent storage in a sing
 | Automation Script | Operational Purpose & Execution Contract |
 | :--- | :--- |
 | **`setup_hub.sh`** | Automated provisioning script. Configures `NetworkManager` Wi-Fi hotspot broadcasting, establishes `iptables` captive portal redirection rules, elevates kernel file descriptor limits (`ulimit`), and installs the `lumina-hub.service` systemd daemon. |
-| **`reset_admin.sh`** | Utility script. Resets the teacher administration password back to the default cryptographic hash (`lumina2026`) via direct SQLite transaction. |
+| **`reset_admin.sh`** | Utility script. Resets the teacher administration password back to the default (`lumina2026`) via direct SQLite transaction. |
 | **`hub_health_check.sh`** | Diagnostic utility for monitoring system vitals, validating `dnsmasq` leases, verifying `iptables` forwarding rules, and checking disk capacity thresholds. |
 | **`set_static_ip.sh`** | Configures the primary wireless interface (`wlan0`) with a persistent static IP (`192.168.1.1`) to ensure stable mesh routing. |
 

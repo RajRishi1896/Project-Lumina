@@ -14,6 +14,8 @@ import 'package:edumesh_android/core/network/api_client.dart';
 import 'package:edumesh_android/shared/services/notification_service.dart';
 import 'package:edumesh_android/shared/services/connectivity_service.dart';
 import 'package:edumesh_android/core/services/activity_tracker.dart';
+import 'package:edumesh_android/core/providers/locale_provider.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// The global [NavigatorState] key used for out-of-widget navigation.
 ///
@@ -86,6 +88,9 @@ class LuminaApp extends ConsumerWidget {
           darkTheme: LuminaLiteTheme.darkTheme,
           themeMode: themeMode, 
           debugShowCheckedModeBanner: false,
+          locale: ref.watch(localeProvider),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: isLoggedIn 
             ? const ConnectionGate(child: AppShell()) 
             : const WelcomePage(),

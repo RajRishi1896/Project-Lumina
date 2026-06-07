@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Section: Head — metadata, styles, and theme detection -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Access Error — Lumina Hub</title>
+<link rel="stylesheet" href="/static/css/lumina.css">
+<style>
+  .error-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:2rem; width:100%; box-sizing:border-box; }
+  .error-card { background:var(--card-bg); border-radius:1rem; padding:3rem; max-width:480px; width:100%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,.12); }
+  .error-icon { width:72px; height:72px; margin:0 auto 1.5rem; background:var(--bg-muted); border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .error-icon svg { width:36px; height:36px; stroke:var(--danger); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .error-card h1 { margin:0 0 .5rem; color:var(--text-primary); font-size:1.5rem; }
+  .error-card p { margin:0 0 1.5rem; color:var(--text-secondary); line-height:1.6; }
+  .error-card .btn { display:inline-flex; align-items:center; gap:.5rem; padding:.75rem 1.5rem; background:var(--primary); color:var(--on-primary); border:none; border-radius:.5rem; font-size:.9rem; font-weight:700; cursor:pointer; text-decoration:none; transition:opacity .2s; }
+  .error-card .btn:hover { opacity:.85; }
+  .error-card .btn svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+  .reason-badge { display:inline-block; padding:.25rem .75rem; border-radius:1rem; font-size:.75rem; font-weight:700; margin-bottom:1rem; }
+  .reason-badge.expired { background:rgba(234,179,8,.15); color:rgb(234,179,8); }
+  .reason-badge.denied { background:rgba(239,68,68,.15); color:rgb(239,68,68); }
+  .reason-badge.notfound { background:rgba(107,114,128,.15); color:rgb(107,114,128); }
+</style>
+</head>
+<body>
+<!-- Section: Error Card — icon, reason badge, title, message, and back button -->
+<div class="error-wrap">
+<div class="error-card" id="errorCard">
+  <!-- icon -->
+  <div class="error-icon">
+    <svg viewBox="0 0 24 24" id="errorIcon">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+  </div>
+  <!-- Section: Reason Badge — shows expired/denied/notfound -->
+  <div class="reason-badge" id="reasonBadge">Access Denied</div>
+  <!-- Section: Title -->
+  <h1 id="errorTitle">You don't have access</h1>
+  <!-- Section: Message -->
+  <p id="errorMessage">This page requires teacher or administrator privileges. Please log in with an authorized account.</p>
+  <!-- Section: Back Button — navigates to welcome page -->
+  <a href="/welcome" class="btn" id="backBtn">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to Home
+  </a>
+</div>
+</div>
+<script>
+/**
+ * Error page is public (no auth check). Theme inlines localStorage
+ * + prefers-color-scheme to avoid flash before CSS loads.
+ */
+(function applyTheme() {
+    var stored = localStorage.getItem('lumina-theme');
+    var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+})();
+/**
+ * Parse the ?reason= query param and render the matching error card content.
+ * Supports: session_expired, access_denied, not_found.
+ */
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var reason = params.get('reason') || 'access_denied';
+  var titleEl = document.getElementById('errorTitle');
+  var msgEl = document.getElementById('errorMessage');
+  var badgeEl = document.getElementById('reasonBadge');
+  var btnEl = document.getElementById('backBtn');
+
+  var messages = {
+    session_expired: {
+      title: 'Session Expired',
+      msg: 'Your session has expired or you are not logged in. Please log in again to continue.',
+      badge: 'Session Expired',
+      badgeClass: 'expired',
+      home: '/welcome'
+    },
+    access_denied: {
+      title: 'Access Denied',
+      msg: 'You don\'t have the required permissions to view this page. Teacher or administrator access is needed.',
+      badge: 'Access Denied',
+      badgeClass: 'denied',
+      home: '/welcome'
+    },
+    not_found: {
+      title: 'Page Not Found',
+      msg: 'The page you\'re looking for doesn\'t exist or has been moved.',
+      badge: 'Not Found',
+      badgeClass: 'notfound',
+      home: '/welcome'
+    }
+  };
+
+  var info = messages[reason] || messages.access_denied;
+  titleEl.textContent = info.title;
+  msgEl.textContent = info.msg;
+  badgeEl.textContent = info.badge;
+  badgeEl.className = 'reason-badge ' + info.badgeClass;
+  btnEl.href = info.home;
+})();
+</script>
+</body>
+</html>

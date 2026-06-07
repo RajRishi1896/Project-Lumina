@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:dio/dio.dart';
+import 'package:pointycastle/export.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,6 +30,31 @@ class ApiClient {
   ))
     ..interceptors.add(LogInterceptor(requestBody: false, responseBody: false))
     ..interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        if (options.method == 'POST' || options.method == 'PUT') {
+          final encKey = await AuthService().getEncryptionKey();
+          if (encKey != null && encKey.isNotEmpty && options.data != null) {
+            try {
+              final data = options.data is Map<String, dynamic> ? options.data as Map<String, dynamic> : <String, dynamic>{};
+              final encrypted = await encryptRequest(data, encKey);
+              options.data = encrypted;
+            } catch (_) {}
+          }
+        }
+        handler.next(options);
+      },
+      onResponse: (response, handler) async {
+        if (response.data is Map && (response.data as Map).containsKey('encrypted')) {
+          try {
+            final encKey = await AuthService().getEncryptionKey();
+            if (encKey != null && encKey.isNotEmpty) {
+              final decrypted = await decryptResponse(response.data as Map<String, dynamic>, encKey);
+              response.data = decrypted;
+            }
+          } catch (_) {}
+        }
+        handler.next(response);
+      },
       onError: (error, handler) async {
         if ((error.response?.statusCode == 401 || error.response?.statusCode == 403) && !_isRefreshing) {
           _isRefreshing = true;
@@ -38,10 +66,16 @@ class ApiClient {
                 final retryResponse = await _dio.fetch(error.requestOptions);
                 handler.resolve(retryResponse);
                 return;
-              } catch (_) {
-                handler.next(error);
+              } catch (_) {}
+            }
+            if (await AuthService().renewSession()) {
+              final newToken = await AuthService().getSessionToken();
+              error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+              try {
+                final retryResponse = await _dio.fetch(error.requestOptions);
+                handler.resolve(retryResponse);
                 return;
-              }
+              } catch (_) {}
             }
             await AuthService().logout();
             onForceLogout?.call();
@@ -74,6 +108,72 @@ class ApiClient {
   /// Removes the Bearer authorization header from all outgoing requests.
   static void clearAuth() {
     _dio.options.headers.remove('Authorization');
+  }
+
+  // ---- AES-256-GCM encryption helpers ----
+
+  static Uint8List _aesGcmEncrypt(Uint8List plaintext, Uint8List key) {
+    final random = Random.secure();
+    final nonce = Uint8List(12);
+    for (var i = 0; i < 12; i++) {
+      nonce[i] = random.nextInt(256);
+    }
+
+    final cipher = GCMBlockCipher(AESEngine())
+      ..init(true, AEADParameters(
+        KeyParameter(key),
+        128,
+        nonce,
+        Uint8List(0),
+      ));
+
+    final out = Uint8List(cipher.getOutputSize(plaintext.length));
+    var len = cipher.processBytes(plaintext, 0, plaintext.length, out, 0);
+    len += cipher.doFinal(out, len);
+
+    final result = Uint8List(12 + len);
+    result.setAll(0, nonce);
+    result.setAll(12, out.sublist(0, len));
+    return result;
+  }
+
+  static Uint8List _aesGcmDecrypt(Uint8List encrypted, Uint8List key) {
+    final nonce = encrypted.sublist(0, 12);
+    final ct = encrypted.sublist(12);
+
+    final cipher = GCMBlockCipher(AESEngine())
+      ..init(false, AEADParameters(
+        KeyParameter(key),
+        128,
+        nonce,
+        Uint8List(0),
+      ));
+
+    final out = Uint8List(cipher.getOutputSize(ct.length));
+    var len = cipher.processBytes(ct, 0, ct.length, out, 0);
+    try {
+      len += cipher.doFinal(out, len);
+    } catch (e) {
+      throw Exception('Decryption failed: $e');
+    }
+    return out.sublist(0, len);
+  }
+
+  /// Encrypts a JSON-serializable map into the encrypted wrapper format.
+  /// Returns a Map with `{"encrypted": "<base64>"}` ready for POST body.
+  static Future<Map<String, dynamic>> encryptRequest(Map<String, dynamic> data, String encryptionKeyBase64) async {
+    final key = base64.decode(encryptionKeyBase64);
+    final jsonBytes = utf8.encode(jsonEncode(data));
+    final encrypted = _aesGcmEncrypt(Uint8List.fromList(jsonBytes), Uint8List.fromList(key));
+    return {'encrypted': base64.encode(encrypted)};
+  }
+
+  /// Decrypts the `{"encrypted": "<base64>"}` response body into a Map.
+  static Future<Map<String, dynamic>> decryptResponse(Map<String, dynamic> encryptedWrapper, String encryptionKeyBase64) async {
+    final key = base64.decode(encryptionKeyBase64);
+    final raw = base64.decode(encryptedWrapper['encrypted'] as String);
+    final decrypted = _aesGcmDecrypt(Uint8List.fromList(raw), Uint8List.fromList(key));
+    return jsonDecode(utf8.decode(decrypted)) as Map<String, dynamic>;
   }
 
   // Ensure the base URL is resolved before any request

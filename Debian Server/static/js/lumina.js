@@ -1,12 +1,29 @@
 /* ── Shared Lumina Dashboard JS ────────────────────────────────────────── */
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
+
+/**
+ * Whether the page is opened directly from the filesystem (file:// protocol).
+ * When true, all API calls are skipped and demo data is used instead.
+ */
 const IS_DEMO = window.location.protocol === 'file:';
 
+/**
+ * Escape HTML special characters in a string to prevent XSS.
+ * Handles &, ", ', <, >, and backtick.
+ * @param {*} str - Value to escape (converted to string)
+ * @returns {string} Escaped string safe for innerHTML
+ */
 function esc(str) {
     return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/`/g,'&#96;');
 }
 
+/**
+ * Safely construct a URL from a resource filename.
+ * Allows absolute paths and http(s) URLs; otherwise prefixes with /files/.
+ * @param {string} url - Raw URL or filename
+ * @returns {string} Safe URL string
+ */
 function safeUrl(url) {
     if (!url) return '#';
     if (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://')) return url;
@@ -20,9 +37,6 @@ const LANGUAGES = [
     { code: 'en', name: 'English', native: 'English' },
     { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
     { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ' },
-    { code: 'sw', name: 'Swahili', native: 'Kiswahili' },
-    { code: 'fr', name: 'French', native: 'Français' },
-    { code: 'es', name: 'Spanish', native: 'Español' },
 ];
 
 /** @type {string} Current language code, persisted to localStorage */
@@ -49,8 +63,164 @@ const TRANSLATIONS = {
         "nav.download": "Download App",
         "teacher.help.header": "Need help?",
         "teacher.help.body": "View setup guides, troubleshooting tips, and admin instructions.",
+        "settings_language_title": "Language",
+        "settings_language_description": "Choose your preferred language for the dashboard.",
     },
 };
+
+// ── AES-256-GCM encryption for API payloads ──────────────────────────
+
+/** Look up the AES-256-GCM key for the current session from sessionStorage */
+function getEncryptionKey() {
+    return sessionStorage.getItem('lumina_encryption_key');
+}
+
+/** Store the encryption key on successful login */
+function setEncryptionKey(key) {
+    if (key) sessionStorage.setItem('lumina_encryption_key', key);
+}
+
+/** Clear encryption key on logout */
+function clearEncryptionKey() {
+    sessionStorage.removeItem('lumina_encryption_key');
+}
+
+/**
+ * Encrypt a JSON-serializable object using AES-256-GCM via Web Crypto API.
+ * Returns {"encrypted": "<base64>"} wrapper.
+ */
+async function encryptPayload(data, keyBase64) {
+    const keyBytes = base64ToBytes(keyBase64);
+    const plaintext = new TextEncoder().encode(JSON.stringify(data));
+    
+    const key = await crypto.subtle.importKey(
+        'raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt']
+    );
+    const nonce = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: nonce }, key, plaintext
+    );
+    const combined = new Uint8Array(12 + encrypted.byteLength);
+    combined.set(nonce, 0);
+    combined.set(new Uint8Array(encrypted), 12);
+    return { encrypted: bytesToBase64(combined) };
+}
+
+/**
+ * Decrypt a {"encrypted": "<base64>"} wrapper and return the parsed JSON object.
+ */
+async function decryptResponse(wrapper, keyBase64) {
+    const keyBytes = base64ToBytes(keyBase64);
+    const raw = base64ToBytes(wrapper.encrypted);
+    const nonce = raw.slice(0, 12);
+    const ciphertext = raw.slice(12);
+    
+    const key = await crypto.subtle.importKey(
+        'raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']
+    );
+    const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: nonce }, key, ciphertext
+    );
+    return JSON.parse(new TextDecoder().decode(decrypted));
+}
+
+// Base64 helpers (IE-safe, uses built-in btoa/atob with UTF-8 handling)
+
+/**
+ * Convert a Uint8Array to a base64-encoded string.
+ * @param {Uint8Array} bytes - Binary data to encode
+ * @returns {string} Base64-encoded string
+ */
+function bytesToBase64(bytes) {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+/**
+ * Decode a base64-encoded string to a Uint8Array.
+ * @param {string} str - Base64-encoded string
+ * @returns {Uint8Array} Decoded binary data
+ */
+function base64ToBytes(str) {
+    const binary = atob(str);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
+
+/**
+ * Wrapper around fetch() that encrypts request bodies and decrypts responses.
+ *
+ * ## Encryption flow
+ * For POST/PUT requests with a body, the JSON body is encrypted with AES-256-GCM
+ * using the session key obtained at login. Responses containing `{"encrypted": "..."}`
+ * are automatically decrypted. Falls back to plain JSON if no encryption key is
+ * available (backwards compatibility with unencrypted endpoints).
+ *
+ * ## Error handling
+ * Encryption/decryption failures are non-fatal: the request is sent as plaintext
+ * and the response is returned as-is. Warnings are logged to console.
+ *
+ * @param {string} url - The URL to fetch
+ * @param {Object} [options] - Standard fetch options (method, body, headers, etc.)
+ * @returns {Promise<Response>} A Response-like object (decrypted if applicable)
+ */
+async function apiFetch(url, options = {}) {
+    const encKey = getEncryptionKey();
+    
+    // Encrypt request body if we have a key
+    if (encKey && options.body && (options.method === 'POST' || options.method === 'PUT' || !options.method)) {
+        try {
+            const bodyData = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
+            const encrypted = await encryptPayload(bodyData, encKey);
+            options.body = JSON.stringify(encrypted);
+        } catch (e) {
+            console.warn('Encryption failed, sending plaintext:', e);
+        }
+    }
+    
+    const response = await fetch(url, options);
+    
+    // Try to decrypt response
+    if (encKey) {
+        try {
+            const text = await response.text();
+            if (text) {
+                const parsed = JSON.parse(text);
+                if (parsed && parsed.encrypted) {
+                    const decrypted = await decryptResponse(parsed, encKey);
+                    const newResponse = {
+                        ok: response.ok,
+                        status: response.status,
+                        statusText: response.statusText,
+                        headers: response.headers,
+                        json: async () => decrypted,
+                        text: async () => JSON.stringify(decrypted),
+                    };
+                    return newResponse;
+                }
+                const newResponse = {
+                    ok: response.ok,
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: response.headers,
+                    json: async () => parsed,
+                    text: async () => text,
+                };
+                return newResponse;
+            }
+        } catch (e) {
+            console.warn('Response decryption failed:', e);
+        }
+    }
+    
+    return response;
+}
 
 /**
  * Look up a translated string for the current language.
@@ -78,7 +248,13 @@ function __(key, params) {
 
 /**
  * Fetch and merge translations from an external JSON file.
- * Called once on page load to overlay the language-specific strings over the defaults.
+ *
+ * ## i18n merge pattern
+ * Called once on page load to overlay the language-specific strings over the
+ * defaults. If the file doesn't exist (e.g., translation not yet written), the
+ * defaults in TRANSLATIONS.en are used without error. The merged table is stored
+ * in TRANSLATIONS[code] for subsequent lookups.
+ *
  * @param {string} code - Language code to load
  */
 async function loadTranslations(code) {
@@ -142,6 +318,13 @@ async function setLanguage(code) {
 
 /**
  * Build and inject the language picker button in the top-right corner.
+ *
+ * ## Language switching flow
+ * Creates a fixed-position button that opens a searchable dropdown of LANGUAGES.
+ * The dropdown is built entirely in JS and appended to document.body. Selecting
+ * a language calls setLanguage(), which triggers loadTranslations() + applyLanguage().
+ * An overlay element behind the dropdown handles click-outside-to-close.
+ * Only one instance is created (guarded by id check).
  */
 function initLangPicker() {
     var existing = document.getElementById('langPickerWrap');
@@ -182,6 +365,11 @@ function initLangPicker() {
     });
 }
 
+/**
+ * Render the language list inside the dropdown, filtered by search query.
+ * Highlights the active language with teal background.
+ * @param {string} query - Lowercased search filter string
+ */
 function renderLangList(query) {
     var list = document.getElementById('langList');
     if (!list) return;
@@ -194,6 +382,10 @@ function renderLangList(query) {
     }).join('');
 }
 
+/**
+ * Toggle the language picker dropdown open/closed.
+ * Shows/hides the dropdown and its backing overlay.
+ */
 function toggleLangPicker() {
     var dd = document.getElementById('langDropdown');
     try { dd.style.display = dd.style.display === 'block' ? 'none' : 'block'; } catch(e){ return; }
@@ -205,6 +397,7 @@ function toggleLangPicker() {
     }
 }
 
+/** Close the language picker dropdown and overlay. */
 function closeLangPicker() {
     var dd = document.getElementById('langDropdown');
     var ov = document.getElementById('langOverlay');
@@ -213,12 +406,24 @@ function closeLangPicker() {
 }
 
 /* ── Theme ───────────────────────────────────────────────────────────────── */
+
+/**
+ * Get the preferred theme based on localStorage or system preference.
+ * Checks localStorage first, then falls back to prefers-color-scheme media query.
+ * @returns {string} 'light' or 'dark'
+ */
 function getPreferredTheme() {
     const stored = localStorage.getItem('lumina-theme');
     if (stored) return stored;
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+/**
+ * Apply a theme to the document and persist to localStorage.
+ * Updates the data-theme attribute on <html>, the theme toggle icon,
+ * and the theme toggle label text.
+ * @param {string} theme - 'light' or 'dark'
+ */
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('lumina-theme', theme);
@@ -234,9 +439,17 @@ function setTheme(theme) {
     if (label) label.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
 }
 
+/** Toggle between light and dark themes based on current preference. */
 function toggleTheme() { setTheme(getPreferredTheme() === 'dark' ? 'light' : 'dark'); }
 
 /* ── Notifications ───────────────────────────────────────────────────────── */
+
+/**
+ * Show a temporary toast notification at the bottom of the page.
+ * Toast auto-dismisses after 3 seconds with a fade-out animation.
+ * @param {string} msg - Message text to display
+ * @param {boolean} isError - If true, uses danger/red background; otherwise success/green
+ */
 function showAlert(msg, isError) {
     const container = document.getElementById('globalToastContainer');
     if (!container) return;
@@ -247,6 +460,14 @@ function showAlert(msg, isError) {
     setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
+/**
+ * Show an inline notification element by id.
+ * Shows a pre-existing notification div with success or error styling.
+ * Auto-hides after 4 seconds.
+ * @param {string} notifId - DOM id of the notification element
+ * @param {string} msg - Message text to display
+ * @param {boolean} isError - If true, uses danger styling; otherwise success
+ */
 function showNotification(notifId, msg, isError) {
     const el = document.getElementById(notifId);
     if (!el) return;
@@ -284,6 +505,12 @@ let adminDefaultEnabled = true;
  * Fetches the currently logged-in user's info from /whoami.
  * Updates the userInfo sidebar element and caches the username to sessionStorage.
  * Called on DOMContentLoaded by each page that has a sidebar.
+ *
+ * ## Cached user pattern
+ * This async function fetches the server-side session. While it's in flight,
+ * the synchronous IIFE above renders the cached username from the previous
+ * page load. Once this resolves, it overwrites with fresh data. If the session
+ * is expired (non-ok response), the user is redirected to the error page.
  */
 async function loadWhoAmI() {
     try {
@@ -291,13 +518,15 @@ async function loadWhoAmI() {
             loggedInUser = 'admin';
             userRole = 'admin';
         } else {
-            const res = await fetch('/whoami');
-            if (res.ok) {
-                const data = await res.json();
-                loggedInUser = data.username;
-                userRole = data.role;
-                sessionStorage.setItem('lumina-user', data.username);
+            const res = await apiFetch('/whoami');
+            if (!res.ok) {
+                window.location.href = '/static/error?reason=session_expired';
+                return;
             }
+            const data = await res.json();
+            loggedInUser = data.username;
+            userRole = data.role;
+            sessionStorage.setItem('lumina-user', data.username);
         }
         const userInfo = document.getElementById('userInfo');
         if (userInfo) {
@@ -309,6 +538,8 @@ async function loadWhoAmI() {
 }
 
 /* ── Mobile Menu ─────────────────────────────────────────────────────────── */
+
+/** Toggle the mobile sidebar open/closed by toggling .open and .active classes. */
 function toggleMobileMenu() {
     const sidebar = document.querySelector('aside');
     const overlay = document.querySelector('.mobile-overlay');
@@ -317,6 +548,7 @@ function toggleMobileMenu() {
 }
 
 /* ── Active nav highlighting ─────────────────────────────────────────────── */
+
 /**
  * Manually highlights a sidebar nav item and its matching bottom-nav item.
  * Removes 'active' from all nav items first.
@@ -361,4 +593,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initNav();
     initLangPicker();
     loadTranslations(currentLang);
+    // Clear encryption key on logout
+    document.querySelectorAll('a[href="/logout"]').forEach(function(el) {
+        el.addEventListener('click', clearEncryptionKey);
+    });
 });

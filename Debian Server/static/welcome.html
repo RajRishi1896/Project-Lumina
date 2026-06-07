@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Section: Head — metadata, fonts, embedded styles -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina Hub | Welcome</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Section: CSS Variables / Design Tokens -->
     <style>
         :root {
             --surface: #FDF7FF;
@@ -376,6 +378,7 @@
 </head>
 <body>
 
+<!-- Section: Navbar — brand, language picker, theme toggle, app download link -->
     <nav>
         <div class="nav-brand">Lumina Hub</div>
         <div class="nav-actions">
@@ -401,12 +404,15 @@
         </div>
     </nav>
 
+    <!-- Section: Hero — page header and tagline -->
     <section class="hero">
         <h1>Your Offline Learning Network</h1>
         <p>Access textbooks, videos, and study materials from the local mesh — no internet required.</p>
     </section>
 
+    <!-- Section: Content Grid — vitals dashboard and login form -->
     <div class="container">
+        <!-- Section: Hub Vitals — storage and battery meters -->
         <div>
             <!-- Vitals Card -->
             <div class="card">
@@ -430,6 +436,7 @@
             </div>
         </div>
 
+        <!-- Section: Login Card — teacher credentials with password visibility toggle -->
         <!-- Login Card -->
         <div class="card login-card">
             <div class="card-label">Educator Access</div>
@@ -452,6 +459,7 @@
         </div>
     </div>
 
+    <!-- Section: Student Guide — step-by-step documentation (no login required) -->
     <!-- Full-width Help Documentation (no login required) -->
     <div style="max-width:940px;margin:0 auto 4rem;padding:0 1.25rem;">
         <div class="card" style="padding-bottom:0;">
@@ -508,7 +516,17 @@
         </div>
     </div>
 
+    <!-- Section: Inline Scripts — theme, language selection, stats fetching, auth handling -->
     <script>
+        /**
+         * Generate a color for meter bars based on percentage.
+         * Storage (invert=false): low% green → high% red.
+         * Battery (invert=true): low% red → high% green.
+         * Uses HSL interpolation across 5 ranges for smooth transitions.
+         * @param {number} percent - Fill percentage (0-100)
+         * @param {boolean} invert - If true, invert the gradient direction (used for battery)
+         * @returns {string} CSS HSL color string
+         */
         function getMeterColor(percent, invert) {
             // Vibrant green → amber → red (Tailwind-inspired HSL)
             // emerald-500: hsl(160, 84%, 39%), amber-500: hsl(38, 92%, 50%), red-500: hsl(0, 84%, 60%)
@@ -531,9 +549,14 @@
             return `hsl(${Math.round(hue)}, ${Math.round(sat)}%, ${Math.round(light)}%)`;
         }
 
+        /**
+         * Fetch hub vitals (storage and battery) from /stats endpoint.
+         * Updates the meter bars and labels. Falls back to "Unavailable" on error.
+         * Called on page load and every 10s via setInterval.
+         */
         async function fetchStats() {
             try {
-                const res = await fetch('/stats');
+                const res = await apiFetch('/stats');
                 const data = await res.json();
 
                 const sFill = document.getElementById('storageFill');
@@ -551,6 +574,13 @@
             }
         }
 
+        /**
+         * Login form submission handler.
+         * Posts username/password to /token via plain fetch (no encryption wrapper
+         * because encryption key is not known until after successful login).
+         * On success: stores encryption key via setEncryptionKey() and redirects to index.html.
+         * On failure: shows the #loginError element.
+         */
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
             const formData = new FormData();
@@ -558,13 +588,15 @@
             formData.append('password', document.getElementById('password').value);
             const res = await fetch('/token', { method: 'POST', body: formData });
             if (res.ok) {
+                const data = await res.json();
+                setEncryptionKey(data.encryption_key || '');
                 window.location.href = 'index.html';
             } else {
                 document.getElementById('loginError').classList.remove('hidden');
             }
         };
 
-        // Clear error when user starts typing again
+        // Clear login error when the user starts typing again
         document.getElementById('username').oninput = () => {
             document.getElementById('loginError').classList.add('hidden');
         };
@@ -572,6 +604,10 @@
             document.getElementById('loginError').classList.add('hidden');
         };
 
+        /**
+         * Toggle password field visibility between text and password types.
+         * Updates the eye icon SVG and button tooltip accordingly.
+         */
         function togglePasswordVisibility() {
             const pwdInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eyeIcon');
@@ -587,7 +623,12 @@
             }
         }
 
-        // --- Dark Mode ---
+        /* ── Theme: Dark Mode ──────────────────────────────────────────── */
+
+        /**
+         * Toggle between light and dark themes.
+         * Persists choice to localStorage and updates the theme icon.
+         */
         function toggleTheme() {
             const html = document.documentElement;
             const isDark = html.getAttribute('data-theme') === 'dark';
@@ -597,12 +638,17 @@
             updateThemeUI(newTheme === 'dark');
         }
 
+        /**
+         * Update the theme toggle icon SVG based on current mode.
+         * @param {boolean} isDark - Whether dark mode is active
+         */
         function updateThemeUI(isDark) {
             document.getElementById('themeIcon').innerHTML = isDark
                 ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
                 : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
         }
 
+        // Restore saved theme on page load (synchronous, runs before DOMContentLoaded)
         (function() {
             const saved = localStorage.getItem('lumina-theme');
             if (saved === 'dark') {
@@ -611,7 +657,9 @@
             }
         })();
 
-        // --- Language Selection ---
+        /* ── Language Selection ───────────────────────────────────────── */
+
+        /** @type {Array<{code:string, name:string, native:string}>} Welcome page language options (hardcoded, not loaded from TRANSLATIONS) */
         const WELCOME_LANGS = [
             { code:'en', name:'English', native:'English' },
             { code:'hi', name:'Hindi', native:'हिन्दी' },
@@ -622,6 +670,11 @@
         ];
         let welcomeLang = localStorage.getItem('lumina-lang') || 'en';
 
+        /**
+         * Render the language dropdown list, filtered by search query.
+         * Highlights the currently selected language with teal background.
+         * @param {string} query - Search/filter string (lowercased)
+         */
         function renderWelcomeLangList(query) {
             const list = document.getElementById('welcomeLangList');
             const q = (query || '').toLowerCase();
@@ -634,6 +687,11 @@
             }).join('');
         }
 
+        /**
+         * Set the active language on the welcome page.
+         * Persists to localStorage, updates the label, and closes the dropdown.
+         * @param {string} code - Language code ('en', 'hi', 'kn', etc.)
+         */
         function setWelcomeLang(code) {
             welcomeLang = code;
             localStorage.setItem('lumina-lang', code);
@@ -644,6 +702,10 @@
             closeWelcomeLang();
         }
 
+        /**
+         * Toggle the language dropdown open/closed.
+         * Opens with empty filter and auto-focuses the search input.
+         */
         function toggleWelcomeLang() {
             const dd = document.getElementById('welcomeLangDropdown');
             dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
@@ -653,16 +715,18 @@
             }
         }
 
+        /** Close the language dropdown. */
         function closeWelcomeLang() {
             document.getElementById('welcomeLangDropdown').style.display = 'none';
         }
 
-        // Close dropdown on click outside
+        // Close language dropdown on click outside the picker
         document.addEventListener('click', function(e) {
             const wrap = document.querySelector('.lang-nav-wrap');
             if (wrap && !wrap.contains(e.target)) closeWelcomeLang();
         });
 
+        // Initialize saved language on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('welcomeLangSearch').addEventListener('input', function(){ renderWelcomeLangList(this.value); });
             document.getElementById('welcomeLangList').addEventListener('click', function(e) { e.stopPropagation(); });
@@ -674,10 +738,11 @@
             if (label && langObj) label.textContent = langObj.native;
         });
 
+        // Initial stats fetch and periodic refresh every 10s
         fetchStats();
         setInterval(fetchStats, 10000);
 
-        // Force clear inputs on page load to prevent browser caching/autofill
+        // Clear login inputs on page load to prevent browser autofill interference
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 const userField = document.getElementById('username');
