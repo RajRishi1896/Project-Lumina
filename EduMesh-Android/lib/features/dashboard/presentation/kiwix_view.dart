@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/constants/lumina_colors.dart';
+import '../../../core/constants/app_spacing.dart';
 
 /// A full-screen WebView wrapper for displaying Kiwix / ZIM content.
 ///
@@ -64,10 +65,10 @@ class _KiwixViewState extends State<KiwixView> {
           widget.title ?? 'KNOWLEDGE BASE',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 letterSpacing: 1.5,
-                fontWeight: FontWeight.w800,
+                fontWeight: AppSpacing.weightDisplay,
               ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: LuminaColors.surface,
         elevation: 0,
         actions: [
           IconButton(

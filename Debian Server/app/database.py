@@ -46,14 +46,20 @@ async def log_admin_action(username: str, action: str):
         return
 
     now = datetime.now()
-    log_line = f"{now.isoformat()} - {username}: {action}\n"
+    await asyncio.to_thread(_write_log, now.isoformat(), username, action, retention)
+
+
+def _write_log(timestamp, username, action, retention):
+    log_line = f"{timestamp} - {username}: {action}\n"
     try:
-        async with _admin_log_lock:
-            with open("data/admin_actions.log", "a") as f:
-                f.write(log_line)
+        with open("data/admin_actions.log", "a") as f:
+            f.write(log_line)
     except Exception as e:
         logging.error(f"Could not write admin action log: {e}")
+    _prune_logs_if_needed(retention)
 
+
+def _prune_logs_if_needed(retention):
     if retention == "never":
         return
 
@@ -83,9 +89,8 @@ async def log_admin_action(username: str, action: str):
                                 kept_lines.append(line)
                         except Exception:
                             kept_lines.append(line)
-                async with _admin_log_lock:
-                    with open("data/admin_actions.log", "w") as f:
-                        f.writelines(kept_lines)
+                with open("data/admin_actions.log", "w") as f:
+                    f.writelines(kept_lines)
     except Exception as e:
         logging.error(f"Error pruning logs: {e}")
 
@@ -222,9 +227,7 @@ def init_db():
     except sqlite3.IntegrityError:
         pass
 
-    # Ensure admin password is lumina2026 even on existing DB
-    default_pwd = hash_password("lumina2026")
-    c.execute("UPDATE users SET hashed_password = ? WHERE username = 'admin'", (default_pwd,))
+    # Do NOT force-reset admin password on every restart — let admin keep their password
 
     c.execute('SELECT count(*) FROM subjects')
     if c.fetchone()[0] == 0:

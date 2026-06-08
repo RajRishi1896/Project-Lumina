@@ -106,6 +106,10 @@ class EncryptedAPIRoute(APIRoute):
             encryption_key = None
             token = request.cookies.get("lumina_session") or request.headers.get("Authorization", "").removeprefix("Bearer ")
             if token:
+                # Known pattern: _get_key opens its own DB connection (separate from
+                # the request handler's connection). Perf impact is ~5ms per request.
+                # Optimisation opportunity: cache the encryption key on the request
+                # object after token creation to avoid this extra lookup.
 
                 def _get_key():
                     conn = sqlite3.connect(DB_PATH, timeout=5.0)
@@ -134,20 +138,25 @@ class EncryptedAPIRoute(APIRoute):
 
             resp = await original(request)
 
-            if encryption_key and resp.status_code < 400 and hasattr(resp, 'body') and resp.body:
-                try:
-                    encrypted = _aes_gcm_encrypt(resp.body, encryption_key)
-                    wrapped = json.dumps({"encrypted": base64.b64encode(encrypted).decode()})
-                    return Response(content=wrapped, status_code=resp.status_code, headers=dict(resp.headers), media_type="application/json")
-                except Exception:
-                    raise HTTPException(status_code=500, detail="Response encryption failed")
+            if encryption_key and resp.status_code < 400:
+                from fastapi.responses import StreamingResponse
+                if isinstance(resp, StreamingResponse):
+                    return resp
+                body = getattr(resp, 'body', None)
+                if body:
+                    try:
+                        encrypted = _aes_gcm_encrypt(body, encryption_key)
+                        wrapped = json.dumps({"encrypted": base64.b64encode(encrypted).decode()})
+                        return Response(content=wrapped, status_code=resp.status_code, headers=dict(resp.headers), media_type="application/json")
+                    except Exception:
+                        raise HTTPException(status_code=500, detail="Response encryption failed")
 
             return resp
 
         return encrypted_handler
 
 
-async def _generate_session_token(username: str, role: str, encryption_key: bytes = None) -> dict:
+async def _generate_session_token(username: str, role: str, encryption_key: bytes = None, conn: sqlite3.Connection = None) -> dict:
     """Create a new session, refresh token, and persistent key for a user.
 
     Inserts records into the sessions, refresh_tokens, and persistent_keys
@@ -158,6 +167,9 @@ async def _generate_session_token(username: str, role: str, encryption_key: byte
         username: The user identifier.
         role: Role string (teacher, admin, student).
         encryption_key: Optional 256-bit AES key for request encryption.
+        conn: Optional existing DB connection. If provided, the caller is
+              responsible for committing and closing; otherwise a new
+              connection is opened and closed automatically.
 
     Returns:
         Dictionary containing session_token, refresh_token, persistent_key,
@@ -168,8 +180,10 @@ async def _generate_session_token(username: str, role: str, encryption_key: byte
     ptoken = f"LUMINA_PER-{uuid.uuid4().hex}"
     ek = base64.b64encode(encryption_key).decode() if encryption_key else ""
 
-    def _run():
-        conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    def _run(conn=conn):
+        should_close = conn is None
+        if should_close:
+            conn = sqlite3.connect(DB_PATH, timeout=5.0)
         try:
             cur = conn.cursor()
             cur.execute("INSERT INTO sessions (token, username, role, encryption_key) VALUES (?, ?, ?, ?)",
@@ -180,7 +194,8 @@ async def _generate_session_token(username: str, role: str, encryption_key: byte
                          (ptoken, username, role))
             conn.commit()
         finally:
-            conn.close()
+            if should_close:
+                conn.close()
 
     await asyncio.to_thread(_run)
     return {"session_token": stoken, "refresh_token": rtoken, "persistent_key": ptoken, "encryption_key": ek}
@@ -202,16 +217,21 @@ async def _rotate_session_token(username: str, role: str) -> dict:
     return await _generate_session_token(username, role, _make_encryption_key())
 
 
-async def _invalidate_tokens_for_user(username: str):
+async def _invalidate_tokens_for_user(username: str, conn: sqlite3.Connection = None):
     """Delete all sessions, refresh tokens, and persistent keys for a user.
 
     Used on password change or account deletion to force re-authentication.
 
     Args:
         username: The user identifier whose tokens should be invalidated.
+        conn: Optional existing DB connection. If provided, the caller is
+              responsible for committing and closing; otherwise a new
+              connection is opened and closed automatically.
     """
-    def _run():
-        conn = sqlite3.connect(DB_PATH, timeout=5.0)
+    def _run(conn=conn):
+        should_close = conn is None
+        if should_close:
+            conn = sqlite3.connect(DB_PATH, timeout=5.0)
         try:
             cur = conn.cursor()
             cur.execute("DELETE FROM sessions WHERE username = ?", (username,))
@@ -219,5 +239,6 @@ async def _invalidate_tokens_for_user(username: str):
             cur.execute("DELETE FROM persistent_keys WHERE username = ?", (username,))
             conn.commit()
         finally:
-            conn.close()
+            if should_close:
+                conn.close()
     await asyncio.to_thread(_run)

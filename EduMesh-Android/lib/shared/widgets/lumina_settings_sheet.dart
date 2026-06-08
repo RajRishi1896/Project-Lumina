@@ -128,23 +128,26 @@ class LuminaSettingsSheet extends ConsumerWidget {
           }),
 
           // Account Settings
-          Consumer(builder: (context, ref, child) {
-            final connected = ConnectivityService().isOnline;
-            final l10n = AppLocalizations.of(context)!;
-            return ListTile(
-              leading: connected
-                  ? Icon(Icons.person, color: cs.primary)
-                  : Icon(Icons.person_outline, color: cs.outline),
-              title: Text(l10n.settingsAccountTitle,
-                  style: TextStyle(color: connected ? cs.onSurface : cs.outline)),
-              subtitle: Text(
-                  connected ? l10n.settingsAccountSubtitleOnline : l10n.settingsAccountSubtitleOffline,
-                  style: TextStyle(color: connected ? cs.onSurfaceVariant : cs.outline)),
-              onTap: connected
-                  ? () => _showChangePasswordDialog(context)
-                  : null,
-            );
-          }),
+          ListenableBuilder(
+            listenable: ConnectivityService(),
+            builder: (context, _) {
+              final connected = ConnectivityService().isOnline;
+              final l10n = AppLocalizations.of(context)!;
+              return ListTile(
+                leading: connected
+                    ? Icon(Icons.person, color: cs.primary)
+                    : Icon(Icons.person_outline, color: cs.outline),
+                title: Text(l10n.settingsAccountTitle,
+                    style: TextStyle(color: connected ? cs.onSurface : cs.outline)),
+                subtitle: Text(
+                    connected ? l10n.settingsAccountSubtitleOnline : l10n.settingsAccountSubtitleOffline,
+                    style: TextStyle(color: connected ? cs.onSurfaceVariant : cs.outline)),
+                onTap: connected
+                    ? () => _showChangePasswordDialog(context)
+                    : null,
+              );
+            },
+          ),
 
           const Divider(),
 
@@ -167,6 +170,10 @@ class LuminaSettingsSheet extends ConsumerWidget {
     );
   }
 }
+
+final _upperRE = RegExp(r'[A-Z]');
+final _lowerRE = RegExp(r'[a-z]');
+final _digitRE = RegExp(r'[0-9]');
 
 /// Displays a dialog for changing the student's password.
 ///
@@ -265,7 +272,7 @@ void _showChangePasswordDialog(BuildContext context) {
                   if (old.isEmpty) { setState(() => error = l10n.errorCurrentPasswordRequired); return; }
                   if (pwd.length < 8) { setState(() => error = l10n.errorPasswordMinLength); return; }
                   if (pwd != confirmPwdCtrl.text) { setState(() => error = l10n.errorPasswordsDoNotMatch); return; }
-                  if (!pwd.contains(RegExp(r'[A-Z]')) || !pwd.contains(RegExp(r'[a-z]')) || !pwd.contains(RegExp(r'[0-9]'))) {
+                  if (!pwd.contains(_upperRE) || !pwd.contains(_lowerRE) || !pwd.contains(_digitRE)) {
                     setState(() => error = l10n.errorPasswordComplexity);
                     return;
                   }
@@ -293,9 +300,9 @@ void _showChangePasswordDialog(BuildContext context) {
         },
       );
     },
-  );
-
-  oldPwdCtrl.dispose();
-  newPwdCtrl.dispose();
-  confirmPwdCtrl.dispose();
+  ).then((_) {
+    oldPwdCtrl.dispose();
+    newPwdCtrl.dispose();
+    confirmPwdCtrl.dispose();
+  });
 }

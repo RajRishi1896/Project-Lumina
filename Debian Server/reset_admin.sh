@@ -12,7 +12,7 @@ echo "[WARNING] Initiating Emergency Password Reset..."
 # Ensure we are in the correct directory
 cd "$(dirname "$0")"
 
-python3 -c '
+./venv/bin/python3 -c '
 import sqlite3
 import bcrypt
 

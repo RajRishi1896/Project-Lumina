@@ -280,7 +280,7 @@
                 /* Auth flow: uses apiFetch with cookie-based session to call /teacher/student/{id}/analytics */
                 apiFetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); })
                 .then(function(analytics){
-                    renderStats((analytics.study_minutes_this_week || 0) * 60, analytics.streak_days || 0, analytics.resources_saved || 0);
+                    renderStats((analytics.study_minutes_this_week || 0), analytics.streak_days || 0, analytics.resources_saved || 0);
                     renderSubjects(analytics.subjects || []);
                     document.getElementById('loadingState').style.display = 'none';
                 }).catch(function(err){

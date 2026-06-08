@@ -42,6 +42,7 @@ class _SearchPageState extends State<SearchPage> {
   Set<String> _downloadedIds = {};
   Set<String> _pendingIds = {};
   final Set<String> _downloadingIds = {};
+  List<Map<String, dynamic>> _filteredResults = [];
   bool _isLoading = true;
   String? _loadError;
 
@@ -65,6 +66,7 @@ class _SearchPageState extends State<SearchPage> {
     if (widget.openFilters) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showFilterSheet());
     }
+    _applyFilters();
   }
 
   Future<void> _loadResources() async {
@@ -78,15 +80,17 @@ class _SearchPageState extends State<SearchPage> {
       } else if (data is Map && data['items'] is List) {
         resources = (data['items'] as List).map((j) => ResourceModel.fromJson(j is Map ? Map<String, dynamic>.from(j) : {})).toList();
       }
-      _allResources = resources;
-      _buildSearchIndex(resources);
-    } catch (_) {
+    _allResources = resources;
+    _buildSearchIndex(resources);
+    _applyFilters();
+  } catch (_) {
       try {
         final local = await SaveResourceService.getAllSavedResourceModels();
         if (local.isNotEmpty) {
-          _allResources = local;
-          _buildSearchIndex(local);
-          if (mounted) setState(() { _isLoading = false; _loadError = null; });
+        _allResources = local;
+        _buildSearchIndex(local);
+        _applyFilters();
+        if (mounted) setState(() { _isLoading = false; _loadError = null; });
           return;
         }
       } catch (_) {}
@@ -242,6 +246,7 @@ class _SearchPageState extends State<SearchPage> {
       _subjectFilter = '';
       _sortBy = 'title_asc';
     });
+    _applyFilters();
   }
 
   void _showFilterSheet() {
@@ -416,13 +421,14 @@ class _SearchPageState extends State<SearchPage> {
                       Expanded(
                         child: FilledButton(
                           onPressed: () {
-                            setState(() {
-                              _selectedTypes = tempTypes;
-                              _selectedGrades = tempGrades;
-                              _subjectFilter = tempSubject;
-                              _sortBy = tempSort;
-                            });
-                            Navigator.pop(ctx);
+                              setState(() {
+                                _selectedTypes = tempTypes;
+                                _selectedGrades = tempGrades;
+                                _subjectFilter = tempSubject;
+                                _sortBy = tempSort;
+                              });
+                              _applyFilters();
+                              Navigator.pop(ctx);
                           },
                           child: const Text('Apply'),
                         ),
@@ -455,36 +461,23 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+  void _applyFilters() {
     final textFiltered = _searchQuery.trim().isEmpty
-        ? List.from(_searchIndex)
+        ? List<Map<String, dynamic>>.from(_searchIndex)
         : _searchIndex.where((item) {
             return (item["searchKeywords"] as String)
                 .contains(_searchQuery.toLowerCase());
           }).toList();
 
-    final filteredResults = textFiltered.where((item) {
+    final List<Map<String, dynamic>> results = textFiltered.where((item) {
       final original = item["originalObject"];
-      if (_selectedTypes.isNotEmpty &&
-          !_selectedTypes.contains(original.type)) {
-        return false;
-      }
-      if (_selectedGrades.isNotEmpty &&
-          !_selectedGrades.contains(original.grade)) {
-        return false;
-      }
-      if (_subjectFilter.isNotEmpty &&
-          !(original.subject ?? '')
-              .toLowerCase()
-              .contains(_subjectFilter.toLowerCase())) {
-        return false;
-      }
+      if (_selectedTypes.isNotEmpty && !_selectedTypes.contains(original.type)) return false;
+      if (_selectedGrades.isNotEmpty && !_selectedGrades.contains(original.grade)) return false;
+      if (_subjectFilter.isNotEmpty && !(original.subject ?? '').toLowerCase().contains(_subjectFilter.toLowerCase())) return false;
       return true;
     }).toList();
 
-    filteredResults.sort((a, b) {
+    results.sort((a, b) {
       final oa = a["originalObject"];
       final ob = b["originalObject"];
       switch (_sortBy) {
@@ -498,6 +491,13 @@ class _SearchPageState extends State<SearchPage> {
           return (oa.title ?? '').compareTo(ob.title ?? '');
       }
     });
+
+    setState(() => _filteredResults = results);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -562,11 +562,12 @@ class _SearchPageState extends State<SearchPage> {
                     child: TextField(
                       controller: _searchController,
                       onChanged: (value) {
-                        ActivityTracker()
-                            .logAction('search', metadata: value)
-                            .catchError((_) {});
-                        setState(() => _searchQuery = value);
-                      },
+        ActivityTracker()
+            .logAction('search', metadata: value)
+            .catchError((_) {});
+        setState(() => _searchQuery = value);
+        _applyFilters();
+      },
                       style: TextStyle(color: cs.onSurface),
                       decoration: InputDecoration(
                         icon: Icon(Icons.search_rounded,
@@ -624,11 +625,11 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ),
               ),
-            if (_searchQuery.trim().isEmpty && !_hasActiveFilters && filteredResults.isNotEmpty)
+            if (_searchQuery.trim().isEmpty && !_hasActiveFilters && _filteredResults.isNotEmpty)
               SliverToBoxAdapter(
                 child: _buildRecommendedSection(cs),
               ),
-            if (_searchQuery.trim().isEmpty && !_hasActiveFilters && filteredResults.isNotEmpty)
+            if (_searchQuery.trim().isEmpty && !_hasActiveFilters && _filteredResults.isNotEmpty)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.only(top: 16.h, bottom: 8.h),
@@ -639,7 +640,7 @@ class _SearchPageState extends State<SearchPage> {
                           color: cs.onSurface)),
                 ),
               ),
-            filteredResults.isEmpty
+            _filteredResults.isEmpty
                 ? SliverFillRemaining(
                     child: Center(
                     child: Text(
@@ -651,7 +652,7 @@ class _SearchPageState extends State<SearchPage> {
                 : SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        final item = filteredResults[index];
+                        final item = _filteredResults[index];
                         final dynamic original = item["originalObject"];
 
                           final isKiwix = original.type == ResourceType.kiwix;
@@ -762,7 +763,7 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         );
                       },
-                      childCount: filteredResults.length,
+                      childCount: _filteredResults.length,
                     ),
                   ),
           ],

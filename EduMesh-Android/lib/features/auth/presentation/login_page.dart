@@ -42,6 +42,10 @@ class _LoginPageState extends State<LoginPage> {
   
   // Gatekeeper state
   bool _isConnected = false;
+  
+  static final _upperRE = RegExp(r'[A-Z]');
+  static final _lowerRE = RegExp(r'[a-z]');
+  static final _digitRE = RegExp(r'[0-9]');
 
   @override
   void initState() {
@@ -70,13 +74,13 @@ class _LoginPageState extends State<LoginPage> {
     if (!_isConnected) return; // Prevent action if offline
     
     if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
-      setState(() => _errorMessage = 'Please fill all fields');
+      setState(() => _errorMessage = AppLocalizations.of(context)!.errorFillAllFields);
       return;
     }
     if (_isRegisterMode) {
       final pwd = _passwordController.text;
-      if (pwd.length < 8 || !pwd.contains(RegExp(r'[A-Z]')) || !pwd.contains(RegExp(r'[a-z]')) || !pwd.contains(RegExp(r'[0-9]'))) {
-        setState(() => _errorMessage = 'Password must be 8+ chars with uppercase, lowercase, and digit');
+      if (pwd.length < 8 || !pwd.contains(_upperRE) || !pwd.contains(_lowerRE) || !pwd.contains(_digitRE)) {
+        setState(() => _errorMessage = AppLocalizations.of(context)!.errorPasswordStrength);
         return;
       }
     }
@@ -105,7 +109,7 @@ class _LoginPageState extends State<LoginPage> {
         } else {
           setState(() {
             _isLoading = false;
-            _errorMessage = 'Registration failed. Check Hub connection.';
+            _errorMessage = AppLocalizations.of(context)!.errorRegistrationFailed;
           });
         }
       }
@@ -134,7 +138,7 @@ class _LoginPageState extends State<LoginPage> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Logged in offline — server sync unavailable'),
+            content: Text(AppLocalizations.of(context)!.snackbarOfflineLogin),
             backgroundColor: Theme.of(context).colorScheme.tertiary,
             behavior: SnackBarBehavior.floating,
           ),
@@ -147,7 +151,7 @@ class _LoginPageState extends State<LoginPage> {
       } else {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Login failed. Invalid name or password.';
+          _errorMessage = AppLocalizations.of(context)!.errorLoginFailed;
         });
       }
     }
@@ -170,17 +174,17 @@ class _LoginPageState extends State<LoginPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('Password Reset Required', style: GoogleFonts.atkinsonHyperlegible()),
+              title: Text(AppLocalizations.of(context)!.dialogPasswordResetTitle, style: GoogleFonts.atkinsonHyperlegible()),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Your password was reset by a teacher. Enter your current password and set a new one.'),
+                  Text(AppLocalizations.of(context)!.dialogPasswordResetBody),
                   SizedBox(height: 16.h),
                   TextField(
                     controller: oldPwdController,
                     obscureText: obscureOld,
                     decoration: InputDecoration(
-                      labelText: 'Current Password',
+                      labelText: AppLocalizations.of(context)!.labelCurrentPassword,
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(obscureOld ? Icons.visibility_off_outlined : Icons.visibility_outlined),
@@ -193,7 +197,7 @@ class _LoginPageState extends State<LoginPage> {
                     controller: newPwdController,
                     obscureText: obscureNew,
                     decoration: InputDecoration(
-                      labelText: 'New Password',
+                      labelText: AppLocalizations.of(context)!.labelNewPassword,
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined),
@@ -204,7 +208,7 @@ class _LoginPageState extends State<LoginPage> {
                   Padding(
                     padding: EdgeInsets.only(top: 4.h),
                     child: Text(
-                      '8+ characters, with uppercase, lowercase, and a digit',
+                          AppLocalizations.of(context)!.hintPasswordRequirements,
                       style: TextStyle(color: cs.outline, fontSize: 11.sp),
                     ),
                   ),
@@ -213,7 +217,7 @@ class _LoginPageState extends State<LoginPage> {
                     controller: confirmPwdController,
                     obscureText: obscureConfirm,
                     decoration: InputDecoration(
-                      labelText: 'Confirm Password',
+                      labelText: AppLocalizations.of(context)!.labelConfirmPassword,
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined),
@@ -231,31 +235,31 @@ class _LoginPageState extends State<LoginPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(null),
-                  child: Text('Cancel'),
+                  child: Text(AppLocalizations.of(context)!.buttonCancel),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     final old = oldPwdController.text;
                     final pwd = newPwdController.text;
                     if (old.isEmpty) {
-                      setDialogState(() => dialogError = 'Current password is required.');
+                      setDialogState(() => dialogError = AppLocalizations.of(context)!.errorCurrentPasswordRequired);
                       return;
                     }
                     if (pwd.length < 8) {
-                      setDialogState(() => dialogError = 'Password must be at least 8 characters.');
+                      setDialogState(() => dialogError = AppLocalizations.of(context)!.errorPasswordMinLength);
                       return;
                     }
                     if (pwd != confirmPwdController.text) {
-                      setDialogState(() => dialogError = 'Passwords do not match.');
+                      setDialogState(() => dialogError = AppLocalizations.of(context)!.errorPasswordsDoNotMatch);
                       return;
                     }
-                    if (!pwd.contains(RegExp(r'[A-Z]')) || !pwd.contains(RegExp(r'[a-z]')) || !pwd.contains(RegExp(r'[0-9]'))) {
-                      setDialogState(() => dialogError = 'Password must contain upper, lower, and digit.');
+                    if (!pwd.contains(_upperRE) || !pwd.contains(_lowerRE) || !pwd.contains(_digitRE)) {
+                      setDialogState(() => dialogError = AppLocalizations.of(context)!.errorPasswordComplexity);
                       return;
                     }
                     Navigator.of(ctx).pop({'old': old, 'new': pwd});
                   },
-                  child: Text('Set Password'),
+                  child: Text(AppLocalizations.of(context)!.buttonSetPassword),
                 ),
               ],
             );
@@ -288,7 +292,7 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Failed to set password. Try again.';
+        _errorMessage = AppLocalizations.of(context)!.errorPasswordChangeFailed;
       });
     }
   }
@@ -319,7 +323,7 @@ class _LoginPageState extends State<LoginPage> {
                 LuminaStepper(currentStep: 1),
                 SizedBox(height: AppSpacing.section.h),
                 Text(
-                  _isRegisterMode ? 'Create Scholar\nIdentity' : 'Scholar\nLogin',
+                  _isRegisterMode ? AppLocalizations.of(context)!.titleRegisterMode : AppLocalizations.of(context)!.titleLoginMode,
                   style: GoogleFonts.atkinsonHyperlegible(
                     fontSize: 36.sp,
                     fontWeight: AppSpacing.weightDisplay,
@@ -329,9 +333,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 SizedBox(height: AppSpacing.sm.h),
                 Text(
-                  _isRegisterMode 
-                    ? 'Start your journey on the Lumina Mesh' 
-                    : 'Access your lessons from any device',
+                  _isRegisterMode ? AppLocalizations.of(context)!.subtitleRegisterMode : AppLocalizations.of(context)!.subtitleLoginMode,
                   style: GoogleFonts.atkinsonHyperlegible(
                     fontSize: 16.sp,
                     color: cs.onSurfaceVariant,
@@ -345,16 +347,16 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       _buildTextField(
                         controller: _usernameController,
-                        label: 'Username',
-                        hint: 'e.g. john_doe',
+                        label: AppLocalizations.of(context)!.labelUsername,
+                        hint: AppLocalizations.of(context)!.hintUsername,
                         icon: Icons.person_outline,
                         enabled: _isConnected,
                       ),
                       SizedBox(height: AppSpacing.xl.h),
                       _buildTextField(
                         controller: _passwordController,
-                        label: 'Password',
-                        hint: 'Password',
+                        label: AppLocalizations.of(context)!.labelPassword,
+                        hint: AppLocalizations.of(context)!.labelPassword,
                         icon: Icons.lock_outline,
                         isPassword: true,
                         obscureText: _obscurePassword,
@@ -364,7 +366,7 @@ class _LoginPageState extends State<LoginPage> {
                       if (_isRegisterMode) ...[
                         SizedBox(height: AppSpacing.xs.h),
                         Text(
-                          '8+ characters, with uppercase, lowercase, and a digit',
+                      AppLocalizations.of(context)!.hintPasswordRequirements,
                           style: TextStyle(color: cs.outline, fontSize: 11.sp),
                         ),
                       ],
@@ -380,7 +382,7 @@ class _LoginPageState extends State<LoginPage> {
                         Center(child: CircularProgressIndicator(color: cs.tertiary))
                       else
                         LuminaButton(
-                          label: _isRegisterMode ? 'Register & Sync' : 'Login & Sync',
+                          label: _isRegisterMode ? AppLocalizations.of(context)!.buttonRegister : AppLocalizations.of(context)!.buttonLogin,
                           onPressed: _isConnected ? _handleAuth : () {},
                         ),
                       if (!_isConnected)
@@ -403,8 +405,8 @@ class _LoginPageState extends State<LoginPage> {
                       : null,
                     child: Text(
                       _isRegisterMode
-                          ? 'Already have an account? Login'
-                          : "Don't have an account? Register",
+                          ? AppLocalizations.of(context)!.toggleToLogin
+                          : AppLocalizations.of(context)!.toggleToRegister,
                       style: GoogleFonts.atkinsonHyperlegible(
                         color: _isConnected ? cs.secondary : cs.outline,
                         fontWeight: AppSpacing.weightStrong,
@@ -432,7 +434,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
       child: Text(
-        _isConnected ? 'Hub Connected' : 'Waiting for Hub...',
+        _isConnected ? AppLocalizations.of(context)!.badgeHubConnected : AppLocalizations.of(context)!.badgeWaitingForHub,
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: AppSpacing.weightBody,

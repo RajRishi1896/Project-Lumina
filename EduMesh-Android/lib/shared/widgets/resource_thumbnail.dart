@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../core/constants/app_spacing.dart';
 import '../../core/models/resource_model.dart';
+import '../../core/network/api_client.dart';
 
 /// A thumbnail image for a [ResourceModel].
 ///
@@ -24,18 +26,20 @@ class ResourceThumbnail extends StatelessWidget {
       child: SizedBox(
         width: size.w,
         height: size.h,
-        child: _buildContent(cs),
+        child: _buildContent(context, cs),
       ),
     );
   }
 
-  Widget _buildContent(ColorScheme cs) {
+  Widget _buildContent(BuildContext context, ColorScheme cs) {
     final fallback = _buildFallbackIcon(cs);
     if (resource.id.isEmpty) return fallback;
-    final thumbUrl = '/api/thumbnail/${resource.id}';
+    final thumbUrl = '${ApiClient.baseUrl}/api/thumbnail/${resource.id}';
     return Image.network(
       thumbUrl,
       fit: BoxFit.cover,
+      cacheWidth: (size * MediaQuery.of(context).devicePixelRatio).round(),
+      cacheHeight: (size * MediaQuery.of(context).devicePixelRatio).round(),
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
         return Container(
@@ -54,7 +58,7 @@ class ResourceThumbnail extends StatelessWidget {
       color: cs.surfaceContainerHighest,
       child: Center(
         child: label != null
-            ? Text(label, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, letterSpacing: 1))
+            ? Text(label, style: TextStyle(fontSize: 10.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant, letterSpacing: 1))
             : Icon(icon, size: size * 0.45, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
       ),
     );

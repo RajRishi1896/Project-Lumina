@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/lumina_colors.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../data/teacher_repository.dart';
 
 class StudentProgressPage extends StatefulWidget {
@@ -102,23 +103,23 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Overview', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700)),
+            Text('Overview', style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
             SizedBox(height: 16.h),
             Row(
               children: [
                 _statBox(cs, 'Today', '${today}m', Icons.today_rounded, LuminaColors.academicTeal),
                 SizedBox(width: 8.w),
-                _statBox(cs, 'This Week', '${week}m', Icons.date_range_rounded, const Color(0xFF7C3AED)),
+                _statBox(cs, 'This Week', '${week}m', Icons.date_range_rounded, LuminaColors.chartPurple),
                 SizedBox(width: 8.w),
-                _statBox(cs, 'This Month', '${month}m', Icons.calendar_month_rounded, const Color(0xFF2563EB)),
+                _statBox(cs, 'This Month', '${month}m', Icons.calendar_month_rounded, LuminaColors.chartBlue),
               ],
             ),
             SizedBox(height: 10.h),
             Row(
               children: [
-                _statBox(cs, 'Streak', '$streak d', Icons.local_fire_department_rounded, const Color(0xFFD97706)),
+                _statBox(cs, 'Streak', '$streak d', Icons.local_fire_department_rounded, LuminaColors.chartAmber),
                 SizedBox(width: 8.w),
-                _statBox(cs, 'Saved', '$saved', Icons.bookmark_rounded, const Color(0xFF059669)),
+                _statBox(cs, 'Saved', '$saved', Icons.bookmark_rounded, LuminaColors.chartEmerald),
                 SizedBox(width: 8.w),
                 Expanded(child: Container()),
               ],
@@ -141,7 +142,7 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
           children: [
             Icon(icon, color: color, size: 22.sp),
             SizedBox(height: 6.h),
-            Text(value, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800, color: color)),
+            Text(value, style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightDisplay, color: color)),
             Text(label, style: TextStyle(fontSize: 11.sp, color: cs.onSurfaceVariant)),
           ],
         ),
@@ -162,7 +163,7 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Study Time by Subject', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700)),
+            Text('Study Time by Subject', style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
             SizedBox(height: 12.h),
             ...subjects.take(5).map((s) {
               final name = s['name'] as String? ?? 'Unknown';
@@ -203,7 +204,7 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Recent Activity', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700)),
+            Text('Recent Activity', style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
             SizedBox(height: 12.h),
             if (_loadingActivity && _activity.isEmpty)
               const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
@@ -281,7 +282,7 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500)),
+                Text(title, style: TextStyle(fontSize: 13.sp, fontWeight: AppSpacing.weightBody)),
                 if (subtitle.isNotEmpty) Text(subtitle, style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),

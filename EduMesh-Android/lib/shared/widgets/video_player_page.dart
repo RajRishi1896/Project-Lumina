@@ -49,6 +49,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   ChewieController? _chewieController;
   bool _initialized = false;
   String? _error;
+  static final _apiTrailingRE = RegExp(r'/api/?$');
 
   String get _positionKey => 'vid_pos_${widget.videoUrl}';
 
@@ -80,7 +81,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         _videoController = VideoPlayerController.file(file);
       } else {
         await ApiClient.ensureInitialized();
-        final base = ApiClient.dio.options.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+        final base = ApiClient.dio.options.baseUrl.replaceAll(_apiTrailingRE, '');
         var streamUrl = widget.videoUrl.startsWith('/') ? '$base$widget.videoUrl' : widget.videoUrl;
         if (streamUrl.contains('/files/')) {
           streamUrl = streamUrl.replaceFirst('/files/', '/api/stream/');

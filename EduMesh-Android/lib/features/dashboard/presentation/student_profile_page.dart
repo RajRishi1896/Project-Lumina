@@ -13,6 +13,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/network/api_client.dart';
 
+final _whitespaceRE = RegExp(r'\s+');
+
 /// The student profile and analytics page.
 ///
 /// Displays the user's name, grade, student ID, profile icon, study stats
@@ -40,6 +42,14 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   bool _showAllActivity = false;
   List<_SubjectTime> _subjectBreakdown = [];
   List<Map<String, dynamic>> _activityHistory = [];
+  static const _subjectColors = [
+    LuminaColors.academicTeal,
+    LuminaColors.chartPurple,
+    LuminaColors.chartEmerald,
+    LuminaColors.chartCyan,
+    LuminaColors.chartAmber,
+    LuminaColors.danger,
+  ];
   bool _loading = true;
   File? _profileImage;
   bool _uploadingIcon = false;
@@ -160,7 +170,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
 
   String _getInitials(String name) {
     if (name.trim().isEmpty) return '?';
-    final parts = name.trim().split(RegExp(r'\s+'));
+    final parts = name.trim().split(_whitespaceRE);
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
@@ -168,15 +178,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   Color _colorForSubject(String name) {
-    const colors = [
-      LuminaColors.academicTeal,
-      Color(0xFF7C3AED),
-      Color(0xFF059669),
-      Color(0xFF0891B2),
-      Color(0xFFD97706),
-      Color(0xFFDC2626),
-    ];
-    return colors[name.length % colors.length];
+    return _subjectColors[name.length % _subjectColors.length];
   }
 
   String _formatActivityTitle(Map<String, dynamic> activity) {

@@ -819,10 +819,10 @@
                 return;
             }
             try {
-                const res = await apiFetch('/teacher/change-password', {
+                const res = await apiFetch('/teacher/force-change-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: loggedInUser || 'admin', old_password: 'lumina2026', new_password: newPwd })
+                    body: JSON.stringify({ username: loggedInUser || 'admin', new_password: newPwd })
                 });
                 if (res.ok) {
                     showNotification('forceResetNotif', 'Password updated successfully. Reloading...', false);

@@ -17,13 +17,9 @@ const List<Map<String, String?>> appLanguageOptions = [
   {'code': null, 'label': 'More...'},
 ];
 
-/// A Riverpod [StateNotifier] that manages the current app [Locale].
-///
 /// Persists the choice to [SharedPreferences] so it survives restarts.
 /// Defaults to `Locale('en')` if no preference is saved.
-class LocaleNotifier extends StateNotifier<Locale> {
-  LocaleNotifier() : super(const Locale('en'));
-
+class LocaleNotifier extends Notifier<Locale> {
   static const _prefKey = 'app_locale';
 
   /// Loads the persisted locale from [SharedPreferences].
@@ -41,9 +37,10 @@ class LocaleNotifier extends StateNotifier<Locale> {
     state = Locale(code);
     SharedPreferences.getInstance().then((prefs) => prefs.setString(_prefKey, code));
   }
+
+  @override
+  Locale build() => const Locale('en');
 }
 
 /// The Riverpod provider for the current app [Locale].
-final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>((ref) {
-  return LocaleNotifier();
-});
+final localeProvider = NotifierProvider<LocaleNotifier, Locale>(LocaleNotifier.new);

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../core/constants/lumina_colors.dart';
 import '../../core/storage/db_helper.dart';
 import '../../shared/services/download_service.dart';
 
@@ -50,7 +51,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
         content: Text('Delete "$title" from offline storage?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: LuminaColors.danger))),
         ],
       ),
     );
@@ -115,7 +116,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                         title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
                         subtitle: Text('$subject • ${_formatSize(size)}', style: TextStyle(fontSize: 12.sp)),
                         trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          icon: Icon(Icons.delete_outline, color: cs.error),
                           onPressed: () => _delete(resourceId, title),
                         ),
                       ),

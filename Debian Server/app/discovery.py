@@ -59,11 +59,11 @@ class MeshBeacon:
             properties={'version': '1.0'},
             server="lumina-hub.local.",
         )
-        print(f"[INFO] Broadcasting Mesh Beacon at {self.host_ip}:{self.port}...")
+        logging.info(f"Broadcasting Mesh Beacon at {self.host_ip}:{self.port}...")
         try:
             self.zeroconf.register_service(info)
         except Exception as e:
-            print(f"[ERROR] Beacon registration failed: {e}")
+            logging.error(f"Beacon registration failed: {e}")
 
     def stop(self):
         """Unregister all mDNS services and shut down the Zeroconf instance."""

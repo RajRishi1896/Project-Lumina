@@ -25,4 +25,31 @@ class LuminaColors {
 
   /// The text and icon colour on primary-coloured containers.
   static const Color onPrimary = Color(0xFFFFFFFF);
+
+  /// A red colour for danger/delete actions.
+  static const Color danger = Color(0xFFDC2626);
+
+  /// A purple colour for chart differentiation.
+  static const Color chartPurple = Color(0xFF7C3AED);
+
+  /// An emerald green colour for chart differentiation.
+  static const Color chartEmerald = Color(0xFF059669);
+
+  /// A cyan colour for chart differentiation.
+  static const Color chartCyan = Color(0xFF0891B2);
+
+  /// An amber colour for chart differentiation.
+  static const Color chartAmber = Color(0xFFD97706);
+
+  /// A blue colour for chart differentiation.
+  static const Color chartBlue = Color(0xFF2563EB);
+
+  /// A gold colour for the welcome page CTA button.
+  static const Color ctaGold = Color(0xFFF8BC4B);
+
+  /// A dark brown text colour for the welcome page CTA button.
+  static const Color ctaGoldText = Color(0xFF271900);
+
+  /// A dark amber border colour for the welcome page CTA button.
+  static const Color ctaGoldBorder = Color(0xFF5F4100);
 }

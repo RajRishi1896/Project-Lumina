@@ -174,7 +174,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                       Text(item.title,
                           style: TextStyle(
                               fontSize: 14.sp,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: AppSpacing.weightStrong,
                               color: cs.onSurface),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis),

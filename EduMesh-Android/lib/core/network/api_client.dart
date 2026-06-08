@@ -10,7 +10,20 @@ import '../../features/auth/data/auth_service.dart';
 
 /// A singleton HTTP client wrapper around [Dio] that handles server discovery,
 /// token-based authentication, and automatic retry on 401/403 responses.
+///
+/// ## Encryption flow
+/// Outgoing POST/PUT request bodies are encrypted with AES-256-GCM when an
+/// encryption key is available. Responses containing `{"encrypted": "..."}`
+/// are automatically decrypted. Authentication handshakes (`/register`,
+/// `/student/token`) are never encrypted — they bootstrap the encryption key.
 class ApiClient {
+  /// Paths that must always be sent in plaintext (mirrors server's NO_ENCRYPT_PATHS).
+  /// These bootstrap the encryption key or serve unauthenticated content.
+  static const Set<String> _noEncryptPaths = {
+    '/register', '/student/token', '/student/refresh-token',
+    '/student/renew-session', '/ping', '/api/health',
+  };
+
   // Now using the official Mesh Domain we set up on Debian
   static const String _defaultDomain = 'http://lumina.hub:8000';
   static String _baseUrl = _defaultDomain;
@@ -31,15 +44,20 @@ class ApiClient {
     ..interceptors.add(LogInterceptor(requestBody: false, responseBody: false))
     ..interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        if (options.method == 'POST' || options.method == 'PUT') {
-          final encKey = await AuthService().getEncryptionKey();
-          if (encKey != null && encKey.isNotEmpty && options.data != null) {
-            try {
-              final data = options.data is Map<String, dynamic> ? options.data as Map<String, dynamic> : <String, dynamic>{};
-              final encrypted = await encryptRequest(data, encKey);
-              options.data = encrypted;
-            } catch (_) {}
-          }
+        // Skip encryption for auth handshakes — key isn't available yet
+        // or the server expects plaintext for these paths.
+        final path = options.path;
+        final noEncrypt = _noEncryptPaths.any((p) => path.startsWith(p));
+        if (!noEncrypt && (options.method == 'POST' || options.method == 'PUT')) {
+          try {
+            final encKey = await AuthService().getEncryptionKey();
+            if (encKey != null && encKey.isNotEmpty && options.data != null) {
+              final bodyData = options.data is Map<String, dynamic>
+                  ? options.data as Map<String, dynamic>
+                  : jsonDecode(jsonEncode(options.data)) as Map<String, dynamic>;
+              options.data = await encryptRequest(bodyData, encKey);
+            }
+          } catch (_) {}
         }
         handler.next(options);
       },
@@ -273,6 +291,9 @@ class ApiClient {
   static Dio get dio {
     return _dio;
   }
+
+  /// The resolved server base URL (e.g. `http://lumina.hub:8000`).
+  static String get baseUrl => _baseUrl;
 
   /// Ensures the server base URL is resolved via DNS or fallback IP.
   /// Safe to call multiple times; only performs initialization once.

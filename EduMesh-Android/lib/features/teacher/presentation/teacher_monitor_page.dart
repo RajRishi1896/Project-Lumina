@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/lumina_colors.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../core/network/api_client.dart';
 import '../data/teacher_repository.dart';
 import 'student_progress_page.dart';
@@ -90,8 +91,8 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
                 _loadData();
               },
               itemBuilder: (_) => [
-                PopupMenuItem(value: null, child: Text(_selectedGrade == null ? 'All Grades' : 'All Grades', style: TextStyle(fontWeight: _selectedGrade == null ? FontWeight.bold : FontWeight.normal))),
-                ..._grades.map((g) => PopupMenuItem(value: g, child: Text(g, style: TextStyle(fontWeight: _selectedGrade == g ? FontWeight.bold : FontWeight.normal)))),
+                PopupMenuItem(value: null, child: Text(_selectedGrade == null ? 'All Grades' : 'All Grades', style: TextStyle(fontWeight: _selectedGrade == null ? AppSpacing.weightStrong : FontWeight.normal))),
+                ..._grades.map((g) => PopupMenuItem(value: g, child: Text(g, style: TextStyle(fontWeight: _selectedGrade == g ? AppSpacing.weightStrong : FontWeight.normal)))),
               ],
             ),
         ],
@@ -113,7 +114,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
             children: [
               Icon(Icons.cloud_off_rounded, size: 48.sp, color: cs.error),
               SizedBox(height: 12.h),
-              Text('Could not load students', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700)),
+              Text('Could not load students', style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
               SizedBox(height: 4.h),
               Text('Check hub connection and try again.', style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant)),
               SizedBox(height: 16.h),
@@ -223,14 +224,14 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
                   CircleAvatar(
                     radius: 20.r,
                     backgroundColor: LuminaColors.academicTeal.withValues(alpha: 0.15),
-                    child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700, color: LuminaColors.academicTeal)),
+                    child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong, color: LuminaColors.academicTeal)),
                   ),
                   SizedBox(width: 12.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700)),
+                        Text(name, style: TextStyle(fontSize: 15.sp, fontWeight: AppSpacing.weightStrong)),
                         Row(
                           children: [
                             if (grade.isNotEmpty) Text(grade, style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant)),
@@ -275,7 +276,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
         children: [
           Icon(icon, size: 12.sp, color: cs.onSurfaceVariant),
           SizedBox(width: 4.w),
-          Text(value, style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700)),
+          Text(value, style: TextStyle(fontSize: 11.sp, fontWeight: AppSpacing.weightStrong)),
           if (label.isNotEmpty) ...[
             SizedBox(width: 2.w),
             Text(label, style: TextStyle(fontSize: 10.sp, color: cs.onSurfaceVariant)),

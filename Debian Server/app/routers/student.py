@@ -6,6 +6,7 @@ import asyncio
 import sqlite3
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
+import logging
 from app.database import DB_PATH, PROFILE_ICONS_DIR, auto_register_if_new
 from app.async_db import db_conn, db_execute, db_fetchone, db_fetchall
 from app.models import StudyTimeSync, SubjectTimeSync, ProfileUpdate, IconUpload, StudentChangePasswordRequest
@@ -29,8 +30,7 @@ async def sync_downloads(resource_ids: list[str], student_id: str = Depends(veri
     await auto_register_if_new(student_id)
     async with db_conn() as conn:
         c = conn.cursor()
-        for rid in resource_ids:
-            c.execute("INSERT OR IGNORE INTO scholar_downloads (scholar_id, resource_id) VALUES (?, ?)", (student_id, rid))
+        c.executemany("INSERT OR IGNORE INTO scholar_downloads (scholar_id, resource_id) VALUES (?, ?)", [(student_id, rid) for rid in resource_ids])
         conn.commit()
     return {"status": "ok"}
 
@@ -92,9 +92,8 @@ async def sync_subject_time(data: SubjectTimeSync, student_id: str = Depends(ver
     async with db_conn() as conn:
         c = conn.cursor()
         c.execute("DELETE FROM subject_minutes WHERE scholar_id = ?", (student_id,))
-        for subj in data.subjects:
-            c.execute("INSERT INTO subject_minutes (scholar_id, subject_name, minutes) VALUES (?, ?, ?)",
-                      (student_id, subj.name, subj.minutes))
+        c.executemany("INSERT INTO subject_minutes (scholar_id, subject_name, minutes) VALUES (?, ?, ?)",
+                      [(student_id, subj.name, subj.minutes) for subj in data.subjects])
         conn.commit()
     return {"status": "ok"}
 
@@ -200,7 +199,7 @@ async def upload_profile_icon(data: IconUpload, student_id: str = Depends(verify
     filename = f"{safe_id}_icon.{ext}"
     filepath = os.path.join(PROFILE_ICONS_DIR, filename)
     with open(filepath, "wb") as f:
-        f.write(raw)
+        await asyncio.to_thread(f.write, raw)
     return {"status": "ok", "filename": filename}
 
 
@@ -220,7 +219,7 @@ async def get_profile_icon(scholar_id: str):
     safe_id = re.sub(r'[^A-Za-z0-9_-]', '_', scholar_id)
     for ext in ("png", "jpg", "jpeg", "gif", "webp"):
         path = os.path.join(PROFILE_ICONS_DIR, f"{safe_id}_icon.{ext}")
-        if os.path.exists(path):
+        if await asyncio.to_thread(os.path.exists, path):
             return FileResponse(path, media_type=f"image/{ext}")
     raise HTTPException(status_code=404, detail="No profile icon found.")
 
@@ -256,7 +255,7 @@ async def student_change_password(data: StudentChangePasswordRequest, student_id
             await _invalidate_tokens_for_user(student_id)
             return {"status": "success"}
         except Exception as e:
-            print(f"[ERROR] student_change_password: {e}")
+            logging.error(f"student_change_password: {e}")
             raise HTTPException(status_code=400, detail="Failed to change password")
 
 

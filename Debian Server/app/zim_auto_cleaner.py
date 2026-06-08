@@ -8,6 +8,7 @@ limit. Runs on a daemon thread started at server startup.
 import os
 import time
 import threading
+import logging
 from datetime import datetime
 
 from lib.zim_settings import get_max_pages
@@ -27,7 +28,7 @@ def _clean_old_pages():
     try:
         max_pages = get_max_pages()
     except Exception as e:
-        print(f"[ZIM Cleaner] Failed to read max_pages: {e}")
+        logging.error(f"Failed to read max_pages: {e}")
         return
     files = [f for f in os.listdir(ZIM_PAGES_DIR) if f.endswith('.html')]
     if len(files) <= max_pages:
@@ -40,7 +41,7 @@ def _clean_old_pages():
         try:
             os.remove(old_file)
         except Exception as e:
-            print(f"[ZIM Cleaner] Failed to delete {old_file}: {e}")
+            logging.error(f"Failed to delete {old_file}: {e}")
 
 
 _cleaner_lock = threading.Lock()

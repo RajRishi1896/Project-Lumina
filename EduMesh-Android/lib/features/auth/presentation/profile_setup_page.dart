@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
 import 'package:edumesh_android/widgets/connection_gate.dart';
 import 'package:edumesh_android/pages/app_shell.dart';
+import 'package:edumesh_android/core/constants/app_spacing.dart';
 
 /// A post-registration page prompting the student to set a display name and
 /// select their grade before entering the main app.
@@ -79,7 +80,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               Icon(Icons.school_rounded, size: 48.sp, color: cs.primary),
               SizedBox(height: 16.h),
               Text('Welcome!',
-                  style: GoogleFonts.atkinsonHyperlegible(fontSize: 32.sp, fontWeight: FontWeight.w800, color: cs.primary)),
+                  style: GoogleFonts.atkinsonHyperlegible(fontSize: 32.sp, fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
               SizedBox(height: 4.h),
               Text("Let's set up your profile",
                   style: GoogleFonts.atkinsonHyperlegible(fontSize: 16.sp, color: cs.onSurfaceVariant)),
@@ -88,7 +89,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                 const Center(child: CircularProgressIndicator())
               else ...[
                 Text('Display Name',
-                    style: GoogleFonts.atkinsonHyperlegible(fontSize: 13.sp, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
+                    style: GoogleFonts.atkinsonHyperlegible(fontSize: 13.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
                 SizedBox(height: 6.h),
                 TextField(
                   controller: _nameController,
@@ -102,7 +103,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                 ),
                 SizedBox(height: 20.h),
                 Text('Grade',
-                    style: GoogleFonts.atkinsonHyperlegible(fontSize: 13.sp, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
+                    style: GoogleFonts.atkinsonHyperlegible(fontSize: 13.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
                 SizedBox(height: 6.h),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedGrade.isNotEmpty && _grades.contains(_selectedGrade) ? _selectedGrade : null,
@@ -130,7 +131,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   child: _saving
                       ? SizedBox(width: 20.sp, height: 20.sp, child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary))
                       : Text('Continue',
-                          style: GoogleFonts.atkinsonHyperlegible(fontSize: 16.sp, fontWeight: FontWeight.w700)),
+                          style: GoogleFonts.atkinsonHyperlegible(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
                 ),
               ),
               SizedBox(height: 32.h),

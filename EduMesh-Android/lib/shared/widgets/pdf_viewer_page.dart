@@ -178,7 +178,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                             style: TextStyle(
                               color: isCurrent ? cs.onPrimary : cs.onSurfaceVariant,
                               fontSize: 12,
-                              fontWeight: isCurrent ? AppSpacing.weightStrong : FontWeight.w400,
+                              fontWeight: isCurrent ? AppSpacing.weightStrong : AppSpacing.weightBody,
                             ),
                           ),
                         ),

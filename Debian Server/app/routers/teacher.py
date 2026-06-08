@@ -114,7 +114,7 @@ async def teacher_reset_student_password(scholar_id: str, teacher_user: str = De
             conn.commit()
             return {"status": "success"}
         except Exception as e:
-            print(f"[ERROR] teacher_reset_student_password: {e}")
+            logging.error(f"teacher_reset_student_password: {e}")
             raise HTTPException(status_code=400, detail="Failed to reset password")
 
 
@@ -141,7 +141,7 @@ async def teacher_delete_student(scholar_id: str, teacher_user: str = Depends(ve
             conn.commit()
             return {"status": "success"}
         except Exception as e:
-            print(f"[ERROR] teacher_delete_student: {e}")
+            logging.error(f"teacher_delete_student: {e}")
             raise HTTPException(status_code=400, detail="Failed to delete student")
 
 
@@ -327,7 +327,7 @@ async def create_subject(subject: SubjectCreate, teacher_user: str = Depends(ver
             conn.commit()
             return {"status": "success", "id": subj_id, "name": subject.name, "symbol": subject.symbol, "class_name": class_val}
         except Exception as e:
-            print(f"[ERROR] create_subject: {e}")
+            logging.error(f"create_subject: {e}")
             raise HTTPException(status_code=400, detail="Failed to create subject")
 
 
@@ -366,9 +366,9 @@ async def delete_subject(data: SubjectDeleteRequest, teacher_user: str = Depends
                 c.execute("SELECT file_path FROM resources WHERE subject = ?", (subject_name,))
                 files = [r[0] for r in c.fetchall()]
                 for fp in files:
-                    if os.path.exists(fp):
+                    if await asyncio.to_thread(os.path.exists, fp):
                         try:
-                            os.remove(fp)
+                            await asyncio.to_thread(os.remove, fp)
                         except Exception as e:
                             logging.warning(f"Could not remove physical file {fp}: {e}")
                 c.execute("DELETE FROM resources WHERE subject = ?", (subject_name,))
@@ -380,7 +380,7 @@ async def delete_subject(data: SubjectDeleteRequest, teacher_user: str = Depends
             conn.commit()
             return {"status": "success"}
         except Exception as e:
-            print(f"[ERROR] delete_subject: {e}")
+            logging.error(f"delete_subject: {e}")
             raise HTTPException(status_code=400, detail="Failed to delete subject")
 
 
@@ -442,7 +442,7 @@ async def create_teacher_profile(teacher: TeacherCreate, admin_user: str = Depen
             conn.commit()
             return {"status": "success", "username": teacher.username, "name": display_name, "department": dept, "scholar_id": full_id}
         except Exception as e:
-            print(f"[ERROR] create_teacher_profile: {e}")
+            logging.error(f"create_teacher_profile: {e}")
             raise HTTPException(status_code=400, detail="Failed to create teacher profile")
 
 
@@ -584,7 +584,7 @@ async def force_change_password(data: ForceChangePasswordRequest, teacher_user: 
         except HTTPException:
             raise
         except Exception as e:
-            print(f"[ERROR] force_change_password: {e}")
+            logging.error(f"force_change_password: {e}")
             raise HTTPException(status_code=400, detail="Failed to change password")
 
 
@@ -612,10 +612,11 @@ async def force_reset_teacher_password(username: str, admin_user: str = Depends(
             c = conn.cursor()
             c.execute("UPDATE users SET hashed_password = ?, reset_required = 1 WHERE username = ?", (hashed, username))
             conn.commit()
+            await _invalidate_tokens_for_user(username)
             await log_admin_action(admin_user, f"reset password for teacher {username}")
             return {"status": "success"}
         except Exception as e:
-            print(f"[ERROR] force_reset_teacher_password: {e}")
+            logging.error(f"force_reset_teacher_password: {e}")
             raise HTTPException(status_code=400, detail="Failed to reset password")
 
 
@@ -720,7 +721,7 @@ async def list_resources():
         fpath = r[2]
         mtime = 0.0
         try:
-            mtime = os.path.getmtime(fpath)
+            mtime = await asyncio.to_thread(os.path.getmtime, fpath)
         except OSError:
             mtime = 0.0
         result.append({
@@ -800,20 +801,22 @@ async def upload_resource(title: str, type: str, subject: str = "General", grade
         raise HTTPException(status_code=507, detail="Hub storage is full. Please delete older files before uploading.")
     safe_filename = re.sub(r'[^A-Za-z0-9_.-]', '_', file.filename or 'unnamed_file')
     file_path = os.path.join(UPLOAD_DIR, safe_filename)
-    contents = await file.read()
+    chunk_size = 64 * 1024
+    total_size = 0
+    with open(file_path, "wb") as f:
+        while True:
+            chunk = await file.read(chunk_size)
+            if not chunk:
+                break
+            total_size += len(chunk)
+            if total_size > 100 * 1024 * 1024:
+                raise HTTPException(status_code=400, detail="File too large")
+            await asyncio.to_thread(f.write, chunk)
     if request and await request.is_disconnected():
         raise HTTPException(status_code=499, detail="Client disconnected")
-    if len(contents) > 100 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large")
     async with db_conn() as conn:
         c = conn.cursor()
         c.execute("DELETE FROM resources WHERE file_path = ?", (file_path,))
-
-        def _write_file():
-            """Write uploaded file contents to disk in a worker thread."""
-            with open(file_path, "wb") as buffer:
-                buffer.write(contents)
-        await asyncio.to_thread(_write_file)
         await file.close()
         try:
             c.execute("INSERT INTO resources (title, file_path, type, subject, grade) VALUES (?, ?, ?, ?, ?)",
@@ -853,26 +856,34 @@ async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(v
     free_gb = free // (2**30)
     if free_gb < 2:
         raise HTTPException(status_code=507, detail="Insufficient storage space for ZIM upload.")
-    contents = await file.read()
-    if request and await request.is_disconnected():
-        raise HTTPException(status_code=499, detail="Client disconnected")
-    if len(contents) > await get_zim_upload_max_size():
-        raise HTTPException(
-            status_code=413,
-            detail=f"ZIM upload exceeds maximum size limit of {await get_zim_upload_max_size() // (1024 * 1024)} MiB."
-        )
     if not file.filename:
         raise HTTPException(status_code=400, detail="Uploaded file has no filename.")
 
     tmp_dir = os.path.join(UPLOAD_DIR, f"tmp_{uuid.uuid4().hex}")
     safe_filename = re.sub(r'[^A-Za-z0-9_.-]', '_', file.filename or 'archive.zip')
     archive_path = os.path.join(tmp_dir, safe_filename)
+    os.makedirs(tmp_dir, exist_ok=True)
+
+    chunk_size = 64 * 1024
+    total_size = 0
+    max_size = await get_zim_upload_max_size()
+    with open(archive_path, "wb") as f:
+        while True:
+            chunk = await file.read(chunk_size)
+            if not chunk:
+                break
+            total_size += len(chunk)
+            if total_size > max_size:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"ZIM upload exceeds maximum size limit of {max_size // (1024 * 1024)} MiB."
+                )
+            await asyncio.to_thread(f.write, chunk)
+    if request and await request.is_disconnected():
+        raise HTTPException(status_code=499, detail="Client disconnected")
 
     def _process_archive():
         """Extract ZIP, validate paths, move HTML files to zim_pages dir. Runs in worker thread."""
-        os.makedirs(tmp_dir, exist_ok=True)
-        with open(archive_path, "wb") as f:
-            f.write(contents)
         try:
             with zipfile.ZipFile(archive_path, "r") as zip_ref:
                 for entry in zip_ref.namelist():
@@ -934,7 +945,7 @@ async def import_server_file(filename: str, title: str, type: str, subject: str 
     if '..' in filename or '/' in filename or '\\' in filename:
         raise HTTPException(status_code=400, detail="Invalid filename.")
     file_path = os.path.join(UPLOAD_DIR, os.path.basename(filename))
-    if not os.path.exists(file_path):
+    if not await asyncio.to_thread(os.path.exists, file_path):
         raise HTTPException(status_code=404, detail="File not found on server.")
     async with db_conn() as conn:
         c = conn.cursor()
@@ -973,9 +984,9 @@ async def delete_resource(resource_id: int, teacher_user: str = Depends(verify_t
             if not row:
                 raise HTTPException(status_code=404, detail="Resource not found.")
             file_path = row[0]
-            if os.path.exists(file_path):
+            if await asyncio.to_thread(os.path.exists, file_path):
                 try:
-                    os.remove(file_path)
+                    await asyncio.to_thread(os.remove, file_path)
                 except Exception as e:
                     logging.warning(f"Could not remove physical file {file_path}: {e}")
             c.execute("DELETE FROM resources WHERE id = ?", (resource_id,))
@@ -983,7 +994,7 @@ async def delete_resource(resource_id: int, teacher_user: str = Depends(verify_t
             conn.commit()
             return {"status": "success"}
         except Exception as e:
-            print(f"[ERROR] delete_resource: {e}")
+            logging.error(f"delete_resource: {e}")
             raise HTTPException(status_code=400, detail="Failed to delete resource")
 
 
@@ -1067,8 +1078,8 @@ async def delete_grade(name: str, transfer_to: str = None, teacher_user: str = D
             c.execute("SELECT file_path FROM resources WHERE grade = ?", (name,))
             files = c.fetchall()
             for (fp,) in files:
-                if os.path.exists(fp):
-                    os.remove(fp)
+                if await asyncio.to_thread(os.path.exists, fp):
+                    await asyncio.to_thread(os.remove, fp)
             c.execute("DELETE FROM resources WHERE grade = ?", (name,))
         c.execute("DELETE FROM grades WHERE name = ?", (name,))
         conn.commit()
@@ -1097,14 +1108,20 @@ async def stream_file(filename: str, request: Request):
         HTTPException 416: If the Range header is invalid.
     """
     file_path = os.path.join(UPLOAD_DIR, filename)
-    if not os.path.exists(file_path):
+    if not await asyncio.to_thread(os.path.exists, file_path):
         raise HTTPException(status_code=404, detail="File not found")
-    file_size = os.path.getsize(file_path)
+    file_size = await asyncio.to_thread(os.path.getsize, file_path)
     range_header = request.headers.get("range")
     if range_header:
-        start_str, _, end_str = range_header.replace("bytes=", "").partition("-")
-        start = int(start_str) if start_str else 0
-        end = int(end_str) if end_str else file_size - 1
+        range_val = range_header.replace("bytes=", "")
+        if range_val.startswith("-"):
+            suffix = int(range_val[1:])
+            start = max(0, file_size - suffix)
+            end = file_size - 1
+        else:
+            start_str, _, end_str = range_val.partition("-")
+            start = int(start_str) if start_str else 0
+            end = int(end_str) if end_str else file_size - 1
         if start >= file_size:
             raise HTTPException(status_code=416, detail="Range not satisfiable")
         content_length = end - start + 1
@@ -1114,7 +1131,7 @@ async def stream_file(filename: str, request: Request):
                 f.seek(start)
                 remaining = content_length
                 while remaining > 0:
-                    chunk = f.read(min(65536, remaining))
+                    chunk = await asyncio.to_thread(f.read, min(65536, remaining))
                     if not chunk:
                         break
                     remaining -= len(chunk)
@@ -1158,9 +1175,9 @@ async def resource_thumbnail(resource_id: int):
         raise HTTPException(status_code=404, detail="Resource not found")
     file_path, rtype = row
     thumb_path = os.path.join(THUMBNAILS_DIR, f"{resource_id}.png")
-    if os.path.exists(thumb_path):
+    if await asyncio.to_thread(os.path.exists, thumb_path):
         return FileResponse(thumb_path, media_type="image/png")
-    if not os.path.exists(file_path):
+    if not await asyncio.to_thread(os.path.exists, file_path):
         raise HTTPException(status_code=404, detail="File not found")
     try:
         if rtype in ("textbook", "notes", "pyq", "pastPaper"):
@@ -1230,7 +1247,7 @@ async def get_stats():
     total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
     battery_percent = 100
     try:
-        if os.path.exists("/sys/class/power_supply/BAT0/capacity"):
+        if await asyncio.to_thread(os.path.exists, "/sys/class/power_supply/BAT0/capacity"):
             def _read_battery():
                 """Read battery percentage from sysfs. Runs in worker thread."""
                 with open("/sys/class/power_supply/BAT0/capacity", "r") as f:
@@ -1394,7 +1411,7 @@ async def list_admins(admin_user: str = Depends(verify_admin)):
             c.execute("SELECT username, name, department, reset_required FROM users WHERE role = 'admin' ORDER BY name ASC")
             rows = c.fetchall()
         except sqlite3.OperationalError:
-            c.execute("SELECT username, name, department, 0 as reset_required FROM users WHERE role != 'teacher' OR role IS NULL ORDER BY name ASC")
+            c.execute("SELECT username, name, department, '' as reset_required FROM users WHERE username != 'admin' ORDER BY name ASC")
             rows = c.fetchall()
     return [{"username": r[0], "name": r[1] or r[0], "department": r[2] or "System", "reset_required": r[3] or 0} for r in rows]
 
@@ -1433,7 +1450,7 @@ async def create_admin(data: TeacherCreate, admin_user: str = Depends(verify_adm
         except HTTPException:
             raise
         except Exception as e:
-            print(f"[ERROR] create_admin: {e}")
+            logging.error(f"create_admin: {e}")
             raise HTTPException(status_code=400, detail="Failed to create admin account")
 
 
@@ -1471,7 +1488,7 @@ async def create_teacher(data: TeacherCreate, admin_user: str = Depends(verify_a
         except HTTPException:
             raise
         except Exception as e:
-            print(f"[ERROR] create_teacher: {e}")
+            logging.error(f"create_teacher: {e}")
             raise HTTPException(status_code=400, detail="Failed to create teacher account")
 
 
@@ -1489,7 +1506,7 @@ async def download_admin_logs(duration: str = "all", admin_user: str = Depends(v
     Returns:
         Plain-text Response with log content and Content-Disposition header.
     """
-    if not os.path.exists("data/admin_actions.log"):
+    if not await asyncio.to_thread(os.path.exists, "data/admin_actions.log"):
         return Response(content="No logs found.", media_type="text/plain")
 
     ALLOWED_DURATIONS = {"24h", "7d", "30d", "3m", "6m", "all"}

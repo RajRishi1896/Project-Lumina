@@ -173,8 +173,8 @@ function base64ToBytes(str) {
 async function apiFetch(url, options = {}) {
     const encKey = getEncryptionKey();
     
-    // Encrypt request body if we have a key
-    if (encKey && options.body && (options.method === 'POST' || options.method === 'PUT' || !options.method)) {
+    // Encrypt request body if we have a key (skip FormData — can't be JSON-serialized)
+    if (encKey && options.body && (options.method === 'POST' || options.method === 'PUT' || !options.method) && !(options.body instanceof FormData)) {
         try {
             const bodyData = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
             const encrypted = await encryptPayload(bodyData, encKey);

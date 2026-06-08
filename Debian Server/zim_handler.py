@@ -6,6 +6,8 @@ files in ``zim_pages/`` using the naming convention ``<id>__<title>.html``.
 """
 
 import os
+import asyncio
+import logging
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from typing import List, Dict
@@ -29,7 +31,7 @@ os.makedirs(ZIM_PAGES_DIR, exist_ok=True)
         200: {"description": "Paginated list of articles"},
     },
 )
-def list_zim_articles(offset: int = Query(default=0, ge=0), limit: int = Query(default=20, ge=1, le=200)) -> List[Dict[str, str]]:
+async def list_zim_articles(offset: int = Query(default=0, ge=0), limit: int = Query(default=20, ge=1, le=200)) -> List[Dict[str, str]]:
     """List all ZIM articles with pagination.
 
     Scans the ``zim_pages`` directory for ``.html`` files and parses
@@ -44,7 +46,8 @@ def list_zim_articles(offset: int = Query(default=0, ge=0), limit: int = Query(d
     """
     results: List[Dict[str, str]] = []
     try:
-        entries = sorted(os.listdir(ZIM_PAGES_DIR))
+        entries = await asyncio.to_thread(os.listdir, ZIM_PAGES_DIR)
+        entries = sorted(entries)
     except FileNotFoundError:
         return results
     for fname in entries:
@@ -68,7 +71,7 @@ def list_zim_articles(offset: int = Query(default=0, ge=0), limit: int = Query(d
         200: {"description": "Matching articles"},
     },
 )
-def search_zim(query: str = Query(..., min_length=1, description="Search term to match against article titles")) -> List[Dict[str, str]]:
+async def search_zim(query: str = Query(..., min_length=1, description="Search term to match against article titles")) -> List[Dict[str, str]]:
     """Search ZIM articles by title substring.
 
     Returns a list of objects with ``article_id`` and ``title``.
@@ -85,7 +88,7 @@ def search_zim(query: str = Query(..., min_length=1, description="Search term to
         return results
     # Simple filename based search; assume files are named "<id>__<title>.html"
     try:
-        entries = os.listdir(ZIM_PAGES_DIR)
+        entries = await asyncio.to_thread(os.listdir, ZIM_PAGES_DIR)
     except FileNotFoundError:
         return results
     for fname in entries:
@@ -111,7 +114,7 @@ def search_zim(query: str = Query(..., min_length=1, description="Search term to
         404: {"description": "Article not found"},
     },
 )
-def get_zim_page(article_id: str = Query(..., description="The unique ID of the article to retrieve")):
+async def get_zim_page(article_id: str = Query(..., description="The unique ID of the article to retrieve")):
     """Return the HTML content of a ZIM article as JSON.
 
     The server looks for a file named ``<id>__*.html`` on disk and
@@ -127,15 +130,17 @@ def get_zim_page(article_id: str = Query(..., description="The unique ID of the 
         HTTPException 404: If no file matching the ID is found.
     """
     try:
-        entries = os.listdir(ZIM_PAGES_DIR)
+        entries = await asyncio.to_thread(os.listdir, ZIM_PAGES_DIR)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail='Article not found')
     for fname in entries:
         if fname.startswith(f"{article_id}__") and fname.endswith('.html'):
             file_path = os.path.join(ZIM_PAGES_DIR, fname)
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    html_content = f.read()
+                def _read_file():
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        return f.read()
+                html_content = await asyncio.to_thread(_read_file)
             except FileNotFoundError:
                 continue
             return JSONResponse(content={'id': article_id, 'html': html_content})

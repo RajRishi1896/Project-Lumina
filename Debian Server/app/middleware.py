@@ -25,7 +25,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.ip_records = {}
         self._lock = asyncio.Lock()
-        asyncio.create_task(self.cleanup_stale())
+        self._cleanup_started = False
 
     async def cleanup_stale(self):
         """Periodically remove IP records older than 60 seconds.
@@ -40,10 +40,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             await asyncio.sleep(60)
             async with self._lock:
                 now = time.time()
-                self.ip_records = {
-                    ip: [t for t in ts if now - t < 60]
-                    for ip, ts in self.ip_records.items()
-                }
+                for ip, timestamps in list(self.ip_records.items()):
+                    self.ip_records[ip] = [t for t in timestamps if now - t < 60]
+                    if not self.ip_records[ip]:
+                        del self.ip_records[ip]
 
     async def dispatch(self, request: Request, call_next):
         """Apply per-IP rate limiting to each incoming request.
@@ -60,6 +60,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             A Response object, either a 429 rate-limit response or the
             response from the next handler.
         """
+        if not self._cleanup_started:
+            self._cleanup_started = True
+            asyncio.create_task(self.cleanup_stale())
         client_ip = request.client.host if request.client else request.headers.get("X-Forwarded-For", "unknown")
         path = request.url.path
         async with self._lock:

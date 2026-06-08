@@ -17,7 +17,7 @@ class LuminaStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final steps = ['Welcome', 'Login/Register', 'Access'];
+    const steps = ['Welcome', 'Login/Register', 'Access'];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -58,7 +58,7 @@ class LuminaStepper extends StatelessWidget {
                 steps[stepIndex],
                 style: GoogleFonts.atkinsonHyperlegible(
                   fontSize: 10.sp,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isActive ? AppSpacing.weightStrong : FontWeight.normal,
                   color: isActive ? cs.primary : cs.onSurfaceVariant,
                 ),
               ),

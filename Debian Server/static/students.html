@@ -256,7 +256,7 @@
                         grade: s.grade || '',
                         avatar: initials,
                         last_active: s.last_active || '',
-                        week_minutes: (s.study_minutes_this_week || 0) * 60,
+                        week_minutes: (s.study_minutes_this_week || 0),
                         streak: s.streak_days || 0,
                         downloads: s.resources_saved || 0
                     };
