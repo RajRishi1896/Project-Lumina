@@ -853,6 +853,22 @@
   "@switchToDarkThemeSubtitle": {
     "description": "Subtitle under the theme toggle when light mode is active"
   },
+  "appIconLabel": "Dark App Icon",
+  "@appIconLabel": {
+    "description": "Label on the app icon toggle tile when dark icon is active"
+  },
+  "appIconLightLabel": "Light App Icon",
+  "@appIconLightLabel": {
+    "description": "Label on the app icon toggle tile when light icon is active"
+  },
+  "appIconDarkSubtitle": "Use dark launcher icon",
+  "@appIconDarkSubtitle": {
+    "description": "Subtitle for the dark app icon toggle"
+  },
+  "appIconLightSubtitle": "Use light launcher icon",
+  "@appIconLightSubtitle": {
+    "description": "Subtitle for the light app icon toggle"
+  },
   "storageOfflineLibraryTitle": "Storage & Offline Library",
   "@storageOfflineLibraryTitle": {
     "description": "ListTile title navigating to the offline library page"
@@ -1036,5 +1052,22 @@
     "placeholders": {
       "error": {"type": "String", "example": "404"}
     }
+  },
+
+  "dialogSetNameTitle": "Set Your Name",
+  "@dialogSetNameTitle": {
+    "description": "Title of the dialog prompting a student to set their display name after login"
+  },
+  "dialogSetNameBody": "Please enter your name to personalize your experience.",
+  "@dialogSetNameBody": {
+    "description": "Body text in the name prompt dialog explaining why a name is requested"
+  },
+  "buttonSave": "Save",
+  "@buttonSave": {
+    "description": "Submit button to save a value, e.g. in the name prompt dialog"
+  },
+  "buttonSkip": "Skip",
+  "@buttonSkip": {
+    "description": "Button to skip a non-required action, e.g. setting a display name"
   }
 }

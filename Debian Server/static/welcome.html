@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina Hub | Welcome</title>
+    <link rel="icon" type="image/svg+xml" href="/static/assets/logo-light.svg" media="(prefers-color-scheme: light)">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/logo-dark.svg" media="(prefers-color-scheme: dark)">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
     <!-- Section: CSS Variables / Design Tokens -->
     <style>
         :root {
@@ -46,6 +49,9 @@
         [data-theme="dark"] .card-label, [data-theme="dark"] .meter-header { color: #6C7086; }
         [data-theme="dark"] .login-btn { background: var(--teal); }
         [data-theme="dark"] .login-btn:hover { background: #005A6A; }
+        [data-theme="dark"] .logo-light { display: none; }
+        .logo-dark { display: none; }
+        [data-theme="dark"] .logo-dark { display: inline; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -74,6 +80,7 @@
             color: var(--primary);
             letter-spacing: -0.025em;
         }
+        .nav-brand { display: inline-flex; align-items: center; gap: 0.5rem; }
         .nav-download {
             display: inline-flex;
             align-items: center;
@@ -138,6 +145,12 @@
             margin-bottom: 0.75rem;
             line-height: 1.15;
         }
+        .hero .logo-wrap { margin-bottom: 1.5rem; }
+        .hero .hero-light, .hero .hero-dark { max-width: 320px; width: 100%; height: auto; display: block; margin: 0 auto; }
+        [data-theme="dark"] .hero .hero-light { display: none; }
+        [data-theme="dark"] .hero .hero-dark { display: block; }
+        .hero .hero-light { display: block; }
+        .hero .hero-dark { display: none; }
         .hero p {
             font-size: 1.0625rem;
             opacity: 0.7;
@@ -373,14 +386,25 @@
         @media (max-width: 768px) {
             .hero h1 { font-size: 1.75rem; }
             .container { grid-template-columns: 1fr; }
+            .hero .logo-wrap { margin-bottom: 1rem; }
+            .hero .hero-light, .hero .hero-dark { max-width: 100%; width: 80%; }
         }
+
+        /* === Modal Overlay === */
+        .modal-overlay { position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000; }
+        .modal { background:var(--surface);border-radius:12px;padding:1.5rem;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+        .modal input:focus { outline:none;border-color:var(--teal); }
+        .btn-primary { background:var(--teal);color:#fff;border:none;border-radius:6px;cursor:pointer; }
+        .btn-primary:hover { background:#005A6A; }
+        .btn-outline { background:transparent;border:1px solid var(--outline);border-radius:6px;cursor:pointer;color:var(--on-surface); }
+        .btn-outline:hover { background:var(--outline); }
     </style>
 </head>
 <body>
 
 <!-- Section: Navbar — brand, language picker, theme toggle, app download link -->
     <nav>
-        <div class="nav-brand">Lumina Hub</div>
+        <div class="nav-brand"><img src="/static/assets/logo-light.svg" alt="" class="logo-light" width="24" height="24" style="flex-shrink:0;border-radius:2px;"><img src="/static/assets/logo-dark.svg" alt="" class="logo-dark" width="24" height="24" style="flex-shrink:0;border-radius:2px;">Lumina Hub</div>
         <div class="nav-actions">
             <div class="lang-nav-wrap" style="position:relative;">
                 <button class="theme-toggle-btn" id="welcomeLangBtn" onclick="toggleWelcomeLang()" title="Select Language" style="display:flex;align-items:center;gap:0.4rem;padding:0.5rem 0.75rem;border-radius:8px;font-family:inherit;font-size:0.8125rem;font-weight:700;">
@@ -406,6 +430,10 @@
 
     <!-- Section: Hero — page header and tagline -->
     <section class="hero">
+        <div class="logo-wrap">
+            <img src="/static/assets/hero-light.svg?v=2" class="hero-light" alt="Lumina Hub" width="320" height="156">
+            <img src="/static/assets/hero-dark.svg?v=2" class="hero-dark" alt="Lumina Hub" width="320" height="156">
+        </div>
         <h1>Your Offline Learning Network</h1>
         <p>Access textbooks, videos, and study materials from the local mesh — no internet required.</p>
     </section>
@@ -516,6 +544,20 @@
         </div>
     </div>
 
+        <!-- Name Setup Modal -->
+        <div id="namePromptModal" class="modal-overlay" style="display:none;">
+            <div class="modal">
+                <h3 style="margin-bottom:0.75rem;">Set Your Display Name</h3>
+                <p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:1rem;">Please enter your display name to personalize your experience.</p>
+                <input type="text" id="namePromptInput" placeholder="Your display name" style="width:100%;padding:0.65rem 1rem;border:1px solid var(--outline);border-radius:6px;font-size:0.95rem;background:var(--bg-page);color:var(--on-surface);">
+                <p id="namePromptError" class="hidden" style="color:var(--error,#e53e3e);font-size:0.8rem;margin-top:0.5rem;"></p>
+                <div style="display:flex;gap:0.75rem;margin-top:1rem;justify-content:flex-end;">
+                    <button id="namePromptSkip" class="btn btn-outline" style="padding:0.5rem 1rem;font-size:0.875rem;">Skip</button>
+                    <button id="namePromptSubmit" class="btn btn-primary" style="padding:0.5rem 1rem;font-size:0.875rem;">Save</button>
+                </div>
+            </div>
+        </div>
+
     <!-- Section: Inline Scripts — theme, language selection, stats fetching, auth handling -->
     <script>
         /**
@@ -578,7 +620,9 @@
          * Login form submission handler.
          * Posts username/password to /token via plain fetch (no encryption wrapper
          * because encryption key is not known until after successful login).
-         * On success: stores encryption key via setEncryptionKey() and redirects to index.html.
+         * On success: stores encryption key via setEncryptionKey().
+         * If data.name === data.username (no display name set), shows name prompt modal.
+         * Otherwise redirects to /static/index.
          * On failure: shows the #loginError element.
          */
         document.getElementById('loginForm').onsubmit = async (e) => {
@@ -589,10 +633,50 @@
             const res = await fetch('/token', { method: 'POST', body: formData });
             if (res.ok) {
                 const data = await res.json();
-                setEncryptionKey(data.encryption_key || '');
-                window.location.href = 'index.html';
+                if (typeof setEncryptionKey === 'function') {
+                    setEncryptionKey(data.encryption_key || '');
+                }
+                if (data.name === data.username) {
+                    document.getElementById('namePromptModal').style.display = 'flex';
+                } else {
+                    window.location.href = '/static/index';
+                }
             } else {
                 document.getElementById('loginError').classList.remove('hidden');
+            }
+        };
+
+        /* ── Name Prompt Modal ────────────────────────────────────────── */
+
+        /** Handle the name prompt modal submit action */
+        document.getElementById('namePromptSubmit').onclick = async () => {
+            const input = document.getElementById('namePromptInput');
+            const error = document.getElementById('namePromptError');
+            const name = input.value.trim();
+            if (!name) {
+                error.textContent = 'Please enter a name or skip.';
+                error.classList.remove('hidden');
+                return;
+            }
+            error.classList.add('hidden');
+            try {
+                await fetch('/teacher/profile/name', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name })
+                });
+            } catch (_) { /* ignore */ }
+            window.location.href = '/static/index';
+        };
+
+        document.getElementById('namePromptSkip').onclick = () => {
+            window.location.href = '/static/index';
+        };
+
+        document.getElementById('namePromptInput').onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('namePromptSubmit').click();
             }
         };
 

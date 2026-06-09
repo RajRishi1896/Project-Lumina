@@ -559,6 +559,8 @@ function setActiveNav(navId) {
     document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
     const nav = document.getElementById(navId);
     if (nav) nav.classList.add('active');
+    const bottomNav = document.getElementById('bottom-' + navId);
+    if (bottomNav) bottomNav.classList.add('active');
 }
 
 /**
@@ -589,10 +591,65 @@ function initNav() {
     }
 }
 
+/**
+ * Saves the current page scroll position to sessionStorage before navigating away.
+ * Keyed by the current pathname so it can be restored on return.
+ */
+function saveScrollPosition() {
+    try {
+        sessionStorage.setItem('scroll:' + location.pathname, window.scrollY.toString());
+    } catch(e) { /* sessionStorage may be unavailable */ }
+}
+
+/**
+ * Restores the saved scroll position for the current page on load.
+ * Uses a short timeout to let the DOM paint before scrolling.
+ */
+function restoreScrollPosition() {
+    try {
+        var saved = sessionStorage.getItem('scroll:' + location.pathname);
+        if (saved !== null) {
+            var pos = parseInt(saved, 10);
+            if (pos > 0) {
+                setTimeout(function() { window.scrollTo(0, pos); }, 10);
+            }
+        }
+    } catch(e) { /* ignore */ }
+}
+
+/**
+ * Hides/shows the mobile header on scroll.
+ * Adds .hidden-header class when scrolling down past 50px, removes on scroll up.
+ */
+function initMobileHeaderScroll() {
+    var lastScroll = 0;
+    var header = document.querySelector('.mobile-header');
+    if (!header) return;
+    window.addEventListener('scroll', function() {
+        var current = window.pageYOffset || document.documentElement.scrollTop;
+        if (current > lastScroll && current > 50) {
+            header.classList.add('hidden-header');
+        } else {
+            header.classList.remove('hidden-header');
+        }
+        lastScroll = current;
+    }, { passive: true });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initNav();
     initLangPicker();
     loadTranslations(currentLang);
+    initMobileHeaderScroll();
+    try { history.scrollRestoration = 'manual'; } catch(e) { /* ignore */ }
+    restoreScrollPosition();
+    // Save scroll position before navigating to another dashboard page
+    document.addEventListener('click', function(e) {
+        var link = e.target.closest('a.bottom-nav-item, a.nav-item');
+        if (link && link.href && link.href.indexOf(location.hostname) !== -1) {
+            saveScrollPosition();
+        }
+    });
     // Clear encryption key on logout
     document.querySelectorAll('a[href="/logout"]').forEach(function(el) {
         el.addEventListener('click', clearEncryptionKey);

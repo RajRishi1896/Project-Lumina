@@ -1270,6 +1270,30 @@ abstract class AppLocalizations {
   /// **'Switch to dark theme'**
   String get switchToDarkThemeSubtitle;
 
+  /// Label on the app icon toggle tile when dark icon is active
+  ///
+  /// In en, this message translates to:
+  /// **'Dark App Icon'**
+  String get appIconLabel;
+
+  /// Label on the app icon toggle tile when light icon is active
+  ///
+  /// In en, this message translates to:
+  /// **'Light App Icon'**
+  String get appIconLightLabel;
+
+  /// Subtitle for the dark app icon toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Use dark launcher icon'**
+  String get appIconDarkSubtitle;
+
+  /// Subtitle for the light app icon toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Use light launcher icon'**
+  String get appIconLightSubtitle;
+
   /// ListTile title navigating to the offline library page
   ///
   /// In en, this message translates to:
@@ -1497,6 +1521,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load article: {error}'**
   String zimFailedToLoadArticle(String error);
+
+  /// Title of the dialog prompting a student to set their display name after login
+  ///
+  /// In en, this message translates to:
+  /// **'Set Your Name'**
+  String get dialogSetNameTitle;
+
+  /// Body text in the name prompt dialog explaining why a name is requested
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your name to personalize your experience.'**
+  String get dialogSetNameBody;
+
+  /// Submit button to save a value, e.g. in the name prompt dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get buttonSave;
+
+  /// Button to skip a non-required action, e.g. setting a display name
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get buttonSkip;
 }
 
 class _AppLocalizationsDelegate

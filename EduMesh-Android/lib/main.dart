@@ -5,7 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Ensure these imports match your project structure exactly
 import 'package:edumesh_android/core/theme/lumina_lite_theme.dart';
-import 'package:edumesh_android/core/theme/theme_provider.dart'; 
+import 'package:edumesh_android/core/theme/theme_provider.dart';
+import 'package:edumesh_android/shared/services/app_icon_service.dart';
 import 'package:edumesh_android/features/auth/presentation/welcome_page.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'package:edumesh_android/widgets/connection_gate.dart';
@@ -36,6 +37,9 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final isDark = prefs.getBool('dark_mode') ?? false;
   final initialThemeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+
+  final useDarkIcon = prefs.getBool('dark_app_icon') ?? false;
+  AppIconService.setAppIcon(useDarkIcon);
 
   final authService = AuthService();
   final userId = await authService.getUniqueUserId();

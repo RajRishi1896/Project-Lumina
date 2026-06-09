@@ -1,10 +1,12 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Section: Head — metadata, styles, and theme detection -->
+<!-- Section: Head - metadata, styles, and theme detection -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Access Error — Lumina Hub</title>
+<title>Access Error - Lumina Hub</title>
+<link rel="icon" type="image/svg+xml" href="/static/assets/logo-light.svg" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/svg+xml" href="/static/assets/logo-dark.svg" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="/static/css/lumina.css">
 <style>
   .error-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:2rem; width:100%; box-sizing:border-box; }
@@ -23,7 +25,7 @@
 </style>
 </head>
 <body>
-<!-- Section: Error Card — icon, reason badge, title, message, and back button -->
+<!-- Section: Error Card - icon, reason badge, title, message, and back button -->
 <div class="error-wrap">
 <div class="error-card" id="errorCard">
   <!-- icon -->
@@ -32,13 +34,13 @@
       <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
     </svg>
   </div>
-  <!-- Section: Reason Badge — shows expired/denied/notfound -->
+  <!-- Section: Reason Badge - shows expired/denied/notfound -->
   <div class="reason-badge" id="reasonBadge">Access Denied</div>
   <!-- Section: Title -->
   <h1 id="errorTitle">You don't have access</h1>
   <!-- Section: Message -->
   <p id="errorMessage">This page requires teacher or administrator privileges. Please log in with an authorized account.</p>
-  <!-- Section: Back Button — navigates to welcome page -->
+  <!-- Section: Back Button - navigates to welcome page -->
   <a href="/welcome" class="btn" id="backBtn">
     <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
     Back to Home

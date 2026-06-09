@@ -23,6 +23,7 @@ class AuthService {
   static const String _refreshTokenKey = 'lumina_refresh_token';
   static const String _persistentKeyKey = 'lumina_persistent_key';
   static const String _gradeKey = 'lumina_grade';
+  static const String _displayNameKey = 'lumina_display_name';
 
   String _hashPassword(String password) => sha256.convert(utf8.encode(password)).toString();
 
@@ -148,6 +149,8 @@ class AuthService {
             if (token.isNotEmpty) {
               final grade = data['grade']?.toString() ?? '';
               if (grade.isNotEmpty) await _secureStorage.write(key: _gradeKey, value: grade);
+              final name = data['name']?.toString();
+              if (name != null && name.isNotEmpty) await _secureStorage.write(key: _displayNameKey, value: name);
               final refreshToken = data['refresh_token']?.toString();
               final persistentKey = data['persistent_key']?.toString();
               final encryptionKey = data['encryption_key']?.toString();
@@ -190,7 +193,10 @@ class AuthService {
             if (refreshToken != null && refreshToken.isNotEmpty) await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
             if (persistentKey != null && persistentKey.isNotEmpty) await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
             if (encryptionKey != null && encryptionKey.isNotEmpty) await _secureStorage.write(key: _encryptionKeyKey, value: encryptionKey);
-            if (name != null) await _secureStorage.write(key: _usernameKey, value: name);
+            if (name != null && name.isNotEmpty) {
+              await _secureStorage.write(key: _usernameKey, value: name);
+              await _secureStorage.write(key: _displayNameKey, value: name);
+            }
             if (grade != null && grade.isNotEmpty) await _secureStorage.write(key: _gradeKey, value: grade);
             ApiClient.setAuth(token);
             return resetReq ? 'reset_required' : 'ok';
@@ -202,6 +208,31 @@ class AuthService {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  /// The stored display name for the logged-in student, or `null` if not set.
+  Future<String?> getDisplayName() async {
+    return _secureStorage.read(key: _displayNameKey);
+  }
+
+  /// Whether the student has set a display name that differs from their username.
+  Future<bool> hasDisplayName() async {
+    final name = await _secureStorage.read(key: _displayNameKey);
+    if (name == null || name.isEmpty) return false;
+    final username = await _secureStorage.read(key: _usernameKey);
+    return name != username;
+  }
+
+  /// Updates the student's display name on the hub and persists it locally.
+  Future<bool> setDisplayName(String name) async {
+    try {
+      await ApiClient.post('/student/profile/update', data: {'name': name});
+      await _secureStorage.write(key: _displayNameKey, value: name);
+      await _secureStorage.write(key: _usernameKey, value: name);
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

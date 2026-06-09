@@ -128,6 +128,19 @@ class _LoginPageState extends State<LoginPage> {
       } else if (result == 'ok') {
         setState(() => _isLoading = false);
         if (!mounted) return;
+        final hasName = await auth.hasDisplayName();
+        if (!hasName && mounted) {
+          final nameSet = await _showSetNameDialog(auth);
+          if (!nameSet && mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => const ConnectionGate(child: AppShell()),
+              ),
+            );
+            return;
+          }
+        }
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => const ConnectionGate(child: AppShell()),
@@ -295,6 +308,72 @@ class _LoginPageState extends State<LoginPage> {
         _errorMessage = AppLocalizations.of(context)!.errorPasswordChangeFailed;
       });
     }
+  }
+
+  /// Shows a dialog prompting the student to set their display name.
+  /// Returns `true` if a name was provided and saved, `false` if skipped.
+  Future<bool> _showSetNameDialog(AuthService auth) async {
+    final cs = Theme.of(context).colorScheme;
+    final nameController = TextEditingController();
+    bool saving = false;
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(
+                AppLocalizations.of(context)!.dialogSetNameTitle,
+                style: GoogleFonts.atkinsonHyperlegible(),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(AppLocalizations.of(context)!.dialogSetNameBody),
+                  SizedBox(height: 16.h),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.editProfileLabelName,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: saving ? null : () => Navigator.of(ctx).pop(false),
+                  child: Text(AppLocalizations.of(context)!.buttonSkip),
+                ),
+                ElevatedButton(
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          final name = nameController.text.trim();
+                          if (name.isEmpty) return;
+                          setDialogState(() => saving = true);
+                          final ok = await auth.setDisplayName(name);
+                          if (ctx.mounted) Navigator.of(ctx).pop(ok);
+                        },
+                  child: saving
+                      ? SizedBox(
+                          width: 16.sp,
+                          height: 16.sp,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
+                        )
+                      : Text(AppLocalizations.of(context)!.buttonSave),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    nameController.dispose();
+    return result ?? false;
   }
 
   @override

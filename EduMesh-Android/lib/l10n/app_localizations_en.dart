@@ -649,6 +649,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get switchToDarkThemeSubtitle => 'Switch to dark theme';
 
   @override
+  String get appIconLabel => 'Dark App Icon';
+
+  @override
+  String get appIconLightLabel => 'Light App Icon';
+
+  @override
+  String get appIconDarkSubtitle => 'Use dark launcher icon';
+
+  @override
+  String get appIconLightSubtitle => 'Use light launcher icon';
+
+  @override
   String get storageOfflineLibraryTitle => 'Storage & Offline Library';
 
   @override
@@ -778,4 +790,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String zimFailedToLoadArticle(String error) {
     return 'Failed to load article: $error';
   }
+
+  @override
+  String get dialogSetNameTitle => 'Set Your Name';
+
+  @override
+  String get dialogSetNameBody =>
+      'Please enter your name to personalize your experience.';
+
+  @override
+  String get buttonSave => 'Save';
+
+  @override
+  String get buttonSkip => 'Skip';
 }

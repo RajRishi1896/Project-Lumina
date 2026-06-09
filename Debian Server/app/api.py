@@ -125,5 +125,5 @@ app.include_router(system_router)
 app.include_router(zim_router, prefix="/zim")
 
 # Static file mounts (must be after routes)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 app.mount("/files", StaticFiles(directory="uploads"), name="files")

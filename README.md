@@ -1,6 +1,11 @@
 # Project Lumina: EduMesh
 **Offline-First Educational Mesh Infrastructure**
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Assets/Transparent%20Dark%20Readme%20Icon.png">
+  <img alt="EduMesh Scholar" src="Assets/Transparent%20Light%20Readme%20Icon.png" width="360">
+</picture>
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Platform: Debian | Android | Flutter](https://img.shields.io/badge/Platform-Debian%20%7C%20Android%20%7C%20Flutter-academicTeal.svg)]()
 [![Architecture: Offline-First | Mesh](https://img.shields.io/badge/Architecture-Offline--First%20%7C%20Mesh-F8BC4B.svg)]()

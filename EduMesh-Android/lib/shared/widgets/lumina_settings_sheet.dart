@@ -59,13 +59,29 @@ class LuminaSettingsSheet extends ConsumerWidget {
           Consumer(builder: (context, ref, child) {
             final themeMode = ref.watch(themeModeProvider);
             final isDark = themeMode == ThemeMode.dark;
+            final l10n = AppLocalizations.of(context)!;
             return SwitchListTile(
               secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode, color: cs.primary),
-              title: Text(isDark ? 'Dark Mode' : 'Light Mode'),
-              subtitle: Text(isDark ? 'Switch to light theme' : 'Switch to dark theme'),
+              title: Text(isDark ? l10n.darkModeLabel : l10n.lightModeLabel),
+              subtitle: Text(isDark ? l10n.switchToLightThemeSubtitle : l10n.switchToDarkThemeSubtitle),
               value: isDark,
               onChanged: (val) {
                 ref.read(themeModeProvider.notifier).setMode(val ? ThemeMode.dark : ThemeMode.light);
+              },
+            );
+          }),
+
+          // App icon toggle
+          Consumer(builder: (context, ref, child) {
+            final useDarkIcon = ref.watch(appIconProvider);
+            final l10n = AppLocalizations.of(context)!;
+            return SwitchListTile(
+              secondary: Icon(Icons.grid_view, color: cs.primary),
+              title: Text(useDarkIcon ? l10n.appIconLabel : l10n.appIconLightLabel),
+              subtitle: Text(useDarkIcon ? l10n.appIconDarkSubtitle : l10n.appIconLightSubtitle),
+              value: useDarkIcon,
+              onChanged: (val) {
+                ref.read(appIconProvider.notifier).setDarkIcon(val);
               },
             );
           }),

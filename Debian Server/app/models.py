@@ -15,6 +15,14 @@ class ScholarReg(BaseModel):
     password: Optional[str] = Field(default="lumina2026", min_length=4, max_length=128, description="Account password. Defaults to a known fallback.", example="lumina2026")
 
 
+class AdminStudentCreate(BaseModel):
+    """Admin-initiated student account creation payload."""
+    username: str = Field(..., min_length=1, max_length=100, description="Unique username for the student.", example="student_new")
+    password: Optional[str] = Field(default="lumina2026", min_length=4, max_length=128, description="Account password. Defaults to a known fallback.", example="lumina2026")
+    name: Optional[str] = Field(default=None, max_length=100, description="Display name for the student.", example="Bob")
+    grade: Optional[str] = Field(default=None, max_length=50, description="Grade or class assignment.", example="Grade 10")
+
+
 class StudentLoginRequest(BaseModel):
     """Student login request payload."""
     username: str = Field(..., min_length=1, max_length=100, description="Scholar username.", example="student42")
@@ -69,6 +77,11 @@ class TeacherCreate(BaseModel):
     password: str = Field(..., min_length=4, max_length=128, description="Account password.", example="TeacherPass1")
     name: Optional[str] = Field(default=None, max_length=100, description="Display name for the teacher.", example="John Doe")
     department: Optional[str] = Field(default="General", max_length=100, description="Department assignment.", example="Science")
+
+
+class NameUpdate(BaseModel):
+    """Teacher display name update request."""
+    name: str = Field(..., min_length=1, max_length=100, description="New display name.", example="Dr. Smith")
 
 
 class DepartmentUpdate(BaseModel):

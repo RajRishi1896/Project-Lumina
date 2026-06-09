@@ -16,7 +16,8 @@ from fastapi.responses import FileResponse, StreamingResponse
 from app.database import DB_PATH, UPLOAD_DIR, THUMBNAILS_DIR, _startup_time, _admin_log_lock, log_admin_action, auto_register_if_new
 from app.async_db import db_conn, db_execute, db_fetchone, db_fetchall
 from app.models import (
-    SubjectCreate, SubjectDeleteRequest, TeacherCreate, DepartmentUpdate,
+    SubjectCreate, SubjectDeleteRequest, TeacherCreate, AdminStudentCreate,
+    NameUpdate, DepartmentUpdate,
     ChangePasswordRequest, ForceChangePasswordRequest, LogRetentionUpdate,
     TimeSync,
 )
@@ -492,6 +493,27 @@ async def get_teacher_me(teacher_user: str = Depends(verify_teacher)):
                 reset_val = 0
             return {"username": teacher_user, "name": row[0] or teacher_user, "department": row[1] or "General", "scholar_id": row[2], "reset_required": reset_val}
         return {"username": teacher_user, "reset_required": 0}
+
+
+@router.post("/teacher/profile/name",
+             summary="Update display name",
+             description="Updates the display name for the currently authenticated teacher or admin.",
+             tags=["Teacher"],
+             responses={401: {"description": "Unauthorized"}})
+async def update_teacher_name(data: NameUpdate, teacher_user: str = Depends(verify_teacher)):
+    """Update the display name of the authenticated user.
+
+    Args:
+        data: Name update payload.
+
+    Returns:
+        Status dict.
+    """
+    async with db_conn() as conn:
+        c = conn.cursor()
+        c.execute("UPDATE users SET name = ? WHERE username = ?", (data.name.strip(), teacher_user))
+        conn.commit()
+    return {"status": "ok"}
 
 
 @router.post("/teacher/profile/department",
@@ -1490,6 +1512,48 @@ async def create_teacher(data: TeacherCreate, admin_user: str = Depends(verify_a
         except Exception as e:
             logging.error(f"create_teacher: {e}")
             raise HTTPException(status_code=400, detail="Failed to create teacher account")
+
+
+@router.post("/api/admin/create-student",
+             summary="Create student account (admin)",
+             description="Creates a new student scholar account. Admin-only. Logs the action to the audit log.",
+             tags=["Admin"],
+             responses={400: {"description": "Username already exists or creation failed"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def create_student(data: AdminStudentCreate, admin_user: str = Depends(verify_admin)):
+    """Create a new student account (admin action).
+
+    Args:
+        data: AdminStudentCreate payload with username, optional password, name, and grade.
+
+    Returns:
+        Dict with status, username, name, and scholar_id.
+    Raises:
+        HTTPException 400: If the username is already taken or creation fails.
+    """
+    async with db_conn() as conn:
+        try:
+            c = conn.cursor()
+            c.execute("SELECT id FROM scholars WHERE username = ?", (data.username,))
+            if c.fetchone():
+                raise HTTPException(status_code=400, detail="Username already exists.")
+            display_name = data.name or data.username
+            scholar_id = f"LUMINA_01-{uuid.uuid4().hex}"
+            pwd = data.password or "lumina2026"
+            hashed_pwd = hash_password(pwd)
+            if data.grade:
+                c.execute("INSERT INTO scholars (id, username, name, hashed_password, reset_required, grade) VALUES (?, ?, ?, ?, 0, ?)",
+                          (scholar_id, data.username, display_name, hashed_pwd, data.grade))
+            else:
+                c.execute("INSERT INTO scholars (id, username, name, hashed_password, reset_required) VALUES (?, ?, ?, ?, 0)",
+                          (scholar_id, data.username, display_name, hashed_pwd))
+            conn.commit()
+            await log_admin_action(admin_user, f"created student account '{data.username}'")
+            return {"status": "success", "username": data.username, "name": display_name, "scholar_id": scholar_id}
+        except HTTPException:
+            raise
+        except Exception as e:
+            logging.error(f"create_student: {e}")
+            raise HTTPException(status_code=400, detail="Failed to create student account")
 
 
 @router.get("/api/admin/logs/download",
