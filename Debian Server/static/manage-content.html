@@ -5,10 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina Hub | Content Manager</title>
-    <link rel="icon" type="image/svg+xml" href="/static/assets/logo-light.svg" media="(prefers-color-scheme: light)">
-    <link rel="icon" type="image/svg+xml" href="/static/assets/logo-dark.svg" media="(prefers-color-scheme: dark)">
+    <link id="favicon" rel="icon" type="image/svg+xml">
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
-    <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
+    <script>
+        var _t=localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+        document.documentElement.setAttribute('data-theme',_t);
+        document.getElementById('favicon').href='/static/assets/logo-'+_t+'.svg';
+    </script>
 <link rel="stylesheet" href="/static/css/lumina.css">
     <style>
         [data-theme="dark"] .logo-light { display: none; }

@@ -5,10 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina Hub | Welcome</title>
-    <link rel="icon" type="image/svg+xml" href="/static/assets/logo-light.svg" media="(prefers-color-scheme: light)">
-    <link rel="icon" type="image/svg+xml" href="/static/assets/logo-dark.svg" media="(prefers-color-scheme: dark)">
+    <link id="favicon" rel="icon" type="image/svg+xml">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
+    <script>
+        var _t=localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+        document.documentElement.setAttribute('data-theme',_t);
+        document.getElementById('favicon').href='/static/assets/logo-'+_t+'.svg';
+    </script>
     <!-- Section: CSS Variables / Design Tokens -->
     <style>
         :root {
@@ -384,6 +387,10 @@
 
         /* === Responsive === */
         @media (max-width: 768px) {
+            nav { padding: 0.5rem 4%; gap: 0.375rem; }
+            .nav-actions { gap: 0.375rem; }
+            .nav-download { padding: 0.5rem; border-radius: 50%; }
+            .nav-download .dl-label { display: none; }
             .hero h1 { font-size: 1.75rem; }
             .container { grid-template-columns: 1fr; }
             .hero .logo-wrap { margin-bottom: 1rem; }
@@ -423,7 +430,7 @@
             </button>
             <a href="/files/EduMesh.apk" class="nav-download" download>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                Download App
+                <span class="dl-label">Download App</span>
             </a>
         </div>
     </nav>
@@ -719,6 +726,7 @@
             const newTheme = isDark ? 'light' : 'dark';
             html.setAttribute('data-theme', newTheme);
             localStorage.setItem('lumina-theme', newTheme);
+            document.getElementById('favicon').href = '/static/assets/logo-' + newTheme + '.svg';
             updateThemeUI(newTheme === 'dark');
         }
 
