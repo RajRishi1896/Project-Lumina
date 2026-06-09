@@ -427,8 +427,6 @@ function getPreferredTheme() {
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('lumina-theme', theme);
-    const favicon = document.getElementById('favicon');
-    if (favicon) favicon.href = '/static/assets/logo-' + theme + '.svg';
     const icon = document.getElementById('themeIcon');
     const label = document.getElementById('themeLabel');
     if (icon) {

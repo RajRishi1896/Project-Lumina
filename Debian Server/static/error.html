@@ -5,12 +5,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Access Error - Lumina Hub</title>
-<link id="favicon" rel="icon" type="image/svg+xml">
-<script>
-    var _t=localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
-    document.documentElement.setAttribute('data-theme',_t);
-    document.getElementById('favicon').href='/static/assets/logo-'+_t+'.svg';
-</script>
+<link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
 <style>
   .error-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:2rem; width:100%; box-sizing:border-box; }

@@ -5,13 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Detail - Lumina Hub</title>
-    <link id="favicon" rel="icon" type="image/svg+xml">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
-    <script>
-        var _t=localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
-        document.documentElement.setAttribute('data-theme',_t);
-        document.getElementById('favicon').href='/static/assets/logo-'+_t+'.svg';
-    </script>
+    <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
     <style>
         /* === Layout and component styles for student detail page === */
