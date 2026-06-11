@@ -123,12 +123,4 @@ class LogRetentionUpdate(BaseModel):
     policy: str = Field(..., description="Retention policy value. Supported: 24h, 7d, 30d, 3m, 6m, never, none.", example="30d")
 
 
-class ResourceMetadata(BaseModel):
-    """Resource metadata returned in catalog listings."""
-    id: int = Field(..., description="Unique resource identifier.", example=1)
-    title: str = Field(..., description="Resource display title.", example="Algebra Textbook")
-    pdfUrl: str = Field(..., description="URL path to the resource file.", example="/files/math_textbook.pdf")
-    type: str = Field(..., description="Resource type category.", example="textbook")
-    subject: str = Field(..., description="Subject this resource belongs to.", example="Mathematics")
-    grade: str = Field(..., description="Target grade level.", example="Grade 10")
-    mtime: float = Field(..., description="Last modification timestamp (Unix epoch).", example=1717000000.0)
+

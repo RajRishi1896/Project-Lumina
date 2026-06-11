@@ -145,7 +145,7 @@
             </a>
             <a href="/static/manage-security" class="nav-item" id="nav-security">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Security
+                Account
             </a>
             <a href="/static/students" class="nav-item" id="nav-students">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -316,7 +316,7 @@
         </a>
         <a href="/static/manage-security" class="bottom-nav-item" id="bottom-nav-security">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Security
+            Account
         </a>
         <a href="/static/students" class="bottom-nav-item" id="bottom-nav-students">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -522,17 +522,6 @@
             document.getElementById('selectedIcon').innerHTML = getSymbolSvg(val);
             document.getElementById('selectedText').innerText = label;
             document.getElementById('dropdownList').style.display = 'none';
-        }
-
-        /**
-         * Ensures a URL string is absolute for linking resource files.
-         * @param {string} url - The raw URL or file path
-         * @returns {string} A safe absolute URL
-         */
-        function safeUrl(url) {
-            if (!url) return '#';
-            if (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://')) return url;
-            return '/files/' + encodeURIComponent(url);
         }
 
         /** Fetches subjects from the server (or demo data) and populates the subject select, filter, and manage table. */

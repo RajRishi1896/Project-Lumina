@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
+import 'package:edumesh_android/core/services/mutation_queue.dart';
 import 'package:edumesh_android/widgets/connection_gate.dart';
 import 'package:edumesh_android/pages/app_shell.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
@@ -50,9 +51,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
     setState(() => _saving = true);
-    try {
-      await ApiClient.post('/student/profile/update', data: {'name': name, 'grade': _selectedGrade});
-    } catch (_) {}
+    MutationQueue().enqueue('/student/profile/update', method: 'POST', body: {'name': name, 'grade': _selectedGrade});
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const ConnectionGate(child: AppShell())),

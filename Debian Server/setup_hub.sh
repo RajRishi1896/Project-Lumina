@@ -82,13 +82,11 @@ LAN_IP=$(ip -o -4 addr show "$LAN_IFACE" | awk '{print $4}' | cut -d/ -f1)
 sudo bash -c "cat > /etc/dnsmasq.d/lumina-lan.conf <<EOF
 address=/Lumina.hub/$LAN_IP
 address=/lumina.hub/$LAN_IP
-address=/Luminahub.org/$LAN_IP
-address=/luminahub.org/$LAN_IP
+
 server=$(ip route | grep default | awk '{print $3}')
 local=/Lumina.hub/
 local=/lumina.hub/
-local=/Luminahub.org/
-local=/luminahub.org/
+
 bind-interfaces
 interface=$LAN_IFACE
 no-dhcp-interface=$LAN_IFACE
@@ -179,7 +177,7 @@ fi
 
 echo "-----------------------------------"
 echo "[SUCCESS] HARDENED SETUP COMPLETE!"
-echo "[INFO] Hub Addresses: http://lumina.hub:8000  /  http://luminahub.org:8000"
+echo "[INFO] Hub Address: http://lumina.hub:8000"
 echo "[INFO] Logs: data/hub.log"
 echo "[INFO] Firewall: Active (SSH & API ports open only)"
 echo "[INFO] The Hub is ready for headless deployment."

@@ -100,7 +100,7 @@
             </a>
             <a href="/static/manage-security" class="nav-item" id="nav-security">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Security
+                Account
             </a>
             <a href="/static/students" class="nav-item" id="nav-students">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -164,7 +164,7 @@
         </a>
         <a href="/static/manage-security" class="bottom-nav-item" id="bottom-nav-security">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Security
+            Account
         </a>
         <a href="/static/students" class="bottom-nav-item" id="bottom-nav-students">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -189,7 +189,7 @@
     </div>
 
     <script src="/static/js/lumina.js"></script>
-    <!-- Section: Inline Scripts — student analytics rendering, demo data fallback, API fetching -->
+    <!-- Section: Inline Scripts — student analytics rendering, API fetching -->
     <script>
         var params = new URLSearchParams(window.location.search);
         var studentId = params.get('id') || '';
@@ -202,80 +202,6 @@
         var avatarInitials = params.get('avatar') || studentName.split(' ').map(function(s){return s[0]}).join('').slice(0,2).toUpperCase();
 
         var subjectColors = ['#14b8a6','#6366f1','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981','#f97316'];
-
-        /* Section: Demo student analytics data — used when IS_DEMO is true */
-        var demoStudents = {
-            'demo-1': {
-                last_active: new Date(Date.now()-1800000).toISOString(),
-                week_minutes: 320,
-                streak: 12,
-                downloads: 18,
-                subjects:[{name:'Math',minutes:95},{name:'Science',minutes:82},{name:'English',minutes:78},{name:'History',minutes:65}]
-            },
-            'demo-2': {
-                last_active: new Date(Date.now()-7200000).toISOString(),
-                week_minutes: 195,
-                streak: 3,
-                downloads: 7,
-                subjects:[{name:'Math',minutes:60},{name:'Science',minutes:80},{name:'English',minutes:55}]
-            },
-            'demo-3': {
-                last_active: new Date(Date.now()-300000).toISOString(),
-                week_minutes: 425,
-                streak: 18,
-                downloads: 24,
-                subjects:[{name:'Math',minutes:110},{name:'Science',minutes:98},{name:'English',minutes:92},{name:'History',minutes:75},{name:'Geography',minutes:50}]
-            },
-            'demo-4': {
-                last_active: new Date(Date.now()-3600000).toISOString(),
-                week_minutes: 160,
-                streak: 5,
-                downloads: 4,
-                subjects:[{name:'Math',minutes:45},{name:'Science',minutes:55},{name:'English',minutes:60}]
-            },
-            'demo-5': {
-                last_active: new Date(Date.now()-600000).toISOString(),
-                week_minutes: 300,
-                streak: 10,
-                downloads: 15,
-                subjects:[{name:'Math',minutes:88},{name:'Science',minutes:80},{name:'English',minutes:72},{name:'History',minutes:60}]
-            },
-            'demo-6': {
-                last_active: new Date(Date.now()-10800000).toISOString(),
-                week_minutes: 228,
-                streak: 7,
-                downloads: 9,
-                subjects:[{name:'Math',minutes:82},{name:'Physics',minutes:76},{name:'English',minutes:70}]
-            },
-            'demo-7': {
-                last_active: new Date(Date.now()-900000).toISOString(),
-                week_minutes: 330,
-                streak: 14,
-                downloads: 20,
-                subjects:[{name:'Math',minutes:98},{name:'Science',minutes:84},{name:'English',minutes:86},{name:'Geography',minutes:62}]
-            },
-            'demo-8': {
-                last_active: new Date(Date.now()-86400000).toISOString(),
-                week_minutes: 90,
-                streak: 1,
-                downloads: 2,
-                subjects:[{name:'Science',minutes:40},{name:'English',minutes:50}]
-            },
-            'demo-9': {
-                last_active: new Date(Date.now()-2700000).toISOString(),
-                week_minutes: 517,
-                streak: 25,
-                downloads: 32,
-                subjects:[{name:'Math',minutes:115},{name:'Science',minutes:105},{name:'English',minutes:98},{name:'History',minutes:85},{name:'Geography',minutes:72},{name:'Sanskrit',minutes:42}]
-            },
-            'demo-10': {
-                last_active: new Date(Date.now()-7200000).toISOString(),
-                week_minutes: 205,
-                streak: 4,
-                downloads: 6,
-                subjects:[{name:'Math',minutes:68},{name:'Science',minutes:72},{name:'English',minutes:65}]
-            }
-        };
 
         /**
          * @param {string} isoStr - ISO date string
@@ -359,7 +285,7 @@
             }).join('');
         }
 
-        /** Entry point — reads URL params, renders header/stats/subjects from demo data or API. */
+        /** Entry point — reads URL params, renders header, then fetches analytics from the API. */
         function init() {
             if (!studentId) {
                 document.getElementById('loadingState').style.display = 'none';
@@ -367,35 +293,17 @@
                 document.getElementById('errorState').textContent = 'No student ID provided.';
                 return;
             }
-            if (IS_DEMO && !lastActive) {
-                var demoLookup = demoStudents[studentId];
-                if (demoLookup && demoLookup.last_active) lastActive = demoLookup.last_active;
-            }
             renderHeader();
-            if (IS_DEMO) {
-                var demo = demoStudents[studentId];
-                if (!demo) {
-                    document.getElementById('statGrid').innerHTML = '';
-                    document.getElementById('subjectList').innerHTML = '<div class="empty-state">Demo data not available for this student.</div>';
-                    document.getElementById('loadingState').style.display = 'none';
-                    return;
-                }
-                renderStats(demo.week_minutes, demo.streak, demo.downloads);
-                renderSubjects(demo.subjects);
+            apiFetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); })
+            .then(function(analytics){
+                renderStats((analytics.study_minutes_this_week || 0), analytics.streak_days || 0, analytics.resources_saved || 0);
+                renderSubjects(analytics.subjects || []);
                 document.getElementById('loadingState').style.display = 'none';
-            } else {
-                /* Auth flow: uses apiFetch with cookie-based session to call /teacher/student/{id}/analytics */
-                apiFetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); })
-                .then(function(analytics){
-                    renderStats((analytics.study_minutes_this_week || 0), analytics.streak_days || 0, analytics.resources_saved || 0);
-                    renderSubjects(analytics.subjects || []);
-                    document.getElementById('loadingState').style.display = 'none';
-                }).catch(function(err){
-                    document.getElementById('loadingState').style.display = 'none';
-                    document.getElementById('errorState').style.display = '';
-                    console.error('Failed to load student data', err);
-                });
-            }
+            }).catch(function(err){
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('errorState').style.display = '';
+                console.error('Failed to load student data', err);
+            });
         }
 
         document.addEventListener('DOMContentLoaded', function() {

@@ -58,15 +58,20 @@ async def add_security_headers(request, call_next):
 
 # Startup / shutdown events
 from app.zim_auto_cleaner import start_zim_auto_cleaner
+from app.task_queue import start as start_task_queue, stop as stop_task_queue, register_handler
+from app.thumb_worker import generate_thumbnail
 
 @app.on_event("startup")
 async def startup_services():
     """Start background services on application startup.
 
-    Launches the ZIM auto-cleaner (hourly interval) and the mDNS/DNS-SD
-    discovery beacon so the hub is discoverable on the local network.
+    Launches the ZIM auto-cleaner (hourly interval), the background
+    task queue (2 workers), and the mDNS/DNS-SD discovery beacon so
+    the hub is discoverable on the local network.
     """
     start_zim_auto_cleaner(interval_seconds=3600)
+    await start_task_queue(max_workers=2)
+    register_handler("generate_thumbnail", generate_thumbnail)
     try:
         from app.discovery import MeshBeacon
         beacon = MeshBeacon(port=8000)
@@ -103,8 +108,10 @@ async def start_pruning():
 async def shutdown_services():
     """Clean up background services on application shutdown.
 
-    Stops the mDNS/DNS-SD discovery beacon if it was started.
+    Stops the mDNS/DNS-SD discovery beacon and the background task
+    queue if they were started.
     """
+    await stop_task_queue()
     if hasattr(app.state, 'beacon'):
         try:
             app.state.beacon.stop()

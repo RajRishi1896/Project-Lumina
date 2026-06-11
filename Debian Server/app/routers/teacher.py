@@ -9,7 +9,7 @@ import sqlite3
 import asyncio
 import logging
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Response, Query, status
 from fastapi.responses import FileResponse, StreamingResponse
@@ -25,6 +25,8 @@ from app.dependencies import hash_password, verify_password, validate_password_s
 from app.encryption import _invalidate_tokens_for_user
 
 router = APIRouter()
+
+_thumbnail_semaphore = asyncio.Semaphore(2)
 
 
 async def get_zim_upload_max_size():
@@ -148,7 +150,7 @@ async def teacher_delete_student(scholar_id: str, teacher_user: str = Depends(ve
 
 @router.get("/teacher/students",
             summary="List students with stats",
-            description="Returns all students with study minutes, streak days, and saved resources. Falls back to demo data when the database is empty.",
+            description="Returns all registered students with study minutes, streak days, and saved resources.",
             tags=["Teacher"],
             responses={401: {"description": "Unauthorized"}, 500: {"description": "Database error"}})
 async def teacher_list_students(teacher_user: str = Depends(verify_teacher), grade: Optional[str] = Query(default=None)):
@@ -193,38 +195,12 @@ async def teacher_list_students(teacher_user: str = Depends(verify_teacher), gra
         except sqlite3.OperationalError as e:
             raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-    if not students:
-        demo = []
-        now = datetime.now()
-        demo_students = [
-            ("LUMINA_DEMO_01", "Ananya Sharma", "ananya", "Grade 10", 210, 12, 18),
-            ("LUMINA_DEMO_02", "Rohit Kumar", "rohit", "Grade 10", 95, 3, 8),
-            ("LUMINA_DEMO_03", "Priya Patel", "priya", "Grade 9", 310, 18, 22),
-            ("LUMINA_DEMO_04", "Arjun Singh", "arjun", "Grade 11", 150, 5, 14),
-            ("LUMINA_DEMO_05", "Sneha Reddy", "sneha", "Grade 9", 380, 10, 25),
-            ("LUMINA_DEMO_06", "Vikram Joshi", "vikram", "Grade 12", 45, 1, 6),
-            ("LUMINA_DEMO_07", "Kavita Nair", "kavita", "Grade 10", 175, 14, 15),
-            ("LUMINA_DEMO_08", "Divya Menon", "divya", "Grade 11", 260, 7, 20),
-            ("LUMINA_DEMO_09", "Rahul Verma", "rahul", "Grade 9", 130, 3, 10),
-            ("LUMINA_DEMO_10", "Meera Iyer", "meera", "Grade 12", 200, 5, 16),
-        ]
-        for sid, name, uname, grd, wk, st, sv in demo_students:
-            demo.append({
-                "id": sid, "name": name, "username": uname, "grade": grd,
-                "study_minutes_this_week": wk // 60,
-                "streak_days": st,
-                "resources_saved": sv,
-                "last_active": (now - timedelta(hours=wk // 60)).isoformat(),
-            })
-        if grade:
-            demo = [s for s in demo if s["grade"] == grade]
-        return {"students": demo}
     return {"students": students}
 
 
 @router.get("/teacher/student/{scholar_id}/analytics",
             summary="Get student analytics",
-            description="Returns study minutes, streak, saved resources, and per-subject breakdown for a student. Falls back to hardcoded demo data for demo IDs.",
+            description="Returns study minutes, streak, saved resources, and per-subject breakdown for a student.",
             tags=["Analytics"],
             responses={401: {"description": "Unauthorized"}, 404: {"description": "Student not found"}})
 async def teacher_student_analytics(scholar_id: str, teacher_user: str = Depends(verify_teacher)):
@@ -241,26 +217,6 @@ async def teacher_student_analytics(scholar_id: str, teacher_user: str = Depends
         c.execute("SELECT name FROM scholars WHERE id = ?", (scholar_id,))
         scholar = c.fetchone()
         if not scholar:
-            if scholar_id.startswith("LUMINA_DEMO"):
-                demo_analytics = {
-                    "LUMINA_DEMO_01": (210, 12, 18),
-                    "LUMINA_DEMO_02": (95, 3, 8),
-                    "LUMINA_DEMO_03": (310, 18, 22),
-                    "LUMINA_DEMO_04": (150, 5, 14),
-                    "LUMINA_DEMO_05": (380, 10, 25),
-                    "LUMINA_DEMO_06": (45, 1, 6),
-                    "LUMINA_DEMO_07": (175, 14, 20),
-                    "LUMINA_DEMO_08": (260, 7, 15),
-                    "LUMINA_DEMO_09": (130, 3, 10),
-                    "LUMINA_DEMO_10": (200, 5, 16),
-                }
-                if scholar_id in demo_analytics:
-                    wk, st, sv = demo_analytics[scholar_id]
-                    return {
-                        "study_minutes_this_week": wk // 60,
-                        "streak_days": st,
-                        "resources_saved": sv,
-                    }
             raise HTTPException(status_code=404, detail="Student not found")
         c.execute("SELECT total_seconds, streak_days FROM weekly_study WHERE scholar_id = ?", (scholar_id,))
         row = c.fetchone()
@@ -1201,37 +1157,38 @@ async def resource_thumbnail(resource_id: int):
         return FileResponse(thumb_path, media_type="image/png")
     if not await asyncio.to_thread(os.path.exists, file_path):
         raise HTTPException(status_code=404, detail="File not found")
-    try:
-        if rtype in ("textbook", "notes", "pyq", "pastPaper"):
-            try:
-                import fitz
+    async with _thumbnail_semaphore:
+        try:
+            if rtype in ("textbook", "notes", "pyq", "pastPaper"):
+                try:
+                    import fitz
 
-                def _gen_pdf_thumb(fp, tp):
-                    """Generate a 0.3x PNG thumbnail from the first page of a PDF. Runs in worker thread."""
-                    doc = fitz.open(fp)
-                    try:
-                        pix = doc[0].get_pixmap(matrix=fitz.Matrix(0.3, 0.3))
-                        pix.save(tp)
-                    finally:
-                        doc.close()
-                await asyncio.to_thread(_gen_pdf_thumb, file_path, thumb_path)
-            except ImportError:
-                raise HTTPException(status_code=404, detail="Thumbnail unavailable (PyMuPDF not installed)")
-        elif rtype == "videos":
-            thumb_time = await asyncio.to_thread(_find_video_thumb_time, file_path)
-            ss = f"{int(thumb_time // 3600):02d}:{int((thumb_time % 3600) // 60):02d}:{int(thumb_time % 60):02d}"
-            result = await asyncio.to_thread(lambda: subprocess.run(
-                ["ffmpeg", "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],
-                capture_output=True, timeout=15
-            ))
-            if result.returncode != 0 or not os.path.exists(thumb_path):
-                raise HTTPException(status_code=404, detail="Thumbnail generation failed")
-        else:
-            raise HTTPException(status_code=404, detail="No thumbnail for this type")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Thumbnail error: {e}")
+                    def _gen_pdf_thumb(fp, tp):
+                        """Generate a 0.3x PNG thumbnail from the first page of a PDF. Runs in worker thread."""
+                        doc = fitz.open(fp)
+                        try:
+                            pix = doc[0].get_pixmap(matrix=fitz.Matrix(0.3, 0.3))
+                            pix.save(tp)
+                        finally:
+                            doc.close()
+                    await asyncio.to_thread(_gen_pdf_thumb, file_path, thumb_path)
+                except ImportError:
+                    raise HTTPException(status_code=404, detail="Thumbnail unavailable (PyMuPDF not installed)")
+            elif rtype == "videos":
+                thumb_time = await asyncio.to_thread(_find_video_thumb_time, file_path)
+                ss = f"{int(thumb_time // 3600):02d}:{int((thumb_time % 3600) // 60):02d}:{int(thumb_time % 60):02d}"
+                result = await asyncio.to_thread(lambda: subprocess.run(
+                    ["ffmpeg", "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],
+                    capture_output=True, timeout=15
+                ))
+                if result.returncode != 0 or not os.path.exists(thumb_path):
+                    raise HTTPException(status_code=404, detail="Thumbnail generation failed")
+            else:
+                raise HTTPException(status_code=404, detail="No thumbnail for this type")
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Thumbnail error: {e}")
     return FileResponse(thumb_path, media_type="image/png")
 
 

@@ -25,25 +25,6 @@ class DownloadService {
     return path;
   }
 
-  /// Runs on startup to delete any abandoned .part files from crashed downloads
-  Future<void> cleanUpPartialDownloads() async {
-    try {
-      final baseDir = await _localPath;
-      final dir = Directory(baseDir);
-      if (await dir.exists()) {
-        final entities = await dir.list().toList();
-        for (var entity in entities) {
-          if (entity is File && entity.path.endsWith('.part')) {
-            await entity.delete();
-            debugPrint('Garbage Collector: Deleted abandoned file ${entity.path}');
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Garbage Collector Error: $e');
-    }
-  }
-
   /// Downloads a file. Throws an exception if storage is full.
   Future<File?> downloadFile(String url, String fileName, {Function(int, int)? onProgress}) async {
     String? savePath;
@@ -96,22 +77,6 @@ class DownloadService {
     } finally {
       await WakelockPlus.disable(); // Release wake lock
     }
-  }
-
-  /// Whether a file matching [fileName] exists in local storage.
-  Future<bool> isFileDownloaded(String fileName) async {
-    final baseDir = await _localPath;
-    final file = File('$baseDir/$fileName');
-    return await file.exists();
-  }
-
-  /// The local file-system path for a given [fileName].
-  ///
-  /// Does not verify that the file actually exists — use [isFileDownloaded]
-  /// or [isDownloaded] to check presence.
-  Future<String> getFilePath(String fileName) async {
-    final baseDir = await _localPath;
-    return '$baseDir/$fileName';
   }
 
   /// Download a file and record it in the local DB.

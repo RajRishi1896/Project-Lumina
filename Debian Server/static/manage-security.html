@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina Hub | Security</title>
+    <title>Lumina Hub | Account</title>
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
@@ -142,9 +142,9 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Content Manager
             </a>
-            <a href="/static/manage-security" class="nav-item active" id="nav-security">
+            <a href="/static/manage-security" class="nav-item active" id="nav-account">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Security
+                Account
             </a>
             <a href="/static/students" class="nav-item" id="nav-students">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -178,8 +178,8 @@
     <main>
 
         <div class="page-header">
-            <h1>Security & Teacher Profiles</h1>
-            <p>Update administrator credentials and manage teacher accounts for mobile app uploading.</p>
+            <h1>Account Settings</h1>
+            <p>Update your password, display name, and department.</p>
         </div>
 
         <!-- Section: Change Admin Password � current password, new password, toggle visibility -->
@@ -212,28 +212,24 @@
                         <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>
                     </div>
                 </div>
-                <button onclick="changePassword()" class="btn btn-dark">Update Password</button>
+                <button onclick="changePassword()" class="btn btn-primary">Update Password</button>
             </div>
         </div>
 
-        <!-- Section: My Profile � read-only username/name, editable department -->
+        <!-- Section: My Profile � editable name and department -->
         <div class="card">
             <div class="card-title">My Profile</div>
             <div id="profileNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
             <div class="security-form" id="profileForm">
                 <div class="form-group">
-                    <label for="profileUsername">Username</label>
-                    <input type="text" id="profileUsername" readonly style="opacity: 0.7; cursor: not-allowed;">
-                </div>
-                <div class="form-group">
                     <label for="profileName">Name</label>
-                    <input type="text" id="profileName" readonly style="opacity: 0.7; cursor: not-allowed;">
+                    <input type="text" id="profileName" placeholder="Enter your display name">
                 </div>
                 <div class="form-group">
                     <label for="profileDepartment">Department</label>
                     <input type="text" id="profileDepartment" placeholder="Enter your department">
                 </div>
-                <button onclick="saveMyProfile()" class="btn btn-dark">Save</button>
+                <button onclick="saveMyProfile()" class="btn btn-primary">Save</button>
             </div>
         </div>
 
@@ -249,9 +245,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
             Content
         </a>
-        <a href="/static/manage-security" class="bottom-nav-item active" id="bottom-nav-security">
+        <a href="/static/manage-security" class="bottom-nav-item active" id="bottom-nav-account">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Security
+            Account
         </a>
         <a href="/static/students" class="bottom-nav-item" id="bottom-nav-students">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -510,10 +506,9 @@
             }
         }
 
-        /** Loads the current user's profile (username, name, department) into the profile form. */
+        /** Loads the current user's profile (name, department) into the profile form. */
         async function loadMyProfile() {
             if (IS_DEMO) {
-                document.getElementById('profileUsername').value = loggedInUser || 'admin';
                 document.getElementById('profileName').value = 'Administrator';
                 document.getElementById('profileDepartment').value = 'System';
                 return;
@@ -522,7 +517,6 @@
                 const res = await apiFetch('/teacher/me');
                 if (res.ok) {
                     const me = await res.json();
-                    document.getElementById('profileUsername').value = me.username || '';
                     document.getElementById('profileName').value = me.name || '';
                     document.getElementById('profileDepartment').value = me.department || '';
                 }
@@ -531,27 +525,41 @@
             }
         }
 
-        /** Saves the user's department via POST /teacher/profile/department. */
+        /** Saves the user's name and department via POST /teacher/profile/name and /teacher/profile/department. */
         async function saveMyProfile() {
+            const name = document.getElementById('profileName').value.trim();
             const department = document.getElementById('profileDepartment').value.trim();
+            if (!name) {
+                return showNotification('profileNotif', 'Name cannot be empty.', true);
+            }
             if (!department) {
                 return showNotification('profileNotif', 'Department cannot be empty.', true);
             }
             if (IS_DEMO) {
-                showNotification('profileNotif', 'Department updated (Demo Mode).', false);
+                showNotification('profileNotif', 'Profile updated (Demo Mode).', false);
                 return;
             }
             try {
-                const res = await apiFetch('/teacher/profile/department', {
+                const nameRes = await apiFetch('/teacher/profile/name', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                if (!nameRes.ok) {
+                    let msg = 'Could not update name.';
+                    try { const err = await nameRes.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    return showNotification('profileNotif', msg, true);
+                }
+                const deptRes = await apiFetch('/teacher/profile/department', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ department })
                 });
-                if (res.ok) {
-                    showNotification('profileNotif', 'Department updated successfully.', false);
+                if (deptRes.ok) {
+                    showNotification('profileNotif', 'Profile updated successfully.', false);
                 } else {
                     let msg = 'Could not update department.';
-                    try { const err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    try { const err = await deptRes.json(); if (err.detail) msg = err.detail; } catch (_) {}
                     showNotification('profileNotif', msg, true);
                 }
             } catch (e) {
@@ -560,7 +568,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            setActiveNav('nav-security');
+            setActiveNav('nav-account');
             loadWhoAmI();
             checkSelfResetRequired();
             loadMyProfile();

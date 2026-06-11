@@ -201,22 +201,6 @@ async def _generate_session_token(username: str, role: str, encryption_key: byte
     return {"session_token": stoken, "refresh_token": rtoken, "persistent_key": ptoken, "encryption_key": ek}
 
 
-async def _rotate_session_token(username: str, role: str) -> dict:
-    """Generate a new session token set with a fresh encryption key.
-
-    Convenience wrapper that calls _generate_session_token with a newly
-    generated encryption key.
-
-    Args:
-        username: The user identifier.
-        role: Role string (teacher, admin, student).
-
-    Returns:
-        Dictionary containing the new token set.
-    """
-    return await _generate_session_token(username, role, _make_encryption_key())
-
-
 async def _invalidate_tokens_for_user(username: str, conn: sqlite3.Connection = None):
     """Delete all sessions, refresh tokens, and persistent keys for a user.
 

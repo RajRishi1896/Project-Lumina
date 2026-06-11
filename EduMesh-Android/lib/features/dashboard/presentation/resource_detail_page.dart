@@ -14,6 +14,8 @@ import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
 import 'package:edumesh_android/shared/widgets/resource_thumbnail.dart';
 import 'package:edumesh_android/shared/widgets/video_player_page.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
+import 'package:edumesh_android/core/services/recent_files_service.dart';
+import 'package:edumesh_android/core/services/catalog_service.dart';
 
 /// A page that lists resources matching a given subject, grade, and type.
 ///
@@ -106,6 +108,22 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       'pyqs' => 'pyq',
       _ => widget.resourceType,
     };
+    try {
+      final cached = await CatalogService().getCatalog(
+        subject: widget.subject,
+        grade: widget.grade,
+        type: targetType,
+      );
+      if (cached.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            items = cached;
+            _loading = false;
+          });
+        }
+        return;
+      }
+    } catch (_) {}
     try {
       final db = DBHelper();
       final rows = await db.getDownloadedResources();
@@ -300,14 +318,36 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
+                    final isDl = _downloadedIds.contains(item.id);
+                    final isOnline = ConnectivityService().isOnline;
+                    final isGhost = !isDl && !isOnline;
                     return Card(
                       margin: EdgeInsets.only(bottom: 16.h),
-                      child: ListTile(
+                      color: isGhost ? cs.surfaceVariant.withValues(alpha: 0.5) : null,
+                      child: Opacity(
+                        opacity: isGhost ? 0.5 : 1.0,
+                        child: ListTile(
                         leading: ResourceThumbnail(resource: item, size: 48),
                         onTap: () async {
                           if (item.pdfUrl == null) return;
-                          final isDl = _downloadedIds.contains(item.id);
-                          if (!isDl && !ConnectivityService().isOnline) {
+                          if (isGhost) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('"${item.title}" is not downloaded. Queue it while offline, or connect to the server to download.'),
+                              duration: const Duration(seconds: 4),
+                              action: SnackBarAction(label: 'Queue', onPressed: () {
+                                final rawUrl = item.pdfUrl;
+                                final url = (rawUrl != null && rawUrl.isNotEmpty) ? rawUrl : '/files/${item.id}';
+                                DownloadQueue().enqueue(item.id, url, '${item.title}.pdf',
+                                  title: item.title, subject: item.subject, grade: item.grade,
+                                  type: item.type.name, mtime: item.mtime,
+                                );
+                                if (mounted) setState(() => _pendingIds.add(item.id));
+                              }),
+                            ));
+                            return;
+                          }
+                          if (!isDl && !isOnline) {
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text('"${item.title}" is not downloaded. Add it from the download button to save for offline access.'),
@@ -356,6 +396,18 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                             }
                           }
                           if (!mounted) return;
+                          RecentFilesService().addRecentFile(
+                            RecentFile(
+                              id: item.id,
+                              title: item.title,
+                              type: item.type.name,
+                              time: 'just now',
+                              icon: item.type == ResourceType.videos
+                                  ? Icons.videocam_rounded
+                                  : Icons.picture_as_pdf_rounded,
+                              color: LuminaColors.academicTeal,
+                            ),
+                          );
                           if (item.type == ResourceType.videos) {
                             Navigator.of(context).push(MaterialPageRoute(
                               builder: (_) => VideoPlayerPage(
@@ -402,6 +454,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                             _buildDownloadButton(item, cs),
                           ],
                         ),
+                      ),
                       ),
                     );
                   },

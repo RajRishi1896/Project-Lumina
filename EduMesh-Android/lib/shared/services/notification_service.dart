@@ -105,4 +105,31 @@ class NotificationService {
       debugPrint("NotificationService: show failed: $e");
     }
   }
+
+  /// Shows a local notification when a download fails after all retries.
+  ///
+  /// Uses the same channel and permission flow as [showDownloadComplete].
+  Future<void> showDownloadFailed(String title) async {
+    if (!await isEnabled) return;
+    if (!_initialized) await init();
+    await requestPermission();
+    try {
+      await _plugin.show(
+        _nextId++,
+        'Download Failed',
+        '"$title" could not be downloaded. Check the server connection and try again.',
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'download_channel',
+            'Downloads',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+      );
+    } catch (e) {
+      debugPrint("NotificationService: show failed: $e");
+    }
+  }
 }

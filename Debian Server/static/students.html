@@ -169,7 +169,7 @@
             </a>
             <a href="/static/manage-security" class="nav-item" id="nav-security">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Security
+                Account
             </a>
             <a href="/static/students" class="nav-item active" id="nav-students">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -243,7 +243,7 @@
         </a>
         <a href="/static/manage-security" class="bottom-nav-item" id="bottom-nav-security">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Security
+            Account
         </a>
         <a href="/static/students" class="bottom-nav-item active" id="bottom-nav-students">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -276,19 +276,7 @@
         var allStudents = [];
         var allGrades = [];
 
-        /** Demo data used when IS_DEMO is true (no server connection needed). */
-        var demoStudents = [
-            { id: 'demo-1', name: 'Ananya Sharma', grade: 'Grade 10', avatar: 'AS', last_active: new Date(Date.now()-1800000).toISOString(), week_minutes: 320, streak: 12, downloads: 18 },
-            { id: 'demo-2', name: 'Rohit Kumar', grade: 'Grade 9', avatar: 'RK', last_active: new Date(Date.now()-7200000).toISOString(), week_minutes: 195, streak: 3, downloads: 7 },
-            { id: 'demo-3', name: 'Priya Patel', grade: 'Grade 10', avatar: 'PP', last_active: new Date(Date.now()-300000).toISOString(), week_minutes: 425, streak: 18, downloads: 24 },
-            { id: 'demo-4', name: 'Arjun Singh', grade: 'Grade 8', avatar: 'AS', last_active: new Date(Date.now()-3600000).toISOString(), week_minutes: 160, streak: 5, downloads: 4 },
-            { id: 'demo-5', name: 'Meera Reddy', grade: 'Grade 9', avatar: 'MR', last_active: new Date(Date.now()-600000).toISOString(), week_minutes: 300, streak: 10, downloads: 15 },
-            { id: 'demo-6', name: 'Vikram Joshi', grade: 'Grade 11', avatar: 'VJ', last_active: new Date(Date.now()-10800000).toISOString(), week_minutes: 228, streak: 7, downloads: 9 },
-            { id: 'demo-7', name: 'Kavita Nair', grade: 'Grade 10', avatar: 'KN', last_active: new Date(Date.now()-900000).toISOString(), week_minutes: 330, streak: 14, downloads: 20 },
-            { id: 'demo-8', name: 'Rahul Verma', grade: 'Grade 7', avatar: 'RV', last_active: new Date(Date.now()-86400000).toISOString(), week_minutes: 90, streak: 1, downloads: 2 },
-            { id: 'demo-9', name: 'Sneha Gupta', grade: 'Grade 9', avatar: 'SG', last_active: new Date(Date.now()-2700000).toISOString(), week_minutes: 517, streak: 25, downloads: 32 },
-            { id: 'demo-10', name: 'Amit Tiwari', grade: 'Grade 11', avatar: 'AT', last_active: new Date(Date.now()-7200000).toISOString(), week_minutes: 205, streak: 4, downloads: 6 }
-        ];
+
 
         /**
          * @param {string|null} iso - ISO date string or null
@@ -318,24 +306,12 @@
         }
 
         /**
-         * Fetches student list from server (or demo data), populates the grade filter dropdown,
+         * Fetches student list from the server, populates the grade filter dropdown,
          * and renders cards into #studentContainer.
          */
         function loadStudents() {
             var container = document.getElementById('studentContainer');
             var gradeFilter = document.getElementById('gradeFilter');
-
-            if (IS_DEMO) {
-                allStudents = demoStudents.slice();
-                allGrades = [];
-                demoStudents.forEach(function(s) {
-                    if (allGrades.indexOf(s.grade) === -1) allGrades.push(s.grade);
-                });
-                allGrades.sort();
-                gradeFilter.innerHTML = '<option value="">All Grades</option>' + allGrades.map(function(g) { return '<option value="' + esc(g) + '">' + esc(g) + '</option>'; }).join('');
-                renderStudents(allStudents);
-                return;
-            }
 
             container.innerHTML = '<div class="empty-state"><span style="display:inline-block; animation: spin 1s linear infinite;">&#9696;</span> Loading students...</div>';
             var grade = gradeFilter ? gradeFilter.value : '';
@@ -380,7 +356,7 @@
         function renderStudents(list) {
             var container = document.getElementById('studentContainer');
             if (list.length === 0) {
-                container.innerHTML = '<div class="empty-state">No students found matching the current filter.</div>';
+                container.innerHTML = '<div class="empty-state">No students registered yet. Students will appear here once they register through the app.</div>';
                 return;
             }
             container.innerHTML = list.map(function(s) {

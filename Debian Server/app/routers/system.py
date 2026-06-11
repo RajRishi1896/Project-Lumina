@@ -44,6 +44,30 @@ async def ping_server():
     return {"status": "pong"}
 
 
+@router.get("/api/task/{task_id}",
+            summary="Poll background task status",
+            description="Returns the current status and result of a background task previously enqueued via the task queue. Clients should poll this endpoint with the task ID returned by an enqueue operation.",
+            tags=["System"],
+            responses={200: {"description": "Task status and result (if completed)"}, 404: {"description": "Task ID not found"}})
+async def get_task_status(task_id: str):
+    """Get the status and result of a background task.
+
+    Args:
+        task_id: The task UUID returned by an enqueue operation.
+
+    Returns:
+        Dict with task id, type, status, result, and error fields.
+
+    Raises:
+        HTTPException 404: If the task ID is unknown.
+    """
+    from app.task_queue import get_task
+    task = get_task(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
 @router.get("/generate_204", summary="Captive portal detection bypass", description="Returns a 204 No Content response to trick Android's captive portal detection into thinking the network has internet access, preventing it from switching to cellular data.", tags=["System"], responses={204: {"description": "Empty response for captive portal bypass"}})
 async def generate_204():
     """Return a 204 response for Android captive portal detection.

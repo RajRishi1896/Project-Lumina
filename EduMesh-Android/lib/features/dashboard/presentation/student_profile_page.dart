@@ -12,6 +12,7 @@ import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/mutation_queue.dart';
 
 final _whitespaceRE = RegExp(r'\s+');
 
@@ -601,33 +602,26 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () async {
-                        final messenger = ScaffoldMessenger.of(context);
                         final newName = nameController.text.trim();
                         if (newName.isNotEmpty || selectedGrade.isNotEmpty) {
-                          try {
-                            await ApiClient.post('/student/profile/update', data: {
-                              if (newName.isNotEmpty) 'name': newName,
-                              if (selectedGrade.isNotEmpty) 'grade': selectedGrade,
-                            });
-                            final auth = AuthService();
-                            if (newName.isNotEmpty) {
-                              await auth.saveUsername(newName);
-                            }
-                            if (selectedGrade.isNotEmpty) {
-                              await auth.saveGrade(selectedGrade);
-                            }
-                            if (mounted) {
-                              setState(() {
-                                _studentName = newName.isNotEmpty ? newName : _studentName;
-                                _grade = selectedGrade.isNotEmpty ? selectedGrade : _grade;
-                              });
-                              if (ctx.mounted) Navigator.pop(ctx);
-                            }
-                          } catch (e) {
-                            messenger.showSnackBar(
-                              SnackBar(content: Text('Failed to update profile: $e')),
-                            );
+                          final auth = AuthService();
+                          if (newName.isNotEmpty) {
+                            await auth.saveUsername(newName);
                           }
+                          if (selectedGrade.isNotEmpty) {
+                            await auth.saveGrade(selectedGrade);
+                          }
+                          if (mounted) {
+                            setState(() {
+                              _studentName = newName.isNotEmpty ? newName : _studentName;
+                              _grade = selectedGrade.isNotEmpty ? selectedGrade : _grade;
+                            });
+                            if (ctx.mounted) Navigator.pop(ctx);
+                          }
+                          MutationQueue().enqueue('/student/profile/update', method: 'POST', body: {
+                            if (newName.isNotEmpty) 'name': newName,
+                            if (selectedGrade.isNotEmpty) 'grade': selectedGrade,
+                          });
                         }
                       },
                       style: ElevatedButton.styleFrom(

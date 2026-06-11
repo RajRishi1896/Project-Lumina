@@ -68,158 +68,19 @@ const TRANSLATIONS = {
     },
 };
 
-// ── AES-256-GCM encryption for API payloads ──────────────────────────
-
-/** Look up the AES-256-GCM key for the current session from sessionStorage */
-function getEncryptionKey() {
-    return sessionStorage.getItem('lumina_encryption_key');
-}
-
 /** Store the encryption key on successful login */
 function setEncryptionKey(key) {
     if (key) sessionStorage.setItem('lumina_encryption_key', key);
 }
 
-/** Clear encryption key on logout */
-function clearEncryptionKey() {
-    sessionStorage.removeItem('lumina_encryption_key');
-}
-
 /**
- * Encrypt a JSON-serializable object using AES-256-GCM via Web Crypto API.
- * Returns {"encrypted": "<base64>"} wrapper.
- */
-async function encryptPayload(data, keyBase64) {
-    const keyBytes = base64ToBytes(keyBase64);
-    const plaintext = new TextEncoder().encode(JSON.stringify(data));
-    
-    const key = await crypto.subtle.importKey(
-        'raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt']
-    );
-    const nonce = crypto.getRandomValues(new Uint8Array(12));
-    const encrypted = await crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv: nonce }, key, plaintext
-    );
-    const combined = new Uint8Array(12 + encrypted.byteLength);
-    combined.set(nonce, 0);
-    combined.set(new Uint8Array(encrypted), 12);
-    return { encrypted: bytesToBase64(combined) };
-}
-
-/**
- * Decrypt a {"encrypted": "<base64>"} wrapper and return the parsed JSON object.
- */
-async function decryptResponse(wrapper, keyBase64) {
-    const keyBytes = base64ToBytes(keyBase64);
-    const raw = base64ToBytes(wrapper.encrypted);
-    const nonce = raw.slice(0, 12);
-    const ciphertext = raw.slice(12);
-    
-    const key = await crypto.subtle.importKey(
-        'raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']
-    );
-    const decrypted = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv: nonce }, key, ciphertext
-    );
-    return JSON.parse(new TextDecoder().decode(decrypted));
-}
-
-// Base64 helpers (IE-safe, uses built-in btoa/atob with UTF-8 handling)
-
-/**
- * Convert a Uint8Array to a base64-encoded string.
- * @param {Uint8Array} bytes - Binary data to encode
- * @returns {string} Base64-encoded string
- */
-function bytesToBase64(bytes) {
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-}
-
-/**
- * Decode a base64-encoded string to a Uint8Array.
- * @param {string} str - Base64-encoded string
- * @returns {Uint8Array} Decoded binary data
- */
-function base64ToBytes(str) {
-    const binary = atob(str);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
-}
-
-/**
- * Wrapper around fetch() that encrypts request bodies and decrypts responses.
- *
- * ## Encryption flow
- * For POST/PUT requests with a body, the JSON body is encrypted with AES-256-GCM
- * using the session key obtained at login. Responses containing `{"encrypted": "..."}`
- * are automatically decrypted. Falls back to plain JSON if no encryption key is
- * available (backwards compatibility with unencrypted endpoints).
- *
- * ## Error handling
- * Encryption/decryption failures are non-fatal: the request is sent as plaintext
- * and the response is returned as-is. Warnings are logged to console.
- *
+ * Wrapper around fetch() for dashboard API calls.
  * @param {string} url - The URL to fetch
  * @param {Object} [options] - Standard fetch options (method, body, headers, etc.)
- * @returns {Promise<Response>} A Response-like object (decrypted if applicable)
+ * @returns {Promise<Response>} A Response object
  */
 async function apiFetch(url, options = {}) {
-    const encKey = getEncryptionKey();
-    
-    // Encrypt request body if we have a key (skip FormData — can't be JSON-serialized)
-    if (encKey && options.body && (options.method === 'POST' || options.method === 'PUT' || !options.method) && !(options.body instanceof FormData)) {
-        try {
-            const bodyData = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
-            const encrypted = await encryptPayload(bodyData, encKey);
-            options.body = JSON.stringify(encrypted);
-        } catch (e) {
-            console.warn('Encryption failed, sending plaintext:', e);
-        }
-    }
-    
-    const response = await fetch(url, options);
-    
-    // Try to decrypt response
-    if (encKey) {
-        try {
-            const text = await response.text();
-            if (text) {
-                const parsed = JSON.parse(text);
-                if (parsed && parsed.encrypted) {
-                    const decrypted = await decryptResponse(parsed, encKey);
-                    const newResponse = {
-                        ok: response.ok,
-                        status: response.status,
-                        statusText: response.statusText,
-                        headers: response.headers,
-                        json: async () => decrypted,
-                        text: async () => JSON.stringify(decrypted),
-                    };
-                    return newResponse;
-                }
-                const newResponse = {
-                    ok: response.ok,
-                    status: response.status,
-                    statusText: response.statusText,
-                    headers: response.headers,
-                    json: async () => parsed,
-                    text: async () => text,
-                };
-                return newResponse;
-            }
-        } catch (e) {
-            console.warn('Response decryption failed:', e);
-        }
-    }
-    
-    return response;
+    return fetch(url, options);
 }
 
 /**
@@ -650,8 +511,5 @@ document.addEventListener('DOMContentLoaded', function() {
             saveScrollPosition();
         }
     });
-    // Clear encryption key on logout
-    document.querySelectorAll('a[href="/logout"]').forEach(function(el) {
-        el.addEventListener('click', clearEncryptionKey);
-    });
+
 });

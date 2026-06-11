@@ -9,9 +9,11 @@ import 'package:edumesh_android/core/network/api_client.dart';
 import '../../../core/services/activity_tracker.dart';
 import '../../../shared/services/download_queue.dart';
 import '../../../shared/services/connectivity_service.dart';
+import '../../../shared/services/zim_api_service.dart';
+import '../../../shared/services/zim_cache_service.dart';
 import '../../../shared/widgets/resource_thumbnail.dart';
 import 'resource_detail_page.dart';
-import 'zim_browser_page.dart';
+import 'kiwix_view.dart';
 
 /// A page for browsing, searching, and filtering all available resources.
 ///
@@ -42,6 +44,7 @@ class _SearchPageState extends State<SearchPage> {
   Set<String> _downloadedIds = {};
   Set<String> _pendingIds = {};
   final Set<String> _downloadingIds = {};
+  List<Map<String, dynamic>> _zimArticles = [];
   List<Map<String, dynamic>> _filteredResults = [];
   bool _isLoading = true;
   String? _loadError;
@@ -81,6 +84,17 @@ class _SearchPageState extends State<SearchPage> {
         resources = (data['items'] as List).map((j) => ResourceModel.fromJson(j is Map ? Map<String, dynamic>.from(j) : {})).toList();
       }
     _allResources = resources;
+
+    _zimArticles = [];
+    try {
+      final zimResp = await ApiClient.get('/zim/articles', queryParameters: {
+        'offset': '0', 'limit': '500',
+      }).timeout(const Duration(seconds: 8));
+      if (zimResp.data is List) {
+        _zimArticles = (zimResp.data as List).cast<Map<String, dynamic>>();
+      }
+    } catch (_) {}
+
     _buildSearchIndex(resources);
     _applyFilters();
   } catch (_) {
@@ -88,6 +102,7 @@ class _SearchPageState extends State<SearchPage> {
         final local = await SaveResourceService.getAllSavedResourceModels();
         if (local.isNotEmpty) {
         _allResources = local;
+        _zimArticles = [];
         _buildSearchIndex(local);
         _applyFilters();
         if (mounted) setState(() { _isLoading = false; _loadError = null; });
@@ -101,13 +116,28 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _buildSearchIndex(List<ResourceModel> resources) {
-    _searchIndex = resources.map((r) {
-      return {
+    _searchIndex = [];
+    for (final r in resources) {
+      if (r.type == ResourceType.kiwix) continue;
+      _searchIndex.add({
         "title": r.title,
         "searchKeywords": "${r.title} ${r.subject} ${r.grade} ${r.type.toString().split('.').last}".toLowerCase(),
         "originalObject": r,
-      };
-    }).toList();
+        "isZim": false,
+      });
+    }
+    for (final article in _zimArticles) {
+      final title = article['title']?.toString() ?? 'Untitled';
+      final id = article['article_id']?.toString() ?? '';
+      if (id.isEmpty) continue;
+      _searchIndex.add({
+        "title": title,
+        "searchKeywords": title.toLowerCase(),
+        "originalObject": null,
+        "isZim": true,
+        "articleId": id,
+      });
+    }
   }
 
   Future<void> _loadDownloadStatus() async {
@@ -127,10 +157,37 @@ class _SearchPageState extends State<SearchPage> {
       final savedIds = results.map((r) => r.id).toSet();
       final statusMap = <dynamic, bool>{};
       for (final item in _searchIndex) {
+        if (item["isZim"] == true) continue;
         final original = item["originalObject"];
         statusMap[original.id] = savedIds.contains(original.id.toString());
       }
       setState(() => _savedStatuses = statusMap);
+    }
+  }
+
+  Future<void> _openZimArticle(String articleId, String title) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      String? html = await ZimCacheService.getPage(articleId);
+      if (html == null) {
+        final pageData = await ZimApiService().fetchPage(articleId);
+        html = pageData['html']?.toString() ?? '';
+        if (html.isNotEmpty) {
+          await ZimCacheService.savePage(articleId, html);
+        }
+      }
+      if (!mounted) return;
+      if (html.isNotEmpty) {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => KiwixView(initialHtml: html, title: title),
+        ));
+      } else {
+        messenger.showSnackBar(SnackBar(content: Text('Article not found')));
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(content: Text('Failed to load article: $e')));
+      }
     }
   }
 
@@ -234,6 +291,7 @@ class _SearchPageState extends State<SearchPage> {
 
   Set<String> _getAllGrades() {
     return _searchIndex
+        .where((item) => item["isZim"] != true)
         .map((item) => (item["originalObject"].grade ?? '').toString())
         .where((g) => g.isNotEmpty)
         .toSet();
@@ -470,6 +528,7 @@ class _SearchPageState extends State<SearchPage> {
           }).toList();
 
     final List<Map<String, dynamic>> results = textFiltered.where((item) {
+      if (item["isZim"] == true) return true;
       final original = item["originalObject"];
       if (_selectedTypes.isNotEmpty && !_selectedTypes.contains(original.type)) return false;
       if (_selectedGrades.isNotEmpty && !_selectedGrades.contains(original.grade)) return false;
@@ -478,6 +537,13 @@ class _SearchPageState extends State<SearchPage> {
     }).toList();
 
     results.sort((a, b) {
+      if (a["isZim"] == true && b["isZim"] == true) {
+        final at = a["title"] as String? ?? '';
+        final bt = b["title"] as String? ?? '';
+        return at.compareTo(bt);
+      }
+      if (a["isZim"] == true) return 1;
+      if (b["isZim"] == true) return -1;
       final oa = a["originalObject"];
       final ob = b["originalObject"];
       switch (_sortBy) {
@@ -653,76 +719,74 @@ class _SearchPageState extends State<SearchPage> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final item = _filteredResults[index];
+                        final isZim = item["isZim"] == true;
                         final dynamic original = item["originalObject"];
 
-                          final isKiwix = original.type == ResourceType.kiwix;
+                        final isOfflineUnavailable = !isZim && !ConnectivityService().isOnline && !_downloadedIds.contains(original.id.toString());
 
-                          final isOfflineUnavailable = !ConnectivityService().isOnline && !_downloadedIds.contains(original.id.toString());
-
-                          return Opacity(
-                            opacity: isOfflineUnavailable ? 0.45 : 1.0,
-                            child: Container(
-                              color: isKiwix
-                                  ? cs.primaryContainer
-                                  : Colors.transparent,
-                              child: ListTile(
-                            leading: ResourceThumbnail(resource: original, size: 48),
-                            onTap: () {
-                              if (original.type == ResourceType.kiwix) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const ZimBrowserPage()),
-                                );
-                                return;
-                              }
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ResourceDetailPage(
-                                    title: item['title'] as String? ?? '',
-                                    subject:
-                                        (original.subject ?? '').toString(),
-                                    grade: (original.grade ?? '').toString(),
-                                    resourceType: original.type.name,
-                                    isInitiallySaved:
-                                        _savedStatuses[original.id] ?? false,
-                                  ),
+                        return Opacity(
+                          opacity: isOfflineUnavailable ? 0.45 : 1.0,
+                          child: ListTile(
+                          leading: isZim
+                              ? CircleAvatar(
+                                  backgroundColor: cs.primaryContainer,
+                                  child: Icon(Icons.article, color: cs.primary),
+                                )
+                              : ResourceThumbnail(resource: original, size: 48),
+                          onTap: () {
+                            if (isZim) {
+                              _openZimArticle(item["articleId"] as String, item["title"] as String);
+                              return;
+                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ResourceDetailPage(
+                                  title: item['title'] as String? ?? '',
+                                  subject:
+                                      (original.subject ?? '').toString(),
+                                  grade: (original.grade ?? '').toString(),
+                                  resourceType: original.type.name,
+                                  isInitiallySaved:
+                                      _savedStatuses[original.id] ?? false,
                                 ),
-                              );
-                            },
-                            title: Row(
-                              children: [
-                                if (isKiwix)
-                                  Padding(
-                                    padding: EdgeInsets.only(right: 8.w),
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 6.w, vertical: 2.h),
-                                      decoration: BoxDecoration(
-                                        color: cs.primary,
-                                        borderRadius:
-                                            BorderRadius.circular(4.r),
-                                      ),
-                                      child: Text(
-                                        'WIKI',
-                                        style: TextStyle(
-                                          color: cs.onPrimary,
-                                          fontSize: 10.sp,
-                                          fontWeight: AppSpacing.weightStrong,
-                                          letterSpacing: 1,
-                                        ),
+                              ),
+                            );
+                          },
+                          title: Row(
+                            children: [
+                              if (isZim)
+                                Padding(
+                                  padding: EdgeInsets.only(right: 8.w),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 6.w, vertical: 2.h),
+                                    decoration: BoxDecoration(
+                                      color: cs.primary,
+                                      borderRadius:
+                                          BorderRadius.circular(4.r),
+                                    ),
+                                    child: Text(
+                                      'WIKI',
+                                      style: TextStyle(
+                                        color: cs.onPrimary,
+                                        fontSize: 10.sp,
+                                        fontWeight: AppSpacing.weightStrong,
+                                        letterSpacing: 1,
                                       ),
                                     ),
                                   ),
-                                Expanded(
-                                  child: Text(item["title"],
-                                      style:
-                                          TextStyle(color: cs.onSurface)),
                                 ),
-                              ],
-                            ),
-                            trailing: Row(
+                              Expanded(
+                                child: Text(item["title"],
+                                    style:
+                                        TextStyle(color: cs.onSurface)),
+                              ),
+                            ],
+                          ),
+                          trailing: isZim
+                              ? Icon(Icons.chevron_right, color: cs.onSurfaceVariant)
+                              : Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
@@ -759,8 +823,7 @@ class _SearchPageState extends State<SearchPage> {
                                 _buildDownloadButton(original, cs),
                               ],
                             ),
-                          ),
-                          ),
+                        ),
                         );
                       },
                       childCount: _filteredResults.length,

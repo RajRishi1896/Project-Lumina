@@ -4,6 +4,7 @@ import 'download_service.dart';
 import 'notification_service.dart';
 import 'connectivity_service.dart';
 
+/// An item waiting to be downloaded by [DownloadQueue].
 class _QueuedDownload {
   final String resourceId;
   final String url;
@@ -13,6 +14,9 @@ class _QueuedDownload {
   final String grade;
   final String type;
   final double mtime;
+
+  /// Remaining retry attempts before the download is abandoned.
+  int retries = 3;
 
   _QueuedDownload(this.resourceId, this.url, this.fileName, {
     this.title = '',
@@ -71,10 +75,16 @@ class DownloadQueue extends ChangeNotifier {
     }
   }
 
+  /// Updates [active] state after a task completes or is removed, and notifies
+  /// listeners so the UI can react to queue changes.
+  void _finishTask() {
+    _processing = _queue.isNotEmpty;
+    notifyListeners();
+  }
+
   Future<void> _processNext() async {
     if (_queue.isEmpty) return;
     _processing = true;
-    notifyListeners();
 
     final task = _queue.first;
     final path = await DownloadService().downloadAndTrack(
@@ -87,15 +97,23 @@ class DownloadQueue extends ChangeNotifier {
         NotificationService().showDownloadComplete(task.title);
       }
       ActivityTracker().logKeyAction('download', resourceId: task.resourceId, metadata: task.title);
-    }
-    _queue.removeAt(0);
-    notifyListeners();
-
-    if (_queue.isNotEmpty) {
+      _queue.removeAt(0);
+      _finishTask();
+      if (_queue.isNotEmpty) _processNext();
+    } else if (task.retries > 0) {
+      // Decrement retries and re-attempt after a short delay so transient
+      // network or server issues have time to resolve.
+      task.retries--;
+      debugPrint('DownloadQueue: retrying ${task.resourceId} (${task.retries} attempts left)');
+      await Future.delayed(const Duration(seconds: 3));
       _processNext();
     } else {
-      _processing = false;
-      notifyListeners();
+      if (task.title.isNotEmpty) {
+        NotificationService().showDownloadFailed(task.title);
+      }
+      _queue.removeAt(0);
+      _finishTask();
+      if (_queue.isNotEmpty) _processNext();
     }
   }
 }

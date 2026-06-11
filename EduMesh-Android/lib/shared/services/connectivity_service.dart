@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/mutation_queue.dart';
+import '../../core/services/catalog_service.dart';
 import 'download_service.dart';
 import 'download_queue.dart';
 
@@ -84,28 +86,33 @@ class ConnectivityService extends ChangeNotifier {
     }
     if (_online != wasOnline) {
       notifyListeners();
-      if (_online && !wasOnline) {
+      if (_online) {
         _flushPending();
       }
+    } else if (_online) {
+      _flushPending();
     }
   }
 
   Future<void> _flushPending() async {
     final items = await DownloadService().getAllPendingDownloads();
-    if (items.isEmpty) return;
-    for (final item in items) {
-      DownloadQueue().enqueue(
-        item['resource_id'] as String,
-        item['url'] as String,
-        item['file_name'] as String,
-        title: item['title'] as String? ?? '',
-        subject: item['subject'] as String? ?? '',
-        grade: item['grade'] as String? ?? '',
-        type: item['type'] as String? ?? '',
-        mtime: (item['mtime'] as num?)?.toDouble() ?? 0,
-      );
+    if (items.isNotEmpty) {
+      for (final item in items) {
+        DownloadQueue().enqueue(
+          item['resource_id'] as String,
+          item['url'] as String,
+          item['file_name'] as String,
+          title: item['title'] as String? ?? '',
+          subject: item['subject'] as String? ?? '',
+          grade: item['grade'] as String? ?? '',
+          type: item['type'] as String? ?? '',
+          mtime: (item['mtime'] as num?)?.toDouble() ?? 0,
+        );
+      }
+      await DownloadService().clearAllPendingDownloads();
     }
-    await DownloadService().clearAllPendingDownloads();
+    await MutationQueue().flush();
+    await CatalogService().syncCatalog();
   }
 
   /// Performs a single connectivity check against the server.

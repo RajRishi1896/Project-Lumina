@@ -25,7 +25,7 @@ class DBHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 5, onCreate: _createDB, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 7, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   Future _createDB(Database db, int version) async {
@@ -83,6 +83,29 @@ class DBHelper {
         type TEXT,
         mtime REAL DEFAULT 0,
         added_at INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS pending_mutations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        endpoint TEXT NOT NULL,
+        method TEXT NOT NULL DEFAULT 'POST',
+        body TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        retries INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS catalog (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        type TEXT NOT NULL,
+        subject TEXT,
+        grade TEXT,
+        pdf_url TEXT,
+        mtime REAL DEFAULT 0,
+        synced_at INTEGER NOT NULL
       )
     ''');
   }
@@ -284,6 +307,36 @@ class DBHelper {
               type TEXT,
               mtime REAL DEFAULT 0,
               added_at INTEGER
+            )
+          ''');
+        } catch (_) {}
+      }
+      if (v >= 6) {
+        try {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS pending_mutations (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              endpoint TEXT NOT NULL,
+              method TEXT NOT NULL DEFAULT 'POST',
+              body TEXT NOT NULL,
+              created_at INTEGER NOT NULL,
+              retries INTEGER NOT NULL DEFAULT 0
+            )
+          ''');
+        } catch (_) {}
+      }
+      if (v >= 7) {
+        try {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS catalog (
+              id TEXT PRIMARY KEY,
+              title TEXT NOT NULL,
+              type TEXT NOT NULL,
+              subject TEXT,
+              grade TEXT,
+              pdf_url TEXT,
+              mtime REAL DEFAULT 0,
+              synced_at INTEGER NOT NULL
             )
           ''');
         } catch (_) {}
