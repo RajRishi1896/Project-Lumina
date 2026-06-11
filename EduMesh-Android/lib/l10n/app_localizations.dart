@@ -1545,6 +1545,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get buttonSkip;
+
+  /// Bottom navigation tab label for the students/teacher monitor page
+  ///
+  /// In en, this message translates to:
+  /// **'Students'**
+  String get bottomNavStudents;
+
+  /// Snackbar message when a ZIM article fetch returns empty content
+  ///
+  /// In en, this message translates to:
+  /// **'Article not found'**
+  String get zimArticleNotFound;
+
+  /// AppBar title on the teacher student monitor page
+  ///
+  /// In en, this message translates to:
+  /// **'Students'**
+  String get teacherPageTitle;
+
+  /// Tooltip for the grade filter popup menu button
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by grade'**
+  String get teacherFilterByGrade;
+
+  /// Menu item text to clear grade filter and show all students
+  ///
+  /// In en, this message translates to:
+  /// **'All Grades'**
+  String get teacherAllGrades;
+
+  /// Error heading when student list fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load students'**
+  String get teacherCouldNotLoadStudents;
+
+  /// Error subtitle suggesting the user check hub connectivity
+  ///
+  /// In en, this message translates to:
+  /// **'Check hub connection and try again.'**
+  String get teacherCheckHubConnection;
+
+  /// Retry button text for teacher page error state
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get teacherRetry;
+
+  /// Hint text in the search field for filtering students
+  ///
+  /// In en, this message translates to:
+  /// **'Search students...'**
+  String get teacherSearchStudentsHint;
+
+  /// Empty state text when student search yields no results
+  ///
+  /// In en, this message translates to:
+  /// **'No students match your search.'**
+  String get teacherNoStudentsMatchSearch;
+
+  /// Empty state text when no students are registered
+  ///
+  /// In en, this message translates to:
+  /// **'No students found.'**
+  String get teacherNoStudentsFound;
+
+  /// Label on the grade filter banner showing which grade is selected
+  ///
+  /// In en, this message translates to:
+  /// **'Showing: {grade}'**
+  String teacherShowing(String grade);
+
+  /// Label below the today-minutes stat chip in teacher student card
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get teacherLabelToday;
+
+  /// Label below the streak stat chip in teacher student card
+  ///
+  /// In en, this message translates to:
+  /// **'streak'**
+  String get teacherLabelStreak;
+
+  /// Label below the saved count stat chip in teacher student card
+  ///
+  /// In en, this message translates to:
+  /// **'saved'**
+  String get teacherLabelSaved;
+
+  /// Label below the downloaded count stat chip in teacher student card
+  ///
+  /// In en, this message translates to:
+  /// **'downloaded'**
+  String get teacherLabelDownloaded;
+
+  /// Section header for the overview stat cards on the student progress page
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get teacherOverview;
+
+  /// Stat box label for monthly study minutes
+  ///
+  /// In en, this message translates to:
+  /// **'This Month'**
+  String get teacherThisMonth;
+
+  /// Button text to load more activity items, showing remaining count
+  ///
+  /// In en, this message translates to:
+  /// **'Show More ({remaining} remaining)'**
+  String teacherShowMore(int remaining);
+
+  /// Error text displayed when analytics data fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load analytics'**
+  String get teacherCouldNotLoadAnalytics;
+
+  /// Empty state text in the activity section when no history exists
+  ///
+  /// In en, this message translates to:
+  /// **'No activity recorded yet.'**
+  String get teacherNoActivityRecorded;
+
+  /// Section header for the subject categories grid on the dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Subjects'**
+  String get sectionSubjects;
+
+  /// Empty state text when no subject categories are loaded
+  ///
+  /// In en, this message translates to:
+  /// **'No subjects available'**
+  String get sectionSubjectsEmpty;
+
+  /// Section label above the resource type list on the resource page
+  ///
+  /// In en, this message translates to:
+  /// **'Resources'**
+  String get resourcePageResources;
 }
 
 class _AppLocalizationsDelegate

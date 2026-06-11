@@ -16,6 +16,7 @@ import 'package:edumesh_android/shared/widgets/video_player_page.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'package:edumesh_android/core/services/recent_files_service.dart';
 import 'package:edumesh_android/core/services/catalog_service.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A page that lists resources matching a given subject, grade, and type.
 ///
@@ -102,8 +103,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
         _loading = false;
       });
       return;
-    } catch (_) {}
-    final targetType = switch (widget.resourceType) {
+    } catch (_) { } final targetType = switch (widget.resourceType) {
       'textbooks' => 'textbook',
       'pyqs' => 'pyq',
       _ => widget.resourceType,
@@ -123,8 +123,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
         }
         return;
       }
-    } catch (_) {}
-    try {
+    } catch (_) { } try {
       final db = DBHelper();
       final rows = await db.getDownloadedResources();
       if (mounted) {
@@ -163,8 +162,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
           _bookmarkedIds = bmIds;
         });
       }
-    } catch (_) {}
-  }
+    } catch (_) { } }
 
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
@@ -203,13 +201,14 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       ),
       onPressed: () async {
         final messenger = ScaffoldMessenger.of(context);
+        final l10n = AppLocalizations.of(context)!;
         if (isDownloaded) {
           await DownloadService().deleteDownload(resourceId);
           if (mounted) {
             setState(() => _downloadedIds.remove(resourceId));
           }
           messenger.showSnackBar(SnackBar(
-            content: const Text("Download removed"),
+            content: Text(l10n.snackbarDownloadRemoved),
             duration: const Duration(milliseconds: 600),
           ));
         } else {
@@ -227,7 +226,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
             if (mounted) {
               setState(() => _pendingIds.add(resourceId));
               messenger.showSnackBar(SnackBar(
-                content: const Text("Added to queue — will download when server is reachable"),
+                content: Text(l10n.snackbarAddedToQueueOffline),
                 duration: const Duration(seconds: 3),
               ));
             }
@@ -245,18 +244,18 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
               }
             }
           } catch (_) {
-            sizeLabel = 'size unavailable';
+            sizeLabel = l10n.fileSizeUnavailable;
           }
           if (!mounted) return;
 
           final confirmed = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('Download'),
-              content: Text('Download "$fileName"?\n\nSize: ${sizeLabel ?? "unknown"}'),
+              title: Text(l10n.dialogDownloadTitle),
+              content: Text(l10n.dialogDownloadContent(fileName, sizeLabel ?? l10n.fileSizeUnknownFallback)),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Download')),
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.buttonCancel)),
+                TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.dialogDownloadButton)),
               ],
             ),
           );
@@ -271,7 +270,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
           );
           if (mounted) setState(() => _pendingIds.add(resourceId));
           messenger.showSnackBar(SnackBar(
-            content: const Text("Added to download queue"),
+            content: Text(l10n.snackbarAddedToQueue),
             duration: const Duration(milliseconds: 600),
           ));
         }
@@ -282,10 +281,11 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: cs.surface,
-      appBar: AppBar(title: Text('${widget.title} — ${widget.subject}')),
+      appBar: AppBar(title: Text(l10n.pageTitleDetail(widget.title, widget.subject))),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : items.isEmpty
@@ -297,17 +297,17 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                       children: [
                         Icon(Icons.search_off_rounded, size: 64.sp, color: cs.onSurfaceVariant),
                         SizedBox(height: AppSpacing.lg.h),
-                        Text('No ${widget.title} available',
+                        Text(l10n.emptyNoResourcesForType(widget.title),
                             style: TextStyle(fontSize: 18.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
                         SizedBox(height: AppSpacing.sm.h),
-                        Text('No resources found for ${widget.subject} in ${widget.grade}.',
+                        Text(l10n.emptyNoResourcesDetail(widget.subject, widget.grade),
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant)),
                         SizedBox(height: AppSpacing.section.h),
                         FilledButton.tonalIcon(
                           onPressed: () => setState(() { _loading = true; _loadResources(); }),
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Refresh'),
+                          label: Text(l10n.emptyRefreshButton),
                         ),
                       ],
                     ),
@@ -333,9 +333,9 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                           if (isGhost) {
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('"${item.title}" is not downloaded. Queue it while offline, or connect to the server to download.'),
+                              content: Text(l10n.snackbarNotDownloaded(item.title)),
                               duration: const Duration(seconds: 4),
-                              action: SnackBarAction(label: 'Queue', onPressed: () {
+                              action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
                                 final rawUrl = item.pdfUrl;
                                 final url = (rawUrl != null && rawUrl.isNotEmpty) ? rawUrl : '/files/${item.id}';
                                 DownloadQueue().enqueue(item.id, url, '${item.title}.pdf',
@@ -350,9 +350,9 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                           if (!isDl && !isOnline) {
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('"${item.title}" is not downloaded. Add it from the download button to save for offline access.'),
+                              content: Text(l10n.snackbarNotDownloaded(item.title)),
                               duration: const Duration(seconds: 4),
-                              action: SnackBarAction(label: 'Queue', onPressed: () {
+                              action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
                                 final rawUrl = item.pdfUrl;
                                 final url = (rawUrl != null && rawUrl.isNotEmpty) ? rawUrl : '/files/${item.id}';
                                 DownloadQueue().enqueue(item.id, url, '${item.title}.pdf',

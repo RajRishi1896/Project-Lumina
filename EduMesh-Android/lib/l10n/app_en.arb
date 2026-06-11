@@ -1069,5 +1069,112 @@
   "buttonSkip": "Skip",
   "@buttonSkip": {
     "description": "Button to skip a non-required action, e.g. setting a display name"
+  },
+
+  "bottomNavStudents": "Students",
+  "@bottomNavStudents": {
+    "description": "Bottom navigation tab label for the students/teacher monitor page"
+  },
+
+  "zimArticleNotFound": "Article not found",
+  "@zimArticleNotFound": {
+    "description": "Snackbar message when a ZIM article fetch returns empty content"
+  },
+
+  "teacherPageTitle": "Students",
+  "@teacherPageTitle": {
+    "description": "AppBar title on the teacher student monitor page"
+  },
+  "teacherFilterByGrade": "Filter by grade",
+  "@teacherFilterByGrade": {
+    "description": "Tooltip for the grade filter popup menu button"
+  },
+  "teacherAllGrades": "All Grades",
+  "@teacherAllGrades": {
+    "description": "Menu item text to clear grade filter and show all students"
+  },
+  "teacherCouldNotLoadStudents": "Could not load students",
+  "@teacherCouldNotLoadStudents": {
+    "description": "Error heading when student list fails to load"
+  },
+  "teacherCheckHubConnection": "Check hub connection and try again.",
+  "@teacherCheckHubConnection": {
+    "description": "Error subtitle suggesting the user check hub connectivity"
+  },
+  "teacherRetry": "Retry",
+  "@teacherRetry": {
+    "description": "Retry button text for teacher page error state"
+  },
+  "teacherSearchStudentsHint": "Search students...",
+  "@teacherSearchStudentsHint": {
+    "description": "Hint text in the search field for filtering students"
+  },
+  "teacherNoStudentsMatchSearch": "No students match your search.",
+  "@teacherNoStudentsMatchSearch": {
+    "description": "Empty state text when student search yields no results"
+  },
+  "teacherNoStudentsFound": "No students found.",
+  "@teacherNoStudentsFound": {
+    "description": "Empty state text when no students are registered"
+  },
+  "teacherShowing": "Showing: {grade}",
+  "@teacherShowing": {
+    "description": "Label on the grade filter banner showing which grade is selected",
+    "placeholders": {
+      "grade": {"type": "String", "example": "Grade 10"}
+    }
+  },
+  "teacherLabelToday": "today",
+  "@teacherLabelToday": {
+    "description": "Label below the today-minutes stat chip in teacher student card"
+  },
+  "teacherLabelStreak": "streak",
+  "@teacherLabelStreak": {
+    "description": "Label below the streak stat chip in teacher student card"
+  },
+  "teacherLabelSaved": "saved",
+  "@teacherLabelSaved": {
+    "description": "Label below the saved count stat chip in teacher student card"
+  },
+  "teacherLabelDownloaded": "downloaded",
+  "@teacherLabelDownloaded": {
+    "description": "Label below the downloaded count stat chip in teacher student card"
+  },
+  "teacherOverview": "Overview",
+  "@teacherOverview": {
+    "description": "Section header for the overview stat cards on the student progress page"
+  },
+  "teacherThisMonth": "This Month",
+  "@teacherThisMonth": {
+    "description": "Stat box label for monthly study minutes"
+  },
+  "teacherShowMore": "Show More ({remaining} remaining)",
+  "@teacherShowMore": {
+    "description": "Button text to load more activity items, showing remaining count",
+    "placeholders": {
+      "remaining": {"type": "int", "example": "12"}
+    }
+  },
+  "teacherCouldNotLoadAnalytics": "Could not load analytics",
+  "@teacherCouldNotLoadAnalytics": {
+    "description": "Error text displayed when analytics data fails to load"
+  },
+  "teacherNoActivityRecorded": "No activity recorded yet.",
+  "@teacherNoActivityRecorded": {
+    "description": "Empty state text in the activity section when no history exists"
+  },
+
+  "sectionSubjects": "Subjects",
+  "@sectionSubjects": {
+    "description": "Section header for the subject categories grid on the dashboard"
+  },
+  "sectionSubjectsEmpty": "No subjects available",
+  "@sectionSubjectsEmpty": {
+    "description": "Empty state text when no subject categories are loaded"
+  },
+
+  "resourcePageResources": "Resources",
+  "@resourcePageResources": {
+    "description": "Section label above the resource type list on the resource page"
   }
 }

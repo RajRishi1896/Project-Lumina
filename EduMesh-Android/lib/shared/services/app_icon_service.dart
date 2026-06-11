@@ -6,8 +6,7 @@ class AppIconService {
   static Future<void> setAppIcon(bool useDark) async {
     try {
       await _channel.invokeMethod('setAppIcon', {'useDark': useDark});
-    } catch (_) {}
-  }
+    } catch (_) { } }
 
   static Future<bool> isDarkIcon() async {
     try {

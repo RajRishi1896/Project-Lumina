@@ -6,9 +6,9 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Form, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from app.database import DB_PATH, log_admin_action
-from app.async_db import db_conn, db_fetchone, db_fetchall, db_execute
+from app.async_db import db_conn
 from app.models import ScholarReg, StudentLoginRequest, TokenRefreshRequest, TokenRenewRequest
-from app.dependencies import hash_password, verify_password, validate_password_strength, verify_teacher
+from app.dependencies import hash_password, verify_password, validate_password_strength
 from app.encryption import _generate_session_token, _make_encryption_key
 
 router = APIRouter()

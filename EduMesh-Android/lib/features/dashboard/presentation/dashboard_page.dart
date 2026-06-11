@@ -13,6 +13,7 @@ import '../../../core/services/recent_files_service.dart';
 import '../../../shared/services/save_resource_service.dart';
 import '../../../shared/widgets/lumina_card.dart';
 import '../../../shared/widgets/lumina_settings_sheet.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../auth/data/auth_service.dart';
 import 'search_page.dart';
 import 'resource_page.dart';
@@ -134,8 +135,7 @@ class _DashboardPageState extends State<DashboardPage> {
         });
         return;
       }
-    } catch (_) {}
-    try {
+    } catch (_) { } try {
       final local = await SaveResourceService.getDistinctSubjects();
       if (mounted) {
         setState(() {
@@ -180,6 +180,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildAppBar(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
       decoration: BoxDecoration(color: cs.surface, border: Border(bottom: BorderSide(color: cs.outlineVariant, width: 1))),
@@ -187,7 +188,7 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
                   Icon(Icons.school, color: cs.primary, size: 24.sp),
           SizedBox(width: AppSpacing.md.w),
-          Text('Project Lumina', style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
+          Text(l10n.appTitle, style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
           const Spacer(),
           _buildServerStatusBadge(),
           SizedBox(width: AppSpacing.sm.w),
@@ -199,18 +200,20 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildServerStatusBadge() {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     Color bgColor = _isChecking ? cs.surfaceContainerHighest.withAlpha(128) : (_isConnected ? cs.secondaryContainer : cs.errorContainer);
     Color textColor = _isChecking ? cs.outline : (_isConnected ? cs.onSecondaryContainer : cs.onErrorContainer);
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
       decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(AppSpacing.radiusFull), border: Border.all(color: textColor, width: 1)),
-      child: Text(_isChecking ? 'Checking...' : (_isConnected ? 'Connected' : 'Disconnected'), style: TextStyle(fontSize: 12.sp, fontWeight: AppSpacing.weightBody, color: textColor)),
+      child: Text(_isChecking ? l10n.serverStatusChecking : (_isConnected ? l10n.serverStatusConnected : l10n.serverStatusDisconnected), style: TextStyle(fontSize: 12.sp, fontWeight: AppSpacing.weightBody, color: textColor)),
     );
   }
 
   Widget _buildSearchBar(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPage())),
       child: Container(
@@ -221,7 +224,7 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             Icon(Icons.search_rounded, color: cs.onSurfaceVariant, size: 22.sp),
             SizedBox(width: AppSpacing.md.w),
-            Expanded(child: Text('Search all resources...', style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant, fontWeight: AppSpacing.weightBody))),
+            Expanded(child: Text(l10n.searchBarHint, style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant, fontWeight: AppSpacing.weightBody))),
             GestureDetector(
               onTap: () => Navigator.push(context, MaterialPageRoute(
                 builder: (_) => SearchPage(initialGrade: _myGrade ?? '', openFilters: true),
@@ -238,10 +241,11 @@ class _DashboardPageState extends State<DashboardPage> {
     final recentFiles = _recentService.recentFiles;
     if (recentFiles.isEmpty) return const SizedBox.shrink();
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Recently Viewed", style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        Text(l10n.sectionRecentlyViewed, style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         SizedBox(
           height: 130.h,
@@ -275,10 +279,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildCategories(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Subjects', style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        Text(l10n.sectionSubjects, style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         if (_subjectsLoading && _subjects.isEmpty)
           Padding(
@@ -289,7 +294,7 @@ class _DashboardPageState extends State<DashboardPage> {
           Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.section.h),
             child: Center(
-              child: Text('No subjects available',
+              child: Text(l10n.sectionSubjectsEmpty,
                   style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant)),
             ),
           )
@@ -316,10 +321,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildStorageSection(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Local Storage', style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        Text(l10n.sectionLocalStorage, style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         LuminaCard(
           padding: EdgeInsets.all(AppSpacing.lg.w),
@@ -352,9 +358,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildStorageLegend() {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: EdgeInsets.only(top: AppSpacing.lg.h),
-      child: Wrap(spacing: AppSpacing.md.w, runSpacing: AppSpacing.md.h, children: [_buildLegendItem(LuminaColors.academicTeal, 'EduMesh', _appUsedStr), _buildLegendItem(LuminaColors.saffron, 'Other Apps', _otherUsedStr), _buildLegendItem(cs.outlineVariant, 'Free', _freeRemainingStr)]),
+      child: Wrap(spacing: AppSpacing.md.w, runSpacing: AppSpacing.md.h, children: [_buildLegendItem(LuminaColors.academicTeal, l10n.storageLegendAppLabel, _appUsedStr), _buildLegendItem(LuminaColors.saffron, l10n.storageLegendOtherLabel, _otherUsedStr), _buildLegendItem(cs.outlineVariant, l10n.storageLegendFreeLabel, _freeRemainingStr)]),
     );
   }
 

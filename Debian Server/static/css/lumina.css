@@ -245,7 +245,6 @@ main {
 }
 .form-grid.form-grid-upload { grid-template-columns: 1fr 1fr 1fr 1fr auto; }
 .form-grid.form-grid-subject { grid-template-columns: 1fr 1fr 1fr auto; }
-.type-khan { background: rgba(255,211,0,0.15); color: var(--warning); }
 #subjectManageTable td:nth-child(3) svg { display: inline; }
 .form-group label {
     display: block;
@@ -329,7 +328,7 @@ tbody tr:hover { background: var(--outline); }
     letter-spacing: 0.04em;
 }
 .type-textbook { background: rgba(0,112,131,0.1); color: var(--teal); }
-
+.type-videos { background: rgba(220,38,38,0.1); color: #DC2626; }
 .type-pyq { background: rgba(128,90,213,0.1); color: #6B46C1; }
 .type-kiwix { background: rgba(49,151,149,0.1); color: #2C7A7B; }
 .type-notes { background: rgba(235,139,0,0.1); color: #D67A00; }

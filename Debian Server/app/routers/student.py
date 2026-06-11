@@ -3,13 +3,12 @@ import os
 import re
 import base64
 import asyncio
-import sqlite3
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 import logging
 from app.database import DB_PATH, PROFILE_ICONS_DIR, auto_register_if_new
-from app.async_db import db_conn, db_execute, db_fetchone, db_fetchall
-from app.models import StudyTimeSync, SubjectTimeSync, ProfileUpdate, IconUpload, StudentChangePasswordRequest
+from app.async_db import db_conn
+from app.models import StudyTimeSync, SubjectTimeSync, IconUpload, StudentChangePasswordRequest
 from app.dependencies import verify_student, hash_password, verify_password
 from app.encryption import _invalidate_tokens_for_user
 

@@ -6,6 +6,7 @@ import 'package:edumesh_android/core/services/mutation_queue.dart';
 import 'package:edumesh_android/widgets/connection_gate.dart';
 import 'package:edumesh_android/pages/app_shell.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A post-registration page prompting the student to set a display name and
 /// select their grade before entering the main app.
@@ -43,8 +44,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         if (mounted) setState(() { _grades = grades; if (grades.isNotEmpty) _selectedGrade = grades[0]; _loading = false; });
         return;
       }
-    } catch (_) {}
-    if (mounted) setState(() => _loading = false);
+    } catch (_) { } if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _saveAndContinue() async {
@@ -67,6 +67,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: cs.surface,
       body: SafeArea(
@@ -78,16 +79,16 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               SizedBox(height: 48.h),
               Icon(Icons.school_rounded, size: 48.sp, color: cs.primary),
               SizedBox(height: 16.h),
-              Text('Welcome!',
+              Text(l10n.profileSetupTitle,
                   style: GoogleFonts.atkinsonHyperlegible(fontSize: 32.sp, fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
               SizedBox(height: 4.h),
-              Text("Let's set up your profile",
+              Text(l10n.profileSetupSubtitle,
                   style: GoogleFonts.atkinsonHyperlegible(fontSize: 16.sp, color: cs.onSurfaceVariant)),
               SizedBox(height: 40.h),
               if (_loading)
                 const Center(child: CircularProgressIndicator())
               else ...[
-                Text('Display Name',
+                Text(l10n.labelDisplayName,
                     style: GoogleFonts.atkinsonHyperlegible(fontSize: 13.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
                 SizedBox(height: 6.h),
                 TextField(
@@ -101,7 +102,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   ),
                 ),
                 SizedBox(height: 20.h),
-                Text('Grade',
+                Text(l10n.editProfileLabelGrade,
                     style: GoogleFonts.atkinsonHyperlegible(fontSize: 13.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
                 SizedBox(height: 6.h),
                 DropdownButtonFormField<String>(
@@ -129,7 +130,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   ),
                   child: _saving
                       ? SizedBox(width: 20.sp, height: 20.sp, child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary))
-                      : Text('Continue',
+                      : Text(l10n.buttonContinue,
                           style: GoogleFonts.atkinsonHyperlegible(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
                 ),
               ),

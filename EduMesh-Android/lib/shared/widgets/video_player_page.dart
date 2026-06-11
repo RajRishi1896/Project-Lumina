@@ -5,6 +5,7 @@ import 'package:chewie/chewie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/network/api_client.dart';
 import 'mini_player_controller.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A full-screen video player page backed by [Chewie] with PiP support.
 ///
@@ -70,12 +71,13 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   Future<void> _initPlayer() async {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     try {
       final isLocal = !widget.videoUrl.startsWith('/') && !widget.videoUrl.startsWith('http');
       if (isLocal) {
         final file = File(widget.videoUrl);
         if (!await file.exists()) {
-          if (mounted) setState(() => _error = 'Local file not found');
+          if (mounted) setState(() => _error = l10n.videoLocalFileNotFound);
           return;
         }
         _videoController = VideoPlayerController.file(file);
@@ -112,7 +114,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       );
       if (mounted) setState(() => _initialized = true);
     } catch (e) {
-      if (mounted) setState(() => _error = 'Failed to load video: $e');
+      if (mounted) setState(() => _error = AppLocalizations.of(context)!.videoFailedToLoad(e.toString()));
     }
   }
 
@@ -173,7 +175,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
             if (_shouldPiP && _initialized)
               IconButton(
                 icon: const Icon(Icons.picture_in_picture_alt),
-                tooltip: 'Mini player',
+                tooltip: AppLocalizations.of(context)!.videoMiniPlayerTooltip,
                 onPressed: _enterMiniPlayer,
               ),
           ],
@@ -183,7 +185,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               ? Padding(
                   padding: const EdgeInsets.all(32),
                   child: Text(_error!,
-                      style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7)),
+                      style: TextStyle(color: cs.error),
                       textAlign: TextAlign.center),
                 )
               : _initialized && _chewieController != null

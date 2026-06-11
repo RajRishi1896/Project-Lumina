@@ -12,6 +12,7 @@ import '../../../shared/services/connectivity_service.dart';
 import '../../../shared/services/zim_api_service.dart';
 import '../../../shared/services/zim_cache_service.dart';
 import '../../../shared/widgets/resource_thumbnail.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 import 'resource_detail_page.dart';
 import 'kiwix_view.dart';
 
@@ -93,9 +94,7 @@ class _SearchPageState extends State<SearchPage> {
       if (zimResp.data is List) {
         _zimArticles = (zimResp.data as List).cast<Map<String, dynamic>>();
       }
-    } catch (_) {}
-
-    _buildSearchIndex(resources);
+    } catch (_) { } _buildSearchIndex(resources);
     _applyFilters();
   } catch (_) {
       try {
@@ -108,8 +107,7 @@ class _SearchPageState extends State<SearchPage> {
         if (mounted) setState(() { _isLoading = false; _loadError = null; });
           return;
         }
-      } catch (_) {}
-      if (mounted) setState(() => _loadError = 'Could not reach server. No cached resources available.');
+      } catch (_) { } if (mounted) setState(() => _loadError = 'Could not reach server. No cached resources available.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -148,8 +146,7 @@ class _SearchPageState extends State<SearchPage> {
         _downloadedIds = ids;
         _pendingIds = pIds;
       });
-    } catch (_) {}
-  }
+    } catch (_) { } }
 
   Future<void> _refreshSavedResources() async {
     final results = await SaveResourceService.getAllSavedResourceModels();
@@ -167,6 +164,7 @@ class _SearchPageState extends State<SearchPage> {
 
   Future<void> _openZimArticle(String articleId, String title) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
     try {
       String? html = await ZimCacheService.getPage(articleId);
       if (html == null) {
@@ -182,11 +180,11 @@ class _SearchPageState extends State<SearchPage> {
           builder: (_) => KiwixView(initialHtml: html, title: title),
         ));
       } else {
-        messenger.showSnackBar(SnackBar(content: Text('Article not found')));
+        messenger.showSnackBar(SnackBar(content: Text(l10n.zimArticleNotFound)));
       }
     } catch (e) {
       if (mounted) {
-        messenger.showSnackBar(SnackBar(content: Text('Failed to load article: $e')));
+        messenger.showSnackBar(SnackBar(content: Text(l10n.zimFailedToLoadArticle(e.toString()))));
       }
     }
   }
@@ -222,13 +220,14 @@ class _SearchPageState extends State<SearchPage> {
           ? null
           : () async {
         final messenger = ScaffoldMessenger.of(context);
+        final l10n = AppLocalizations.of(context)!;
         if (isDownloaded) {
           await DownloadService().deleteDownload(resourceId);
           if (mounted) {
             setState(() => _downloadedIds.remove(resourceId));
           }
           messenger.showSnackBar(SnackBar(
-            content: const Text("Download removed"),
+            content: Text(l10n.snackbarDownloadRemoved),
             duration: const Duration(milliseconds: 600),
           ));
         } else {
@@ -245,7 +244,7 @@ class _SearchPageState extends State<SearchPage> {
             if (mounted) {
               setState(() => _pendingIds.add(resourceId));
               messenger.showSnackBar(SnackBar(
-                content: const Text("Added to queue — will download when server is reachable"),
+                content: Text(l10n.snackbarAddedToQueueOffline),
                 duration: const Duration(seconds: 3),
               ));
             }
@@ -268,7 +267,7 @@ class _SearchPageState extends State<SearchPage> {
             }
             if (path != null) {
               messenger.showSnackBar(SnackBar(
-                content: const Text("Download complete"),
+                content: Text(l10n.snackbarDownloadComplete),
                 duration: const Duration(milliseconds: 600),
               ));
             }
@@ -278,7 +277,7 @@ class _SearchPageState extends State<SearchPage> {
               setState(() => _downloadingIds.remove(resourceId));
             }
             messenger.showSnackBar(SnackBar(
-              content: const Text("Download failed"),
+              content: Text(l10n.snackbarDownloadFailed),
               duration: const Duration(milliseconds: 600),
             ));
           }
@@ -309,6 +308,7 @@ class _SearchPageState extends State<SearchPage> {
 
   void _showFilterSheet() {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final allGrades = _getAllGrades().toList()..sort();
 
     Set<ResourceType> tempTypes = Set.from(_selectedTypes);
@@ -334,13 +334,13 @@ class _SearchPageState extends State<SearchPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Filters',
+                  Text(l10n.filterSheetTitle,
                       style: TextStyle(
                           fontSize: 18.sp,
                           fontWeight: AppSpacing.weightStrong,
                           color: cs.onSurface)),
                   SizedBox(height: 16.h),
-                  Text('Resource Type',
+                  Text(l10n.filterResourceTypeHeader,
                       style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: AppSpacing.weightStrong,
@@ -371,10 +371,10 @@ class _SearchPageState extends State<SearchPage> {
                   SizedBox(height: 16.h),
                   Row(
                     children: [
-                      Text('Show:', style: TextStyle(fontSize: 14.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
+                      Text(l10n.filterShowLabel, style: TextStyle(fontSize: 14.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
                       SizedBox(width: 12.w),
                       ChoiceChip(
-                        label: const Text('My Grade'),
+                        label: Text(l10n.filterMyGrade),
                         selected: tempGrades.contains(widget.initialGrade),
                         onSelected: (_) {
                           setSheetState(() {
@@ -385,7 +385,7 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                       SizedBox(width: 8.w),
                       ChoiceChip(
-                        label: const Text('All Grades'),
+                        label: Text(l10n.filterAllGrades),
                         selected: tempGrades.isEmpty,
                         onSelected: (_) {
                           setSheetState(() => tempGrades.clear());
@@ -394,7 +394,7 @@ class _SearchPageState extends State<SearchPage> {
                     ],
                   ),
                   SizedBox(height: 16.h),
-                  Text('Grade',
+                  Text(l10n.filterGradeHeader,
                       style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: AppSpacing.weightStrong,
@@ -421,7 +421,7 @@ class _SearchPageState extends State<SearchPage> {
                     }).toList(),
                   ),
                   SizedBox(height: 16.h),
-                  Text('Subject',
+                  Text(l10n.filterSubjectHeader,
                       style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: AppSpacing.weightStrong,
@@ -429,7 +429,7 @@ class _SearchPageState extends State<SearchPage> {
                   SizedBox(height: 8.h),
                   TextField(
                     decoration: InputDecoration(
-                      hintText: 'Filter by subject...',
+                      hintText: l10n.filterSubjectHint,
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.r)),
                       contentPadding: EdgeInsets.symmetric(
@@ -439,7 +439,7 @@ class _SearchPageState extends State<SearchPage> {
                     onChanged: (v) => tempSubject = v,
                   ),
                   SizedBox(height: 16.h),
-                  Text('Sort By',
+                  Text(l10n.filterSortByHeader,
                       style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: AppSpacing.weightStrong,
@@ -449,13 +449,13 @@ class _SearchPageState extends State<SearchPage> {
                     spacing: 8.w,
                     runSpacing: 4.h,
                     children: [
-                      _sortChip('Title A-Z', 'title_asc', tempSort,
+                      _sortChip(l10n.sortTitleAsc, 'title_asc', tempSort,
                           (v) => setSheetState(() => tempSort = v)),
-                      _sortChip('Title Z-A', 'title_desc', tempSort,
+                      _sortChip(l10n.sortTitleDesc, 'title_desc', tempSort,
                           (v) => setSheetState(() => tempSort = v)),
-                      _sortChip('Type', 'type', tempSort,
+                      _sortChip(l10n.sortByType, 'type', tempSort,
                           (v) => setSheetState(() => tempSort = v)),
-                      _sortChip('Grade', 'grade', tempSort,
+                      _sortChip(l10n.sortByGrade, 'grade', tempSort,
                           (v) => setSheetState(() => tempSort = v)),
                     ],
                   ),
@@ -472,7 +472,7 @@ class _SearchPageState extends State<SearchPage> {
                               tempSort = 'title_asc';
                             });
                           },
-                          child: const Text('Reset'),
+                          child: Text(l10n.filterResetButton),
                         ),
                       ),
                       SizedBox(width: 12.w),
@@ -488,7 +488,7 @@ class _SearchPageState extends State<SearchPage> {
                               _applyFilters();
                               Navigator.pop(ctx);
                           },
-                          child: const Text('Apply'),
+                          child: Text(l10n.filterApplyButton),
                         ),
                       ),
                     ],
@@ -500,6 +500,17 @@ class _SearchPageState extends State<SearchPage> {
         );
       },
     );
+  }
+
+  String _sortLabel(String sortBy) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (sortBy) {
+      case 'title_asc': return l10n.sortTitleAsc;
+      case 'title_desc': return l10n.sortTitleDesc;
+      case 'type': return l10n.sortByType;
+      case 'grade': return l10n.sortByGrade;
+      default: return sortBy.replaceAll('_', ' ');
+    }
   }
 
   Widget _sortChip(String label, String value, String current,
@@ -564,6 +575,7 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -571,7 +583,7 @@ class _SearchPageState extends State<SearchPage> {
         elevation: 0,
         backgroundColor: cs.surface,
         iconTheme: IconThemeData(color: cs.primary),
-        title: Text("Browse Resources",
+        title: Text(l10n.pageTitleBrowseResources,
             style: TextStyle(
                 color: cs.primary,
                 fontWeight: AppSpacing.weightDisplay,
@@ -602,7 +614,7 @@ class _SearchPageState extends State<SearchPage> {
                         FilledButton.tonalIcon(
                           onPressed: _loadResources,
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Retry'),
+                          label: Text(l10n.errorRetryButton),
                         ),
                       ],
                     ),
@@ -638,7 +650,7 @@ class _SearchPageState extends State<SearchPage> {
                       decoration: InputDecoration(
                         icon: Icon(Icons.search_rounded,
                             color: cs.onSurfaceVariant),
-                        hintText: "Search by title, subject, or grade...",
+                        hintText: l10n.searchFieldHint,
                         border: InputBorder.none,
                       ),
                     ),
@@ -669,8 +681,8 @@ class _SearchPageState extends State<SearchPage> {
                     Expanded(
                       child: Text(
                         _sortBy != 'title_asc'
-                            ? 'Filters active · Sorted: ${_sortBy.replaceAll('_', ' ')}'
-                            : 'Filters active',
+                            ? l10n.filtersActiveSorted(_sortLabel(_sortBy))
+                            : l10n.filtersActiveLabel,
                         style: TextStyle(
                             color: cs.primary,
                             fontSize: 13.sp,
@@ -679,7 +691,7 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                     TextButton.icon(
                       icon: Icon(Icons.clear_all, size: 16.sp),
-                      label: const Text('Clear filters'),
+                      label: Text(l10n.clearFiltersButton),
                       onPressed: _resetFilters,
                       style: TextButton.styleFrom(
                         foregroundColor: cs.error,
@@ -699,7 +711,7 @@ class _SearchPageState extends State<SearchPage> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.only(top: 16.h, bottom: 8.h),
-                  child: Text('All Resources',
+                  child: Text(l10n.sectionAllResources,
                       style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: AppSpacing.weightStrong,
@@ -711,8 +723,8 @@ class _SearchPageState extends State<SearchPage> {
                     child: Center(
                     child: Text(
                     _searchQuery.trim().isEmpty && !_hasActiveFilters
-                        ? "No resources available on the hub."
-                        : "No results found.",
+                        ? l10n.emptyNoResources
+                        : l10n.emptyNoSearchResults,
                     style: TextStyle(color: cs.onSurfaceVariant),
                   )))
                 : SliverList(
@@ -767,7 +779,7 @@ class _SearchPageState extends State<SearchPage> {
                                           BorderRadius.circular(4.r),
                                     ),
                                     child: Text(
-                                      'WIKI',
+                                      l10n.badgeKiwixWiki,
                                       style: TextStyle(
                                         color: cs.onPrimary,
                                         fontSize: 10.sp,
@@ -811,8 +823,8 @@ class _SearchPageState extends State<SearchPage> {
                                     messenger.showSnackBar(
                                       SnackBar(
                                         content: Text(wasSaved
-                                            ? "Removed from Saved"
-                                            : "Added to Saved"),
+                                            ? l10n.snackbarRemovedFromSaved
+                                            : l10n.snackbarAddedToSaved),
                                         duration:
                                             const Duration(milliseconds: 600),
                                       ),
@@ -837,6 +849,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildRecommendedSection(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     final recommended = _computeRecommendations();
     if (recommended.isEmpty) return const SizedBox.shrink();
     return Column(
@@ -846,7 +859,7 @@ class _SearchPageState extends State<SearchPage> {
           children: [
             Icon(Icons.auto_awesome_rounded, size: 18.sp, color: cs.primary),
             SizedBox(width: 6.w),
-            Text('Recommended for You',
+            Text(l10n.sectionRecommendedForYou,
                 style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: AppSpacing.weightStrong,

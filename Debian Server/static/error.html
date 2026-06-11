@@ -8,6 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
+<script src="/static/js/lumina.js"></script>
 <style>
   .error-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:2rem; width:100%; box-sizing:border-box; }
   .error-card { background:var(--card-bg); border-radius:1rem; padding:3rem; max-width:480px; width:100%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,.12); }
@@ -35,15 +36,15 @@
     </svg>
   </div>
   <!-- Section: Reason Badge - shows expired/denied/notfound -->
-  <div class="reason-badge" id="reasonBadge">Access Denied</div>
+  <div class="reason-badge" id="reasonBadge" data-i18n="error_access_denied_badge">Access Denied</div>
   <!-- Section: Title -->
-  <h1 id="errorTitle">You don't have access</h1>
+  <h1 id="errorTitle" data-i18n="error_access_denied_title">You don't have access</h1>
   <!-- Section: Message -->
-  <p id="errorMessage">This page requires teacher or administrator privileges. Please log in with an authorized account.</p>
+  <p id="errorMessage" data-i18n="error_access_denied_message">This page requires teacher or administrator privileges. Please log in with an authorized account.</p>
   <!-- Section: Back Button - navigates to welcome page -->
   <a href="/welcome" class="btn" id="backBtn">
     <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-    Back to Home
+    <span data-i18n="error_back_home">Back to Home</span>
   </a>
 </div>
 </div>
@@ -57,6 +58,7 @@
     var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);
 })();
+loadTranslations(currentLang);
 /**
  * Parse the ?reason= query param and render the matching error card content.
  * Supports: session_expired, access_denied, not_found.
@@ -71,23 +73,23 @@
 
   var messages = {
     session_expired: {
-      title: 'Session Expired',
-      msg: 'Your session has expired or you are not logged in. Please log in again to continue.',
-      badge: 'Session Expired',
+      title: __('error_session_expired_title'),
+      msg: __('error_session_expired_message'),
+      badge: __('error_session_expired_badge'),
       badgeClass: 'expired',
       home: '/welcome'
     },
     access_denied: {
-      title: 'Access Denied',
-      msg: 'You don\'t have the required permissions to view this page. Teacher or administrator access is needed.',
-      badge: 'Access Denied',
+      title: __('error_access_denied_title'),
+      msg: __('error_access_denied_message'),
+      badge: __('error_access_denied_badge'),
       badgeClass: 'denied',
       home: '/welcome'
     },
     not_found: {
-      title: 'Page Not Found',
-      msg: 'The page you\'re looking for doesn\'t exist or has been moved.',
-      badge: 'Not Found',
+      title: __('error_not_found_title'),
+      msg: __('error_not_found_message'),
+      badge: __('error_not_found_badge'),
       badgeClass: 'notfound',
       home: '/welcome'
     }

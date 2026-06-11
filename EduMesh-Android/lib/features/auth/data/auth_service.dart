@@ -202,8 +202,7 @@ class AuthService {
             return resetReq ? 'reset_required' : 'ok';
           }
         }
-      } catch (_) {
-      }
+      } catch (_) { }
 
       return null;
     } catch (e) {
@@ -258,8 +257,7 @@ class AuthService {
   Future<void> logout() async {
     try {
       await ApiClient.post('/logout');
-    } catch (_) {}
-    await _secureStorage.deleteAll();
+    } catch (_) { } await _secureStorage.deleteAll();
   }
 
   /// Refreshes the session token using the stored refresh token.

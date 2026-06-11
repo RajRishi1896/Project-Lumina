@@ -803,4 +803,80 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get buttonSkip => 'Skip';
+
+  @override
+  String get bottomNavStudents => 'Students';
+
+  @override
+  String get zimArticleNotFound => 'Article not found';
+
+  @override
+  String get teacherPageTitle => 'Students';
+
+  @override
+  String get teacherFilterByGrade => 'Filter by grade';
+
+  @override
+  String get teacherAllGrades => 'All Grades';
+
+  @override
+  String get teacherCouldNotLoadStudents => 'Could not load students';
+
+  @override
+  String get teacherCheckHubConnection => 'Check hub connection and try again.';
+
+  @override
+  String get teacherRetry => 'Retry';
+
+  @override
+  String get teacherSearchStudentsHint => 'Search students...';
+
+  @override
+  String get teacherNoStudentsMatchSearch => 'No students match your search.';
+
+  @override
+  String get teacherNoStudentsFound => 'No students found.';
+
+  @override
+  String teacherShowing(String grade) {
+    return 'Showing: $grade';
+  }
+
+  @override
+  String get teacherLabelToday => 'today';
+
+  @override
+  String get teacherLabelStreak => 'streak';
+
+  @override
+  String get teacherLabelSaved => 'saved';
+
+  @override
+  String get teacherLabelDownloaded => 'downloaded';
+
+  @override
+  String get teacherOverview => 'Overview';
+
+  @override
+  String get teacherThisMonth => 'This Month';
+
+  @override
+  String teacherShowMore(int remaining) {
+    return 'Show More ($remaining remaining)';
+  }
+
+  @override
+  String get teacherCouldNotLoadAnalytics => 'Could not load analytics';
+
+  @override
+  String get teacherNoActivityRecorded => 'No activity recorded yet.';
+
+  @override
+  String get sectionSubjects => 'Subjects';
+
+  @override
+  String get sectionSubjectsEmpty => 'No subjects available';
+
+  @override
+  String get resourcePageResources => 'Resources';
 }

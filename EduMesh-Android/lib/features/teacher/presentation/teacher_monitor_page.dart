@@ -5,6 +5,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/network/api_client.dart';
 import '../data/teacher_repository.dart';
 import 'student_progress_page.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 class TeacherMonitorPage extends StatefulWidget {
   const TeacherMonitorPage({super.key});
@@ -78,21 +79,22 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Students'),
+        title: Text(l10n.teacherPageTitle),
         actions: [
           if (_grades.isNotEmpty)
             PopupMenuButton<String?>(
               icon: const Icon(Icons.filter_list_rounded),
-              tooltip: 'Filter by grade',
+              tooltip: l10n.teacherFilterByGrade,
               onSelected: (grade) {
                 setState(() { _selectedGrade = grade; });
                 _loadData();
               },
               itemBuilder: (_) => [
-                PopupMenuItem(value: null, child: Text(_selectedGrade == null ? 'All Grades' : 'All Grades', style: TextStyle(fontWeight: _selectedGrade == null ? AppSpacing.weightStrong : FontWeight.normal))),
-                ..._grades.map((g) => PopupMenuItem(value: g, child: Text(g, style: TextStyle(fontWeight: _selectedGrade == g ? AppSpacing.weightStrong : FontWeight.normal)))),
+                PopupMenuItem(value: null, child: Text(l10n.teacherAllGrades, style: TextStyle(fontWeight: _selectedGrade == null ? AppSpacing.weightStrong : AppSpacing.weightBody))),
+                ..._grades.map((g) => PopupMenuItem(value: g, child: Text(g, style: TextStyle(fontWeight: _selectedGrade == g ? AppSpacing.weightStrong : AppSpacing.weightBody)))),
               ],
             ),
         ],
@@ -102,6 +104,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
   }
 
   Widget _buildBody(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -114,11 +117,11 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
             children: [
               Icon(Icons.cloud_off_rounded, size: 48.sp, color: cs.error),
               SizedBox(height: 12.h),
-              Text('Could not load students', style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
+              Text(l10n.teacherCouldNotLoadStudents, style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
               SizedBox(height: 4.h),
-              Text('Check hub connection and try again.', style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant)),
+              Text(l10n.teacherCheckHubConnection, style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant)),
               SizedBox(height: 16.h),
-              FilledButton.tonalIcon(onPressed: _loadData, icon: const Icon(Icons.refresh_rounded), label: const Text('Retry')),
+              FilledButton.tonalIcon(onPressed: _loadData, icon: const Icon(Icons.refresh_rounded), label: Text(l10n.teacherRetry)),
             ],
           ),
         ),
@@ -136,7 +139,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
               children: [
                 Icon(Icons.filter_alt_rounded, size: 16.sp, color: LuminaColors.academicTeal),
                 SizedBox(width: 8.w),
-                Expanded(child: Text('Showing: $_selectedGrade', style: TextStyle(fontSize: 13.sp, color: LuminaColors.academicTeal))),
+                Expanded(child: Text(l10n.teacherShowing(_selectedGrade!), style: TextStyle(fontSize: 13.sp, color: LuminaColors.academicTeal))),
                 GestureDetector(
                   onTap: () { setState(() { _selectedGrade = null; }); _loadData(); },
                   child: Icon(Icons.close_rounded, size: 18.sp, color: LuminaColors.academicTeal),
@@ -149,7 +152,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search students...',
+              hintText: l10n.teacherSearchStudentsHint,
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(icon: const Icon(Icons.clear_rounded), onPressed: () { _searchController.clear(); setState(() { _searchQuery = ''; _applySearch(); }); })
@@ -168,7 +171,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
                 children: [
                   Icon(Icons.people_outline_rounded, size: 48.sp, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
                   SizedBox(height: 12.h),
-                  Text(_searchQuery.isNotEmpty ? 'No students match your search.' : 'No students found.', style: TextStyle(fontSize: 16.sp, color: cs.onSurfaceVariant)),
+                  Text(_searchQuery.isNotEmpty ? l10n.teacherNoStudentsMatchSearch : l10n.teacherNoStudentsFound, style: TextStyle(fontSize: 16.sp, color: cs.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -189,6 +192,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
   }
 
   Widget _buildStudentCard(ColorScheme cs, Map<String, dynamic> s) {
+    final l10n = AppLocalizations.of(context)!;
     final name = s['name'] as String? ?? 'Unknown';
     final grade = s['grade'] as String? ?? '';
     final todayMin = s['study_minutes_today'] as int? ?? 0;
@@ -202,10 +206,10 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
       try {
         final dt = DateTime.parse(lastActive);
         final diff = DateTime.now().difference(dt);
-        if (diff.inMinutes < 1) timeAgo = 'just now';
-        else if (diff.inMinutes < 60) timeAgo = '${diff.inMinutes}m ago';
-        else if (diff.inHours < 24) timeAgo = '${diff.inHours}h ago';
-        else timeAgo = '${diff.inDays}d ago';
+        if (diff.inMinutes < 1) timeAgo = l10n.relativeTimeJustNow;
+        else if (diff.inMinutes < 60) timeAgo = l10n.relativeTimeMinutesAgo(diff.inMinutes);
+        else if (diff.inHours < 24) timeAgo = l10n.relativeTimeHoursAgo(diff.inHours);
+        else timeAgo = l10n.relativeTimeDaysAgo(diff.inDays);
       } catch (_) { timeAgo = ''; }
     }
 
@@ -248,13 +252,13 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
               SizedBox(height: 10.h),
               Row(
                 children: [
-                  _statChip(cs, Icons.timer_rounded, '${todayMin}m', 'today'),
+                  _statChip(cs, Icons.timer_rounded, '${todayMin}m', l10n.teacherLabelToday),
                   SizedBox(width: 8.w),
-                  _statChip(cs, Icons.local_fire_department_rounded, '$streak d', 'streak'),
+                  _statChip(cs, Icons.local_fire_department_rounded, '$streak d', l10n.teacherLabelStreak),
                   SizedBox(width: 8.w),
-                  _statChip(cs, Icons.bookmark_rounded, '$saved', 'saved'),
+                  _statChip(cs, Icons.bookmark_rounded, '$saved', l10n.teacherLabelSaved),
                   SizedBox(width: 8.w),
-                  _statChip(cs, Icons.download_rounded, '$downloaded', 'downloaded'),
+                  _statChip(cs, Icons.download_rounded, '$downloaded', l10n.teacherLabelDownloaded),
                 ],
               ),
             ],

@@ -10,11 +10,11 @@ import asyncio
 import logging
 import subprocess
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Response, Query, status
 from fastapi.responses import FileResponse, StreamingResponse
-from app.database import DB_PATH, UPLOAD_DIR, THUMBNAILS_DIR, _startup_time, _admin_log_lock, log_admin_action, auto_register_if_new
-from app.async_db import db_conn, db_execute, db_fetchone, db_fetchall
+from app.database import DB_PATH, UPLOAD_DIR, THUMBNAILS_DIR, _startup_time, _admin_log_lock, log_admin_action
+from app.async_db import db_conn
 from app.models import (
     SubjectCreate, SubjectDeleteRequest, TeacherCreate, AdminStudentCreate,
     NameUpdate, DepartmentUpdate,

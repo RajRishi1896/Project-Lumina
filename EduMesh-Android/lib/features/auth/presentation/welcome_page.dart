@@ -10,6 +10,7 @@ import '../../../core/constants/lumina_colors.dart';
 import '../../../core/services/connection_service.dart';
 import '../../../shared/widgets/lumina_stepper.dart';
 import '../data/auth_service.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 const _illustrationSvg = '''
 <svg width="1677" height="1100" viewBox="0 0 1677 1100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -114,6 +115,23 @@ class _WelcomePageState extends State<WelcomePage> {
     return totalSize;
   }
 
+  String _displayHubStrength(AppLocalizations l10n) {
+    switch (_hubStrength) {
+      case 'Checking...': return l10n.hubStrengthChecking;
+      case 'Offline': return l10n.hubStrengthOffline;
+      case 'Excellent': return l10n.hubStrengthExcellent;
+      case 'Good': return l10n.hubStrengthGood;
+      case 'Fair': return l10n.hubStrengthFair;
+      default: return _hubStrength;
+    }
+  }
+
+  String _displayStorageUsed(AppLocalizations l10n) {
+    if (_storageUsed == 'Calculating...') return l10n.storageCalculating;
+    if (_storageUsed == 'Unknown') return l10n.storageUnknown;
+    return _storageUsed;
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -150,6 +168,7 @@ class _WelcomePageState extends State<WelcomePage> {
 
   Widget _buildIllustration(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       width: 312.w,
@@ -186,7 +205,7 @@ class _WelcomePageState extends State<WelcomePage> {
                     Icon(Icons.sync, color: cs.secondary, size: 18.sp),
                     SizedBox(width: 8.w),
                     Text(
-                      'No Internet Connection Required!',
+                      l10n.illustrationBadgeNoInternet,
                       style: GoogleFonts.atkinsonHyperlegible(
                         fontSize: 12.sp,
                         fontWeight: AppSpacing.weightStrong,
@@ -205,11 +224,12 @@ class _WelcomePageState extends State<WelcomePage> {
 
   Widget _buildContent(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       children: [
         Text(
-          'Connected to Learning Hub',
+          l10n.welcomeTitle,
           textAlign: TextAlign.center,
           style: GoogleFonts.atkinsonHyperlegible(
             fontSize: 32.sp,
@@ -220,7 +240,7 @@ class _WelcomePageState extends State<WelcomePage> {
         ),
         SizedBox(height: 12.h),
         Text(
-          'No Internet Needed. Access thousands of books and courses locally.',
+          l10n.welcomeSubtitle,
           textAlign: TextAlign.center,
           style: GoogleFonts.atkinsonHyperlegible(
             fontSize: 16.sp,
@@ -234,12 +254,13 @@ class _WelcomePageState extends State<WelcomePage> {
 
   Widget _buildLanguageSelection(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'SELECT LANGUAGE',
+          l10n.languageSectionHeader,
           style: GoogleFonts.atkinsonHyperlegible(
             fontSize: 12.sp,
             fontWeight: AppSpacing.weightStrong,
@@ -256,10 +277,10 @@ class _WelcomePageState extends State<WelcomePage> {
           crossAxisSpacing: 12.w,
           childAspectRatio: 2.5,
           children: [
-            _LanguageButton(label: 'English', isSelected: true, isEnabled: true, cs: cs),
-            _LanguageButton(label: 'Kiswahili', isSelected: false, isEnabled: false, cs: cs),
-            _LanguageButton(label: 'Hindi', isSelected: false, isEnabled: false, cs: cs),
-            _LanguageButton(label: 'More...', isSelected: false, isEnabled: false, cs: cs),
+            _LanguageButton(label: l10n.languageEnglish, isSelected: true, isEnabled: true, cs: cs),
+            _LanguageButton(label: l10n.languageKiswahili, isSelected: false, isEnabled: false, cs: cs),
+            _LanguageButton(label: l10n.languageHindi, isSelected: false, isEnabled: false, cs: cs),
+            _LanguageButton(label: l10n.languageMore, isSelected: false, isEnabled: false, cs: cs),
           ],
         ),
       ],
@@ -267,6 +288,7 @@ class _WelcomePageState extends State<WelcomePage> {
   }
 
   Widget _buildCTA(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -289,7 +311,7 @@ class _WelcomePageState extends State<WelcomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Enter Portal',
+              l10n.ctaEnterPortal,
               style: GoogleFonts.atkinsonHyperlegible(
                 fontSize: 20.sp,
                 fontWeight: AppSpacing.weightStrong,
@@ -305,6 +327,7 @@ class _WelcomePageState extends State<WelcomePage> {
 
   Widget _buildDeviceStatus(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       padding: EdgeInsets.only(top: 24.h),
@@ -316,14 +339,14 @@ class _WelcomePageState extends State<WelcomePage> {
         children: [
           _StatusItem(
             icon: Icons.wifi,
-            label: 'Hub Strength',
-            value: _hubStrength,
+            label: l10n.statusHubStrength,
+            value: _displayHubStrength(l10n),
             cs: cs,
           ),
           _StatusItem(
             icon: Icons.storage,
-            label: 'Local Storage',
-            value: _storageUsed,
+            label: l10n.statusLocalStorage,
+            value: _displayStorageUsed(l10n),
             cs: cs,
           ),
         ],

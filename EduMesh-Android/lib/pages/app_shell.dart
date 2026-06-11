@@ -7,6 +7,7 @@ import 'package:edumesh_android/features/dashboard/presentation/student_profile_
 import 'package:edumesh_android/features/dashboard/presentation/search_page.dart';
 import 'package:edumesh_android/features/teacher/presentation/teacher_monitor_page.dart';
 import 'package:edumesh_android/shared/widgets/mini_player_widget.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// The main application shell with a 5-tab bottom navigation bar.
 ///
@@ -49,13 +50,14 @@ class _AppShellState extends State<AppShell> {
         }
         _lastBackPress = DateTime.now();
         final messenger = ScaffoldMessenger.of(context);
+        final l10n = AppLocalizations.of(context)!;
         messenger.clearSnackBars();
         messenger.showSnackBar(
           SnackBar(
-            content: const Text('Press back again to exit'),
+            content: Text(l10n.doubleBackToExitMessage),
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
-            action: SnackBarAction(label: 'Exit', onPressed: () => SystemNavigator.pop()),
+            action: SnackBarAction(label: l10n.exitButtonLabel, onPressed: () => SystemNavigator.pop()),
           ),
         );
       },
@@ -72,12 +74,12 @@ class _AppShellState extends State<AppShell> {
           type: BottomNavigationBarType.fixed,
           selectedItemColor: LuminaColors.academicTeal,
           unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Dashboard'),
-            BottomNavigationBarItem(icon: Icon(Icons.explore_rounded), label: 'Browse'),
-            BottomNavigationBarItem(icon: Icon(Icons.bookmark_rounded), label: 'Saved'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
-            BottomNavigationBarItem(icon: Icon(Icons.supervisor_account_rounded), label: 'Students'),
+          items: [
+            BottomNavigationBarItem(icon: const Icon(Icons.dashboard_rounded), label: AppLocalizations.of(context)!.bottomNavDashboard),
+            BottomNavigationBarItem(icon: const Icon(Icons.explore_rounded), label: AppLocalizations.of(context)!.bottomNavBrowse),
+            BottomNavigationBarItem(icon: const Icon(Icons.bookmark_rounded), label: AppLocalizations.of(context)!.bottomNavSaved),
+            BottomNavigationBarItem(icon: const Icon(Icons.person_rounded), label: AppLocalizations.of(context)!.bottomNavProfile),
+            BottomNavigationBarItem(icon: const Icon(Icons.supervisor_account_rounded), label: AppLocalizations.of(context)!.bottomNavStudents),
           ],
         ),
       ),

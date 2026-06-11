@@ -57,8 +57,7 @@ class ApiClient {
                   : jsonDecode(jsonEncode(options.data)) as Map<String, dynamic>;
               options.data = await encryptRequest(bodyData, encKey);
             }
-          } catch (_) {}
-        }
+          } catch (_) { } }
         handler.next(options);
       },
       onResponse: (response, handler) async {
@@ -69,8 +68,7 @@ class ApiClient {
               final decrypted = await decryptResponse(response.data as Map<String, dynamic>, encKey);
               response.data = decrypted;
             }
-          } catch (_) {}
-        }
+          } catch (_) { } }
         handler.next(response);
       },
       onError: (error, handler) async {
@@ -84,8 +82,7 @@ class ApiClient {
                 final retryResponse = await _dio.fetch(error.requestOptions);
                 handler.resolve(retryResponse);
                 return;
-              } catch (_) {}
-            }
+              } catch (_) { } }
             if (await AuthService().renewSession()) {
               final newToken = await AuthService().getSessionToken();
               error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
@@ -93,8 +90,7 @@ class ApiClient {
                 final retryResponse = await _dio.fetch(error.requestOptions);
                 handler.resolve(retryResponse);
                 return;
-              } catch (_) {}
-            }
+              } catch (_) { } }
             await AuthService().logout();
             onForceLogout?.call();
           } finally {

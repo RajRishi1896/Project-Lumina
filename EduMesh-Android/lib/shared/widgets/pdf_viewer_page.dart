@@ -4,6 +4,7 @@ import 'package:pdfx/pdfx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/app_spacing.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A full-screen PDF viewer page with pinch-to-zoom and page navigation.
 ///
@@ -101,12 +102,13 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
   void _showPagePicker() {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: _currentPage.toString());
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: cs.surfaceContainerHighest,
-        title: Text('Pg $_currentPage of $_totalPages',
+        title: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
             style: TextStyle(color: cs.onSurface)),
         content: SizedBox(
           width: double.maxFinite,
@@ -121,7 +123,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       keyboardType: TextInputType.number,
                       style: TextStyle(color: cs.onSurface, fontSize: 16),
                       decoration: InputDecoration(
-                        hintText: 'Enter page number',
+                        hintText: l10n.pdfEnterPageNumberHint,
                         hintStyle: TextStyle(color: cs.onSurfaceVariant),
                         filled: true,
                         fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.12),
@@ -145,7 +147,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       backgroundColor: cs.onPrimary,
                       foregroundColor: cs.primary,
                     ),
-                    child: const Text('Go'),
+                    child: Text(l10n.pdfGoButton),
                   ),
                 ],
               ),
@@ -205,6 +207,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: cs.surfaceContainerHighest,
       appBar: AppBar(
@@ -222,7 +225,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                   color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Text('Pg $_currentPage of $_totalPages',
+                child: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
                     style: TextStyle(color: cs.onSurface, fontSize: 13)),
               ),
             ),
@@ -270,7 +273,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                                   color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text('Pg $_currentPage of $_totalPages',
+                                child: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
                                     style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
                               ),
                             ),
@@ -298,7 +301,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                           onTap: _showPagePicker,
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            child: Text('Tap to jump to page',
+                            child: Text(l10n.pdfTapToJumpLabel,
                                 style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
                           ),
                         ),
@@ -321,7 +324,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                         icon: Icon(Icons.add, color: cs.onSurface),
                         onPressed: () => _setZoom(_zoomLevel + 0.25),
                       ),
-                      Text('${(_zoomLevel * 100).toInt()}%',
+                      Text(l10n.pdfZoomPercent((_zoomLevel * 100).toInt().toString()),
                           style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
                       IconButton(
                         icon: Icon(Icons.remove, color: cs.onSurface),

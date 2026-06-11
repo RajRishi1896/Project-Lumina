@@ -681,6 +681,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function() {
+            loadTranslations(currentLang);
             setActiveNav('nav-settings');
             await loadWhoAmI();
             await checkSelfResetRequired();

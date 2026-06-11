@@ -92,41 +92,41 @@
         <nav>
             <a href="/static/index" class="nav-item" id="nav-home">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                Home
+                <span data-i18n="sidebar.home">Home</span>
             </a>
             <a href="/static/manage-content" class="nav-item" id="nav-content">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Content
+                <span data-i18n="sidebar.content">Content</span>
             </a>
             <a href="/static/manage-security" class="nav-item" id="nav-security">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Account
+                <span data-i18n="sidebar.security">Account</span>
             </a>
             <a href="/static/students" class="nav-item" id="nav-students">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Students
+                <span data-i18n="sidebar.students">Students</span>
             </a>
             <a href="/static/manage-help#teacher-guide" class="nav-item" id="nav-help">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                Teacher Guide
+                <span data-i18n="sidebar.help">Teacher Guide</span>
             </a>
             <a href="/static/manage-danger" class="nav-item danger" id="nav-danger">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                Danger Zone
+                <span data-i18n="sidebar.danger">Danger Zone</span>
             </a>
             <a href="/static/manage-settings" class="nav-item" id="nav-settings">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                Settings
+                <span data-i18n="sidebar.settings">Settings</span>
             </a>
         </nav>
         <div class="nav-spacer"></div>
         <div class="theme-toggle" onclick="toggleTheme()">
             <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            <span id="themeLabel">Dark Mode</span>
+            <span id="themeLabel"><span data-i18n="sidebar.dark_mode">Dark Mode</span></span>
         </div>
         <a href="/logout" class="nav-logout">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            Log out
+            <span data-i18n="sidebar.logout">Log out</span>
         </a>
     </aside>
 
@@ -135,7 +135,7 @@
         <div class="student-detail-container" id="app">
             <a href="/static/students" class="back-link">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                Back to Students
+                <span data-i18n="student_detail_back">Back to</span> <span data-i18n="sidebar.students">Students</span>
             </a>
             <!-- Section: Student Header — avatar, name, grade, last active -->
             <div class="student-header" id="studentHeader"></div>
@@ -143,12 +143,12 @@
             <div class="stat-grid" id="statGrid"></div>
             <!-- Section: Subject Breakdown — horizontal bar chart per subject -->
             <div class="card" id="subjectCard">
-                <div class="card-title" id="subjectCardTitle">Subject Breakdown</div>
+                <div class="card-title" id="subjectCardTitle" data-i18n="student_detail_subject_breakdown">Subject Breakdown</div>
                 <div class="subject-list" id="subjectList"></div>
             </div>
             <!-- Section: Loading / Error States -->
-            <div id="loadingState" class="empty-state" style="display:none;">Loading student data...</div>
-            <div id="errorState" class="empty-state" style="display:none; color: var(--danger);">Failed to load student data.</div>
+            <div id="loadingState" class="empty-state" style="display:none;" data-i18n="student_detail_loading">Loading student data...</div>
+            <div id="errorState" class="empty-state" style="display:none; color: var(--danger);" data-i18n="student_detail_failed">Failed to load student data.</div>
         </div>
     </main>
 
@@ -156,35 +156,35 @@
     <div id="bottomNav">
         <a href="/static/index" class="bottom-nav-item" id="bottom-nav-home">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            Home
+            <span data-i18n="sidebar.home">Home</span>
         </a>
         <a href="/static/manage-content" class="bottom-nav-item" id="bottom-nav-content">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Content
+            <span data-i18n="sidebar.content">Content</span>
         </a>
         <a href="/static/manage-security" class="bottom-nav-item" id="bottom-nav-security">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Account
+            <span data-i18n="sidebar.security">Account</span>
         </a>
         <a href="/static/students" class="bottom-nav-item" id="bottom-nav-students">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Students
+            <span data-i18n="sidebar.students">Students</span>
         </a>
         <a href="/static/manage-help#teacher-guide" class="bottom-nav-item" id="bottom-nav-help">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-            Guide
+            <span data-i18n="sidebar.help">Guide</span>
         </a>
         <a href="/static/manage-danger" class="bottom-nav-item danger" id="bottom-nav-danger">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-            Danger
+            <span data-i18n="sidebar.danger">Danger</span>
         </a>
         <a href="/static/manage-settings" class="bottom-nav-item" id="bottom-nav-settings">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            Settings
+            <span data-i18n="sidebar.settings">Settings</span>
         </a>
         <a href="/logout" class="bottom-nav-item" id="bottom-nav-logout">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            Logout
+            <span data-i18n="sidebar.logout">Logout</span>
         </a>
     </div>
 
@@ -193,7 +193,7 @@
     <script>
         var params = new URLSearchParams(window.location.search);
         var studentId = params.get('id') || '';
-        var studentName = params.get('name') || 'Student';
+        var studentName = params.get('name') || __('student_unknown');
         var studentGrade = params.get('grade') || '';
         var weekMinutes = parseInt(params.get('week')) || 0;
         var streakDays = parseInt(params.get('streak')) || 0;
@@ -211,12 +211,12 @@
             var now = new Date();
             var d = new Date(isoStr);
             var diff = Math.floor((now - d) / 1000);
-            if (diff < 60) return diff <= 5 ? 'Just now' : diff + 's ago';
-            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+            if (diff < 60) return diff <= 5 ? __('time_just_now') : __('time_seconds_ago', {n: diff});
+            if (diff < 3600) return __('time_minutes_ago', {n: Math.floor(diff / 60)});
+            if (diff < 86400) return __('time_hours_ago', {n: Math.floor(diff / 3600)});
             var days = Math.floor(diff / 86400);
-            if (days === 1) return 'Yesterday';
-            if (days < 30) return days + 'd ago';
+            if (days === 1) return __('time_yesterday');
+            if (days < 30) return __('time_days_ago', {n: days});
             return d.toLocaleDateString();
         }
 
@@ -229,7 +229,7 @@
                 '<h1>' + esc(studentName) + '</h1>' +
                 '<div class="meta">' +
                 '<span>' + esc(studentGrade) + '</span>' +
-                (lastActive ? '<span class="meta-dot"></span><span>Last updated ' + esc(timeAgo(lastActive)) + '</span>' : '') +
+                (lastActive ? '<span class="meta-dot"></span><span>' + __('student_detail_last_updated') + ' ' + esc(timeAgo(lastActive)) + '</span>' : '') +
                 '</div></div>';
         }
 
@@ -243,9 +243,9 @@
             var weekVal = (weekMin / 60).toFixed(1).replace(/\.0$/, '');
             var grid = document.getElementById('statGrid');
             var cards = [
-                { label:'Time This Week', value:weekVal, unit:'h' },
-                { label:'Day Streak', value:streakVal, unit:'days' },
-                { label:'Downloaded', value:dlVal, unit:'' }
+                { label:__('student_detail_time_this_week'), value:weekVal, unit:'h' },
+                { label:__('student_detail_day_streak'), value:streakVal, unit:'days' },
+                { label:__('student_detail_downloaded'), value:dlVal, unit:'' }
             ];
             grid.innerHTML = cards.map(function(c){
                 var val = c.label === 'Day Streak' ? c.value : c.value + (c.unit ? ' <span class="stat-unit">' + c.unit + '</span>' : '');
@@ -263,12 +263,12 @@
             /* Set the card title with the student's grade */
             var titleEl = document.getElementById('subjectCardTitle');
             if (studentGrade) {
-                titleEl.innerHTML = esc(studentGrade) + ' &mdash; Subject Breakdown <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">(This Week)</span>';
+                titleEl.innerHTML = esc(studentGrade) + ' &mdash; ' + __('student_detail_subject_breakdown') + ' <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">' + __('student_detail_this_week') + '</span>';
             } else {
-                titleEl.innerHTML = 'Subject Breakdown <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">(This Week)</span>';
+                titleEl.innerHTML = __('student_detail_subject_breakdown') + ' <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">' + __('student_detail_this_week') + '</span>';
             }
             if (!subjects || subjects.length === 0) {
-                document.getElementById('subjectList').innerHTML = '<div class="empty-state">No subject data available.</div>';
+                document.getElementById('subjectList').innerHTML = '<div class="empty-state">' + __('student_detail_no_subject_data') + '</div>';
                 return;
             }
             var maxMin = Math.max.apply(null, subjects.map(function(s){ return s.minutes; }));
@@ -290,7 +290,7 @@
             if (!studentId) {
                 document.getElementById('loadingState').style.display = 'none';
                 document.getElementById('errorState').style.display = '';
-                document.getElementById('errorState').textContent = 'No student ID provided.';
+                document.getElementById('errorState').textContent = __('student_detail_no_id');
                 return;
             }
             renderHeader();
@@ -307,6 +307,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            loadTranslations(currentLang);
             init();
             setActiveNav('nav-students');
         });

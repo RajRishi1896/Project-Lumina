@@ -287,13 +287,11 @@ class DBHelper {
       if (v <= 3) {
         try {
           await db.execute("ALTER TABLE downloads ADD COLUMN mtime REAL DEFAULT 0");
-        } catch (_) {}
-      }
+        } catch (_) { } }
       if (v >= 4) {
         try {
           await db.execute("ALTER TABLE bookmarks ADD COLUMN pdf_url TEXT");
-        } catch (_) {}
-      }
+        } catch (_) { } }
       if (v >= 5) {
         try {
           await db.execute('''
@@ -309,8 +307,7 @@ class DBHelper {
               added_at INTEGER
             )
           ''');
-        } catch (_) {}
-      }
+        } catch (_) { } }
       if (v >= 6) {
         try {
           await db.execute('''
@@ -323,8 +320,7 @@ class DBHelper {
               retries INTEGER NOT NULL DEFAULT 0
             )
           ''');
-        } catch (_) {}
-      }
+        } catch (_) { } }
       if (v >= 7) {
         try {
           await db.execute('''
@@ -339,8 +335,7 @@ class DBHelper {
               synced_at INTEGER NOT NULL
             )
           ''');
-        } catch (_) {}
-      }
+        } catch (_) { } }
     }
   }
 

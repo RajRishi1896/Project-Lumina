@@ -184,14 +184,14 @@
 
         <!-- Section: Change Admin Password � current password, new password, toggle visibility -->
         <div class="card">
-            <div class="card-title">Change Admin Password</div>
+            <div class="card-title" data-i18n="security_change_password_title">Change Admin Password</div>
             <div id="securityNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
             <div class="security-form">
                 <div class="form-group">
-                    <label for="oldPwd">Current Password</label>
+                    <label for="oldPwd" data-i18n="security_current_password">Current Password</label>
                     <div class="password-container">
-                        <input type="password" id="oldPwd" placeholder="Enter current password">
-                        <button type="button" class="toggle-password" id="toggleOldPwdBtn" onclick="togglePasswordVisibility('oldPwd', 'eyeIconOld', 'toggleOldPwdBtn')" title="Show Password">
+                        <input type="password" id="oldPwd" placeholder="Enter current password" data-i18n="security_current_password_placeholder">
+                        <button type="button" class="toggle-password" id="toggleOldPwdBtn" onclick="togglePasswordVisibility('oldPwd', 'eyeIconOld', 'toggleOldPwdBtn')" title="Show Password" data-i18n="security_show_password">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eyeIconOld">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
@@ -200,36 +200,36 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="newPwd">New Password</label>
+                    <label for="newPwd" data-i18n="security_new_password">New Password</label>
                     <div class="password-container">
-                        <input type="password" id="newPwd" placeholder="Enter new password">
-                        <button type="button" class="toggle-password" id="toggleNewPwdBtn" onclick="togglePasswordVisibility('newPwd', 'eyeIconNew', 'toggleNewPwdBtn')" title="Show Password">
+                        <input type="password" id="newPwd" placeholder="Enter new password" data-i18n="security_new_password_placeholder">
+                        <button type="button" class="toggle-password" id="toggleNewPwdBtn" onclick="togglePasswordVisibility('newPwd', 'eyeIconNew', 'toggleNewPwdBtn')" title="Show Password" data-i18n="security_show_password">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eyeIconNew">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
                             </svg>
                         </button>
-                        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;" data-i18n="security_password_requirements">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>
                     </div>
                 </div>
-                <button onclick="changePassword()" class="btn btn-primary">Update Password</button>
+                <button onclick="changePassword()" class="btn btn-primary" data-i18n="security_update_password">Update Password</button>
             </div>
         </div>
 
         <!-- Section: My Profile � editable name and department -->
         <div class="card">
-            <div class="card-title">My Profile</div>
+            <div class="card-title" data-i18n="security_my_profile">My Profile</div>
             <div id="profileNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
             <div class="security-form" id="profileForm">
                 <div class="form-group">
-                    <label for="profileName">Name</label>
-                    <input type="text" id="profileName" placeholder="Enter your display name">
+                    <label for="profileName" data-i18n="security_name">Name</label>
+                    <input type="text" id="profileName" placeholder="Enter your display name" data-i18n="security_name_placeholder">
                 </div>
                 <div class="form-group">
-                    <label for="profileDepartment">Department</label>
-                    <input type="text" id="profileDepartment" placeholder="Enter your department">
+                    <label for="profileDepartment" data-i18n="security_department">Department</label>
+                    <input type="text" id="profileDepartment" placeholder="Enter your department" data-i18n="security_department_placeholder">
                 </div>
-                <button onclick="saveMyProfile()" class="btn btn-primary">Save</button>
+                <button onclick="saveMyProfile()" class="btn btn-primary" data-i18n="security_save">Save</button>
             </div>
         </div>
 
@@ -568,6 +568,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            loadTranslations(currentLang);
             setActiveNav('nav-account');
             loadWhoAmI();
             checkSelfResetRequired();

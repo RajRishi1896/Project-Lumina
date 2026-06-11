@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina Hub | Students</title>
+    <title>Lumina Hub | <span data-i18n="sidebar.students">Students</span></title>
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
@@ -161,73 +161,73 @@
         <nav>
             <a href="/static/index" class="nav-item" id="nav-home">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                Home
+                <span data-i18n="sidebar.home">Home</span>
             </a>
             <a href="/static/manage-content" class="nav-item" id="nav-content">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Content Manager
+                <span data-i18n="sidebar.content">Content Manager</span>
             </a>
             <a href="/static/manage-security" class="nav-item" id="nav-security">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Account
+                <span data-i18n="sidebar.security">Account</span>
             </a>
             <a href="/static/students" class="nav-item active" id="nav-students">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Students
+                <span data-i18n="sidebar.students">Students</span>
             </a>
             <a href="/static/manage-help#teacher-guide" class="nav-item" id="nav-help">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                Teacher Guide
+                <span data-i18n="sidebar.help">Teacher Guide</span>
             </a>
             <a href="/static/manage-danger" class="nav-item danger" id="nav-danger">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                Danger Zone
+                <span data-i18n="sidebar.danger">Danger Zone</span>
             </a>
             <a href="/static/manage-settings" class="nav-item" id="nav-settings">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                Settings
+                <span data-i18n="sidebar.settings">Settings</span>
             </a>
         </nav>
         <div class="nav-spacer"></div>
         <div class="theme-toggle" onclick="toggleTheme()">
             <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            <span id="themeLabel">Dark Mode</span>
+            <span id="themeLabel"><span data-i18n="sidebar.dark_mode">Dark Mode</span></span>
         </div>
         <a href="/logout" class="nav-logout">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            Log out
+            <span data-i18n="sidebar.logout">Log out</span>
         </a>
     </aside>
 
     <!-- Section: Main Content � page header, filter row, student card list -->
     <main>
         <div class="page-header">
-            <h1>Student Monitoring</h1>
-            <p>View and monitor student activity, study time, and engagement across grades.</p>
+            <h1 data-i18n="students.title">Student Monitoring</h1>
+            <p data-i18n="students.subtitle">View and monitor student activity, study time, and engagement across grades.</p>
         </div>
 
         <div class="filter-row">
             <div class="form-group grade-filter">
-                <label for="gradeFilter">Grade</label>
+                <label for="gradeFilter" data-i18n="students.filter_grade">Grade</label>
                 <select id="gradeFilter" onchange="applyFilters()">
-                    <option value="">All Grades</option>
+                    <option value="" data-i18n="students.all_grades">All Grades</option>
                 </select>
             </div>
             <div class="form-group search-wrap">
-                <label for="searchInput">Search</label>
+                <label for="searchInput" data-i18n="students_search">Search</label>
                 <div class="search-inner">
-                    <input type="text" id="searchInput" placeholder="Search by name or ID..." oninput="applyFilters()">
+                    <input type="text" id="searchInput" placeholder="Search by name or ID..." oninput="applyFilters()" data-i18n="students.search">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </div>
             </div>
             <button onclick="loadStudents()" class="btn btn-outline" style="padding:0.5rem 0.75rem; font-size:0.8rem; display:flex; align-items:center; gap:0.5rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                Refresh
+                <span data-i18n="students_refresh">Refresh</span>
             </button>
         </div>
 
         <div id="studentContainer">
-            <div class="empty-state">Loading students...</div>
+            <div class="empty-state" data-i18n="students_loading">Loading students...</div>
         </div>
     </main>
 
@@ -235,35 +235,35 @@
     <div id="bottomNav">
         <a href="/static/index" class="bottom-nav-item" id="bottom-nav-home">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            Home
+            <span data-i18n="sidebar.home">Home</span>
         </a>
         <a href="/static/manage-content" class="bottom-nav-item" id="bottom-nav-content">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Content
+            <span data-i18n="sidebar.content">Content</span>
         </a>
         <a href="/static/manage-security" class="bottom-nav-item" id="bottom-nav-security">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Account
+            <span data-i18n="sidebar.security">Account</span>
         </a>
         <a href="/static/students" class="bottom-nav-item active" id="bottom-nav-students">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Students
+            <span data-i18n="sidebar.students">Students</span>
         </a>
         <a href="/static/manage-help#teacher-guide" class="bottom-nav-item" id="bottom-nav-help">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-            Guide
+            <span data-i18n="sidebar.help">Guide</span>
         </a>
         <a href="/static/manage-danger" class="bottom-nav-item danger" id="bottom-nav-danger">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-            Danger
+            <span data-i18n="sidebar.danger">Danger</span>
         </a>
         <a href="/static/manage-settings" class="bottom-nav-item" id="bottom-nav-settings">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            Settings
+            <span data-i18n="sidebar.settings">Settings</span>
         </a>
         <a href="/logout" class="bottom-nav-item" id="bottom-nav-logout">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            Logout
+            <span data-i18n="sidebar.logout">Logout</span>
         </a>
     </div>
 
@@ -313,12 +313,12 @@
             var container = document.getElementById('studentContainer');
             var gradeFilter = document.getElementById('gradeFilter');
 
-            container.innerHTML = '<div class="empty-state"><span style="display:inline-block; animation: spin 1s linear infinite;">&#9696;</span> Loading students...</div>';
+            container.innerHTML = '<div class="empty-state"><span style="display:inline-block; animation: spin 1s linear infinite;">&#9696;</span> ' + __('students_loading') + '</div>';
             var grade = gradeFilter ? gradeFilter.value : '';
             var url = '/teacher/students' + (grade ? '?grade=' + encodeURIComponent(grade) : '');
 
             apiFetch(url).then(function(res) {
-                if (!res.ok) { container.innerHTML = '<div class="empty-state" style="color: var(--danger);">Failed to load students.</div>'; return null; }
+                if (!res.ok) { container.innerHTML = '<div class="empty-state" style="color: var(--danger);">' + __('students_failed_load') + '</div>'; return null; }
                 return res.json();
             }).then(function(data) {
                 if (!data) return;
@@ -328,7 +328,7 @@
                     var initials = nameParts.map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
                     return {
                         id: s.id || s.scholar_id || '',
-                        name: s.name || 'Unknown',
+                        name: s.name || __('students_unknown'),
                         grade: s.grade || '',
                         avatar: initials,
                         last_active: s.last_active || '',
@@ -345,7 +345,7 @@
                 gradeFilter.innerHTML = '<option value="">All Grades</option>' + allGrades.map(function(g) { return '<option value="' + esc(g) + '">' + esc(g) + '</option>'; }).join('');
                 renderStudents(allStudents);
             }).catch(function() {
-                container.innerHTML = '<div class="empty-state" style="color: var(--danger);">Connection error. Check that the hub server is running.</div>';
+                container.innerHTML = '<div class="empty-state" style="color: var(--danger);">' + __('students_connection_error') + '</div>';
             });
         }
 
@@ -356,7 +356,7 @@
         function renderStudents(list) {
             var container = document.getElementById('studentContainer');
             if (list.length === 0) {
-                container.innerHTML = '<div class="empty-state">No students registered yet. Students will appear here once they register through the app.</div>';
+                container.innerHTML = '<div class="empty-state">' + __('students_none_registered') + '</div>';
                 return;
             }
             container.innerHTML = list.map(function(s) {
@@ -370,12 +370,12 @@
                     '<div class="student-body">' +
                     '<a href="' + detailUrl + '" class="student-name">' + esc(s.name) + '</a>' +
                     '<div class="student-meta">' +
-                    esc(s.grade) + ' &middot; <span class="scholar-id">' + esc(s.id) + '</span> &middot; Last updated ' + timeAgo(s.last_active) +
+                    esc(s.grade) + ' &middot; <span class="scholar-id">' + esc(s.id) + '</span> &middot; ' + __('students_last_updated') + ' ' + timeAgo(s.last_active) +
                     '</div>' +
                     '</div>' +
                     '<div class="student-stats">' +
-                    '<span class="stat-pill"><span class="stat-pill-value">' + wh + '<span style="font-weight:400;font-size:0.65rem;color:var(--text-muted);margin-left:0.1rem;">h</span></span></span>' +
-                    '<span class="stat-pill"><span class="stat-pill-value">' + st + '<span style="font-weight:400;font-size:0.65rem;color:var(--text-muted);margin-left:0.1rem;">d</span></span></span>' +
+                    '<span class="stat-pill"><span class="stat-pill-value">' + wh + '<span style="font-weight:400;font-size:0.65rem;color:var(--text-muted);margin-left:0.1rem;" data-i18n="students_hours_abbr">h</span></span></span>' +
+                    '<span class="stat-pill"><span class="stat-pill-value">' + st + '<span style="font-weight:400;font-size:0.65rem;color:var(--text-muted);margin-left:0.1rem;" data-i18n="students_days_abbr">d</span></span></span>' +
                     '<span class="stat-pill"><span class="stat-pill-value">' + dl + '</span></span>' +
                     '</div>' +
                     '</div></div>';
@@ -383,6 +383,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            loadTranslations(currentLang);
             setActiveNav('nav-students');
             loadStudents();
             loadWhoAmI();

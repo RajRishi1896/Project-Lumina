@@ -13,6 +13,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/mutation_queue.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 final _whitespaceRE = RegExp(r'\s+');
 
@@ -163,11 +164,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 }
               }
             }
-          } catch (_) {}
-        }
+          } catch (_) { } }
       }
-    } catch (_) {}
-  }
+    } catch (_) { } }
 
   String _getInitials(String name) {
     if (name.trim().isEmpty) return '?';
@@ -182,31 +181,31 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     return _subjectColors[name.length % _subjectColors.length];
   }
 
-  String _formatActivityTitle(Map<String, dynamic> activity) {
+  String _formatActivityTitle(Map<String, dynamic> activity, AppLocalizations l10n) {
     final action = (activity['action'] as String? ?? '').toLowerCase();
     final resourceId = activity['resource_id'] as String? ?? '';
     String verb;
     switch (action) {
       case 'view':
-        verb = 'Viewed';
+        verb = l10n.activityVerbViewed;
         break;
       case 'search':
-        verb = 'Searched';
+        verb = l10n.activityVerbSearched;
         break;
       case 'download':
-        verb = 'Downloaded';
+        verb = l10n.activityVerbDownloaded;
         break;
       case 'watch':
-        verb = 'Watched';
+        verb = l10n.activityVerbWatched;
         break;
       case 'save':
-        verb = 'Saved';
+        verb = l10n.activityVerbSaved;
         break;
       case 'open':
-        verb = 'Opened';
+        verb = l10n.activityVerbOpened;
         break;
       case 'complete':
-        verb = 'Completed';
+        verb = l10n.activityVerbCompleted;
         break;
       case '':
         verb = '';
@@ -219,10 +218,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     if (resourceId.isEmpty) return verb;
     final title = activity['resource_title']?.toString() ?? activity['title']?.toString() ?? '';
     if (title.isNotEmpty) return '$verb $title';
-    return '$verb a resource';
+    return l10n.activityTitleFallback(verb);
   }
 
-  String _formatRelativeTime(dynamic timestamp) {
+  String _formatRelativeTime(dynamic timestamp, AppLocalizations l10n) {
     if (timestamp == null) return '';
     DateTime dateTime;
     if (timestamp is DateTime) {
@@ -235,11 +234,11 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       return '';
     }
     final diff = DateTime.now().difference(dateTime);
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-    if (diff.inHours < 24) return '${diff.inHours} hour${diff.inHours > 1 ? 's' : ''} ago';
-    if (diff.inDays < 30) return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
-    return '${diff.inDays ~/ 30} month${diff.inDays ~/ 30 > 1 ? 's' : ''} ago';
+    if (diff.inMinutes < 1) return l10n.relativeTimeJustNow;
+    if (diff.inMinutes < 60) return l10n.relativeTimeMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.relativeTimeHoursAgo(diff.inHours);
+    if (diff.inDays < 30) return l10n.relativeTimeDaysAgo(diff.inDays);
+    return l10n.relativeTimeMonthsAgo(diff.inDays ~/ 30);
   }
 
   IconData _iconForAction(String action) {
@@ -299,6 +298,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   Widget _buildHeader(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
       decoration: BoxDecoration(
@@ -309,7 +309,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         children: [
           Icon(Icons.person_rounded, color: cs.primary, size: 24.sp),
           SizedBox(width: AppSpacing.md.w),
-          Text('My Profile',
+          Text(l10n.headerMyProfile,
               style: GoogleFonts.atkinsonHyperlegible(
                   fontSize: 20.sp,
                   fontWeight: AppSpacing.weightDisplay,
@@ -317,7 +317,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           const Spacer(),
           Icon(Icons.bar_chart_rounded, color: cs.primary, size: 20.sp),
           SizedBox(width: AppSpacing.xs.w),
-          Text('Analytics',
+          Text(l10n.headerAnalytics,
               style: GoogleFonts.atkinsonHyperlegible(
                   fontSize: 13.sp,
                   fontWeight: AppSpacing.weightStrong,
@@ -369,6 +369,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   Widget _buildProfileCard(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: EdgeInsets.only(top: AppSpacing.lg.h),
       padding: EdgeInsets.all(AppSpacing.xl.w),
@@ -445,7 +446,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         color: LuminaColors.academicTeal.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(4.r),
                       ),
-                      child: Text('Student',
+                      child: Text(l10n.roleBadgeStudent,
                           style: TextStyle(
                               fontSize: 11.sp,
                               color: LuminaColors.academicTeal,
@@ -476,6 +477,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   void _showEditProfileSheet(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController(text: _studentName);
     String selectedGrade = _grade;
     List<String> availableGrades = [];
@@ -518,7 +520,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                     children: [
                       Icon(Icons.edit_rounded, color: cs.primary, size: 22.sp),
                       SizedBox(width: 10.w),
-                      Text('Edit Profile',
+                      Text(l10n.editProfileSheetTitle,
                           style: GoogleFonts.atkinsonHyperlegible(
                               fontSize: 20.sp,
                               fontWeight: AppSpacing.weightStrong,
@@ -531,7 +533,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                     ],
                   ),
                   SizedBox(height: 20.h),
-                  Text('Full Name',
+                  Text(l10n.editProfileLabelName,
                       style: GoogleFonts.atkinsonHyperlegible(
                           fontSize: 13.sp,
                           fontWeight: AppSpacing.weightStrong,
@@ -552,7 +554,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                     ),
                   ),
                   SizedBox(height: 16.h),
-                  Text('Grade',
+                  Text(l10n.editProfileLabelGrade,
                       style: GoogleFonts.atkinsonHyperlegible(
                           fontSize: 13.sp,
                           fontWeight: AppSpacing.weightStrong,
@@ -573,10 +575,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                     ),
                     hint: loadingGrades
                         ? SizedBox(width: 16.sp, height: 16.sp, child: CircularProgressIndicator(strokeWidth: 2))
-                        : Text('Select grade', style: TextStyle(color: cs.onSurfaceVariant)),
+                        : Text(l10n.editProfileGradeHint, style: TextStyle(color: cs.onSurfaceVariant)),
                   ),
                   SizedBox(height: 16.h),
-                  Text('Student ID',
+                  Text(l10n.editProfileLabelStudentId,
                       style: GoogleFonts.atkinsonHyperlegible(
                           fontSize: 13.sp,
                           fontWeight: AppSpacing.weightStrong,
@@ -632,7 +634,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
-                      child: Text('Save Changes',
+                      child: Text(l10n.editProfileSaveButton,
                           style: GoogleFonts.atkinsonHyperlegible(
                               fontSize: 15.sp,
                               fontWeight: AppSpacing.weightStrong)),
@@ -650,6 +652,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   Widget _buildStatsRow(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest,
@@ -659,9 +662,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         padding: EdgeInsets.all(AppSpacing.lg.w),
         child: Column(
           children: [
-            _statRow(cs, 'Today', '${_studyMinutesToday}m', 'This Week', _studyMinutesThisWeek < 60 ? '${_studyMinutesThisWeek}m' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}h'),
+            _statRow(cs, l10n.statCardToday, '${_studyMinutesToday}m', l10n.statCardThisWeek, _studyMinutesThisWeek < 60 ? '${_studyMinutesThisWeek}m' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}h'),
             SizedBox(height: AppSpacing.md.h),
-            _statRow(cs, 'Saved', '$_resourcesSaved', 'Streak', '$_streakDays d'),
+            _statRow(cs, l10n.statCardSaved, '$_resourcesSaved', l10n.statCardStreak, '$_streakDays d'),
           ],
         ),
       ),
@@ -684,11 +687,12 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   Widget _buildSubjectBreakdown(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     final total = _subjectBreakdown.fold(0, (sum, s) => sum + s.minutes);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Study Time by Subject',
+        Text(l10n.sectionSubjectBreakdown,
             style: GoogleFonts.atkinsonHyperlegible(
                 fontSize: 18.sp,
                 fontWeight: AppSpacing.weightStrong,
@@ -710,7 +714,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       children: [
                         Icon(Icons.bar_chart_rounded, size: 36.sp, color: cs.onSurfaceVariant),
                         SizedBox(height: 8.h),
-                        Text('No study data yet.\nYour subject time will appear here as you use the app.',
+                        Text(l10n.emptyStateSubjectBreakdown,
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 13.sp, color: cs.onSurfaceVariant)),
                       ],
@@ -770,11 +774,12 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   Widget _buildRecentActivity(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     final displayCount = _showAllActivity ? _activityHistory.length : 5;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Recent Activity',
+        Text(l10n.sectionRecentActivity,
             style: GoogleFonts.atkinsonHyperlegible(
                 fontSize: 18.sp,
                 fontWeight: AppSpacing.weightStrong,
@@ -796,7 +801,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       children: [
                         Icon(Icons.history_rounded, size: 40.sp, color: cs.onSurfaceVariant),
                         SizedBox(height: 12.h),
-                        Text('No recent activity yet.\nStart browsing resources to see your activity here.',
+                        Text(l10n.emptyStateRecentActivity,
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 13.sp, color: cs.onSurfaceVariant)),
                       ],
@@ -822,12 +827,12 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         color: cs.primary,
                       ),
                     ),
-                    title: Text(_formatActivityTitle(act),
+                    title: Text(_formatActivityTitle(act, l10n),
                         style: TextStyle(
                             fontSize: 13.sp,
                             fontWeight: AppSpacing.weightBody,
                             color: cs.onSurface)),
-                    trailing: Text(_formatRelativeTime(act['timestamp']),
+                    trailing: Text(_formatRelativeTime(act['timestamp'], l10n),
                         style: TextStyle(
                             fontSize: 11.sp, color: cs.onSurfaceVariant)),
                     dense: true,
@@ -852,8 +857,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         SizedBox(width: 4.w),
                         Text(
                           _showAllActivity
-                              ? 'Show Less'
-                              : 'Show All (${_activityHistory.length})',
+                              ? l10n.toggleShowLess
+                              : l10n.toggleShowAll(_activityHistory.length),
                           style: TextStyle(
                             fontSize: 13.sp,
                             fontWeight: AppSpacing.weightStrong,

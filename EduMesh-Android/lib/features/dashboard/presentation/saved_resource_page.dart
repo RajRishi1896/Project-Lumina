@@ -9,6 +9,7 @@ import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
 import 'package:edumesh_android/shared/widgets/video_player_page.dart';
 import 'package:edumesh_android/shared/widgets/resource_thumbnail.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A page that displays the user's bookmarked resources, organised into
 /// "All", "Textbooks", "Videos", "PYQs", and "Notes" tabs.
@@ -23,6 +24,7 @@ class SavedResourcesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return DefaultTabController(
       length: 5,
@@ -32,7 +34,7 @@ class SavedResourcesPage extends StatelessWidget {
           backgroundColor: cs.surface,
           elevation: 0,
           title: Text(
-            "Saved Resources",
+            l10n.savedResourcesTitle,
             style: TextStyle(color: cs.onSurface, fontWeight: AppSpacing.weightStrong),
           ),
           bottom: TabBar(
@@ -42,12 +44,12 @@ class SavedResourcesPage extends StatelessWidget {
             unselectedLabelColor: cs.onSurfaceVariant,
             indicatorColor: cs.primary,
             indicatorWeight: 3.0,
-            tabs: const [
-              Tab(text: "All"),
-              Tab(text: "Textbooks"),
-              Tab(text: "Videos"),
-              Tab(text: "PYQs"),
-              Tab(text: "Notes"),
+            tabs: [
+              Tab(text: l10n.tabAll),
+              Tab(text: l10n.tabTextbooks),
+              Tab(text: l10n.tabVideos),
+              Tab(text: l10n.tabPyqs),
+              Tab(text: l10n.tabNotes),
             ],
           ),
         ),
@@ -134,11 +136,12 @@ class _SavedListByTypeState extends State<_SavedListByType> {
     }
 
     if (_savedItems.isEmpty) {
+      final l10n = AppLocalizations.of(context)!;
       return Center(
         child: Text(
           widget.type != null
-              ? "No saved ${widget.type!.name}s found."
-              : "No saved resources yet.",
+              ? l10n.emptyStateByType(widget.type!.name)
+              : l10n.emptyStateAll,
           style: TextStyle(color: cs.onSurfaceVariant),
         ),
       );
@@ -200,6 +203,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                     ),
                     onPressed: () async {
                       final messenger = ScaffoldMessenger.of(context);
+                      final l10n = AppLocalizations.of(context)!;
                       final downloadService = DownloadService();
                       if (isSavedDownloaded) {
                         await downloadService.deleteDownload(resourceId);
@@ -207,7 +211,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                           setState(() => _downloadedIds.remove(resourceId));
                         }
                         messenger.showSnackBar(SnackBar(
-                          content: const Text("Download removed"),
+                          content: Text(l10n.snackbarDownloadRemoved),
                           duration: const Duration(milliseconds: 600),
                         ));
                       } else {
@@ -230,7 +234,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                           }
                           if (path != null) {
                             messenger.showSnackBar(SnackBar(
-                              content: const Text("Download complete"),
+                              content: Text(l10n.snackbarDownloadComplete),
                               duration: const Duration(milliseconds: 600),
                             ));
                           }
@@ -240,7 +244,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                             setState(() => _downloadingIds.remove(resourceId));
                           }
                           messenger.showSnackBar(SnackBar(
-                            content: const Text("Download failed"),
+                            content: Text(l10n.snackbarDownloadFailed),
                             duration: const Duration(milliseconds: 600),
                           ));
                         }

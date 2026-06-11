@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_spacing.dart';
 
 /// A palette of core brand colours used in the Lumina Lite theme.
 class LuminaLiteColors {
@@ -56,11 +57,11 @@ class LuminaLiteTheme {
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF002045),
-        foregroundColor: Colors.white,
+        foregroundColor: Color(0xFFFFFFFF),
         elevation: 0,
       ),
       textTheme: const TextTheme(
-        titleLarge: TextStyle(color: Color(0xFF002045), fontWeight: FontWeight.w700),
+        titleLarge: TextStyle(color: Color(0xFF002045), fontWeight: AppSpacing.weightStrong),
         bodyMedium: TextStyle(color: Color(0xFF111C2C)),
         bodySmall: TextStyle(color: Color(0xFF43474E)),
       ),
@@ -78,9 +79,9 @@ class LuminaLiteTheme {
         indicatorColor: Color(0xFF002045),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
+        style:         ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF002045),
-          foregroundColor: Colors.white,
+          foregroundColor: const Color(0xFFFFFFFF),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         ),
@@ -155,7 +156,7 @@ class LuminaLiteTheme {
         elevation: 0,
       ),
       textTheme: const TextTheme(
-        titleLarge: TextStyle(color: Color(0xFFEBF1FF), fontWeight: FontWeight.w700),
+        titleLarge: TextStyle(color: Color(0xFFEBF1FF), fontWeight: AppSpacing.weightStrong),
         bodyMedium: TextStyle(color: Color(0xFFEBF1FF)),
         bodySmall: TextStyle(color: Color(0xFFC4C6CF)),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_spacing.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A horizontal step indicator used in the welcome/onboarding flow.
 ///
@@ -17,7 +18,8 @@ class LuminaStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    const steps = ['Welcome', 'Login/Register', 'Access'];
+    final l10n = AppLocalizations.of(context)!;
+    final steps = [l10n.stepperStepWelcome, l10n.stepperStepLoginRegister, l10n.stepperStepAccess];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -58,7 +60,7 @@ class LuminaStepper extends StatelessWidget {
                 steps[stepIndex],
                 style: GoogleFonts.atkinsonHyperlegible(
                   fontSize: 10.sp,
-                  fontWeight: isActive ? AppSpacing.weightStrong : FontWeight.normal,
+                  fontWeight: isActive ? AppSpacing.weightStrong : AppSpacing.weightBody,
                   color: isActive ? cs.primary : cs.onSurfaceVariant,
                 ),
               ),

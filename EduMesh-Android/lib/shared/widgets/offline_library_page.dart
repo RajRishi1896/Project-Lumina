@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/constants/lumina_colors.dart';
 import '../../core/storage/db_helper.dart';
 import '../../shared/services/download_service.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A page that lists all resources downloaded for offline access.
 ///
@@ -44,14 +45,15 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
   }
 
   Future<void> _delete(String resourceId, String title) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Download'),
-        content: Text('Delete "$title" from offline storage?'),
+        title: Text(l10n.deleteDownloadDialogTitle),
+        content: Text(l10n.deleteDownloadConfirmation(title)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: LuminaColors.danger))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.buttonCancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.deleteConfirmButtonLabel, style: TextStyle(color: LuminaColors.danger))),
         ],
       ),
     );
@@ -80,10 +82,11 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: cs.surface,
       appBar: AppBar(
-        title: const Text('Offline Library'),
+        title: Text(l10n.offlineLibraryAppBarTitle),
         backgroundColor: cs.surface,
       ),
       body: _loading
@@ -95,7 +98,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                     children: [
                       Icon(Icons.download_outlined, size: 64.sp, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
                       SizedBox(height: 16.h),
-                      Text('No downloaded resources', style: TextStyle(fontSize: 16.sp, color: cs.onSurfaceVariant)),
+                      Text(l10n.emptyOfflineLibraryMessage, style: TextStyle(fontSize: 16.sp, color: cs.onSurfaceVariant)),
                     ],
                   ),
                 )

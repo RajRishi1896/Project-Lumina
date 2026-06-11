@@ -48,7 +48,7 @@ class LuminaSettingsSheet extends ConsumerWidget {
 
           Padding(
             padding: EdgeInsets.only(left: AppSpacing.lg.w, bottom: AppSpacing.sm.h),
-            child: Text('Settings',
+            child: Text(AppLocalizations.of(context)!.settingsSheetTitle,
                 style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: AppSpacing.weightDisplay,
@@ -89,8 +89,8 @@ class LuminaSettingsSheet extends ConsumerWidget {
           // Storage
           ListTile(
             leading: Icon(Icons.storage, color: cs.primary),
-            title: const Text('Storage & Offline Library'),
-            subtitle: const Text('Manage downloaded content'),
+            title: Text(AppLocalizations.of(context)!.storageOfflineLibraryTitle),
+            subtitle: Text(AppLocalizations.of(context)!.storageOfflineLibrarySubtitle),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (_) => const OfflineLibraryPage()));
@@ -100,8 +100,8 @@ class LuminaSettingsSheet extends ConsumerWidget {
           // Network
           ListTile(
             leading: Icon(Icons.wifi, color: cs.primary),
-            title: const Text('Network Settings'),
-            subtitle: const Text('Configure Hub connectivity'),
+            title: Text(AppLocalizations.of(context)!.networkSettingsTitle),
+            subtitle: Text(AppLocalizations.of(context)!.networkSettingsSubtitle),
             onTap: () {
               Navigator.pop(context);
               AppSettings.openAppSettings(type: AppSettingsType.wifi);
@@ -111,19 +111,20 @@ class LuminaSettingsSheet extends ConsumerWidget {
           // Language
           Consumer(builder: (context, ref, child) {
             final locale = ref.watch(localeProvider);
+            final l10n = AppLocalizations.of(context)!;
             final currentLabel = appLanguageOptions
                 .firstWhere((o) => o['code'] == locale.languageCode,
                     orElse: () => {'label': 'English'})
                 ['label'] as String;
             return ListTile(
               leading: Icon(Icons.language, color: cs.primary),
-              title: const Text('Language'),
+              title: Text(l10n.settingsLanguageTitle),
               subtitle: Text(currentLabel),
               onTap: () {
                 showDialog(
                   context: context,
                   builder: (ctx) => SimpleDialog(
-                    title: const Text('Select Language'),
+                    title: Text(l10n.settingsLanguagePickerTitle),
                     children: appLanguageOptions
                         .where((o) => o['code'] != null)
                         .map((o) => ListTile(
@@ -169,7 +170,7 @@ class LuminaSettingsSheet extends ConsumerWidget {
 
           ListTile(
             leading: Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
-            title: Text('Log Out', style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: AppSpacing.weightStrong)),
+            title: Text(AppLocalizations.of(context)!.logOutButtonLabel, style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: AppSpacing.weightStrong)),
             onTap: () async {
               await AuthService().logout();
               if (context.mounted) {

@@ -121,13 +121,29 @@ async def shutdown_services():
 # Import routers
 from app.routers.auth import router as auth_router
 from app.routers.student import router as student_router
-from app.routers.teacher import router as teacher_router
+from app.routers.scholars import router as scholars_router
+from app.routers.teacher_students import router as teacher_students_router
+from app.routers.academics import router as academics_router
+from app.routers.resources import router as resources_router
+from app.routers.media import router as media_router
+from app.routers.administration import router as administration_router
+from app.routers.passwords import router as passwords_router
+from app.routers.admin_logs import router as admin_logs_router
+from app.routers.system_stats import router as system_stats_router
 from app.routers.system import router as system_router
 from zim_handler import router as zim_router
 
 app.include_router(auth_router)
 app.include_router(student_router)
-app.include_router(teacher_router)
+app.include_router(scholars_router)
+app.include_router(teacher_students_router)
+app.include_router(academics_router)
+app.include_router(resources_router)
+app.include_router(media_router)
+app.include_router(administration_router)
+app.include_router(passwords_router)
+app.include_router(admin_logs_router)
+app.include_router(system_stats_router)
 app.include_router(system_router)
 app.include_router(zim_router, prefix="/zim")
 

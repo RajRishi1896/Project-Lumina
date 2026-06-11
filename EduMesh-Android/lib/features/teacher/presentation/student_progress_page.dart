@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/lumina_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../data/teacher_repository.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 class StudentProgressPage extends StatefulWidget {
   final String scholarId;
@@ -83,12 +84,13 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
   }
 
   Widget _buildOverviewCard(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     if (_loadingAnalytics) {
       return const Card(child: Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())));
     }
     final a = _analytics;
     if (a == null) {
-      return Card(child: Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Could not load analytics', style: TextStyle(color: cs.error)))));
+      return Card(child: Center(child: Padding(padding: EdgeInsets.all(24), child: Text(l10n.teacherCouldNotLoadAnalytics, style: TextStyle(color: cs.error)))));
     }
 
     final today = a['study_minutes_today'] as int? ?? 0;
@@ -103,23 +105,23 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Overview', style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
+            Text(l10n.teacherOverview, style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
             SizedBox(height: 16.h),
             Row(
               children: [
-                _statBox(cs, 'Today', '${today}m', Icons.today_rounded, LuminaColors.academicTeal),
+                _statBox(cs, l10n.statCardToday, '${today}m', Icons.today_rounded, LuminaColors.academicTeal),
                 SizedBox(width: 8.w),
-                _statBox(cs, 'This Week', '${week}m', Icons.date_range_rounded, LuminaColors.chartPurple),
+                _statBox(cs, l10n.statCardThisWeek, '${week}m', Icons.date_range_rounded, LuminaColors.chartPurple),
                 SizedBox(width: 8.w),
-                _statBox(cs, 'This Month', '${month}m', Icons.calendar_month_rounded, LuminaColors.chartBlue),
+                _statBox(cs, l10n.teacherThisMonth, '${month}m', Icons.calendar_month_rounded, LuminaColors.chartBlue),
               ],
             ),
             SizedBox(height: 10.h),
             Row(
               children: [
-                _statBox(cs, 'Streak', '$streak d', Icons.local_fire_department_rounded, LuminaColors.chartAmber),
+                _statBox(cs, l10n.statCardStreak, '$streak d', Icons.local_fire_department_rounded, LuminaColors.chartAmber),
                 SizedBox(width: 8.w),
-                _statBox(cs, 'Saved', '$saved', Icons.bookmark_rounded, LuminaColors.chartEmerald),
+                _statBox(cs, l10n.statCardSaved, '$saved', Icons.bookmark_rounded, LuminaColors.chartEmerald),
                 SizedBox(width: 8.w),
                 Expanded(child: Container()),
               ],
@@ -151,6 +153,7 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
   }
 
   Widget _buildSubjectBreakdown(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     if (_loadingAnalytics) return const SizedBox.shrink();
     final subjects = _analytics?['subjects'] as List<dynamic>? ?? [];
     if (subjects.isEmpty) return const SizedBox.shrink();
@@ -163,7 +166,7 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Study Time by Subject', style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
+            Text(l10n.sectionSubjectBreakdown, style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
             SizedBox(height: 12.h),
             ...subjects.take(5).map((s) {
               final name = s['name'] as String? ?? 'Unknown';
@@ -198,23 +201,24 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
   }
 
   Widget _buildActivitySection(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Recent Activity', style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
+            Text(l10n.sectionRecentActivity, style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
             SizedBox(height: 12.h),
             if (_loadingActivity && _activity.isEmpty)
               const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
             else if (_activity.isEmpty)
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 24.h),
-                child: Center(child: Text('No activity recorded yet.', style: TextStyle(color: cs.onSurfaceVariant))),
+                child: Center(child: Text(l10n.teacherNoActivityRecorded, style: TextStyle(color: cs.onSurfaceVariant))),
               )
             else
-              ..._activity.take(50).map((a) => _buildActivityRow(cs, a)),
+              ..._activity.take(50).map((a) => _buildActivityRow(cs, a, l10n)),
             if (_activityOffset < _activityTotal)
               Padding(
                 padding: EdgeInsets.only(top: 8.h),
@@ -222,7 +226,7 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
                   child: TextButton.icon(
                     onPressed: () => _loadActivity(append: true),
                     icon: const Icon(Icons.expand_more_rounded),
-                    label: Text('Show More (${_activityTotal - _activityOffset} remaining)'),
+                    label: Text(l10n.teacherShowMore(_activityTotal - _activityOffset)),
                   ),
                 ),
               ),
@@ -232,7 +236,7 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
     );
   }
 
-  Widget _buildActivityRow(ColorScheme cs, Map<String, dynamic> a) {
+  Widget _buildActivityRow(ColorScheme cs, Map<String, dynamic> a, AppLocalizations l10n) {
     final action = a['action'] as String? ?? '';
     final metadata = a['metadata'] as String? ?? '';
     final timestamp = a['timestamp'] as String? ?? '';
@@ -255,12 +259,11 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
       try {
         final dt = DateTime.parse(timestamp);
         final diff = DateTime.now().difference(dt);
-        if (diff.inMinutes < 1) timeAgo = 'just now';
-        else if (diff.inMinutes < 60) timeAgo = '${diff.inMinutes}m ago';
-        else if (diff.inHours < 24) timeAgo = '${diff.inHours}h ago';
-        else timeAgo = '${diff.inDays}d ago';
-      } catch (_) {}
-    }
+        if (diff.inMinutes < 1) timeAgo = l10n.relativeTimeJustNow;
+        else if (diff.inMinutes < 60) timeAgo = l10n.relativeTimeMinutesAgo(diff.inMinutes);
+        else if (diff.inHours < 24) timeAgo = l10n.relativeTimeHoursAgo(diff.inHours);
+        else timeAgo = l10n.relativeTimeDaysAgo(diff.inDays);
+      } catch (_) { } }
 
     IconData icon;
     switch (action) {

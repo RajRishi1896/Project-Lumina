@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/services/activity_tracker.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 import 'package:edumesh_android/features/dashboard/presentation/resource_detail_page.dart';
 
@@ -28,6 +29,7 @@ class _ResourcePageState extends State<ResourcePage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -52,15 +54,15 @@ class _ResourcePageState extends State<ResourcePage> {
             SizedBox(height: AppSpacing.xs.h),
             Text(widget.grade, style: TextStyle(fontSize: 15.sp, color: cs.onSurfaceVariant)),
             SizedBox(height: AppSpacing.section.h),
-            Text('Resources', style: TextStyle(fontSize: 13.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
+            Text(l10n.resourcePageResources, style: TextStyle(fontSize: 13.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
             SizedBox(height: AppSpacing.md.h),
-            _resourceRow(context, 'Textbooks', 'Chapter-wise PDFs and study materials', 'textbooks'),
+            _resourceRow(context, l10n.resourceTypeTextbooks, l10n.resourceTypeTextbooksSubtitle, 'textbooks'),
             Divider(height: 1, color: cs.outlineVariant),
-            _resourceRow(context, 'Videos', 'Watch lessons and concept explanations', 'videos'),
+            _resourceRow(context, l10n.resourceTypeVideos, l10n.resourceTypeVideosSubtitle, 'videos'),
             Divider(height: 1, color: cs.outlineVariant),
-            _resourceRow(context, 'PYQs', 'Previous year papers and practice sets', 'pyqs'),
+            _resourceRow(context, l10n.resourceTypePyqs, l10n.resourceTypePyqsSubtitle, 'pyqs'),
             Divider(height: 1, color: cs.outlineVariant),
-            _resourceRow(context, 'Notes', 'Quick revision notes and summaries', 'notes'),
+            _resourceRow(context, l10n.resourceTypeNotes, l10n.resourceTypeNotesSubtitle, 'notes'),
           ],
         ),
       ),

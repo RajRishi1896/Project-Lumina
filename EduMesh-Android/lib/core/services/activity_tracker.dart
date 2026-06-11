@@ -47,8 +47,7 @@ class ActivityTracker {
       try {
         final activeData = jsonDecode(activeRaw);
         subject = activeData['subject'] as String?;
-      } catch (_) {}
-    }
+      } catch (_) { } }
     _studyStartTime = null;
     await prefs.remove(_activeStudySessionKey);
     final meta = <String, dynamic>{'duration_seconds': duration.inSeconds};
@@ -110,8 +109,7 @@ class ActivityTracker {
       try {
         final decoded = jsonDecode(cached);
         if (decoded is Map<String, dynamic>) return decoded;
-      } catch (_) {}
-    }
+      } catch (_) { } }
     return {
       'study_minutes_this_week': 0,
       'streak_days': 0,
@@ -148,8 +146,7 @@ class ActivityTracker {
           try {
             final decoded = jsonDecode(meta);
             totalSeconds += (decoded['duration_seconds'] as num?)?.toInt() ?? 0;
-          } catch (_) {}
-        }
+          } catch (_) { } }
       }
     }
 
@@ -194,8 +191,7 @@ class ActivityTracker {
             if (subj != null && subj.isNotEmpty && secs > 0) {
               subjectMinutes[subj] = (subjectMinutes[subj] ?? 0) + secs;
             }
-          } catch (_) {}
-        }
+          } catch (_) { } }
       }
     }
     if (subjectMinutes.isNotEmpty) {
@@ -205,8 +201,7 @@ class ActivityTracker {
       }).toList();
       try {
         await ApiClient.post('/student/sync-subject-time', data: {'subjects': subjects});
-      } catch (_) {}
-    }
+      } catch (_) { } }
 
     // Save pruned list and refresh cached analytics
     await prefs.setString(_localEventsKey, jsonEncode(list));
@@ -215,6 +210,5 @@ class ActivityTracker {
       if (response.statusCode == 200) {
         await prefs.setString(_cachedAnalyticsKey, jsonEncode(response.data));
       }
-    } catch (_) {}
-  }
+    } catch (_) { } }
 }
