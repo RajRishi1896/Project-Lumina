@@ -24,6 +24,8 @@ class LuminaSettingsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
 
+    final tt = Theme.of(context).textTheme;
+
     return Container(
       padding: EdgeInsets.only(top: AppSpacing.sm.h),
       decoration: BoxDecoration(
@@ -49,9 +51,7 @@ class LuminaSettingsSheet extends ConsumerWidget {
           Padding(
             padding: EdgeInsets.only(left: AppSpacing.lg.w, bottom: AppSpacing.sm.h),
             child: Text(AppLocalizations.of(context)!.settingsSheetTitle,
-                style: TextStyle(
-                    fontSize: 20.sp,
-                    fontWeight: AppSpacing.weightDisplay,
+                style: tt.titleLarge?.copyWith(
                     color: cs.onSurface)),
           ),
 
@@ -112,10 +112,7 @@ class LuminaSettingsSheet extends ConsumerWidget {
           Consumer(builder: (context, ref, child) {
             final locale = ref.watch(localeProvider);
             final l10n = AppLocalizations.of(context)!;
-            final currentLabel = appLanguageOptions
-                .firstWhere((o) => o['code'] == locale.languageCode,
-                    orElse: () => {'label': 'English'})
-                ['label'] as String;
+            final currentLabel = _languageLabel(locale.languageCode, l10n);
             return ListTile(
               leading: Icon(Icons.language, color: cs.primary),
               title: Text(l10n.settingsLanguageTitle),
@@ -130,8 +127,8 @@ class LuminaSettingsSheet extends ConsumerWidget {
                         .map((o) => ListTile(
                               leading: o['code'] == locale.languageCode
                                   ? Icon(Icons.check, color: cs.primary)
-                                  : const SizedBox(width: 24),
-                              title: Text(o['label'] as String),
+                                  : const SizedBox(width: AppSpacing.xxl),
+                              title: Text(_languageLabel(o['code']!, l10n)),
                               onTap: () {
                                 ref.read(localeProvider.notifier).setLocale(o['code']!);
                                 Navigator.pop(ctx);
@@ -155,10 +152,10 @@ class LuminaSettingsSheet extends ConsumerWidget {
                     ? Icon(Icons.person, color: cs.primary)
                     : Icon(Icons.person_outline, color: cs.outline),
                 title: Text(l10n.settingsAccountTitle,
-                    style: TextStyle(color: connected ? cs.onSurface : cs.outline)),
+                    style: tt.bodyMedium?.copyWith(color: connected ? cs.onSurface : cs.outline)),
                 subtitle: Text(
                     connected ? l10n.settingsAccountSubtitleOnline : l10n.settingsAccountSubtitleOffline,
-                    style: TextStyle(color: connected ? cs.onSurfaceVariant : cs.outline)),
+                    style: tt.bodySmall?.copyWith(color: connected ? cs.onSurfaceVariant : cs.outline)),
                 onTap: connected
                     ? () => _showChangePasswordDialog(context)
                     : null,
@@ -170,7 +167,7 @@ class LuminaSettingsSheet extends ConsumerWidget {
 
           ListTile(
             leading: Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
-            title: Text(AppLocalizations.of(context)!.logOutButtonLabel, style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: AppSpacing.weightStrong)),
+            title: Text(AppLocalizations.of(context)!.logOutButtonLabel, style: tt.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
             onTap: () async {
               await AuthService().logout();
               if (context.mounted) {
@@ -181,7 +178,7 @@ class LuminaSettingsSheet extends ConsumerWidget {
               }
             },
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: AppSpacing.sm.h),
         ],
       ),
     );
@@ -200,6 +197,7 @@ final _digitRE = RegExp(r'[0-9]');
 /// The [context] must be within a widget tree that has [ApiClient] available.
 void _showChangePasswordDialog(BuildContext context) {
   final cs = Theme.of(context).colorScheme;
+  final tt = Theme.of(context).textTheme;
   final l10n = AppLocalizations.of(context)!;
   final oldPwdCtrl = TextEditingController();
   final newPwdCtrl = TextEditingController();
@@ -216,12 +214,12 @@ void _showChangePasswordDialog(BuildContext context) {
       return StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: Text(l10n.dialogChangePasswordTitle, style: TextStyle(fontWeight: AppSpacing.weightDisplay, fontSize: 18.sp)),
+            title: Text(l10n.dialogChangePasswordTitle, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(l10n.dialogChangePasswordBody, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13.sp)),
-                SizedBox(height: 16.h),
+                Text(l10n.dialogChangePasswordBody, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                SizedBox(height: AppSpacing.lg.h),
                 TextField(
                   controller: oldPwdCtrl,
                   obscureText: obscureOld,
@@ -234,7 +232,7 @@ void _showChangePasswordDialog(BuildContext context) {
                     ),
                   ),
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: AppSpacing.md.h),
                 TextField(
                   controller: newPwdCtrl,
                   obscureText: obscureNew,
@@ -248,11 +246,11 @@ void _showChangePasswordDialog(BuildContext context) {
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.only(top: 4.h),
+                  padding: EdgeInsets.only(top: AppSpacing.xs.h),
                   child: Text(l10n.hintPasswordRequirements,
-                      style: TextStyle(color: cs.outline, fontSize: 11.sp)),
+                      style: tt.labelSmall?.copyWith(color: cs.outline)),
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: AppSpacing.md.h),
                 TextField(
                   controller: confirmPwdCtrl,
                   obscureText: obscureConfirm,
@@ -267,12 +265,12 @@ void _showChangePasswordDialog(BuildContext context) {
                 ),
                 if (error != null)
                   Padding(
-                    padding: EdgeInsets.only(top: 8.h),
-                    child: Text(error!, style: TextStyle(color: cs.error, fontSize: 13.sp)),
+                    padding: EdgeInsets.only(top: AppSpacing.sm.h),
+                    child: Text(error!, style: tt.bodySmall?.copyWith(color: cs.error)),
                   ),
                 if (loading)
                   Padding(
-                    padding: EdgeInsets.only(top: 12.h),
+                    padding: EdgeInsets.only(top: AppSpacing.md.h),
                     child: CircularProgressIndicator(color: cs.tertiary),
                   ),
               ],
@@ -322,4 +320,14 @@ void _showChangePasswordDialog(BuildContext context) {
     newPwdCtrl.dispose();
     confirmPwdCtrl.dispose();
   });
+}
+
+String _languageLabel(String code, AppLocalizations l10n) {
+  switch (code) {
+    case 'en': return l10n.languageEnglish;
+    case 'hi': return l10n.languageHindi;
+    case 'kn': return l10n.languageKannada;
+    case 'fr': return l10n.languageFrench;
+    default: return code;
+  }
 }

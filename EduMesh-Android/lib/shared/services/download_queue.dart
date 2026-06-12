@@ -15,8 +15,8 @@ class _QueuedDownload {
   final String type;
   final double mtime;
 
-  /// Remaining retry attempts before the download is abandoned.
-  int retries = 3;
+  /// Remaining retry attempts before the download is abandoned (max 5).
+  int retries = 5;
 
   _QueuedDownload(this.resourceId, this.url, this.fileName, {
     this.title = '',
@@ -101,11 +101,13 @@ class DownloadQueue extends ChangeNotifier {
       _finishTask();
       if (_queue.isNotEmpty) _processNext();
     } else if (task.retries > 0) {
-      // Decrement retries and re-attempt after a short delay so transient
+      // Decrement retries and re-attempt with exponential backoff so transient
       // network or server issues have time to resolve.
       task.retries--;
       debugPrint('DownloadQueue: retrying ${task.resourceId} (${task.retries} attempts left)');
-      await Future.delayed(const Duration(seconds: 3));
+      final retryCount = 5 - task.retries; // 0-indexed attempt number
+      final delay = Duration(seconds: 3 * (1 << retryCount)); // 3s, 6s, 12s, 24s, 48s
+      await Future.delayed(delay);
       _processNext();
     } else {
       if (task.title.isNotEmpty) {

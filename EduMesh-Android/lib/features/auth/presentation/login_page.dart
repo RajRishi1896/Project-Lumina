@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../shared/widgets/lumina_button.dart';
 import '../../../shared/widgets/lumina_stepper.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -172,6 +171,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _showResetPasswordDialog() async {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final oldPwdController = TextEditingController();
     final newPwdController = TextEditingController();
     final confirmPwdController = TextEditingController();
@@ -187,12 +187,12 @@ class _LoginPageState extends State<LoginPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(AppLocalizations.of(context)!.dialogPasswordResetTitle, style: GoogleFonts.atkinsonHyperlegible()),
+              title: Text(AppLocalizations.of(context)!.dialogPasswordResetTitle),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(AppLocalizations.of(context)!.dialogPasswordResetBody),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: AppSpacing.lg.h),
                   TextField(
                     controller: oldPwdController,
                     obscureText: obscureOld,
@@ -202,10 +202,11 @@ class _LoginPageState extends State<LoginPage> {
                       suffixIcon: IconButton(
                         icon: Icon(obscureOld ? Icons.visibility_off_outlined : Icons.visibility_outlined),
                         onPressed: () => setDialogState(() => obscureOld = !obscureOld),
+                        tooltip: obscureOld ? AppLocalizations.of(context)!.showPassword : AppLocalizations.of(context)!.hidePassword,
                       ),
                     ),
                   ),
-                  SizedBox(height: 12.h),
+                  SizedBox(height: AppSpacing.md.h),
                   TextField(
                     controller: newPwdController,
                     obscureText: obscureNew,
@@ -215,17 +216,18 @@ class _LoginPageState extends State<LoginPage> {
                       suffixIcon: IconButton(
                         icon: Icon(obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined),
                         onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                        tooltip: obscureNew ? AppLocalizations.of(context)!.showPassword : AppLocalizations.of(context)!.hidePassword,
                       ),
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.only(top: 4.h),
+                    padding: EdgeInsets.only(top: AppSpacing.xs.h),
                     child: Text(
                           AppLocalizations.of(context)!.hintPasswordRequirements,
-                      style: TextStyle(color: cs.outline, fontSize: 11.sp),
+                      style: tt.labelSmall?.copyWith(color: cs.outline),
                     ),
                   ),
-                  SizedBox(height: 12.h),
+                  SizedBox(height: AppSpacing.md.h),
                   TextField(
                     controller: confirmPwdController,
                     obscureText: obscureConfirm,
@@ -235,13 +237,14 @@ class _LoginPageState extends State<LoginPage> {
                       suffixIcon: IconButton(
                         icon: Icon(obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined),
                         onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                        tooltip: obscureConfirm ? AppLocalizations.of(context)!.showPassword : AppLocalizations.of(context)!.hidePassword,
                       ),
                     ),
                   ),
                   if (dialogError != null)
                     Padding(
-                      padding: EdgeInsets.only(top: 8.h),
-                      child: Text(dialogError!, style: TextStyle(color: cs.error, fontSize: 13.sp)),
+                      padding: EdgeInsets.only(top: AppSpacing.sm.h),
+                      child: Text(dialogError!, style: tt.bodySmall?.copyWith(color: cs.error)),
                     ),
                 ],
               ),
@@ -326,13 +329,12 @@ class _LoginPageState extends State<LoginPage> {
             return AlertDialog(
               title: Text(
                 AppLocalizations.of(context)!.dialogSetNameTitle,
-                style: GoogleFonts.atkinsonHyperlegible(),
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(AppLocalizations.of(context)!.dialogSetNameBody),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: AppSpacing.lg.h),
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
@@ -379,6 +381,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -395,17 +398,15 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                LuminaStepper(currentStep: 1),
+                const LuminaStepper(currentStep: 1),
                 SizedBox(height: AppSpacing.section.h),
                 Text(
                   _isRegisterMode ? AppLocalizations.of(context)!.titleRegisterMode : AppLocalizations.of(context)!.titleLoginMode,
-                  style: GoogleFonts.atkinsonHyperlegible(
-                    fontSize: 36.sp,
-                    fontWeight: AppSpacing.weightDisplay,
+                  style: tt.displaySmall?.copyWith(
                     color: cs.primary,
                     height: 1.1,
                   ),
@@ -413,8 +414,7 @@ class _LoginPageState extends State<LoginPage> {
                 SizedBox(height: AppSpacing.sm.h),
                 Text(
                   _isRegisterMode ? AppLocalizations.of(context)!.subtitleRegisterMode : AppLocalizations.of(context)!.subtitleLoginMode,
-                  style: GoogleFonts.atkinsonHyperlegible(
-                    fontSize: 16.sp,
+                  style: tt.bodyLarge?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
                 ),
@@ -446,14 +446,14 @@ class _LoginPageState extends State<LoginPage> {
                         SizedBox(height: AppSpacing.xs.h),
                         Text(
                       AppLocalizations.of(context)!.hintPasswordRequirements,
-                          style: TextStyle(color: cs.outline, fontSize: 11.sp),
+                          style: tt.labelSmall?.copyWith(color: cs.outline),
                         ),
                       ],
                       if (_errorMessage != null) ...[
                         SizedBox(height: AppSpacing.lg.h),
                         Text(
                           _errorMessage!,
-                          style: TextStyle(color: cs.error, fontSize: 12.sp),
+                          style: tt.bodySmall?.copyWith(color: cs.error),
                         ),
                       ],
                       SizedBox(height: AppSpacing.section.h),
@@ -466,11 +466,11 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       if (!_isConnected)
                         Padding(
-                          padding: EdgeInsets.only(top: 12.h),
+                          padding: EdgeInsets.only(top: AppSpacing.md.h),
                           child: Text(
                             AppLocalizations.of(context)!.loginConnectToHub,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: cs.outline, fontSize: 12.sp),
+                            style: tt.bodySmall?.copyWith(color: cs.outline),
                           ),
                         ),
                     ],
@@ -486,9 +486,8 @@ class _LoginPageState extends State<LoginPage> {
                       _isRegisterMode
                           ? AppLocalizations.of(context)!.toggleToLogin
                           : AppLocalizations.of(context)!.toggleToRegister,
-                      style: GoogleFonts.atkinsonHyperlegible(
+                      style: tt.titleSmall?.copyWith(
                         color: _isConnected ? cs.secondary : cs.outline,
-                        fontWeight: AppSpacing.weightStrong,
                       ),
                     ),
                   ),
@@ -503,6 +502,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildConnectionBadge() {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.xs.h),
       decoration: BoxDecoration(
@@ -514,9 +514,7 @@ class _LoginPageState extends State<LoginPage> {
       ),
       child: Text(
         _isConnected ? AppLocalizations.of(context)!.badgeHubConnected : AppLocalizations.of(context)!.badgeWaitingForHub,
-        style: TextStyle(
-          fontSize: 12.sp,
-          fontWeight: AppSpacing.weightBody,
+        style: tt.bodySmall?.copyWith(
           color: _isConnected ? cs.onTertiaryContainer : cs.onErrorContainer,
         ),
       ),
@@ -534,14 +532,13 @@ class _LoginPageState extends State<LoginPage> {
     bool enabled = true,
   }) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.atkinsonHyperlegible(
-            fontSize: 14.sp,
-            fontWeight: AppSpacing.weightStrong,
+          style: tt.titleSmall?.copyWith(
             color: enabled ? cs.onSurface : cs.outline,
           ),
         ),
@@ -557,6 +554,7 @@ class _LoginPageState extends State<LoginPage> {
                 ? IconButton(
                     icon: Icon(obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined),
                     onPressed: onToggleObscure,
+                    tooltip: obscureText ? AppLocalizations.of(context)!.showPassword : AppLocalizations.of(context)!.hidePassword,
                   )
                 : null,
             filled: true,

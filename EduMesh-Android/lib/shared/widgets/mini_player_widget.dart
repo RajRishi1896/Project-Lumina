@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import '../../../core/constants/app_spacing.dart';
 import 'mini_player_controller.dart';
 import 'video_player_page.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A floating mini-player overlay shown at the bottom of the screen.
 ///
@@ -21,7 +23,10 @@ class MiniPlayerWidget extends StatelessWidget {
         if (!ctrl.isActive) return const SizedBox.shrink();
         return Align(
           alignment: Alignment.bottomCenter,
-          child: GestureDetector(
+          child: Semantics(
+            button: true,
+            label: AppLocalizations.of(context)!.semanticsOpenVideoPlayer,
+            child: GestureDetector(
             onTap: () {
               Navigator.push(
                 context,
@@ -43,14 +48,14 @@ class MiniPlayerWidget extends StatelessWidget {
             },
             child: Container(
               height: 80,
-              margin: const EdgeInsets.only(bottom: 64),
+              margin: const EdgeInsets.only(bottom: AppSpacing.pageMargin),
               width: 144,
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
-                    color: cs.scrim.withValues(alpha: 0.5),
+                    color: cs.scrim.withValues(alpha: 0.12),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -65,22 +70,36 @@ class MiniPlayerWidget extends StatelessWidget {
                       child: VideoPlayer(ctrl.videoController!),
                     )
                   else
-                    Center(child: Icon(Icons.play_circle_fill, color: cs.onSurface.withValues(alpha: 0.54), size: 32)),
+                    Center(child: Icon(Icons.play_circle_fill, color: cs.onSurfaceVariant, size: 32)),
                   Positioned(
                     right: 0,
                     top: 0,
-                    child: GestureDetector(
+                    child: Semantics(
+                      button: true,
+                      label: AppLocalizations.of(context)!.semanticsCloseMiniPlayer,
+                      child: SizedBox(
+                        width: AppSpacing.touchTarget,
+                        height: AppSpacing.touchTarget,
+                        child: GestureDetector(
                       onTap: () => ctrl.stop(),
                       child: Container(
-                        color: cs.scrim.withValues(alpha: 0.54),
+                        color: cs.scrim.withValues(alpha: 0.12),
                         child: Icon(Icons.close, color: cs.onSurface, size: 18),
+                      ),
+                    ),
                       ),
                     ),
                   ),
                   Positioned(
                     left: 4,
                     bottom: 4,
-                    child: GestureDetector(
+                    child: Semantics(
+                      button: true,
+                      label: AppLocalizations.of(context)!.semanticsTogglePlay,
+                      child: SizedBox(
+                        width: AppSpacing.touchTarget,
+                        height: AppSpacing.touchTarget,
+                        child: GestureDetector(
                       onTap: () {
                         if (ctrl.videoController != null) {
                           if (ctrl.videoController!.value.isPlaying) {
@@ -91,8 +110,8 @@ class MiniPlayerWidget extends StatelessWidget {
                         }
                       },
                       child: Container(
-                        color: cs.scrim.withValues(alpha: 0.54),
-                        padding: const EdgeInsets.all(2),
+                        color: cs.scrim.withValues(alpha: 0.12),
+                        padding: const EdgeInsets.all(AppSpacing.xs),
                         child: Icon(
                           ctrl.videoController != null && ctrl.videoController!.value.isPlaying
                               ? Icons.pause
@@ -102,11 +121,14 @@ class MiniPlayerWidget extends StatelessWidget {
                         ),
                       ),
                     ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+        ),
         );
       },
     );

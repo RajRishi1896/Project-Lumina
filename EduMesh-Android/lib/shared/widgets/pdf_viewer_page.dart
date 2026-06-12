@@ -102,6 +102,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
   void _showPagePicker() {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: _currentPage.toString());
     showDialog(
@@ -109,7 +110,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       builder: (ctx) => AlertDialog(
         backgroundColor: cs.surfaceContainerHighest,
         title: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
-            style: TextStyle(color: cs.onSurface)),
+            style: tt.titleLarge?.copyWith(color: cs.onSurface)),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(
@@ -121,10 +122,10 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                     child: TextField(
                       controller: controller,
                       keyboardType: TextInputType.number,
-                      style: TextStyle(color: cs.onSurface, fontSize: 16),
+                      style: tt.bodyLarge?.copyWith(color: cs.onSurface),
                       decoration: InputDecoration(
                         hintText: l10n.pdfEnterPageNumberHint,
-                        hintStyle: TextStyle(color: cs.onSurfaceVariant),
+                        hintStyle: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
                         filled: true,
                         fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.12),
                         border: OutlineInputBorder(
@@ -134,7 +135,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   ElevatedButton(
                     onPressed: () {
                       final p = int.tryParse(controller.text);
@@ -151,7 +152,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Expanded(
                 child: GridView.builder(
                   shrinkWrap: true,
@@ -177,9 +178,8 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                         child: Center(
                           child: Text(
                             p.toString(),
-                            style: TextStyle(
+                            style: tt.labelSmall?.copyWith(
                               color: isCurrent ? cs.onPrimary : cs.onSurfaceVariant,
-                              fontSize: 12,
                               fontWeight: isCurrent ? AppSpacing.weightStrong : AppSpacing.weightBody,
                             ),
                           ),
@@ -193,7 +193,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           ),
         ),
       ),
-    );
+    ).whenComplete(() => controller.dispose());
   }
 
   @override
@@ -207,6 +207,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: cs.surfaceContainerHighest,
@@ -219,14 +220,14 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
             GestureDetector(
               onTap: _showPagePicker,
               child: Container(
-                margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                margin: const EdgeInsets.only(right: AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
-                    style: TextStyle(color: cs.onSurface, fontSize: 13)),
+                    style: tt.bodySmall?.copyWith(color: cs.onSurface)),
               ),
             ),
         ],
@@ -253,7 +254,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       color: cs.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.sm, AppSpacing.xs, AppSpacing.sm, AppSpacing.sm),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -268,13 +269,13 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                             GestureDetector(
                               onTap: _showPagePicker,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                                 decoration: BoxDecoration(
                                   color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
-                                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+                                    style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
                               ),
                             ),
                             Expanded(
@@ -283,7 +284,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                                 min: 1,
                                 max: _totalPages.toDouble(),
                                 activeColor: cs.primary,
-                                inactiveColor: cs.onSurface.withValues(alpha: 0.24),
+                                inactiveColor: cs.outline,
                                 onChanged: (v) {
                                   _pdfController.animateToPage(pageNumber: v.round(), duration: Duration.zero);
                                 },
@@ -300,9 +301,9 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                         GestureDetector(
                           onTap: _showPagePicker,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                             child: Text(l10n.pdfTapToJumpLabel,
-                                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
+                                style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
                           ),
                         ),
                       ],
@@ -325,7 +326,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                         onPressed: () => _setZoom(_zoomLevel + 0.25),
                       ),
                       Text(l10n.pdfZoomPercent((_zoomLevel * 100).toInt().toString()),
-                          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
+                          style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
                       IconButton(
                         icon: Icon(Icons.remove, color: cs.onSurface),
                         onPressed: () => _setZoom(_zoomLevel - 0.25),

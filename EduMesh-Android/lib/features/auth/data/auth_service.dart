@@ -339,14 +339,6 @@ class AuthService {
     }
   }
 
-  /// The estimated size of the installed APK in bytes (hardcoded to 65 MB).
-  ///
-  /// Used by [WelcomePage] for storage calculations when no real APK path is
-  /// available on the device.
-  Future<int> getApkSize() async {
-    return 65 * 1024 * 1024;
-  }
-
   /// Persists the student's display name to secure storage.
   ///
   /// Used by [StudentProfilePage] when the user edits their profile name so the

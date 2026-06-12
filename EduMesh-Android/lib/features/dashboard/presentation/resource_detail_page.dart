@@ -164,11 +164,11 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       }
     } catch (_) { } }
 
-  String _formatFileSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  String _formatFileSize(int bytes, AppLocalizations l10n) {
+    if (bytes < 1024) return '$bytes${l10n.unitBytes}';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}${l10n.unitKilobytes}';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}${l10n.unitMegabytes}';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)}${l10n.unitGigabytes}';
   }
 
   Widget _buildDownloadButton(ResourceModel item, ColorScheme cs) {
@@ -183,7 +183,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       return SizedBox(
         width: 24.w,
         height: 24.h,
-        child: CircularProgressIndicator(strokeWidth: 2),
+        child: const CircularProgressIndicator(strokeWidth: 2),
       );
     }
 
@@ -240,7 +240,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
               final headResp = await ApiClient.dio.head(url);
               final cl = headResp.headers.value('content-length');
               if (cl != null) {
-                sizeLabel = _formatFileSize(int.tryParse(cl) ?? 0);
+                sizeLabel = _formatFileSize(int.tryParse(cl) ?? 0, l10n);
               }
             }
           } catch (_) {
@@ -281,6 +281,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -298,11 +299,11 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                         Icon(Icons.search_off_rounded, size: 64.sp, color: cs.onSurfaceVariant),
                         SizedBox(height: AppSpacing.lg.h),
                         Text(l10n.emptyNoResourcesForType(widget.title),
-                            style: TextStyle(fontSize: 18.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
+                            style: tt.titleLarge?.copyWith(color: cs.onSurface)),
                         SizedBox(height: AppSpacing.sm.h),
                         Text(l10n.emptyNoResourcesDetail(widget.subject, widget.grade),
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant)),
+                            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
                         SizedBox(height: AppSpacing.section.h),
                         FilledButton.tonalIcon(
                           onPressed: () => setState(() { _loading = true; _loadResources(); }),
@@ -314,7 +315,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                   ),
                 )
               : ListView.builder(
-                  padding: EdgeInsets.all(20.w),
+                  padding: EdgeInsets.all(AppSpacing.xl.w),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
@@ -322,8 +323,8 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                     final isOnline = ConnectivityService().isOnline;
                     final isGhost = !isDl && !isOnline;
                     return Card(
-                      margin: EdgeInsets.only(bottom: 16.h),
-                      color: isGhost ? cs.surfaceVariant.withValues(alpha: 0.5) : null,
+                      margin: EdgeInsets.only(bottom: AppSpacing.lg.h),
+                      color: isGhost ? cs.surfaceContainerHighest : null,
                       child: Opacity(
                         opacity: isGhost ? 0.5 : 1.0,
                         child: ListTile(
@@ -401,7 +402,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                               id: item.id,
                               title: item.title,
                               type: item.type.name,
-                              time: 'just now',
+                              time: l10n.relativeTimeJustNow,
                               icon: item.type == ResourceType.videos
                                   ? Icons.videocam_rounded
                                   : Icons.picture_as_pdf_rounded,
@@ -409,14 +410,14 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                             ),
                           );
                           if (item.type == ResourceType.videos) {
-                            Navigator.of(context).push(MaterialPageRoute(
+                            Navigator.of(this.context).push(MaterialPageRoute(
                               builder: (_) => VideoPlayerPage(
                                 title: item.title,
                                 videoUrl: url,
                               ),
                             ));
                           } else {
-                            Navigator.of(context).push(MaterialPageRoute(
+                            Navigator.of(this.context).push(MaterialPageRoute(
                               builder: (_) => PdfViewerPage(
                                 title: item.title,
                                 pdfUrl: url,
@@ -424,7 +425,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                             ));
                           }
                         },
-                        subtitle: Text("${item.subject} • ${item.grade}"),
+                        subtitle: Text(l10n.resourceSubtitle(item.subject, item.grade)),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -450,7 +451,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                 }
                               },
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: AppSpacing.xs),
                             _buildDownloadButton(item, cs),
                           ],
                         ),

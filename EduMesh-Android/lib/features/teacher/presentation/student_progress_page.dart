@@ -70,12 +70,12 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
       body: RefreshIndicator(
         onRefresh: _loadAll,
         child: ListView(
-          padding: EdgeInsets.all(16.w),
+          padding: EdgeInsets.all(AppSpacing.lg.w),
           children: [
             _buildOverviewCard(cs),
-            SizedBox(height: 16.h),
+            SizedBox(height: AppSpacing.lg.h),
             _buildSubjectBreakdown(cs),
-            SizedBox(height: 16.h),
+            SizedBox(height: AppSpacing.lg.h),
             _buildActivitySection(cs),
           ],
         ),
@@ -84,13 +84,14 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
   }
 
   Widget _buildOverviewCard(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     if (_loadingAnalytics) {
-      return const Card(child: Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())));
+      return const Card(child: Center(child: Padding(padding: EdgeInsets.all(AppSpacing.section), child: CircularProgressIndicator())));
     }
     final a = _analytics;
     if (a == null) {
-      return Card(child: Center(child: Padding(padding: EdgeInsets.all(24), child: Text(l10n.teacherCouldNotLoadAnalytics, style: TextStyle(color: cs.error)))));
+      return Card(child: Center(child: Padding(padding: const EdgeInsets.all(AppSpacing.xxl), child: Text(l10n.teacherCouldNotLoadAnalytics, style: tt.bodySmall?.copyWith(color: cs.error)))));
     }
 
     final today = a['study_minutes_today'] as int? ?? 0;
@@ -101,28 +102,28 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
 
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16.w),
+        padding: EdgeInsets.all(AppSpacing.lg.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.teacherOverview, style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
-            SizedBox(height: 16.h),
+            Text(l10n.teacherOverview, style: tt.titleMedium),
+            SizedBox(height: AppSpacing.lg.h),
             Row(
               children: [
-                _statBox(cs, l10n.statCardToday, '${today}m', Icons.today_rounded, LuminaColors.academicTeal),
-                SizedBox(width: 8.w),
-                _statBox(cs, l10n.statCardThisWeek, '${week}m', Icons.date_range_rounded, LuminaColors.chartPurple),
-                SizedBox(width: 8.w),
-                _statBox(cs, l10n.teacherThisMonth, '${month}m', Icons.calendar_month_rounded, LuminaColors.chartBlue),
+                _statBox(cs, l10n.statCardToday, '$today${l10n.suffixMinutes}', Icons.today_rounded, LuminaColors.academicTeal),
+                SizedBox(width: AppSpacing.sm.w),
+                _statBox(cs, l10n.statCardThisWeek, '$week${l10n.suffixMinutes}', Icons.date_range_rounded, LuminaColors.chartPurple),
+                SizedBox(width: AppSpacing.sm.w),
+                _statBox(cs, l10n.teacherThisMonth, '$month${l10n.suffixMinutes}', Icons.calendar_month_rounded, LuminaColors.chartBlue),
               ],
             ),
-            SizedBox(height: 10.h),
+            SizedBox(height: AppSpacing.md.h),
             Row(
               children: [
-                _statBox(cs, l10n.statCardStreak, '$streak d', Icons.local_fire_department_rounded, LuminaColors.chartAmber),
-                SizedBox(width: 8.w),
+                _statBox(cs, l10n.statCardStreak, '$streak${l10n.suffixDays}', Icons.local_fire_department_rounded, LuminaColors.chartAmber),
+                SizedBox(width: AppSpacing.sm.w),
                 _statBox(cs, l10n.statCardSaved, '$saved', Icons.bookmark_rounded, LuminaColors.chartEmerald),
-                SizedBox(width: 8.w),
+                SizedBox(width: AppSpacing.sm.w),
                 Expanded(child: Container()),
               ],
             ),
@@ -133,9 +134,10 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
   }
 
   Widget _statBox(ColorScheme cs, String label, String value, IconData icon, Color color) {
+    final tt = Theme.of(context).textTheme;
     return Expanded(
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 8.w),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.md.h, horizontal: AppSpacing.sm.w),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12.r),
@@ -143,9 +145,9 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
         child: Column(
           children: [
             Icon(icon, color: color, size: 22.sp),
-            SizedBox(height: 6.h),
-            Text(value, style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightDisplay, color: color)),
-            Text(label, style: TextStyle(fontSize: 11.sp, color: cs.onSurfaceVariant)),
+            SizedBox(height: AppSpacing.sm.h),
+            Text(value, style: tt.titleMedium?.copyWith(fontWeight: AppSpacing.weightDisplay, color: color)),
+            Text(label, style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
           ],
         ),
       ),
@@ -153,6 +155,7 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
   }
 
   Widget _buildSubjectBreakdown(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     if (_loadingAnalytics) return const SizedBox.shrink();
     final subjects = _analytics?['subjects'] as List<dynamic>? ?? [];
@@ -162,23 +165,23 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
 
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16.w),
+        padding: EdgeInsets.all(AppSpacing.lg.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.sectionSubjectBreakdown, style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
-            SizedBox(height: 12.h),
+            Text(l10n.sectionSubjectBreakdown, style: tt.titleMedium),
+            SizedBox(height: AppSpacing.md.h),
             ...subjects.take(5).map((s) {
-              final name = s['name'] as String? ?? 'Unknown';
+              final name = s['name'] as String? ?? l10n.subjectNameUnknown;
               final minutes = s['minutes'] as int? ?? 0;
               final pct = totalMinutes > 0 ? (minutes / totalMinutes * 100).toStringAsFixed(0) : '0';
               return Padding(
-                padding: EdgeInsets.only(bottom: 8.h),
+                padding: EdgeInsets.only(bottom: AppSpacing.sm.h),
                 child: Row(
                   children: [
-                    SizedBox(width: 100.w, child: Text(name, style: TextStyle(fontSize: 13.sp), overflow: TextOverflow.ellipsis)),
-                    SizedBox(width: 8.w),
-                    Expanded(
+                    SizedBox(width: AppSpacing.pageMargin.w, child: Text(name, style: tt.bodySmall, overflow: TextOverflow.ellipsis)),
+                SizedBox(width: AppSpacing.sm.w),
+                Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(4.r),
                         child: LinearProgressIndicator(
@@ -188,8 +191,8 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
                         ),
                       ),
                     ),
-                    SizedBox(width: 8.w),
-                    SizedBox(width: 48.w, child: Text('$pct%', style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant), textAlign: TextAlign.right)),
+                    SizedBox(width: AppSpacing.sm.w),
+                    SizedBox(width: AppSpacing.touchTarget.w, child: Text('$pct${l10n.suffixPercent}', style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant), textAlign: TextAlign.right)),
                   ],
                 ),
               );
@@ -201,27 +204,28 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
   }
 
   Widget _buildActivitySection(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16.w),
+        padding: EdgeInsets.all(AppSpacing.lg.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.sectionRecentActivity, style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
-            SizedBox(height: 12.h),
+            Text(l10n.sectionRecentActivity, style: tt.titleMedium),
+            SizedBox(height: AppSpacing.md.h),
             if (_loadingActivity && _activity.isEmpty)
-              const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
+              const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.lg), child: CircularProgressIndicator()))
             else if (_activity.isEmpty)
               Padding(
-                padding: EdgeInsets.symmetric(vertical: 24.h),
-                child: Center(child: Text(l10n.teacherNoActivityRecorded, style: TextStyle(color: cs.onSurfaceVariant))),
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl.h),
+                child: Center(child: Text(l10n.teacherNoActivityRecorded, style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant))),
               )
             else
               ..._activity.take(50).map((a) => _buildActivityRow(cs, a, l10n)),
             if (_activityOffset < _activityTotal)
               Padding(
-                padding: EdgeInsets.only(top: 8.h),
+                padding: EdgeInsets.only(top: AppSpacing.sm.h),
                 child: Center(
                   child: TextButton.icon(
                     onPressed: () => _loadActivity(append: true),
@@ -237,6 +241,7 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
   }
 
   Widget _buildActivityRow(ColorScheme cs, Map<String, dynamic> a, AppLocalizations l10n) {
+    final tt = Theme.of(context).textTheme;
     final action = a['action'] as String? ?? '';
     final metadata = a['metadata'] as String? ?? '';
     final timestamp = a['timestamp'] as String? ?? '';
@@ -259,10 +264,15 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
       try {
         final dt = DateTime.parse(timestamp);
         final diff = DateTime.now().difference(dt);
-        if (diff.inMinutes < 1) timeAgo = l10n.relativeTimeJustNow;
-        else if (diff.inMinutes < 60) timeAgo = l10n.relativeTimeMinutesAgo(diff.inMinutes);
-        else if (diff.inHours < 24) timeAgo = l10n.relativeTimeHoursAgo(diff.inHours);
-        else timeAgo = l10n.relativeTimeDaysAgo(diff.inDays);
+        if (diff.inMinutes < 1) {
+          timeAgo = l10n.relativeTimeJustNow;
+        } else if (diff.inMinutes < 60) {
+          timeAgo = l10n.relativeTimeMinutesAgo(diff.inMinutes);
+        } else if (diff.inHours < 24) {
+          timeAgo = l10n.relativeTimeHoursAgo(diff.inHours);
+        } else {
+          timeAgo = l10n.relativeTimeDaysAgo(diff.inDays);
+        }
       } catch (_) { } }
 
     IconData icon;
@@ -275,22 +285,22 @@ class _StudentProgressPageState extends State<StudentProgressPage> {
     }
 
     return Padding(
-      padding: EdgeInsets.only(bottom: 10.h),
+      padding: EdgeInsets.only(bottom: AppSpacing.md.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18.sp, color: cs.onSurfaceVariant),
-          SizedBox(width: 10.w),
+          SizedBox(width: AppSpacing.md.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: 13.sp, fontWeight: AppSpacing.weightBody)),
-                if (subtitle.isNotEmpty) Text(subtitle, style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(title, style: tt.bodySmall),
+                if (subtitle.isNotEmpty) Text(subtitle, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
-          if (timeAgo.isNotEmpty) Text(timeAgo, style: TextStyle(fontSize: 11.sp, color: cs.onSurfaceVariant)),
+          if (timeAgo.isNotEmpty) Text(timeAgo, style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
         ],
       ),
     );

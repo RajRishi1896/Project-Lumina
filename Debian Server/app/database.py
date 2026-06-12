@@ -27,29 +27,29 @@ _admin_log_lock = asyncio.Lock()
 
 
 async def log_admin_action(username: str, action: str):
+    now = datetime.now()
+    await asyncio.to_thread(_write_log, now.isoformat(), username, action)
+
+
+def _write_log(timestamp, username, action):
+    """Reads retention, writes log entry, prunes if needed. All sync, runs in worker thread."""
     try:
-        async with _admin_log_lock:
-            conn = sqlite3.connect(DB_PATH, timeout=5.0)
-            try:
-                cur = conn.cursor()
-                cur.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
-                cur.execute('INSERT OR IGNORE INTO settings (key, value) VALUES ("log_retention", "30d")')
-                cur.execute("SELECT value FROM settings WHERE key = 'log_retention'")
-                row = cur.fetchone()
-                retention = row[0] if row else "30d"
-            finally:
-                conn.close()
-    except Exception as e:
+        conn = sqlite3.connect(DB_PATH, timeout=5.0)
+        try:
+            cur = conn.cursor()
+            cur.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
+            cur.execute('INSERT OR IGNORE INTO settings (key, value) VALUES ("log_retention", "30d")')
+            cur.execute("SELECT value FROM settings WHERE key = 'log_retention'")
+            row = cur.fetchone()
+            retention = row[0] if row else "30d"
+        finally:
+            conn.close()
+    except Exception:
         retention = "30d"
 
     if retention == "none":
         return
 
-    now = datetime.now()
-    await asyncio.to_thread(_write_log, now.isoformat(), username, action, retention)
-
-
-def _write_log(timestamp, username, action, retention):
     log_line = f"{timestamp} - {username}: {action}\n"
     try:
         with open("data/admin_actions.log", "a") as f:
@@ -253,8 +253,64 @@ def init_db():
         c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
     except sqlite3.OperationalError:
         pass
+    _migrate_resources_v2(conn)
     conn.commit()
     conn.close()
+
+
+def _migrate_resources_v2(conn):
+    """Migrate resources table to v2 schema with all required metadata columns.
+
+    Uses the caller's connection so we don't get 'database is locked' from
+    two simultaneous connections in the same thread.
+    """
+    c = conn.cursor()
+    # Check if migration already done
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='resources_v2'")
+    if c.fetchone():
+        return
+
+    c.execute('''CREATE TABLE resources_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        subject TEXT NOT NULL DEFAULT 'General',
+        grade INTEGER DEFAULT 0,
+        language TEXT NOT NULL DEFAULT 'en',
+        resource_type TEXT NOT NULL DEFAULT 'textbook',
+        filename TEXT,
+        original_name TEXT,
+        source TEXT DEFAULT 'Unknown',
+        license TEXT DEFAULT 'Internal Only',
+        uploaded_by INTEGER,
+        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        status TEXT NOT NULL DEFAULT 'approved',
+        description TEXT,
+        chapter TEXT,
+        year INTEGER,
+        superseded_by INTEGER REFERENCES resources_v2(id)
+    )''')
+
+    # Migrate existing data
+    try:
+        c.execute('''INSERT INTO resources_v2
+            (id, title, subject, grade, resource_type, filename, original_name, status)
+            SELECT id, title, COALESCE(subject, 'General'),
+                CAST(CASE WHEN grade IS NULL OR grade = '' THEN '0' ELSE grade END AS INTEGER),
+                COALESCE(type, 'textbook'),
+                COALESCE(file_path, ''), COALESCE(file_path, ''),
+                'approved'
+            FROM resources''')
+    except sqlite3.OperationalError:
+        # Old table may have different columns
+        pass
+
+    # Drop old table and rename
+    try:
+        c.execute('DROP TABLE IF EXISTS resources')
+        c.execute('ALTER TABLE resources_v2 RENAME TO resources')
+        logging.info("Resources table migrated to v2")
+    except sqlite3.OperationalError as e:
+        logging.warning(f"Could not complete migration: {e}")
 
 
 async def auto_register_if_new(scholar_id: str, name: str = "Roaming Scholar"):
@@ -269,10 +325,3 @@ async def auto_register_if_new(scholar_id: str, name: str = "Roaming Scholar"):
     await asyncio.to_thread(_run)
 
 
-init_db()
-
-conn = sqlite3.connect(DB_PATH, timeout=5.0)
-cur = conn.cursor()
-cur.execute('UPDATE users SET role = "admin" WHERE username = "admin"')
-conn.commit()
-conn.close()

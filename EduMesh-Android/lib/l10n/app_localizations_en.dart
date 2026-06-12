@@ -55,6 +55,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageKannada => 'Kannada';
 
   @override
+  String get languageFrench => 'French';
+
+  @override
   String get languageKiswahili => 'Kiswahili';
 
   @override
@@ -209,14 +212,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dialogPasswordResetBody =>
-      'Your password was reset by a teacher. Enter your current password and set a new one.';
+      'A teacher reset your password. Enter your current password and set a new one.';
 
   @override
   String get errorFillAllFields => 'Please fill all fields';
 
   @override
   String get errorPasswordStrength =>
-      'Password must be 8+ chars with uppercase, lowercase, and digit';
+      'Password must be 8 or more characters with capital letters, small letters, and a number';
 
   @override
   String get errorRegistrationFailed =>
@@ -224,7 +227,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get snackbarOfflineLogin =>
-      'Logged in offline — server sync unavailable';
+      'Logged in offline — cannot connect to hub to save changes';
 
   @override
   String get errorLoginFailed => 'Login failed. Invalid name or password.';
@@ -494,7 +497,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String emptyStateByType(String type) {
-    return 'No saved ${type}s found.';
+    return 'No saved $type found.';
   }
 
   @override
@@ -614,17 +617,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relativeTimeHoursAgo(int hours) {
-    return '$hours hour(s) ago';
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours hours ago',
+      one: '$hours hour ago',
+    );
+    return '$_temp0';
   }
 
   @override
   String relativeTimeDaysAgo(int days) {
-    return '$days day(s) ago';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days ago',
+      one: '$days day ago',
+    );
+    return '$_temp0';
   }
 
   @override
   String relativeTimeMonthsAgo(int months) {
-    return '$months month(s) ago';
+    String _temp0 = intl.Intl.pluralLogic(
+      months,
+      locale: localeName,
+      other: '$months months ago',
+      one: '$months month ago',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -714,6 +735,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String downloadCompleteNotificationBody(String title) {
     return '\"$title\" has been downloaded and saved to offline storage.';
+  }
+
+  @override
+  String get downloadFailedNotificationTitle => 'Download Failed';
+
+  @override
+  String downloadFailedNotificationBody(String title) {
+    return '\"$title\" could not be downloaded. Check the server connection and try again.';
   }
 
   @override
@@ -879,4 +908,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resourcePageResources => 'Resources';
+
+  @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
+
+  @override
+  String get semanticsSettings => 'Settings';
+
+  @override
+  String get semanticsSearchResources => 'Search resources';
+
+  @override
+  String get semanticsFilterResources => 'Filter resources';
+
+  @override
+  String semanticsSelectLanguage(String label) {
+    return 'Select language: $label';
+  }
+
+  @override
+  String get semanticsOpenVideoPlayer => 'Open video player';
+
+  @override
+  String get semanticsCloseMiniPlayer => 'Close mini player';
+
+  @override
+  String get semanticsTogglePlay => 'Toggle play';
+
+  @override
+  String get tooltipBackToResource => 'Back to resource';
+
+  @override
+  String tooltipDeleteDownload(String title) {
+    return 'Delete $title';
+  }
+
+  @override
+  String get connectionOfflineBanner =>
+      'Offline — some features may be unavailable';
+
+  @override
+  String get notificationDownloadFailedTitle => 'Download Failed';
+
+  @override
+  String notificationDownloadFailedBody(String title) {
+    return '$title could not be downloaded. Check your connection and try again.';
+  }
+
+  @override
+  String get studentNameUnknown => 'Unknown';
+
+  @override
+  String activityPastTense(String verb) {
+    return '${verb}ed';
+  }
+
+  @override
+  String storageAppSize(String size) {
+    return '$size MB';
+  }
+
+  @override
+  String get hubStrengthCalculating => 'Calculating...';
+
+  @override
+  String get resourceFallbackTitle => 'Untitled';
+
+  @override
+  String get subjectFallbackGeneral => 'General';
+
+  @override
+  String get subjectNameUnknown => 'Unknown';
 }

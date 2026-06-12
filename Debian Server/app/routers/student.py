@@ -197,8 +197,11 @@ async def upload_profile_icon(data: IconUpload, student_id: str = Depends(verify
     safe_id = re.sub(r'[^A-Za-z0-9_-]', '_', student_id)
     filename = f"{safe_id}_icon.{ext}"
     filepath = os.path.join(PROFILE_ICONS_DIR, filename)
-    with open(filepath, "wb") as f:
-        await asyncio.to_thread(f.write, raw)
+    def _write_icon(filepath, raw):
+        with open(filepath, "wb") as f:
+            f.write(raw)
+
+    await asyncio.to_thread(_write_icon, filepath, raw)
     return {"status": "ok", "filename": filename}
 
 
@@ -278,3 +281,42 @@ async def get_student_profile(student_id: str = Depends(verify_student)):
         if not row:
             raise HTTPException(status_code=404, detail="Student not found")
         return {"name": row[0], "grade": row[1] or "", "scholar_id": row[2]}
+
+
+@router.get("/student/weekly-breakdown",
+            summary="Get weekly study breakdown",
+            description="Returns daily study minutes for the past 7 days for a student.",
+            tags=["Student"],
+            responses={200: {"description": "Weekly breakdown retrieved successfully"}})
+async def weekly_breakdown(student_id: str = Depends(verify_student)):
+    """Get daily study minutes for the past 7 days.
+
+    Args:
+        student_id: The authenticated student's ID, injected by the verify_student dependency.
+
+    Returns:
+        Dict with weekly_data (day -> minutes mapping) and today_minutes.
+    """
+    async with db_conn() as conn:
+        c = conn.cursor()
+        c.execute("""
+            SELECT COALESCE(SUM(duration_seconds), 0) / 60 as minutes
+            FROM study_sessions
+            WHERE scholar_id = ?
+              AND date(start_time) = date('now')
+        """, (student_id,))
+        row = c.fetchone()
+        today_minutes = row[0] if row else 0
+
+        c.execute("""
+            SELECT date(start_time) as day,
+                   COALESCE(SUM(duration_seconds), 0) / 60 as minutes
+            FROM study_sessions
+            WHERE scholar_id = ?
+              AND start_time >= datetime('now', '-7 days')
+            GROUP BY date(start_time)
+            ORDER BY day
+        """, (student_id,))
+        rows = c.fetchall()
+
+    return {"today_minutes": today_minutes, "weekly_data": {row[0]: row[1] for row in rows}}

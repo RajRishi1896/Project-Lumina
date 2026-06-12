@@ -7,13 +7,15 @@ const List<Locale> appSupportedLocales = [
   Locale('en'),
   Locale('hi'),
   Locale('kn'),
+  Locale('fr'),
 ];
 
 /// The locale language codes available for user selection.
 const List<Map<String, String?>> appLanguageOptions = [
   {'code': 'en', 'label': 'English'},
-  {'code': 'hi', 'label': 'Hindi'},
-  {'code': 'kn', 'label': 'Kannada'},
+  {'code': 'hi', 'label': 'हिन्दी'},
+  {'code': 'kn', 'label': 'ಕನ್ನಡ'},
+  {'code': 'fr', 'label': 'Français'},
   {'code': null, 'label': 'More...'},
 ];
 
@@ -21,9 +23,14 @@ const List<Map<String, String?>> appLanguageOptions = [
 /// Defaults to `Locale('en')` if no preference is saved.
 class LocaleNotifier extends Notifier<Locale> {
   static const _prefKey = 'app_locale';
+  bool _loaded = false;
 
   /// Loads the persisted locale from [SharedPreferences].
+  ///
+  /// Safe to call multiple times — only the first call reads storage.
   Future<void> load() async {
+    if (_loaded) return;
+    _loaded = true;
     final prefs = await SharedPreferences.getInstance();
     final code = prefs.getString(_prefKey);
     if (code != null && appSupportedLocales.any((l) => l.languageCode == code)) {

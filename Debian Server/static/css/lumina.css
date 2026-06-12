@@ -61,6 +61,7 @@
 
 /* === Utility Classes === */
 .hidden { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 
 /* === Reset & Base === */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -272,6 +273,10 @@ main {
     box-shadow: 0 0 0 3px rgba(0,112,131,0.1);
 }
 
+/* Prevent flash of untranslated sidebar text */
+aside [data-i18n] { visibility: hidden; }
+html[data-i18n-ready] aside [data-i18n] { visibility: visible; }
+
 /* === Buttons === */
 .btn {
     display: inline-flex;
@@ -440,8 +445,8 @@ tbody tr:hover { background: var(--outline); }
     .filter-row .form-group { width: 100%; }
     .search-wrap { width: 100%; }
     .custom-option { padding: 0.75rem 1rem !important; min-height: 44px; display: flex !important; align-items: center; }
-    .filter-inline-group { flex-direction: column; align-items: stretch; width: 100%; }
-    .filter-inline-group .form-group { width: 100%; margin-bottom: 0.5rem; flex-direction: row; align-items: center; }
+    .filter-inline-group { flex-wrap: wrap; }
+    .filter-inline-group .form-group { flex: 1 1 auto; margin-bottom: 0.5rem; min-width: 0; }
     .student-stats { justify-content: flex-start; }
     .student-row { flex-wrap: wrap; }
     html { overflow-x: hidden; }
@@ -499,7 +504,7 @@ tbody tr:hover { background: var(--outline); }
 
 /* === Search wrap (inline) — used in content manager === */
 .search-wrap-inline { position: relative; width: 200px; }
-@media (max-width: 768px) { .search-wrap-inline { width: 100%; } }
+@media (max-width: 768px) { .search-wrap-inline { min-width: 0; } }
 
 /* === Loading Spinner === */
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

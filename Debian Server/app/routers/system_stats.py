@@ -12,18 +12,23 @@ from app.models import TimeSync
 
 router = APIRouter()
 
+_stats_cache = {"data": None, "expires": 0.0}
+
 
 @router.get("/stats",
             summary="Get hub statistics",
             description="Returns scholar count, resource count, subject count, disk usage, battery percentage, and server uptime.",
             tags=["System"])
 async def get_stats():
-    """Get aggregate hub statistics.
+    """Get aggregate hub statistics (cached for 5s).
 
     Returns:
         Dict with scholars, resources, subjects counts, storage info,
         battery_percent, uptime string, and disk_usage.
     """
+    now = time.time()
+    if _stats_cache["data"] and now < _stats_cache["expires"]:
+        return _stats_cache["data"]
     import shutil
     async with db_conn() as conn:
         c = conn.cursor()
@@ -66,9 +71,12 @@ async def get_stats():
             break
         du /= 1024
         dt /= 1024
-    return {"scholars": scholar_count, "resources": resource_count, "subjects": subject_count,
-            "storage": f"{used_str} / {total_str}", "storage_percent": (used / total) * 100,
-            "battery_percent": battery_percent, "uptime": uptime_str, "disk_usage": f"{used_str} / {total_str}"}
+    result = {"scholars": scholar_count, "resources": resource_count, "subjects": subject_count,
+              "storage": f"{used_str} / {total_str}", "storage_percent": (used / total) * 100,
+              "battery_percent": battery_percent, "uptime": uptime_str, "disk_usage": f"{used_str} / {total_str}"}
+    _stats_cache["data"] = result
+    _stats_cache["expires"] = now + 5
+    return result
 
 
 @router.get("/system/stats",

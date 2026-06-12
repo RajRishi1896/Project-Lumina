@@ -15,6 +15,11 @@ enum ResourceType {
 }
 
 /// A model representing a learning resource with its metadata and download status.
+///
+/// The fallback subject [kFallbackSubject] can be overridden with a localized
+/// string where a [BuildContext] is available.
+const String kFallbackSubject = 'General';
+
 class ResourceModel {
   /// The unique identifier for this resource.
   final String id;
@@ -57,7 +62,7 @@ class ResourceModel {
     return ResourceModel(
       id: json['id']?.toString() ?? '',
       title: json['title'] ?? '',
-      subject: json['subject'] ?? 'General',
+      subject: json['subject'] ?? kFallbackSubject,
       grade: json['grade'] ?? '',
       type: _parseType(json['type']?.toString() ?? ''),
       pdfUrl: json['pdfUrl'],

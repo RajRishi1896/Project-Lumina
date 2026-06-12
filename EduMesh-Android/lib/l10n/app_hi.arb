@@ -1,3 +1,1390 @@
 {
-  "@@locale": "hi"
+  "@@locale": "hi",
+  "@@needs-review": "true",
+  "appTitle": "Project Lumina",
+  "materialAppTitle": "Edu-Mesh Scholar",
+  "bottomNavDashboard": "डैशबोर्ड",
+  "bottomNavBrowse": "ब्राउज़ करें",
+  "bottomNavSaved": "सहेजा गया",
+  "bottomNavProfile": "प्रोफ़ाइल",
+  "doubleBackToExitMessage": "बाहर निकलने के लिए फिर से पीछे दबाएं",
+  "exitButtonLabel": "बाहर निकलें",
+  "welcomeTitle": "लर्निंग हब से जुड़ा",
+  "welcomeSubtitle": "इंटरनेट की ज़रूरत नहीं। हज़ारों किताबें और पाठ्यक्रम स्थानीय रूप से उपलब्ध।",
+  "illustrationBadgeNoInternet": "इंटरनेट कनेक्शन की आवश्यकता नहीं!",
+  "languageSectionHeader": "भाषा चुनें",
+  "languageEnglish": "अंग्रेज़ी",
+  "languageHindi": "हिन्दी",
+  "languageKannada": "कन्नड़",
+  "languageFrench": "फ़्रेंच",
+  "languageKiswahili": "स्वाहिली",
+  "languageMore": "और...",
+  "settingsLanguagePickerTitle": "भाषा चुनें",
+  "ctaEnterPortal": "पोर्टल में प्रवेश करें",
+  "hubStrengthChecking": "जाँच हो रही है...",
+  "hubStrengthOffline": "ऑफ़लाइन",
+  "hubStrengthExcellent": "उत्कृष्ट",
+  "hubStrengthGood": "अच्छा",
+  "hubStrengthFair": "ठीक",
+  "statusHubStrength": "हब की क्षमता",
+  "statusLocalStorage": "स्थानीय भंडारण",
+  "storageCalculating": "गणना हो रही है...",
+  "storageUnknown": "अज्ञात",
+  "storageMbUsed": "{size} MB उपयोग",
+  "storageGbUsed": "{size} GB उपयोग",
+  "storageTotalCapacity": "{size} GB कुल",
+  "storageUsedLabel": "{size} GB उपयोग",
+  "unitMegabytes": " MB",
+  "unitGigabytes": " GB",
+  "unitBytes": " B",
+  "unitKilobytes": " KB",
+  "storageLegendAppLabel": "EduMesh",
+  "storageLegendOtherLabel": "अन्य ऐप्स",
+  "storageLegendFreeLabel": "खाली",
+  "serverStatusChecking": "जाँच हो रही है...",
+  "serverStatusConnected": "जुड़ा",
+  "serverStatusDisconnected": "डिस्कनेक्ट",
+  "searchBarHint": "सभी संसाधन खोजें...",
+  "titleRegisterMode": "स्कॉलर\nपहचान बनाएं",
+  "titleLoginMode": "स्कॉलर\nलॉगिन",
+  "subtitleRegisterMode": "Lumina Mesh पर अपनी यात्रा शुरू करें",
+  "subtitleLoginMode": "किसी भी डिवाइस से अपने पाठों तक पहुंचें",
+  "labelUsername": "उपयोगकर्ता नाम",
+  "hintUsername": "जैसे john_doe",
+  "labelPassword": "पासवर्ड",
+  "labelCurrentPassword": "वर्तमान पासवर्ड",
+  "labelNewPassword": "नया पासवर्ड",
+  "labelConfirmPassword": "पासवर्ड की पुष्टि करें",
+  "hintPasswordRequirements": "8+ अक्षर, अपरकेस, लोअरकेस और एक अंक आवश्यक",
+  "buttonRegister": "पंजीकरण और सिंक",
+  "buttonLogin": "लॉगिन और सिंक",
+  "toggleToLogin": "पहले से खाता है? लॉगिन करें",
+  "toggleToRegister": "खाता नहीं है? पंजीकरण करें",
+  "badgeHubConnected": "हब से जुड़ा",
+  "badgeWaitingForHub": "हब का इंतज़ार...",
+  "buttonSetPassword": "पासवर्ड सेट करें",
+  "buttonCancel": "रद्द करें",
+  "dialogPasswordResetTitle": "पासवर्ड रीसेट आवश्यक",
+  "dialogPasswordResetBody": "आपका पासवर्ड शिक्षक द्वारा रीसेट किया गया। कृपया अपना वर्तमान पासवर्ड दर्ज करें और नया पासवर्ड सेट करें।",
+  "errorFillAllFields": "कृपया सभी फ़ील्ड भरें",
+  "errorPasswordStrength": "पासवर्ड 8+ अक्षर, अपरकेस, लोअरकेस और अंक के साथ होना चाहिए",
+  "errorRegistrationFailed": "पंजीकरण विफल। हब कनेक्शन जांचें।",
+  "snackbarOfflineLogin": "ऑफ़लाइन लॉगिन — सर्वर सिंक उपलब्ध नहीं",
+  "errorLoginFailed": "लॉगिन विफल। नाम या पासवर्ड गलत।",
+  "errorCurrentPasswordRequired": "वर्तमान पासवर्ड आवश्यक है।",
+  "errorPasswordMinLength": "पासवर्ड कम से कम 8 अक्षर का होना चाहिए।",
+  "errorPasswordsDoNotMatch": "पासवर्ड मेल नहीं खाते।",
+  "errorPasswordComplexity": "पासवर्ड में अपरकेस, लोअरकेस और अंक होना चाहिए।",
+  "errorPasswordChangeFailed": "पासवर्ड सेट करने में विफल। पुनः प्रयास करें।",
+  "dialogChangePasswordTitle": "पासवर्ड बदलें",
+  "dialogChangePasswordBody": "अपना वर्तमान पासवर्ड और नया पासवर्ड दर्ज करें।",
+  "buttonUpdatePassword": "पासवर्ड अपडेट करें",
+  "snackbarPasswordChanged": "पासवर्ड सफलतापूर्वक बदला गया",
+  "loginConnectToHub": "पंजीकरण या लॉगिन के लिए Lumina Hub से जुड़ें।",
+  "profileSetupTitle": "स्वागत है!",
+  "profileSetupSubtitle": "आइए आपकी प्रोफ़ाइल सेट करें",
+  "labelDisplayName": "प्रदर्शन नाम",
+  "buttonContinue": "जारी रखें",
+  "sectionRecentlyViewed": "हाल ही में देखा गया",
+  "sectionSubjectCategories": "विषय श्रेणियाँ",
+  "emptyNoSubjects": "कोई विषय उपलब्ध नहीं",
+  "sectionLocalStorage": "स्थानीय भंडारण",
+  "pageTitleBrowseResources": "संसाधन ब्राउज़ करें",
+  "searchFieldHint": "शीर्षक, विषय या कक्षा द्वारा खोजें...",
+  "filtersActiveLabel": "फ़िल्टर सक्रिय",
+  "filtersActiveSorted": "फ़िल्टर सक्रिय · क्रमबद्ध: {sortBy}",
+  "clearFiltersButton": "फ़िल्टर साफ़ करें",
+  "sectionAllResources": "सभी संसाधन",
+  "sectionRecommendedForYou": "आपके लिए अनुशंसित",
+  "emptyNoResources": "हब पर कोई संसाधन उपलब्ध नहीं।",
+  "emptyNoSearchResults": "कोई परिणाम नहीं मिला।",
+  "errorNoServerNoCache": "सर्वर तक नहीं पहुंचा जा सका। कोई कैश्ड संसाधन उपलब्ध नहीं।",
+  "errorRetryButton": "पुनः प्रयास करें",
+  "badgeKiwixWiki": "विकी",
+  "filterSheetTitle": "फ़िल्टर",
+  "filterResourceTypeHeader": "संसाधन प्रकार",
+  "filterShowLabel": "दिखाएँ:",
+  "filterMyGrade": "मेरी कक्षा",
+  "filterAllGrades": "सभी कक्षाएँ",
+  "filterGradeHeader": "कक्षा",
+  "filterSubjectHeader": "विषय",
+  "filterSubjectHint": "विषय द्वारा फ़िल्टर करें...",
+  "filterSortByHeader": "क्रमबद्ध करें",
+  "sortTitleAsc": "शीर्षक A-Z",
+  "sortTitleDesc": "शीर्षक Z-A",
+  "sortByType": "प्रकार",
+  "sortByGrade": "कक्षा",
+  "filterResetButton": "रीसेट",
+  "filterApplyButton": "लागू करें",
+  "snackbarAddedToQueueOffline": "कतार में जोड़ा — सर्वर से जुड़ने पर डाउनलोड होगा",
+  "snackbarAddedToQueue": "डाउनलोड कतार में जोड़ा गया",
+  "snackbarDownloadComplete": "डाउनलोड पूरा",
+  "snackbarDownloadFailed": "डाउनलोड विफल",
+  "snackbarDownloadRemoved": "डाउनलोड हटाया गया",
+  "snackbarRemovedFromSaved": "सहेजे गए से हटाया गया",
+  "snackbarAddedToSaved": "सहेजे गए में जोड़ा गया",
+  "snackbarNotDownloaded": "\"{title}\" डाउनलोड नहीं है। ऑफ़लाइन उपयोग के लिए डाउनलोड बटन से जोड़ें।",
+  "snackbarQueueAction": "कतार",
+  "dialogDownloadTitle": "डाउनलोड",
+  "dialogDownloadContent": "\"{fileName}\" डाउनलोड करें?\n\nआकार: {sizeLabel}",
+  "dialogDownloadButton": "डाउनलोड",
+  "fileSizeUnavailable": "आकार उपलब्ध नहीं",
+  "fileSizeUnknownFallback": "अज्ञात",
+  "pageTitleDetail": "{title} — {subject}",
+  "emptyNoResourcesForType": "कोई {title} उपलब्ध नहीं",
+  "emptyNoResourcesDetail": "{subject} में {grade} के लिए कोई संसाधन नहीं मिला।",
+  "emptyRefreshButton": "रीफ़्रेश",
+  "resourceSubtitle": "{subject} • {grade}",
+  "resourceTypeTextbooks": "पाठ्यपुस्तकें",
+  "resourceTypeTextbooksSubtitle": "अध्यायवार PDF और अध्ययन सामग्री",
+  "resourceTypeVideos": "वीडियो",
+  "resourceTypeVideosSubtitle": "पाठ और अवधारणा स्पष्टीकरण देखें",
+  "resourceTypePyqs": "पिछले वर्ष के प्रश्न",
+  "resourceTypePyqsSubtitle": "पिछले वर्षों के प्रश्नपत्र और अभ्यास सेट",
+  "resourceTypeNotes": "नोट्स",
+  "resourceTypeNotesSubtitle": "त्वरित पुनरीक्षण नोट्स और सारांश",
+  "resourceCardOpenButton": "खोलें",
+  "savedResourcesTitle": "सहेजे गए संसाधन",
+  "tabAll": "सभी",
+  "tabTextbooks": "पाठ्यपुस्तकें",
+  "tabVideos": "वीडियो",
+  "tabPyqs": "पिछले प्रश्न",
+  "tabNotes": "नोट्स",
+  "emptyStateAll": "अभी तक कोई संसाधन सहेजा नहीं गया।",
+  "emptyStateByType": "कोई {type} सहेजा नहीं मिला।",
+  "headerMyProfile": "मेरी प्रोफ़ाइल",
+  "headerAnalytics": "विश्लेषण",
+  "roleBadgeStudent": "छात्र",
+  "initialsFallback": "?",
+  "editProfileSheetTitle": "प्रोफ़ाइल संपादित करें",
+  "editProfileLabelName": "पूरा नाम",
+  "editProfileLabelGrade": "कक्षा",
+  "editProfileGradeHint": "कक्षा चुनें",
+  "editProfileLabelStudentId": "छात्र आईडी",
+  "editProfileErrorSnackbar": "प्रोफ़ाइल अपडेट विफल: {error}",
+  "editProfileSaveButton": "परिवर्तन सहेजें",
+  "statCardToday": "आज",
+  "statCardThisWeek": "इस सप्ताह",
+  "statCardSaved": "सहेजा गया",
+  "statCardStreak": "लगातार",
+  "sectionSubjectBreakdown": "विषय के अनुसार अध्ययन समय",
+  "sectionRecentActivity": "हाल की गतिविधि",
+  "emptyStateSubjectBreakdown": "अभी तक कोई डेटा नहीं।\nआपके विषय का समय यहाँ दिखाई देगा।",
+  "emptyStateRecentActivity": "अभी तक कोई गतिविधि नहीं।\nसंसाधन ब्राउज़ करना शुरू करें।",
+  "toggleShowLess": "कम दिखाएँ",
+  "toggleShowAll": "सभी दिखाएँ ({count})",
+  "suffixMinutes": "मि",
+  "suffixHours": "घं",
+  "suffixDays": " दिन",
+  "suffixPercent": "%",
+  "activityVerbViewed": "देखा",
+  "activityVerbSearched": "खोजा",
+  "activityVerbDownloaded": "डाउनलोड किया",
+  "activityVerbWatched": "देखा गया",
+  "activityVerbSaved": "सहेजा",
+  "activityVerbOpened": "खोला",
+  "activityVerbCompleted": "पूरा किया",
+  "activityTitleFallback": "{verb} एक संसाधन",
+  "relativeTimeJustNow": "अभी",
+  "relativeTimeMinutesAgo": "{minutes} मिनट पहले",
+  "relativeTimeHoursAgo": "{hours} घंटे पहले",
+  "relativeTimeDaysAgo": "{days} दिन पहले",
+  "relativeTimeMonthsAgo": "{months} महीने पहले",
+  "settingsSheetTitle": "सेटिंग्स",
+  "settingsLanguageTitle": "भाषा",
+  "settingsLanguageSubtitle": "ऐप प्रदर्शन भाषा बदलें",
+  "darkModeLabel": "डार्क मोड",
+  "lightModeLabel": "लाइट मोड",
+  "switchToLightThemeSubtitle": "लाइट थीम में बदलें",
+  "switchToDarkThemeSubtitle": "डार्क थीम में बदलें",
+  "appIconLabel": "डार्क ऐप आइकन",
+  "appIconLightLabel": "लाइट ऐप आइकन",
+  "appIconDarkSubtitle": "डार्क लॉन्चर आइकन का उपयोग करें",
+  "appIconLightSubtitle": "लाइट लॉन्चर आइकन का उपयोग करें",
+  "storageOfflineLibraryTitle": "भंडारण और ऑफ़लाइन लाइब्रेरी",
+  "storageOfflineLibrarySubtitle": "डाउनलोड की गई सामग्री प्रबंधित करें",
+  "networkSettingsTitle": "नेटवर्क सेटिंग्स",
+  "networkSettingsSubtitle": "हब कनेक्टिविटी कॉन्फ़िगर करें",
+  "logOutButtonLabel": "लॉग आउट",
+  "settingsAccountTitle": "खाता सेटिंग्स",
+  "settingsAccountSubtitleOnline": "अपना पासवर्ड बदलें",
+  "settingsAccountSubtitleOffline": "खाता प्रबंधन के लिए हब से जुड़ें",
+  "offlineLibraryAppBarTitle": "ऑफ़लाइन लाइब्रेरी",
+  "emptyOfflineLibraryMessage": "कोई डाउनलोड किया गया संसाधन नहीं",
+  "deleteDownloadDialogTitle": "डाउनलोड हटाएं",
+  "deleteDownloadConfirmation": "ऑफ़लाइन स्टोरेज से \"{title}\" हटाएं?",
+  "deleteConfirmButtonLabel": "हटाएं",
+  "downloadChannelName": "डाउनलोड",
+  "downloadChannelDescription": "डाउनलोड पूर्णता सूचनाएं",
+  "downloadCompleteNotificationTitle": "डाउनलोड पूरा",
+  "downloadCompleteNotificationBody": "\"{title}\" डाउनलोड होकर ऑफ़लाइन स्टोरेज में सहेजा गया।",
+  "downloadFailedNotificationTitle": "डाउनलोड विफल",
+  "downloadFailedNotificationBody": "\"{title}\" डाउनलोड नहीं हो सका। कनेक्शन जाँचें और पुनः प्रयास करें।",
+  "stepperStepWelcome": "स्वागत",
+  "stepperStepLoginRegister": "लॉगिन/पंजीकरण",
+  "stepperStepAccess": "पहुंच",
+  "pdfPageOfLabel": "पृ {currentPage} / {totalPages}",
+  "pdfEnterPageNumberHint": "पृष्ठ संख्या दर्ज करें",
+  "pdfGoButton": "जाएं",
+  "pdfTapToJumpLabel": "पृष्ठ पर जाने के लिए टैप करें",
+  "pdfZoomPercent": "{zoomLevel}%",
+  "videoLocalFileNotFound": "स्थानीय फ़ाइल नहीं मिली",
+  "videoFailedToLoad": "वीडियो लोड करने में विफल: {error}",
+  "videoMiniPlayerTooltip": "मिनी प्लेयर",
+  "kiwixDefaultTitle": "ज्ञानकोष",
+  "thumbnailWikiLabel": "विकी",
+  "zimAppBarTitle": "विकिपीडिया",
+  "zimSearchHint": "विकिपीडिया लेख खोजें...",
+  "zimNoArticlesEmpty": "सर्वर पर कोई लेख उपलब्ध नहीं",
+  "zimNoResultsEmpty": "कोई परिणाम नहीं मिला",
+  "zimUntitledArticleFallback": "शीर्षकहीन",
+  "zimFailedToLoadArticles": "लेख लोड करने में विफल: {error}",
+  "zimSearchFailed": "खोज विफल: {error}",
+  "zimFailedToLoadArticle": "लेख लोड करने में विफल: {error}",
+  "dialogSetNameTitle": "अपना नाम सेट करें",
+  "dialogSetNameBody": "कृपया अपना अनुभव निजीकृत करने के लिए नाम दर्ज करें।",
+  "buttonSave": "सहेजें",
+  "buttonSkip": "छोड़ें",
+  "bottomNavStudents": "छात्र",
+  "zimArticleNotFound": "लेख नहीं मिला",
+  "teacherPageTitle": "छात्र",
+  "teacherFilterByGrade": "कक्षा द्वारा फ़िल्टर",
+  "teacherAllGrades": "सभी कक्षाएँ",
+  "teacherCouldNotLoadStudents": "छात्र लोड नहीं हो सके",
+  "teacherCheckHubConnection": "हब कनेक्शन जांचें और पुनः प्रयास करें।",
+  "teacherRetry": "पुनः प्रयास",
+  "teacherSearchStudentsHint": "छात्र खोजें...",
+  "teacherNoStudentsMatchSearch": "आपकी खोज से मेल खाने वाला कोई छात्र नहीं।",
+  "teacherNoStudentsFound": "कोई छात्र नहीं मिला।",
+  "teacherShowing": "दिखाया: {grade}",
+  "teacherLabelToday": "आज",
+  "teacherLabelStreak": "लगातार",
+  "teacherLabelSaved": "सहेजा",
+  "teacherLabelDownloaded": "डाउनलोड",
+  "teacherOverview": "अवलोकन",
+  "teacherThisMonth": "इस महीने",
+  "teacherShowMore": "और दिखाएँ ({remaining} शेष)",
+  "teacherCouldNotLoadAnalytics": "विश्लेषण लोड नहीं हो सका",
+  "teacherNoActivityRecorded": "अभी तक कोई गतिविधि दर्ज नहीं।",
+  "sectionSubjects": "विषय",
+  "sectionSubjectsEmpty": "कोई विषय उपलब्ध नहीं",
+  "resourcePageResources": "संसाधन",
+  "showPassword": "पासवर्ड दिखाएँ",
+  "hidePassword": "पासवर्ड छुपाएँ",
+  "semanticsSettings": "सेटिंग्स",
+  "semanticsSearchResources": "संसाधन खोजें",
+  "semanticsFilterResources": "संसाधन फ़िल्टर करें",
+  "semanticsSelectLanguage": "भाषा चुनें: {label}",
+  "semanticsOpenVideoPlayer": "वीडियो प्लेयर खोलें",
+  "semanticsCloseMiniPlayer": "मिनी प्लेयर बंद करें",
+  "semanticsTogglePlay": "चलाएँ/रोकें",
+  "tooltipBackToResource": "संसाधन पर वापस जाएँ",
+  "tooltipDeleteDownload": "{title} हटाएँ",
+  "connectionOfflineBanner": "ऑफ़लाइन — कुछ सुविधाएँ उपलब्ध नहीं हो सकतीं",
+  "notificationDownloadFailedTitle": "डाउनलोड विफल",
+  "notificationDownloadFailedBody": "{title} डाउनलोड नहीं हो सका। कनेक्शन जाँचें और फिर से कोशिश करें।",
+  "studentNameUnknown": "अज्ञात",
+  "activityPastTense": "{verb}ा गया",
+  "storageAppSize": "{size} MB",
+  "hubStrengthCalculating": "गणना हो रही है...",
+  "resourceFallbackTitle": "Untitled",
+  "subjectFallbackGeneral": "General",
+  "subjectNameUnknown": "Unknown",
+  "@appTitle": {
+    "description": "Application branding title shown in the app bar and task switcher"
+  },
+  "@materialAppTitle": {
+    "description": "MaterialApp title used as the application name in the OS task switcher"
+  },
+  "@bottomNavDashboard": {
+    "description": "Bottom navigation tab label for the dashboard page"
+  },
+  "@bottomNavBrowse": {
+    "description": "Bottom navigation tab label for the search/browse page"
+  },
+  "@bottomNavSaved": {
+    "description": "Bottom navigation tab label for the saved resources page"
+  },
+  "@bottomNavProfile": {
+    "description": "Bottom navigation tab label for the student profile page"
+  },
+  "@doubleBackToExitMessage": {
+    "description": "SnackBar shown when user presses back once; instructs to press again to exit the app"
+  },
+  "@exitButtonLabel": {
+    "description": "SnackBar action button to force-exit the app immediately"
+  },
+  "@welcomeTitle": {
+    "description": "Main heading on the welcome page"
+  },
+  "@welcomeSubtitle": {
+    "description": "Subtitle below the main heading explaining offline access"
+  },
+  "@illustrationBadgeNoInternet": {
+    "description": "Badge on the welcome illustration indicating the app works offline"
+  },
+  "@languageSectionHeader": {
+    "description": "Section header for the language selection grid"
+  },
+  "@languageEnglish": {
+    "description": "Language button label for English"
+  },
+  "@languageHindi": {
+    "description": "Language button label for Hindi"
+  },
+  "@languageKannada": {
+    "description": "Language button label for Kannada"
+  },
+  "@languageFrench": {
+    "description": "Language button label for French"
+  },
+  "@languageKiswahili": {
+    "description": "Language button label for Swahili"
+  },
+  "@languageMore": {
+    "description": "Language button label indicating additional language options exist"
+  },
+  "@settingsLanguagePickerTitle": {
+    "description": "Title of the language picker bottom sheet in settings"
+  },
+  "@ctaEnterPortal": {
+    "description": "Call-to-action button text that navigates to the login page"
+  },
+  "@hubStrengthChecking": {
+    "description": "Default label shown for hub connection strength while initial check is in progress"
+  },
+  "@hubStrengthOffline": {
+    "description": "Hub strength status label when device is not connected to the hub"
+  },
+  "@hubStrengthExcellent": {
+    "description": "Hub strength status label when latency is under 50ms"
+  },
+  "@hubStrengthGood": {
+    "description": "Hub strength status label when latency is between 50ms and 150ms"
+  },
+  "@hubStrengthFair": {
+    "description": "Hub strength status label when latency exceeds 150ms"
+  },
+  "@statusHubStrength": {
+    "description": "Label for the hub connection strength status indicator"
+  },
+  "@statusLocalStorage": {
+    "description": "Label for the local storage usage status indicator"
+  },
+  "@storageCalculating": {
+    "description": "Default display text for storage values while computing"
+  },
+  "@storageUnknown": {
+    "description": "Fallback text when storage calculation fails"
+  },
+  "@storageMbUsed": {
+    "description": "Local storage used display when total is under 1024 MB",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "256.5"
+      }
+    }
+  },
+  "@storageGbUsed": {
+    "description": "Local storage used display when total is 1024 MB or more",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
+  },
+  "@storageTotalCapacity": {
+    "description": "Total device capacity label in the storage section",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "32"
+      }
+    }
+  },
+  "@storageUsedLabel": {
+    "description": "Total storage used label",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "12.5"
+      }
+    }
+  },
+  "@unitMegabytes": {
+    "description": "Unit suffix for values displayed in megabytes"
+  },
+  "@unitGigabytes": {
+    "description": "Unit suffix for values displayed in gigabytes"
+  },
+  "@unitBytes": {
+    "description": "Unit suffix for file sizes displayed in bytes"
+  },
+  "@unitKilobytes": {
+    "description": "Unit suffix for file sizes displayed in kilobytes"
+  },
+  "@storageLegendAppLabel": {
+    "description": "Legend label for app (EduMesh) storage usage in the storage bar"
+  },
+  "@storageLegendOtherLabel": {
+    "description": "Legend label for other apps storage usage in the storage bar"
+  },
+  "@storageLegendFreeLabel": {
+    "description": "Legend label for free storage space in the storage bar"
+  },
+  "@serverStatusChecking": {
+    "description": "Server status badge text while connection check is in progress"
+  },
+  "@serverStatusConnected": {
+    "description": "Server status badge text when server is reachable"
+  },
+  "@serverStatusDisconnected": {
+    "description": "Server status badge text when server is unreachable"
+  },
+  "@searchBarHint": {
+    "description": "Search bar placeholder text on the dashboard"
+  },
+  "@titleRegisterMode": {
+    "description": "Page title shown when the form is in registration mode"
+  },
+  "@titleLoginMode": {
+    "description": "Page title shown when the form is in login mode"
+  },
+  "@subtitleRegisterMode": {
+    "description": "Page subtitle shown when the form is in registration mode"
+  },
+  "@subtitleLoginMode": {
+    "description": "Page subtitle shown when the form is in login mode"
+  },
+  "@labelUsername": {
+    "description": "Label above the username text field"
+  },
+  "@hintUsername": {
+    "description": "Hint text inside the username text field"
+  },
+  "@labelPassword": {
+    "description": "Label above the password text field and hint text inside it"
+  },
+  "@labelCurrentPassword": {
+    "description": "Label for the current password text field in the password reset dialog"
+  },
+  "@labelNewPassword": {
+    "description": "Label for the new password text field in the password reset dialog"
+  },
+  "@labelConfirmPassword": {
+    "description": "Label for the confirm password text field in the password reset dialog"
+  },
+  "@hintPasswordRequirements": {
+    "description": "Helper text below the new password field specifying password rules"
+  },
+  "@buttonRegister": {
+    "description": "Submit button label when the form is in registration mode"
+  },
+  "@buttonLogin": {
+    "description": "Submit button label when the form is in login mode"
+  },
+  "@toggleToLogin": {
+    "description": "Toggle button text shown in register mode to switch to login"
+  },
+  "@toggleToRegister": {
+    "description": "Toggle button text shown in login mode to switch to registration"
+  },
+  "@badgeHubConnected": {
+    "description": "Connection badge text shown when the device is connected to the hub"
+  },
+  "@badgeWaitingForHub": {
+    "description": "Connection badge text shown when the device is not connected to the hub"
+  },
+  "@buttonSetPassword": {
+    "description": "Confirm button in the password reset dialog to submit the new password"
+  },
+  "@buttonCancel": {
+    "description": "Generic cancel button label used in dialogs and bottom sheets"
+  },
+  "@dialogPasswordResetTitle": {
+    "description": "Title of the password reset dialog shown after a teacher-initiated password reset"
+  },
+  "@dialogPasswordResetBody": {
+    "description": "Body text of the password reset dialog explaining why a password change is required"
+  },
+  "@errorFillAllFields": {
+    "description": "Validation error shown when username or password fields are empty"
+  },
+  "@errorPasswordStrength": {
+    "description": "Validation error shown when password does not meet complexity requirements during registration"
+  },
+  "@errorRegistrationFailed": {
+    "description": "Error shown when the registration API call fails"
+  },
+  "@snackbarOfflineLogin": {
+    "description": "SnackBar message shown when login succeeds but only local authentication was available"
+  },
+  "@errorLoginFailed": {
+    "description": "Error shown when the login API call fails due to invalid credentials"
+  },
+  "@errorCurrentPasswordRequired": {
+    "description": "Validation error in the password reset dialog when the current password field is empty"
+  },
+  "@errorPasswordMinLength": {
+    "description": "Validation error when the new password is too short"
+  },
+  "@errorPasswordsDoNotMatch": {
+    "description": "Validation error when new and confirm passwords differ"
+  },
+  "@errorPasswordComplexity": {
+    "description": "Validation error when password lacks uppercase, lowercase, or digit"
+  },
+  "@errorPasswordChangeFailed": {
+    "description": "Error shown when the change-password API call fails"
+  },
+  "@dialogChangePasswordTitle": {
+    "description": "Title of the change-password dialog in account settings"
+  },
+  "@dialogChangePasswordBody": {
+    "description": "Body text in the change-password dialog explaining what to do"
+  },
+  "@buttonUpdatePassword": {
+    "description": "Submit button label in the change-password dialog"
+  },
+  "@snackbarPasswordChanged": {
+    "description": "Success snackbar after a successful password change"
+  },
+  "@loginConnectToHub": {
+    "description": "Offline guidance message shown below the form when the Hub is unreachable"
+  },
+  "@profileSetupTitle": {
+    "description": "Heading at the top of the profile setup page"
+  },
+  "@profileSetupSubtitle": {
+    "description": "Subtitle below the heading on the profile setup page"
+  },
+  "@labelDisplayName": {
+    "description": "Label for the display name text field on the profile setup page"
+  },
+  "@buttonContinue": {
+    "description": "Submit button on the profile setup page to save and proceed to the main app"
+  },
+  "@sectionRecentlyViewed": {
+    "description": "Section header for recently viewed resources list"
+  },
+  "@sectionSubjectCategories": {
+    "description": "Section header for subject category grid"
+  },
+  "@emptyNoSubjects": {
+    "description": "Empty state text when no subject categories are loaded"
+  },
+  "@sectionLocalStorage": {
+    "description": "Section header for device storage usage display"
+  },
+  "@pageTitleBrowseResources": {
+    "description": "AppBar title on the search/browse page"
+  },
+  "@searchFieldHint": {
+    "description": "Hint text in the search field on the browse page"
+  },
+  "@filtersActiveLabel": {
+    "description": "Label shown below search bar when filters are applied with default sort"
+  },
+  "@filtersActiveSorted": {
+    "description": "Label shown when filters are active with a non-default sort",
+    "placeholders": {
+      "sortBy": {
+        "type": "String",
+        "example": "Title A-Z"
+      }
+    }
+  },
+  "@clearFiltersButton": {
+    "description": "Button text to reset all active filters"
+  },
+  "@sectionAllResources": {
+    "description": "Section header for the full resource list when no search query and no filters"
+  },
+  "@sectionRecommendedForYou": {
+    "description": "Section header for personalized resource recommendations"
+  },
+  "@emptyNoResources": {
+    "description": "Empty state text when no resources exist at all"
+  },
+  "@emptyNoSearchResults": {
+    "description": "Empty state text when search or filter yields no matches"
+  },
+  "@errorNoServerNoCache": {
+    "description": "Error message when server is unreachable and no local cache exists"
+  },
+  "@errorRetryButton": {
+    "description": "Button to retry loading resources after an error"
+  },
+  "@badgeKiwixWiki": {
+    "description": "Badge label on Kiwix (Wikipedia) resources in the resource list"
+  },
+  "@filterSheetTitle": {
+    "description": "Title of the filter bottom sheet"
+  },
+  "@filterResourceTypeHeader": {
+    "description": "Section header for resource type filter chips"
+  },
+  "@filterShowLabel": {
+    "description": "Label before grade filter choice chips"
+  },
+  "@filterMyGrade": {
+    "description": "Choice chip to filter resources by the student's own grade"
+  },
+  "@filterAllGrades": {
+    "description": "Choice chip to clear grade filter and show all grades"
+  },
+  "@filterGradeHeader": {
+    "description": "Section header for grade filter chips"
+  },
+  "@filterSubjectHeader": {
+    "description": "Section header for subject filter text field"
+  },
+  "@filterSubjectHint": {
+    "description": "Hint text in the subject filter text field"
+  },
+  "@filterSortByHeader": {
+    "description": "Section header for sort order choice chips"
+  },
+  "@sortTitleAsc": {
+    "description": "Sort chip for alphabetical ascending order by title"
+  },
+  "@sortTitleDesc": {
+    "description": "Sort chip for alphabetical descending order by title"
+  },
+  "@sortByType": {
+    "description": "Sort chip for ordering by resource type"
+  },
+  "@sortByGrade": {
+    "description": "Sort chip for ordering by grade level"
+  },
+  "@filterResetButton": {
+    "description": "Button to clear all filter selections"
+  },
+  "@filterApplyButton": {
+    "description": "Button to apply current filter selections"
+  },
+  "@snackbarAddedToQueueOffline": {
+    "description": "SnackBar shown when resource is queued for download while offline"
+  },
+  "@snackbarAddedToQueue": {
+    "description": "SnackBar confirming a resource was added to the download queue"
+  },
+  "@snackbarDownloadComplete": {
+    "description": "SnackBar confirming a download finished successfully"
+  },
+  "@snackbarDownloadFailed": {
+    "description": "SnackBar shown when a download encounters an error"
+  },
+  "@snackbarDownloadRemoved": {
+    "description": "SnackBar confirming a download was deleted"
+  },
+  "@snackbarRemovedFromSaved": {
+    "description": "SnackBar confirming a resource was removed from saved/bookmarked"
+  },
+  "@snackbarAddedToSaved": {
+    "description": "SnackBar confirming a resource was added to saved/bookmarked"
+  },
+  "@snackbarNotDownloaded": {
+    "description": "SnackBar when user taps an undownloaded resource while offline",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Chapter 1"
+      }
+    }
+  },
+  "@snackbarQueueAction": {
+    "description": "Action button in the offline snackbar to queue the resource for download"
+  },
+  "@dialogDownloadTitle": {
+    "description": "Title of the download confirmation dialog"
+  },
+  "@dialogDownloadContent": {
+    "description": "Download confirmation dialog body",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "Chapter1.pdf"
+      },
+      "sizeLabel": {
+        "type": "String",
+        "example": "5.2 MB"
+      }
+    }
+  },
+  "@dialogDownloadButton": {
+    "description": "Confirm/Download button in the download confirmation dialog"
+  },
+  "@fileSizeUnavailable": {
+    "description": "Fallback text when file size cannot be determined before download"
+  },
+  "@fileSizeUnknownFallback": {
+    "description": "Fallback text in download dialog when sizeLabel is null"
+  },
+  "@pageTitleDetail": {
+    "description": "AppBar title on the resource detail page",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Chapter 1"
+      },
+      "subject": {
+        "type": "String",
+        "example": "Mathematics"
+      }
+    }
+  },
+  "@emptyNoResourcesForType": {
+    "description": "Empty state title when no resources match the filter type",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "textbook"
+      }
+    }
+  },
+  "@emptyNoResourcesDetail": {
+    "description": "Empty state subtitle with subject and grade context",
+    "placeholders": {
+      "subject": {
+        "type": "String",
+        "example": "Mathematics"
+      },
+      "grade": {
+        "type": "String",
+        "example": "Grade 10"
+      }
+    }
+  },
+  "@emptyRefreshButton": {
+    "description": "Button to reload resources from the empty state"
+  },
+  "@resourceSubtitle": {
+    "description": "Subtitle text on each resource list item",
+    "placeholders": {
+      "subject": {
+        "type": "String",
+        "example": "Mathematics"
+      },
+      "grade": {
+        "type": "String",
+        "example": "Grade 10"
+      }
+    }
+  },
+  "@resourceTypeTextbooks": {
+    "description": "Card title for the Textbooks resource category"
+  },
+  "@resourceTypeTextbooksSubtitle": {
+    "description": "Card subtitle description for Textbooks category"
+  },
+  "@resourceTypeVideos": {
+    "description": "Card title for the Videos resource category"
+  },
+  "@resourceTypeVideosSubtitle": {
+    "description": "Card subtitle description for Videos category"
+  },
+  "@resourceTypePyqs": {
+    "description": "Card title for the Previous Year Questions resource category"
+  },
+  "@resourceTypePyqsSubtitle": {
+    "description": "Card subtitle description for PYQs category"
+  },
+  "@resourceTypeNotes": {
+    "description": "Card title for the Notes resource category"
+  },
+  "@resourceTypeNotesSubtitle": {
+    "description": "Card subtitle description for Notes category"
+  },
+  "@resourceCardOpenButton": {
+    "description": "Button label on each resource category card to open its resources"
+  },
+  "@savedResourcesTitle": {
+    "description": "AppBar title at top of saved resources page"
+  },
+  "@tabAll": {
+    "description": "Tab label showing all saved resources"
+  },
+  "@tabTextbooks": {
+    "description": "Tab label filtering saved textbooks"
+  },
+  "@tabVideos": {
+    "description": "Tab label filtering saved videos"
+  },
+  "@tabPyqs": {
+    "description": "Tab label filtering saved PYQs"
+  },
+  "@tabNotes": {
+    "description": "Tab label filtering saved notes"
+  },
+  "@emptyStateAll": {
+    "description": "Empty state when the All tab has no saved resources"
+  },
+  "@emptyStateByType": {
+    "description": "Empty state when a specific type tab has no saved items",
+    "placeholders": {
+      "type": {
+        "type": "String",
+        "example": "textbook"
+      }
+    }
+  },
+  "@headerMyProfile": {
+    "description": "Page header title displayed at top of profile screen"
+  },
+  "@headerAnalytics": {
+    "description": "Page header secondary label, shown next to a bar chart icon"
+  },
+  "@roleBadgeStudent": {
+    "description": "Role badge label in the profile card"
+  },
+  "@initialsFallback": {
+    "description": "Fallback character shown inside the profile avatar when the student's name is empty"
+  },
+  "@editProfileSheetTitle": {
+    "description": "Title of the bottom sheet for editing profile information"
+  },
+  "@editProfileLabelName": {
+    "description": "Label above the full-name text field in the edit profile sheet"
+  },
+  "@editProfileLabelGrade": {
+    "description": "Label above the grade dropdown in the edit profile sheet"
+  },
+  "@editProfileGradeHint": {
+    "description": "Placeholder hint text in the grade dropdown when no grade is loaded yet"
+  },
+  "@editProfileLabelStudentId": {
+    "description": "Label above the read-only student-ID field in the edit profile sheet"
+  },
+  "@editProfileErrorSnackbar": {
+    "description": "SnackBar shown when the profile update API call fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Connection refused"
+      }
+    }
+  },
+  "@editProfileSaveButton": {
+    "description": "Elevated button label to submit profile edits"
+  },
+  "@statCardToday": {
+    "description": "Stat card label for today's study minutes"
+  },
+  "@statCardThisWeek": {
+    "description": "Stat card label for this week's study time"
+  },
+  "@statCardSaved": {
+    "description": "Stat card label for the count of saved/bookmarked resources"
+  },
+  "@statCardStreak": {
+    "description": "Stat card label for consecutive-day streak count"
+  },
+  "@sectionSubjectBreakdown": {
+    "description": "Section header above the subject-breakdown chart"
+  },
+  "@sectionRecentActivity": {
+    "description": "Section header above the recent-activity timeline"
+  },
+  "@emptyStateSubjectBreakdown": {
+    "description": "Empty-state message in the subject-breakdown section when no activity is recorded"
+  },
+  "@emptyStateRecentActivity": {
+    "description": "Empty-state message in the recent-activity section when no history exists"
+  },
+  "@toggleShowLess": {
+    "description": "Toggle label to collapse the activity list back to 5 items"
+  },
+  "@toggleShowAll": {
+    "description": "Toggle label to expand the activity list showing the total count",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "@suffixMinutes": {
+    "description": "Minutes suffix appended to numeric values in stat cards"
+  },
+  "@suffixHours": {
+    "description": "Hours suffix appended to numeric values in stat cards and subject breakdown"
+  },
+  "@suffixDays": {
+    "description": "Days suffix with leading space appended to the streak count in the stat card"
+  },
+  "@suffixPercent": {
+    "description": "Percent sign appended to subject-breakdown percentage values"
+  },
+  "@activityVerbViewed": {
+    "description": "Past-tense verb in the activity feed for a view action"
+  },
+  "@activityVerbSearched": {
+    "description": "Past-tense verb in the activity feed for a search action"
+  },
+  "@activityVerbDownloaded": {
+    "description": "Past-tense verb in the activity feed for a download action"
+  },
+  "@activityVerbWatched": {
+    "description": "Past-tense verb in the activity feed for a watch action"
+  },
+  "@activityVerbSaved": {
+    "description": "Past-tense verb in the activity feed for a save action"
+  },
+  "@activityVerbOpened": {
+    "description": "Past-tense verb in the activity feed for an open action"
+  },
+  "@activityVerbCompleted": {
+    "description": "Past-tense verb in the activity feed for a complete action"
+  },
+  "@activityTitleFallback": {
+    "description": "Fallback activity title when the resource title is missing",
+    "placeholders": {
+      "verb": {
+        "type": "String",
+        "example": "Viewed"
+      }
+    }
+  },
+  "@relativeTimeJustNow": {
+    "description": "Relative timestamp label for events less than 1 minute ago"
+  },
+  "@relativeTimeMinutesAgo": {
+    "description": "Relative timestamp pattern for minutes ago",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "@relativeTimeHoursAgo": {
+    "description": "Relative timestamp pattern for hours ago with conditional plural",
+    "placeholders": {
+      "hours": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "@relativeTimeDaysAgo": {
+    "description": "Relative timestamp pattern for days ago with conditional plural",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "7"
+      }
+    }
+  },
+  "@relativeTimeMonthsAgo": {
+    "description": "Relative timestamp pattern for months ago with conditional plural",
+    "placeholders": {
+      "months": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "@settingsSheetTitle": {
+    "description": "Header/title of the settings bottom sheet panel"
+  },
+  "@settingsLanguageTitle": {
+    "description": "ListTile title for the language picker in settings"
+  },
+  "@settingsLanguageSubtitle": {
+    "description": "ListTile subtitle for the language picker in settings"
+  },
+  "@darkModeLabel": {
+    "description": "Label on the theme toggle tile when dark mode is active"
+  },
+  "@lightModeLabel": {
+    "description": "Label on the theme toggle tile when light mode is active"
+  },
+  "@switchToLightThemeSubtitle": {
+    "description": "Subtitle under the theme toggle when dark mode is active"
+  },
+  "@switchToDarkThemeSubtitle": {
+    "description": "Subtitle under the theme toggle when light mode is active"
+  },
+  "@appIconLabel": {
+    "description": "Label on the app icon toggle tile when dark icon is active"
+  },
+  "@appIconLightLabel": {
+    "description": "Label on the app icon toggle tile when light icon is active"
+  },
+  "@appIconDarkSubtitle": {
+    "description": "Subtitle for the dark app icon toggle"
+  },
+  "@appIconLightSubtitle": {
+    "description": "Subtitle for the light app icon toggle"
+  },
+  "@storageOfflineLibraryTitle": {
+    "description": "ListTile title navigating to the offline library page"
+  },
+  "@storageOfflineLibrarySubtitle": {
+    "description": "ListTile subtitle describing the storage/offline library action"
+  },
+  "@networkSettingsTitle": {
+    "description": "ListTile title to open system WiFi settings"
+  },
+  "@networkSettingsSubtitle": {
+    "description": "ListTile subtitle describing the network settings action"
+  },
+  "@logOutButtonLabel": {
+    "description": "Red-colored ListTile title that triggers the logout flow"
+  },
+  "@settingsAccountTitle": {
+    "description": "ListTile title for the account settings section in the settings sheet"
+  },
+  "@settingsAccountSubtitleOnline": {
+    "description": "ListTile subtitle when the Hub is reachable, indicating password change is available"
+  },
+  "@settingsAccountSubtitleOffline": {
+    "description": "ListTile subtitle when the Hub is unreachable, prompting connection"
+  },
+  "@offlineLibraryAppBarTitle": {
+    "description": "AppBar title for the offline library page"
+  },
+  "@emptyOfflineLibraryMessage": {
+    "description": "Empty state message shown when no resources have been downloaded"
+  },
+  "@deleteDownloadDialogTitle": {
+    "description": "AlertDialog title shown when user taps delete on a downloaded resource"
+  },
+  "@deleteDownloadConfirmation": {
+    "description": "AlertDialog body confirming deletion of a specific resource",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Chapter 1"
+      }
+    }
+  },
+  "@deleteConfirmButtonLabel": {
+    "description": "AlertDialog button to confirm deletion"
+  },
+  "@downloadChannelName": {
+    "description": "Android notification channel name for download notifications"
+  },
+  "@downloadChannelDescription": {
+    "description": "Android notification channel description shown in system notification settings"
+  },
+  "@downloadCompleteNotificationTitle": {
+    "description": "Title of the local notification shown when a download finishes"
+  },
+  "@downloadCompleteNotificationBody": {
+    "description": "Body text of the download-complete notification",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Chapter 1"
+      }
+    }
+  },
+  "@downloadFailedNotificationTitle": {
+    "description": "Title of the local notification shown when a download fails"
+  },
+  "@downloadFailedNotificationBody": {
+    "description": "Body text of the download-failed notification",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Chapter 1"
+      }
+    }
+  },
+  "@stepperStepWelcome": {
+    "description": "Label for step 1 of the onboarding stepper"
+  },
+  "@stepperStepLoginRegister": {
+    "description": "Label for step 2 of the onboarding stepper"
+  },
+  "@stepperStepAccess": {
+    "description": "Label for step 3 of the onboarding stepper"
+  },
+  "@pdfPageOfLabel": {
+    "description": "Label showing current page out of total pages in the PDF viewer",
+    "placeholders": {
+      "currentPage": {
+        "type": "int",
+        "example": "1"
+      },
+      "totalPages": {
+        "type": "int",
+        "example": "50"
+      }
+    }
+  },
+  "@pdfEnterPageNumberHint": {
+    "description": "Hint text inside the page-jump text field"
+  },
+  "@pdfGoButton": {
+    "description": "Button label to navigate to a typed page number"
+  },
+  "@pdfTapToJumpLabel": {
+    "description": "Label below the page slider inviting user to tap for page picker"
+  },
+  "@pdfZoomPercent": {
+    "description": "Zoom level displayed as a percentage next to zoom +/- buttons",
+    "placeholders": {
+      "zoomLevel": {
+        "type": "String",
+        "example": "150"
+      }
+    }
+  },
+  "@videoLocalFileNotFound": {
+    "description": "Error message when the local video file does not exist on disk"
+  },
+  "@videoFailedToLoad": {
+    "description": "Error message shown when video initialization fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Format not supported"
+      }
+    }
+  },
+  "@videoMiniPlayerTooltip": {
+    "description": "Tooltip on the picture-in-picture icon button in the app bar"
+  },
+  "@kiwixDefaultTitle": {
+    "description": "Default app bar title when no title is provided for the Kiwix WebView"
+  },
+  "@thumbnailWikiLabel": {
+    "description": "Fallback label shown on thumbnail for kiwix-type resources when no image is available"
+  },
+  "@zimAppBarTitle": {
+    "description": "App bar title for the ZIM/Wikipedia browser page"
+  },
+  "@zimSearchHint": {
+    "description": "Hint text in the search text field of the ZIM browser"
+  },
+  "@zimNoArticlesEmpty": {
+    "description": "Empty state message when the initial article list has no content"
+  },
+  "@zimNoResultsEmpty": {
+    "description": "Empty state message when a search returns no matching articles"
+  },
+  "@zimUntitledArticleFallback": {
+    "description": "Fallback display title when an article has no title in the API response"
+  },
+  "@zimFailedToLoadArticles": {
+    "description": "Error message when the initial article list fails to load from the server",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Connection refused"
+      }
+    }
+  },
+  "@zimSearchFailed": {
+    "description": "Error message when a search request fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Timeout"
+      }
+    }
+  },
+  "@zimFailedToLoadArticle": {
+    "description": "SnackBar error when opening an individual article fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "404"
+      }
+    }
+  },
+  "@dialogSetNameTitle": {
+    "description": "Title of the dialog prompting a student to set their display name after login"
+  },
+  "@dialogSetNameBody": {
+    "description": "Body text in the name prompt dialog explaining why a name is requested"
+  },
+  "@buttonSave": {
+    "description": "Submit button to save a value, e.g. in the name prompt dialog"
+  },
+  "@buttonSkip": {
+    "description": "Button to skip a non-required action, e.g. setting a display name"
+  },
+  "@bottomNavStudents": {
+    "description": "Bottom navigation tab label for the students/teacher monitor page"
+  },
+  "@zimArticleNotFound": {
+    "description": "Snackbar message when a ZIM article fetch returns empty content"
+  },
+  "@teacherPageTitle": {
+    "description": "AppBar title on the teacher student monitor page"
+  },
+  "@teacherFilterByGrade": {
+    "description": "Tooltip for the grade filter popup menu button"
+  },
+  "@teacherAllGrades": {
+    "description": "Menu item text to clear grade filter and show all students"
+  },
+  "@teacherCouldNotLoadStudents": {
+    "description": "Error heading when student list fails to load"
+  },
+  "@teacherCheckHubConnection": {
+    "description": "Error subtitle suggesting the user check hub connectivity"
+  },
+  "@teacherRetry": {
+    "description": "Retry button text for teacher page error state"
+  },
+  "@teacherSearchStudentsHint": {
+    "description": "Hint text in the search field for filtering students"
+  },
+  "@teacherNoStudentsMatchSearch": {
+    "description": "Empty state text when student search yields no results"
+  },
+  "@teacherNoStudentsFound": {
+    "description": "Empty state text when no students are registered"
+  },
+  "@teacherShowing": {
+    "description": "Label on the grade filter banner showing which grade is selected",
+    "placeholders": {
+      "grade": {
+        "type": "String",
+        "example": "Grade 10"
+      }
+    }
+  },
+  "@teacherLabelToday": {
+    "description": "Label below the today-minutes stat chip in teacher student card"
+  },
+  "@teacherLabelStreak": {
+    "description": "Label below the streak stat chip in teacher student card"
+  },
+  "@teacherLabelSaved": {
+    "description": "Label below the saved count stat chip in teacher student card"
+  },
+  "@teacherLabelDownloaded": {
+    "description": "Label below the downloaded count stat chip in teacher student card"
+  },
+  "@teacherOverview": {
+    "description": "Section header for the overview stat cards on the student progress page"
+  },
+  "@teacherThisMonth": {
+    "description": "Stat box label for monthly study minutes"
+  },
+  "@teacherShowMore": {
+    "description": "Button text to load more activity items, showing remaining count",
+    "placeholders": {
+      "remaining": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "@teacherCouldNotLoadAnalytics": {
+    "description": "Error text displayed when analytics data fails to load"
+  },
+  "@teacherNoActivityRecorded": {
+    "description": "Empty state text in the activity section when no history exists"
+  },
+  "@sectionSubjects": {
+    "description": "Section header for the subject categories grid on the dashboard"
+  },
+  "@sectionSubjectsEmpty": {
+    "description": "Empty state text when no subject categories are loaded"
+  },
+  "@resourcePageResources": {
+    "description": "Section label above the resource type list on the resource page"
+  },
+  "@showPassword": {
+    "description": "Tooltip for the password visibility toggle icon button when the password is hidden"
+  },
+  "@hidePassword": {
+    "description": "Tooltip for the password visibility toggle icon button when the password is visible"
+  },
+  "@semanticsSettings": {
+    "description": "Semantics label for the settings button"
+  },
+  "@semanticsSearchResources": {
+    "description": "Semantics label for the search resources field"
+  },
+  "@semanticsFilterResources": {
+    "description": "Semantics label for the filter resources button"
+  },
+  "@semanticsSelectLanguage": {
+    "description": "Semantics label for language selector",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "English"
+      }
+    }
+  },
+  "@semanticsOpenVideoPlayer": {
+    "description": "Semantics label for opening the video player"
+  },
+  "@semanticsCloseMiniPlayer": {
+    "description": "Semantics label for closing the mini player"
+  },
+  "@semanticsTogglePlay": {
+    "description": "Semantics label for the play/pause toggle button"
+  },
+  "@tooltipBackToResource": {
+    "description": "Tooltip for the back-to-resource button in the video player"
+  },
+  "@tooltipDeleteDownload": {
+    "description": "Tooltip for the delete download button",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Chapter 1"
+      }
+    }
+  },
+  "@connectionOfflineBanner": {
+    "description": "Banner text shown when the device is offline"
+  },
+  "@notificationDownloadFailedTitle": {
+    "description": "Title of the notification shown when a download fails"
+  },
+  "@notificationDownloadFailedBody": {
+    "description": "Notification body shown when download fails",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Chapter 1"
+      }
+    }
+  },
+  "@studentNameUnknown": {
+    "description": "Fallback text when a student's name is not available"
+  },
+  "@activityPastTense": {
+    "description": "Fallback past-tense verb construction for unknown activity types",
+    "placeholders": {
+      "verb": {
+        "type": "String",
+        "example": "View"
+      }
+    }
+  },
+  "@storageAppSize": {
+    "description": "App cache size label",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "42.5"
+      }
+    }
+  },
+  "@hubStrengthCalculating": {
+    "description": "Hub strength status label while connection quality is being recalculated"
+  },
+  "@resourceFallbackTitle": {
+    "description": "Fallback title for a resource when no title is available"
+  },
+  "@subjectFallbackGeneral": {
+    "description": "Fallback subject name when no subject is provided by the server"
+  },
+  "@subjectNameUnknown": {
+    "description": "Fallback text for an unknown subject name in subject breakdown"
+  }
 }

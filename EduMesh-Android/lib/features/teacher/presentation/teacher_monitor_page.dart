@@ -79,6 +79,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
@@ -93,8 +94,8 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
                 _loadData();
               },
               itemBuilder: (_) => [
-                PopupMenuItem(value: null, child: Text(l10n.teacherAllGrades, style: TextStyle(fontWeight: _selectedGrade == null ? AppSpacing.weightStrong : AppSpacing.weightBody))),
-                ..._grades.map((g) => PopupMenuItem(value: g, child: Text(g, style: TextStyle(fontWeight: _selectedGrade == g ? AppSpacing.weightStrong : AppSpacing.weightBody)))),
+                PopupMenuItem(value: null, child: Text(l10n.teacherAllGrades, style: tt.titleSmall?.copyWith(fontWeight: _selectedGrade == null ? AppSpacing.weightStrong : AppSpacing.weightBody))),
+                ..._grades.map((g) => PopupMenuItem(value: g, child: Text(g, style: tt.titleSmall?.copyWith(fontWeight: _selectedGrade == g ? AppSpacing.weightStrong : AppSpacing.weightBody)))),
               ],
             ),
         ],
@@ -104,6 +105,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
   }
 
   Widget _buildBody(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
@@ -111,16 +113,16 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
     if (_error != null) {
       return Center(
         child: Padding(
-          padding: EdgeInsets.all(24.w),
+          padding: EdgeInsets.all(AppSpacing.xxl.w),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.cloud_off_rounded, size: 48.sp, color: cs.error),
-              SizedBox(height: 12.h),
-              Text(l10n.teacherCouldNotLoadStudents, style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
-              SizedBox(height: 4.h),
-              Text(l10n.teacherCheckHubConnection, style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant)),
-              SizedBox(height: 16.h),
+              SizedBox(height: AppSpacing.md.h),
+              Text(l10n.teacherCouldNotLoadStudents, style: tt.titleMedium),
+              SizedBox(height: AppSpacing.xs.h),
+              Text(l10n.teacherCheckHubConnection, style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+              SizedBox(height: AppSpacing.lg.h),
               FilledButton.tonalIcon(onPressed: _loadData, icon: const Icon(Icons.refresh_rounded), label: Text(l10n.teacherRetry)),
             ],
           ),
@@ -133,13 +135,13 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
         if (_selectedGrade != null)
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
             color: LuminaColors.academicTeal.withValues(alpha: 0.08),
             child: Row(
               children: [
                 Icon(Icons.filter_alt_rounded, size: 16.sp, color: LuminaColors.academicTeal),
-                SizedBox(width: 8.w),
-                Expanded(child: Text(l10n.teacherShowing(_selectedGrade!), style: TextStyle(fontSize: 13.sp, color: LuminaColors.academicTeal))),
+                SizedBox(width: AppSpacing.sm.w),
+                Expanded(child: Text(l10n.teacherShowing(_selectedGrade!), style: tt.titleSmall?.copyWith(color: LuminaColors.academicTeal))),
                 GestureDetector(
                   onTap: () { setState(() { _selectedGrade = null; }); _loadData(); },
                   child: Icon(Icons.close_rounded, size: 18.sp, color: LuminaColors.academicTeal),
@@ -148,7 +150,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
             ),
           ),
         Padding(
-          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
+            padding: EdgeInsets.fromLTRB(AppSpacing.lg.w, AppSpacing.md.h, AppSpacing.lg.w, AppSpacing.sm.h),
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
@@ -158,7 +160,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
                   ? IconButton(icon: const Icon(Icons.clear_rounded), onPressed: () { _searchController.clear(); setState(() { _searchQuery = ''; _applySearch(); }); })
                   : null,
               isDense: true,
-              contentPadding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
+              contentPadding: EdgeInsets.symmetric(vertical: AppSpacing.md.h, horizontal: AppSpacing.md.w),
             ),
             onChanged: (v) { setState(() { _searchQuery = v; _applySearch(); }); },
           ),
@@ -169,9 +171,9 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.people_outline_rounded, size: 48.sp, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
-                  SizedBox(height: 12.h),
-                  Text(_searchQuery.isNotEmpty ? l10n.teacherNoStudentsMatchSearch : l10n.teacherNoStudentsFound, style: TextStyle(fontSize: 16.sp, color: cs.onSurfaceVariant)),
+                  Icon(Icons.people_outline_rounded, size: 48.sp, color: cs.onSurfaceVariant),
+                  SizedBox(height: AppSpacing.md.h),
+                  Text(_searchQuery.isNotEmpty ? l10n.teacherNoStudentsMatchSearch : l10n.teacherNoStudentsFound, style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -181,7 +183,7 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
             child: RefreshIndicator(
               onRefresh: _loadData,
               child: ListView.builder(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.xs.h),
                 itemCount: _filteredStudents.length,
                 itemBuilder: (_, i) => _buildStudentCard(cs, _filteredStudents[i]),
               ),
@@ -192,8 +194,9 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
   }
 
   Widget _buildStudentCard(ColorScheme cs, Map<String, dynamic> s) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
-    final name = s['name'] as String? ?? 'Unknown';
+    final name = s['name'] as String? ?? l10n.studentNameUnknown;
     final grade = s['grade'] as String? ?? '';
     final todayMin = s['study_minutes_today'] as int? ?? 0;
     final streak = s['streak_days'] as int? ?? 0;
@@ -206,20 +209,25 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
       try {
         final dt = DateTime.parse(lastActive);
         final diff = DateTime.now().difference(dt);
-        if (diff.inMinutes < 1) timeAgo = l10n.relativeTimeJustNow;
-        else if (diff.inMinutes < 60) timeAgo = l10n.relativeTimeMinutesAgo(diff.inMinutes);
-        else if (diff.inHours < 24) timeAgo = l10n.relativeTimeHoursAgo(diff.inHours);
-        else timeAgo = l10n.relativeTimeDaysAgo(diff.inDays);
+        if (diff.inMinutes < 1) {
+          timeAgo = l10n.relativeTimeJustNow;
+        } else if (diff.inMinutes < 60) {
+          timeAgo = l10n.relativeTimeMinutesAgo(diff.inMinutes);
+        } else if (diff.inHours < 24) {
+          timeAgo = l10n.relativeTimeHoursAgo(diff.inHours);
+        } else {
+          timeAgo = l10n.relativeTimeDaysAgo(diff.inDays);
+        }
       } catch (_) { timeAgo = ''; }
     }
 
     return Card(
-      margin: EdgeInsets.only(bottom: 8.h),
+      margin: EdgeInsets.only(bottom: AppSpacing.sm.h),
       child: InkWell(
         borderRadius: BorderRadius.circular(12.r),
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => StudentProgressPage(scholarId: s['id'] as String, scholarName: name))),
         child: Padding(
-          padding: EdgeInsets.all(14.w),
+          padding: EdgeInsets.all(AppSpacing.md.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -227,20 +235,20 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
                 children: [
                   CircleAvatar(
                     radius: 20.r,
-                    backgroundColor: LuminaColors.academicTeal.withValues(alpha: 0.15),
-                    child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong, color: LuminaColors.academicTeal)),
+                    backgroundColor: cs.surfaceContainerHighest,
+                    child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: tt.titleMedium?.copyWith(color: LuminaColors.academicTeal)),
                   ),
-                  SizedBox(width: 12.w),
+                  SizedBox(width: AppSpacing.md.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: TextStyle(fontSize: 15.sp, fontWeight: AppSpacing.weightStrong)),
+                        Text(name, style: tt.titleMedium),
                         Row(
                           children: [
-                            if (grade.isNotEmpty) Text(grade, style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant)),
-                            if (grade.isNotEmpty && timeAgo.isNotEmpty) Text(' · ', style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant)),
-                            if (timeAgo.isNotEmpty) Text(timeAgo, style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant)),
+                            if (grade.isNotEmpty) Text(grade, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                            if (grade.isNotEmpty && timeAgo.isNotEmpty) Text(' · ', style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                            if (timeAgo.isNotEmpty) Text(timeAgo, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                           ],
                         ),
                       ],
@@ -249,15 +257,15 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
                   Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
                 ],
               ),
-              SizedBox(height: 10.h),
+              SizedBox(height: AppSpacing.md.h),
               Row(
                 children: [
-                  _statChip(cs, Icons.timer_rounded, '${todayMin}m', l10n.teacherLabelToday),
-                  SizedBox(width: 8.w),
-                  _statChip(cs, Icons.local_fire_department_rounded, '$streak d', l10n.teacherLabelStreak),
-                  SizedBox(width: 8.w),
+                  _statChip(cs, Icons.timer_rounded, '$todayMin${l10n.suffixMinutes}', l10n.teacherLabelToday),
+                  SizedBox(width: AppSpacing.sm.w),
+                  _statChip(cs, Icons.local_fire_department_rounded, '$streak${l10n.suffixDays}', l10n.teacherLabelStreak),
+                  SizedBox(width: AppSpacing.sm.w),
                   _statChip(cs, Icons.bookmark_rounded, '$saved', l10n.teacherLabelSaved),
-                  SizedBox(width: 8.w),
+                  SizedBox(width: AppSpacing.sm.w),
                   _statChip(cs, Icons.download_rounded, '$downloaded', l10n.teacherLabelDownloaded),
                 ],
               ),
@@ -269,21 +277,22 @@ class _TeacherMonitorPageState extends State<TeacherMonitorPage> {
   }
 
   Widget _statChip(ColorScheme cs, IconData icon, String value, String label) {
+    final tt = Theme.of(context).textTheme;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 12.sp, color: cs.onSurfaceVariant),
-          SizedBox(width: 4.w),
-          Text(value, style: TextStyle(fontSize: 11.sp, fontWeight: AppSpacing.weightStrong)),
+          SizedBox(width: AppSpacing.xs.w),
+          Text(value, style: tt.labelSmall?.copyWith(fontWeight: AppSpacing.weightStrong)),
           if (label.isNotEmpty) ...[
-            SizedBox(width: 2.w),
-            Text(label, style: TextStyle(fontSize: 10.sp, color: cs.onSurfaceVariant)),
+            SizedBox(width: AppSpacing.xs.w),
+            Text(label, style: tt.labelSmall?.copyWith(fontSize: 10.sp, color: cs.onSurfaceVariant)),
           ],
         ],
       ),

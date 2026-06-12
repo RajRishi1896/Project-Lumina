@@ -1,15 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'login_page.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/lumina_colors.dart';
+import '../../../core/providers/locale_provider.dart';
 import '../../../core/services/connection_service.dart';
+import '../../../core/services/app_info_service.dart';
 import '../../../shared/widgets/lumina_stepper.dart';
-import '../data/auth_service.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 const _illustrationSvg = '''
@@ -82,20 +83,21 @@ class _WelcomePageState extends State<WelcomePage> {
     try {
       final dir = await getApplicationDocumentsDirectory();
       final sizeInBytes = await _getDirSize(dir);
-      final apkSize = await AuthService().getApkSize();
+      final apkSize = AppInfoService.getApkSize();
       final totalSizeInMb = (sizeInBytes + apkSize) / (1024 * 1024);
       
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         setState(() {
           if (totalSizeInMb < 1024) {
-            _storageUsed = '${totalSizeInMb.toStringAsFixed(1)} MB Used';
+            _storageUsed = l10n.storageMbUsed(totalSizeInMb.toStringAsFixed(1));
           } else {
-            _storageUsed = '${(totalSizeInMb / 1024).toStringAsFixed(1)} GB Used';
+            _storageUsed = l10n.storageGbUsed((totalSizeInMb / 1024).toStringAsFixed(1));
           }
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _storageUsed = 'Unknown');
+      if (mounted) { final l10n = AppLocalizations.of(context)!; setState(() => _storageUsed = l10n.storageUnknown); }
     }
   }
 
@@ -141,20 +143,20 @@ class _WelcomePageState extends State<WelcomePage> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl.w, vertical: AppSpacing.xxl.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                LuminaStepper(currentStep: 0),
-                SizedBox(height: 32.h),
+                const LuminaStepper(currentStep: 0),
+                SizedBox(height: AppSpacing.section.h),
                 _buildIllustration(context),
-                SizedBox(height: 40.h),
+                SizedBox(height: AppSpacing.sectionLg.h),
                 _buildContent(context),
-                SizedBox(height: 32.h),
+                SizedBox(height: AppSpacing.section.h),
                 _buildLanguageSelection(context),
-                SizedBox(height: 48.h),
+                SizedBox(height: AppSpacing.touchTarget.h),
                 _buildCTA(context),
-                SizedBox(height: 40.h),
+                SizedBox(height: AppSpacing.sectionLg.h),
                 _buildDeviceStatus(context),
               ],
             ),
@@ -168,6 +170,7 @@ class _WelcomePageState extends State<WelcomePage> {
 
   Widget _buildIllustration(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
@@ -193,7 +196,7 @@ class _WelcomePageState extends State<WelcomePage> {
             right: 0,
             child: Center(
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.sm.h),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(8.r),
@@ -203,12 +206,10 @@ class _WelcomePageState extends State<WelcomePage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.sync, color: cs.secondary, size: 18.sp),
-                    SizedBox(width: 8.w),
+                    SizedBox(width: AppSpacing.sm.w),
                     Text(
                       l10n.illustrationBadgeNoInternet,
-                      style: GoogleFonts.atkinsonHyperlegible(
-                        fontSize: 12.sp,
-                        fontWeight: AppSpacing.weightStrong,
+                      style: tt.labelSmall?.copyWith(
                         color: cs.onSurfaceVariant,
                       ),
                     ),
@@ -224,6 +225,7 @@ class _WelcomePageState extends State<WelcomePage> {
 
   Widget _buildContent(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
 
     return Column(
@@ -231,20 +233,16 @@ class _WelcomePageState extends State<WelcomePage> {
         Text(
           l10n.welcomeTitle,
           textAlign: TextAlign.center,
-          style: GoogleFonts.atkinsonHyperlegible(
-            fontSize: 32.sp,
-            fontWeight: AppSpacing.weightDisplay,
+          style: tt.displaySmall?.copyWith(
             color: cs.primary,
             height: 1.1,
           ),
         ),
-        SizedBox(height: 12.h),
+        SizedBox(height: AppSpacing.md.h),
         Text(
           l10n.welcomeSubtitle,
           textAlign: TextAlign.center,
-          style: GoogleFonts.atkinsonHyperlegible(
-            fontSize: 16.sp,
-            fontWeight: AppSpacing.weightBody,
+          style: tt.bodyLarge?.copyWith(
             color: cs.onSurfaceVariant,
           ),
         ),
@@ -254,6 +252,7 @@ class _WelcomePageState extends State<WelcomePage> {
 
   Widget _buildLanguageSelection(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
 
     return Column(
@@ -261,33 +260,50 @@ class _WelcomePageState extends State<WelcomePage> {
       children: [
         Text(
           l10n.languageSectionHeader,
-          style: GoogleFonts.atkinsonHyperlegible(
-            fontSize: 12.sp,
+          style: tt.labelSmall?.copyWith(
             fontWeight: AppSpacing.weightStrong,
             color: cs.secondary,
             letterSpacing: 1.5,
           ),
         ),
-        SizedBox(height: 12.h),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          mainAxisSpacing: 12.h,
-          crossAxisSpacing: 12.w,
-          childAspectRatio: 2.5,
-          children: [
-            _LanguageButton(label: l10n.languageEnglish, isSelected: true, isEnabled: true, cs: cs),
-            _LanguageButton(label: l10n.languageKiswahili, isSelected: false, isEnabled: false, cs: cs),
-            _LanguageButton(label: l10n.languageHindi, isSelected: false, isEnabled: false, cs: cs),
-            _LanguageButton(label: l10n.languageMore, isSelected: false, isEnabled: false, cs: cs),
-          ],
-        ),
+        SizedBox(height: AppSpacing.md.h),
+        Consumer(builder: (context, ref, child) {
+          final currentLocale = ref.watch(localeProvider);
+          final options = appLanguageOptions.where((o) => o['code'] != null).toList();
+          return GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            mainAxisSpacing: 12.h,
+            crossAxisSpacing: 12.w,
+            childAspectRatio: 2.5,
+            children: options.map((o) {
+              final code = o['code']!;
+              final isSelected = code == currentLocale.languageCode;
+              String label;
+              switch (code) {
+                case 'en': label = l10n.languageEnglish; break;
+                case 'hi': label = l10n.languageHindi; break;
+                case 'kn': label = l10n.languageKannada; break;
+                case 'fr': label = l10n.languageFrench; break;
+                default: label = code;
+              }
+              return _LanguageButton(
+                label: label,
+                isSelected: isSelected,
+                isEnabled: true,
+                cs: cs,
+                onTap: () => ref.read(localeProvider.notifier).setLocale(code),
+              );
+            }).toList(),
+          );
+        }),
       ],
     );
   }
 
   Widget _buildCTA(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       width: double.infinity,
@@ -300,7 +316,7 @@ class _WelcomePageState extends State<WelcomePage> {
         style: ElevatedButton.styleFrom(
           backgroundColor: LuminaColors.ctaGold,
           foregroundColor: LuminaColors.ctaGoldText,
-          padding: EdgeInsets.symmetric(vertical: 16.h),
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.lg.h),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8.r),
             side: const BorderSide(color: LuminaColors.ctaGoldBorder, width: 2),
@@ -312,12 +328,11 @@ class _WelcomePageState extends State<WelcomePage> {
           children: [
             Text(
               l10n.ctaEnterPortal,
-              style: GoogleFonts.atkinsonHyperlegible(
-                fontSize: 20.sp,
+              style: tt.titleLarge?.copyWith(
                 fontWeight: AppSpacing.weightStrong,
               ),
             ),
-            SizedBox(width: 8.w),
+            SizedBox(width: AppSpacing.sm.w),
             Icon(Icons.arrow_forward, size: 24.sp),
           ],
         ),
@@ -330,7 +345,7 @@ class _WelcomePageState extends State<WelcomePage> {
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      padding: EdgeInsets.only(top: 24.h),
+      padding: EdgeInsets.only(top: AppSpacing.xxl.h),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: cs.outlineVariant)),
       ),
@@ -360,45 +375,53 @@ class _LanguageButton extends StatelessWidget {
   final bool isSelected;
   final bool isEnabled;
   final ColorScheme cs;
+  final VoidCallback? onTap;
 
   const _LanguageButton({
     required this.label,
     required this.isSelected,
     required this.isEnabled,
     required this.cs,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isEnabled ? cs.onPrimary : cs.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(
-          color: isSelected 
-              ? cs.primary 
-              : (isEnabled ? cs.outlineVariant : cs.outlineVariant.withValues(alpha: 0.5)),
-          width: isSelected ? 2 : 1,
+    final tt = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      label: AppLocalizations.of(context)!.semanticsSelectLanguage(label),
+      child: GestureDetector(
+      onTap: (isEnabled && onTap != null) ? onTap : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isEnabled ? cs.onPrimary : cs.surfaceContainerHighest.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(
+            color: isSelected 
+                ? cs.primary 
+                : (isEnabled ? cs.outlineVariant : cs.surfaceContainerHighest),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: tt.titleSmall?.copyWith(
+                color: isSelected 
+                    ? cs.primary 
+                    : (isEnabled ? cs.onSurfaceVariant : cs.outline),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle, color: cs.primary, size: 18.sp),
+          ],
         ),
       ),
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.atkinsonHyperlegible(
-              fontSize: 14.sp,
-              fontWeight: AppSpacing.weightStrong,
-              color: isSelected 
-                  ? cs.primary 
-                  : (isEnabled ? cs.onSurfaceVariant : cs.outline),
-            ),
-          ),
-          if (isSelected)
-            Icon(Icons.check_circle, color: cs.primary, size: 18.sp),
-        ],
-      ),
+    ),
     );
   }
 }
@@ -418,25 +441,23 @@ class _StatusItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     return Row(
       children: [
         Icon(icon, color: cs.secondary, size: 24.sp),
-        SizedBox(width: 8.w),
+        SizedBox(width: AppSpacing.sm.w),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               label,
-              style: GoogleFonts.atkinsonHyperlegible(
-                fontSize: 12.sp,
-                fontWeight: AppSpacing.weightBody,
+              style: tt.bodySmall?.copyWith(
                 color: cs.onSurfaceVariant,
               ),
             ),
             Text(
               value.toUpperCase(),
-              style: GoogleFonts.atkinsonHyperlegible(
-                fontSize: 10.sp,
+              style: tt.labelSmall?.copyWith(
                 fontWeight: AppSpacing.weightDisplay,
                 color: cs.onSurfaceVariant,
               ),

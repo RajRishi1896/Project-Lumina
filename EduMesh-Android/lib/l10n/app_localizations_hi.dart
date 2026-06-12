@@ -15,102 +15,105 @@ class AppLocalizationsHi extends AppLocalizations {
   String get materialAppTitle => 'Edu-Mesh Scholar';
 
   @override
-  String get bottomNavDashboard => 'Dashboard';
+  String get bottomNavDashboard => 'डैशबोर्ड';
 
   @override
-  String get bottomNavBrowse => 'Browse';
+  String get bottomNavBrowse => 'ब्राउज़ करें';
 
   @override
-  String get bottomNavSaved => 'Saved';
+  String get bottomNavSaved => 'सहेजा गया';
 
   @override
-  String get bottomNavProfile => 'Profile';
+  String get bottomNavProfile => 'प्रोफ़ाइल';
 
   @override
-  String get doubleBackToExitMessage => 'Press back again to exit';
+  String get doubleBackToExitMessage => 'बाहर निकलने के लिए फिर से पीछे दबाएं';
 
   @override
-  String get exitButtonLabel => 'Exit';
+  String get exitButtonLabel => 'बाहर निकलें';
 
   @override
-  String get welcomeTitle => 'Connected to Learning Hub';
+  String get welcomeTitle => 'लर्निंग हब से जुड़ा';
 
   @override
   String get welcomeSubtitle =>
-      'No Internet Needed. Access thousands of books and courses locally.';
+      'इंटरनेट की ज़रूरत नहीं। हज़ारों किताबें और पाठ्यक्रम स्थानीय रूप से उपलब्ध।';
 
   @override
-  String get illustrationBadgeNoInternet => 'No Internet Connection Required!';
+  String get illustrationBadgeNoInternet => 'इंटरनेट कनेक्शन की आवश्यकता नहीं!';
 
   @override
-  String get languageSectionHeader => 'SELECT LANGUAGE';
+  String get languageSectionHeader => 'भाषा चुनें';
 
   @override
-  String get languageEnglish => 'English';
+  String get languageEnglish => 'अंग्रेज़ी';
 
   @override
-  String get languageHindi => 'Hindi';
+  String get languageHindi => 'हिन्दी';
 
   @override
-  String get languageKannada => 'Kannada';
+  String get languageKannada => 'कन्नड़';
 
   @override
-  String get languageKiswahili => 'Kiswahili';
+  String get languageFrench => 'फ़्रेंच';
 
   @override
-  String get languageMore => 'More...';
+  String get languageKiswahili => 'स्वाहिली';
 
   @override
-  String get settingsLanguagePickerTitle => 'Select Language';
+  String get languageMore => 'और...';
 
   @override
-  String get ctaEnterPortal => 'Enter Portal';
+  String get settingsLanguagePickerTitle => 'भाषा चुनें';
 
   @override
-  String get hubStrengthChecking => 'Checking...';
+  String get ctaEnterPortal => 'पोर्टल में प्रवेश करें';
 
   @override
-  String get hubStrengthOffline => 'Offline';
+  String get hubStrengthChecking => 'जाँच हो रही है...';
 
   @override
-  String get hubStrengthExcellent => 'Excellent';
+  String get hubStrengthOffline => 'ऑफ़लाइन';
 
   @override
-  String get hubStrengthGood => 'Good';
+  String get hubStrengthExcellent => 'उत्कृष्ट';
 
   @override
-  String get hubStrengthFair => 'Fair';
+  String get hubStrengthGood => 'अच्छा';
 
   @override
-  String get statusHubStrength => 'Hub Strength';
+  String get hubStrengthFair => 'ठीक';
 
   @override
-  String get statusLocalStorage => 'Local Storage';
+  String get statusHubStrength => 'हब की क्षमता';
 
   @override
-  String get storageCalculating => 'Calculating...';
+  String get statusLocalStorage => 'स्थानीय भंडारण';
 
   @override
-  String get storageUnknown => 'Unknown';
+  String get storageCalculating => 'गणना हो रही है...';
+
+  @override
+  String get storageUnknown => 'अज्ञात';
 
   @override
   String storageMbUsed(String size) {
-    return '$size MB Used';
+    return '$size MB उपयोग';
   }
 
   @override
   String storageGbUsed(String size) {
-    return '$size GB Used';
+    return '$size GB उपयोग';
   }
 
   @override
   String storageTotalCapacity(String size) {
-    return '$size GB Total';
+    return '$size GB कुल';
   }
 
   @override
   String storageUsedLabel(String size) {
-    return '$size GB used';
+    return '$size GB उपयोग';
   }
 
   @override
@@ -129,294 +132,293 @@ class AppLocalizationsHi extends AppLocalizations {
   String get storageLegendAppLabel => 'EduMesh';
 
   @override
-  String get storageLegendOtherLabel => 'Other Apps';
+  String get storageLegendOtherLabel => 'अन्य ऐप्स';
 
   @override
-  String get storageLegendFreeLabel => 'Free';
+  String get storageLegendFreeLabel => 'खाली';
 
   @override
-  String get serverStatusChecking => 'Checking...';
+  String get serverStatusChecking => 'जाँच हो रही है...';
 
   @override
-  String get serverStatusConnected => 'Connected';
+  String get serverStatusConnected => 'जुड़ा';
 
   @override
-  String get serverStatusDisconnected => 'Disconnected';
+  String get serverStatusDisconnected => 'डिस्कनेक्ट';
 
   @override
-  String get searchBarHint => 'Search all resources...';
+  String get searchBarHint => 'सभी संसाधन खोजें...';
 
   @override
-  String get titleRegisterMode => 'Create Scholar\nIdentity';
+  String get titleRegisterMode => 'स्कॉलर\nपहचान बनाएं';
 
   @override
-  String get titleLoginMode => 'Scholar\nLogin';
+  String get titleLoginMode => 'स्कॉलर\nलॉगिन';
 
   @override
-  String get subtitleRegisterMode => 'Start your journey on the Lumina Mesh';
+  String get subtitleRegisterMode => 'Lumina Mesh पर अपनी यात्रा शुरू करें';
 
   @override
-  String get subtitleLoginMode => 'Access your lessons from any device';
+  String get subtitleLoginMode => 'किसी भी डिवाइस से अपने पाठों तक पहुंचें';
 
   @override
-  String get labelUsername => 'Username';
+  String get labelUsername => 'उपयोगकर्ता नाम';
 
   @override
-  String get hintUsername => 'e.g. john_doe';
+  String get hintUsername => 'जैसे john_doe';
 
   @override
-  String get labelPassword => 'Password';
+  String get labelPassword => 'पासवर्ड';
 
   @override
-  String get labelCurrentPassword => 'Current Password';
+  String get labelCurrentPassword => 'वर्तमान पासवर्ड';
 
   @override
-  String get labelNewPassword => 'New Password';
+  String get labelNewPassword => 'नया पासवर्ड';
 
   @override
-  String get labelConfirmPassword => 'Confirm Password';
+  String get labelConfirmPassword => 'पासवर्ड की पुष्टि करें';
 
   @override
   String get hintPasswordRequirements =>
-      '8+ characters, with uppercase, lowercase, and a digit';
+      '8+ अक्षर, अपरकेस, लोअरकेस और एक अंक आवश्यक';
 
   @override
-  String get buttonRegister => 'Register & Sync';
+  String get buttonRegister => 'पंजीकरण और सिंक';
 
   @override
-  String get buttonLogin => 'Login & Sync';
+  String get buttonLogin => 'लॉगिन और सिंक';
 
   @override
-  String get toggleToLogin => 'Already have an account? Login';
+  String get toggleToLogin => 'पहले से खाता है? लॉगिन करें';
 
   @override
-  String get toggleToRegister => 'Don\'t have an account? Register';
+  String get toggleToRegister => 'खाता नहीं है? पंजीकरण करें';
 
   @override
-  String get badgeHubConnected => 'Hub Connected';
+  String get badgeHubConnected => 'हब से जुड़ा';
 
   @override
-  String get badgeWaitingForHub => 'Waiting for Hub...';
+  String get badgeWaitingForHub => 'हब का इंतज़ार...';
 
   @override
-  String get buttonSetPassword => 'Set Password';
+  String get buttonSetPassword => 'पासवर्ड सेट करें';
 
   @override
-  String get buttonCancel => 'Cancel';
+  String get buttonCancel => 'रद्द करें';
 
   @override
-  String get dialogPasswordResetTitle => 'Password Reset Required';
+  String get dialogPasswordResetTitle => 'पासवर्ड रीसेट आवश्यक';
 
   @override
   String get dialogPasswordResetBody =>
-      'Your password was reset by a teacher. Enter your current password and set a new one.';
+      'आपका पासवर्ड शिक्षक द्वारा रीसेट किया गया। कृपया अपना वर्तमान पासवर्ड दर्ज करें और नया पासवर्ड सेट करें।';
 
   @override
-  String get errorFillAllFields => 'Please fill all fields';
+  String get errorFillAllFields => 'कृपया सभी फ़ील्ड भरें';
 
   @override
   String get errorPasswordStrength =>
-      'Password must be 8+ chars with uppercase, lowercase, and digit';
+      'पासवर्ड 8+ अक्षर, अपरकेस, लोअरकेस और अंक के साथ होना चाहिए';
 
   @override
-  String get errorRegistrationFailed =>
-      'Registration failed. Check Hub connection.';
+  String get errorRegistrationFailed => 'पंजीकरण विफल। हब कनेक्शन जांचें।';
 
   @override
-  String get snackbarOfflineLogin =>
-      'Logged in offline — server sync unavailable';
+  String get snackbarOfflineLogin => 'ऑफ़लाइन लॉगिन — सर्वर सिंक उपलब्ध नहीं';
 
   @override
-  String get errorLoginFailed => 'Login failed. Invalid name or password.';
+  String get errorLoginFailed => 'लॉगिन विफल। नाम या पासवर्ड गलत।';
 
   @override
-  String get errorCurrentPasswordRequired => 'Current password is required.';
+  String get errorCurrentPasswordRequired => 'वर्तमान पासवर्ड आवश्यक है।';
 
   @override
   String get errorPasswordMinLength =>
-      'Password must be at least 8 characters.';
+      'पासवर्ड कम से कम 8 अक्षर का होना चाहिए।';
 
   @override
-  String get errorPasswordsDoNotMatch => 'Passwords do not match.';
+  String get errorPasswordsDoNotMatch => 'पासवर्ड मेल नहीं खाते।';
 
   @override
   String get errorPasswordComplexity =>
-      'Password must contain upper, lower, and digit.';
+      'पासवर्ड में अपरकेस, लोअरकेस और अंक होना चाहिए।';
 
   @override
-  String get errorPasswordChangeFailed => 'Failed to set password. Try again.';
+  String get errorPasswordChangeFailed =>
+      'पासवर्ड सेट करने में विफल। पुनः प्रयास करें।';
 
   @override
-  String get dialogChangePasswordTitle => 'Change Password';
+  String get dialogChangePasswordTitle => 'पासवर्ड बदलें';
 
   @override
   String get dialogChangePasswordBody =>
-      'Enter your current password and a new one.';
+      'अपना वर्तमान पासवर्ड और नया पासवर्ड दर्ज करें।';
 
   @override
-  String get buttonUpdatePassword => 'Update Password';
+  String get buttonUpdatePassword => 'पासवर्ड अपडेट करें';
 
   @override
-  String get snackbarPasswordChanged => 'Password changed successfully';
+  String get snackbarPasswordChanged => 'पासवर्ड सफलतापूर्वक बदला गया';
 
   @override
   String get loginConnectToHub =>
-      'Connect to the Lumina Hub to register or log in.';
+      'पंजीकरण या लॉगिन के लिए Lumina Hub से जुड़ें।';
 
   @override
-  String get profileSetupTitle => 'Welcome!';
+  String get profileSetupTitle => 'स्वागत है!';
 
   @override
-  String get profileSetupSubtitle => 'Let\'s set up your profile';
+  String get profileSetupSubtitle => 'आइए आपकी प्रोफ़ाइल सेट करें';
 
   @override
-  String get labelDisplayName => 'Display Name';
+  String get labelDisplayName => 'प्रदर्शन नाम';
 
   @override
-  String get buttonContinue => 'Continue';
+  String get buttonContinue => 'जारी रखें';
 
   @override
-  String get sectionRecentlyViewed => 'Recently Viewed';
+  String get sectionRecentlyViewed => 'हाल ही में देखा गया';
 
   @override
-  String get sectionSubjectCategories => 'Subject Categories';
+  String get sectionSubjectCategories => 'विषय श्रेणियाँ';
 
   @override
-  String get emptyNoSubjects => 'No subjects available';
+  String get emptyNoSubjects => 'कोई विषय उपलब्ध नहीं';
 
   @override
-  String get sectionLocalStorage => 'Local Storage';
+  String get sectionLocalStorage => 'स्थानीय भंडारण';
 
   @override
-  String get pageTitleBrowseResources => 'Browse Resources';
+  String get pageTitleBrowseResources => 'संसाधन ब्राउज़ करें';
 
   @override
-  String get searchFieldHint => 'Search by title, subject, or grade...';
+  String get searchFieldHint => 'शीर्षक, विषय या कक्षा द्वारा खोजें...';
 
   @override
-  String get filtersActiveLabel => 'Filters active';
+  String get filtersActiveLabel => 'फ़िल्टर सक्रिय';
 
   @override
   String filtersActiveSorted(String sortBy) {
-    return 'Filters active · Sorted: $sortBy';
+    return 'फ़िल्टर सक्रिय · क्रमबद्ध: $sortBy';
   }
 
   @override
-  String get clearFiltersButton => 'Clear filters';
+  String get clearFiltersButton => 'फ़िल्टर साफ़ करें';
 
   @override
-  String get sectionAllResources => 'All Resources';
+  String get sectionAllResources => 'सभी संसाधन';
 
   @override
-  String get sectionRecommendedForYou => 'Recommended for You';
+  String get sectionRecommendedForYou => 'आपके लिए अनुशंसित';
 
   @override
-  String get emptyNoResources => 'No resources available on the hub.';
+  String get emptyNoResources => 'हब पर कोई संसाधन उपलब्ध नहीं।';
 
   @override
-  String get emptyNoSearchResults => 'No results found.';
+  String get emptyNoSearchResults => 'कोई परिणाम नहीं मिला।';
 
   @override
   String get errorNoServerNoCache =>
-      'Could not reach server. No cached resources available.';
+      'सर्वर तक नहीं पहुंचा जा सका। कोई कैश्ड संसाधन उपलब्ध नहीं।';
 
   @override
-  String get errorRetryButton => 'Retry';
+  String get errorRetryButton => 'पुनः प्रयास करें';
 
   @override
-  String get badgeKiwixWiki => 'WIKI';
+  String get badgeKiwixWiki => 'विकी';
 
   @override
-  String get filterSheetTitle => 'Filters';
+  String get filterSheetTitle => 'फ़िल्टर';
 
   @override
-  String get filterResourceTypeHeader => 'Resource Type';
+  String get filterResourceTypeHeader => 'संसाधन प्रकार';
 
   @override
-  String get filterShowLabel => 'Show:';
+  String get filterShowLabel => 'दिखाएँ:';
 
   @override
-  String get filterMyGrade => 'My Grade';
+  String get filterMyGrade => 'मेरी कक्षा';
 
   @override
-  String get filterAllGrades => 'All Grades';
+  String get filterAllGrades => 'सभी कक्षाएँ';
 
   @override
-  String get filterGradeHeader => 'Grade';
+  String get filterGradeHeader => 'कक्षा';
 
   @override
-  String get filterSubjectHeader => 'Subject';
+  String get filterSubjectHeader => 'विषय';
 
   @override
-  String get filterSubjectHint => 'Filter by subject...';
+  String get filterSubjectHint => 'विषय द्वारा फ़िल्टर करें...';
 
   @override
-  String get filterSortByHeader => 'Sort By';
+  String get filterSortByHeader => 'क्रमबद्ध करें';
 
   @override
-  String get sortTitleAsc => 'Title A-Z';
+  String get sortTitleAsc => 'शीर्षक A-Z';
 
   @override
-  String get sortTitleDesc => 'Title Z-A';
+  String get sortTitleDesc => 'शीर्षक Z-A';
 
   @override
-  String get sortByType => 'Type';
+  String get sortByType => 'प्रकार';
 
   @override
-  String get sortByGrade => 'Grade';
+  String get sortByGrade => 'कक्षा';
 
   @override
-  String get filterResetButton => 'Reset';
+  String get filterResetButton => 'रीसेट';
 
   @override
-  String get filterApplyButton => 'Apply';
+  String get filterApplyButton => 'लागू करें';
 
   @override
   String get snackbarAddedToQueueOffline =>
-      'Added to queue — will download when server is reachable';
+      'कतार में जोड़ा — सर्वर से जुड़ने पर डाउनलोड होगा';
 
   @override
-  String get snackbarAddedToQueue => 'Added to download queue';
+  String get snackbarAddedToQueue => 'डाउनलोड कतार में जोड़ा गया';
 
   @override
-  String get snackbarDownloadComplete => 'Download complete';
+  String get snackbarDownloadComplete => 'डाउनलोड पूरा';
 
   @override
-  String get snackbarDownloadFailed => 'Download failed';
+  String get snackbarDownloadFailed => 'डाउनलोड विफल';
 
   @override
-  String get snackbarDownloadRemoved => 'Download removed';
+  String get snackbarDownloadRemoved => 'डाउनलोड हटाया गया';
 
   @override
-  String get snackbarRemovedFromSaved => 'Removed from Saved';
+  String get snackbarRemovedFromSaved => 'सहेजे गए से हटाया गया';
 
   @override
-  String get snackbarAddedToSaved => 'Added to Saved';
+  String get snackbarAddedToSaved => 'सहेजे गए में जोड़ा गया';
 
   @override
   String snackbarNotDownloaded(String title) {
-    return '\"$title\" is not downloaded. Add it from the download button to save for offline access.';
+    return '\"$title\" डाउनलोड नहीं है। ऑफ़लाइन उपयोग के लिए डाउनलोड बटन से जोड़ें।';
   }
 
   @override
-  String get snackbarQueueAction => 'Queue';
+  String get snackbarQueueAction => 'कतार';
 
   @override
-  String get dialogDownloadTitle => 'Download';
+  String get dialogDownloadTitle => 'डाउनलोड';
 
   @override
   String dialogDownloadContent(String fileName, String sizeLabel) {
-    return 'Download \"$fileName\"?\n\nSize: $sizeLabel';
+    return '\"$fileName\" डाउनलोड करें?\n\nआकार: $sizeLabel';
   }
 
   @override
-  String get dialogDownloadButton => 'Download';
+  String get dialogDownloadButton => 'डाउनलोड';
 
   @override
-  String get fileSizeUnavailable => 'size unavailable';
+  String get fileSizeUnavailable => 'आकार उपलब्ध नहीं';
 
   @override
-  String get fileSizeUnknownFallback => 'unknown';
+  String get fileSizeUnknownFallback => 'अज्ञात';
 
   @override
   String pageTitleDetail(String title, String subject) {
@@ -425,16 +427,16 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String emptyNoResourcesForType(String title) {
-    return 'No $title available';
+    return 'कोई $title उपलब्ध नहीं';
   }
 
   @override
   String emptyNoResourcesDetail(String subject, String grade) {
-    return 'No resources found for $subject in $grade.';
+    return '$subject में $grade के लिए कोई संसाधन नहीं मिला।';
   }
 
   @override
-  String get emptyRefreshButton => 'Refresh';
+  String get emptyRefreshButton => 'रीफ़्रेश';
 
   @override
   String resourceSubtitle(String subject, String grade) {
@@ -442,302 +444,309 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get resourceTypeTextbooks => 'Textbooks';
+  String get resourceTypeTextbooks => 'पाठ्यपुस्तकें';
 
   @override
-  String get resourceTypeTextbooksSubtitle =>
-      'Chapter-wise PDFs and study materials';
+  String get resourceTypeTextbooksSubtitle => 'अध्यायवार PDF और अध्ययन सामग्री';
 
   @override
-  String get resourceTypeVideos => 'Videos';
+  String get resourceTypeVideos => 'वीडियो';
 
   @override
-  String get resourceTypeVideosSubtitle =>
-      'Watch lessons and concept explanations';
+  String get resourceTypeVideosSubtitle => 'पाठ और अवधारणा स्पष्टीकरण देखें';
 
   @override
-  String get resourceTypePyqs => 'PYQs';
+  String get resourceTypePyqs => 'पिछले वर्ष के प्रश्न';
 
   @override
   String get resourceTypePyqsSubtitle =>
-      'Previous year papers and practice sets';
+      'पिछले वर्षों के प्रश्नपत्र और अभ्यास सेट';
 
   @override
-  String get resourceTypeNotes => 'Notes';
+  String get resourceTypeNotes => 'नोट्स';
 
   @override
-  String get resourceTypeNotesSubtitle => 'Quick revision notes and summaries';
+  String get resourceTypeNotesSubtitle => 'त्वरित पुनरीक्षण नोट्स और सारांश';
 
   @override
-  String get resourceCardOpenButton => 'Open';
+  String get resourceCardOpenButton => 'खोलें';
 
   @override
-  String get savedResourcesTitle => 'Saved Resources';
+  String get savedResourcesTitle => 'सहेजे गए संसाधन';
 
   @override
-  String get tabAll => 'All';
+  String get tabAll => 'सभी';
 
   @override
-  String get tabTextbooks => 'Textbooks';
+  String get tabTextbooks => 'पाठ्यपुस्तकें';
 
   @override
-  String get tabVideos => 'Videos';
+  String get tabVideos => 'वीडियो';
 
   @override
-  String get tabPyqs => 'PYQs';
+  String get tabPyqs => 'पिछले प्रश्न';
 
   @override
-  String get tabNotes => 'Notes';
+  String get tabNotes => 'नोट्स';
 
   @override
-  String get emptyStateAll => 'No saved resources yet.';
+  String get emptyStateAll => 'अभी तक कोई संसाधन सहेजा नहीं गया।';
 
   @override
   String emptyStateByType(String type) {
-    return 'No saved ${type}s found.';
+    return 'कोई $type सहेजा नहीं मिला।';
   }
 
   @override
-  String get headerMyProfile => 'My Profile';
+  String get headerMyProfile => 'मेरी प्रोफ़ाइल';
 
   @override
-  String get headerAnalytics => 'Analytics';
+  String get headerAnalytics => 'विश्लेषण';
 
   @override
-  String get roleBadgeStudent => 'Student';
+  String get roleBadgeStudent => 'छात्र';
 
   @override
   String get initialsFallback => '?';
 
   @override
-  String get editProfileSheetTitle => 'Edit Profile';
+  String get editProfileSheetTitle => 'प्रोफ़ाइल संपादित करें';
 
   @override
-  String get editProfileLabelName => 'Full Name';
+  String get editProfileLabelName => 'पूरा नाम';
 
   @override
-  String get editProfileLabelGrade => 'Grade';
+  String get editProfileLabelGrade => 'कक्षा';
 
   @override
-  String get editProfileGradeHint => 'Select grade';
+  String get editProfileGradeHint => 'कक्षा चुनें';
 
   @override
-  String get editProfileLabelStudentId => 'Student ID';
+  String get editProfileLabelStudentId => 'छात्र आईडी';
 
   @override
   String editProfileErrorSnackbar(String error) {
-    return 'Failed to update profile: $error';
+    return 'प्रोफ़ाइल अपडेट विफल: $error';
   }
 
   @override
-  String get editProfileSaveButton => 'Save Changes';
+  String get editProfileSaveButton => 'परिवर्तन सहेजें';
 
   @override
-  String get statCardToday => 'Today';
+  String get statCardToday => 'आज';
 
   @override
-  String get statCardThisWeek => 'This Week';
+  String get statCardThisWeek => 'इस सप्ताह';
 
   @override
-  String get statCardSaved => 'Saved';
+  String get statCardSaved => 'सहेजा गया';
 
   @override
-  String get statCardStreak => 'Streak';
+  String get statCardStreak => 'लगातार';
 
   @override
-  String get sectionSubjectBreakdown => 'Study Time by Subject';
+  String get sectionSubjectBreakdown => 'विषय के अनुसार अध्ययन समय';
 
   @override
-  String get sectionRecentActivity => 'Recent Activity';
+  String get sectionRecentActivity => 'हाल की गतिविधि';
 
   @override
   String get emptyStateSubjectBreakdown =>
-      'No study data yet.\nYour subject time will appear here as you use the app.';
+      'अभी तक कोई डेटा नहीं।\nआपके विषय का समय यहाँ दिखाई देगा।';
 
   @override
   String get emptyStateRecentActivity =>
-      'No recent activity yet.\nStart browsing resources to see your activity here.';
+      'अभी तक कोई गतिविधि नहीं।\nसंसाधन ब्राउज़ करना शुरू करें।';
 
   @override
-  String get toggleShowLess => 'Show Less';
+  String get toggleShowLess => 'कम दिखाएँ';
 
   @override
   String toggleShowAll(int count) {
-    return 'Show All ($count)';
+    return 'सभी दिखाएँ ($count)';
   }
 
   @override
-  String get suffixMinutes => 'm';
+  String get suffixMinutes => 'मि';
 
   @override
-  String get suffixHours => 'h';
+  String get suffixHours => 'घं';
 
   @override
-  String get suffixDays => ' d';
+  String get suffixDays => ' दिन';
 
   @override
   String get suffixPercent => '%';
 
   @override
-  String get activityVerbViewed => 'Viewed';
+  String get activityVerbViewed => 'देखा';
 
   @override
-  String get activityVerbSearched => 'Searched';
+  String get activityVerbSearched => 'खोजा';
 
   @override
-  String get activityVerbDownloaded => 'Downloaded';
+  String get activityVerbDownloaded => 'डाउनलोड किया';
 
   @override
-  String get activityVerbWatched => 'Watched';
+  String get activityVerbWatched => 'देखा गया';
 
   @override
-  String get activityVerbSaved => 'Saved';
+  String get activityVerbSaved => 'सहेजा';
 
   @override
-  String get activityVerbOpened => 'Opened';
+  String get activityVerbOpened => 'खोला';
 
   @override
-  String get activityVerbCompleted => 'Completed';
+  String get activityVerbCompleted => 'पूरा किया';
 
   @override
   String activityTitleFallback(String verb) {
-    return '$verb a resource';
+    return '$verb एक संसाधन';
   }
 
   @override
-  String get relativeTimeJustNow => 'Just now';
+  String get relativeTimeJustNow => 'अभी';
 
   @override
   String relativeTimeMinutesAgo(int minutes) {
-    return '$minutes min ago';
+    return '$minutes मिनट पहले';
   }
 
   @override
   String relativeTimeHoursAgo(int hours) {
-    return '$hours hour(s) ago';
+    return '$hours घंटे पहले';
   }
 
   @override
   String relativeTimeDaysAgo(int days) {
-    return '$days day(s) ago';
+    return '$days दिन पहले';
   }
 
   @override
   String relativeTimeMonthsAgo(int months) {
-    return '$months month(s) ago';
+    return '$months महीने पहले';
   }
 
   @override
-  String get settingsSheetTitle => 'Settings';
+  String get settingsSheetTitle => 'सेटिंग्स';
 
   @override
-  String get settingsLanguageTitle => 'Language';
+  String get settingsLanguageTitle => 'भाषा';
 
   @override
-  String get settingsLanguageSubtitle => 'Change app display language';
+  String get settingsLanguageSubtitle => 'ऐप प्रदर्शन भाषा बदलें';
 
   @override
-  String get darkModeLabel => 'Dark Mode';
+  String get darkModeLabel => 'डार्क मोड';
 
   @override
-  String get lightModeLabel => 'Light Mode';
+  String get lightModeLabel => 'लाइट मोड';
 
   @override
-  String get switchToLightThemeSubtitle => 'Switch to light theme';
+  String get switchToLightThemeSubtitle => 'लाइट थीम में बदलें';
 
   @override
-  String get switchToDarkThemeSubtitle => 'Switch to dark theme';
+  String get switchToDarkThemeSubtitle => 'डार्क थीम में बदलें';
 
   @override
-  String get appIconLabel => 'Dark App Icon';
+  String get appIconLabel => 'डार्क ऐप आइकन';
 
   @override
-  String get appIconLightLabel => 'Light App Icon';
+  String get appIconLightLabel => 'लाइट ऐप आइकन';
 
   @override
-  String get appIconDarkSubtitle => 'Use dark launcher icon';
+  String get appIconDarkSubtitle => 'डार्क लॉन्चर आइकन का उपयोग करें';
 
   @override
-  String get appIconLightSubtitle => 'Use light launcher icon';
+  String get appIconLightSubtitle => 'लाइट लॉन्चर आइकन का उपयोग करें';
 
   @override
-  String get storageOfflineLibraryTitle => 'Storage & Offline Library';
+  String get storageOfflineLibraryTitle => 'भंडारण और ऑफ़लाइन लाइब्रेरी';
 
   @override
-  String get storageOfflineLibrarySubtitle => 'Manage downloaded content';
+  String get storageOfflineLibrarySubtitle =>
+      'डाउनलोड की गई सामग्री प्रबंधित करें';
 
   @override
-  String get networkSettingsTitle => 'Network Settings';
+  String get networkSettingsTitle => 'नेटवर्क सेटिंग्स';
 
   @override
-  String get networkSettingsSubtitle => 'Configure Hub connectivity';
+  String get networkSettingsSubtitle => 'हब कनेक्टिविटी कॉन्फ़िगर करें';
 
   @override
-  String get logOutButtonLabel => 'Log Out';
+  String get logOutButtonLabel => 'लॉग आउट';
 
   @override
-  String get settingsAccountTitle => 'Account Settings';
+  String get settingsAccountTitle => 'खाता सेटिंग्स';
 
   @override
-  String get settingsAccountSubtitleOnline => 'Change your password';
+  String get settingsAccountSubtitleOnline => 'अपना पासवर्ड बदलें';
 
   @override
   String get settingsAccountSubtitleOffline =>
-      'Connect to Hub to manage account';
+      'खाता प्रबंधन के लिए हब से जुड़ें';
 
   @override
-  String get offlineLibraryAppBarTitle => 'Offline Library';
+  String get offlineLibraryAppBarTitle => 'ऑफ़लाइन लाइब्रेरी';
 
   @override
-  String get emptyOfflineLibraryMessage => 'No downloaded resources';
+  String get emptyOfflineLibraryMessage => 'कोई डाउनलोड किया गया संसाधन नहीं';
 
   @override
-  String get deleteDownloadDialogTitle => 'Delete Download';
+  String get deleteDownloadDialogTitle => 'डाउनलोड हटाएं';
 
   @override
   String deleteDownloadConfirmation(String title) {
-    return 'Delete \"$title\" from offline storage?';
+    return 'ऑफ़लाइन स्टोरेज से \"$title\" हटाएं?';
   }
 
   @override
-  String get deleteConfirmButtonLabel => 'Delete';
+  String get deleteConfirmButtonLabel => 'हटाएं';
 
   @override
-  String get downloadChannelName => 'Downloads';
+  String get downloadChannelName => 'डाउनलोड';
 
   @override
-  String get downloadChannelDescription => 'Download completion notifications';
+  String get downloadChannelDescription => 'डाउनलोड पूर्णता सूचनाएं';
 
   @override
-  String get downloadCompleteNotificationTitle => 'Download Complete';
+  String get downloadCompleteNotificationTitle => 'डाउनलोड पूरा';
 
   @override
   String downloadCompleteNotificationBody(String title) {
-    return '\"$title\" has been downloaded and saved to offline storage.';
+    return '\"$title\" डाउनलोड होकर ऑफ़लाइन स्टोरेज में सहेजा गया।';
   }
 
   @override
-  String get stepperStepWelcome => 'Welcome';
+  String get downloadFailedNotificationTitle => 'डाउनलोड विफल';
 
   @override
-  String get stepperStepLoginRegister => 'Login/Register';
+  String downloadFailedNotificationBody(String title) {
+    return '\"$title\" डाउनलोड नहीं हो सका। कनेक्शन जाँचें और पुनः प्रयास करें।';
+  }
 
   @override
-  String get stepperStepAccess => 'Access';
+  String get stepperStepWelcome => 'स्वागत';
+
+  @override
+  String get stepperStepLoginRegister => 'लॉगिन/पंजीकरण';
+
+  @override
+  String get stepperStepAccess => 'पहुंच';
 
   @override
   String pdfPageOfLabel(int currentPage, int totalPages) {
-    return 'Pg $currentPage of $totalPages';
+    return 'पृ $currentPage / $totalPages';
   }
 
   @override
-  String get pdfEnterPageNumberHint => 'Enter page number';
+  String get pdfEnterPageNumberHint => 'पृष्ठ संख्या दर्ज करें';
 
   @override
-  String get pdfGoButton => 'Go';
+  String get pdfGoButton => 'जाएं';
 
   @override
-  String get pdfTapToJumpLabel => 'Tap to jump to page';
+  String get pdfTapToJumpLabel => 'पृष्ठ पर जाने के लिए टैप करें';
 
   @override
   String pdfZoomPercent(String zoomLevel) {
@@ -745,138 +754,214 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get videoLocalFileNotFound => 'Local file not found';
+  String get videoLocalFileNotFound => 'स्थानीय फ़ाइल नहीं मिली';
 
   @override
   String videoFailedToLoad(String error) {
-    return 'Failed to load video: $error';
+    return 'वीडियो लोड करने में विफल: $error';
   }
 
   @override
-  String get videoMiniPlayerTooltip => 'Mini player';
+  String get videoMiniPlayerTooltip => 'मिनी प्लेयर';
 
   @override
-  String get kiwixDefaultTitle => 'KNOWLEDGE BASE';
+  String get kiwixDefaultTitle => 'ज्ञानकोष';
 
   @override
-  String get thumbnailWikiLabel => 'WIKI';
+  String get thumbnailWikiLabel => 'विकी';
 
   @override
-  String get zimAppBarTitle => 'Wikipedia';
+  String get zimAppBarTitle => 'विकिपीडिया';
 
   @override
-  String get zimSearchHint => 'Search Wikipedia articles...';
+  String get zimSearchHint => 'विकिपीडिया लेख खोजें...';
 
   @override
-  String get zimNoArticlesEmpty => 'No articles available on the server';
+  String get zimNoArticlesEmpty => 'सर्वर पर कोई लेख उपलब्ध नहीं';
 
   @override
-  String get zimNoResultsEmpty => 'No results found';
+  String get zimNoResultsEmpty => 'कोई परिणाम नहीं मिला';
 
   @override
-  String get zimUntitledArticleFallback => 'Untitled';
+  String get zimUntitledArticleFallback => 'शीर्षकहीन';
 
   @override
   String zimFailedToLoadArticles(String error) {
-    return 'Failed to load articles: $error';
+    return 'लेख लोड करने में विफल: $error';
   }
 
   @override
   String zimSearchFailed(String error) {
-    return 'Search failed: $error';
+    return 'खोज विफल: $error';
   }
 
   @override
   String zimFailedToLoadArticle(String error) {
-    return 'Failed to load article: $error';
+    return 'लेख लोड करने में विफल: $error';
   }
 
   @override
-  String get dialogSetNameTitle => 'Set Your Name';
+  String get dialogSetNameTitle => 'अपना नाम सेट करें';
 
   @override
   String get dialogSetNameBody =>
-      'Please enter your name to personalize your experience.';
+      'कृपया अपना अनुभव निजीकृत करने के लिए नाम दर्ज करें।';
 
   @override
-  String get buttonSave => 'Save';
+  String get buttonSave => 'सहेजें';
 
   @override
-  String get buttonSkip => 'Skip';
+  String get buttonSkip => 'छोड़ें';
 
   @override
-  String get bottomNavStudents => 'Students';
+  String get bottomNavStudents => 'छात्र';
 
   @override
-  String get zimArticleNotFound => 'Article not found';
+  String get zimArticleNotFound => 'लेख नहीं मिला';
 
   @override
-  String get teacherPageTitle => 'Students';
+  String get teacherPageTitle => 'छात्र';
 
   @override
-  String get teacherFilterByGrade => 'Filter by grade';
+  String get teacherFilterByGrade => 'कक्षा द्वारा फ़िल्टर';
 
   @override
-  String get teacherAllGrades => 'All Grades';
+  String get teacherAllGrades => 'सभी कक्षाएँ';
 
   @override
-  String get teacherCouldNotLoadStudents => 'Could not load students';
+  String get teacherCouldNotLoadStudents => 'छात्र लोड नहीं हो सके';
 
   @override
-  String get teacherCheckHubConnection => 'Check hub connection and try again.';
+  String get teacherCheckHubConnection =>
+      'हब कनेक्शन जांचें और पुनः प्रयास करें।';
 
   @override
-  String get teacherRetry => 'Retry';
+  String get teacherRetry => 'पुनः प्रयास';
 
   @override
-  String get teacherSearchStudentsHint => 'Search students...';
+  String get teacherSearchStudentsHint => 'छात्र खोजें...';
 
   @override
-  String get teacherNoStudentsMatchSearch => 'No students match your search.';
+  String get teacherNoStudentsMatchSearch =>
+      'आपकी खोज से मेल खाने वाला कोई छात्र नहीं।';
 
   @override
-  String get teacherNoStudentsFound => 'No students found.';
+  String get teacherNoStudentsFound => 'कोई छात्र नहीं मिला।';
 
   @override
   String teacherShowing(String grade) {
-    return 'Showing: $grade';
+    return 'दिखाया: $grade';
   }
 
   @override
-  String get teacherLabelToday => 'today';
+  String get teacherLabelToday => 'आज';
 
   @override
-  String get teacherLabelStreak => 'streak';
+  String get teacherLabelStreak => 'लगातार';
 
   @override
-  String get teacherLabelSaved => 'saved';
+  String get teacherLabelSaved => 'सहेजा';
 
   @override
-  String get teacherLabelDownloaded => 'downloaded';
+  String get teacherLabelDownloaded => 'डाउनलोड';
 
   @override
-  String get teacherOverview => 'Overview';
+  String get teacherOverview => 'अवलोकन';
 
   @override
-  String get teacherThisMonth => 'This Month';
+  String get teacherThisMonth => 'इस महीने';
 
   @override
   String teacherShowMore(int remaining) {
-    return 'Show More ($remaining remaining)';
+    return 'और दिखाएँ ($remaining शेष)';
   }
 
   @override
-  String get teacherCouldNotLoadAnalytics => 'Could not load analytics';
+  String get teacherCouldNotLoadAnalytics => 'विश्लेषण लोड नहीं हो सका';
 
   @override
-  String get teacherNoActivityRecorded => 'No activity recorded yet.';
+  String get teacherNoActivityRecorded => 'अभी तक कोई गतिविधि दर्ज नहीं।';
 
   @override
-  String get sectionSubjects => 'Subjects';
+  String get sectionSubjects => 'विषय';
 
   @override
-  String get sectionSubjectsEmpty => 'No subjects available';
+  String get sectionSubjectsEmpty => 'कोई विषय उपलब्ध नहीं';
 
   @override
-  String get resourcePageResources => 'Resources';
+  String get resourcePageResources => 'संसाधन';
+
+  @override
+  String get showPassword => 'पासवर्ड दिखाएँ';
+
+  @override
+  String get hidePassword => 'पासवर्ड छुपाएँ';
+
+  @override
+  String get semanticsSettings => 'सेटिंग्स';
+
+  @override
+  String get semanticsSearchResources => 'संसाधन खोजें';
+
+  @override
+  String get semanticsFilterResources => 'संसाधन फ़िल्टर करें';
+
+  @override
+  String semanticsSelectLanguage(String label) {
+    return 'भाषा चुनें: $label';
+  }
+
+  @override
+  String get semanticsOpenVideoPlayer => 'वीडियो प्लेयर खोलें';
+
+  @override
+  String get semanticsCloseMiniPlayer => 'मिनी प्लेयर बंद करें';
+
+  @override
+  String get semanticsTogglePlay => 'चलाएँ/रोकें';
+
+  @override
+  String get tooltipBackToResource => 'संसाधन पर वापस जाएँ';
+
+  @override
+  String tooltipDeleteDownload(String title) {
+    return '$title हटाएँ';
+  }
+
+  @override
+  String get connectionOfflineBanner =>
+      'ऑफ़लाइन — कुछ सुविधाएँ उपलब्ध नहीं हो सकतीं';
+
+  @override
+  String get notificationDownloadFailedTitle => 'डाउनलोड विफल';
+
+  @override
+  String notificationDownloadFailedBody(String title) {
+    return '$title डाउनलोड नहीं हो सका। कनेक्शन जाँचें और फिर से कोशिश करें।';
+  }
+
+  @override
+  String get studentNameUnknown => 'अज्ञात';
+
+  @override
+  String activityPastTense(String verb) {
+    return '$verbा गया';
+  }
+
+  @override
+  String storageAppSize(String size) {
+    return '$size MB';
+  }
+
+  @override
+  String get hubStrengthCalculating => 'गणना हो रही है...';
+
+  @override
+  String get resourceFallbackTitle => 'Untitled';
+
+  @override
+  String get subjectFallbackGeneral => 'General';
+
+  @override
+  String get subjectNameUnknown => 'Unknown';
 }

@@ -29,6 +29,7 @@ class _ResourcePageState extends State<ResourcePage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -40,8 +41,8 @@ class _ResourcePageState extends State<ResourcePage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.subject, style: TextStyle(color: cs.primary, fontSize: 22.sp, fontWeight: AppSpacing.weightDisplay)),
-            Text(widget.grade, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13.sp, fontWeight: AppSpacing.weightStrong)),
+            Text(widget.subject, style: tt.titleLarge?.copyWith(color: cs.primary)),
+            Text(widget.grade, style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant)),
           ],
         ),
       ),
@@ -50,11 +51,11 @@ class _ResourcePageState extends State<ResourcePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.subject, style: TextStyle(color: cs.onSurface, fontSize: 28.sp, fontWeight: AppSpacing.weightDisplay)),
+            Text(widget.subject, style: tt.headlineMedium?.copyWith(color: cs.onSurface)),
             SizedBox(height: AppSpacing.xs.h),
-            Text(widget.grade, style: TextStyle(fontSize: 15.sp, color: cs.onSurfaceVariant)),
+            Text(widget.grade, style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
             SizedBox(height: AppSpacing.section.h),
-            Text(l10n.resourcePageResources, style: TextStyle(fontSize: 13.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
+            Text(l10n.resourcePageResources, style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant)),
             SizedBox(height: AppSpacing.md.h),
             _resourceRow(context, l10n.resourceTypeTextbooks, l10n.resourceTypeTextbooksSubtitle, 'textbooks'),
             Divider(height: 1, color: cs.outlineVariant),
@@ -71,6 +72,7 @@ class _ResourcePageState extends State<ResourcePage> {
 
   Widget _resourceRow(BuildContext context, String title, String subtitle, String id) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     return InkWell(
       onTap: () {
         ActivityTracker().logAction('view', resourceId: id, metadata: widget.subject).catchError((_) {});
@@ -87,9 +89,9 @@ class _ResourcePageState extends State<ResourcePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
+                  Text(title, style: tt.titleMedium?.copyWith(color: cs.onSurface)),
                   SizedBox(height: AppSpacing.xs.h),
-                  Text(subtitle, style: TextStyle(fontSize: 13.sp, color: cs.onSurfaceVariant)),
+                  Text(subtitle, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                 ],
               ),
             ),

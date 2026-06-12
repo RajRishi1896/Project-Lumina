@@ -19,6 +19,13 @@ class NotificationService {
   bool _initialized = false;
   int _nextId = 1000;
 
+  // Configurable strings for localization — set via [setLocalizedStrings]
+  // when a BuildContext is available. Defaults are English fallbacks.
+  String _channelName = 'Downloads';
+  String _channelDescription = 'Download completion notifications';
+  String _completeNotificationTitle = 'Download Complete';
+  String _failedNotificationTitle = 'Download Failed';
+
   /// Initializes the notification plugin and creates the download channel.
   ///
   /// Must be called at least once before showing notifications. Calling
@@ -33,18 +40,22 @@ class NotificationService {
     );
     const settings = InitializationSettings(android: android, iOS: ios);
     await _plugin.initialize(settings);
+    await _createChannel();
+    _initialized = true;
+  }
+
+  Future<void> _createChannel() async {
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
+        AndroidNotificationChannel(
           'download_channel',
-          'Downloads',
-          description: 'Download completion notifications',
+          _channelName,
+          description: _channelDescription,
           importance: Importance.defaultImportance,
         ),
       );
     }
-    _initialized = true;
   }
 
   /// Whether notifications are enabled in user preferences.
@@ -82,54 +93,70 @@ class NotificationService {
   /// [requestPermission] immediately before showing — on Android 13+ this
   /// surfaces the permission prompt at a natural UX moment (right after the
   /// user triggered a download).
-  Future<void> showDownloadComplete(String title) async {
+  Future<void> showDownloadComplete(String title, {String? notificationTitle, String? notificationBody}) async {
     if (!await isEnabled) return;
     if (!_initialized) await init();
     await requestPermission();
     try {
       await _plugin.show(
         _nextId++,
-        'Download Complete',
-        '"$title" has been downloaded and saved to offline storage.',
-        const NotificationDetails(
+        notificationTitle ?? _completeNotificationTitle,
+        notificationBody ?? '"$title" has been downloaded and saved to offline storage.',
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'download_channel',
-            'Downloads',
+            _channelName,
             importance: Importance.defaultImportance,
             priority: Priority.defaultPriority,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: const DarwinNotificationDetails(),
         ),
       );
     } catch (e) {
-      debugPrint("NotificationService: show failed: $e");
+      debugPrint('NotificationService: show failed: $e');
     }
+  }
+
+  /// Sets localized strings for notifications.
+  ///
+  /// Call this with [AppLocalizations] values when a [BuildContext] is
+  /// available (e.g. in [LuminaApp.build] or after locale change).
+  void setLocalizedStrings({
+    String? channelName,
+    String? channelDescription,
+    String? downloadCompleteTitle,
+    String? downloadFailedTitle,
+  }) {
+    if (channelName != null) _channelName = channelName;
+    if (channelDescription != null) _channelDescription = channelDescription;
+    if (downloadCompleteTitle != null) _completeNotificationTitle = downloadCompleteTitle;
+    if (downloadFailedTitle != null) _failedNotificationTitle = downloadFailedTitle;
   }
 
   /// Shows a local notification when a download fails after all retries.
   ///
   /// Uses the same channel and permission flow as [showDownloadComplete].
-  Future<void> showDownloadFailed(String title) async {
+  Future<void> showDownloadFailed(String title, {String? notificationTitle, String? notificationBody}) async {
     if (!await isEnabled) return;
     if (!_initialized) await init();
     await requestPermission();
     try {
       await _plugin.show(
         _nextId++,
-        'Download Failed',
-        '"$title" could not be downloaded. Check the server connection and try again.',
-        const NotificationDetails(
+        notificationTitle ?? _failedNotificationTitle,
+        notificationBody ?? '"$title" could not be downloaded. Check the server connection and try again.',
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'download_channel',
-            'Downloads',
+            _channelName,
             importance: Importance.defaultImportance,
             priority: Priority.defaultPriority,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: const DarwinNotificationDetails(),
         ),
       );
     } catch (e) {
-      debugPrint("NotificationService: show failed: $e");
+      debugPrint('NotificationService: show failed: $e');
     }
   }
 }

@@ -160,7 +160,7 @@ async def serve_static(path: str, request: Request):
             return fp + ".html"
         return None
 
-    if path.startswith("css/") or path.startswith("js/") or path.startswith("assets/") or path in ("welcome.html", "welcome", "error.html", "error"):
+    if path.startswith("css/") or path.startswith("js/") or path.startswith("assets/") or path.startswith("lang/") or path in ("welcome.html", "welcome", "error.html", "error"):
         file_path = _resolve(path)
         if file_path:
             return FileResponse(file_path)

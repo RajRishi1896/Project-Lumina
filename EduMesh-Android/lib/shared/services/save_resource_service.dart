@@ -5,6 +5,11 @@ import 'package:edumesh_android/core/storage/db_helper.dart';
 
 /// Service for toggling and querying saved (bookmarked) resources.
 ///
+/// The fallback title [kFallbackTitle] can be overridden with a localized
+/// string on app startup (e.g. from [LuminaApp.build]).
+const String kFallbackTitle = 'Untitled';
+
+///
 /// Operates on the local SQLite database via [DBHelper] and logs save/unsave
 /// actions to the [ActivityTracker].
 class SaveResourceService {
@@ -30,7 +35,7 @@ class SaveResourceService {
       }
       await db.upsertBookmark(
         id,
-        title ?? 'Untitled',
+        title ?? kFallbackTitle,
         subject ?? '',
         grade ?? '',
         type ?? '',
@@ -39,7 +44,7 @@ class SaveResourceService {
       ActivityTracker().logKeyAction('save', resourceId: id, metadata: title ?? '');
       return true;
     } catch (e) {
-      debugPrint("Error toggling bookmark: $e");
+      debugPrint('Error toggling bookmark: $e');
       return false;
     }
   }

@@ -78,6 +78,7 @@ class LuminaApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.read(localeProvider.notifier).load();
     final themeMode = ref.watch(themeModeProvider);
 
     return ScreenUtilInit(
@@ -87,7 +88,7 @@ class LuminaApp extends ConsumerWidget {
       builder: (context, child) {
         return MaterialApp(
           navigatorKey: navigatorKey,
-          title: 'Edu-Mesh Scholar',
+          title: AppLocalizations.of(context)!.materialAppTitle,
           theme: LuminaLiteTheme.lightTheme,
           darkTheme: LuminaLiteTheme.darkTheme,
           themeMode: themeMode, 

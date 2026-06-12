@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/models/resource_model.dart';
 import '../../core/network/api_client.dart';
@@ -32,34 +33,37 @@ class ResourceThumbnail extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, ColorScheme cs) {
-    final fallback = _buildFallbackIcon(cs);
+    final l10n = AppLocalizations.of(context)!;
+    final fallback = _buildFallbackIcon(context, cs, l10n);
     if (resource.id.isEmpty) return fallback;
     final thumbUrl = '${ApiClient.baseUrl}/api/thumbnail/${resource.id}';
     return Image.network(
       thumbUrl,
       fit: BoxFit.cover,
+      semanticLabel: resource.title,
       cacheWidth: (size * MediaQuery.of(context).devicePixelRatio).round(),
       cacheHeight: (size * MediaQuery.of(context).devicePixelRatio).round(),
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
         return Container(
           color: cs.surfaceContainerHighest,
-          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         );
       },
       errorBuilder: (context, error, stackTrace) => fallback,
     );
   }
 
-  Widget _buildFallbackIcon(ColorScheme cs) {
+  Widget _buildFallbackIcon(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
+    final tt = Theme.of(context).textTheme;
     final icon = _iconForType(resource.type);
-    final label = resource.type == ResourceType.kiwix ? 'WIKI' : null;
+    final label = resource.type == ResourceType.kiwix ? l10n.thumbnailWikiLabel : null;
     return Container(
       color: cs.surfaceContainerHighest,
       child: Center(
         child: label != null
-            ? Text(label, style: TextStyle(fontSize: 10.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant, letterSpacing: 1))
-            : Icon(icon, size: size * 0.45, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+            ? Text(label, style: tt.labelSmall?.copyWith(fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant, letterSpacing: 1))
+            : Icon(icon, size: size * 0.45, color: cs.onSurfaceVariant),
       ),
     );
   }

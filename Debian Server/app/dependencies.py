@@ -3,6 +3,7 @@ import re
 import sqlite3
 import asyncio
 import bcrypt as bcrypt_lib
+from datetime import datetime, timedelta
 from fastapi import HTTPException, Request
 from app.database import DB_PATH
 
@@ -55,6 +56,23 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
     return True, ""
 
 
+def _is_stale_minutes(dt_str: str, minutes: int) -> bool:
+    """Check if a datetime string is more than N minutes old.
+    
+    Args:
+        dt_str: ISO datetime string from SQLite (e.g., '2026-06-11 12:00:00').
+        minutes: Threshold in minutes.
+    
+    Returns:
+        True if the datetime is older than the threshold or unparsable.
+    """
+    try:
+        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+        return datetime.now() - dt > timedelta(minutes=minutes)
+    except (ValueError, TypeError):
+        return True
+
+
 async def _extract_user(request: Request) -> dict:
     """Resolve the authenticated user from a request's session cookie or bearer token.
 
@@ -66,9 +84,6 @@ async def _extract_user(request: Request) -> dict:
 
     Returns:
         Dictionary with keys 'username' and 'role'.
-
-    Raises:
-        HTTPException: 401 if no valid session is found.
     """
     auth = request.headers.get("Authorization")
     cookie = request.cookies.get("lumina_session")
@@ -80,21 +95,24 @@ async def _extract_user(request: Request) -> dict:
         conn = sqlite3.connect(DB_PATH, timeout=5.0)
         try:
             cur = conn.cursor()
-            cur.execute("SELECT s.username, s.role FROM sessions s JOIN users u ON s.username = u.username WHERE s.token = ?", (token,))
+            cur.execute("SELECT s.username, s.role, s.last_accessed FROM sessions s JOIN users u ON s.username = u.username WHERE s.token = ?", (token,))
             row = cur.fetchone()
             if row:
                 try:
-                    cur.execute("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
-                    conn.commit()
+                    # Only update last_accessed if >5min old — reduces DB writes
+                    if row[2] is None or _is_stale_minutes(row[2], 5):
+                        cur.execute("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
+                        conn.commit()
                 except Exception:
                     pass
                 return {"username": row[0], "role": row[1]}
-            cur.execute("SELECT s.username, 'student' as role FROM sessions s JOIN scholars sc ON s.username = sc.id WHERE s.token = ?", (token,))
+            cur.execute("SELECT s.username, s.last_accessed FROM sessions s JOIN scholars sc ON s.username = sc.id WHERE s.token = ?", (token,))
             row = cur.fetchone()
             if row:
                 try:
-                    cur.execute("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
-                    conn.commit()
+                    if row[1] is None or _is_stale_minutes(row[1], 5):
+                        cur.execute("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
+                        conn.commit()
                 except Exception:
                     pass
                 return {"username": row[0], "role": "student"}

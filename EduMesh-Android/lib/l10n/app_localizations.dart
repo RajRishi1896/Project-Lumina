@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
+import 'app_localizations_fr.dart';
 import 'app_localizations_hi.dart';
 import 'app_localizations_kn.dart';
 
@@ -96,6 +97,7 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
+    Locale('fr'),
     Locale('hi'),
     Locale('kn')
   ];
@@ -189,6 +191,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Kannada'**
   String get languageKannada;
+
+  /// Language button label for French
+  ///
+  /// In en, this message translates to:
+  /// **'French'**
+  String get languageFrench;
 
   /// Language button label for Swahili
   ///
@@ -481,7 +489,7 @@ abstract class AppLocalizations {
   /// Body text of the password reset dialog explaining why a password change is required
   ///
   /// In en, this message translates to:
-  /// **'Your password was reset by a teacher. Enter your current password and set a new one.'**
+  /// **'A teacher reset your password. Enter your current password and set a new one.'**
   String get dialogPasswordResetBody;
 
   /// Validation error shown when username or password fields are empty
@@ -493,7 +501,7 @@ abstract class AppLocalizations {
   /// Validation error shown when password does not meet complexity requirements during registration
   ///
   /// In en, this message translates to:
-  /// **'Password must be 8+ chars with uppercase, lowercase, and digit'**
+  /// **'Password must be 8 or more characters with capital letters, small letters, and a number'**
   String get errorPasswordStrength;
 
   /// Error shown when the registration API call fails
@@ -505,7 +513,7 @@ abstract class AppLocalizations {
   /// SnackBar message shown when login succeeds but only local authentication was available
   ///
   /// In en, this message translates to:
-  /// **'Logged in offline — server sync unavailable'**
+  /// **'Logged in offline — cannot connect to hub to save changes'**
   String get snackbarOfflineLogin;
 
   /// Error shown when the login API call fails due to invalid credentials
@@ -997,7 +1005,7 @@ abstract class AppLocalizations {
   /// Empty state when a specific type tab has no saved items
   ///
   /// In en, this message translates to:
-  /// **'No saved {type}s found.'**
+  /// **'No saved {type} found.'**
   String emptyStateByType(String type);
 
   /// Page header title displayed at top of profile screen
@@ -1213,19 +1221,19 @@ abstract class AppLocalizations {
   /// Relative timestamp pattern for hours ago with conditional plural
   ///
   /// In en, this message translates to:
-  /// **'{hours} hour(s) ago'**
+  /// **'{hours, plural, one{{hours} hour ago} other{{hours} hours ago}}'**
   String relativeTimeHoursAgo(int hours);
 
   /// Relative timestamp pattern for days ago with conditional plural
   ///
   /// In en, this message translates to:
-  /// **'{days} day(s) ago'**
+  /// **'{days, plural, one{{days} day ago} other{{days} days ago}}'**
   String relativeTimeDaysAgo(int days);
 
   /// Relative timestamp pattern for months ago with conditional plural
   ///
   /// In en, this message translates to:
-  /// **'{months} month(s) ago'**
+  /// **'{months, plural, one{{months} month ago} other{{months} months ago}}'**
   String relativeTimeMonthsAgo(int months);
 
   /// Header/title of the settings bottom sheet panel
@@ -1395,6 +1403,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'\"{title}\" has been downloaded and saved to offline storage.'**
   String downloadCompleteNotificationBody(String title);
+
+  /// Title of the local notification shown when a download fails
+  ///
+  /// In en, this message translates to:
+  /// **'Download Failed'**
+  String get downloadFailedNotificationTitle;
+
+  /// Body text of the download-failed notification
+  ///
+  /// In en, this message translates to:
+  /// **'\"{title}\" could not be downloaded. Check the server connection and try again.'**
+  String downloadFailedNotificationBody(String title);
 
   /// Label for step 1 of the onboarding stepper
   ///
@@ -1689,6 +1709,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resources'**
   String get resourcePageResources;
+
+  /// Tooltip for the password visibility toggle icon button when the password is hidden
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPassword;
+
+  /// Tooltip for the password visibility toggle icon button when the password is visible
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
+
+  /// Semantics label for the settings button
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get semanticsSettings;
+
+  /// Semantics label for the search resources field
+  ///
+  /// In en, this message translates to:
+  /// **'Search resources'**
+  String get semanticsSearchResources;
+
+  /// Semantics label for the filter resources button
+  ///
+  /// In en, this message translates to:
+  /// **'Filter resources'**
+  String get semanticsFilterResources;
+
+  /// Semantics label for language selector
+  ///
+  /// In en, this message translates to:
+  /// **'Select language: {label}'**
+  String semanticsSelectLanguage(String label);
+
+  /// Semantics label for opening the video player
+  ///
+  /// In en, this message translates to:
+  /// **'Open video player'**
+  String get semanticsOpenVideoPlayer;
+
+  /// Semantics label for closing the mini player
+  ///
+  /// In en, this message translates to:
+  /// **'Close mini player'**
+  String get semanticsCloseMiniPlayer;
+
+  /// Semantics label for the play/pause toggle button
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle play'**
+  String get semanticsTogglePlay;
+
+  /// Tooltip for the back-to-resource button in the video player
+  ///
+  /// In en, this message translates to:
+  /// **'Back to resource'**
+  String get tooltipBackToResource;
+
+  /// Tooltip for the delete download button
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {title}'**
+  String tooltipDeleteDownload(String title);
+
+  /// Banner text shown when the device is offline
+  ///
+  /// In en, this message translates to:
+  /// **'Offline — some features may be unavailable'**
+  String get connectionOfflineBanner;
+
+  /// Title of the notification shown when a download fails
+  ///
+  /// In en, this message translates to:
+  /// **'Download Failed'**
+  String get notificationDownloadFailedTitle;
+
+  /// Notification body shown when download fails
+  ///
+  /// In en, this message translates to:
+  /// **'{title} could not be downloaded. Check your connection and try again.'**
+  String notificationDownloadFailedBody(String title);
+
+  /// Fallback text when a student's name is not available
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get studentNameUnknown;
+
+  /// Fallback past-tense verb construction for unknown activity types
+  ///
+  /// In en, this message translates to:
+  /// **'{verb}ed'**
+  String activityPastTense(String verb);
+
+  /// App cache size label
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MB'**
+  String storageAppSize(String size);
+
+  /// Hub strength status label while connection quality is being recalculated
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating...'**
+  String get hubStrengthCalculating;
+
+  /// Fallback title for a resource when no title is available
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled'**
+  String get resourceFallbackTitle;
+
+  /// Fallback subject name when no subject is provided by the server
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get subjectFallbackGeneral;
+
+  /// Fallback text for an unknown subject name in subject breakdown
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get subjectNameUnknown;
 }
 
 class _AppLocalizationsDelegate
@@ -1702,7 +1848,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'hi', 'kn'].contains(locale.languageCode);
+      <String>['en', 'fr', 'hi', 'kn'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -1713,6 +1859,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
     case 'en':
       return AppLocalizationsEn();
+    case 'fr':
+      return AppLocalizationsFr();
     case 'hi':
       return AppLocalizationsHi();
     case 'kn':

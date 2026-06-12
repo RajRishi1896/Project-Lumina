@@ -186,6 +186,8 @@ async def _generate_session_token(username: str, role: str, encryption_key: byte
             conn = sqlite3.connect(DB_PATH, timeout=5.0)
         try:
             cur = conn.cursor()
+            # Prune stale sessions for same user (keep last 5)
+            cur.execute("DELETE FROM sessions WHERE username = ? AND rowid NOT IN (SELECT rowid FROM sessions WHERE username = ? ORDER BY rowid DESC LIMIT 5)", (username, username))
             cur.execute("INSERT INTO sessions (token, username, role, encryption_key) VALUES (?, ?, ?, ?)",
                          (stoken, username, role, ek))
             cur.execute("INSERT INTO refresh_tokens (token, username, role, expires_at) VALUES (?, ?, ?, datetime('now', '+7 days'))",

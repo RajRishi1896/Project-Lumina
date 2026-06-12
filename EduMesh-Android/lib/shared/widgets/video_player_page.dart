@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/constants/app_spacing.dart';
 import 'mini_player_controller.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
@@ -155,6 +156,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -167,6 +169,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: _enterMiniPlayer,
+            tooltip: AppLocalizations.of(context)!.tooltipBackToResource,
           ),
           title: Text(widget.title),
           backgroundColor: cs.surfaceContainerHighest,
@@ -183,9 +186,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         body: Center(
           child: _error != null
               ? Padding(
-                  padding: const EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(AppSpacing.section),
                   child: Text(_error!,
-                      style: TextStyle(color: cs.error),
+                      style: tt.bodyMedium?.copyWith(color: cs.error),
                       textAlign: TextAlign.center),
                 )
               : _initialized && _chewieController != null

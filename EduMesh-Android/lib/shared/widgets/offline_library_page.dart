@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/constants/lumina_colors.dart';
+import '../../core/constants/app_spacing.dart';
 import '../../core/storage/db_helper.dart';
 import '../../shared/services/download_service.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
@@ -45,6 +46,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
   }
 
   Future<void> _delete(String resourceId, String title) async {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -53,7 +55,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
         content: Text(l10n.deleteDownloadConfirmation(title)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.buttonCancel)),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.deleteConfirmButtonLabel, style: TextStyle(color: LuminaColors.danger))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.deleteConfirmButtonLabel, style: tt.labelSmall?.copyWith(color: LuminaColors.danger))),
         ],
       ),
     );
@@ -63,10 +65,10 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
     }
   }
 
-  String _formatSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  String _formatSize(int bytes, AppLocalizations l10n) {
+    if (bytes < 1024) return '$bytes${l10n.unitBytes}';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}${l10n.unitKilobytes}';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}${l10n.unitMegabytes}';
   }
 
   IconData _iconForType(String type) {
@@ -82,6 +84,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: cs.surface,
@@ -96,14 +99,14 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.download_outlined, size: 64.sp, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
-                      SizedBox(height: 16.h),
-                      Text(l10n.emptyOfflineLibraryMessage, style: TextStyle(fontSize: 16.sp, color: cs.onSurfaceVariant)),
+                      Icon(Icons.download_outlined, size: 64.sp, color: cs.onSurfaceVariant),
+                      SizedBox(height: AppSpacing.lg.h),
+                      Text(l10n.emptyOfflineLibraryMessage, style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
                     ],
                   ),
                 )
               : ListView.builder(
-                  padding: EdgeInsets.all(16.w),
+                  padding: EdgeInsets.all(AppSpacing.lg.w),
                   itemCount: _items.length,
                   itemBuilder: (context, index) {
                     final item = _items[index];
@@ -113,14 +116,15 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                     final size = item['size'] as int? ?? 0;
                     final resourceId = item['resource_id'] as String? ?? '';
                     return Card(
-                      margin: EdgeInsets.only(bottom: 8.h),
+                      margin: EdgeInsets.only(bottom: AppSpacing.sm.h),
                       child: ListTile(
                         leading: Icon(_iconForType(type), color: cs.primary),
                         title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                        subtitle: Text('$subject • ${_formatSize(size)}', style: TextStyle(fontSize: 12.sp)),
+                        subtitle: Text('$subject • ${_formatSize(size, l10n)}', style: tt.bodySmall),
                         trailing: IconButton(
                           icon: Icon(Icons.delete_outline, color: cs.error),
                           onPressed: () => _delete(resourceId, title),
+                          tooltip: l10n.tooltipDeleteDownload(title),
                         ),
                       ),
                     );

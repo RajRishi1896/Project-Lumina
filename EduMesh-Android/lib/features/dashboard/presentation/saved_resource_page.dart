@@ -24,6 +24,7 @@ class SavedResourcesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
 
     return DefaultTabController(
@@ -35,7 +36,7 @@ class SavedResourcesPage extends StatelessWidget {
           elevation: 0,
           title: Text(
             l10n.savedResourcesTitle,
-            style: TextStyle(color: cs.onSurface, fontWeight: AppSpacing.weightStrong),
+            style: tt.titleMedium?.copyWith(color: cs.onSurface),
           ),
           bottom: TabBar(
             isScrollable: true,
@@ -130,6 +131,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
@@ -142,15 +144,16 @@ class _SavedListByTypeState extends State<_SavedListByType> {
           widget.type != null
               ? l10n.emptyStateByType(widget.type!.name)
               : l10n.emptyStateAll,
-          style: TextStyle(color: cs.onSurfaceVariant),
+          style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
         ),
       );
     }
 
     return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
       itemCount: _savedItems.length,
       itemBuilder: (context, index) {
+        final l10n = AppLocalizations.of(context)!;
         final item = _savedItems[index];
         final resourceId = item.id.toString();
         final isSavedDownloaded = _downloadedIds.contains(resourceId);
@@ -158,8 +161,8 @@ class _SavedListByTypeState extends State<_SavedListByType> {
         return GestureDetector(
           onTap: () => _openItem(item),
           child: Container(
-            margin: EdgeInsets.only(bottom: 10.h),
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+              margin: EdgeInsets.only(bottom: AppSpacing.md.h),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
             decoration: BoxDecoration(
               color: cs.surface,
               borderRadius: BorderRadius.circular(12.r),
@@ -168,32 +171,28 @@ class _SavedListByTypeState extends State<_SavedListByType> {
             child: Row(
               children: [
                 ResourceThumbnail(resource: item, size: 48),
-                SizedBox(width: 12.w),
+                SizedBox(width: AppSpacing.md.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(item.title,
-                          style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: AppSpacing.weightStrong,
-                              color: cs.onSurface),
+                          style: tt.titleSmall?.copyWith(color: cs.onSurface),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis),
-                      SizedBox(height: 4.h),
-                      Text("${item.subject} • ${item.grade}",
-                          style: TextStyle(
-                              fontSize: 12.sp, color: cs.onSurfaceVariant)),
+                      SizedBox(height: AppSpacing.xs.h),
+                      Text(l10n.resourceSubtitle(item.subject, item.grade),
+                          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                     ],
                   ),
                 ),
-                SizedBox(width: 8.w),
+                SizedBox(width: AppSpacing.sm.w),
                 if (isSavedDownloading)
                   SizedBox(
                     width: 24.w,
                     height: 24.h,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: const CircularProgressIndicator(strokeWidth: 2),
                   )
                 else
                   IconButton(
@@ -239,7 +238,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                             ));
                           }
                         } catch (e) {
-                          debugPrint("Download error: $e");
+                          debugPrint('Download error: $e');
                           if (mounted) {
                             setState(() => _downloadingIds.remove(resourceId));
                           }
@@ -251,7 +250,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                       }
                     },
                   ),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 IconButton(
                   icon: Icon(Icons.bookmark_remove, color: cs.error),
                   onPressed: () async {

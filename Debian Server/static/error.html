@@ -4,20 +4,23 @@
 <!-- Section: Head - metadata, styles, and theme detection -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Access Error - Lumina Hub</title>
+<title data-i18n="error.page_title">Access Error - Lumina Hub</title>
 <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
 <script src="/static/js/lumina.js"></script>
 <style>
   .error-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:2rem; width:100%; box-sizing:border-box; }
-  .error-card { background:var(--card-bg); border-radius:1rem; padding:3rem; max-width:480px; width:100%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,.12); }
-  .error-icon { width:72px; height:72px; margin:0 auto 1.5rem; background:var(--bg-muted); border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .error-card { background:var(--bg-surface); border-radius:1rem; padding:3rem; max-width:480px; width:100%; text-align:center; box-shadow:var(--card-shadow); }
+  .error-icon { width:72px; height:72px; margin:0 auto 1.5rem; background:var(--outline); border-radius:50%; display:flex; align-items:center; justify-content:center; }
   .error-icon svg { width:36px; height:36px; stroke:var(--danger); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   .error-card h1 { margin:0 0 .5rem; color:var(--text-primary); font-size:1.5rem; }
   .error-card p { margin:0 0 1.5rem; color:var(--text-secondary); line-height:1.6; }
+  .error-card .actions { display:flex; gap:.75rem; justify-content:center; flex-wrap:wrap; }
   .error-card .btn { display:inline-flex; align-items:center; gap:.5rem; padding:.75rem 1.5rem; background:var(--primary); color:var(--on-primary); border:none; border-radius:.5rem; font-size:.9rem; font-weight:700; cursor:pointer; text-decoration:none; transition:opacity .2s; }
   .error-card .btn:hover { opacity:.85; }
+  .error-card .btn-outline { background:transparent; color:var(--text-primary); border:1px solid var(--outline); }
+  .error-card .btn-outline:hover { background:var(--outline); }
   .error-card .btn svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
   .reason-badge { display:inline-block; padding:.25rem .75rem; border-radius:1rem; font-size:.75rem; font-weight:700; margin-bottom:1rem; }
   .reason-badge.expired { background:rgba(234,179,8,.15); color:rgb(234,179,8); }
@@ -42,65 +45,68 @@
   <!-- Section: Message -->
   <p id="errorMessage" data-i18n="error_access_denied_message">This page requires teacher or administrator privileges. Please log in with an authorized account.</p>
   <!-- Section: Back Button - navigates to welcome page -->
-  <a href="/welcome" class="btn" id="backBtn">
-    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-    <span data-i18n="error_back_home">Back to Home</span>
-  </a>
-</div>
+  <div class="actions">
+    <a href="/welcome" class="btn" id="backBtn">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      <span data-i18n="error_back_home">Back to Home</span>
+    </a>
+  </div>
 </div>
 <script>
-/**
- * Error page is public (no auth check). Theme inlines localStorage
- * + prefers-color-scheme to avoid flash before CSS loads.
- */
+// Restore saved theme (no toggle button — error page is minimal)
 (function applyTheme() {
-    var stored = localStorage.getItem('lumina-theme');
-    var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const stored = localStorage.getItem('lumina-theme');
+    const theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);
 })();
-loadTranslations(currentLang);
-/**
+
+/*
  * Parse the ?reason= query param and render the matching error card content.
  * Supports: session_expired, access_denied, not_found.
+ *
+ * Key names are stored statically; translations are applied on load
+ * via data-i18n / data-i18n-body attributes processed by applyLanguage().
  */
 (function(){
-  var params = new URLSearchParams(window.location.search);
-  var reason = params.get('reason') || 'access_denied';
-  var titleEl = document.getElementById('errorTitle');
-  var msgEl = document.getElementById('errorMessage');
-  var badgeEl = document.getElementById('reasonBadge');
-  var btnEl = document.getElementById('backBtn');
+  const params = new URLSearchParams(window.location.search);
+  const reason = params.get('reason') || 'access_denied';
+  const titleEl = document.getElementById('errorTitle');
+  const msgEl = document.getElementById('errorMessage');
+  const badgeEl = document.getElementById('reasonBadge');
+  const btnEl = document.getElementById('backBtn');
 
-  var messages = {
+  const messages = {
     session_expired: {
-      title: __('error_session_expired_title'),
-      msg: __('error_session_expired_message'),
-      badge: __('error_session_expired_badge'),
+      titleKey: 'error_session_expired_title',
+      msgKey: 'error_session_expired_message',
+      badgeKey: 'error_session_expired_badge',
       badgeClass: 'expired',
       home: '/welcome'
     },
     access_denied: {
-      title: __('error_access_denied_title'),
-      msg: __('error_access_denied_message'),
-      badge: __('error_access_denied_badge'),
+      titleKey: 'error_access_denied_title',
+      msgKey: 'error_access_denied_message',
+      badgeKey: 'error_access_denied_badge',
       badgeClass: 'denied',
       home: '/welcome'
     },
     not_found: {
-      title: __('error_not_found_title'),
-      msg: __('error_not_found_message'),
-      badge: __('error_not_found_badge'),
+      titleKey: 'error_not_found_title',
+      msgKey: 'error_not_found_message',
+      badgeKey: 'error_not_found_badge',
       badgeClass: 'notfound',
       home: '/welcome'
     }
   };
 
-  var info = messages[reason] || messages.access_denied;
-  titleEl.textContent = info.title;
-  msgEl.textContent = info.msg;
-  badgeEl.textContent = info.badge;
-  badgeEl.className = 'reason-badge ' + info.badgeClass;
-  btnEl.href = info.home;
+  loadTranslations(currentLang).then(function() {
+    const info = messages[reason] || messages.access_denied;
+    titleEl.textContent = __(info.titleKey);
+    msgEl.textContent = __(info.msgKey);
+    badgeEl.textContent = __(info.badgeKey);
+    badgeEl.className = 'reason-badge ' + info.badgeClass;
+    btnEl.href = info.home;
+  });
 })();
 </script>
 </body>

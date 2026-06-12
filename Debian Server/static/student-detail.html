@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Detail - Lumina Hub</title>
+    <title data-i18n="student_detail.page_title">Student Detail - Lumina Hub</title>
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
@@ -73,13 +73,13 @@
             <img class="logo-light" src="/static/assets/logo-light.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina">
             <img class="logo-dark" src="/static/assets/logo-dark.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina">
         </div>
-        <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
+        <button class="menu-toggle" id="btn-toggleMobileMenu" data-i18n-aria-label="sidebar.toggle_menu" aria-label="Toggle Menu">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
     </header>
 
     <!-- Section: Mobile Overlay — dark backdrop for sidebar on small screens -->
-    <div class="mobile-overlay" onclick="toggleMobileMenu()"></div>
+    <div class="mobile-overlay" id="overlay-toggleMobileMenu"></div>
 
     <!-- Section: Sidebar — nav links, user info, theme toggle, logout -->
     <aside>
@@ -120,7 +120,7 @@
             </a>
         </nav>
         <div class="nav-spacer"></div>
-        <div class="theme-toggle" onclick="toggleTheme()">
+        <div class="theme-toggle" id="btn-toggleTheme">
             <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             <span id="themeLabel"><span data-i18n="sidebar.dark_mode">Dark Mode</span></span>
         </div>
@@ -191,30 +191,30 @@
     <script src="/static/js/lumina.js"></script>
     <!-- Section: Inline Scripts — student analytics rendering, API fetching -->
     <script>
-        var params = new URLSearchParams(window.location.search);
-        var studentId = params.get('id') || '';
-        var studentName = params.get('name') || __('student_unknown');
-        var studentGrade = params.get('grade') || '';
-        var weekMinutes = parseInt(params.get('week')) || 0;
-        var streakDays = parseInt(params.get('streak')) || 0;
-        var dlCount = parseInt(params.get('dl')) || 0;
-        var lastActive = params.get('last') || '';
-        var avatarInitials = params.get('avatar') || studentName.split(' ').map(function(s){return s[0]}).join('').slice(0,2).toUpperCase();
+        const params = new URLSearchParams(window.location.search);
+        const studentId = params.get('id') || '';
+        const studentName = params.get('name') || __('student_unknown');
+        const studentGrade = params.get('grade') || '';
+        const weekMinutes = parseInt(params.get('week')) || 0;
+        const streakDays = parseInt(params.get('streak')) || 0;
+        const dlCount = parseInt(params.get('dl')) || 0;
+        const lastActive = params.get('last') || '';
+        const avatarInitials = params.get('avatar') || studentName.split(' ').map(function(s){return s[0]}).join('').slice(0,2).toUpperCase();
 
-        var subjectColors = ['#14b8a6','#6366f1','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981','#f97316'];
+        const subjectColors = ['#14b8a6','#6366f1','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981','#f97316'];
 
         /**
          * @param {string} isoStr - ISO date string
          * @returns {string} Human-friendly relative time label
          */
         function timeAgo(isoStr) {
-            var now = new Date();
-            var d = new Date(isoStr);
-            var diff = Math.floor((now - d) / 1000);
+            const now = new Date();
+            const d = new Date(isoStr);
+            const diff = Math.floor((now - d) / 1000);
             if (diff < 60) return diff <= 5 ? __('time_just_now') : __('time_seconds_ago', {n: diff});
             if (diff < 3600) return __('time_minutes_ago', {n: Math.floor(diff / 60)});
             if (diff < 86400) return __('time_hours_ago', {n: Math.floor(diff / 3600)});
-            var days = Math.floor(diff / 86400);
+            const days = Math.floor(diff / 86400);
             if (days === 1) return __('time_yesterday');
             if (days < 30) return __('time_days_ago', {n: days});
             return d.toLocaleDateString();
@@ -222,7 +222,7 @@
 
         /** Renders the student avatar, name, grade, and last active into #studentHeader. */
         function renderHeader() {
-            var el = document.getElementById('studentHeader');
+            const el = document.getElementById('studentHeader');
             el.innerHTML =
                 '<div class="avatar-large">' + esc(avatarInitials) + '</div>' +
                 '<div class="student-info">' +
@@ -240,15 +240,15 @@
          * Renders three stat cards into #statGrid.
          */
         function renderStats(weekMin, streakVal, dlVal) {
-            var weekVal = (weekMin / 60).toFixed(1).replace(/\.0$/, '');
-            var grid = document.getElementById('statGrid');
-            var cards = [
-                { label:__('student_detail_time_this_week'), value:weekVal, unit:'h' },
-                { label:__('student_detail_day_streak'), value:streakVal, unit:'days' },
+            const weekVal = (weekMin / 60).toFixed(1).replace(/\.0$/, '');
+            const grid = document.getElementById('statGrid');
+            const cards = [
+                { label:__('student_detail_time_this_week'), value:weekVal, unit:__('student_detail.hours') },
+                { label:__('student_detail_day_streak'), value:streakVal, unit:'' },
                 { label:__('student_detail_downloaded'), value:dlVal, unit:'' }
             ];
-            grid.innerHTML = cards.map(function(c){
-                var val = c.label === 'Day Streak' ? c.value : c.value + (c.unit ? ' <span class="stat-unit">' + c.unit + '</span>' : '');
+            grid.innerHTML = cards.map(function(c, idx){
+                const val = idx === 1 ? c.value : c.value + (c.unit ? ' <span class="stat-unit">' + c.unit + '</span>' : '');
                 return '<div class="stat-card">' +
                     '<div class="stat-label">' + c.label + '</div>' +
                     '<div class="stat-value">' + val + '</div></div>';
@@ -261,7 +261,7 @@
          */
         function renderSubjects(subjects) {
             /* Set the card title with the student's grade */
-            var titleEl = document.getElementById('subjectCardTitle');
+            const titleEl = document.getElementById('subjectCardTitle');
             if (studentGrade) {
                 titleEl.innerHTML = esc(studentGrade) + ' &mdash; ' + __('student_detail_subject_breakdown') + ' <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">' + __('student_detail_this_week') + '</span>';
             } else {
@@ -271,16 +271,16 @@
                 document.getElementById('subjectList').innerHTML = '<div class="empty-state">' + __('student_detail_no_subject_data') + '</div>';
                 return;
             }
-            var maxMin = Math.max.apply(null, subjects.map(function(s){ return s.minutes; }));
-            var list = document.getElementById('subjectList');
+            const maxMin = Math.max.apply(null, subjects.map(function(s){ return s.minutes; }));
+            const list = document.getElementById('subjectList');
             list.innerHTML = subjects.map(function(s, i){
-                var pct = (s.minutes / maxMin) * 100;
-                var color = subjectColors[i % subjectColors.length];
+                const pct = (s.minutes / maxMin) * 100;
+                const color = subjectColors[i % subjectColors.length];
                 return '<div class="subject-row">' +
                     '<span class="subject-name">' + esc(s.name) + '</span>' +
                     '<div class="subject-bar-wrap">' +
                     '<div class="subject-bar-track"><div class="subject-bar-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>' +
-                    '<span class="subject-minutes">' + s.minutes + 'm</span>' +
+                    '<span class="subject-minutes">' + __('student_detail.minutes_abbr', {n: s.minutes}) + '</span>' +
                     '</div></div>';
             }).join('');
         }
@@ -310,6 +310,9 @@
             loadTranslations(currentLang);
             init();
             setActiveNav('nav-students');
+            document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
+            document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
+            document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
         });
     </script>
 </body>

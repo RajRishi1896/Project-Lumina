@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_spacing.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
@@ -18,6 +17,7 @@ class LuminaStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final steps = [l10n.stepperStepWelcome, l10n.stepperStepLoginRegister, l10n.stepperStepAccess];
 
@@ -47,18 +47,17 @@ class LuminaStepper extends StatelessWidget {
                 ? Icon(Icons.check, color: cs.onPrimary, size: 14.sp)
                 : Text(
                     '${stepIndex + 1}',
-                    style: GoogleFonts.atkinsonHyperlegible(
-                      fontSize: 12.sp,
+                    style: tt.labelSmall?.copyWith(
                       fontWeight: AppSpacing.weightStrong,
                       color: isActive ? cs.onPrimary : cs.onSurfaceVariant,
                     ),
                   ),
                 ),
               ),
-              SizedBox(height: 4.h),
+              SizedBox(height: AppSpacing.xs.h),
               Text(
                 steps[stepIndex],
-                style: GoogleFonts.atkinsonHyperlegible(
+                style: tt.labelSmall?.copyWith(
                   fontSize: 10.sp,
                   fontWeight: isActive ? AppSpacing.weightStrong : AppSpacing.weightBody,
                   color: isActive ? cs.primary : cs.onSurfaceVariant,
@@ -71,7 +70,7 @@ class LuminaStepper extends StatelessWidget {
           return Container(
             width: 40.w,
             height: 2.h,
-            margin: EdgeInsets.only(bottom: 14.h),
+            margin: EdgeInsets.only(bottom: AppSpacing.md.h),
             color: isActive ? cs.primary : cs.outlineVariant,
           );
         }

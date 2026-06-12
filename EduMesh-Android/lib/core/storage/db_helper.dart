@@ -286,11 +286,11 @@ class DBHelper {
       }
       if (v <= 3) {
         try {
-          await db.execute("ALTER TABLE downloads ADD COLUMN mtime REAL DEFAULT 0");
+          await db.execute('ALTER TABLE downloads ADD COLUMN mtime REAL DEFAULT 0');
         } catch (_) { } }
       if (v >= 4) {
         try {
-          await db.execute("ALTER TABLE bookmarks ADD COLUMN pdf_url TEXT");
+          await db.execute('ALTER TABLE bookmarks ADD COLUMN pdf_url TEXT');
         } catch (_) { } }
       if (v >= 5) {
         try {

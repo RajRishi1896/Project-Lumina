@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../../core/constants/lumina_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 
@@ -59,10 +60,11 @@ class _KiwixViewState extends State<KiwixView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.title ?? 'KNOWLEDGE BASE',
+          widget.title ?? l10n.kiwixDefaultTitle,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 letterSpacing: 1.5,
                 fontWeight: AppSpacing.weightDisplay,

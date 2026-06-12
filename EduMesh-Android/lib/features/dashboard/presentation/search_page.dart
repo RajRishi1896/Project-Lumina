@@ -38,7 +38,7 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = "";
+  String _searchQuery = '';
   List<Map<String, dynamic>> _searchIndex = [];
   List<ResourceModel> _allResources = [];
   Map<dynamic, bool> _savedStatuses = {};
@@ -107,7 +107,7 @@ class _SearchPageState extends State<SearchPage> {
         if (mounted) setState(() { _isLoading = false; _loadError = null; });
           return;
         }
-      } catch (_) { } if (mounted) setState(() => _loadError = 'Could not reach server. No cached resources available.');
+      } catch (_) { } if (mounted) { final l10n = AppLocalizations.of(context)!; setState(() => _loadError = l10n.errorNoServerNoCache); }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -118,22 +118,23 @@ class _SearchPageState extends State<SearchPage> {
     for (final r in resources) {
       if (r.type == ResourceType.kiwix) continue;
       _searchIndex.add({
-        "title": r.title,
-        "searchKeywords": "${r.title} ${r.subject} ${r.grade} ${r.type.toString().split('.').last}".toLowerCase(),
-        "originalObject": r,
-        "isZim": false,
+        'title': r.title,
+        'searchKeywords': '${r.title} ${r.subject} ${r.grade} ${r.type.toString().split('.').last}'.toLowerCase(),
+        'originalObject': r,
+        'isZim': false,
       });
     }
+    final l10n = AppLocalizations.of(context)!;
     for (final article in _zimArticles) {
-      final title = article['title']?.toString() ?? 'Untitled';
+      final title = article['title']?.toString() ?? l10n.zimUntitledArticleFallback;
       final id = article['article_id']?.toString() ?? '';
       if (id.isEmpty) continue;
       _searchIndex.add({
-        "title": title,
-        "searchKeywords": title.toLowerCase(),
-        "originalObject": null,
-        "isZim": true,
-        "articleId": id,
+        'title': title,
+        'searchKeywords': title.toLowerCase(),
+        'originalObject': null,
+        'isZim': true,
+        'articleId': id,
       });
     }
   }
@@ -142,10 +143,12 @@ class _SearchPageState extends State<SearchPage> {
     try {
       final ids = await DownloadService().getAllDownloadedIds();
       final pIds = await DownloadService().getAllPendingIds();
-      if (mounted) setState(() {
-        _downloadedIds = ids;
-        _pendingIds = pIds;
-      });
+      if (mounted) {
+        setState(() {
+          _downloadedIds = ids;
+          _pendingIds = pIds;
+        });
+      }
     } catch (_) { } }
 
   Future<void> _refreshSavedResources() async {
@@ -154,8 +157,8 @@ class _SearchPageState extends State<SearchPage> {
       final savedIds = results.map((r) => r.id).toSet();
       final statusMap = <dynamic, bool>{};
       for (final item in _searchIndex) {
-        if (item["isZim"] == true) continue;
-        final original = item["originalObject"];
+        if (item['isZim'] == true) continue;
+        final original = item['originalObject'];
         statusMap[original.id] = savedIds.contains(original.id.toString());
       }
       setState(() => _savedStatuses = statusMap);
@@ -199,7 +202,7 @@ class _SearchPageState extends State<SearchPage> {
       return SizedBox(
         width: 24.w,
         height: 24.h,
-        child: CircularProgressIndicator(strokeWidth: 2),
+        child: const CircularProgressIndicator(strokeWidth: 2),
       );
     }
 
@@ -272,7 +275,7 @@ class _SearchPageState extends State<SearchPage> {
               ));
             }
           } catch (e) {
-            debugPrint("Download error: $e");
+            debugPrint('Download error: $e');
             if (mounted) {
               setState(() => _downloadingIds.remove(resourceId));
             }
@@ -290,8 +293,8 @@ class _SearchPageState extends State<SearchPage> {
 
   Set<String> _getAllGrades() {
     return _searchIndex
-        .where((item) => item["isZim"] != true)
-        .map((item) => (item["originalObject"].grade ?? '').toString())
+        .where((item) => item['isZim'] != true)
+        .map((item) => (item['originalObject'].grade ?? '').toString())
         .where((g) => g.isNotEmpty)
         .toSet();
   }
@@ -308,6 +311,7 @@ class _SearchPageState extends State<SearchPage> {
 
   void _showFilterSheet() {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final allGrades = _getAllGrades().toList()..sort();
 
@@ -316,6 +320,7 @@ class _SearchPageState extends State<SearchPage> {
     String tempSubject = _subjectFilter;
     String tempSort = _sortBy;
 
+    final subjectController = TextEditingController(text: tempSubject);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -335,17 +340,13 @@ class _SearchPageState extends State<SearchPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(l10n.filterSheetTitle,
-                      style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: AppSpacing.weightStrong,
+                      style: tt.titleLarge?.copyWith(
                           color: cs.onSurface)),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: AppSpacing.lg.h),
                   Text(l10n.filterResourceTypeHeader,
-                      style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: AppSpacing.weightStrong,
+                      style: tt.titleSmall?.copyWith(
                           color: cs.onSurfaceVariant)),
-                  SizedBox(height: 8.h),
+                  SizedBox(height: AppSpacing.sm.h),
                   Wrap(
                     spacing: 8.w,
                     runSpacing: 4.h,
@@ -368,11 +369,11 @@ class _SearchPageState extends State<SearchPage> {
                       );
                     }).toList(),
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: AppSpacing.lg.h),
                   Row(
                     children: [
-                      Text(l10n.filterShowLabel, style: TextStyle(fontSize: 14.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
-                      SizedBox(width: 12.w),
+                      Text(l10n.filterShowLabel, style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant)),
+                      SizedBox(width: AppSpacing.md.w),
                       ChoiceChip(
                         label: Text(l10n.filterMyGrade),
                         selected: tempGrades.contains(widget.initialGrade),
@@ -383,7 +384,7 @@ class _SearchPageState extends State<SearchPage> {
                           });
                         },
                       ),
-                      SizedBox(width: 8.w),
+                      SizedBox(width: AppSpacing.sm.w),
                       ChoiceChip(
                         label: Text(l10n.filterAllGrades),
                         selected: tempGrades.isEmpty,
@@ -393,13 +394,11 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: AppSpacing.lg.h),
                   Text(l10n.filterGradeHeader,
-                      style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: AppSpacing.weightStrong,
+                      style: tt.titleSmall?.copyWith(
                           color: cs.onSurfaceVariant)),
-                  SizedBox(height: 8.h),
+                  SizedBox(height: AppSpacing.sm.h),
                   Wrap(
                     spacing: 8.w,
                     runSpacing: 4.h,
@@ -420,13 +419,11 @@ class _SearchPageState extends State<SearchPage> {
                       );
                     }).toList(),
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: AppSpacing.lg.h),
                   Text(l10n.filterSubjectHeader,
-                      style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: AppSpacing.weightStrong,
+                      style: tt.titleSmall?.copyWith(
                           color: cs.onSurfaceVariant)),
-                  SizedBox(height: 8.h),
+                  SizedBox(height: AppSpacing.sm.h),
                   TextField(
                     decoration: InputDecoration(
                       hintText: l10n.filterSubjectHint,
@@ -435,16 +432,14 @@ class _SearchPageState extends State<SearchPage> {
                       contentPadding: EdgeInsets.symmetric(
                           horizontal: 12.w, vertical: 10.h),
                     ),
-                    controller: TextEditingController(text: tempSubject),
+                    controller: subjectController,
                     onChanged: (v) => tempSubject = v,
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: AppSpacing.lg.h),
                   Text(l10n.filterSortByHeader,
-                      style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: AppSpacing.weightStrong,
+                      style: tt.titleSmall?.copyWith(
                           color: cs.onSurfaceVariant)),
-                  SizedBox(height: 8.h),
+                  SizedBox(height: AppSpacing.sm.h),
                   Wrap(
                     spacing: 8.w,
                     runSpacing: 4.h,
@@ -459,7 +454,7 @@ class _SearchPageState extends State<SearchPage> {
                           (v) => setSheetState(() => tempSort = v)),
                     ],
                   ),
-                  SizedBox(height: 24.h),
+                  SizedBox(height: AppSpacing.xxl.h),
                   Row(
                     children: [
                       Expanded(
@@ -471,11 +466,12 @@ class _SearchPageState extends State<SearchPage> {
                               tempSubject = '';
                               tempSort = 'title_asc';
                             });
+                            subjectController.clear();
                           },
                           child: Text(l10n.filterResetButton),
                         ),
                       ),
-                      SizedBox(width: 12.w),
+                      SizedBox(width: AppSpacing.md.w),
                       Expanded(
                         child: FilledButton(
                           onPressed: () {
@@ -499,7 +495,7 @@ class _SearchPageState extends State<SearchPage> {
           },
         );
       },
-    );
+    ).whenComplete(() => subjectController.dispose());
   }
 
   String _sortLabel(String sortBy) {
@@ -515,9 +511,10 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _sortChip(String label, String value, String current,
       void Function(String) onSelected) {
+    final tt = Theme.of(context).textTheme;
     final selected = current == value;
     return ChoiceChip(
-      label: Text(label, style: TextStyle(fontSize: 12.sp)),
+      label: Text(label, style: tt.labelSmall),
       selected: selected,
       onSelected: (_) => onSelected(value),
       visualDensity: VisualDensity.compact,
@@ -534,13 +531,13 @@ class _SearchPageState extends State<SearchPage> {
     final textFiltered = _searchQuery.trim().isEmpty
         ? List<Map<String, dynamic>>.from(_searchIndex)
         : _searchIndex.where((item) {
-            return (item["searchKeywords"] as String)
+            return (item['searchKeywords'] as String)
                 .contains(_searchQuery.toLowerCase());
           }).toList();
 
     final List<Map<String, dynamic>> results = textFiltered.where((item) {
-      if (item["isZim"] == true) return true;
-      final original = item["originalObject"];
+      if (item['isZim'] == true) return true;
+      final original = item['originalObject'];
       if (_selectedTypes.isNotEmpty && !_selectedTypes.contains(original.type)) return false;
       if (_selectedGrades.isNotEmpty && !_selectedGrades.contains(original.grade)) return false;
       if (_subjectFilter.isNotEmpty && !(original.subject ?? '').toLowerCase().contains(_subjectFilter.toLowerCase())) return false;
@@ -548,15 +545,15 @@ class _SearchPageState extends State<SearchPage> {
     }).toList();
 
     results.sort((a, b) {
-      if (a["isZim"] == true && b["isZim"] == true) {
-        final at = a["title"] as String? ?? '';
-        final bt = b["title"] as String? ?? '';
+      if (a['isZim'] == true && b['isZim'] == true) {
+        final at = a['title'] as String? ?? '';
+        final bt = b['title'] as String? ?? '';
         return at.compareTo(bt);
       }
-      if (a["isZim"] == true) return 1;
-      if (b["isZim"] == true) return -1;
-      final oa = a["originalObject"];
-      final ob = b["originalObject"];
+      if (a['isZim'] == true) return 1;
+      if (b['isZim'] == true) return -1;
+      final oa = a['originalObject'];
+      final ob = b['originalObject'];
       switch (_sortBy) {
         case 'title_desc':
           return (ob.title ?? '').compareTo(oa.title ?? '');
@@ -575,6 +572,7 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -584,10 +582,8 @@ class _SearchPageState extends State<SearchPage> {
         backgroundColor: cs.surface,
         iconTheme: IconThemeData(color: cs.primary),
         title: Text(l10n.pageTitleBrowseResources,
-            style: TextStyle(
-                color: cs.primary,
-                fontWeight: AppSpacing.weightDisplay,
-                fontSize: 20.sp)),
+            style: tt.titleLarge?.copyWith(
+                fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -600,17 +596,17 @@ class _SearchPageState extends State<SearchPage> {
           : _loadError != null
               ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(32.w),
+                    padding: EdgeInsets.all(AppSpacing.section.w),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.cloud_off_rounded,
                             size: 48.sp, color: cs.error),
-                        SizedBox(height: 16.h),
+                        SizedBox(height: AppSpacing.lg.h),
                         Text(_loadError!,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: cs.onSurfaceVariant)),
-                        SizedBox(height: 16.h),
+                            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+                        SizedBox(height: AppSpacing.lg.h),
                         FilledButton.tonalIcon(
                           onPressed: _loadResources,
                           icon: const Icon(Icons.refresh),
@@ -623,16 +619,16 @@ class _SearchPageState extends State<SearchPage> {
               : RefreshIndicator(
                   onRefresh: _loadResources,
                   child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: SizedBox(height: 8.h)),
+            SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm.h)),
             SliverToBoxAdapter(
               child: Row(
               children: [
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
                     decoration: BoxDecoration(
                         color: cs.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(16.r),
@@ -646,7 +642,7 @@ class _SearchPageState extends State<SearchPage> {
         setState(() => _searchQuery = value);
         _applyFilters();
       },
-                      style: TextStyle(color: cs.onSurface),
+                      style: tt.bodyLarge?.copyWith(color: cs.onSurface),
                       decoration: InputDecoration(
                         icon: Icon(Icons.search_rounded,
                             color: cs.onSurfaceVariant),
@@ -656,7 +652,7 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                   ),
                 ),
-                SizedBox(width: 8.w),
+                SizedBox(width: AppSpacing.sm.w),
                 IconButton(
                   icon: Icon(
                     _hasActiveFilters
@@ -671,11 +667,11 @@ class _SearchPageState extends State<SearchPage> {
               ],
             ),
             ),
-            SliverToBoxAdapter(child: SizedBox(height: 12.h)),
+            SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md.h)),
             if (_hasActiveFilters)
               SliverToBoxAdapter(
                 child: Padding(
-                padding: EdgeInsets.only(bottom: 8.h),
+                padding: EdgeInsets.only(bottom: AppSpacing.sm.h),
                 child: Row(
                   children: [
                     Expanded(
@@ -683,10 +679,8 @@ class _SearchPageState extends State<SearchPage> {
                         _sortBy != 'title_asc'
                             ? l10n.filtersActiveSorted(_sortLabel(_sortBy))
                             : l10n.filtersActiveLabel,
-                        style: TextStyle(
-                            color: cs.primary,
-                            fontSize: 13.sp,
-                            fontWeight: AppSpacing.weightBody),
+                        style: tt.titleSmall?.copyWith(
+                            color: cs.primary),
                       ),
                     ),
                     TextButton.icon(
@@ -710,11 +704,9 @@ class _SearchPageState extends State<SearchPage> {
             if (_searchQuery.trim().isEmpty && !_hasActiveFilters && _filteredResults.isNotEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.only(top: 16.h, bottom: 8.h),
+                  padding: EdgeInsets.only(top: AppSpacing.lg.h, bottom: AppSpacing.sm.h),
                   child: Text(l10n.sectionAllResources,
-                      style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: AppSpacing.weightStrong,
+                      style: tt.titleMedium?.copyWith(
                           color: cs.onSurface)),
                 ),
               ),
@@ -725,14 +717,14 @@ class _SearchPageState extends State<SearchPage> {
                     _searchQuery.trim().isEmpty && !_hasActiveFilters
                         ? l10n.emptyNoResources
                         : l10n.emptyNoSearchResults,
-                    style: TextStyle(color: cs.onSurfaceVariant),
+                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                   )))
                 : SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final item = _filteredResults[index];
-                        final isZim = item["isZim"] == true;
-                        final dynamic original = item["originalObject"];
+                        final isZim = item['isZim'] == true;
+                        final dynamic original = item['originalObject'];
 
                         final isOfflineUnavailable = !isZim && !ConnectivityService().isOnline && !_downloadedIds.contains(original.id.toString());
 
@@ -747,7 +739,7 @@ class _SearchPageState extends State<SearchPage> {
                               : ResourceThumbnail(resource: original, size: 48),
                           onTap: () {
                             if (isZim) {
-                              _openZimArticle(item["articleId"] as String, item["title"] as String);
+                              _openZimArticle(item['articleId'] as String, item['title'] as String);
                               return;
                             }
                             Navigator.push(
@@ -769,7 +761,7 @@ class _SearchPageState extends State<SearchPage> {
                             children: [
                               if (isZim)
                                 Padding(
-                                  padding: EdgeInsets.only(right: 8.w),
+                                  padding: EdgeInsets.only(right: AppSpacing.sm.w),
                                   child: Container(
                                     padding: EdgeInsets.symmetric(
                                         horizontal: 6.w, vertical: 2.h),
@@ -780,9 +772,8 @@ class _SearchPageState extends State<SearchPage> {
                                     ),
                                     child: Text(
                                       l10n.badgeKiwixWiki,
-                                      style: TextStyle(
+                                      style: tt.labelSmall?.copyWith(
                                         color: cs.onPrimary,
-                                        fontSize: 10.sp,
                                         fontWeight: AppSpacing.weightStrong,
                                         letterSpacing: 1,
                                       ),
@@ -790,9 +781,9 @@ class _SearchPageState extends State<SearchPage> {
                                   ),
                                 ),
                               Expanded(
-                                child: Text(item["title"],
+                                child: Text(item['title'],
                                     style:
-                                        TextStyle(color: cs.onSurface)),
+                                        tt.bodyLarge?.copyWith(color: cs.onSurface)),
                               ),
                             ],
                           ),
@@ -831,7 +822,7 @@ class _SearchPageState extends State<SearchPage> {
                                     );
                                   },
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: AppSpacing.xs),
                                 _buildDownloadButton(original, cs),
                               ],
                             ),
@@ -849,6 +840,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildRecommendedSection(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final recommended = _computeRecommendations();
     if (recommended.isEmpty) return const SizedBox.shrink();
@@ -858,21 +850,19 @@ class _SearchPageState extends State<SearchPage> {
         Row(
           children: [
             Icon(Icons.auto_awesome_rounded, size: 18.sp, color: cs.primary),
-            SizedBox(width: 6.w),
+            SizedBox(width: AppSpacing.sm.w),
             Text(l10n.sectionRecommendedForYou,
-                style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: AppSpacing.weightStrong,
+                style: tt.titleMedium?.copyWith(
                     color: cs.onSurface)),
           ],
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: AppSpacing.sm.h),
         SizedBox(
           height: 120.h,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: recommended.length,
-            separatorBuilder: (_, __) => SizedBox(width: 10.w),
+            separatorBuilder: (_, __) => SizedBox(width: AppSpacing.md.w),
             itemBuilder: (context, index) {
               final r = recommended[index];
               return _buildRecommendationCard(r, cs);
@@ -884,6 +874,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildRecommendationCard(ResourceModel r, ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -899,11 +890,11 @@ class _SearchPageState extends State<SearchPage> {
       ),
       child: Container(
         width: 160.w,
-        padding: EdgeInsets.all(12.w),
+        padding: EdgeInsets.all(AppSpacing.md.w),
         decoration: BoxDecoration(
-          color: cs.primaryContainer.withValues(alpha: 0.3),
+          color: cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
+          border: Border.all(color: cs.outlineVariant),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -911,34 +902,31 @@ class _SearchPageState extends State<SearchPage> {
             Row(
               children: [
                 Icon(Icons.auto_awesome, size: 14.sp, color: cs.primary),
-                SizedBox(width: 4.w),
+                SizedBox(width: AppSpacing.xs.w),
                 Expanded(
                   child: Text(r.type.name.toUpperCase(),
-                      style: TextStyle(
-                          fontSize: 10.sp,
+                      style: tt.labelSmall?.copyWith(
                           fontWeight: AppSpacing.weightStrong,
                           color: cs.primary),
                       overflow: TextOverflow.ellipsis),
                 ),
               ],
             ),
-            SizedBox(height: 6.h),
+            SizedBox(height: AppSpacing.sm.h),
             Text(r.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: AppSpacing.weightStrong,
+                style: tt.titleSmall?.copyWith(
                     color: cs.onSurface)),
             const Spacer(),
             Row(
               children: [
                 Icon(Icons.school_outlined, size: 12.sp,
                     color: cs.onSurfaceVariant),
-                SizedBox(width: 4.w),
+                SizedBox(width: AppSpacing.xs.w),
                 Text(r.grade,
-                    style: TextStyle(
-                        fontSize: 11.sp, color: cs.onSurfaceVariant)),
+                    style: tt.labelSmall?.copyWith(
+                        color: cs.onSurfaceVariant)),
               ],
             ),
           ],

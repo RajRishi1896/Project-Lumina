@@ -4,7 +4,7 @@
     <!-- Section: Head — metadata, fonts, embedded styles -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina Hub | Welcome</title>
+    <title data-i18n="welcome.page_title">Lumina Hub | Welcome</title>
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
@@ -329,7 +329,7 @@
         .toggle-password {
             position: absolute;
             right: 0.75rem;
-            top: 40%;
+            top: 50%;
             transform: translateY(-50%);
             background: none;
             border: none;
@@ -402,6 +402,11 @@
         .btn-primary:hover { background:#005A6A; }
         .btn-outline { background:transparent;border:1px solid var(--outline);border-radius:6px;cursor:pointer;color:var(--on-surface); }
         .btn-outline:hover { background:var(--outline); }
+        .welcome-lang-option { padding:0.5rem 0.75rem;cursor:pointer;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;border-radius:6px;transition:background 0.15s,color 0.15s; }
+        .welcome-lang-option:hover { background:var(--outline); }
+        .welcome-lang-option.active { background:var(--teal);color:#fff; }
+        .welcome-lang-option.active:hover { background:var(--teal);color:#fff; }
+        .lang-code-label { font-size:0.7rem;opacity:0.6; }
     </style>
 </head>
 <body>
@@ -411,18 +416,19 @@
         <div class="nav-brand"><img src="/static/assets/logo-light.svg" alt="" class="logo-light" width="24" height="24" style="flex-shrink:0;border-radius:2px;"><img src="/static/assets/logo-dark.svg" alt="" class="logo-dark" width="24" height="24" style="flex-shrink:0;border-radius:2px;"><span data-i18n="app.title">Lumina Hub</span></div>
         <div class="nav-actions">
             <div class="lang-nav-wrap" style="position:relative;">
-                <button class="theme-toggle-btn" id="welcomeLangBtn" onclick="toggleWelcomeLang()" title="Select Language" style="display:flex;align-items:center;gap:0.4rem;padding:0.5rem 0.75rem;border-radius:8px;font-family:inherit;font-size:0.8125rem;font-weight:700;">
+                <button class="theme-toggle-btn" id="btn-toggleWelcomeLang" data-i18n-title="nav.language" data-i18n-aria-label="nav.language" title="Select Language" aria-label="Select Language" style="display:flex;align-items:center;gap:0.4rem;padding:0.5rem 0.75rem;border-radius:8px;font-family:inherit;font-size:0.8125rem;font-weight:700;">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                     <span id="welcomeLangLabel">English</span>
                 </button>
                 <div id="welcomeLangDropdown" style="display:none;position:absolute;right:0;top:calc(100% + 6px);width:200px;background:var(--surface);border:1px solid var(--outline);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.2);z-index:200;overflow:hidden;">
                     <div style="padding:0.5rem;border-bottom:1px solid var(--outline);">
-                        <input id="welcomeLangSearch" type="text" placeholder="Search..." style="width:100%;padding:0.4rem 0.6rem;font-size:0.8rem;font-family:inherit;border:1px solid var(--outline);border-radius:6px;background:var(--surface);color:var(--on-surface);outline:none;box-sizing:border-box;">
+                        <label for="welcomeLangSearch" class="sr-only" data-i18n="welcome.lang_search_placeholder">Search...</label>
+                        <input id="welcomeLangSearch" type="text" data-i18n="welcome.lang_search_placeholder" placeholder="Search..." style="width:100%;padding:0.4rem 0.6rem;font-size:0.8rem;font-family:inherit;border:1px solid var(--outline);border-radius:6px;background:var(--surface);color:var(--on-surface);outline:none;box-sizing:border-box;">
                     </div>
                     <div id="welcomeLangList" style="overflow-y:auto;max-height:220px;"></div>
                 </div>
             </div>
-            <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark Mode">
+            <button class="theme-toggle-btn" id="btn-toggleTheme" data-i18n-title="nav.theme" data-i18n-aria-label="nav.theme" title="Toggle Dark Mode" aria-label="Toggle Dark Mode">
                 <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             </button>
             <a href="/files/EduMesh.apk" class="nav-download" download>
@@ -476,10 +482,12 @@
             <p class="subtitle" data-i18n="welcome.teacher_subtitle">Manage resources and monitor the mesh network.</p>
             <form id="loginForm" autocomplete="off">
                 <div id="loginError" class="login-error hidden" data-i18n="welcome.invalid_creds">Invalid credentials. Please try again.</div>
-                <input type="text" id="username" placeholder="Username" required autocomplete="off" data-i18n="welcome.username">
+                <label for="username" class="sr-only" data-i18n="welcome.username">Username</label>
+                <input type="text" id="username" placeholder="Username" required aria-required="true" autocomplete="off" data-i18n="welcome.username">
                 <div class="password-container">
-                    <input type="password" id="password" placeholder="Password" required autocomplete="off" data-i18n="welcome.password">
-                    <button type="button" class="toggle-password" id="togglePasswordBtn" onclick="togglePasswordVisibility()" title="Show Password">
+                    <label for="password" class="sr-only" data-i18n="welcome.password">Password</label>
+                    <input type="password" id="password" placeholder="Password" required aria-required="true" autocomplete="off" data-i18n="welcome.password">
+                    <button type="button" class="toggle-password" id="btn-togglePassword" data-i18n-title="welcome.show_password" data-i18n-aria-label="welcome.show_password" title="Show Password" aria-label="Show Password">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eyeIcon">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                             <circle cx="12" cy="12" r="3"></circle>
@@ -499,51 +507,32 @@
 
             <div style="margin-bottom:1.5rem;">
                 <h3 style="font-size:0.9375rem;font-weight:700;color:var(--primary);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;" data-i18n="welcome.getting_started"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Getting Started as a Student</h3>
-                <ol class="steps">
-                    <li><strong>Connect to Wi-Fi</strong> — Turn on your phone's Wi-Fi and join the network named <strong>EduMesh</strong>. No password needed.</li>
-                    <li><strong>Open the welcome page</strong> — Once connected, a login screen should appear automatically (captive portal). If not, open your browser and go to <strong>http://lumina.hub:8000</strong>.</li>
-                    <li><strong>Download the app</strong> — Tap the <strong>Download App</strong> button in the top-right corner of this page to get the EduMesh APK.</li>
-                    <li><strong>Install the app</strong> — Open the downloaded file and tap Install. If your phone asks, allow "Install from Unknown Sources" in Settings.</li>
-                    <li><strong>Register</strong> — Open the EduMesh app, enter your name, and you're in. You'll be assigned a permanent student ID.</li>
-                    <li><strong>Start learning</strong> — Browse textbooks, videos, past papers, and more. Tap any resource to view it, or download it to access offline.</li>
-                </ol>
+                <ol class="steps" id="guideGettingStarted"></ol>
             </div>
 
             <div style="margin-bottom:1.5rem;padding-top:1.25rem;border-top:1px solid var(--outline);">
                 <h3 style="font-size:0.9375rem;font-weight:700;color:var(--primary);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;" data-i18n="welcome.using_app"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg> Using the App</h3>
-                <p style="font-size:0.875rem;color:var(--text-secondary);line-height:1.7;margin-bottom:0.75rem;">The EduMesh app has four tabs at the bottom:</p>
-                <ul style="font-size:0.875rem;color:var(--text-secondary);line-height:1.7;padding-left:1.25rem;">
-                    <li><strong>Dashboard</strong> — See your study stats, recent activity, and quick-access resources.</li>
-                    <li><strong>Browse</strong> — Explore all available resources by subject or grade. Search by keyword.</li>
-                    <li><strong>Saved</strong> — View resources you've bookmarked or downloaded for offline use.</li>
-                    <li><strong>Profile</strong> — View your weekly study time, streak, and saved resource count.</li>
-                </ul>
+                <div id="guideUsingApp"></div>
             </div>
 
             <div style="margin-bottom:1.5rem;padding-top:1.25rem;border-top:1px solid var(--outline);">
                 <h3 style="font-size:0.9375rem;font-weight:700;color:var(--primary);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;" data-i18n="welcome.download_offline"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Downloading for Offline</h3>
-                <p style="font-size:0.875rem;color:var(--text-secondary);line-height:1.7;">Tap the download icon on any resource to save it to your phone. Downloaded resources work <strong>even when you're not connected</strong> to the EduMesh network. Perfect for studying anywhere.</p>
+                <p id="guideDownloadOffline" style="font-size:0.875rem;color:var(--text-secondary);line-height:1.7;"></p>
             </div>
 
             <div style="margin-bottom:1.5rem;padding-top:1.25rem;border-top:1px solid var(--outline);">
                 <h3 style="font-size:0.9375rem;font-weight:700;color:var(--primary);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;" data-i18n="welcome.tracking_privacy"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg> Study Tracking &amp; Privacy</h3>
-                <p style="font-size:0.875rem;color:var(--text-secondary);line-height:1.7;">The app tracks your <strong>study time</strong> using a built-in timer and counts your <strong>daily streak</strong> of consecutive study days. This helps teachers see how the class is engaging with materials.</p>
-                <p style="font-size:0.875rem;color:var(--text-secondary);line-height:1.7;margin-top:0.5rem;"><strong>Your privacy matters.</strong> Individual details — like which PDF you opened or what you searched for — stay on your phone and are <strong>never sent</strong> to the Hub. Only your total weekly minutes, streak days, and resource count are shared.</p>
+                <div id="guideTrackingPrivacy"></div>
             </div>
 
             <div style="margin-bottom:1.5rem;padding-top:1.25rem;border-top:1px solid var(--outline);">
                 <h3 style="font-size:0.9375rem;font-weight:700;color:var(--primary);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;" data-i18n="welcome.troubleshooting"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Troubleshooting</h3>
-                <ul style="font-size:0.875rem;color:var(--text-secondary);line-height:1.7;padding-left:1.25rem;">
-                    <li><strong>Can't connect to Wi-Fi?</strong> Make sure the Hub laptop is powered on and broadcasting. Ask your teacher to check.</li>
-                    <li><strong>Captive portal not opening?</strong> Open your browser and manually go to <strong>http://lumina.hub:8000</strong>.</li>
-                    <li><strong>App won't install?</strong> Go to Settings > Security and enable "Install from Unknown Sources". Then try again.</li>
-                    <li><strong>App is slow or crashing?</strong> Close other apps, restart EduMesh, or clear app data from Android Settings and reinstall.</li>
-                </ul>
+                <ul id="guideTroubleshooting" style="font-size:0.875rem;color:var(--text-secondary);line-height:1.7;padding-left:1.25rem;"></ul>
             </div>
 
             <div style="padding:1.25rem 0 1.75rem;border-top:1px solid var(--outline);">
                 <h3 style="font-size:0.9375rem;font-weight:700;color:var(--primary);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;" data-i18n="welcome.for_teachers"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> For Teachers</h3>
-                <p style="font-size:0.875rem;color:var(--text-secondary);line-height:1.7;">Teachers can log in above using their credentials. Once logged in, you can <strong>upload resources</strong>, <strong>view student analytics</strong>, <strong>manage grades and subjects</strong>, and <strong>configure the hub</strong> — including changing passwords and managing storage. Visit the <strong>Teacher Guide</strong> in the sidebar after logging in for detailed instructions.</p>
+                <p id="guideForTeachers" style="font-size:0.875rem;color:var(--text-secondary);line-height:1.7;"></p>
             </div>
         </div>
     </div>
@@ -606,17 +595,17 @@
                 const data = await res.json();
 
                 const sFill = document.getElementById('storageFill');
-                document.getElementById('storageText').innerText = `${data.storage_used_gb || Math.round(data.storage_percent)}% used`;
+                document.getElementById('storageText').innerText = __('welcome.storage.used_pct', { pct: data.storage_used_gb || Math.round(data.storage_percent) });
                 sFill.style.width = `${data.storage_percent}%`;
                 sFill.style.background = getMeterColor(data.storage_percent, false);
 
                 const bFill = document.getElementById('batteryFill');
-                document.getElementById('batteryText').innerText = `${data.battery_percent}%`;
+                document.getElementById('batteryText').innerText = __('welcome.battery.percent', { percent: data.battery_percent });
                 bFill.style.width = `${data.battery_percent}%`;
                 bFill.style.background = getMeterColor(data.battery_percent, true);
             } catch (e) {
-                document.getElementById('storageText').innerText = 'Unavailable';
-                document.getElementById('batteryText').innerText = 'Unavailable';
+                document.getElementById('storageText').innerText = __('welcome.unavailable');
+                document.getElementById('batteryText').innerText = __('welcome.unavailable');
             }
         }
 
@@ -629,7 +618,7 @@
          * Otherwise redirects to /static/index.
          * On failure: shows the #loginError element.
          */
-        document.getElementById('loginForm').onsubmit = async (e) => {
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData();
             formData.append('username', document.getElementById('username').value);
@@ -648,17 +637,17 @@
             } else {
                 document.getElementById('loginError').classList.remove('hidden');
             }
-        };
+        });
 
         /* ── Name Prompt Modal ────────────────────────────────────────── */
 
         /** Handle the name prompt modal submit action */
-        document.getElementById('namePromptSubmit').onclick = async () => {
+        document.getElementById('namePromptSubmit').addEventListener('click', async () => {
             const input = document.getElementById('namePromptInput');
             const error = document.getElementById('namePromptError');
             const name = input.value.trim();
             if (!name) {
-                error.textContent = 'Please enter a name or skip.';
+                error.textContent = __('welcome.display_name_error');
                 error.classList.remove('hidden');
                 return;
             }
@@ -672,25 +661,25 @@
                 });
             } catch (_) { /* ignore */ }
             window.location.href = '/static/index';
-        };
+        });
 
-        document.getElementById('namePromptSkip').onclick = () => {
+        document.getElementById('namePromptSkip').addEventListener('click', () => {
             window.location.href = '/static/index';
-        };
+        });
 
-        document.getElementById('namePromptInput').onkeydown = (e) => {
+        document.getElementById('namePromptInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 document.getElementById('namePromptSubmit').click();
             }
-        };
+        });
 
         // Clear login error when the user starts typing again
-        document.getElementById('username').oninput = () => {
+        document.getElementById('username').addEventListener('input', () => {
             document.getElementById('loginError').classList.add('hidden');
-        };
-        document.getElementById('password').oninput = () => {
+        });
+        document.getElementById('password').addEventListener('input', () => {
             document.getElementById('loginError').classList.add('hidden');
-        };
+        });
 
         /**
          * Toggle password field visibility between text and password types.
@@ -699,14 +688,14 @@
         function togglePasswordVisibility() {
             const pwdInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eyeIcon');
-            const toggleBtn = document.getElementById('togglePasswordBtn');
+            const toggleBtn = document.getElementById('btn-togglePassword');
             if (pwdInput.type === 'password') {
                 pwdInput.type = 'text';
-                toggleBtn.title = 'Hide Password';
+                toggleBtn.setAttribute('aria-label', __('welcome.hide_password'));
                 eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
             } else {
                 pwdInput.type = 'password';
-                toggleBtn.title = 'Show Password';
+                toggleBtn.setAttribute('aria-label', __('welcome.show_password'));
                 eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
             }
         }
@@ -752,9 +741,7 @@
             { code:'en', name:'English', native:'English' },
             { code:'hi', name:'Hindi', native:'हिन्दी' },
             { code:'kn', name:'Kannada', native:'ಕನ್ನಡ' },
-            { code:'sw', name:'Swahili', native:'Kiswahili' },
             { code:'fr', name:'French', native:'Français' },
-            { code:'es', name:'Spanish', native:'Español' },
         ];
         let welcomeLang = localStorage.getItem('lumina-lang') || 'en';
 
@@ -771,8 +758,28 @@
                 const active = l.code === welcomeLang;
                 const bg = active ? 'var(--teal)' : 'transparent';
                 const clr = active ? '#fff' : '';
-                return '<div style="padding:0.5rem 0.75rem;cursor:pointer;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;border-radius:6px;' + (active ? 'background:' + bg + ';color:' + clr + ';' : '') + '" onmouseenter="this.style.background=\'' + (active ? 'var(--teal)' : 'var(--outline)') + '\';this.style.color=\'' + (active ? '#fff' : '') + '\'" onmouseleave="this.style.background=\'' + (active ? 'var(--teal)' : 'transparent') + '\';this.style.color=\'' + (active ? '#fff' : '') + '\'" onclick="setWelcomeLang(\'' + l.code + '\')"><span>' + l.native + '</span><span style="font-size:0.7rem;opacity:0.6;">' + l.name + '</span></div>';
+                return '<div class="welcome-lang-option' + (active ? ' active' : '') + '" data-lang="' + l.code + '"><span>' + l.native + '</span><span class="lang-code-label">' + l.name + '</span></div>';
             }).join('');
+        }
+
+        /**
+         * Populate the student guide sections with translated HTML content.
+         * Called after language is loaded to render rich HTML sections that
+         * the data-i18n attribute (textContent-only) cannot handle.
+         */
+        function populateGuide() {
+            const gs = document.getElementById('guideGettingStarted');
+            if (gs) gs.innerHTML = __('welcome.guide.getting_started_body');
+            const ua = document.getElementById('guideUsingApp');
+            if (ua) ua.innerHTML = __('welcome.guide.using_app_body');
+            const dl = document.getElementById('guideDownloadOffline');
+            if (dl) dl.innerHTML = __('welcome.guide.download_offline_body');
+            const tp = document.getElementById('guideTrackingPrivacy');
+            if (tp) tp.innerHTML = __('welcome.guide.tracking_privacy_body');
+            const tr = document.getElementById('guideTroubleshooting');
+            if (tr) tr.innerHTML = __('welcome.guide.troubleshooting_body');
+            const ft = document.getElementById('guideForTeachers');
+            if (ft) ft.innerHTML = __('welcome.guide.for_teachers_body');
         }
 
         /**
@@ -780,15 +787,17 @@
          * Persists to localStorage, updates the label, and closes the dropdown.
          * @param {string} code - Language code ('en', 'hi', 'kn', etc.)
          */
-        function setWelcomeLang(code) {
+        async function setWelcomeLang(code) {
             welcomeLang = code;
+            currentLang = code;
             localStorage.setItem('lumina-lang', code);
             document.documentElement.setAttribute('lang', code);
-            var label = document.getElementById('welcomeLangLabel');
-            var langObj = WELCOME_LANGS.find(function(l){ return l.code === code; });
+            const label = document.getElementById('welcomeLangLabel');
+            const langObj = WELCOME_LANGS.find(function(l){ return l.code === code; });
             if (label && langObj) label.textContent = langObj.native;
             closeWelcomeLang();
-            loadTranslations(code);
+            await loadTranslations(code);
+            populateGuide();
         }
 
         /**
@@ -815,22 +824,36 @@
             if (wrap && !wrap.contains(e.target)) closeWelcomeLang();
         });
 
+        // Wrap the global setLanguage so guide sections re-render via populateGuide
+        const _origSetLanguage = window.setLanguage;
+        window.setLanguage = async function(code) {
+            if (code === currentLang) return;
+            await _origSetLanguage(code);
+            populateGuide();
+        };
+
         // Initialize saved language on DOMContentLoaded
-        document.addEventListener('DOMContentLoaded', function() {
-            loadTranslations(welcomeLang);
+        document.addEventListener('DOMContentLoaded', async function() {
+            const saved = localStorage.getItem('lumina-lang');
+            if (saved) { welcomeLang = saved; currentLang = saved; document.documentElement.setAttribute('lang', saved); }
+            await loadTranslations(welcomeLang);
+            populateGuide();
             document.getElementById('welcomeLangSearch').addEventListener('input', function(){ renderWelcomeLangList(this.value); });
             document.getElementById('welcomeLangList').addEventListener('click', function(e) { e.stopPropagation(); });
-            // Apply saved lang
-            const saved = localStorage.getItem('lumina-lang');
-            if (saved) { welcomeLang = saved; document.documentElement.setAttribute('lang', saved); }
-            var label = document.getElementById('welcomeLangLabel');
-            var langObj = WELCOME_LANGS.find(function(l){ return l.code === welcomeLang; });
+            const label = document.getElementById('welcomeLangLabel');
+            const langObj = WELCOME_LANGS.find(function(l){ return l.code === welcomeLang; });
             if (label && langObj) label.textContent = langObj.native;
+            document.getElementById('btn-toggleWelcomeLang')?.addEventListener('click', toggleWelcomeLang);
+            document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
+            document.getElementById('btn-togglePassword')?.addEventListener('click', togglePasswordVisibility);
+            document.getElementById('welcomeLangList')?.addEventListener('click', function(e) {
+                const opt = e.target.closest('.welcome-lang-option');
+                if (opt) { setWelcomeLang(opt.dataset.lang); }
+            });
         });
 
-        // Initial stats fetch and periodic refresh every 10s
-        fetchStats();
-        setInterval(fetchStats, 10000);
+        // Deferred stats fetch — don't block initial render; refresh every 30s
+        setTimeout(() => { fetchStats(); setInterval(fetchStats, 30000); }, 500);
 
         // Clear login inputs on page load to prevent browser autofill interference
         window.addEventListener('DOMContentLoaded', () => {

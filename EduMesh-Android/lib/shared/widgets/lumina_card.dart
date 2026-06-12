@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_spacing.dart';
 
 /// A reusable bordered card container with optional tap handling.
 ///
@@ -36,7 +37,7 @@ class LuminaCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: padding ?? const EdgeInsets.all(16),
+        padding: padding ?? const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(4),

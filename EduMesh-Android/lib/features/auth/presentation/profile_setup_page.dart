@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
 import 'package:edumesh_android/core/services/mutation_queue.dart';
 import 'package:edumesh_android/widgets/connection_gate.dart';
@@ -67,44 +66,45 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: cs.surface,
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
+           padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 48.h),
+              SizedBox(height: AppSpacing.touchTarget.h),
               Icon(Icons.school_rounded, size: 48.sp, color: cs.primary),
-              SizedBox(height: 16.h),
+              SizedBox(height: AppSpacing.lg.h),
               Text(l10n.profileSetupTitle,
-                  style: GoogleFonts.atkinsonHyperlegible(fontSize: 32.sp, fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
-              SizedBox(height: 4.h),
+                  style: tt.displaySmall?.copyWith(color: cs.primary)),
+              SizedBox(height: AppSpacing.xs.h),
               Text(l10n.profileSetupSubtitle,
-                  style: GoogleFonts.atkinsonHyperlegible(fontSize: 16.sp, color: cs.onSurfaceVariant)),
-              SizedBox(height: 40.h),
+                  style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
+              SizedBox(height: AppSpacing.sectionLg.h),
               if (_loading)
                 const Center(child: CircularProgressIndicator())
               else ...[
                 Text(l10n.labelDisplayName,
-                    style: GoogleFonts.atkinsonHyperlegible(fontSize: 13.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
-                SizedBox(height: 6.h),
+                    style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant)),
+                SizedBox(height: AppSpacing.sm.h),
                 TextField(
                   controller: _nameController,
-                  style: GoogleFonts.atkinsonHyperlegible(fontSize: 15.sp, color: cs.onSurface),
+                  style: tt.bodyLarge?.copyWith(color: cs.onSurface),
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: cs.surfaceContainerHighest,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                    contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.md.h),
                   ),
                 ),
-                SizedBox(height: 20.h),
+                SizedBox(height: AppSpacing.xl.h),
                 Text(l10n.editProfileLabelGrade,
-                    style: GoogleFonts.atkinsonHyperlegible(fontSize: 13.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurfaceVariant)),
-                SizedBox(height: 6.h),
+                    style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant)),
+                SizedBox(height: AppSpacing.sm.h),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedGrade.isNotEmpty && _grades.contains(_selectedGrade) ? _selectedGrade : null,
                   items: _grades.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
@@ -113,7 +113,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     filled: true,
                     fillColor: cs.surfaceContainerHighest,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                    contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.md.h),
                   ),
                 ),
               ],
@@ -125,16 +125,16 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: cs.primary,
                     foregroundColor: cs.onPrimary,
-                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md.h),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                   ),
                   child: _saving
                       ? SizedBox(width: 20.sp, height: 20.sp, child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary))
                       : Text(l10n.buttonContinue,
-                          style: GoogleFonts.atkinsonHyperlegible(fontSize: 16.sp, fontWeight: AppSpacing.weightStrong)),
+                          style: tt.titleMedium?.copyWith()),
                 ),
               ),
-              SizedBox(height: 32.h),
+              SizedBox(height: AppSpacing.section.h),
             ],
           ),
         ),

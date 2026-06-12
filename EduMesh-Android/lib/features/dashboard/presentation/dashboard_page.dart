@@ -10,6 +10,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/services/connection_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/recent_files_service.dart';
+import '../../../core/services/app_info_service.dart';
 import '../../../shared/services/save_resource_service.dart';
 import '../../../shared/widgets/lumina_card.dart';
 import '../../../shared/widgets/lumina_settings_sheet.dart';
@@ -98,7 +99,7 @@ class _DashboardPageState extends State<DashboardPage> {
           if (entity is File) appDataSize += await entity.length();
         }
       }
-      final apkSize = await AuthService().getApkSize();
+      final apkSize = AppInfoService.getApkSize();
       final appUsedBytes = appDataSize + apkSize;
       final storageInfo = await _storageService.getStorageInfo();
       var totalBytes = (storageInfo['totalBytes'] ?? (128 * 1024 * 1024 * 1024)) as num;
@@ -107,21 +108,22 @@ class _DashboardPageState extends State<DashboardPage> {
       final otherUsedBytes = (totalBytes - availableBytes - appUsedBytes).clamp(0, totalBytes);
 
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         setState(() {
           final appMb = appUsedBytes / (1024 * 1024);
-          _appUsedStr = appMb < 1024 ? '${appMb.toStringAsFixed(1)} MB' : '${(appMb / 1024).toStringAsFixed(1)} GB';
+          _appUsedStr = appMb < 1024 ? '${appMb.toStringAsFixed(1)}${l10n.unitMegabytes}' : '${(appMb / 1024).toStringAsFixed(1)}${l10n.unitGigabytes}';
           final otherGb = otherUsedBytes / (1024 * 1024 * 1024);
-          _otherUsedStr = otherGb < 1.0 ? '${(otherUsedBytes / (1024 * 1024)).toStringAsFixed(1)} MB' : '${otherGb.toStringAsFixed(1)} GB';
-          _freeRemainingStr = '${(availableBytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-          _totalCapacityStr = '${(totalBytes / (1024 * 1024 * 1024)).toStringAsFixed(0)} GB Total';
+          _otherUsedStr = otherGb < 1.0 ? '${(otherUsedBytes / (1024 * 1024)).toStringAsFixed(1)}${l10n.unitMegabytes}' : '${otherGb.toStringAsFixed(1)}${l10n.unitGigabytes}';
+          _freeRemainingStr = '${(availableBytes / (1024 * 1024 * 1024)).toStringAsFixed(1)}${l10n.unitGigabytes}';
+          _totalCapacityStr = l10n.storageTotalCapacity((totalBytes / (1024 * 1024 * 1024)).toStringAsFixed(0));
           _appFlex = (appUsedBytes / totalBytes * 1000).toInt().clamp(1, 1000);
           _otherFlex = (otherUsedBytes / totalBytes * 1000).toInt().clamp(1, 1000);
           _freeFlex = (availableBytes / totalBytes * 1000).toInt().clamp(1, 1000);
-          _totalStorageUsedStr = '${((appUsedBytes + otherUsedBytes) / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB used';
+          _totalStorageUsedStr = l10n.storageUsedLabel(((appUsedBytes + otherUsedBytes) / (1024 * 1024 * 1024)).toStringAsFixed(1));
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _appUsedStr = _otherUsedStr = _freeRemainingStr = 'Unknown');
+      if (mounted) { final l10n = AppLocalizations.of(context)!; setState(() => _appUsedStr = _otherUsedStr = _freeRemainingStr = l10n.storageUnknown); }
     }
   }
 
@@ -180,6 +182,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildAppBar(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
@@ -188,11 +191,11 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
                   Icon(Icons.school, color: cs.primary, size: 24.sp),
           SizedBox(width: AppSpacing.md.w),
-          Text(l10n.appTitle, style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
+          Text(l10n.appTitle, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
           const Spacer(),
           _buildServerStatusBadge(),
           SizedBox(width: AppSpacing.sm.w),
-          GestureDetector(onTap: () => _showSettings(context), child: Icon(Icons.settings, color: cs.primary, size: 24.sp)),
+          Semantics(button: true, label: l10n.semanticsSettings, child: GestureDetector(onTap: () => _showSettings(context), child: Icon(Icons.settings, color: cs.primary, size: 24.sp))),
         ],
       ),
     );
@@ -200,6 +203,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildServerStatusBadge() {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     Color bgColor = _isChecking ? cs.surfaceContainerHighest.withAlpha(128) : (_isConnected ? cs.secondaryContainer : cs.errorContainer);
     Color textColor = _isChecking ? cs.outline : (_isConnected ? cs.onSecondaryContainer : cs.onErrorContainer);
@@ -207,14 +211,18 @@ class _DashboardPageState extends State<DashboardPage> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
       decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(AppSpacing.radiusFull), border: Border.all(color: textColor, width: 1)),
-      child: Text(_isChecking ? l10n.serverStatusChecking : (_isConnected ? l10n.serverStatusConnected : l10n.serverStatusDisconnected), style: TextStyle(fontSize: 12.sp, fontWeight: AppSpacing.weightBody, color: textColor)),
+      child: Text(_isChecking ? l10n.serverStatusChecking : (_isConnected ? l10n.serverStatusConnected : l10n.serverStatusDisconnected), style: tt.bodySmall?.copyWith(color: textColor)),
     );
   }
 
   Widget _buildSearchBar(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: l10n.semanticsSearchResources,
+      child: GestureDetector(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPage())),
       child: Container(
         margin: EdgeInsets.only(top: AppSpacing.lg.h),
@@ -224,16 +232,21 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             Icon(Icons.search_rounded, color: cs.onSurfaceVariant, size: 22.sp),
             SizedBox(width: AppSpacing.md.w),
-            Expanded(child: Text(l10n.searchBarHint, style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant, fontWeight: AppSpacing.weightBody))),
-            GestureDetector(
+            Expanded(child: Text(l10n.searchBarHint, style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant))),
+            Semantics(
+              button: true,
+              label: l10n.semanticsFilterResources,
+              child: GestureDetector(
               onTap: () => Navigator.push(context, MaterialPageRoute(
                 builder: (_) => SearchPage(initialGrade: _myGrade ?? '', openFilters: true),
               )),
               child: Icon(Icons.tune_rounded, color: cs.primary, size: 20.sp),
             ),
+            ),
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -241,11 +254,12 @@ class _DashboardPageState extends State<DashboardPage> {
     final recentFiles = _recentService.recentFiles;
     if (recentFiles.isEmpty) return const SizedBox.shrink();
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.sectionRecentlyViewed, style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        Text(l10n.sectionRecentlyViewed, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         SizedBox(
           height: 130.h,
@@ -265,8 +279,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Icon(file.icon, color: file.color, size: 24.sp),
                     SizedBox(height: AppSpacing.sm.h),
-                    Text(file.title, style: TextStyle(fontSize: 12.sp, fontWeight: AppSpacing.weightStrong), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    Text(file.time, style: TextStyle(fontSize: 10.sp, color: cs.onSurfaceVariant)),
+                    Text(file.title, style: tt.labelSmall?.copyWith(fontWeight: AppSpacing.weightStrong), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(file.time, style: tt.labelSmall?.copyWith(fontSize: 10.sp, color: cs.onSurfaceVariant)),
                   ],
                 ),
               );
@@ -279,11 +293,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildCategories(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.sectionSubjects, style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        Text(l10n.sectionSubjects, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         if (_subjectsLoading && _subjects.isEmpty)
           Padding(
@@ -295,7 +310,7 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: EdgeInsets.symmetric(vertical: AppSpacing.section.h),
             child: Center(
               child: Text(l10n.sectionSubjectsEmpty,
-                  style: TextStyle(fontSize: 14.sp, color: cs.onSurfaceVariant)),
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
             ),
           )
         else
@@ -305,7 +320,7 @@ class _DashboardPageState extends State<DashboardPage> {
             children: _subjects.map((sub) {
               final name = sub['name'] as String;
               return ActionChip(
-                label: Text(name, style: TextStyle(fontSize: 13.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
+                label: Text(name, style: tt.titleSmall?.copyWith(color: cs.onSurface)),
                 onPressed: () => Navigator.push(context, MaterialPageRoute(
                   builder: (_) => ResourcePage(subject: name, grade: _myGrade ?? ''),
                 )),
@@ -321,11 +336,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildStorageSection(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.sectionLocalStorage, style: TextStyle(fontSize: 20.sp, fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        Text(l10n.sectionLocalStorage, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         LuminaCard(
           padding: EdgeInsets.all(AppSpacing.lg.w),
@@ -334,9 +350,9 @@ class _DashboardPageState extends State<DashboardPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (_totalStorageUsedStr != 'Calculating...') ...[
-                Text(_totalStorageUsedStr, style: TextStyle(fontSize: 14.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
+                Text(_totalStorageUsedStr, style: tt.titleSmall?.copyWith(color: cs.onSurface)),
                 SizedBox(height: AppSpacing.xs.h),
-                Text(_totalCapacityStr, style: TextStyle(fontSize: 12.sp, fontWeight: AppSpacing.weightDisplay, color: LuminaColors.academicTeal)),
+                Text(_totalCapacityStr, style: tt.bodySmall?.copyWith(fontWeight: AppSpacing.weightDisplay, color: LuminaColors.academicTeal)),
                 SizedBox(height: AppSpacing.md.h),
               ],
               _buildMultiColorBar(AppSpacing.md.h),
@@ -367,15 +383,16 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildLegendItem(Color color, String label, String value) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.sm.h),
       decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r), border: Border.all(color: cs.outlineVariant)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [Container(width: AppSpacing.sm.w, height: AppSpacing.sm.w, decoration: BoxDecoration(color: color, shape: BoxShape.circle)), SizedBox(width: AppSpacing.sm.w), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(fontSize: 10.sp, fontWeight: AppSpacing.weightBody, color: cs.onSurfaceVariant)), SizedBox(height: AppSpacing.xs.h), Text(value, style: TextStyle(fontSize: 11.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface))])]),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [Container(width: AppSpacing.sm.w, height: AppSpacing.sm.w, decoration: BoxDecoration(color: color, shape: BoxShape.circle)), SizedBox(width: AppSpacing.sm.w), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: tt.labelSmall?.copyWith(fontSize: 10.sp, color: cs.onSurfaceVariant)), SizedBox(height: AppSpacing.xs.h), Text(value, style: tt.labelSmall?.copyWith(fontWeight: AppSpacing.weightStrong, color: cs.onSurface))])]),
     );
   }
 
   void _showSettings(BuildContext context) {
-    showModalBottomSheet(context: context, isScrollControlled: true, shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg))), builder: (_) => const LuminaSettingsSheet());
+    showModalBottomSheet(context: context, isScrollControlled: true, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg))), builder: (_) => const LuminaSettingsSheet());
   }
 
 }

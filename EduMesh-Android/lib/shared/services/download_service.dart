@@ -61,10 +61,10 @@ class DownloadService {
       }
       
       if (e.error is FileSystemException || e.message?.contains('No space left on device') == true) {
-        throw Exception("STORAGE_FULL");
+        throw Exception('STORAGE_FULL');
       }
       debugPrint('Download network error: $e');
-      throw Exception("NETWORK_ERROR");
+      throw Exception('NETWORK_ERROR');
     } catch (e) {
       if (partPath != null) {
         final partialFile = File(partPath);
@@ -73,7 +73,7 @@ class DownloadService {
         }
       }
       debugPrint('Unexpected download error: $e');
-      throw Exception("UNKNOWN_ERROR");
+      throw Exception('UNKNOWN_ERROR');
     } finally {
       await WakelockPlus.disable(); // Release wake lock
     }
@@ -100,7 +100,7 @@ class DownloadService {
       }
       return null;
     } catch (e) {
-      debugPrint("DownloadService: downloadAndTrack failed: $e");
+      debugPrint('DownloadService: downloadAndTrack failed: $e');
       return null;
     }
   }
@@ -128,7 +128,7 @@ class DownloadService {
       }
       await db.removeDownload(resourceId);
     } catch (e) {
-      debugPrint("DownloadService: deleteDownload failed: $e");
+      debugPrint('DownloadService: deleteDownload failed: $e');
     }
   }
 

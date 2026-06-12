@@ -1,0 +1,31 @@
+repos:
+  - repo: local
+    hooks:
+      - id: dart-analyze
+        name: dart analyze
+        entry: bash -c 'cd EduMesh-Android && dart analyze lib/ --fatal-infos 2>&1 | tail -5'
+        language: system
+        files: 'EduMesh-Android/lib/.*\.dart$'
+      - id: arb-parity
+        name: ARB parity check
+        entry: python3 -c "
+import json,sys
+en=json.load(open('EduMesh-Android/lib/l10n/app_en.arb'))
+en_keys={k for k in en if not k.startswith('@')}
+for lang in ['hi','kn','fr']:
+  xx=json.load(open(f'EduMesh-Android/lib/l10n/app_{lang}.arb'))
+  xx_keys={k for k in xx if not k.startswith('@')}
+  if en_keys!=xx_keys: print(f'{lang}: keys mismatch'); sys.exit(1)
+"
+        language: system
+        files: 'EduMesh-Android/lib/l10n/.*\.arb$'
+      - id: server-start
+        name: server import check
+        entry: bash -c 'cd "Debian Server" && python -c "from app.api import app; print(\"Server OK\")"'
+        language: system
+        files: 'Debian Server/app/.*\.py$'
+      - id: no-googlefonts
+        name: no GoogleFonts
+        entry: bash -c '! grep -rn "GoogleFonts\." EduMesh-Android/lib/'
+        language: system
+        files: 'EduMesh-Android/lib/.*\.dart$'

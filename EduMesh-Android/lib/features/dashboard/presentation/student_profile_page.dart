@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
@@ -52,6 +51,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     LuminaColors.chartAmber,
     LuminaColors.danger,
   ];
+  late final TextEditingController _studentIdController;
   bool _loading = true;
   File? _profileImage;
   bool _uploadingIcon = false;
@@ -59,6 +59,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   @override
   void initState() {
     super.initState();
+    _studentIdController = TextEditingController(text: _studentId);
     _loadLocalProfile();
     _loadData();
   }
@@ -94,9 +95,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     final id = await auth.getUniqueUserId();
     final grade = await auth.getStudentGrade();
     if (mounted) {
+      _studentId = id ?? _studentId;
+      _studentIdController.text = _studentId;
       setState(() {
         _studentName = name ?? _studentName;
-        _studentId = id ?? _studentId;
         _grade = grade ?? _grade;
       });
     }
@@ -143,9 +145,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       final profile = await ApiClient.get('/student/profile');
       if (mounted && profile.data is Map) {
         final p = profile.data as Map;
+        _studentId = p['scholar_id']?.toString() ?? _studentId;
+        _studentIdController.text = _studentId;
         setState(() {
           _studentName = p['name']?.toString() ?? _studentName;
-          _studentId = p['scholar_id']?.toString() ?? _studentId;
           _grade = p['grade']?.toString() ?? _grade;
         });
         final scholarId = p['scholar_id']?.toString() ?? '';
@@ -168,8 +171,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       }
     } catch (_) { } }
 
-  String _getInitials(String name) {
-    if (name.trim().isEmpty) return '?';
+  String _getInitials(String name, AppLocalizations l10n) {
+    if (name.trim().isEmpty) return l10n.initialsFallback;
     final parts = name.trim().split(_whitespaceRE);
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
@@ -269,7 +272,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       backgroundColor: cs.surface,
       body: SafeArea(
         child: _loading
-            ? Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
                   _buildHeader(cs),
@@ -277,16 +280,16 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                     child: RefreshIndicator(
                       onRefresh: _loadData,
                       child: ListView(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
                       children: [
                         _buildProfileCard(cs),
-                        SizedBox(height: 20.h),
+                        SizedBox(height: AppSpacing.xl.h),
                         _buildStatsRow(cs),
-                        SizedBox(height: 24.h),
+                        SizedBox(height: AppSpacing.xxl.h),
                         _buildSubjectBreakdown(cs),
-                        SizedBox(height: 24.h),
+                        SizedBox(height: AppSpacing.xxl.h),
                         _buildRecentActivity(cs),
-                        SizedBox(height: 24.h),
+                        SizedBox(height: AppSpacing.xxl.h),
                       ],
                     ),
                   ),
@@ -298,6 +301,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   Widget _buildHeader(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
@@ -310,17 +314,13 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           Icon(Icons.person_rounded, color: cs.primary, size: 24.sp),
           SizedBox(width: AppSpacing.md.w),
           Text(l10n.headerMyProfile,
-              style: GoogleFonts.atkinsonHyperlegible(
-                  fontSize: 20.sp,
-                  fontWeight: AppSpacing.weightDisplay,
+              style: tt.titleLarge?.copyWith(
                   color: cs.primary)),
           const Spacer(),
           Icon(Icons.bar_chart_rounded, color: cs.primary, size: 20.sp),
           SizedBox(width: AppSpacing.xs.w),
           Text(l10n.headerAnalytics,
-              style: GoogleFonts.atkinsonHyperlegible(
-                  fontSize: 13.sp,
-                  fontWeight: AppSpacing.weightStrong,
+              style: tt.titleSmall?.copyWith(
                   color: cs.onSurfaceVariant)),
         ],
       ),
@@ -369,6 +369,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   Widget _buildProfileCard(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: EdgeInsets.only(top: AppSpacing.lg.h),
@@ -388,10 +389,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   backgroundColor: LuminaColors.academicTeal,
                   backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
                   child: _profileImage == null
-                      ? Text(_getInitials(_studentName),
-                          style: GoogleFonts.atkinsonHyperlegible(
-                              fontSize: 22.sp,
-                              fontWeight: AppSpacing.weightStrong,
+                      ? Text(_getInitials(_studentName, l10n),
+                          style: tt.titleLarge?.copyWith(
                               color: cs.onPrimary))
                       : null,
                 ),
@@ -399,7 +398,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: cs.scrim.withValues(alpha: 0.3),
+                        color: cs.scrim.withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -426,44 +425,39 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
               ],
             ),
           ),
-          SizedBox(width: 16.w),
+          SizedBox(width: AppSpacing.lg.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(_studentName,
-                    style: GoogleFonts.atkinsonHyperlegible(
-                        fontSize: 20.sp,
-                        fontWeight: AppSpacing.weightStrong,
+                    style: tt.titleLarge?.copyWith(
                         color: cs.onSurface)),
-                SizedBox(height: 4.h),
+                SizedBox(height: AppSpacing.xs.h),
                 Row(
                   children: [
                     Container(
                       padding:
-                          EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                          EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
                       decoration: BoxDecoration(
                         color: LuminaColors.academicTeal.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(4.r),
                       ),
                       child: Text(l10n.roleBadgeStudent,
-                          style: TextStyle(
-                              fontSize: 11.sp,
+                          style: tt.labelSmall?.copyWith(
                               color: LuminaColors.academicTeal,
                               fontWeight: AppSpacing.weightStrong)),
                     ),
-                    SizedBox(width: 8.w),
+                    SizedBox(width: AppSpacing.sm.w),
                     Text(_grade,
-                        style: TextStyle(
-                            fontSize: 13.sp,
-                            color: cs.onSurfaceVariant,
-                            fontWeight: AppSpacing.weightBody)),
+                        style: tt.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant)),
                   ],
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: AppSpacing.xs.h),
                 Text(_studentId,
-                    style: TextStyle(
-                        fontSize: 11.sp, color: cs.onSurfaceVariant)),
+                    style: tt.labelSmall?.copyWith(
+                        color: cs.onSurfaceVariant)),
               ],
             ),
           ),
@@ -477,6 +471,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   void _showEditProfileSheet(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController(text: _studentName);
     String selectedGrade = _grade;
@@ -511,7 +506,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
               bottom: MediaQuery.of(ctx).viewInsets.bottom,
             ),
             child: Padding(
-              padding: EdgeInsets.all(24.w),
+              padding: EdgeInsets.all(AppSpacing.xxl.w),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,11 +514,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   Row(
                     children: [
                       Icon(Icons.edit_rounded, color: cs.primary, size: 22.sp),
-                      SizedBox(width: 10.w),
+                      SizedBox(width: AppSpacing.md.w),
                       Text(l10n.editProfileSheetTitle,
-                          style: GoogleFonts.atkinsonHyperlegible(
-                              fontSize: 20.sp,
-                              fontWeight: AppSpacing.weightStrong,
+                          style: tt.titleLarge?.copyWith(
                               color: cs.primary)),
                       const Spacer(),
                       IconButton(
@@ -532,17 +525,15 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 20.h),
+                  SizedBox(height: AppSpacing.xl.h),
                   Text(l10n.editProfileLabelName,
-                      style: GoogleFonts.atkinsonHyperlegible(
-                          fontSize: 13.sp,
-                          fontWeight: AppSpacing.weightStrong,
+                      style: tt.titleSmall?.copyWith(
                           color: cs.onSurfaceVariant)),
-                  SizedBox(height: 6.h),
+                  SizedBox(height: AppSpacing.sm.h),
                   TextField(
                     controller: nameController,
-                    style: GoogleFonts.atkinsonHyperlegible(
-                        fontSize: 15.sp, color: cs.onSurface),
+                    style: tt.bodyLarge?.copyWith(
+                        color: cs.onSurface),
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: cs.surfaceContainerHighest,
@@ -550,16 +541,14 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         borderRadius: BorderRadius.circular(12.r),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                      contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.md.h),
                     ),
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: AppSpacing.lg.h),
                   Text(l10n.editProfileLabelGrade,
-                      style: GoogleFonts.atkinsonHyperlegible(
-                          fontSize: 13.sp,
-                          fontWeight: AppSpacing.weightStrong,
+                      style: tt.titleSmall?.copyWith(
                           color: cs.onSurfaceVariant)),
-                  SizedBox(height: 6.h),
+                  SizedBox(height: AppSpacing.sm.h),
                   DropdownButtonFormField<String>(
                     initialValue: availableGrades.contains(selectedGrade) ? selectedGrade : null,
                     items: availableGrades.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
@@ -571,24 +560,22 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         borderRadius: BorderRadius.circular(12.r),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                      contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.md.h),
                     ),
                     hint: loadingGrades
-                        ? SizedBox(width: 16.sp, height: 16.sp, child: CircularProgressIndicator(strokeWidth: 2))
-                        : Text(l10n.editProfileGradeHint, style: TextStyle(color: cs.onSurfaceVariant)),
+                        ? SizedBox(width: 16.sp, height: 16.sp, child: const CircularProgressIndicator(strokeWidth: 2))
+                        : Text(l10n.editProfileGradeHint, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: AppSpacing.lg.h),
                   Text(l10n.editProfileLabelStudentId,
-                      style: GoogleFonts.atkinsonHyperlegible(
-                          fontSize: 13.sp,
-                          fontWeight: AppSpacing.weightStrong,
+                      style: tt.titleSmall?.copyWith(
                           color: cs.onSurfaceVariant)),
-                  SizedBox(height: 6.h),
+                  SizedBox(height: AppSpacing.sm.h),
                   TextField(
-                    controller: TextEditingController(text: _studentId),
+                    controller: _studentIdController,
                     enabled: false,
-                    style: GoogleFonts.atkinsonHyperlegible(
-                        fontSize: 15.sp, color: cs.onSurfaceVariant),
+                    style: tt.bodyLarge?.copyWith(
+                        color: cs.onSurfaceVariant),
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: cs.surfaceContainerHighest,
@@ -596,10 +583,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         borderRadius: BorderRadius.circular(12.r),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                      contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.md.h),
                     ),
                   ),
-                  SizedBox(height: 24.h),
+                  SizedBox(height: AppSpacing.xxl.h),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -629,15 +616,14 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: cs.primary,
                         foregroundColor: cs.onPrimary,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md.h),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
                       child: Text(l10n.editProfileSaveButton,
-                          style: GoogleFonts.atkinsonHyperlegible(
-                              fontSize: 15.sp,
-                              fontWeight: AppSpacing.weightStrong)),
+                          style: tt.titleMedium?.copyWith(
+                              fontSize: 15.sp)),
                     ),
                   ),
                 ],
@@ -651,6 +637,12 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     });
   }
 
+  @override
+  void dispose() {
+    _studentIdController.dispose();
+    super.dispose();
+  }
+
   Widget _buildStatsRow(ColorScheme cs) {
     final l10n = AppLocalizations.of(context)!;
     return Container(
@@ -662,9 +654,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         padding: EdgeInsets.all(AppSpacing.lg.w),
         child: Column(
           children: [
-            _statRow(cs, l10n.statCardToday, '${_studyMinutesToday}m', l10n.statCardThisWeek, _studyMinutesThisWeek < 60 ? '${_studyMinutesThisWeek}m' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}h'),
+            _statRow(cs, l10n.statCardToday, '$_studyMinutesToday${l10n.suffixMinutes}', l10n.statCardThisWeek, _studyMinutesThisWeek < 60 ? '$_studyMinutesThisWeek${l10n.suffixMinutes}' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}${l10n.suffixHours}'),
             SizedBox(height: AppSpacing.md.h),
-            _statRow(cs, l10n.statCardSaved, '$_resourcesSaved', l10n.statCardStreak, '$_streakDays d'),
+            _statRow(cs, l10n.statCardSaved, '$_resourcesSaved', l10n.statCardStreak, '$_streakDays${l10n.suffixDays}'),
           ],
         ),
       ),
@@ -672,32 +664,32 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   Widget _statRow(ColorScheme cs, String label1, String value1, String label2, String value2) {
+    final tt = Theme.of(context).textTheme;
     return Row(
       children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value1, style: GoogleFonts.atkinsonHyperlegible(fontSize: 20.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
-          Text(label1, style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant)),
+          Text(value1, style: tt.titleLarge?.copyWith(color: cs.onSurface)),
+          Text(label1, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         ])),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value2, style: GoogleFonts.atkinsonHyperlegible(fontSize: 20.sp, fontWeight: AppSpacing.weightStrong, color: cs.onSurface)),
-          Text(label2, style: TextStyle(fontSize: 12.sp, color: cs.onSurfaceVariant)),
+          Text(value2, style: tt.titleLarge?.copyWith(color: cs.onSurface)),
+          Text(label2, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         ])),
       ],
     );
   }
 
   Widget _buildSubjectBreakdown(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final total = _subjectBreakdown.fold(0, (sum, s) => sum + s.minutes);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(l10n.sectionSubjectBreakdown,
-            style: GoogleFonts.atkinsonHyperlegible(
-                fontSize: 18.sp,
-                fontWeight: AppSpacing.weightStrong,
+            style: tt.titleLarge?.copyWith(
                 color: cs.onSurface)),
-        SizedBox(height: 12.h),
+          SizedBox(height: AppSpacing.md.h),
         Container(
           padding: EdgeInsets.all(AppSpacing.lg.w),
           decoration: BoxDecoration(
@@ -708,15 +700,15 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             children: [
               if (_subjectBreakdown.isEmpty)
                 Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24.h),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl.h),
                   child: Center(
                     child: Column(
                       children: [
                         Icon(Icons.bar_chart_rounded, size: 36.sp, color: cs.onSurfaceVariant),
-                        SizedBox(height: 8.h),
+                        SizedBox(height: AppSpacing.sm.h),
                         Text(l10n.emptyStateSubjectBreakdown,
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 13.sp, color: cs.onSurfaceVariant)),
+                            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                       ],
                     ),
                   ),
@@ -727,7 +719,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 final pct = total > 0
                     ? sub.minutes / total
                     : 0.0;
-                final hours = '${(sub.minutes / 60).toStringAsFixed(1)}h';
+                final hours = '${(sub.minutes / 60).toStringAsFixed(1)}${l10n.suffixHours}';
                 return Padding(
                   padding: EdgeInsets.only(bottom: i < _subjectBreakdown.length - 1 ? 14.h : 0),
                   child: Column(
@@ -736,23 +728,19 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         children: [
                           Expanded(
                             child: Text(sub.name,
-                                style: TextStyle(
-                                    fontSize: 13.sp,
-                                    fontWeight: AppSpacing.weightStrong,
+                                style: tt.titleSmall?.copyWith(
                                     color: cs.onSurface)),
                           ),
                           Text(hours,
-                              style: TextStyle(
-                                  fontSize: 12.sp,
+                              style: tt.bodySmall?.copyWith(
                                   color: cs.onSurfaceVariant)),
-                          SizedBox(width: 8.w),
-                          Text('${(pct * 100).toStringAsFixed(0)}%',
-                              style: TextStyle(
-                                  fontSize: 12.sp,
+                          SizedBox(width: AppSpacing.sm.w),
+                          Text('${(pct * 100).toStringAsFixed(0)}${l10n.suffixPercent}',
+                              style: tt.bodySmall?.copyWith(
                                   color: cs.onSurfaceVariant)),
                         ],
                       ),
-                      SizedBox(height: 6.h),
+                      SizedBox(height: AppSpacing.sm.h),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(3.r),
                         child: LinearProgressIndicator(
@@ -774,17 +762,16 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   Widget _buildRecentActivity(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final displayCount = _showAllActivity ? _activityHistory.length : 5;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(l10n.sectionRecentActivity,
-            style: GoogleFonts.atkinsonHyperlegible(
-                fontSize: 18.sp,
-                fontWeight: AppSpacing.weightStrong,
+            style: tt.titleLarge?.copyWith(
                 color: cs.onSurface)),
-        SizedBox(height: 12.h),
+        SizedBox(height: AppSpacing.md.h),
         Container(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.sm.h),
           decoration: BoxDecoration(
@@ -795,15 +782,15 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             children: [
               if (_activityHistory.isEmpty)
                 Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32.h),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.section.h),
                   child: Center(
                     child: Column(
                       children: [
                         Icon(Icons.history_rounded, size: 40.sp, color: cs.onSurfaceVariant),
-                        SizedBox(height: 12.h),
+                        SizedBox(height: AppSpacing.md.h),
                         Text(l10n.emptyStateRecentActivity,
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 13.sp, color: cs.onSurfaceVariant)),
+                            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                       ],
                     ),
                   ),
@@ -828,20 +815,18 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       ),
                     ),
                     title: Text(_formatActivityTitle(act, l10n),
-                        style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: AppSpacing.weightBody,
+                        style: tt.bodySmall?.copyWith(
                             color: cs.onSurface)),
                     trailing: Text(_formatRelativeTime(act['timestamp'], l10n),
-                        style: TextStyle(
-                            fontSize: 11.sp, color: cs.onSurfaceVariant)),
+                        style: tt.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant)),
                     dense: true,
                   );
                 },
               ),
               if (_activityHistory.length > 5)
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.xs.h),
                   child: GestureDetector(
                     onTap: () => setState(() => _showAllActivity = !_showAllActivity),
                     child: Row(
@@ -854,14 +839,12 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                           size: 20.sp,
                           color: cs.primary,
                         ),
-                        SizedBox(width: 4.w),
+                        SizedBox(width: AppSpacing.xs.w),
                         Text(
                           _showAllActivity
                               ? l10n.toggleShowLess
                               : l10n.toggleShowAll(_activityHistory.length),
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: AppSpacing.weightStrong,
+                          style: tt.titleSmall?.copyWith(
                             color: cs.primary,
                           ),
                         ),
