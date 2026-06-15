@@ -8,14 +8,14 @@ from fastapi import APIRouter, Depends
 from app.database import _startup_time
 from app.async_db import db_conn
 from app.dependencies import verify_teacher, verify_admin
-from app.models import TimeSync
+from app.models import TimeSync, HubStatsResponse, StatusResponse
 
 router = APIRouter()
 
 _stats_cache = {"data": None, "expires": 0.0}
 
 
-@router.get("/stats",
+@router.get("/stats", response_model=HubStatsResponse,
             summary="Get hub statistics",
             description="Returns scholar count, resource count, subject count, disk usage, battery percentage, and server uptime.",
             tags=["System"])
@@ -79,7 +79,7 @@ async def get_stats():
     return result
 
 
-@router.get("/system/stats",
+@router.get("/system/stats", response_model=StatusResponse,
             summary="System health check",
             description="Simple health-check endpoint returning a healthy status. Requires teacher authentication.",
             tags=["System"],
@@ -93,7 +93,7 @@ async def system_stats(teacher_user: str = Depends(verify_teacher)):
     return {"status": "healthy"}
 
 
-@router.post("/system/sync-time",
+@router.post("/system/sync-time", response_model=StatusResponse,
              summary="Sync server time",
              description="Sets the server system time via the date command. Admin-only.",
              tags=["System"],

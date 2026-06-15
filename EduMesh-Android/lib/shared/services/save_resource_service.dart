@@ -9,7 +9,6 @@ import 'package:edumesh_android/core/storage/db_helper.dart';
 /// string on app startup (e.g. from [LuminaApp.build]).
 const String kFallbackTitle = 'Untitled';
 
-///
 /// Operates on the local SQLite database via [DBHelper] and logs save/unsave
 /// actions to the [ActivityTracker].
 class SaveResourceService {

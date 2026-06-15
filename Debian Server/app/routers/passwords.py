@@ -2,7 +2,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.async_db import db_conn
-from app.models import ChangePasswordRequest, ForceChangePasswordRequest
+from app.models import ChangePasswordRequest, ForceChangePasswordRequest, StatusResponse
 from app.dependencies import hash_password, verify_password, validate_password_strength, verify_teacher, verify_admin
 from app.encryption import _invalidate_tokens_for_user
 from app.database import log_admin_action
@@ -10,7 +10,7 @@ from app.database import log_admin_action
 router = APIRouter()
 
 
-@router.post("/teacher/change-password",
+@router.post("/teacher/change-password", response_model=StatusResponse,
              summary="Change password",
              description="Changes the authenticated teacher's password after verifying the current password.",
              tags=["Teacher"],
@@ -42,7 +42,7 @@ async def change_password(data: ChangePasswordRequest, teacher_user: str = Depen
     return {"status": "success"}
 
 
-@router.post("/teacher/force-change-password",
+@router.post("/teacher/force-change-password", response_model=StatusResponse,
              summary="Force change password",
              description="Changes password when reset_required is set (used for first-login forced password reset).",
              tags=["Teacher"],
@@ -80,7 +80,7 @@ async def force_change_password(data: ForceChangePasswordRequest, teacher_user: 
             raise HTTPException(status_code=400, detail="Failed to change password")
 
 
-@router.post("/teacher/reset-password/{username}",
+@router.post("/teacher/reset-password/{username}", response_model=StatusResponse,
              summary="Admin reset teacher password",
              description="Resets a teacher's password to the default and marks reset_required. Admin-only.",
              tags=["Admin"],

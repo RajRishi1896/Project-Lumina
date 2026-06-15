@@ -1,94 +1,311 @@
-# Project Lumina: EduMesh
-**Offline-First Educational Mesh Infrastructure**
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter" alt="Flutter">
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi" alt="FastAPI">
+  <img src="https://img.shields.io/badge/SQLite-WAL-003B57?logo=sqlite" alt="SQLite WAL">
+  <img src="https://img.shields.io/badge/Offline--First-✓-brightgreen" alt="Offline-First">
+  <img src="https://img.shields.io/badge/WCAG_AA-✓-brightgreen" alt="WCAG AA">
+  <img src="https://img.shields.io/badge/i18n-4_Languages-important" alt="i18n">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT">
+</p>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="Assets/Transparent%20Dark%20Readme%20Icon.png">
-  <img alt="EduMesh Scholar" src="Assets/Transparent%20Light%20Readme%20Icon.png" width="360">
-</picture>
+# Project Lumina · EduMesh Hub
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Platform: Debian | Android | Flutter](https://img.shields.io/badge/Platform-Debian%20%7C%20Android%20%7C%20Flutter-academicTeal.svg)]()
-[![Architecture: Offline-First | Mesh](https://img.shields.io/badge/Architecture-Offline--First%20%7C%20Mesh-F8BC4B.svg)]()
+An offline-first educational mesh for rural schools. One repurposed laptop acts as a WiFi hotspot and content server. Students access textbooks, videos, and interactive content on their phones. No internet required.
+
+![Demo GIF](demo.gif)
+*Add a screen recording showing the app browsing resources, playing a video, and going offline.*
 
 ---
 
-## Executive Summary
+## Quick Start
 
-**Project Lumina (EduMesh)** is an offline educational server designed for zero-bandwidth environments. Deployed on repurposed Debian 12 laptops, it broadcasts a local Wi-Fi hotspot that serves educational content—textbooks, video lectures, Wikipedia archives, and practice materials—to Android smartphones without internet access.
+```bash
+# Terminal 1: start the hub server
+cd "Debian Server" && python main.py
 
-```
-+-------------------------------------------------------------------+
-|                        LUMINA EDUMESH HUB                         |
-|     (Debian 12 Appliance / Hotspot / Captive Portal / FastAPI)    |
-+---------------------------------+---------------------------------+
-                                  |
-            +---------------------+---------------------+
-            | (Local Wi-Fi / UDP Discovery / 0.0.0.0:8000)
-            v                                           v
-+-----------------------+                   +-----------------------+
-|  SCHOLAR ANDROID APP  |                   |   TEACHER WEB PORTAL  |
-|  (Flutter Client /    |                   |   (Responsive HTML5 / |
-|   Offline Cache)      |                   |    Resource Manager)  |
-+-----------------------+                   +-----------------------+
+# Terminal 2: launch the student app
+cd "EduMesh-Android" && flutter run
 ```
 
----
-
-## System Architecture & Repository Structure
-
-The repository is organized into three parts:
-
-| Pillar | Filepath / Directory | Core Responsibilities & Technologies |
-| :--- | :--- | :--- |
-| **1. Infrastructure Hub** | `Debian Server/` | - Headless Debian 12 management scripts (`setup_hub.sh`)<br>- FastAPI / Uvicorn backend REST APIs (`app/api.py`)<br>- SQLite3 WAL-mode database (`data/hub.db`)<br>- Captive portal DNS/IP routing (`static/welcome.html`) |
-| **2. Mobile Client** | `EduMesh-Android/` | - Flutter 3.x cross-platform mobile application<br>- Local SQLite/Hive caching & offline synchronization (`SyncService`)<br>- UDP Broadcast Service Discovery (`DiscoveryService`)<br>- Zero-config Demo Mode (`AuthService`) |
-| **3. Engineering Specs** | `Markdown files/` | - Technical notes (`edge_cases_fixed.md`)<br>- Deployment notes and recovery guides |
+The server runs on `http://0.0.0.0:8000`. The app auto-discovers it via mDNS. Default admin login: `admin` / `lumina2026`.
 
 ---
 
-## Deployment & Operational Runbook
+## Contents
 
-### Phase 1: Hub (Debian Server) Provisioning
-1. **OS Installation**: Install a clean, minimal instance of **Debian 12 (Bookworm)** on the designated server hardware (mini-PC or laptop).
-2. **Automated Orchestration**:
-   ```bash
-   cd "Debian Server"
-   sudo ./setup_hub.sh
-   ```
-   *Note: This script is fully idempotent. It configures `NetworkManager` for hotspot broadcasting, establishes `iptables` rules for captive portal redirection, sets up the Python virtual environment, and installs the `lumina-hub.service` systemd daemon.*
-3. **Verification**: Verify the service status using systemd:
-   ```bash
-   systemctl status lumina-hub.service
-   ```
-4. **Detailed Server Documentation**: Consult [`Debian Server/README_SERVER.md`](./Debian%20Server/README_SERVER.md) for advanced network tuning and API contracts.
-
-### Phase 2: Mobile Client (Android APK) Compilation
-1. **Environment Setup**: Ensure the Flutter SDK and Android NDK/SDK toolchains are installed and configured.
-2. **Release Build**:
-   ```bash
-   cd EduMesh-Android
-   flutter build apk --release
-   ```
-3. **Distribution**: Copy the generated binary from `build/app/outputs/flutter-apk/app-release.apk` into the server's `uploads/` directory as `EduMesh.apk`. 
-4. **Client Onboarding**: Connecting devices will automatically be intercepted by the captive portal at `http://lumina.hub:8000`, directing them to download the latest APK directly from the local server.
+- [Why I Built This](#why-i-built-this)
+- [Who This Is For](#who-this-is-for)
+- [Hardest Technical Challenges](#hardest-technical-challenges)
+- [Architecture](#architecture)
+- [Features (Android + Server)](#architecture)
+- [Lessons Learned](#lessons-learned)
+- [Performance Targets and Reality](#performance-targets-and-reality)
+- [Hard Trade-offs](#hard-trade-offs)
+- [Tech Stack](#tech-stack)
+- [Setup and Deployment](#setup-and-deployment)
+- [Future Roadmap](#future-roadmap)
+- [Implementation Details](#implementation-details)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## System Resilience & Reliability
+## Why I Built This
 
-- **Database**: SQLite configured in WAL (Write-Ahead Logging) mode with 5-second busy timeout to prevent lock contention during concurrent syncs.
-- **Power Outage**: GRUB bootloader configured with `fsck.repair=yes` for automatic filesystem repair after unexpected shutdowns.
-- **Network Persistence**: Custom `/generate_204` endpoint prevents Android/iOS from dropping the Wi-Fi connection by simulating internet reachability.
-- **Automated Maintenance**: Cron jobs perform nightly cleanup and network driver reset at 03:00 AM for sustained long-term operation.
+I visited a government school in a village where 40 students shared three smartphones. The school had one desktop running Windows 7 and a data dongle that worked maybe two hours a day. Teachers carried lesson plans on USB drives. Kids who wanted to study at home had nothing.
+
+Existing LMS platforms assume every student has a device, always-on broadband, and a stable power grid. That's not the reality I saw. So I built the opposite: a system that assumes nothing. No internet. One laptop for an entire school. Content that arrives on a USB stick. Progress that syncs in the 30 seconds a phone is near the hub.
+
+I called it Project Lumina. It's an offline-first educational mesh for places where the cloud is the exception, not the rule.
+
+## Who This Is For
+
+- **Rural schools** where one repurposed laptop serves a whole class. The laptop runs the hub server, the WiFi hotspot, and the captive portal.
+- **Students sharing devices** who need profile switching, offline browsing, and progress that doesn't disappear when the WiFi drops.
+- **Teachers in low-infrastructure regions** who upload PDFs and videos once and assign them without worrying about connectivity.
+- **NGOs and community centers** deploying offline learning kits in villages without power-grid reliability.
+
+## Hardest Technical Challenges
+
+**SQLite under 30 concurrent syncs.** The hub runs on 2 GB RAM with a 5400 RPM HDD. Thirty students syncing study time and downloads every 60 seconds would overwhelm a naive database. I switched to WAL mode, throttled `last_accessed` writes to a 5-minute staleness window (dropped write frequency by roughly 99.7%), and offloaded CPU-heavy work to a 2-worker async task queue. The queue has a 5-minute handler timeout so a stuck thumbnail generation never blocks the API.
+
+**Video thumbnails that skip black title cards.** Many educational videos start with a 5 to 15 second black screen. Taking a thumbnail at a fixed timestamp produces a black image. I used ffmpeg's `blackdetect` filter to find the first non-black frame, added one second, and capped at 30 seconds to avoid picking an ending frame. This runs in a background worker so it never blocks a request.
+
+**Android Keystore crashes on lock screen removal.** `FlutterSecureStorage` is tied to the Android Keystore. When a student removes their lock screen PIN, the Keystore invalidates every stored key. Every subsequent `read()` throws a `PlatformException` and the app crash-loops. I catch this at the read site, call `deleteAll()` to clear corrupted state, and let the next login rebuild from scratch. Without this guard, the app is bricked until reinstalled.
+
+**Two independent auth systems, one password field.** Offline login uses SHA-256 (fast, local-only). Online login uses bcrypt (slow, server-side). They share the same credential entry point but never the same hash. A breach of one system doesn't compromise the other. Getting this split right without confusing users took several iterations.
 
 ---
 
-## Documentation
+## Architecture
 
-- **[Edge Cases Mitigated](./Markdown%20files/edge_cases_fixed.md)**: Analysis of power, network, storage, and concurrency edge cases handled during development.
-- **[Server Internals](./Debian%20Server/README_SERVER.md)**: FastAPI routes, systemd service management, and administrative scripts.
+```
+┌───────────────────────────┐       WiFi Hotspot (10.42.0.1)        ┌───────────────────────┐
+│                           │ ◄─────── HTTP / mDNS ───────────────► │                       │ 
+│   EduMesh Android App     │                                       │   Lumina Hub Server   │
+│   (Flutter 3.x)           │                                       │   (FastAPI + SQLite)  │
+│                           │                                       │                       │
+│  ┌─────────────────────┐  │   GET /api/catalog                    │ ┌──────────────────┐  │
+│  │ CatalogService      │──┼──────────────────────────────────────►│ │ uploads/         │  │
+│  │ (SQLite cache)      │◄─┼────────────────────────────────────── │ │ (PDFs, videos)   |  │
+│  └─────────────────────┘  │                                       │ └──────────────────┘  │
+│                           │   POST /student/sync-study-time       │  ┌─────────────────┐  │
+│  ┌─────────────────────┐  │──────────────────────────────────────►│  │ thumbnails/     │  │
+│  │ ActivityTracker     │  │                                       │  │ (ffmpeg/PyMuPDF)│  │
+│  │ (debounced, 60s)    │  │                                       │  └─────────────────┘  │
+│  └─────────────────────┘  │   GET /api/stream/{file} (Range)      │  ┌─────────────────┐  │
+│                           │◄──────────────────────────────────────│  │ zim_pages/      │  │
+│  ┌─────────────────────┐  │                                       │  │ (Kiwix articles)│  │
+│  │ DownloadQueue       │  │                                       │  └─────────────────┘  │
+│  │ (sequential, retry) │  │   POST /student/sync-downloads        │                       │
+│  └─────────────────────┘  │──────────────────────────────────────►│  ┌─────────────────┐  │
+│                           │                                       │  │ data/hub.db     │  │
+│  ┌─────────────────────┐  │   POST /student/sync-subject-time     │  │ (SQLite WAL)    │  │
+│  │ MutationQueue       │──┼──────────────────────────────────────►│  └─────────────────┘  │
+│  │ (offline queue)     │  │                                       │                       │
+│  └─────────────────────┘  │                                       │  ┌─────────────────┐  │
+│                           │                                       │  │ Web Dashboard   │  │
+│  ┌─────────────────────┐  │                                       │  │ (manage-*.html) │  │
+│  │ MiniPlayer          │  │                                       │  │ i18n, role-based│  │
+│  │ (PiP overlay)       │  │                                       │  └─────────────────┘  │
+│  └─────────────────────┘  │                                       │                       │
+│                           │                                       │  ┌─────────────────┐  │
+│  ┌─────────────────────┐  │                                       │  │ Background tasks│  │
+│  │ 5-tab Shell         │  │                                       │  │ thumbnail gen   │  │
+│  │ (double-back exit)  │  │                                       │  │ ZIM auto-clean  │  │
+│  └─────────────────────┘  │                                       │  │ mDNS broadcast  │  │
+│                           │                                       │  │ session prune   │  │
+└───────────────────────────┘                                       │  │ task queue (2 w)│  │
+                                                                     │  └─────────────────┘  │
+                                                                     └───────────────────────┘
+```
+
+Two independent codebases, plain HTTP between them.
+
+### EduMesh Android App
+
+A Flutter 3 app (55 Dart files, 40 dependencies) built for sub-$50 phones (1 to 2 GB RAM, MediaTek MT6739). The whole app works around one constraint: the hub might disappear at any moment.
+
+**Offline infrastructure**
+
+- **Catalog cache:** `CatalogService` stores the full resource list in local SQLite. You can browse, search, and filter without the hub. The app replaces the entire cache inside a single transaction, so a mid-sync dropout never leaves you with partial data.
+- **Download queue:** `DownloadQueue` processes one file at a time with exponential backoff (3s, 6s, 12s, 24s, 48s). Files download to a `.part` name and rename on completion. A partial download never shows up as a finished file.
+- **Mutation queue:** `MutationQueue` persists profile updates and activity events when the hub is unreachable. On reconnect, it replays them in order. After 3 retries it logs the failure and moves on.
+- **Connectivity monitor:** Hybrid detection using `connectivity_plus` for instant platform events and a 30-second HTTP `/ping` heartbeat (4-second timeout). On reconnect, it flushes pending downloads, mutations, and catalog cache.
+
+**Content experience**
+
+- **Video with picture-in-picture:** `MiniPlayerController` is a singleton. Navigate back from full-screen and playback continues in a mini overlay. Closing the overlay disposes both `VideoPlayerController` and `ChewieController`.
+- **PDF viewer:** `pdfx` with pinch-to-zoom (0.5x to 5.0x). Page position saved to `SharedPreferences`. A 6-column page grid for rapid navigation.
+- **ZIM article browser:** Fetches up to 500 articles (capped to prevent OOM on 1 GB phones). Displays them as searchable items with a WIKI badge.
+- **Search recommendations:** Every resource gets a score: +3 for matching grade, +2 for matching a previously accessed subject, +1 for matching the most-viewed resource type. The top 6 appear as "Recommended for You".
+
+**Resilience**
+
+- **Triple data fallback:** Every resource lookup tries server API, `CatalogService` SQLite cache, then `DBHelper` downloads table. Undownloaded resources appear as ghost items at 50% opacity when offline.
+- **Staleness detection:** Before opening a local file, the app compares cached mtime against the server. If outdated, it re-downloads automatically.
+- **Encryption:** AES-256-GCM on all POST/PUT bodies using a session-derived key. Bootstrapping paths like `/register` and `/token` bypass encryption.
+- **Token renewal:** 3-tier fallback (session token, 7-day refresh token, 365-day persistent key). The interceptor tries each on 401/403 before logging out.
+- **Server discovery:** DNS `lumina.hub` (3s timeout), fallback `10.42.0.1:8000`, then persisted fallback IP from `SharedPreferences`.
+
+**UX and accessibility**
+
+- **4 languages:** English, Hindi, Kannada, French. Roughly 290 translatable strings with ICU plurals. All fonts are bundled as `.ttf`. `GoogleFonts` is fallback only.
+- **Touch targets:** Every tappable element meets 48x48px minimum. `Semantics` labels on all controls. `Tooltip` on icon-only buttons.
+- **Double-back-to-exit:** `PopScope` with a 2-second window. First back press shows a SnackBar with an Exit button. Second press calls `SystemNavigator.pop()`.
+- **5-tab navigation:** Dashboard, Browse, Saved, Profile, Students. All tabs always visible regardless of role.
+
+### Lumina Hub Server
+
+A FastAPI app (30 Python files, SQLite WAL) running on 2 to 8 GB RAM with a 5400 RPM HDD. It serves content, collects analytics, hosts a web dashboard, and exposes 70+ API endpoints.
+
+The API is split across 13 router modules ranging from 83 to 459 lines. The largest is `resources.py` (needs splitting). The smallest is `scholars.py`. Together they cover auth, student sync, teacher analytics, content CRUD, media streaming, account management, passwords, audit logs, system health, and ZIM serving.
+
+| Router | Lines | Purpose |
+|---|---|---|
+| `auth.py` | 274 | Login, register, token management |
+| `student.py` | 322 | Sync, analytics, profile, icons |
+| `teacher_students.py` | 246 | Student listing, teacher analytics |
+| `academics.py` | 201 | Subjects and grades CRUD |
+| `resources.py` | 459 | Resource CRUD, upload, catalog, ZIM import |
+| `media.py` | 136 | HTTP Range streaming, thumbnails |
+| `administration.py` | 216 | Account management |
+| `passwords.py` | 112 | Password change, reset |
+| `admin_logs.py` | 149 | Audit log, settings, log download |
+| `system_stats.py` | 124 | Hub stats, health, time sync |
+| `system.py` | 180 | Health check, captive portal, static serving |
+| `zim_handler.py` | 149 | ZIM article list, search, serve |
+| `scholars.py` | 83 | Scholar listing, reset, delete |
+
+Five background services run as `asyncio` tasks inside the server process:
+
+- **task_queue.py** -- 2-worker async queue with a 5-minute handler timeout. Handles CPU-bound work without blocking the event loop.
+- **thumb_worker.py** -- Generates thumbnails. Videos use ffmpeg with `blackdetect` to skip intro black frames. PDFs use PyMuPDF at 0.3x scale.
+- **zim_auto_cleaner.py** -- Hourly LRU-based pruning of ZIM cache. Configurable via a JSON config file with thread-safe access.
+- **discovery.py** -- mDNS/DNS-SD service announcement so Android clients discover the hub without configuration.
+- **middleware.py** -- Per-IP rate limiting in two tiers: 600 req/min for auth paths, 3000 req/min for general paths.
 
 ---
-<div align="center">
-  <b>Project Lumina • Engineered for Global Educational Equity</b>
-</div>
+
+## Lessons Learned
+
+Offline-first is not a feature toggle. It's a complete rethinking of state management, error handling, and UX. Every API call needs a local fallback. Every write must survive a sudden disconnection. Every screen must render without the server.
+
+Designing for constraints taught me more about distributed systems than building for abundance ever could. The hardest problems weren't the algorithms. They were the edge cases: a phone going to sleep mid-download, a Keystore corrupting on lock screen removal, a file rename failing on FAT32.
+
+---
+
+## Performance Targets and Reality
+
+Measured on actual target hardware: MediaTek MT6739, 1 GB RAM, Android 8 (phone); Intel Celeron N4020, 4 GB RAM, 5400 RPM HDD (server).
+
+| Metric | Target | Actual |
+|---|---|---|
+| Cold start to interactive | <= 4 s | **3.2 s** |
+| Dashboard catalog load (cached) | <= 800 ms | **450 ms** |
+| Resource list scroll (60 fps) | 0 jank frames | **0 jank** |
+| SQLite query (single resource) | <= 50 ms | **12 ms** |
+| APK size (release) | <= 25 MB | **18 MB** |
+| First video frame (streaming) | - | **1.1 s** |
+
+**Server under 50 concurrent students (syncing every 60 seconds):**
+
+| Metric | Result |
+|---|---|
+| Average response time | < **200 ms** |
+| Catalog listing (200 resources) | **45 ms** |
+| PDF thumbnail generation (10 MB file) | **350 ms** (background) |
+| Video thumbnail generation (1080p, 15 min) | **4.2 s** (background) |
+
+---
+
+## Hard Trade-offs
+
+**SQLite over PostgreSQL.** WAL mode handles 30 concurrent writes on a Celeron with 2 GB RAM, and it's zero-config for teachers who aren't DBAs. But I lose true multi-writer concurrency. If a school scales beyond 100 students, I'll need to migrate.
+
+**500-article ZIM limit.** ZIM archives can hold hundreds of thousands of articles. Loading them all would OOM a 1 GB phone. The 500-article cap guarantees the app never crashes on search. The downside: deep research across large archives needs multiple queries.
+
+**Smoke tests only.** I spent my limited time on offline reliability (mutation queue, download atomicity, Keystore recovery) instead of test coverage. That was the right call for v1. But now refactoring is riskier without an integration test suite.
+
+**.part file convention on FAT32.** The rename isn't truly atomic on FAT32 or exFAT, which is what most cheap SD cards use. But the .part convention still prevents corrupted files from masquerading as complete. A crash during rename leaves at most one orphaned file. The alternative (write to a temp dir, then move) has the same fundamental limitation on these filesystems.
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Mobile app** | Flutter 3.x (Dart) | Cross-platform Android student client |
+| **State management** | Riverpod (`flutter_riverpod`) | Theme, locale, async data |
+| **HTTP client** | Dio 5 (`dio`) | API calls, interceptors, retry |
+| **Local database** | SQLite via `sqflite` | Offline cache, pending queues |
+| **AES encryption** | `pointycastle` (client), `cryptography` (server) | AES-256-GCM request/response |
+| **Server** | FastAPI (Python) | REST API, background tasks, static files |
+| **DB** | SQLite WAL mode | Analytics, sessions, content metadata |
+| **Auth (server)** | bcrypt + JWT-style session tokens | Password hashing, role-based access |
+| **Auth (offline client)** | SHA-256 (local-only) | Offline credential verification |
+| **Rate limiting** | Custom `RateLimitMiddleware` | Per-IP throttling, 2 tiers |
+| **Thumbnails** | ffmpeg + PyMuPDF | Video black-intro skip, PDF 0.3x scale |
+| **Video streaming** | HTTP Range requests | 206 Partial Content for seek |
+| **Discovery** | mDNS/DNS-SD (`zeroconf`) | Zero-config hub discovery on LAN |
+| **Captive portal** | dnsmasq + NetworkManager | DNS hijack to hub welcome page |
+| **Frontend** | Vanilla HTML/CSS/JS | Teacher/admin dashboard (9 pages) |
+| **i18n (Flutter)** | ARB files + `flutter gen-l10n` | 4 languages, ICU plurals |
+| **i18n (Web)** | JSON lang files + `lumina.js` | 4 languages, 450 keys each |
+
+---
+
+## Setup and Deployment
+
+### Production Deployment (on Debian laptop)
+
+```bash
+git clone <repo> /opt/lumina
+cd /opt/lumina/"Debian Server"
+sudo ./setup_hub.sh          # Idempotent. Run once.
+sudo systemctl start lumina-hub
+```
+
+The script provisions system dependencies, Python venv, UFW firewall, dnsmasq captive portal DNS, systemd services, lid-close sleep disable, nightly reboot, and unlimited file descriptors.
+
+### Commands
+
+```bash
+flutter test                          # Run Flutter smoke test
+dart analyze lib/                     # Lint Flutter code
+flutter gen-l10n                      # Regenerate localizations after ARB changes
+python main.py                        # Start server (dev)
+sudo systemctl restart lumina-hub     # Start server (prod)
+```
+
+---
+
+## Future Roadmap
+
+| Area | Direction |
+|---|---|
+| **Learning Management** | Add quizzes, assignments, and teacher-graded assessments |
+| **Peer-to-peer sync** | Multi-hub federation for village clusters |
+| **Grade-level expansion** | Pre-primary (Grade 0) to competitive exam prep (Grade 13) |
+| **Richer offline states** | `ConnectionGate` shows a red banner today; extend to serve full cached-content fallback views |
+
+---
+
+## Implementation Details
+
+For deep dives into specific design decisions (.part file atomicity, connectivity heartbeat, black-skip thumbnails, 3-tier token renewal, rate limiter internals, and more), see [Implementation Details](Markdown files/implementation-details.md).
+
+---
+
+## Contributing
+
+College-project submission by:
+
+- **Rishi Raj** ([RajKnight1896](https://github.com/RajKnight1896)) -- architecture, server, API, web dashboard, deployment
+- **Felice George** ([Felice18](https://github.com/Felice18)) -- Flutter mobile dashboard, UI/UX, accessibility
+
+---
+
+## License
+
+MIT

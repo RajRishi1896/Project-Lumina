@@ -7,12 +7,12 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from app.async_db import db_conn
 from app.dependencies import verify_teacher
-from app.models import SubjectCreate, SubjectDeleteRequest
+from app.models import SubjectCreate, SubjectDeleteRequest, SubjectResponse, SubjectCreateResponse, StatusResponse, GradeInfo, GradeCreateResponse
 
 router = APIRouter()
 
 
-@router.get("/subjects",
+@router.get("/subjects", response_model=list[SubjectResponse],
             summary="List all subjects",
             description="Returns all subjects with id, name, symbol, and class_name.",
             tags=["Subjects"],
@@ -35,7 +35,7 @@ async def get_subjects(teacher_user: str = Depends(verify_teacher)):
             return [{"id": r[0], "name": r[1], "symbol": r[2], "class_name": "All Classes"} for r in rows]
 
 
-@router.post("/teacher/subjects",
+@router.post("/teacher/subjects", response_model=SubjectCreateResponse,
              summary="Create a subject",
              description="Creates a new subject with name, symbol, and optional class_name.",
              tags=["Subjects"],
@@ -63,7 +63,7 @@ async def create_subject(subject: SubjectCreate, teacher_user: str = Depends(ver
             raise HTTPException(status_code=400, detail="Failed to create subject")
 
 
-@router.post("/teacher/subjects/delete",
+@router.post("/teacher/subjects/delete", response_model=StatusResponse,
              summary="Delete a subject",
              description="Deletes a subject by id or name, optionally transferring resources to another subject.",
              tags=["Subjects"],
@@ -116,7 +116,7 @@ async def delete_subject(data: SubjectDeleteRequest, teacher_user: str = Depends
             raise HTTPException(status_code=400, detail="Failed to delete subject")
 
 
-@router.get("/grades",
+@router.get("/grades", response_model=list[GradeInfo],
             summary="List all grades",
             description="Returns all grade levels ordered by name.",
             tags=["Subjects"],
@@ -134,7 +134,7 @@ async def get_grades(teacher_user: str = Depends(verify_teacher)):
     return [{"name": r[0]} for r in rows]
 
 
-@router.post("/grades",
+@router.post("/grades", response_model=GradeCreateResponse,
              summary="Create a grade",
              description="Creates a new grade level with a unique name (max 50 characters).",
              tags=["Subjects"],
@@ -165,7 +165,7 @@ async def create_grade(data: dict, teacher_user: str = Depends(verify_teacher)):
             raise HTTPException(status_code=400, detail="Grade already exists.")
 
 
-@router.delete("/grades/{name}",
+@router.delete("/grades/{name}", response_model=StatusResponse,
                summary="Delete a grade",
                description="Deletes a grade level, optionally transferring resources to another grade first.",
                tags=["Subjects"],

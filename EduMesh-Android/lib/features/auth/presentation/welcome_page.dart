@@ -33,11 +33,8 @@ const _illustrationSvg = '''
 <path d="M1303.62 790.583C1315.31 779.683 1324.64 766.502 1331.04 751.856C1337.44 737.209 1340.77 721.414 1340.83 705.431C1340.88 689.447 1337.66 673.611 1331.37 658.92C1325.07 644.228 1315.82 630.981 1304.21 619.999" stroke="#F5A623" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="24 24"/>
 </svg>''';
 
-/// The initial landing screen shown on first app launch.
-///
-/// Displays an illustration, a language selection grid, device status
-/// indicators (hub strength and local storage usage), and a call-to-action
-/// button that navigates to [LoginPage].
+/// Onboarding flow with language selection, captive portal guide, and display
+/// name setup.
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
 

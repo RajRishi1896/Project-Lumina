@@ -4,11 +4,12 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from app.async_db import db_conn
 from app.dependencies import hash_password, verify_teacher
+from app.models import StatusResponse, ScholarListItem
 
 router = APIRouter()
 
 
-@router.get("/teacher/scholars",
+@router.get("/teacher/scholars", response_model=list[ScholarListItem],
             summary="List all scholars",
             description="Returns a list of all scholars ordered by name, with reset_required flag.",
             tags=["Teacher"],
@@ -30,7 +31,7 @@ async def get_scholars(teacher_user: str = Depends(verify_teacher)):
     return [{"id": r[0], "name": r[1], "reset_required": r[2] or 0} for r in rows]
 
 
-@router.post("/teacher/scholars/reset-password/{scholar_id}",
+@router.post("/teacher/scholars/reset-password/{scholar_id}", response_model=StatusResponse,
              summary="Reset student password",
              description="Resets a scholar's password to the default and marks reset_required.",
              tags=["Teacher"],
@@ -56,7 +57,7 @@ async def teacher_reset_student_password(scholar_id: str, teacher_user: str = De
             raise HTTPException(status_code=400, detail="Failed to reset password")
 
 
-@router.delete("/teacher/scholars/{scholar_id}",
+@router.delete("/teacher/scholars/{scholar_id}", response_model=StatusResponse,
                summary="Delete a scholar",
                description="Deletes a scholar and all associated activity logs and downloads.",
                tags=["Teacher"],

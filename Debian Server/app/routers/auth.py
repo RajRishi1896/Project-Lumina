@@ -7,14 +7,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, Form, 
 from fastapi.responses import JSONResponse, RedirectResponse
 from app.database import DB_PATH, log_admin_action
 from app.async_db import db_conn
-from app.models import ScholarReg, StudentLoginRequest, TokenRefreshRequest, TokenRenewRequest
+from app.models import ScholarReg, StudentLoginRequest, TokenRefreshRequest, TokenRenewRequest, ScholarRegisterResponse, StudentLoginResponse, LoginTokenResponse, TokenResponse
 from app.dependencies import hash_password, verify_password, validate_password_strength
 from app.encryption import _generate_session_token, _make_encryption_key
 
 router = APIRouter()
 
 
-@router.post("/register", summary="Register a new student scholar", description="Creates or updates a scholar account with username and optional password. Returns session, refresh, and persistent tokens on success.", tags=["Auth"], responses={400: {"description": "Registration failed or validation error"}})
+@router.post("/register", response_model=ScholarRegisterResponse, summary="Register a new student scholar", description="Creates or updates a scholar account with username and optional password. Returns session, refresh, and persistent tokens on success.", tags=["Auth"], responses={400: {"description": "Registration failed or validation error"}})
 async def register_scholar(scholar: ScholarReg, request: Request):
     """Register a new student scholar account.
 
@@ -62,7 +62,7 @@ async def register_scholar(scholar: ScholarReg, request: Request):
         return response
 
 
-@router.post("/student/token", summary="Authenticate a student", description="Validates student credentials against the scholars table and returns session, refresh, and persistent tokens. Also returns the student's name, grade, and reset-required flag.", tags=["Auth"], responses={401: {"description": "Invalid credentials or account not found"}, 500: {"description": "Login failed due to server error"}})
+@router.post("/student/token", response_model=StudentLoginResponse, summary="Authenticate a student", description="Validates student credentials against the scholars table and returns session, refresh, and persistent tokens. Also returns the student's name, grade, and reset-required flag.", tags=["Auth"], responses={401: {"description": "Invalid credentials or account not found"}, 500: {"description": "Login failed due to server error"}})
 async def student_login(data: StudentLoginRequest, request: Request):
     """Authenticate a student and issue session tokens.
 
@@ -114,7 +114,7 @@ async def student_login(data: StudentLoginRequest, request: Request):
         return response
 
 
-@router.post("/token", summary="Authenticate a teacher or admin", description="Form-based login for teacher and admin users. Returns a bearer access token with user metadata including role, name, department, and scholar ID. Supports schema migration for the scholar_id column.", tags=["Auth"], responses={401: {"description": "Invalid credentials or account disabled"}})
+@router.post("/token", response_model=LoginTokenResponse, summary="Authenticate a teacher or admin", description="Form-based login for teacher and admin users. Returns a bearer access token with user metadata including role, name, department, and scholar ID. Supports schema migration for the scholar_id column.", tags=["Auth"], responses={401: {"description": "Invalid credentials or account disabled"}})
 async def login(response: Response, request: Request, username: str = Form(...), password: str = Form(...)):
     """Authenticate a teacher or admin via form-based login.
 
@@ -200,7 +200,7 @@ async def logout(request: Request, response: Response):
     return RedirectResponse(url="/welcome")
 
 
-@router.post("/student/refresh-token", summary="Refresh an expired session", description="Exchanges a valid one-time-use refresh token for a new set of session, refresh, and persistent tokens. The old refresh token is marked as used to prevent replay.", tags=["Auth"], responses={401: {"description": "Invalid, used, or expired refresh token"}, 500: {"description": "Token refresh failed due to server error"}})
+@router.post("/student/refresh-token", response_model=TokenResponse, summary="Refresh an expired session", description="Exchanges a valid one-time-use refresh token for a new set of session, refresh, and persistent tokens. The old refresh token is marked as used to prevent replay.", tags=["Auth"], responses={401: {"description": "Invalid, used, or expired refresh token"}, 500: {"description": "Token refresh failed due to server error"}})
 async def refresh_session(data: TokenRefreshRequest, request: Request):
     """Refresh an expired session using a one-time refresh token.
 
@@ -237,7 +237,7 @@ async def refresh_session(data: TokenRefreshRequest, request: Request):
         }
 
 
-@router.post("/student/renew-session", summary="Renew session with persistent key", description="Exchanges a valid one-time-use persistent key for a new set of session tokens without requiring re-authentication. The old persistent key is marked as used.", tags=["Auth"], responses={401: {"description": "Invalid, used, or expired persistent key"}, 500: {"description": "Session renewal failed due to server error"}})
+@router.post("/student/renew-session", response_model=TokenResponse, summary="Renew session with persistent key", description="Exchanges a valid one-time-use persistent key for a new set of session tokens without requiring re-authentication. The old persistent key is marked as used.", tags=["Auth"], responses={401: {"description": "Invalid, used, or expired persistent key"}, 500: {"description": "Session renewal failed due to server error"}})
 async def renew_session(data: TokenRenewRequest, request: Request):
     """Renew a session using a one-time persistent key without re-authentication.
 

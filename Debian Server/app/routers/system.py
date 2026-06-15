@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from app.database import _startup_time
 from app.dependencies import _extract_user
+from app.models import UptimeResponse, PingResponse, TaskStatusResponse, WhoamiResponse
 
 router = APIRouter()
 
@@ -24,7 +25,7 @@ def _error_response(reason: str) -> FileResponse:
     return HTMLResponse(content=f"<h1>Access Denied</h1><p>{reason}</p><a href='/welcome'>Back to Home</a>", status_code=403)
 
 
-@router.get("/api/health", summary="Health check endpoint", description="Returns server status and uptime in seconds since the application started.", tags=["System"], responses={200: {"description": "Server is healthy with uptime info"}})
+@router.get("/api/health", response_model=UptimeResponse, summary="Health check endpoint", description="Returns server status and uptime in seconds since the application started.", tags=["System"], responses={200: {"description": "Server is healthy with uptime info"}})
 async def health():
     """Check the server's health and return uptime.
 
@@ -34,7 +35,7 @@ async def health():
     return {"status": "ok", "uptime": time.time() - _startup_time}
 
 
-@router.get("/ping", summary="Ping server", description="Simple liveness probe. Returns a pong response used by the Flutter app's connectivity heartbeat.", tags=["System"], responses={200: {"description": "Pong response indicating the server is alive"}})
+@router.get("/ping", response_model=PingResponse, summary="Ping server", description="Simple liveness probe. Returns a pong response used by the Flutter app's connectivity heartbeat.", tags=["System"], responses={200: {"description": "Pong response indicating the server is alive"}})
 async def ping_server():
     """Respond to a liveness ping.
 
@@ -44,7 +45,7 @@ async def ping_server():
     return {"status": "pong"}
 
 
-@router.get("/api/task/{task_id}",
+@router.get("/api/task/{task_id}", response_model=TaskStatusResponse,
             summary="Poll background task status",
             description="Returns the current status and result of a background task previously enqueued via the task queue. Clients should poll this endpoint with the task ID returned by an enqueue operation.",
             tags=["System"],
@@ -108,7 +109,7 @@ async def get_dashboard(request: Request):
     return FileResponse("static/index.html")
 
 
-@router.get("/whoami", summary="Get current user identity", description="Returns the username and role of the currently authenticated user based on their session token.", tags=["System"], responses={200: {"description": "User identity retrieved"}, 401: {"description": "Not authenticated or invalid session"}})
+@router.get("/whoami", response_model=WhoamiResponse, summary="Get current user identity", description="Returns the username and role of the currently authenticated user based on their session token.", tags=["System"], responses={200: {"description": "User identity retrieved"}, 401: {"description": "Not authenticated or invalid session"}})
 async def whoami(user: dict = Depends(_extract_user)):
     """Get the currently authenticated user's identity.
 

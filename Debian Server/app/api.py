@@ -98,6 +98,20 @@ app = FastAPI(
     version="1.0.0",
     contact={"name": "EduMesh Team", "url": "https://github.com/anomalyco/opencode"},
     license_info={"name": "MIT", "identifier": "MIT"},
+    openapi_tags=[
+        {"name": "Auth", "description": "Authentication and session management for students, teachers, and admins."},
+        {"name": "Student", "description": "Student sync, analytics, profile management, and icon upload."},
+        {"name": "Scholars", "description": "Scholar listing, password reset, and account management."},
+        {"name": "Teacher Students", "description": "Teacher-facing student listing, analytics, and teacher profile management."},
+        {"name": "Academics", "description": "Subject and grade management."},
+        {"name": "Resources", "description": "Resource CRUD, upload, catalog, and ZIM import."},
+        {"name": "Media", "description": "Media streaming with HTTP Range support and thumbnail generation."},
+        {"name": "Administration", "description": "Default admin toggles, admin/teacher/student CRUD."},
+        {"name": "Passwords", "description": "Password change, force-change, and admin password reset."},
+        {"name": "Admin Logs", "description": "Audit logs, admin settings, and log download."},
+        {"name": "System Stats", "description": "Hub statistics, health endpoint, and time sync."},
+        {"name": "System", "description": "Health checks, captive portal, static file serving, and user identity."},
+    ],
     lifespan=lifespan,
 )
 app.router.route_class = EncryptedAPIRoute

@@ -84,3 +84,7 @@ IMPLEMENTATION_PLAN.md
 Markdown files/DESIGN.md
 docs/
 docs/*
+
+# Ponytail (opencode plugin)
+hooks/
+skills/

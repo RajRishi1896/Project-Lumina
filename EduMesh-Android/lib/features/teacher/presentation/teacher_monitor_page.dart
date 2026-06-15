@@ -7,6 +7,8 @@ import '../data/teacher_repository.dart';
 import 'student_progress_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
+/// Teacher overview page showing student stats, study time, streaks, and
+/// saved resources.
 class TeacherMonitorPage extends StatefulWidget {
   const TeacherMonitorPage({super.key});
 

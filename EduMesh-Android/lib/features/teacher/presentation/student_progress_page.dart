@@ -5,6 +5,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../data/teacher_repository.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
+/// Detailed student analytics page with subject breakdown and time tracking.
 class StudentProgressPage extends StatefulWidget {
   final String scholarId;
   final String scholarName;

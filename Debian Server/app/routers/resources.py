@@ -13,6 +13,7 @@ from app.database import UPLOAD_DIR, log_admin_action
 from app.async_db import db_conn
 from app.dependencies import verify_teacher
 from app.thumb_utils import get_zim_upload_max_size
+from app.models import CatalogResourceResponse, FileEntryResponse, LimitsResponse, UploadResponse, ZimUploadResponse, StatusResponse, DeleteResourceResponse
 
 router = APIRouter()
 
@@ -31,11 +32,11 @@ def validate_subject(subject: str):
     return normalized
 
 
-@router.get("/resources",
+@router.get("/resources", response_model=list[CatalogResourceResponse],
             summary="List all resources",
             description="Returns the full resource catalog with id, title, file path, type, subject, grade, and modification time. Also mounted at /api/catalog for backward compatibility.",
             tags=["Resources"])
-@router.get("/api/catalog",
+@router.get("/api/catalog", response_model=list[CatalogResourceResponse],
             summary="List all resources (alias)",
             description="Alias for /resources — returns the full resource catalog. Kept for backward compatibility with legacy clients.",
             tags=["Resources"])
@@ -120,7 +121,7 @@ async def list_resources(
     return result
 
 
-@router.get("/api/files",
+@router.get("/api/files", response_model=list[FileEntryResponse],
             summary="List uploaded files",
             description="Returns a list of files in the upload directory with name and size.",
             tags=["Resources"],
@@ -140,7 +141,7 @@ async def list_files(teacher_user: str = Depends(verify_teacher)):
     ])
 
 
-@router.get("/api/limits",
+@router.get("/api/limits", response_model=LimitsResponse,
             summary="Get upload limits",
             description="Returns the maximum allowed ZIM upload size based on available disk space.",
             tags=["Resources"],
@@ -154,7 +155,7 @@ async def get_limits(teacher_user: str = Depends(verify_teacher)):
     return {"zim_upload_max_size": await get_zim_upload_max_size()}
 
 
-@router.post("/teacher/upload",
+@router.post("/teacher/upload", response_model=UploadResponse,
              summary="Upload a resource",
              description="Uploads a file as a learning resource with title, type, subject, and optional grade. Rejects uploads when disk is below 2 GB free.",
              tags=["Resources"],
@@ -265,7 +266,7 @@ async def upload_resource(title: str = Query(..., description="Display title"),
     return {"status": "success", "filename": uuid_name, "original_name": original_filename}
 
 
-@router.post("/teacher/upload-zim",
+@router.post("/teacher/upload-zim", response_model=ZimUploadResponse,
              summary="Upload ZIM archive",
              description="Uploads and extracts a ZIM archive (as a ZIP) into the zim_pages directory. Rejects uploads when disk is below 2 GB free or file exceeds the computed limit.",
              tags=["Resources"],
@@ -355,7 +356,7 @@ async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(v
     return {"status": "success", "imported": imported}
 
 
-@router.post("/teacher/import-server-file",
+@router.post("/teacher/import-server-file", response_model=StatusResponse,
              summary="Import server-side file",
              description="Registers an already-uploaded file on the server as a learning resource in the database.",
              tags=["Resources"],
@@ -393,7 +394,7 @@ async def import_server_file(filename: str, title: str, type: str, subject: str 
     return {"status": "success"}
 
 
-@router.delete("/teacher/resources/{resource_id}",
+@router.delete("/teacher/resources/{resource_id}", response_model=DeleteResourceResponse,
                summary="Delete a resource",
                description="Deletes a resource by id. If any student has the resource in their downloads, soft-deprecates instead of hard-deleting. Logs the action.",
                tags=["Resources"],

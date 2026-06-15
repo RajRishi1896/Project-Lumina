@@ -6,13 +6,13 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Response
 from app.database import _admin_log_lock, log_admin_action
 from app.async_db import db_conn
-from app.models import LogRetentionUpdate
+from app.models import LogRetentionUpdate, AuditLogResponse, SettingsResponse, StatusResponse
 from app.dependencies import verify_admin
 
 router = APIRouter()
 
 
-@router.get("/admin/log",
+@router.get("/admin/log", response_model=AuditLogResponse,
             summary="View admin audit log",
             description="Returns the most recent admin action log entries. Admin-only.",
             tags=["Admin"],
@@ -41,7 +41,7 @@ async def admin_log(limit: int = 20, admin_user: str = Depends(verify_admin)):
             return {"log": []}
 
 
-@router.get("/api/admin/settings",
+@router.get("/api/admin/settings", response_model=SettingsResponse,
             summary="Get admin settings",
             description="Returns current admin settings (log retention policy). Admin-only.",
             tags=["Admin"],
@@ -59,7 +59,7 @@ async def get_admin_settings(admin_user: str = Depends(verify_admin)):
     return {"log_retention": row[0] if row else "30d"}
 
 
-@router.post("/api/admin/settings",
+@router.post("/api/admin/settings", response_model=StatusResponse,
              summary="Update admin settings",
              description="Updates the log retention policy. Admin-only. Valid policies: 24h, 7d, 30d, 3m, 6m, never, none.",
              tags=["Admin"],

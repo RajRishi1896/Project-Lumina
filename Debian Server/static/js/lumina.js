@@ -497,13 +497,24 @@ const TRANSLATIONS = {
     },
 };
 
-/** Store the encryption key on successful login */
+/**
+ * Store the encryption key on successful login.
+ * @param {string} key - The encryption key from the login response
+ */
 function setEncryptionKey(key) {
     if (key) sessionStorage.setItem('lumina_encryption_key', key);
 }
 
 /**
  * Wrapper around fetch() for dashboard API calls.
+ *
+ * Error handling: Non-OK responses are NOT automatically rejected — callers must
+ * check `res.ok`. This allows each page to handle 401, 403, and 500 differently.
+ * Rate limiting: The server applies RateLimitMiddleware (20 requests/min per IP).
+ * If rate-limited, the server returns 429; the caller should show a user-friendly
+ * message and retry after a delay.
+ * Demo mode: Not applicable — IS_DEMO has been removed from the codebase.
+ *
  * @param {string} url - The URL to fetch
  * @param {Object} [options] - Standard fetch options (method, body, headers, etc.)
  * @returns {Promise<Response>} A Response object
@@ -547,6 +558,7 @@ function __(key, params) {
  * in TRANSLATIONS[code] for subsequent lookups.
  *
  * @param {string} code - Language code to load
+ * @returns {Promise<void>}
  */
 async function loadTranslations(code) {
     if (TRANSLATIONS[code] && code !== 'en') { applyLanguage(); return; }
@@ -631,6 +643,7 @@ function applyLanguage() {
 /**
  * Switch the active language. Loads remote translations if not yet cached.
  * @param {string} code - Language code ('en', 'hi', 'kn', etc.)
+ * @returns {Promise<void>}
  */
 async function setLanguage(code) {
     if (code === currentLang) return;
@@ -707,6 +720,7 @@ function initLangPicker() {
  * Render the language list inside the dropdown, filtered by search query.
  * Highlights the active language with teal background.
  * @param {string} query - Lowercased search filter string
+ * @returns {void}
  */
 function renderLangList(query) {
     const list = document.getElementById('langList');
@@ -759,6 +773,7 @@ function getPreferredTheme() {
  * Updates the data-theme attribute on <html>, the theme toggle icon,
  * and the theme toggle label text.
  * @param {string} theme - 'light' or 'dark'
+ * @returns {void}
  */
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
@@ -785,6 +800,7 @@ function toggleTheme() { setTheme(getPreferredTheme() === 'dark' ? 'light' : 'da
  * Toast auto-dismisses after 3 seconds with a fade-out animation.
  * @param {string} msg - Message text to display
  * @param {boolean} isError - If true, uses danger/red background; otherwise success/green
+ * @returns {void}
  */
 function showAlert(msg, isError) {
     const container = document.getElementById('globalToastContainer');
@@ -803,6 +819,7 @@ function showAlert(msg, isError) {
  * @param {string} notifId - DOM id of the notification element
  * @param {string} msg - Message text to display
  * @param {boolean} isError - If true, uses danger styling; otherwise success
+ * @returns {void}
  */
 function showNotification(notifId, msg, isError) {
     const el = document.getElementById(notifId);
@@ -822,6 +839,27 @@ let loggedInUser = 'admin';
 let userRole = 'admin';
 /** @type {boolean} Whether the default 'admin' login is still enabled. */
 let adminDefaultEnabled = true;
+
+/**
+ * ── Auth / Session Flow ──────────────────────────────────────────────────────
+ *
+ * The Lumina Hub uses cookie-based session authentication:
+ *  1. Login: POST /token (teacher/admin) or POST /student/token (student)
+ *     → Server sets `lumina_session` (httponly) cookie + returns tokens in body.
+ *  2. Session persistence: The browser sends the cookie automatically on every
+ *     request. No Authorization header needed for cookie-based auth.
+ *  3. WhoAmI: GET /whoami reads the cookie server-side and returns {username, role}.
+ *     This is called on every dashboard page load to verify the session.
+ *  4. Cached user: sessionStorage('lumina-user') is set on every successful
+ *     /whoami response and rendered immediately by the synchronous IIFE below
+ *     to eliminate the flash of empty userInfo on page navigation.
+ *  5. Logout: GET /logout (or POST) deletes the session from the DB and clears
+ *     the cookie. Redirects to /welcome.
+ *  6. Session expiry: The server returns 401. The frontend redirects to
+ *     /static/error?reason=session_expired.
+ *  7. Force password reset: If the server returns reset_required=1, the user
+ *     is shown a forced password reset modal before accessing any page.
+ */
 
 /**
  * Immediately renders the cached username from sessionStorage on script load.
@@ -847,6 +885,7 @@ let adminDefaultEnabled = true;
  * the synchronous IIFE above renders the cached username from the previous
  * page load. Once this resolves, it overwrites with fresh data. If the session
  * is expired (non-ok response), the user is redirected to the error page.
+ * @returns {Promise<void>}
  */
 async function loadWhoAmI() {
     try {
@@ -884,6 +923,7 @@ function toggleMobileMenu() {
  * Manually highlights a sidebar nav item and its matching bottom-nav item.
  * Removes 'active' from all nav items first.
  * @param {string} navId - The DOM id of the nav item to highlight (e.g. 'nav-home').
+ * @returns {void}
  */
 function setActiveNav(navId) {
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));

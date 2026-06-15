@@ -6,12 +6,12 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.async_db import db_conn
 from app.dependencies import hash_password, verify_teacher, verify_admin
-from app.models import TeacherCreate, NameUpdate, DepartmentUpdate
+from app.models import TeacherCreate, NameUpdate, DepartmentUpdate, StudentListResponse, StudentAnalyticsResponse, TeacherSummary, TeacherCreateResponse, StatusResponse, TeacherProfileResponse
 
 router = APIRouter()
 
 
-@router.get("/teacher/students",
+@router.get("/teacher/students", response_model=StudentListResponse,
             summary="List students with stats",
             description="Returns all registered students with study minutes, streak days, and saved resources.",
             tags=["Teacher"],
@@ -61,7 +61,7 @@ async def teacher_list_students(teacher_user: str = Depends(verify_teacher), gra
     return {"students": students}
 
 
-@router.get("/teacher/student/{scholar_id}/analytics",
+@router.get("/teacher/student/{scholar_id}/analytics", response_model=StudentAnalyticsResponse,
             summary="Get student analytics",
             description="Returns study minutes, streak, saved resources, and per-subject breakdown for a student.",
             tags=["Analytics"],
@@ -97,7 +97,7 @@ async def teacher_student_analytics(scholar_id: str, teacher_user: str = Depends
     }
 
 
-@router.get("/teachers",
+@router.get("/teachers", response_model=list[TeacherSummary],
             summary="List teacher profiles",
             description="Returns all teacher profiles except the default admin, with name, department, and scholar_id.",
             tags=["Teacher"],
@@ -119,7 +119,7 @@ async def get_teachers(teacher_user: str = Depends(verify_teacher)):
     return [{"username": r[0], "name": r[1] or r[0], "department": r[2] or "General", "scholar_id": r[3] or "", "reset_required": r[4] or 0} for r in rows]
 
 
-@router.post("/teacher/profiles",
+@router.post("/teacher/profiles", response_model=TeacherCreateResponse,
              summary="Create a teacher profile",
              description="Creates a new teacher user and a corresponding scholar record. Admin-only.",
              tags=["Teacher"],
@@ -156,7 +156,7 @@ async def create_teacher_profile(teacher: TeacherCreate, admin_user: str = Depen
             raise HTTPException(status_code=400, detail="Failed to create teacher profile")
 
 
-@router.delete("/teacher/profiles/{username}",
+@router.delete("/teacher/profiles/{username}", response_model=StatusResponse,
                summary="Delete a teacher profile",
                description="Deletes a teacher user by username. The default admin account cannot be deleted.",
                tags=["Teacher"],
@@ -181,7 +181,7 @@ async def delete_teacher_profile(username: str, admin_user: str = Depends(verify
     return {"status": "success"}
 
 
-@router.get("/teacher/me",
+@router.get("/teacher/me", response_model=TeacherProfileResponse,
             summary="Get current teacher profile",
             description="Returns the profile of the currently authenticated teacher or admin.",
             tags=["Teacher"],
@@ -204,7 +204,7 @@ async def get_teacher_me(teacher_user: str = Depends(verify_teacher)):
         return {"username": teacher_user, "reset_required": 0}
 
 
-@router.post("/teacher/profile/name",
+@router.post("/teacher/profile/name", response_model=StatusResponse,
              summary="Update display name",
              description="Updates the display name for the currently authenticated teacher or admin.",
              tags=["Teacher"],
@@ -225,7 +225,7 @@ async def update_teacher_name(data: NameUpdate, teacher_user: str = Depends(veri
     return {"status": "ok"}
 
 
-@router.post("/teacher/profile/department",
+@router.post("/teacher/profile/department", response_model=StatusResponse,
              summary="Update department",
              description="Updates the department for the currently authenticated teacher.",
              tags=["Teacher"],

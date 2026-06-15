@@ -8,14 +8,14 @@ from fastapi.responses import FileResponse, JSONResponse
 import logging
 from app.database import DB_PATH, PROFILE_ICONS_DIR, auto_register_if_new
 from app.async_db import db_conn
-from app.models import StudyTimeSync, SubjectTimeSync, IconUpload, StudentChangePasswordRequest
+from app.models import StudyTimeSync, SubjectTimeSync, IconUpload, StudentChangePasswordRequest, StatusResponse, RestoreResponse, StudentAnalyticsResponse, IconUploadResponse, StudentProfileResponse, WeeklyBreakdownResponse
 from app.dependencies import verify_student, hash_password, verify_password
 from app.encryption import _invalidate_tokens_for_user
 
 router = APIRouter()
 
 
-@router.post("/sync/downloads", summary="Sync downloaded resource IDs", description="Records which resources the student has downloaded. Used for offline sync and restore across devices. Auto-registers the student if not already in the database.", tags=["Sync"], responses={200: {"description": "Download IDs recorded successfully"}})
+@router.post("/sync/downloads", response_model=StatusResponse, summary="Sync downloaded resource IDs", description="Records which resources the student has downloaded. Used for offline sync and restore across devices. Auto-registers the student if not already in the database.", tags=["Sync"], responses={200: {"description": "Download IDs recorded successfully"}})
 async def sync_downloads(resource_ids: list[str], student_id: str = Depends(verify_student)):
     """Record downloaded resource IDs for a student.
 
@@ -34,7 +34,7 @@ async def sync_downloads(resource_ids: list[str], student_id: str = Depends(veri
     return {"status": "ok"}
 
 
-@router.get("/sync/restore", summary="Restore download history", description="Returns the list of resource IDs previously downloaded by the student. Used to restore offline content on a new device or after reinstalling the app.", tags=["Sync"], responses={200: {"description": "Download history retrieved successfully"}})
+@router.get("/sync/restore", response_model=RestoreResponse, summary="Restore download history", description="Returns the list of resource IDs previously downloaded by the student. Used to restore offline content on a new device or after reinstalling the app.", tags=["Sync"], responses={200: {"description": "Download history retrieved successfully"}})
 async def restore_profile(student_id: str = Depends(verify_student)):
     """Restore a student's download history.
 
@@ -51,7 +51,7 @@ async def restore_profile(student_id: str = Depends(verify_student)):
     return {"download_history": downloads}
 
 
-@router.post("/student/sync-study-time", summary="Sync weekly study time", description="Updates the student's total study seconds and streak days for the current week. Uses an upsert pattern against the weekly_study table.", tags=["Sync"], responses={200: {"description": "Study time synced successfully"}})
+@router.post("/student/sync-study-time", response_model=StatusResponse, summary="Sync weekly study time", description="Updates the student's total study seconds and streak days for the current week. Uses an upsert pattern against the weekly_study table.", tags=["Sync"], responses={200: {"description": "Study time synced successfully"}})
 async def sync_study_time(data: StudyTimeSync, student_id: str = Depends(verify_student)):
     """Sync a student's weekly study time and streak.
 
@@ -71,7 +71,7 @@ async def sync_study_time(data: StudyTimeSync, student_id: str = Depends(verify_
     return {"status": "ok"}
 
 
-@router.post("/student/sync-subject-time", summary="Sync per-subject study minutes", description="Replaces the student's subject-level study minutes breakdown with the provided data. Limited to 30 subjects per request.", tags=["Sync"], responses={200: {"description": "Subject time synced successfully"}, 400: {"description": "Too many subjects (max 30)"}})
+@router.post("/student/sync-subject-time", response_model=StatusResponse, summary="Sync per-subject study minutes", description="Replaces the student's subject-level study minutes breakdown with the provided data. Limited to 30 subjects per request.", tags=["Sync"], responses={200: {"description": "Subject time synced successfully"}, 400: {"description": "Too many subjects (max 30)"}})
 async def sync_subject_time(data: SubjectTimeSync, student_id: str = Depends(verify_student)):
     """Sync a student's per-subject study minutes.
 
@@ -97,7 +97,7 @@ async def sync_subject_time(data: SubjectTimeSync, student_id: str = Depends(ver
     return {"status": "ok"}
 
 
-@router.get("/student/analytics", summary="Get student analytics", description="Returns aggregated study minutes this week, streak days, total resources saved, and a per-subject breakdown of study minutes.", tags=["Student"], responses={200: {"description": "Analytics retrieved successfully"}})
+@router.get("/student/analytics", response_model=StudentAnalyticsResponse, summary="Get student analytics", description="Returns aggregated study minutes this week, streak days, total resources saved, and a per-subject breakdown of study minutes.", tags=["Student"], responses={200: {"description": "Analytics retrieved successfully"}})
 async def get_analytics(student_id: str = Depends(verify_student)):
     """Get aggregated analytics for a student.
 
@@ -125,7 +125,7 @@ async def get_analytics(student_id: str = Depends(verify_student)):
     }
 
 
-@router.post("/student/profile/update", summary="Update student profile", description="Updates the student's display name and/or grade. Only provided fields are updated.", tags=["Profile"], responses={200: {"description": "Profile updated successfully"}, 400: {"description": "Failed to update profile"}})
+@router.post("/student/profile/update", response_model=StatusResponse, summary="Update student profile", description="Updates the student's display name and/or grade. Only provided fields are updated.", tags=["Profile"], responses={200: {"description": "Profile updated successfully"}, 400: {"description": "Failed to update profile"}})
 async def update_student_profile(data: dict, student_id: str = Depends(verify_student)):
     """Update a student's display name and grade.
 
@@ -154,7 +154,7 @@ async def update_student_profile(data: dict, student_id: str = Depends(verify_st
             raise HTTPException(status_code=400, detail="Failed to update profile.")
 
 
-@router.post("/student/profile/icon", summary="Upload profile icon", description="Uploads a base64-encoded profile image for the student. Validates file magic bytes to confirm the format and enforces a 500KB size limit. Supports PNG, JPG, GIF, and WebP.", tags=["Profile"], responses={200: {"description": "Icon uploaded successfully"}, 400: {"description": "Invalid image data, format, or size exceeded"}})
+@router.post("/student/profile/icon", response_model=IconUploadResponse, summary="Upload profile icon", description="Uploads a base64-encoded profile image for the student. Validates file magic bytes to confirm the format and enforces a 500KB size limit. Supports PNG, JPG, GIF, and WebP.", tags=["Profile"], responses={200: {"description": "Icon uploaded successfully"}, 400: {"description": "Invalid image data, format, or size exceeded"}})
 async def upload_profile_icon(data: IconUpload, student_id: str = Depends(verify_student)):
     """Upload a base64-encoded profile icon for a student.
 
@@ -226,7 +226,7 @@ async def get_profile_icon(scholar_id: str):
     raise HTTPException(status_code=404, detail="No profile icon found.")
 
 
-@router.post("/student/change-password", summary="Change student password", description="Changes the student's password after verifying the current password. Clears the reset-required flag on success.", tags=["Auth", "Profile"], responses={200: {"description": "Password changed successfully"}, 400: {"description": "Incorrect current password, password not set, or change failed"}})
+@router.post("/student/change-password", response_model=StatusResponse, summary="Change student password", description="Changes the student's password after verifying the current password. Clears the reset-required flag on success.", tags=["Auth", "Profile"], responses={200: {"description": "Password changed successfully"}, 400: {"description": "Incorrect current password, password not set, or change failed"}})
 async def student_change_password(data: StudentChangePasswordRequest, student_id: str = Depends(verify_student)):
     """Change a student's password.
 
@@ -261,7 +261,7 @@ async def student_change_password(data: StudentChangePasswordRequest, student_id
             raise HTTPException(status_code=400, detail="Failed to change password")
 
 
-@router.get("/student/profile", summary="Get student profile", description="Returns the student's display name, grade, and scholar ID.", tags=["Profile"], responses={200: {"description": "Profile retrieved successfully"}, 404: {"description": "Student not found"}})
+@router.get("/student/profile", response_model=StudentProfileResponse, summary="Get student profile", description="Returns the student's display name, grade, and scholar ID.", tags=["Profile"], responses={200: {"description": "Profile retrieved successfully"}, 404: {"description": "Student not found"}})
 async def get_student_profile(student_id: str = Depends(verify_student)):
     """Get a student's profile information.
 
@@ -283,7 +283,7 @@ async def get_student_profile(student_id: str = Depends(verify_student)):
         return {"name": row[0], "grade": row[1] or "", "scholar_id": row[2]}
 
 
-@router.get("/student/weekly-breakdown",
+@router.get("/student/weekly-breakdown", response_model=WeeklyBreakdownResponse,
             summary="Get weekly study breakdown",
             description="Returns daily study minutes for the past 7 days for a student.",
             tags=["Student"],

@@ -561,6 +561,11 @@
             }
         }
 
+        /**
+         * Reset an admin account's password to the default.
+         * Sends a POST request to /api/admin/reset-password/{username}.
+         * @param {string} username - The admin username to reset
+         */
         async function resetAdminPassword(username) {
             const confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_admin', {username: username}), false);
             if (!confirmed) return;
@@ -578,6 +583,11 @@
             }
         }
 
+        /**
+         * Delete an admin profile from the system.
+         * Sends a DELETE request to /api/delete-user/{username} with role=admin.
+         * @param {string} username - The admin username to delete
+         */
         async function deleteAdminProfile(username) {
             const confirmed = await showConfirm(__('danger.confirm.delete_admin_title'), __('danger.confirm.delete_admin', {username: username}), true);
             if (!confirmed) return;

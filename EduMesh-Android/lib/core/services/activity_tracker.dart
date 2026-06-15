@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
 import '../../shared/services/connectivity_service.dart';
 
+/// Tracks study sessions and user actions, persists them locally, and
+/// auto-syncs to the hub via [ApiClient].
 class ActivityTracker {
   static final ActivityTracker _instance = ActivityTracker._internal();
   factory ActivityTracker() => _instance;
@@ -18,16 +20,19 @@ class ActivityTracker {
   DateTime? _studyStartTime;
   Timer? _autoSyncTimer;
 
+  /// Start the periodic auto-sync timer. Syncs every 60 seconds.
   void startAutoSync() {
     _autoSyncTimer?.cancel();
     _autoSyncTimer = Timer.periodic(const Duration(seconds: 60), (_) => sync());
   }
 
+  /// Stop the periodic auto-sync timer.
   void stopAutoSync() {
     _autoSyncTimer?.cancel();
     _autoSyncTimer = null;
   }
 
+  /// Record the start of a focused study session.
   Future<void> startStudySession({String? subject}) async {
     _studyStartTime = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
@@ -37,6 +42,7 @@ class ActivityTracker {
     }));
   }
 
+  /// Record the end of a focused study session and log the duration.
   Future<void> endStudySession() async {
     if (_studyStartTime == null) return;
     final duration = DateTime.now().difference(_studyStartTime!);
@@ -63,6 +69,7 @@ class ActivityTracker {
     await sync();
   }
 
+  /// Log a general user action with debouncing (15s cooldown).
   Future<void> logAction(String action, {String? resourceId, String? metadata}) async {
     final prefs = await SharedPreferences.getInstance();
     await _storeLocal(prefs, {
@@ -73,6 +80,7 @@ class ActivityTracker {
     });
   }
 
+  /// Log a key user action immediately without debouncing.
   Future<void> logKeyAction(String action, {String? resourceId, String? metadata}) async {
     final prefs = await SharedPreferences.getInstance();
     await _storeLocal(prefs, {
@@ -91,6 +99,7 @@ class ActivityTracker {
     await prefs.setString(_localEventsKey, jsonEncode(list));
   }
 
+  /// Get the recorded activity history for the current session.
   Future<List<Map<String, dynamic>>> getActivityHistory({int limit = 25, int offset = 0}) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_localEventsKey);
@@ -102,6 +111,7 @@ class ActivityTracker {
     return all.sublist(offset, end > all.length ? all.length : end);
   }
 
+  /// Get analytics data including study time and streak info.
   Future<Map<String, dynamic>> getAnalytics() async {
     final prefs = await SharedPreferences.getInstance();
     final cached = prefs.getString(_cachedAnalyticsKey);
@@ -117,6 +127,7 @@ class ActivityTracker {
     };
   }
 
+  /// Force an immediate sync of pending activity data to the hub.
   Future<void> sync() async {
     if (!ConnectivityService().isOnline) return;
     final prefs = await SharedPreferences.getInstance();

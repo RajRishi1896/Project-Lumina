@@ -5,13 +5,13 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from app.database import log_admin_action
 from app.async_db import db_conn
-from app.models import TeacherCreate, AdminStudentCreate
+from app.models import TeacherCreate, AdminStudentCreate, StatusResponse, AdminStatusResponse, AdminSummary, AdminCreateResponse
 from app.dependencies import hash_password, verify_admin
 
 router = APIRouter()
 
 
-@router.post("/teacher/disable-default-admin",
+@router.post("/teacher/disable-default-admin", response_model=StatusResponse,
              summary="Disable default admin",
              description="Disables the default admin account by setting its password to DISABLED. Requires at least one other teacher profile.",
              tags=["Admin"],
@@ -36,7 +36,7 @@ async def disable_default_admin(admin_user: str = Depends(verify_admin)):
     return {"status": "success"}
 
 
-@router.post("/teacher/enable-default-admin",
+@router.post("/teacher/enable-default-admin", response_model=StatusResponse,
              summary="Enable default admin",
              description="Re-enables the default admin account by resetting its password to the default.",
              tags=["Admin"],
@@ -56,7 +56,7 @@ async def enable_default_admin(admin_user: str = Depends(verify_admin)):
     return {"status": "success"}
 
 
-@router.get("/teacher/default-admin-status",
+@router.get("/teacher/default-admin-status", response_model=AdminStatusResponse,
              summary="Check default admin status",
              description="Returns whether the default admin account is currently enabled or disabled.",
              tags=["Admin"],
@@ -76,7 +76,7 @@ async def default_admin_status(admin_user: str = Depends(verify_admin)):
     return {"enabled": True}
 
 
-@router.get("/api/admin/admins",
+@router.get("/api/admin/admins", response_model=list[AdminSummary],
             summary="List admin accounts",
             description="Returns all admin user profiles. Admin-only.",
             tags=["Admin"],
@@ -98,7 +98,7 @@ async def list_admins(admin_user: str = Depends(verify_admin)):
     return [{"username": r[0], "name": r[1] or r[0], "department": r[2] or "System", "reset_required": r[3] or 0} for r in rows]
 
 
-@router.post("/api/admin/create",
+@router.post("/api/admin/create", response_model=AdminCreateResponse,
              summary="Create admin account",
              description="Creates a new admin user. Admin-only. Logs the action to the audit log.",
              tags=["Admin"],
@@ -136,7 +136,7 @@ async def create_admin(data: TeacherCreate, admin_user: str = Depends(verify_adm
             raise HTTPException(status_code=400, detail="Failed to create admin account")
 
 
-@router.post("/api/admin/create-teacher",
+@router.post("/api/admin/create-teacher", response_model=AdminCreateResponse,
              summary="Create teacher account (admin)",
              description="Creates a new teacher user with the teacher role. Admin-only. Logs the action to the audit log.",
              tags=["Admin"],
@@ -174,7 +174,7 @@ async def create_teacher(data: TeacherCreate, admin_user: str = Depends(verify_a
             raise HTTPException(status_code=400, detail="Failed to create teacher account")
 
 
-@router.post("/api/admin/create-student",
+@router.post("/api/admin/create-student", response_model=AdminCreateResponse,
              summary="Create student account (admin)",
              description="Creates a new student scholar account. Admin-only. Logs the action to the audit log.",
              tags=["Admin"],

@@ -11,6 +11,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from typing import List, Dict
+from app.models import ZimArticleResponse, ZimPageResponse
 
 router = APIRouter()
 
@@ -26,12 +27,12 @@ os.makedirs(ZIM_PAGES_DIR, exist_ok=True)
                 "contains an ``article_id`` and a human-readable ``title`` derived "
                 "from the filename.",
     tags=["ZIM"],
-    response_model=List[Dict[str, str]],
+    response_model=list[ZimArticleResponse],
     responses={
         200: {"description": "Paginated list of articles"},
     },
 )
-async def list_zim_articles(offset: int = Query(default=0, ge=0), limit: int = Query(default=20, ge=1, le=200)) -> List[Dict[str, str]]:
+async def list_zim_articles(offset: int = Query(default=0, ge=0), limit: int = Query(default=20, ge=1, le=200)) -> list[ZimArticleResponse]:
     """List all ZIM articles with pagination.
 
     Scans the ``zim_pages`` directory for ``.html`` files and parses
@@ -66,12 +67,12 @@ async def list_zim_articles(offset: int = Query(default=0, ge=0), limit: int = Q
     description="Performs a case-insensitive substring search against cached ZIM "
                 "article titles. Returns matching articles with their ID and title.",
     tags=["ZIM"],
-    response_model=List[Dict[str, str]],
+    response_model=list[ZimArticleResponse],
     responses={
         200: {"description": "Matching articles"},
     },
 )
-async def search_zim(query: str = Query(..., min_length=1, description="Search term to match against article titles")) -> List[Dict[str, str]]:
+async def search_zim(query: str = Query(..., min_length=1, description="Search term to match against article titles")) -> list[ZimArticleResponse]:
     """Search ZIM articles by title substring.
 
     Returns a list of objects with ``article_id`` and ``title``.
@@ -109,6 +110,7 @@ async def search_zim(query: str = Query(..., min_length=1, description="Search t
                 "object. The server looks up the file by ``article_id`` using the "
                 "``<id>__*.html`` naming pattern.",
     tags=["ZIM"],
+    response_model=ZimPageResponse,
     responses={
         200: {"description": "Article HTML wrapped in JSON", "content": {"application/json": {}}},
         404: {"description": "Article not found"},
