@@ -182,7 +182,7 @@ class WhoamiResponse(BaseModel):
 
 class SubjectResponse(BaseModel):
     """Subject definition."""
-    id: int = Field(..., description="Subject ID.", example=1)
+    id: str = Field(..., description="Subject ID.", example="SUBJ-90286c83")
     name: str = Field(..., description="Subject name.", example="Mathematics")
     symbol: str = Field(..., description="Subject icon symbol.", example="MATH")
     class_name: str = Field(..., description="Associated class or grade.", example="Grade 10")
