@@ -23,7 +23,14 @@ admin_handler = RotatingFileHandler('data/admin_actions.log', maxBytes=2*1024*10
 admin_logger = logging.getLogger('admin_actions')
 admin_logger.setLevel(logging.INFO)
 admin_logger.addHandler(admin_handler)
-_admin_log_lock = asyncio.Lock()
+
+RETENTION_DELTAS = {
+    "24h": 86400,
+    "7d": 604800,
+    "30d": 2592000,
+    "3m": 7776000,
+    "6m": 15552000,
+}
 
 
 async def log_admin_action(username: str, action: str):
@@ -37,8 +44,6 @@ def _write_log(timestamp, username, action):
         conn = sqlite3.connect(DB_PATH, timeout=5.0)
         try:
             cur = conn.cursor()
-            cur.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
-            cur.execute('INSERT OR IGNORE INTO settings (key, value) VALUES ("log_retention", "30d")')
             cur.execute("SELECT value FROM settings WHERE key = 'log_retention'")
             row = cur.fetchone()
             retention = row[0] if row else "30d"
@@ -60,37 +65,31 @@ def _write_log(timestamp, username, action):
 
 
 def _prune_logs_if_needed(retention):
+    # Throttle: only prune at most once per 60s to avoid rewriting the entire
+    # file on every single admin action (SSD wear / write amplification).
     if retention == "never":
         return
+    now = time.time()
+    if now - getattr(_prune_logs_if_needed, '_last_run', 0) < 60:
+        return
+    _prune_logs_if_needed._last_run = now
 
     try:
-        delta = None
-        if retention == "24h":
-            delta = 24 * 3600
-        elif retention == "7d":
-            delta = 7 * 24 * 3600
-        elif retention == "30d":
-            delta = 30 * 24 * 3600
-        elif retention == "3m":
-            delta = 90 * 24 * 3600
-        elif retention == "6m":
-            delta = 180 * 24 * 3600
-
-        if delta is not None:
-            cutoff = datetime.now().timestamp() - delta
-            kept_lines = []
-            if os.path.exists("data/admin_actions.log"):
-                with open("data/admin_actions.log", "r") as f:
-                    for line in f:
-                        parts = line.split(" - ", 1)
-                        try:
-                            log_time = datetime.fromisoformat(parts[0])
-                            if log_time.timestamp() >= cutoff:
-                                kept_lines.append(line)
-                        except Exception:
+        delta = RETENTION_DELTAS.get(retention, 2592000)
+        cutoff = datetime.now().timestamp() - delta
+        kept_lines = []
+        if os.path.exists("data/admin_actions.log"):
+            with open("data/admin_actions.log", "r") as f:
+                for line in f:
+                    parts = line.split(" - ", 1)
+                    try:
+                        log_time = datetime.fromisoformat(parts[0])
+                        if log_time.timestamp() >= cutoff:
                             kept_lines.append(line)
-                with open("data/admin_actions.log", "w") as f:
-                    f.writelines(kept_lines)
+                    except Exception:
+                        kept_lines.append(line)
+            with open("data/admin_actions.log", "w") as f:
+                f.writelines(kept_lines)
     except Exception as e:
         logging.error(f"Error pruning logs: {e}")
 
@@ -100,46 +99,13 @@ def init_db():
 
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
     conn.execute('PRAGMA journal_mode=WAL')
+    conn.execute('PRAGMA busy_timeout=5000')
+    conn.execute('PRAGMA cache_size=-8000')
+    conn.execute('PRAGMA synchronous=NORMAL')
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS scholars (id TEXT PRIMARY KEY, name TEXT UNIQUE)')
     c.execute('CREATE TABLE IF NOT EXISTS resources (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, file_path TEXT, type TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, hashed_password TEXT, name TEXT, department TEXT, scholar_id TEXT, reset_required INTEGER DEFAULT 0, role TEXT NOT NULL DEFAULT "teacher")')
-    try:
-        c.execute('ALTER TABLE users ADD COLUMN name TEXT')
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute('ALTER TABLE users ADD COLUMN department TEXT')
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute('ALTER TABLE users ADD COLUMN scholar_id TEXT')
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute('ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT "teacher"')
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute('ALTER TABLE users ADD COLUMN reset_required INTEGER DEFAULT 0')
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute('ALTER TABLE scholars ADD COLUMN hashed_password TEXT')
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute('ALTER TABLE scholars ADD COLUMN reset_required INTEGER DEFAULT 0')
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute('ALTER TABLE scholars ADD COLUMN grade TEXT DEFAULT ""')
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute('ALTER TABLE scholars ADD COLUMN username TEXT')
-    except sqlite3.OperationalError:
-        pass
     c.execute("UPDATE scholars SET username = name WHERE username IS NULL OR username = ''")
     try:
         c.execute('DROP INDEX IF EXISTS idx_scholars_name')
@@ -153,29 +119,28 @@ def init_db():
         c.execute('CREATE INDEX IF NOT EXISTS idx_scholars_name ON scholars(name)')
     except Exception:
         pass
+    try:
+        c.execute('CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_resources_status ON resources(status)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_resources_subject ON resources(subject)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_resources_grade ON resources(grade)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_resources_type ON resources(resource_type)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_downloads_scholar ON scholar_downloads(scholar_id)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_subject_minutes_scholar ON subject_minutes(scholar_id)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_study_sessions_scholar ON study_sessions(scholar_id)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_weekly_study_scholar ON weekly_study(scholar_id)')
+    except Exception:
+        pass
     c.execute('CREATE TABLE IF NOT EXISTS weekly_study (scholar_id TEXT PRIMARY KEY, total_seconds INTEGER DEFAULT 0, streak_days INTEGER DEFAULT 0, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
-    try:
-        c.execute('ALTER TABLE weekly_study ADD COLUMN streak_days INTEGER DEFAULT 0')
-    except sqlite3.OperationalError:
-        pass
     c.execute('CREATE TABLE IF NOT EXISTS scholar_downloads (scholar_id TEXT, resource_id TEXT, PRIMARY KEY(scholar_id, resource_id))')
+    c.execute('CREATE TABLE IF NOT EXISTS activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, scholar_id TEXT NOT NULL, action TEXT NOT NULL, timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (scholar_id) REFERENCES scholars(id))')
     c.execute('CREATE TABLE IF NOT EXISTS study_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, scholar_id TEXT, start_time DATETIME, end_time DATETIME, duration_seconds INTEGER)')
-    c.execute('CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, username TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
-    try:
-        c.execute('ALTER TABLE sessions ADD COLUMN role TEXT')
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute('ALTER TABLE sessions ADD COLUMN encryption_key TEXT')
-    except sqlite3.OperationalError:
-        pass
+    c.execute('CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, username TEXT, used INTEGER DEFAULT 0, expiry TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
     c.execute('CREATE TABLE IF NOT EXISTS subject_minutes (scholar_id TEXT NOT NULL, subject_name TEXT NOT NULL, minutes INTEGER DEFAULT 0, PRIMARY KEY (scholar_id, subject_name))')
-    try:
-        c.execute('ALTER TABLE sessions ADD COLUMN last_accessed DATETIME')
-    except sqlite3.OperationalError:
-        pass
     c.execute('CREATE TABLE IF NOT EXISTS refresh_tokens (token TEXT PRIMARY KEY, username TEXT, role TEXT, used INTEGER DEFAULT 0, expires_at TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
     c.execute('CREATE TABLE IF NOT EXISTS persistent_keys (token TEXT PRIMARY KEY, username TEXT, role TEXT, used INTEGER DEFAULT 0, expires_at TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
+
+    _migrate_schema(conn)
 
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='subjects'")
     if c.fetchone():
@@ -194,20 +159,12 @@ def init_db():
     else:
         c.execute('CREATE TABLE IF NOT EXISTS subjects (name TEXT, symbol TEXT, class_name TEXT, PRIMARY KEY (name, class_name))')
 
-    try:
-        c.execute('ALTER TABLE subjects ADD COLUMN id TEXT')
-    except sqlite3.OperationalError:
-        pass
     c.execute("SELECT rowid FROM subjects WHERE id IS NULL")
     for (rowid,) in c.fetchall():
         c.execute("UPDATE subjects SET id = ? WHERE rowid = ?", (f"SUBJ-{uuid.uuid4().hex[:8]}", rowid))
     try:
         c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_subjects_id ON subjects(id)')
     except Exception:
-        pass
-    try:
-        c.execute('ALTER TABLE resources ADD COLUMN grade TEXT DEFAULT ""')
-    except sqlite3.OperationalError:
         pass
 
     c.execute('CREATE TABLE IF NOT EXISTS grades (name TEXT PRIMARY KEY)')
@@ -256,6 +213,55 @@ def init_db():
     _migrate_resources_v2(conn)
     conn.commit()
     conn.close()
+
+
+def _migrate_schema(conn):
+    """Add missing columns to all tables using PRAGMA introspection."""
+    for table, col_defs in {
+        "users": {
+            "name": "TEXT",
+            "department": "TEXT",
+            "scholar_id": "TEXT",
+            "role": "TEXT NOT NULL DEFAULT 'teacher'",
+            "reset_required": "INTEGER DEFAULT 0",
+        },
+        "scholars": {
+            "hashed_password": "TEXT",
+            "reset_required": "INTEGER DEFAULT 0",
+            "grade": "TEXT DEFAULT ''",
+            "username": "TEXT",
+        },
+        "weekly_study": {
+            "streak_days": "INTEGER DEFAULT 0",
+        },
+        "sessions": {
+            "role": "TEXT",
+            "encryption_key": "TEXT",
+            "last_accessed": "DATETIME",
+            "used": "INTEGER DEFAULT 0",
+            "expiry": "TEXT",
+        },
+        "subjects": {
+            "id": "TEXT",
+        },
+        "resources": {
+            "grade": "TEXT DEFAULT ''",
+            "description": "TEXT DEFAULT ''",
+            "chapter": "TEXT DEFAULT ''",
+            "year": "INTEGER DEFAULT NULL",
+            "superseded_by": "INTEGER DEFAULT NULL",
+            "language": "TEXT DEFAULT 'en'",
+            "resource_type": "TEXT DEFAULT 'textbook'",
+            "source": "TEXT DEFAULT 'Unknown'",
+            "license": "TEXT DEFAULT 'Internal Only'",
+            "uploaded_by": "INTEGER DEFAULT NULL",
+            "uploaded_at": "DATETIME DEFAULT CURRENT_TIMESTAMP",
+        },
+    }.items():
+        existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+        for col, definition in col_defs.items():
+            if col not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {definition}")
 
 
 def _migrate_resources_v2(conn):
@@ -312,16 +318,5 @@ def _migrate_resources_v2(conn):
     except sqlite3.OperationalError as e:
         logging.warning(f"Could not complete migration: {e}")
 
-
-async def auto_register_if_new(scholar_id: str, name: str = "Roaming Scholar"):
-    def _run():
-        conn = sqlite3.connect(DB_PATH, timeout=5.0)
-        try:
-            c = conn.cursor()
-            c.execute("INSERT OR IGNORE INTO scholars (id, name) VALUES (?, ?)", (scholar_id, name))
-            conn.commit()
-        finally:
-            conn.close()
-    await asyncio.to_thread(_run)
 
 

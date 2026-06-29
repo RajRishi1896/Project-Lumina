@@ -177,13 +177,11 @@ The API is split across 13 router modules ranging from 83 to 459 lines. The larg
 | `zim_handler.py` | 149 | ZIM article list, search, serve |
 | `scholars.py` | 83 | Scholar listing, reset, delete |
 
-Five background services run as `asyncio` tasks inside the server process:
+One background service runs as an `asyncio` task inside the server process:
 
-- **task_queue.py** -- 2-worker async queue with a 5-minute handler timeout. Handles CPU-bound work without blocking the event loop.
-- **thumb_worker.py** -- Generates thumbnails. Videos use ffmpeg with `blackdetect` to skip intro black frames. PDFs use PyMuPDF at 0.3x scale.
 - **zim_auto_cleaner.py** -- Hourly LRU-based pruning of ZIM cache. Configurable via a JSON config file with thread-safe access.
-- **discovery.py** -- mDNS/DNS-SD service announcement so Android clients discover the hub without configuration.
-- **middleware.py** -- Per-IP rate limiting in two tiers: 600 req/min for auth paths, 3000 req/min for general paths.
+
+Additional services (task queue, thumbnail worker, mDNS discovery, rate limiting middleware) are planned but not yet created.
 
 ---
 

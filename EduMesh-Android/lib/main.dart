@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Ensure these imports match your project structure exactly
 import 'package:edumesh_android/core/theme/lumina_lite_theme.dart';
 import 'package:edumesh_android/core/theme/theme_provider.dart';
-import 'package:edumesh_android/shared/services/app_icon_service.dart';
+import 'package:edumesh_android/shared/services/app_icon_service.dart' show setAppIcon;
 import 'package:edumesh_android/features/auth/presentation/welcome_page.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'package:edumesh_android/widgets/connection_gate.dart';
@@ -32,14 +33,11 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 /// [ProviderScope].
 void main() async { 
   WidgetsFlutterBinding.ensureInitialized();
-  NotificationService().init();
+  unawaited(NotificationService().init());
 
   final prefs = await SharedPreferences.getInstance();
-  final isDark = prefs.getBool('dark_mode') ?? false;
-  final initialThemeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-
   final useDarkIcon = prefs.getBool('dark_app_icon') ?? false;
-  AppIconService.setAppIcon(useDarkIcon);
+  unawaited(setAppIcon(useDarkIcon));
 
   final authService = AuthService();
   final userId = await authService.getUniqueUserId();
@@ -57,9 +55,6 @@ void main() async {
 
   runApp(
     ProviderScope(
-      overrides: [
-        initialThemeProvider.overrideWithValue(initialThemeMode),
-      ],
       child: LuminaApp(isLoggedIn: isLoggedIn),
     ),
   );
@@ -79,7 +74,16 @@ class LuminaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.read(localeProvider.notifier).load();
+    ref.read(themeModeProvider.notifier).load();
     final themeMode = ref.watch(themeModeProvider);
+
+    final l10n = AppLocalizations.of(context)!;
+    NotificationService().setLocalizedStrings(
+      channelName: l10n.downloadChannelName,
+      channelDescription: l10n.downloadChannelDescription,
+      downloadCompleteTitle: l10n.downloadCompleteNotificationTitle,
+      downloadFailedTitle: l10n.downloadFailedNotificationTitle,
+    );
 
     return ScreenUtilInit(
       designSize: const Size(360, 800),
@@ -88,7 +92,7 @@ class LuminaApp extends ConsumerWidget {
       builder: (context, child) {
         return MaterialApp(
           navigatorKey: navigatorKey,
-          title: AppLocalizations.of(context)!.materialAppTitle,
+          title: l10n.materialAppTitle,
           theme: LuminaLiteTheme.lightTheme,
           darkTheme: LuminaLiteTheme.darkTheme,
           themeMode: themeMode, 

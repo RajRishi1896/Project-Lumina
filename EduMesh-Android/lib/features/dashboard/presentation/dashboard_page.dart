@@ -1,18 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../core/constants/lumina_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/network/api_client.dart';
-import '../../../core/services/connection_service.dart';
-import '../../../core/services/storage_service.dart';
-import '../../../core/services/recent_files_service.dart';
-import '../../../core/services/app_info_service.dart';
-import '../../../shared/services/save_resource_service.dart';
-import '../../../shared/widgets/lumina_card.dart';
+import '../../../shared/services/connectivity_service.dart';
+import '../../../core/storage/db_helper.dart';
 import '../../../shared/widgets/lumina_settings_sheet.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../auth/data/auth_service.dart';
@@ -36,9 +33,6 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isConnected = false;
   bool _isChecking = true;
   Timer? _pingTimer;
-  final ConnectionService _connectionService = ConnectionService();
-  
-  final RecentFilesService _recentService = RecentFilesService();
 
   String _totalStorageUsedStr = 'Calculating...';
   String _totalCapacityStr = 'Calculating...';
@@ -49,8 +43,6 @@ class _DashboardPageState extends State<DashboardPage> {
   int _appFlex = 1;
   int _otherFlex = 1;
   int _freeFlex = 1;
-
-  final StorageService _storageService = StorageService();
 
   String? _myGrade;
 
@@ -65,23 +57,16 @@ class _DashboardPageState extends State<DashboardPage> {
     _calcTotalStorage();
     _loadSubjects();
     AuthService().getStudentGrade().then((g) { if (mounted) setState(() => _myGrade = g); });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _recentService.addListener(_updateUI);
-    });
-  }
-  void _updateUI() {
-    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _pingTimer?.cancel();
-    _recentService.removeListener(_updateUI);
     super.dispose();
   }
 
   Future<void> _checkServer() async {
-    final connected = await _connectionService.ping(timeout: const Duration(seconds: 10));
+    final connected = await ConnectivityService().ping();
     if (mounted) {
       setState(() {
         _isConnected = connected;
@@ -99,12 +84,13 @@ class _DashboardPageState extends State<DashboardPage> {
           if (entity is File) appDataSize += await entity.length();
         }
       }
-      final apkSize = AppInfoService.getApkSize();
+      const channel = MethodChannel('com.edumesh.android/storage');
+      final info = await channel.invokeMethod<Map>('getStorageInfo');
+      final apkSize = info?['apkSize'] as int? ?? 65 * 1024 * 1024;
       final appUsedBytes = appDataSize + apkSize;
-      final storageInfo = await _storageService.getStorageInfo();
-      var totalBytes = (storageInfo['totalBytes'] ?? (128 * 1024 * 1024 * 1024)) as num;
+      var totalBytes = (info?['totalBytes'] ?? (128 * 1024 * 1024 * 1024)) as num;
       if (totalBytes == 0) totalBytes = 128 * 1024 * 1024 * 1024;
-      final availableBytes = storageInfo['availableBytes'] ?? (64 * 1024 * 1024 * 1024);
+      final availableBytes = info?['availableBytes'] ?? (64 * 1024 * 1024 * 1024);
       final otherUsedBytes = (totalBytes - availableBytes - appUsedBytes).clamp(0, totalBytes);
 
       if (mounted) {
@@ -138,7 +124,19 @@ class _DashboardPageState extends State<DashboardPage> {
         return;
       }
     } catch (_) { } try {
-      final local = await SaveResourceService.getDistinctSubjects();
+      final db = DBHelper();
+        final bookmarks = await db.getBookmarkedResources();
+        final downloads = await db.getDownloadedResources();
+        final subjectsSet = <String>{};
+        for (final r in bookmarks) {
+          final s = r['subject'] as String? ?? '';
+          if (s.isNotEmpty) subjectsSet.add(s);
+        }
+        for (final r in downloads) {
+          final s = r['subject'] as String? ?? '';
+          if (s.isNotEmpty) subjectsSet.add(s);
+        }
+        final local = subjectsSet.map((s) => {'name': s}).toList();
       if (mounted) {
         setState(() {
           _subjects = local;
@@ -166,7 +164,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   _buildSearchBar(context),
                   SizedBox(height: AppSpacing.xxl.h),
                   _buildRecentlyViewedSection(context),
-                  if (_recentService.recentFiles.isNotEmpty) SizedBox(height: AppSpacing.xxl.h),
                   _buildCategories(context),
                   SizedBox(height: AppSpacing.xxl.h),
                   _buildStorageSection(context),
@@ -186,7 +183,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
-      decoration: BoxDecoration(color: cs.surface, border: Border(bottom: BorderSide(color: cs.outlineVariant, width: 1))),
+      decoration: BoxDecoration(color: cs.surface, border: Border(bottom: BorderSide(color: cs.outlineVariant))),
       child: Row(
         children: [
                   Icon(Icons.school, color: cs.primary, size: 24.sp),
@@ -210,7 +207,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(AppSpacing.radiusFull), border: Border.all(color: textColor, width: 1)),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(AppSpacing.radiusFull), border: Border.all(color: textColor)),
       child: Text(_isChecking ? l10n.serverStatusChecking : (_isConnected ? l10n.serverStatusConnected : l10n.serverStatusDisconnected), style: tt.bodySmall?.copyWith(color: textColor)),
     );
   }
@@ -251,44 +248,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildRecentlyViewedSection(BuildContext context) {
-    final recentFiles = _recentService.recentFiles;
-    if (recentFiles.isEmpty) return const SizedBox.shrink();
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l10n.sectionRecentlyViewed, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
-        SizedBox(height: AppSpacing.md.h),
-        SizedBox(
-          height: 130.h,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
-            itemCount: recentFiles.length,
-            separatorBuilder: (_, __) => SizedBox(width: AppSpacing.md.w),
-            itemBuilder: (context, index) {
-              final file = recentFiles[index];
-              return Container(
-                width: 150.w,
-                padding: EdgeInsets.all(AppSpacing.md.w),
-                decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(AppSpacing.radiusLg.r), border: Border.all(color: cs.outlineVariant)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(file.icon, color: file.color, size: 24.sp),
-                    SizedBox(height: AppSpacing.sm.h),
-                    Text(file.title, style: tt.labelSmall?.copyWith(fontWeight: AppSpacing.weightStrong), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    Text(file.time, style: tt.labelSmall?.copyWith(fontSize: 10.sp, color: cs.onSurfaceVariant)),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildCategories(BuildContext context) {
@@ -343,10 +303,10 @@ class _DashboardPageState extends State<DashboardPage> {
       children: [
         Text(l10n.sectionLocalStorage, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
-        LuminaCard(
-          padding: EdgeInsets.all(AppSpacing.lg.w),
-          borderColor: cs.outlineVariant,
-          child: Column(
+        Card(
+          child: Padding(
+            padding: EdgeInsets.all(AppSpacing.lg.w),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (_totalStorageUsedStr != 'Calculating...') ...[
@@ -360,7 +320,8 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
         ),
-      ],
+      ),
+    ],
     );
   }
 

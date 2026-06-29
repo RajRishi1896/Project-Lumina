@@ -78,7 +78,7 @@ class _ResourcePageState extends State<ResourcePage> {
         ActivityTracker().logAction('view', resourceId: id, metadata: widget.subject).catchError((_) {});
         Navigator.push(context, MaterialPageRoute(builder: (_) => ResourceDetailPage(
           title: title, subject: widget.subject, grade: widget.grade,
-          resourceType: id, isInitiallySaved: false,
+          resourceType: id,
         )));
       },
       child: Padding(

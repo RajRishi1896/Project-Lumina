@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -11,6 +12,10 @@ import '../../../features/auth/data/auth_service.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../../features/auth/presentation/welcome_page.dart';
 import '../../../shared/widgets/offline_library_page.dart';
+
+final upperRE = RegExp(r'[A-Z]');
+final lowerRE = RegExp(r'[a-z]');
+final digitRE = RegExp(r'[0-9]');
 
 /// A bottom-sheet settings panel displayed inside the app.
 ///
@@ -123,7 +128,6 @@ class LuminaSettingsSheet extends ConsumerWidget {
                   builder: (ctx) => SimpleDialog(
                     title: Text(l10n.settingsLanguagePickerTitle),
                     children: appLanguageOptions
-                        .where((o) => o['code'] != null)
                         .map((o) => ListTile(
                               leading: o['code'] == locale.languageCode
                                   ? Icon(Icons.check, color: cs.primary)
@@ -171,10 +175,10 @@ class LuminaSettingsSheet extends ConsumerWidget {
             onTap: () async {
               await AuthService().logout();
               if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
+                unawaited(Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const WelcomePage()),
                   (route) => false,
-                );
+                ));
               }
             },
           ),
@@ -184,10 +188,6 @@ class LuminaSettingsSheet extends ConsumerWidget {
     );
   }
 }
-
-final _upperRE = RegExp(r'[A-Z]');
-final _lowerRE = RegExp(r'[a-z]');
-final _digitRE = RegExp(r'[0-9]');
 
 /// Displays a dialog for changing the student's password.
 ///
@@ -287,7 +287,7 @@ void _showChangePasswordDialog(BuildContext context) {
                   if (old.isEmpty) { setState(() => error = l10n.errorCurrentPasswordRequired); return; }
                   if (pwd.length < 8) { setState(() => error = l10n.errorPasswordMinLength); return; }
                   if (pwd != confirmPwdCtrl.text) { setState(() => error = l10n.errorPasswordsDoNotMatch); return; }
-                  if (!pwd.contains(_upperRE) || !pwd.contains(_lowerRE) || !pwd.contains(_digitRE)) {
+                  if (!pwd.contains(upperRE) || !pwd.contains(lowerRE) || !pwd.contains(digitRE)) {
                     setState(() => error = l10n.errorPasswordComplexity);
                     return;
                   }

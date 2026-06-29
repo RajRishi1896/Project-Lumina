@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <!-- Section: Head - metadata, styles, and theme detection -->
@@ -8,7 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
-<script src="/static/js/lumina.js"></script>
+<script src="/static/js/lumina.js" defer></script>
 <style>
   .error-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:2rem; width:100%; box-sizing:border-box; }
   .error-card { background:var(--bg-surface); border-radius:1rem; padding:3rem; max-width:480px; width:100%; text-align:center; box-shadow:var(--card-shadow); }
@@ -39,11 +39,11 @@
     </svg>
   </div>
   <!-- Section: Reason Badge - shows expired/denied/notfound -->
-  <div class="reason-badge" id="reasonBadge" data-i18n="error_access_denied_badge">Access Denied</div>
+  <div class="reason-badge {{BADGE}}" id="reasonBadge" data-i18n="error_access_denied_badge">{{BADGE_TEXT}}</div>
   <!-- Section: Title -->
-  <h1 id="errorTitle" data-i18n="error_access_denied_title">You don't have access</h1>
+  <h1 id="errorTitle" data-i18n="error_access_denied_title">{{TITLE}}</h1>
   <!-- Section: Message -->
-  <p id="errorMessage" data-i18n="error_access_denied_message">This page requires teacher or administrator privileges. Please log in with an authorized account.</p>
+  <p id="errorMessage" data-i18n="error_access_denied_message">{{MESSAGE}}</p>
   <!-- Section: Back Button - navigates to welcome page -->
   <div class="actions">
     <a href="/welcome" class="btn" id="backBtn">
@@ -67,47 +67,49 @@
  * Key names are stored statically; translations are applied on load
  * via data-i18n / data-i18n-body attributes processed by applyLanguage().
  */
-(function(){
-  const params = new URLSearchParams(window.location.search);
-  const reason = params.get('reason') || 'access_denied';
-  const titleEl = document.getElementById('errorTitle');
-  const msgEl = document.getElementById('errorMessage');
-  const badgeEl = document.getElementById('reasonBadge');
-  const btnEl = document.getElementById('backBtn');
+document.addEventListener('DOMContentLoaded', function() {
+  const reason = new URLSearchParams(window.location.search).get('reason');
+  if (!reason) return;
+  (function(){
+    const titleEl = document.getElementById('errorTitle');
+    const msgEl = document.getElementById('errorMessage');
+    const badgeEl = document.getElementById('reasonBadge');
+    const btnEl = document.getElementById('backBtn');
 
-  const messages = {
-    session_expired: {
-      titleKey: 'error_session_expired_title',
-      msgKey: 'error_session_expired_message',
-      badgeKey: 'error_session_expired_badge',
-      badgeClass: 'expired',
-      home: '/welcome'
-    },
-    access_denied: {
-      titleKey: 'error_access_denied_title',
-      msgKey: 'error_access_denied_message',
-      badgeKey: 'error_access_denied_badge',
-      badgeClass: 'denied',
-      home: '/welcome'
-    },
-    not_found: {
-      titleKey: 'error_not_found_title',
-      msgKey: 'error_not_found_message',
-      badgeKey: 'error_not_found_badge',
-      badgeClass: 'notfound',
-      home: '/welcome'
-    }
-  };
+    const messages = {
+      session_expired: {
+        titleKey: 'error_session_expired_title',
+        msgKey: 'error_session_expired_message',
+        badgeKey: 'error_session_expired_badge',
+        badgeClass: 'expired',
+        home: '/welcome'
+      },
+      access_denied: {
+        titleKey: 'error_access_denied_title',
+        msgKey: 'error_access_denied_message',
+        badgeKey: 'error_access_denied_badge',
+        badgeClass: 'denied',
+        home: '/welcome'
+      },
+      not_found: {
+        titleKey: 'error_not_found_title',
+        msgKey: 'error_not_found_message',
+        badgeKey: 'error_not_found_badge',
+        badgeClass: 'notfound',
+        home: '/welcome'
+      }
+    };
 
-  loadTranslations(currentLang).then(function() {
-    const info = messages[reason] || messages.access_denied;
-    titleEl.textContent = __(info.titleKey);
-    msgEl.textContent = __(info.msgKey);
-    badgeEl.textContent = __(info.badgeKey);
-    badgeEl.className = 'reason-badge ' + info.badgeClass;
-    btnEl.href = info.home;
-  });
-})();
+    loadTranslations(currentLang).then(function() {
+      const info = messages[reason] || messages.access_denied;
+      titleEl.textContent = __(info.titleKey);
+      msgEl.textContent = __(info.msgKey);
+      badgeEl.textContent = __(info.badgeKey);
+      badgeEl.className = 'reason-badge ' + info.badgeClass;
+      btnEl.href = info.home;
+    });
+  })();
+});
 </script>
 </body>
 </html>

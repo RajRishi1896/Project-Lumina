@@ -10,10 +10,10 @@ import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Query
 from app.database import UPLOAD_DIR, log_admin_action
-from app.async_db import db_conn
+from app.async_db import db_conn, db_exec, db_fetch, db_fetch_one
 from app.dependencies import verify_teacher
 from app.thumb_utils import get_zim_upload_max_size
-from app.models import CatalogResourceResponse, FileEntryResponse, LimitsResponse, UploadResponse, ZimUploadResponse, StatusResponse, DeleteResourceResponse
+from app.models import CatalogResourceResponse, FileEntryResponse, LimitsResponse, UploadResponse, ZimUploadResponse, DeleteResourceResponse
 
 router = APIRouter()
 
@@ -22,14 +22,9 @@ APPROVED_SUBJECTS = {
     'soc', 'his', 'geo', 'civ', 'cs', 'eco', 'com', 'gen',
 }
 
-def validate_subject(subject: str):
-    normalized = subject.lower().strip().replace(' ', '_')
-    if normalized not in APPROVED_SUBJECTS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid subject '{subject}'. Allowed: {', '.join(sorted(APPROVED_SUBJECTS))}"
-        )
-    return normalized
+def _check_disk_space():
+    """Check available disk space. Returns (total, used, free) bytes. Run via asyncio.to_thread."""
+    return shutil.disk_usage("/")
 
 
 @router.get("/resources", response_model=list[CatalogResourceResponse],
@@ -83,19 +78,8 @@ async def list_resources(
     if conditions:
         where_clause = " WHERE " + " AND ".join(conditions)
 
-    async with db_conn() as conn:
-        c = conn.cursor()
-        try:
-            query = f"SELECT id, title, filename, resource_type, subject, grade, language, source, license, status FROM resources{where_clause}"
-            c.execute(query, params)
-        except sqlite3.OperationalError:
-            try:
-                query = f"SELECT id, title, COALESCE(filename, file_path, ''), COALESCE(resource_type, type, ''), subject, grade, 'en', 'Unknown', 'Internal Only', status FROM resources{where_clause}"
-                c.execute(query, params)
-            except sqlite3.OperationalError:
-                query = f"SELECT id, title, file_path, type, subject, grade FROM resources{where_clause}"
-                c.execute(query, params)
-        rows = c.fetchall()
+    query = f"SELECT id, title, filename, resource_type, subject, grade, language, source, license, status FROM resources{where_clause}"
+    rows = await db_fetch(query, tuple(params))
 
     result = []
     # Batch get all mtimes in one thread call
@@ -193,13 +177,16 @@ async def upload_resource(title: str = Query(..., description="Display title"),
         HTTPException 409: If a duplicate resource exists and force_upload is not set.
         HTTPException 499: If client disconnects mid-upload.
     """
-    total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
+    total, used, free = await asyncio.to_thread(_check_disk_space)
     free_gb = free // (2**30)
     if free_gb < 2:
         logging.error("Upload rejected: Hub storage critically low (< 2GB free).")
         raise HTTPException(status_code=507, detail="Hub storage is full. Please delete older files before uploading.")
 
-    validated_subject = validate_subject(subject)
+    normalized = subject.lower().strip().replace(' ', '_')
+    if normalized not in APPROVED_SUBJECTS:
+        raise HTTPException(status_code=400, detail=f"Invalid subject '{subject}'. Allowed: {', '.join(sorted(APPROVED_SUBJECTS))}")
+    validated_subject = normalized
 
     original_filename = file.filename or 'unnamed_file'
     ext = os.path.splitext(original_filename)[1]
@@ -208,61 +195,55 @@ async def upload_resource(title: str = Query(..., description="Display title"),
 
     # Duplicate check
     if not force_upload:
-        async with db_conn() as conn:
-            c = conn.cursor()
-            try:
-                c.execute("""SELECT id FROM resources
-                    WHERE title = ? AND subject = ? AND grade = ?
-                    AND language = ? AND resource_type = ?
-                    AND status != 'deprecated'
-                """, (title, validated_subject, grade, language, type))
-            except sqlite3.OperationalError:
-                c.execute("""SELECT id FROM resources
-                    WHERE title = ? AND subject = ? AND grade = ?
-                    AND status != 'deprecated'
-                """, (title, validated_subject, grade))
-            existing = c.fetchone()
-            if existing:
-                raise HTTPException(
-                    status_code=409,
-                    detail=f"Duplicate resource exists (id={existing[0]}). Use force_upload=true to override."
-                )
+        try:
+            existing = await db_fetch_one("""SELECT id FROM resources
+                WHERE title = ? AND subject = ? AND grade = ?
+                AND language = ? AND resource_type = ?
+                AND status != 'deprecated'
+            """, (title, validated_subject, grade, language, type))
+        except sqlite3.OperationalError:
+            existing = await db_fetch_one("""SELECT id FROM resources
+                WHERE title = ? AND subject = ? AND grade = ?
+                AND status != 'deprecated'
+            """, (title, validated_subject, grade))
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Duplicate resource exists (id={existing[0]}). Use force_upload=true to override."
+            )
 
     chunk_size = 64 * 1024
     total_size = 0
-    with open(file_path, "wb") as f:
-        while True:
-            chunk = await file.read(chunk_size)
-            if not chunk:
-                break
-            total_size += len(chunk)
-            if total_size > 100 * 1024 * 1024:
+    chunk_buffer = b""
+    while True:
+        chunk = await file.read(chunk_size)
+        if not chunk:
+            break
+        chunk_buffer += chunk
+        total_size += len(chunk)
+        if total_size > 100 * 1024 * 1024:
+            try:
                 await asyncio.to_thread(os.remove, file_path)
-                raise HTTPException(status_code=400, detail="File too large")
-            await asyncio.to_thread(f.write, chunk)
+            except FileNotFoundError:
+                pass
+            raise HTTPException(status_code=400, detail="File too large")
+        if len(chunk_buffer) >= 4 * 1024 * 1024:
+            buf = chunk_buffer
+            await asyncio.to_thread(lambda: open(file_path, "ab" if os.path.exists(file_path) else "wb").write(buf))
+            chunk_buffer = b""
+    if chunk_buffer:
+        await asyncio.to_thread(lambda: open(file_path, "ab" if os.path.exists(file_path) else "wb").write(chunk_buffer))
     if request and await request.is_disconnected():
-        await asyncio.to_thread(os.remove, file_path)
+        try:
+            await asyncio.to_thread(os.remove, file_path)
+        except FileNotFoundError:
+            pass
         raise HTTPException(status_code=499, detail="Client disconnected")
     await file.close()
-    async with db_conn() as conn:
-        c = conn.cursor()
-        try:
-            c.execute("""INSERT INTO resources
-                (title, subject, grade, language, resource_type, filename, original_name, source, license, uploaded_by, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
-            """, (title, validated_subject, grade, language, type, uuid_name, original_filename, source, license, teacher_user))
-        except sqlite3.OperationalError:
-            try:
-                c.execute("""INSERT INTO resources
-                    (title, subject, grade, resource_type, filename, original_name, source, license, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved')
-                """, (title, validated_subject, grade, type, uuid_name, original_filename, source, license))
-            except sqlite3.OperationalError:
-                c.execute("""INSERT INTO resources
-                    (title, file_path, type, subject, grade)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (title, file_path, type, validated_subject, grade))
-        conn.commit()
+    await db_exec("""INSERT INTO resources
+        (title, subject, grade, language, resource_type, filename, original_name, source, license, uploaded_by, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
+    """, (title, validated_subject, grade, language, type, uuid_name, original_filename, source, license, teacher_user))
     return {"status": "success", "filename": uuid_name, "original_name": original_filename}
 
 
@@ -286,7 +267,7 @@ async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(v
         HTTPException 400: If the ZIP is invalid or contains path traversal.
         HTTPException 499: If client disconnects.
     """
-    total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
+    total, used, free = await asyncio.to_thread(_check_disk_space)
     free_gb = free // (2**30)
     if free_gb < 2:
         raise HTTPException(status_code=507, detail="Insufficient storage space for ZIM upload.")
@@ -301,18 +282,30 @@ async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(v
     chunk_size = 64 * 1024
     total_size = 0
     max_size = await get_zim_upload_max_size()
-    with open(archive_path, "wb") as f:
-        while True:
-            chunk = await file.read(chunk_size)
-            if not chunk:
-                break
-            total_size += len(chunk)
-            if total_size > max_size:
-                raise HTTPException(
-                    status_code=413,
-                    detail=f"ZIM upload exceeds maximum size limit of {max_size // (1024 * 1024)} MiB."
-                )
-            await asyncio.to_thread(f.write, chunk)
+
+    def _flush_chunks(chunks):
+        """Append chunks to file in a single open/write/close. Runs in worker thread."""
+        with open(archive_path, "ab") as f:
+            for c in chunks:
+                f.write(c)
+
+    buf = []
+    while True:
+        chunk = await file.read(chunk_size)
+        if not chunk:
+            break
+        buf.append(chunk)
+        total_size += len(chunk)
+        if total_size > max_size:
+            raise HTTPException(
+                status_code=413,
+                detail=f"ZIM upload exceeds maximum size limit of {max_size // (1024 * 1024)} MiB."
+            )
+        if len(buf) >= 64:  # flush every ~4MB
+            await asyncio.to_thread(_flush_chunks, buf)
+            buf = []
+    if buf:
+        await asyncio.to_thread(_flush_chunks, buf)
     if request and await request.is_disconnected():
         raise HTTPException(status_code=499, detail="Client disconnected")
 
@@ -321,8 +314,11 @@ async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(v
         try:
             with zipfile.ZipFile(archive_path, "r") as zip_ref:
                 for entry in zip_ref.namelist():
-                    if '..' in entry or entry.startswith('/'):
+                    info = zip_ref.getinfo(entry)
+                    if '..' in entry or entry.startswith('/') or (entry.endswith('/') and os.path.islink(entry)):
                         raise HTTPException(status_code=400, detail="ZIP contains invalid path entries.")
+                    if info.external_attr >> 28 == 0o120000:  # symlink
+                        raise HTTPException(status_code=400, detail="ZIP contains symlinks, rejected.")
                 zip_ref.extractall(tmp_dir)
             imported = []
             zim_target_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "zim_pages")
@@ -354,44 +350,6 @@ async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(v
 
     imported = await asyncio.to_thread(_process_archive)
     return {"status": "success", "imported": imported}
-
-
-@router.post("/teacher/import-server-file", response_model=StatusResponse,
-             summary="Import server-side file",
-             description="Registers an already-uploaded file on the server as a learning resource in the database.",
-             tags=["Resources"],
-             responses={400: {"description": "Invalid filename"}, 401: {"description": "Unauthorized"}, 404: {"description": "File not found on server"}})
-async def import_server_file(filename: str, title: str, type: str, subject: str = "General", teacher_user: str = Depends(verify_teacher)):
-    """Register an existing server file as a resource.
-
-    Args:
-        filename: Name of the file (must not contain path traversal).
-        title: Display title for the resource.
-        type: Resource type.
-        subject: Subject name (defaults to "General").
-
-    Returns:
-        Status dict indicating success.
-    Raises:
-        HTTPException 400: If filename contains invalid characters.
-        HTTPException 404: If file does not exist on the server.
-    """
-    if '..' in filename or '/' in filename or '\\' in filename:
-        raise HTTPException(status_code=400, detail="Invalid filename.")
-    file_path = os.path.join(UPLOAD_DIR, os.path.basename(filename))
-    if not await asyncio.to_thread(os.path.exists, file_path):
-        raise HTTPException(status_code=404, detail="File not found on server.")
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("DELETE FROM resources WHERE file_path = ?", (file_path,))
-        try:
-            c.execute("INSERT INTO resources (title, file_path, type, subject) VALUES (?, ?, ?, ?)",
-                      (title, file_path, type, subject))
-        except sqlite3.OperationalError:
-            c.execute("INSERT INTO resources (title, file_path, type) VALUES (?, ?, ?)",
-                      (title, file_path, type))
-        conn.commit()
-    return {"status": "success"}
 
 
 @router.delete("/teacher/resources/{resource_id}", response_model=DeleteResourceResponse,
@@ -452,7 +410,6 @@ async def delete_resource(resource_id: int, teacher_user: str = Depends(verify_t
         except Exception as e:
             logging.error(f"delete_resource: {e}")
             raise HTTPException(status_code=400, detail="Failed to delete resource")
-
 
 
 

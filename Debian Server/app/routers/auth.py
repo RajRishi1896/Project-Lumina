@@ -1,17 +1,56 @@
 """Authentication routes — register, login, token management, logout."""
 import uuid
+import time
 import sqlite3
 import asyncio
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Form, status
 from fastapi.responses import JSONResponse, RedirectResponse
-from app.database import DB_PATH, log_admin_action
-from app.async_db import db_conn
+from app.async_db import db_conn, db_exec, db_fetch_one, db_run
 from app.models import ScholarReg, StudentLoginRequest, TokenRefreshRequest, TokenRenewRequest, ScholarRegisterResponse, StudentLoginResponse, LoginTokenResponse, TokenResponse
-from app.dependencies import hash_password, verify_password, validate_password_strength
-from app.encryption import _generate_session_token, _make_encryption_key
+from app.dependencies import hash_password, verify_password, validate_password_strength, generate_session_token
 
 router = APIRouter()
+
+# ponytail: per-IP rate limiter, in-memory dict.
+# Zero external deps, survives ~250 concurrent.
+# Upgrade to Redis-backed if multi-node in future.
+_login_attempts: dict[str, list[float]] = {}
+_MAX_LOGIN_ATTEMPTS = 10
+_LOGIN_WINDOW = 60  # seconds
+_MAX_IPS = 500  # ponytail: cap dict size to prevent memory leak
+
+
+def _check_rate_limit(request: Request):
+    """Raise 429 if this IP exceeds max login attempts in the window."""
+    ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    window_start = now - _LOGIN_WINDOW
+    attempts = _login_attempts.get(ip, [])
+    # prune old entries
+    attempts = [t for t in attempts if t > window_start]
+    if len(attempts) >= _MAX_LOGIN_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many login attempts. Try again later.")
+    _login_attempts[ip] = attempts
+
+
+def _record_failed_login(request: Request):
+    """Record a failed login attempt for rate limiting."""
+    ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    # ponytail: cap dict size — drop oldest IPs if over limit
+    if len(_login_attempts) > _MAX_IPS:
+        cutoff = now - _LOGIN_WINDOW
+        stale = [k for k, v in _login_attempts.items() if not v or v[-1] < cutoff]
+        for k in stale[:len(stale) // 2 + 1]:
+            _login_attempts.pop(k, None)
+    attempts = _login_attempts.get(ip, [])
+    attempts.append(now)
+    _login_attempts[ip] = attempts
+
+
+def _secure_cookie(request) -> bool:
+    return request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "") == "https"
 
 
 @router.post("/register", response_model=ScholarRegisterResponse, summary="Register a new student scholar", description="Creates or updates a scholar account with username and optional password. Returns session, refresh, and persistent tokens on success.", tags=["Auth"], responses={400: {"description": "Registration failed or validation error"}})
@@ -28,6 +67,7 @@ async def register_scholar(scholar: ScholarReg, request: Request):
     Raises:
         HTTPException 400: If the password fails strength validation or registration otherwise fails.
     """
+    _check_rate_limit(request)
     async with db_conn() as conn:
         c = conn.cursor()
         display_name = scholar.name or scholar.username
@@ -52,13 +92,13 @@ async def register_scholar(scholar: ScholarReg, request: Request):
             c.execute("INSERT INTO scholars (id, username, name, hashed_password, reset_required) VALUES (?, ?, ?, ?, 0)", (full_id, scholar.username, display_name, hashed))
         conn.commit()
 
-        tokens = await _generate_session_token(full_id, "student", _make_encryption_key())
+        tokens = await generate_session_token(full_id, "student")
         resp_data = {"id": full_id, "token": tokens["session_token"]}
         resp_data["refresh_token"] = tokens["refresh_token"]
         resp_data["persistent_key"] = tokens["persistent_key"]
         resp_data["encryption_key"] = tokens["encryption_key"]
         response = JSONResponse(resp_data)
-        response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, samesite="strict", secure=request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "") == "https", max_age=86400)
+        response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, samesite="strict", secure=_secure_cookie(request), max_age=86400)
         return response
 
 
@@ -75,43 +115,45 @@ async def student_login(data: StudentLoginRequest, request: Request):
 
     Raises:
         HTTPException 401: If the account is not found or credentials are invalid.
+        HTTPException 429: If rate limited.
         HTTPException 500: If the login process fails unexpectedly.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT id, hashed_password, reset_required FROM scholars WHERE username = ?", (data.username,))
-        row = c.fetchone()
+    _check_rate_limit(request)
+    row = await db_fetch_one("SELECT id, hashed_password, reset_required FROM scholars WHERE username = ?", (data.username,))
 
-        if not row:
-            raise HTTPException(status_code=401, detail="Student account not found.")
+    if not row:
+        _record_failed_login(request)
+        raise HTTPException(status_code=401, detail="Student account not found.")
 
-        scholar_id, hashed_pwd, reset_req = row
+    scholar_id, hashed_pwd, reset_req = row
 
-        pwd_to_check = hashed_pwd
-        if not pwd_to_check:
-            raise HTTPException(status_code=401, detail="Password not set. Contact teacher to set your password.")
+    pwd_to_check = hashed_pwd
+    if not pwd_to_check:
+        _record_failed_login(request)
+        raise HTTPException(status_code=401, detail="Password not set. Contact teacher to set your password.")
 
-        if not verify_password(data.password, pwd_to_check):
-            raise HTTPException(status_code=401, detail="Invalid student credentials.")
+    password_ok = await asyncio.to_thread(verify_password, data.password, pwd_to_check)
+    if not password_ok:
+        _record_failed_login(request)
+        raise HTTPException(status_code=401, detail="Invalid student credentials.")
 
-        tokens = await _generate_session_token(scholar_id, "student", _make_encryption_key())
+    tokens = await generate_session_token(scholar_id, "student")
 
-        c.execute("SELECT name, grade FROM scholars WHERE id = ?", (scholar_id,))
-        srow = c.fetchone()
-        srow_name = srow[0] if srow else data.username
-        srow_grade = srow[1] if srow else ""
+    srow = await db_fetch_one("SELECT name, grade FROM scholars WHERE id = ?", (scholar_id,))
+    srow_name = srow[0] if srow else data.username
+    srow_grade = srow[1] if srow else ""
 
-        response = JSONResponse({
-            "status": "ok", "scholar_id": scholar_id,
-            "token": tokens["session_token"],
-            "refresh_token": tokens["refresh_token"],
-            "persistent_key": tokens["persistent_key"],
-            "encryption_key": tokens["encryption_key"],
-            "name": srow_name, "grade": srow_grade,
-            "reset_required": bool(reset_req)
-        })
-        response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, samesite="strict", max_age=86400, secure=request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "") == "https")
-        return response
+    response = JSONResponse({
+        "status": "ok", "scholar_id": scholar_id,
+        "token": tokens["session_token"],
+        "refresh_token": tokens["refresh_token"],
+        "persistent_key": tokens["persistent_key"],
+        "encryption_key": tokens["encryption_key"],
+        "name": srow_name, "grade": srow_grade,
+        "reset_required": bool(reset_req)
+    })
+    response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, samesite="strict", max_age=86400, secure=_secure_cookie(request))
+    return response
 
 
 @router.post("/token", response_model=LoginTokenResponse, summary="Authenticate a teacher or admin", description="Form-based login for teacher and admin users. Returns a bearer access token with user metadata including role, name, department, and scholar ID. Supports schema migration for the scholar_id column.", tags=["Auth"], responses={401: {"description": "Invalid credentials or account disabled"}})
@@ -126,58 +168,52 @@ async def login(response: Response, request: Request, username: str = Form(...),
 
     Returns:
         Dict with access token, token type, username, name, department, scholar ID, role, reset-required flag, and encryption key.
-
-    Raises:
-        HTTPException 401: If credentials are invalid or the account is disabled.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        try:
-            c.execute("SELECT hashed_password, name, department, scholar_id, reset_required, role FROM users WHERE username = ?", (username,))
-            row = c.fetchone()
-            reset_req = row[4] if row else 0
-            if username == "admin":
-                reset_req = 0
-        except sqlite3.OperationalError:
-            c.execute("SELECT hashed_password, username as name, 'General' as department, scholar_id FROM users WHERE username = ?", (username,))
-            row = c.fetchone()
-            if row and not row[3]:
-                fallback_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-                conn.execute("UPDATE users SET scholar_id = ? WHERE username = ?", (fallback_id, username))
-                conn.commit()
-                row = (row[0], row[1], row[2], fallback_id)
+    _check_rate_limit(request)
+    try:
+        row = await db_fetch_one("SELECT hashed_password, name, department, scholar_id, reset_required, role FROM users WHERE username = ?", (username,))
+        reset_req = row[4] if row else 0
+        if username == "admin":
             reset_req = 0
+    except sqlite3.OperationalError:
+        row = await db_fetch_one("SELECT hashed_password, username as name, 'General' as department, scholar_id FROM users WHERE username = ?", (username,))
+        if row and not row[3]:
+            fallback_id = f"LUMINA_01-T{uuid.uuid4().hex}"
+            await db_exec("UPDATE users SET scholar_id = ? WHERE username = ?", (fallback_id, username))
+            row = (row[0], row[1], row[2], fallback_id)
+        reset_req = 0
 
-        if not row:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")
-        if row[0] == 'DISABLED':
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="This account has been disabled by an administrator.")
-        if not verify_password(password, row[0]):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")
+    if not row:
+        _record_failed_login(request)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")
+    if row[0] == 'DISABLED':
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="This account has been disabled by an administrator.")
+    password_ok = await asyncio.to_thread(verify_password, password, row[0])
+    if not password_ok:
+        _record_failed_login(request)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")
 
-        user_role = row[5] if (row and len(row) > 5) else ("admin" if username == "admin" else "teacher")
-        tokens = await _generate_session_token(username, user_role, _make_encryption_key())
-        scholar_id = row[3] if (row and row[3]) else None
-        if not scholar_id:
-            scholar_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-            conn.execute("UPDATE users SET scholar_id = ? WHERE username = ?", (scholar_id, username))
-            conn.commit()
-        response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, max_age=86400, samesite="strict", secure=request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "") == "https")
-        return {
-            "access_token": tokens["session_token"],
-            "token_type": "bearer",
-            "username": username,
-            "name": row[1] or username,
-            "department": row[2] or "General",
-            "scholar_id": scholar_id,
-            "role": user_role,
-            "reset_required": reset_req or 0,
-            "encryption_key": tokens["encryption_key"]
-        }
+    user_role = row[5] if (row and len(row) > 5) else ("admin" if username == "admin" else "teacher")
+    tokens = await generate_session_token(username, user_role)
+    scholar_id = row[3] if (row and row[3]) else None
+    if not scholar_id:
+        scholar_id = f"LUMINA_01-T{uuid.uuid4().hex}"
+        await db_exec("UPDATE users SET scholar_id = ? WHERE username = ?", (scholar_id, username))
+    response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, max_age=86400, samesite="strict", secure=_secure_cookie(request))
+    return {
+        "access_token": tokens["session_token"],
+        "token_type": "bearer",
+        "username": username,
+        "name": row[1] or username,
+        "department": row[2] or "General",
+        "scholar_id": scholar_id,
+        "role": user_role,
+        "reset_required": reset_req or 0,
+        "encryption_key": tokens["encryption_key"]
+    }
 
 
-@router.get("/logout", summary="Log out current user", description="Deletes the session, refresh token, and persistent key from the database and clears the lumina_session cookie. Redirects to the welcome page.", tags=["Auth"])
-@router.post("/logout", summary="Log out current user", description="Deletes the session, refresh token, and persistent key from the database and clears the lumina_session cookie. Redirects to the welcome page.", tags=["Auth"])
+@router.api_route("/logout", methods=["GET", "POST"], summary="Log out current user", description="Deletes the session, refresh token, and persistent key from the database and clears the lumina_session cookie. Redirects to the welcome page.", tags=["Auth"])
 async def logout(request: Request, response: Response):
     """Log out the current user and clear session data.
 
@@ -228,7 +264,7 @@ async def refresh_session(data: TokenRefreshRequest, request: Request):
         username, role = row[0], row[1]
         c.execute("UPDATE refresh_tokens SET used = 1 WHERE token = ?", (data.refresh_token,))
         conn.commit()
-        tokens = await _generate_session_token(username, role, _make_encryption_key())
+        tokens = await generate_session_token(username, role)
         return {
             "token": tokens["session_token"],
             "refresh_token": tokens["refresh_token"],
@@ -265,7 +301,7 @@ async def renew_session(data: TokenRenewRequest, request: Request):
         username, role = row[0], row[1]
         c.execute("UPDATE persistent_keys SET used = 1 WHERE token = ?", (data.persistent_key,))
         conn.commit()
-        tokens = await _generate_session_token(username, role, _make_encryption_key())
+        tokens = await generate_session_token(username, role)
         return {
             "token": tokens["session_token"],
             "refresh_token": tokens["refresh_token"],

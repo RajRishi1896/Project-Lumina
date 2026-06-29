@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,7 +7,6 @@ import 'package:edumesh_android/core/models/resource_model.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
-import 'package:edumesh_android/shared/services/save_resource_service.dart';
 import 'package:edumesh_android/shared/services/download_service.dart';
 import 'package:edumesh_android/shared/services/download_queue.dart';
 import 'package:edumesh_android/shared/services/connectivity_service.dart';
@@ -14,8 +14,9 @@ import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
 import 'package:edumesh_android/shared/widgets/resource_thumbnail.dart';
 import 'package:edumesh_android/shared/widgets/video_player_page.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
-import 'package:edumesh_android/core/services/recent_files_service.dart';
+import 'package:edumesh_android/core/services/activity_tracker.dart';
 import 'package:edumesh_android/core/services/catalog_service.dart';
+import 'package:edumesh_android/core/utils/file_utils.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A page that lists resources matching a given subject, grade, and type.
@@ -78,7 +79,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
 
   void _onQueueChanged() {
     if (mounted) setState(() {});
-    DownloadService().getAllDownloadedIds().then((ids) {
+    DBHelper().getDownloadedIds().then((ids) {
       if (mounted) setState(() => _downloadedIds = ids);
     });
   }
@@ -89,11 +90,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       if (!mounted) return;
       final all = (resp.data as List?)?.cast<Map<String, dynamic>>() ?? [];
       final parsed = all.map((j) => ResourceModel.fromJson(j)).toList();
-      final targetType = switch (widget.resourceType) {
-        'textbooks' => 'textbook',
-        'pyqs' => 'pyq',
-        _ => widget.resourceType,
-      };
+      final targetType = _resolveType(widget.resourceType);
       setState(() {
         items = parsed.where((r) =>
           r.subject == widget.subject &&
@@ -103,11 +100,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
         _loading = false;
       });
       return;
-    } catch (_) { } final targetType = switch (widget.resourceType) {
-      'textbooks' => 'textbook',
-      'pyqs' => 'pyq',
-      _ => widget.resourceType,
-    };
+    } catch (_) { } final targetType = _resolveType(widget.resourceType);
     try {
       final cached = await CatalogService().getCatalog(
         subject: widget.subject,
@@ -138,7 +131,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
               title: r['title'] as String? ?? '',
               subject: r['subject'] as String? ?? '',
               grade: r['grade'] as String? ?? '',
-              type: SaveResourceService.parseType(r['type'] as String? ?? ''),
+              type: parseResourceType(r['type'] as String? ?? ''),
               pdfUrl: r['local_path'] as String?,
             ))
             .toList();
@@ -152,8 +145,8 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
 
   Future<void> _loadStatus() async {
     try {
-      final dlIds = await DownloadService().getAllDownloadedIds();
-      final pdIds = await DownloadService().getAllPendingIds();
+      final dlIds = await DBHelper().getDownloadedIds();
+      final pdIds = await DBHelper().getPendingIds();
       final bmIds = await DBHelper().getBookmarkedIds();
       if (mounted) {
         setState(() {
@@ -164,11 +157,42 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       }
     } catch (_) { } }
 
-  String _formatFileSize(int bytes, AppLocalizations l10n) {
-    if (bytes < 1024) return '$bytes${l10n.unitBytes}';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}${l10n.unitKilobytes}';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}${l10n.unitMegabytes}';
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)}${l10n.unitGigabytes}';
+  static String _resolveType(String resourceType) => switch (resourceType) {
+    'textbooks' => 'textbook',
+    'pyqs' => 'pyq',
+    _ => resourceType,
+  };
+
+  static Future<bool> _toggleSave(
+    String id, {
+    String? title,
+    String? subject,
+    String? grade,
+    String? type,
+    String? pdfUrl,
+  }) async {
+    try {
+      final db = DBHelper();
+      final bookmarked = await db.getBookmarkedIds();
+      if (bookmarked.contains(id)) {
+        await db.removeBookmark(id);
+        unawaited(ActivityTracker().logAction('unsave', resourceId: id, metadata: title ?? ''));
+        return false;
+      }
+      await db.upsertBookmark(
+        id,
+        title ?? 'Untitled',
+        subject ?? '',
+        grade ?? '',
+        type ?? '',
+        pdfUrl: pdfUrl,
+      );
+      unawaited(ActivityTracker().logAction('save', resourceId: id, metadata: title ?? ''));
+      return true;
+    } catch (e) {
+      debugPrint('Error toggling bookmark: $e');
+      return false;
+    }
   }
 
   Widget _buildDownloadButton(ResourceModel item, ColorScheme cs) {
@@ -240,7 +264,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
               final headResp = await ApiClient.dio.head(url);
               final cl = headResp.headers.value('content-length');
               if (cl != null) {
-                sizeLabel = _formatFileSize(int.tryParse(cl) ?? 0, l10n);
+                sizeLabel = formatFileSize(int.tryParse(cl) ?? 0, l10n);
               }
             }
           } catch (_) {
@@ -261,13 +285,13 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
           );
           if (confirmed != true) return;
 
-          DownloadQueue().enqueue(resourceId, url, fileName,
+          unawaited(DownloadQueue().enqueue(resourceId, url, fileName,
             title: item.title,
             subject: item.subject,
             grade: item.grade,
             type: item.type.name,
             mtime: item.mtime,
-          );
+          ));
           if (mounted) setState(() => _pendingIds.add(resourceId));
           messenger.showSnackBar(SnackBar(
             content: Text(l10n.snackbarAddedToQueue),
@@ -335,24 +359,6 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text(l10n.snackbarNotDownloaded(item.title)),
-                              duration: const Duration(seconds: 4),
-                              action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
-                                final rawUrl = item.pdfUrl;
-                                final url = (rawUrl != null && rawUrl.isNotEmpty) ? rawUrl : '/files/${item.id}';
-                                DownloadQueue().enqueue(item.id, url, '${item.title}.pdf',
-                                  title: item.title, subject: item.subject, grade: item.grade,
-                                  type: item.type.name, mtime: item.mtime,
-                                );
-                                if (mounted) setState(() => _pendingIds.add(item.id));
-                              }),
-                            ));
-                            return;
-                          }
-                          if (!isDl && !isOnline) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(l10n.snackbarNotDownloaded(item.title)),
-                              duration: const Duration(seconds: 4),
                               action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
                                 final rawUrl = item.pdfUrl;
                                 final url = (rawUrl != null && rawUrl.isNotEmpty) ? rawUrl : '/files/${item.id}';
@@ -396,33 +402,20 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                               }
                             }
                           }
-                          if (!mounted) return;
-                          RecentFilesService().addRecentFile(
-                            RecentFile(
-                              id: item.id,
-                              title: item.title,
-                              type: item.type.name,
-                              time: l10n.relativeTimeJustNow,
-                              icon: item.type == ResourceType.videos
-                                  ? Icons.videocam_rounded
-                                  : Icons.picture_as_pdf_rounded,
-                              color: LuminaColors.academicTeal,
-                            ),
-                          );
                           if (item.type == ResourceType.videos) {
-                            Navigator.of(this.context).push(MaterialPageRoute(
+                            unawaited(Navigator.of(this.context).push(MaterialPageRoute(
                               builder: (_) => VideoPlayerPage(
                                 title: item.title,
                                 videoUrl: url,
                               ),
-                            ));
+                            )));
                           } else {
-                            Navigator.of(this.context).push(MaterialPageRoute(
+                            unawaited(Navigator.of(this.context).push(MaterialPageRoute(
                               builder: (_) => PdfViewerPage(
                                 title: item.title,
                                 pdfUrl: url,
                               ),
-                            ));
+                            )));
                           }
                         },
                         subtitle: Text(l10n.resourceSubtitle(item.subject, item.grade)),
@@ -435,7 +428,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                 color: _bookmarkedIds.contains(item.id) ? cs.primary : cs.onSurfaceVariant,
                               ),
                               onPressed: () async {
-                                final saved = await SaveResourceService.toggleSaveStatus(
+                                final saved = await _toggleSave(
                                   item.id,
                                   title: item.title,
                                   subject: item.subject,

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <!-- Section: Head — theme detection, metadata, detail page styles -->
 <head>
@@ -11,13 +11,6 @@
 <link rel="stylesheet" href="/static/css/lumina.css">
     <style>
         /* === Layout and component styles for student detail page === */
-        [data-theme="dark"] .logo-light { display: none; }
-        .logo-dark { display: none; }
-        [data-theme="dark"] .logo-dark { display: block; }
-        .sidebar-brand-horizontal { display: flex; align-items: center; padding: 0.5rem 0; }
-        .sidebar-brand-horizontal svg { width: 100%; height: auto; }
-        .mobile-brand-horizontal { display: flex; align-items: center; }
-        .mobile-brand-horizontal svg { max-width: 100%; height:32px; max-height: 36px; }
         .student-detail-container { width: 100%; max-width: 900px; }
         .back-link { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--teal); text-decoration: none; font-weight: 700; margin-bottom: 1.5rem; transition: opacity var(--transition); }
         .back-link:hover { opacity: 0.75; }
@@ -70,8 +63,8 @@
     <!-- Section: Mobile Header — hamburger toggle + brand -->
     <header class="mobile-header">
         <div class="mobile-brand-horizontal">
-            <img class="logo-light" src="/static/assets/logo-light.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina">
-            <img class="logo-dark" src="/static/assets/logo-dark.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina">
+            <img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina">
+            <img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina">
         </div>
         <button class="menu-toggle" id="btn-toggleMobileMenu" data-i18n-aria-label="sidebar.toggle_menu" aria-label="Toggle Menu">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -84,8 +77,8 @@
     <!-- Section: Sidebar — nav links, user info, theme toggle, logout -->
     <aside>
         <a href="/static/index" class="sidebar-brand-horizontal">
-            <img class="logo-light" src="/static/assets/logo-light.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina">
-            <img class="logo-dark" src="/static/assets/logo-dark.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina">
+            <img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina">
+            <img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina">
         </a>
         <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
         <div class="sidebar-divider"></div>
@@ -188,12 +181,12 @@
         </a>
     </div>
 
-    <script src="/static/js/lumina.js"></script>
+    <script src="/static/js/lumina.js" defer></script>
     <!-- Section: Inline Scripts — student analytics rendering, API fetching -->
     <script>
         const params = new URLSearchParams(window.location.search);
         const studentId = params.get('id') || '';
-        const studentName = params.get('name') || __('student_unknown');
+        const studentName = params.get('name') || 'Student';
         const studentGrade = params.get('grade') || '';
         const weekMinutes = parseInt(params.get('week')) || 0;
         const streakDays = parseInt(params.get('streak')) || 0;
@@ -294,7 +287,7 @@
                 return;
             }
             renderHeader();
-            apiFetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); })
+            fetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); })
             .then(function(analytics){
                 renderStats((analytics.study_minutes_this_week || 0), analytics.streak_days || 0, analytics.resources_saved || 0);
                 renderSubjects(analytics.subjects || []);

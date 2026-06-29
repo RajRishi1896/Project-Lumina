@@ -245,27 +245,7 @@
   "dialogSetNameBody": "Veuillez entrer votre nom pour personnaliser votre expérience.",
   "buttonSave": "Enregistrer",
   "buttonSkip": "Passer",
-  "bottomNavStudents": "Étudiants",
   "zimArticleNotFound": "Article introuvable",
-  "teacherPageTitle": "Étudiants",
-  "teacherFilterByGrade": "Filtrer par niveau",
-  "teacherAllGrades": "Tous les niveaux",
-  "teacherCouldNotLoadStudents": "Impossible de charger les étudiants",
-  "teacherCheckHubConnection": "Vérifiez la connexion au Hub et réessayez.",
-  "teacherRetry": "Réessayer",
-  "teacherSearchStudentsHint": "Rechercher des étudiants...",
-  "teacherNoStudentsMatchSearch": "Aucun étudiant ne correspond à votre recherche.",
-  "teacherNoStudentsFound": "Aucun étudiant trouvé.",
-  "teacherShowing": "Affichage : {grade}",
-  "teacherLabelToday": "aujourd'hui",
-  "teacherLabelStreak": "série",
-  "teacherLabelSaved": "enregistré",
-  "teacherLabelDownloaded": "téléchargé",
-  "teacherOverview": "Aperçu",
-  "teacherThisMonth": "Ce mois",
-  "teacherShowMore": "Afficher plus ({remaining} restants)",
-  "teacherCouldNotLoadAnalytics": "Impossible de charger les analytiques",
-  "teacherNoActivityRecorded": "Aucune activité enregistrée pour l'instant.",
   "sectionSubjects": "Matières",
   "sectionSubjectsEmpty": "Aucune matière disponible",
   "resourcePageResources": "Ressources",
@@ -1210,80 +1190,8 @@
   "@buttonSkip": {
     "description": "Button to skip a non-required action, e.g. setting a display name"
   },
-  "@bottomNavStudents": {
-    "description": "Bottom navigation tab label for the students/teacher monitor page"
-  },
   "@zimArticleNotFound": {
     "description": "Snackbar message when a ZIM article fetch returns empty content"
-  },
-  "@teacherPageTitle": {
-    "description": "AppBar title on the teacher student monitor page"
-  },
-  "@teacherFilterByGrade": {
-    "description": "Tooltip for the grade filter popup menu button"
-  },
-  "@teacherAllGrades": {
-    "description": "Menu item text to clear grade filter and show all students"
-  },
-  "@teacherCouldNotLoadStudents": {
-    "description": "Error heading when student list fails to load"
-  },
-  "@teacherCheckHubConnection": {
-    "description": "Error subtitle suggesting the user check hub connectivity"
-  },
-  "@teacherRetry": {
-    "description": "Retry button text for teacher page error state"
-  },
-  "@teacherSearchStudentsHint": {
-    "description": "Hint text in the search field for filtering students"
-  },
-  "@teacherNoStudentsMatchSearch": {
-    "description": "Empty state text when student search yields no results"
-  },
-  "@teacherNoStudentsFound": {
-    "description": "Empty state text when no students are registered"
-  },
-  "@teacherShowing": {
-    "description": "Label on the grade filter banner showing which grade is selected",
-    "placeholders": {
-      "grade": {
-        "type": "String",
-        "example": "Grade 10"
-      }
-    }
-  },
-  "@teacherLabelToday": {
-    "description": "Label below the today-minutes stat chip in teacher student card"
-  },
-  "@teacherLabelStreak": {
-    "description": "Label below the streak stat chip in teacher student card"
-  },
-  "@teacherLabelSaved": {
-    "description": "Label below the saved count stat chip in teacher student card"
-  },
-  "@teacherLabelDownloaded": {
-    "description": "Label below the downloaded count stat chip in teacher student card"
-  },
-  "@teacherOverview": {
-    "description": "Section header for the overview stat cards on the student progress page"
-  },
-  "@teacherThisMonth": {
-    "description": "Stat box label for monthly study minutes"
-  },
-  "@teacherShowMore": {
-    "description": "Button text to load more activity items, showing remaining count",
-    "placeholders": {
-      "remaining": {
-        "type": "int",
-        "example": "12"
-      }
-    }
-  },
-  "@teacherCouldNotLoadAnalytics": {
-    "description": "Error text displayed when analytics data fails to load"
-  },
-  "@teacherNoActivityRecorded": {
-    "description": "Empty state text in the activity section when no history exists"
   },
   "@sectionSubjects": {
     "description": "Section header for the subject categories grid on the dashboard"

@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
-import 'package:edumesh_android/shared/services/save_resource_service.dart';
+import 'package:edumesh_android/core/utils/file_utils.dart';
 import 'package:edumesh_android/shared/services/download_service.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
@@ -90,10 +91,19 @@ class _SavedListByTypeState extends State<_SavedListByType> {
 
   Future<void> _loadData() async {
     try {
+      final rows = await DBHelper().getBookmarkedResources();
+      final all = rows.map((r) => ResourceModel(
+        id: r['resource_id'] as String? ?? '',
+        title: r['title'] as String? ?? '',
+        subject: r['subject'] as String? ?? '',
+        grade: r['grade'] as String? ?? '',
+        type: parseResourceType(r['type'] as String? ?? ''),
+        pdfUrl: r['pdf_url'] as String?,
+      )).toList();
       final items = widget.type != null
-          ? await SaveResourceService.getSavedByType(widget.type!)
-          : await SaveResourceService.getAllSavedResourceModels();
-      final ids = await DownloadService().getAllDownloadedIds();
+          ? all.where((r) => r.type == widget.type!).toList()
+          : all;
+      final ids = await DBHelper().getDownloadedIds();
       if (mounted) {
         setState(() {
           _savedItems = items;
@@ -103,6 +113,22 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<bool> _toggleSave(String id) async {
+    try {
+      final db = DBHelper();
+      final bookmarked = await db.getBookmarkedIds();
+      if (bookmarked.contains(id)) {
+        await db.removeBookmark(id);
+        return false;
+      }
+      await db.upsertBookmark(id, '', '', '', '');
+      return true;
+    } catch (e) {
+      debugPrint('Error toggling bookmark: $e');
+      return false;
     }
   }
 
@@ -118,13 +144,13 @@ class _SavedListByTypeState extends State<_SavedListByType> {
     }
     if (!mounted) return;
     if (item.type == ResourceType.videos) {
-      Navigator.push(context, MaterialPageRoute(
+      unawaited(Navigator.push(context, MaterialPageRoute(
         builder: (_) => VideoPlayerPage(title: item.title, videoUrl: url),
-      ));
+      )));
     } else {
-      Navigator.push(context, MaterialPageRoute(
+      unawaited(Navigator.push(context, MaterialPageRoute(
         builder: (_) => PdfViewerPage(title: item.title, pdfUrl: url),
-      ));
+      )));
     }
   }
 
@@ -254,7 +280,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                 IconButton(
                   icon: Icon(Icons.bookmark_remove, color: cs.error),
                   onPressed: () async {
-                    await SaveResourceService.toggleSaveStatus(item.id);
+                    await _toggleSave(item.id);
                     if (mounted) {
                       setState(() {
                         _savedItems.removeWhere((r) => r.id == item.id);

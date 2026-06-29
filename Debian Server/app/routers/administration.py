@@ -90,12 +90,35 @@ async def list_admins(admin_user: str = Depends(verify_admin)):
     async with db_conn() as conn:
         c = conn.cursor()
         try:
-            c.execute("SELECT username, name, department, reset_required FROM users WHERE role = 'admin' ORDER BY name ASC")
+            c.execute("SELECT username, name, department, scholar_id, reset_required FROM users WHERE role = 'admin' ORDER BY name ASC")
             rows = c.fetchall()
         except sqlite3.OperationalError:
-            c.execute("SELECT username, name, department, '' as reset_required FROM users WHERE username != 'admin' ORDER BY name ASC")
+            c.execute("SELECT username, name, department, '' as scholar_id, '' as reset_required FROM users WHERE username != 'admin' ORDER BY name ASC")
             rows = c.fetchall()
-    return [{"username": r[0], "name": r[1] or r[0], "department": r[2] or "System", "reset_required": r[3] or 0} for r in rows]
+    return [{"username": r[0], "name": r[1] or r[0], "department": r[2] or "System", "scholar_id": r[3] or "", "reset_required": r[4] or 0} for r in rows]
+
+
+async def _create_user(data: TeacherCreate, admin_user: str, role: str, default_dept: str):
+    async with db_conn() as conn:
+        try:
+            c = conn.cursor()
+            c.execute("SELECT username FROM users WHERE username = ?", (data.username,))
+            if c.fetchone():
+                raise HTTPException(status_code=400, detail="Username already exists.")
+            display_name = data.name or data.username
+            dept = data.department or default_dept
+            user_id = f"LUMINA_01-T{uuid.uuid4().hex}"
+            hashed_pwd = hash_password(data.password)
+            c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, ?)",
+                      (data.username, hashed_pwd, display_name, dept, user_id, role))
+            conn.commit()
+            await log_admin_action(admin_user, f"created {role} account '{data.username}'")
+            return {"status": "success", "username": data.username, "name": display_name, "scholar_id": user_id}
+        except HTTPException:
+            raise
+        except Exception as e:
+            logging.error(f"create_{role}: {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to create {role} account")
 
 
 @router.post("/api/admin/create", response_model=AdminCreateResponse,
@@ -104,36 +127,7 @@ async def list_admins(admin_user: str = Depends(verify_admin)):
              tags=["Admin"],
              responses={400: {"description": "Username already exists or creation failed"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
 async def create_admin(data: TeacherCreate, admin_user: str = Depends(verify_admin)):
-    """Create a new admin account.
-
-    Args:
-        data: TeacherCreate payload with username, password, name, and department.
-
-    Returns:
-        Dict with status, username, name, and scholar_id.
-    Raises:
-        HTTPException 400: If the username is already taken.
-    """
-    async with db_conn() as conn:
-        try:
-            c = conn.cursor()
-            c.execute("SELECT username FROM users WHERE username = ?", (data.username,))
-            if c.fetchone():
-                raise HTTPException(status_code=400, detail="Username already exists.")
-            display_name = data.name or data.username
-            dept = data.department or "System"
-            admin_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-            hashed_pwd = hash_password(data.password)
-            c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, 'admin')",
-                      (data.username, hashed_pwd, display_name, dept, admin_id))
-            conn.commit()
-            await log_admin_action(admin_user, f"created admin account '{data.username}'")
-            return {"status": "success", "username": data.username, "name": display_name, "scholar_id": admin_id}
-        except HTTPException:
-            raise
-        except Exception as e:
-            logging.error(f"create_admin: {e}")
-            raise HTTPException(status_code=400, detail="Failed to create admin account")
+    return await _create_user(data, admin_user, "admin", "System")
 
 
 @router.post("/api/admin/create-teacher", response_model=AdminCreateResponse,
@@ -142,36 +136,7 @@ async def create_admin(data: TeacherCreate, admin_user: str = Depends(verify_adm
              tags=["Admin"],
              responses={400: {"description": "Username already exists or creation failed"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
 async def create_teacher(data: TeacherCreate, admin_user: str = Depends(verify_admin)):
-    """Create a new teacher account (admin action).
-
-    Args:
-        data: TeacherCreate payload with username, password, name, and department.
-
-    Returns:
-        Dict with status, username, name, and scholar_id.
-    Raises:
-        HTTPException 400: If the username is already taken.
-    """
-    async with db_conn() as conn:
-        try:
-            c = conn.cursor()
-            c.execute("SELECT username FROM users WHERE username = ?", (data.username,))
-            if c.fetchone():
-                raise HTTPException(status_code=400, detail="Username already exists.")
-            display_name = data.name or data.username
-            dept = data.department or "General"
-            teacher_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-            hashed_pwd = hash_password(data.password)
-            c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, 'teacher')",
-                      (data.username, hashed_pwd, display_name, dept, teacher_id))
-            conn.commit()
-            await log_admin_action(admin_user, f"created teacher account '{data.username}'")
-            return {"status": "success", "username": data.username, "name": display_name, "scholar_id": teacher_id}
-        except HTTPException:
-            raise
-        except Exception as e:
-            logging.error(f"create_teacher: {e}")
-            raise HTTPException(status_code=400, detail="Failed to create teacher account")
+    return await _create_user(data, admin_user, "teacher", "General")
 
 
 @router.post("/api/admin/create-student", response_model=AdminCreateResponse,

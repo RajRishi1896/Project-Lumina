@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../shared/widgets/lumina_button.dart';
 import '../../../shared/widgets/lumina_stepper.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../pages/app_shell.dart';
@@ -11,6 +10,10 @@ import '../../../core/network/api_client.dart';
 import '../../../widgets/connection_gate.dart';
 import 'profile_setup_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
+
+final upperRE = RegExp(r'[A-Z]');
+final lowerRE = RegExp(r'[a-z]');
+final digitRE = RegExp(r'[0-9]');
 
 /// A page for student registration and login.
 ///
@@ -42,10 +45,6 @@ class _LoginPageState extends State<LoginPage> {
   // Gatekeeper state
   bool _isConnected = false;
   
-  static final _upperRE = RegExp(r'[A-Z]');
-  static final _lowerRE = RegExp(r'[a-z]');
-  static final _digitRE = RegExp(r'[0-9]');
-
   @override
   void initState() {
     super.initState();
@@ -78,7 +77,7 @@ class _LoginPageState extends State<LoginPage> {
     }
     if (_isRegisterMode) {
       final pwd = _passwordController.text;
-      if (pwd.length < 8 || !pwd.contains(_upperRE) || !pwd.contains(_lowerRE) || !pwd.contains(_digitRE)) {
+      if (pwd.length < 8 || !pwd.contains(upperRE) || !pwd.contains(lowerRE) || !pwd.contains(digitRE)) {
         setState(() => _errorMessage = AppLocalizations.of(context)!.errorPasswordStrength);
         return;
       }
@@ -100,11 +99,11 @@ class _LoginPageState extends State<LoginPage> {
         if (success) {
           setState(() => _isLoading = false);
           if (!mounted) return;
-          Navigator.of(context).pushReplacement(
+          unawaited(Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (_) => ProfileSetupPage(username: _usernameController.text),
             ),
-          );
+          ));
         } else {
           setState(() {
             _isLoading = false;
@@ -123,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
     if (mounted) {
       if (result == 'reset_required') {
         setState(() => _isLoading = false);
-        _showResetPasswordDialog();
+        unawaited(_showResetPasswordDialog());
       } else if (result == 'ok') {
         setState(() => _isLoading = false);
         if (!mounted) return;
@@ -131,20 +130,20 @@ class _LoginPageState extends State<LoginPage> {
         if (!hasName && mounted) {
           final nameSet = await _showSetNameDialog(auth);
           if (!nameSet && mounted) {
-            Navigator.of(context).pushReplacement(
+            unawaited(Navigator.of(context).pushReplacement(
               MaterialPageRoute(
                 builder: (_) => const ConnectionGate(child: AppShell()),
               ),
-            );
+            ));
             return;
           }
         }
         if (!mounted) return;
-        Navigator.of(context).pushReplacement(
+        unawaited(Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => const ConnectionGate(child: AppShell()),
           ),
-        );
+        ));
       } else if (result == 'local_only') {
         setState(() => _isLoading = false);
         if (!mounted) return;
@@ -155,11 +154,11 @@ class _LoginPageState extends State<LoginPage> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        Navigator.of(context).pushReplacement(
+        unawaited(Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => const ConnectionGate(child: AppShell()),
           ),
-        );
+        ));
       } else {
         setState(() {
           _isLoading = false;
@@ -250,7 +249,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(null),
+                  onPressed: () => Navigator.of(ctx).pop(),
                   child: Text(AppLocalizations.of(context)!.buttonCancel),
                 ),
                 ElevatedButton(
@@ -269,7 +268,7 @@ class _LoginPageState extends State<LoginPage> {
                       setDialogState(() => dialogError = AppLocalizations.of(context)!.errorPasswordsDoNotMatch);
                       return;
                     }
-                    if (!pwd.contains(_upperRE) || !pwd.contains(_lowerRE) || !pwd.contains(_digitRE)) {
+                    if (!pwd.contains(upperRE) || !pwd.contains(lowerRE) || !pwd.contains(digitRE)) {
                       setDialogState(() => dialogError = AppLocalizations.of(context)!.errorPasswordComplexity);
                       return;
                     }
@@ -299,11 +298,11 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
+      unawaited(Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => const ConnectionGate(child: AppShell()),
         ),
-      );
+      ));
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -460,9 +459,12 @@ class _LoginPageState extends State<LoginPage> {
                       if (_isLoading)
                         Center(child: CircularProgressIndicator(color: cs.tertiary))
                       else
-                        LuminaButton(
-                          label: _isRegisterMode ? AppLocalizations.of(context)!.buttonRegister : AppLocalizations.of(context)!.buttonLogin,
-                          onPressed: _isConnected ? _handleAuth : () {},
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isConnected ? _handleAuth : () {},
+                            child: Text(_isRegisterMode ? AppLocalizations.of(context)!.buttonRegister : AppLocalizations.of(context)!.buttonLogin),
+                          ),
                         ),
                       if (!_isConnected)
                         Padding(

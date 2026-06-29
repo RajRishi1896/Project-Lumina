@@ -4,6 +4,7 @@ import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/models/resource_model.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/file_utils.dart';
 
 /// A thumbnail image for a [ResourceModel].
 ///
@@ -56,7 +57,7 @@ class ResourceThumbnail extends StatelessWidget {
 
   Widget _buildFallbackIcon(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
     final tt = Theme.of(context).textTheme;
-    final icon = _iconForType(resource.type);
+    final icon = iconForType(resource.type);
     final label = resource.type == ResourceType.kiwix ? l10n.thumbnailWikiLabel : null;
     return Container(
       color: cs.surfaceContainerHighest,
@@ -68,20 +69,4 @@ class ResourceThumbnail extends StatelessWidget {
     );
   }
 
-  IconData _iconForType(ResourceType type) {
-    switch (type) {
-      case ResourceType.textbook:
-        return Icons.menu_book_rounded;
-      case ResourceType.videos:
-        return Icons.play_circle_rounded;
-      case ResourceType.pyq:
-        return Icons.assignment_rounded;
-      case ResourceType.notes:
-        return Icons.note_rounded;
-      case ResourceType.kiwix:
-        return Icons.language_rounded;
-      case ResourceType.pastPaper:
-        return Icons.assignment_rounded;
-    }
-  }
 }

@@ -4,7 +4,7 @@ import asyncio
 import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Response
-from app.database import _admin_log_lock, log_admin_action
+from app.database import log_admin_action, RETENTION_DELTAS
 from app.async_db import db_conn
 from app.models import LogRetentionUpdate, AuditLogResponse, SettingsResponse, StatusResponse
 from app.dependencies import verify_admin
@@ -26,19 +26,18 @@ async def admin_log(limit: int = 20, admin_user: str = Depends(verify_admin)):
     Returns:
         Dict with a log list of trimmed log lines.
     """
-    async with _admin_log_lock:
-        try:
-            def _read_log():
-                """Read the last N lines from the admin audit log. Runs in worker thread."""
-                try:
-                    with open("data/admin_actions.log", "r") as f:
-                        return [line.strip() for line in f.readlines()[-limit:]]
-                except FileNotFoundError:
-                    return []
-            log_lines = await asyncio.to_thread(_read_log)
-            return {"log": log_lines}
-        except FileNotFoundError:
-            return {"log": []}
+    try:
+        def _read_log():
+            """Read the last N lines from the admin audit log. Runs in worker thread."""
+            try:
+                with open("data/admin_actions.log", "r") as f:
+                    return [line.strip() for line in f.readlines()[-limit:]]
+            except FileNotFoundError:
+                return []
+        log_lines = await asyncio.to_thread(_read_log)
+        return {"log": log_lines}
+    except FileNotFoundError:
+        return {"log": []}
 
 
 @router.get("/api/admin/settings", response_model=SettingsResponse,
@@ -108,16 +107,9 @@ async def download_admin_logs(duration: str = "all", admin_user: str = Depends(v
 
     cutoff = None
     now = datetime.now().timestamp()
-    if duration == "24h":
-        cutoff = now - 24 * 3600
-    elif duration == "7d":
-        cutoff = now - 7 * 24 * 3600
-    elif duration == "30d":
-        cutoff = now - 30 * 24 * 3600
-    elif duration == "3m":
-        cutoff = now - 90 * 24 * 3600
-    elif duration == "6m":
-        cutoff = now - 180 * 24 * 3600
+    delta = RETENTION_DELTAS.get(duration)
+    if delta is not None:
+        cutoff = now - delta
 
     def _filter_log_file():
         """Read and filter admin audit log by duration cutoff. Runs in worker thread."""

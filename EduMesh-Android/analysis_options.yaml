@@ -28,6 +28,11 @@ linter:
     - unnecessary_new
     - unnecessary_this
     - use_super_parameters
+    - avoid_print
+    - unawaited_futures
+    - prefer_const_constructors_in_immutables
+    - avoid_redundant_argument_values
+    - flutter_style_todos
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

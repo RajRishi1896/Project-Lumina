@@ -28,24 +28,23 @@ class ApiClient {
   static const String _defaultDomain = 'http://lumina.hub:8000';
   static String _baseUrl = _defaultDomain;
   static bool _initialized = false;
-  static int _initAttempts = 0;
   static bool _isRefreshing = false;
 
   /// Callback invoked when a token refresh fails and the user must be logged out.
   static void Function()? onForceLogout;
 
-  static final Dio _dio = Dio(BaseOptions(
-    baseUrl: _baseUrl,
-    connectTimeout: const Duration(seconds: 10), // Increased for mesh stability
-    receiveTimeout: const Duration(seconds: 15),
-    sendTimeout: const Duration(seconds: 10),
-    responseType: ResponseType.json,
-  ))
-    ..interceptors.add(LogInterceptor(requestBody: false, responseBody: false))
-    ..interceptors.add(InterceptorsWrapper(
+  static final Dio _dio = _createDio();
+
+  static Dio _createDio() {
+    final dio = Dio(BaseOptions(
+      baseUrl: _baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 15),
+      sendTimeout: const Duration(seconds: 10),
+    ));
+    if (kDebugMode) dio.interceptors.add(LogInterceptor());
+    dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // Skip encryption for auth handshakes — key isn't available yet
-        // or the server expects plaintext for these paths.
         final path = options.path;
         final noEncrypt = _noEncryptPaths.any((p) => path.startsWith(p));
         if (!noEncrypt && (options.method == 'POST' || options.method == 'PUT')) {
@@ -79,7 +78,7 @@ class ApiClient {
               final newToken = await AuthService().getSessionToken();
               error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
               try {
-                final retryResponse = await _dio.fetch(error.requestOptions);
+                final retryResponse = await dio.fetch(error.requestOptions);
                 handler.resolve(retryResponse);
                 return;
               } catch (_) { } }
@@ -87,7 +86,7 @@ class ApiClient {
               final newToken = await AuthService().getSessionToken();
               error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
               try {
-                final retryResponse = await _dio.fetch(error.requestOptions);
+                final retryResponse = await dio.fetch(error.requestOptions);
                 handler.resolve(retryResponse);
                 return;
               } catch (_) { } }
@@ -100,6 +99,8 @@ class ApiClient {
         handler.next(error);
       },
     ));
+    return dio;
+  }
 
   static bool _keepAliveConfigured = false;
 
@@ -195,16 +196,7 @@ class ApiClient {
   static Future<void> _ensureInitialized() async {
     _configureKeepAlive();
     if (_initialized) return;
-    if (_initAttempts >= 3) {
-      _dio.options.baseUrl = _baseUrl;
-      return;
-    }
     // Only allow one caller to init at a time
-    if (_initAttempts > 0 && !_initialized) {
-      await _initLock;
-      if (_initialized) return;
-    }
-    _initAttempts++;
     _initLock = _doInitialize();
     await _initLock;
   }
@@ -231,13 +223,11 @@ class ApiClient {
       }
       _dio.options.baseUrl = _baseUrl;
       _initialized = true;
-      _initAttempts = 0;
     } catch (e) {
       debugPrint('ApiClient initialization error: $e');
       // Mark initialized anyway so we don't keep retrying DNS
       _dio.options.baseUrl = _baseUrl;
       _initialized = true;
-      _initAttempts = 0;
     }
   }
 
@@ -263,25 +253,6 @@ class ApiClient {
     return _dio.delete<T>(path, data: data, queryParameters: queryParameters);
   }
   
-  /// Executes the given [request] function with automatic retry on failure.
-  /// Retries up to [maxRetries] times with an [initialDelay] that doubles each attempt.
-  /// Throws if all retries are exhausted.
-  static Future<Response<T>> requestWithRetry<T>(
-    Future<Response<T>> Function() request, {
-    int maxRetries = 3,
-    Duration initialDelay = const Duration(seconds: 1),
-  }) async {
-    for (int i = 0; i < maxRetries; i++) {
-      try {
-        return await request();
-      } catch (e) {
-        if (i == maxRetries - 1) rethrow;
-        await Future.delayed(initialDelay * (i + 1));
-      }
-    }
-    throw Exception('Request failed after $maxRetries retries');
-  }
-
   /// The underlying [Dio] instance used for all HTTP requests.
   /// Does NOT resolve the server base URL — call [ensureInitialized] first if needed.
   static Dio get dio {
@@ -295,8 +266,4 @@ class ApiClient {
   /// Safe to call multiple times; only performs initialization once.
   static Future<void> ensureInitialized() => _ensureInitialized();
 
-  /// Overrides the base [url] used for all subsequent requests.
-  static void setBaseUrl(String url) {
-    _dio.options.baseUrl = url;
-  }
 }

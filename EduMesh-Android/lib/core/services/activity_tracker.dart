@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
 import '../../shared/services/connectivity_service.dart';
@@ -80,22 +80,13 @@ class ActivityTracker {
     });
   }
 
-  /// Log a key user action immediately without debouncing.
-  Future<void> logKeyAction(String action, {String? resourceId, String? metadata}) async {
-    final prefs = await SharedPreferences.getInstance();
-    await _storeLocal(prefs, {
-      'action': action,
-      'resource_id': resourceId,
-      'metadata': metadata,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-  }
-
   Future<void> _storeLocal(SharedPreferences prefs, Map<String, dynamic> event) async {
     final raw = prefs.getString(_localEventsKey);
-    final list = raw != null ? (jsonDecode(raw) as List).cast<Map<String, dynamic>>() : <Map<String, dynamic>>[];
+    final list = raw != null
+        ? (jsonDecode(raw) as List).cast<Map<String, dynamic>>()
+        : <Map<String, dynamic>>[];
     list.add(event);
-    if (list.length > _maxLocalEvents) list.removeAt(0);
+    while (list.length > _maxLocalEvents) { list.removeAt(0); }
     await prefs.setString(_localEventsKey, jsonEncode(list));
   }
 

@@ -4,6 +4,11 @@ import re
 import time
 import asyncio
 import logging
+try:
+    import resource as _resource
+    _HAS_RESOURCE = True
+except ImportError:
+    _HAS_RESOURCE = False
 from fastapi import APIRouter, Depends
 from app.database import _startup_time
 from app.async_db import db_conn
@@ -12,23 +17,17 @@ from app.models import TimeSync, HubStatsResponse, StatusResponse
 
 router = APIRouter()
 
-_stats_cache = {"data": None, "expires": 0.0}
-
-
 @router.get("/stats", response_model=HubStatsResponse,
             summary="Get hub statistics",
             description="Returns scholar count, resource count, subject count, disk usage, battery percentage, and server uptime.",
             tags=["System"])
 async def get_stats():
-    """Get aggregate hub statistics (cached for 5s).
+    """Get aggregate hub statistics.
 
     Returns:
         Dict with scholars, resources, subjects counts, storage info,
         battery_percent, uptime string, and disk_usage.
     """
-    now = time.time()
-    if _stats_cache["data"] and now < _stats_cache["expires"]:
-        return _stats_cache["data"]
     import shutil
     async with db_conn() as conn:
         c = conn.cursor()
@@ -62,20 +61,14 @@ async def get_stats():
     hours, rem = divmod(uptime_secs, 3600)
     mins, secs = divmod(rem, 60)
     uptime_str = f"{hours}h {mins}m" if hours else f"{mins}m {secs}s"
-    du = used
-    dt = total
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if du < 1024:
-            used_str = f"{du:.1f} {unit}"
-            total_str = f"{dt:.1f} {unit}"
+    for i, unit in enumerate(['B', 'KB', 'MB', 'GB', 'TB']):
+        if used < 1024 ** (i + 1):
+            used_str = f"{used / 1024**i:.1f} {unit}"
+            total_str = f"{total / 1024**i:.1f} {unit}"
             break
-        du /= 1024
-        dt /= 1024
     result = {"scholars": scholar_count, "resources": resource_count, "subjects": subject_count,
               "storage": f"{used_str} / {total_str}", "storage_percent": (used / total) * 100,
               "battery_percent": battery_percent, "uptime": uptime_str, "disk_usage": f"{used_str} / {total_str}"}
-    _stats_cache["data"] = result
-    _stats_cache["expires"] = now + 5
     return result
 
 
@@ -122,3 +115,21 @@ async def sync_time(data: TimeSync, admin_user: str = Depends(verify_admin)):
         return {"status": "ok"}
     except Exception:
         return {"status": "failed"}
+
+
+@router.get("/healthz")
+async def health():
+    """Return SQLite connectivity, open FDs, RSS."""
+    async with db_conn() as db:
+        await asyncio.to_thread(db.execute, "SELECT 1")
+
+    rss_mb = _resource.getrusage(_resource.RUSAGE_SELF).ru_maxrss // 1024 if _HAS_RESOURCE else 0
+    try:
+        open_fds = len(os.listdir(f"/proc/{os.getpid()}/fd"))
+    except (FileNotFoundError, PermissionError):
+        open_fds = -1
+    return {
+        "status": "ok",
+        "open_fds": open_fds,
+        "rss_mb": rss_mb,
+    }

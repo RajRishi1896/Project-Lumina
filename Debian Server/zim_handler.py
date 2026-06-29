@@ -10,7 +10,6 @@ import asyncio
 import logging
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
-from typing import List, Dict
 from app.models import ZimArticleResponse, ZimPageResponse
 
 router = APIRouter()
@@ -45,7 +44,7 @@ async def list_zim_articles(offset: int = Query(default=0, ge=0), limit: int = Q
     Returns:
         A list of dicts with keys ``article_id`` and ``title``.
     """
-    results: List[Dict[str, str]] = []
+    results: list[dict[str, str]] = []
     try:
         entries = await asyncio.to_thread(os.listdir, ZIM_PAGES_DIR)
         entries = sorted(entries)
@@ -84,9 +83,7 @@ async def search_zim(query: str = Query(..., min_length=1, description="Search t
         A list of matching article dicts, or an empty list if no matches
         or the directory is missing.
     """
-    results: List[Dict[str, str]] = []
-    if not query:
-        return results
+    results: list[dict[str, str]] = []
     # Simple filename based search; assume files are named "<id>__<title>.html"
     try:
         entries = await asyncio.to_thread(os.listdir, ZIM_PAGES_DIR)

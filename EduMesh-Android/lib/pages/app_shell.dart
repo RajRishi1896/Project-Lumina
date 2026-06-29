@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:edumesh_android/features/dashboard/presentation/dashboard_page.dart' as feat;
+import 'package:edumesh_android/features/dashboard/presentation/dashboard_page.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/features/dashboard/presentation/saved_resource_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/student_profile_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/search_page.dart';
-import 'package:edumesh_android/features/teacher/presentation/teacher_monitor_page.dart';
 import 'package:edumesh_android/shared/widgets/mini_player_widget.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
-/// The main application shell with a 5-tab bottom navigation bar.
+/// The main application shell with a 4-tab bottom navigation bar.
 ///
 /// Hosts the [DashboardPage], [SearchPage], [SavedResourcesPage],
-/// [StudentProfilePage], and [TeacherMonitorPage] in an [IndexedStack]
+/// and [StudentProfilePage] in an [IndexedStack]
 /// and overlays the [MiniPlayerWidget] on top. Pressing back twice within
 /// two seconds exits the app via [SystemNavigator.pop].
 class AppShell extends StatefulWidget {
@@ -27,19 +26,14 @@ class _AppShellState extends State<AppShell> {
   DateTime? _lastBackPress;
 
   final List<Widget> _pages = [
-    const feat.DashboardPage(),
+    const DashboardPage(),
     const SearchPage(),
     const SavedResourcesPage(),
     const StudentProfilePage(),
-    const TeacherMonitorPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return _buildShell();
-  }
-
-  Widget _buildShell() {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -79,7 +73,6 @@ class _AppShellState extends State<AppShell> {
             BottomNavigationBarItem(icon: const Icon(Icons.explore_rounded), label: AppLocalizations.of(context)!.bottomNavBrowse),
             BottomNavigationBarItem(icon: const Icon(Icons.bookmark_rounded), label: AppLocalizations.of(context)!.bottomNavSaved),
             BottomNavigationBarItem(icon: const Icon(Icons.person_rounded), label: AppLocalizations.of(context)!.bottomNavProfile),
-            BottomNavigationBarItem(icon: const Icon(Icons.supervisor_account_rounded), label: AppLocalizations.of(context)!.bottomNavStudents),
           ],
         ),
       ),

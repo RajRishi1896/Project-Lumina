@@ -247,25 +247,6 @@
   "buttonSkip": "छोड़ें",
   "bottomNavStudents": "छात्र",
   "zimArticleNotFound": "लेख नहीं मिला",
-  "teacherPageTitle": "छात्र",
-  "teacherFilterByGrade": "कक्षा द्वारा फ़िल्टर",
-  "teacherAllGrades": "सभी कक्षाएँ",
-  "teacherCouldNotLoadStudents": "छात्र लोड नहीं हो सके",
-  "teacherCheckHubConnection": "हब कनेक्शन जांचें और पुनः प्रयास करें।",
-  "teacherRetry": "पुनः प्रयास",
-  "teacherSearchStudentsHint": "छात्र खोजें...",
-  "teacherNoStudentsMatchSearch": "आपकी खोज से मेल खाने वाला कोई छात्र नहीं।",
-  "teacherNoStudentsFound": "कोई छात्र नहीं मिला।",
-  "teacherShowing": "दिखाया: {grade}",
-  "teacherLabelToday": "आज",
-  "teacherLabelStreak": "लगातार",
-  "teacherLabelSaved": "सहेजा",
-  "teacherLabelDownloaded": "डाउनलोड",
-  "teacherOverview": "अवलोकन",
-  "teacherThisMonth": "इस महीने",
-  "teacherShowMore": "और दिखाएँ ({remaining} शेष)",
-  "teacherCouldNotLoadAnalytics": "विश्लेषण लोड नहीं हो सका",
-  "teacherNoActivityRecorded": "अभी तक कोई गतिविधि दर्ज नहीं।",
   "sectionSubjects": "विषय",
   "sectionSubjectsEmpty": "कोई विषय उपलब्ध नहीं",
   "resourcePageResources": "संसाधन",
@@ -1215,75 +1196,6 @@
   },
   "@zimArticleNotFound": {
     "description": "Snackbar message when a ZIM article fetch returns empty content"
-  },
-  "@teacherPageTitle": {
-    "description": "AppBar title on the teacher student monitor page"
-  },
-  "@teacherFilterByGrade": {
-    "description": "Tooltip for the grade filter popup menu button"
-  },
-  "@teacherAllGrades": {
-    "description": "Menu item text to clear grade filter and show all students"
-  },
-  "@teacherCouldNotLoadStudents": {
-    "description": "Error heading when student list fails to load"
-  },
-  "@teacherCheckHubConnection": {
-    "description": "Error subtitle suggesting the user check hub connectivity"
-  },
-  "@teacherRetry": {
-    "description": "Retry button text for teacher page error state"
-  },
-  "@teacherSearchStudentsHint": {
-    "description": "Hint text in the search field for filtering students"
-  },
-  "@teacherNoStudentsMatchSearch": {
-    "description": "Empty state text when student search yields no results"
-  },
-  "@teacherNoStudentsFound": {
-    "description": "Empty state text when no students are registered"
-  },
-  "@teacherShowing": {
-    "description": "Label on the grade filter banner showing which grade is selected",
-    "placeholders": {
-      "grade": {
-        "type": "String",
-        "example": "Grade 10"
-      }
-    }
-  },
-  "@teacherLabelToday": {
-    "description": "Label below the today-minutes stat chip in teacher student card"
-  },
-  "@teacherLabelStreak": {
-    "description": "Label below the streak stat chip in teacher student card"
-  },
-  "@teacherLabelSaved": {
-    "description": "Label below the saved count stat chip in teacher student card"
-  },
-  "@teacherLabelDownloaded": {
-    "description": "Label below the downloaded count stat chip in teacher student card"
-  },
-  "@teacherOverview": {
-    "description": "Section header for the overview stat cards on the student progress page"
-  },
-  "@teacherThisMonth": {
-    "description": "Stat box label for monthly study minutes"
-  },
-  "@teacherShowMore": {
-    "description": "Button text to load more activity items, showing remaining count",
-    "placeholders": {
-      "remaining": {
-        "type": "int",
-        "example": "12"
-      }
-    }
-  },
-  "@teacherCouldNotLoadAnalytics": {
-    "description": "Error text displayed when analytics data fails to load"
-  },
-  "@teacherNoActivityRecorded": {
-    "description": "Empty state text in the activity section when no history exists"
   },
   "@sectionSubjects": {
     "description": "Section header for the subject categories grid on the dashboard"

@@ -1,16 +1,17 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:edumesh_android/shared/services/save_resource_service.dart';
-import 'package:edumesh_android/shared/services/download_service.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
+import 'package:edumesh_android/core/storage/db_helper.dart';
+import 'package:edumesh_android/core/utils/file_utils.dart';
+import 'package:edumesh_android/shared/services/download_service.dart';
 import '../../../core/services/activity_tracker.dart';
 import '../../../shared/services/download_queue.dart';
 import '../../../shared/services/connectivity_service.dart';
-import '../../../shared/services/zim_api_service.dart';
-import '../../../shared/services/zim_cache_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../shared/widgets/resource_thumbnail.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import 'resource_detail_page.dart';
@@ -38,8 +39,8 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
   String _searchQuery = '';
-  List<Map<String, dynamic>> _searchIndex = [];
   List<ResourceModel> _allResources = [];
   Map<dynamic, bool> _savedStatuses = {};
   Set<String> _downloadedIds = {};
@@ -84,65 +85,50 @@ class _SearchPageState extends State<SearchPage> {
       } else if (data is Map && data['items'] is List) {
         resources = (data['items'] as List).map((j) => ResourceModel.fromJson(j is Map ? Map<String, dynamic>.from(j) : {})).toList();
       }
-    _allResources = resources;
+      _allResources = resources;
 
-    _zimArticles = [];
-    try {
-      final zimResp = await ApiClient.get('/zim/articles', queryParameters: {
-        'offset': '0', 'limit': '500',
-      }).timeout(const Duration(seconds: 8));
-      if (zimResp.data is List) {
-        _zimArticles = (zimResp.data as List).cast<Map<String, dynamic>>();
-      }
-    } catch (_) { } _buildSearchIndex(resources);
-    _applyFilters();
-  } catch (_) {
+      _zimArticles = [];
       try {
-        final local = await SaveResourceService.getAllSavedResourceModels();
-        if (local.isNotEmpty) {
-        _allResources = local;
-        _zimArticles = [];
-        _buildSearchIndex(local);
-        _applyFilters();
-        if (mounted) setState(() { _isLoading = false; _loadError = null; });
+        final zimResp = await ApiClient.get('/zim/articles', queryParameters: {
+          'offset': '0', 'limit': '500',
+        }).timeout(const Duration(seconds: 8));
+        if (zimResp.data is List) {
+          _zimArticles = (zimResp.data as List).cast<Map<String, dynamic>>();
+        }
+      } catch (_) { }
+      _applyFilters();
+    } catch (_) {
+      try {
+        final db = DBHelper();
+        final rows = await db.getBookmarkedResources();
+        if (rows.isNotEmpty) {
+          _allResources = rows.map((r) => ResourceModel(
+            id: r['resource_id'] as String? ?? '',
+            title: r['title'] as String? ?? '',
+            subject: r['subject'] as String? ?? '',
+            grade: r['grade'] as String? ?? '',
+            type: parseResourceType(r['type'] as String? ?? ''),
+            pdfUrl: r['pdf_url'] as String?,
+          )).toList();
+          _zimArticles = [];
+          _applyFilters();
+          if (mounted) setState(() { _isLoading = false; _loadError = null; });
           return;
         }
-      } catch (_) { } if (mounted) { final l10n = AppLocalizations.of(context)!; setState(() => _loadError = l10n.errorNoServerNoCache); }
+      } catch (_) { }
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        setState(() => _loadError = l10n.errorNoServerNoCache);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _buildSearchIndex(List<ResourceModel> resources) {
-    _searchIndex = [];
-    for (final r in resources) {
-      if (r.type == ResourceType.kiwix) continue;
-      _searchIndex.add({
-        'title': r.title,
-        'searchKeywords': '${r.title} ${r.subject} ${r.grade} ${r.type.toString().split('.').last}'.toLowerCase(),
-        'originalObject': r,
-        'isZim': false,
-      });
-    }
-    final l10n = AppLocalizations.of(context)!;
-    for (final article in _zimArticles) {
-      final title = article['title']?.toString() ?? l10n.zimUntitledArticleFallback;
-      final id = article['article_id']?.toString() ?? '';
-      if (id.isEmpty) continue;
-      _searchIndex.add({
-        'title': title,
-        'searchKeywords': title.toLowerCase(),
-        'originalObject': null,
-        'isZim': true,
-        'articleId': id,
-      });
-    }
-  }
-
   Future<void> _loadDownloadStatus() async {
     try {
-      final ids = await DownloadService().getAllDownloadedIds();
-      final pIds = await DownloadService().getAllPendingIds();
+      final ids = await DBHelper().getDownloadedIds();
+      final pIds = await DBHelper().getPendingIds();
       if (mounted) {
         setState(() {
           _downloadedIds = ids;
@@ -151,37 +137,64 @@ class _SearchPageState extends State<SearchPage> {
       }
     } catch (_) { } }
 
-  Future<void> _refreshSavedResources() async {
-    final results = await SaveResourceService.getAllSavedResourceModels();
-    if (mounted) {
-      final savedIds = results.map((r) => r.id).toSet();
-      final statusMap = <dynamic, bool>{};
-      for (final item in _searchIndex) {
-        if (item['isZim'] == true) continue;
-        final original = item['originalObject'];
-        statusMap[original.id] = savedIds.contains(original.id.toString());
+  Future<bool> _toggleSaveStatus(String id) async {
+    try {
+      final db = DBHelper();
+      final bookmarked = await db.getBookmarkedIds();
+      if (bookmarked.contains(id)) {
+        await db.removeBookmark(id);
+        unawaited(ActivityTracker().logAction('unsave', resourceId: id));
+        return false;
       }
-      setState(() => _savedStatuses = statusMap);
+      await db.upsertBookmark(id, '', '', '', '');
+      unawaited(ActivityTracker().logAction('save', resourceId: id));
+      return true;
+    } catch (e) {
+      debugPrint('Error toggling bookmark: $e');
+      return false;
     }
+  }
+
+  Future<void> _refreshSavedResources() async {
+    try {
+      final savedIds = await DBHelper().getBookmarkedIds();
+      if (mounted) {
+        final statusMap = <dynamic, bool>{};
+        for (final r in _allResources) {
+          statusMap[r.id] = savedIds.contains(r.id.toString());
+        }
+        setState(() => _savedStatuses = statusMap);
+      }
+    } catch (_) {}
   }
 
   Future<void> _openZimArticle(String articleId, String title) async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
     try {
-      String? html = await ZimCacheService.getPage(articleId);
+      String? html;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        html = prefs.getString('zim_page_$articleId');
+      } catch (_) {}
       if (html == null) {
-        final pageData = await ZimApiService().fetchPage(articleId);
-        html = pageData['html']?.toString() ?? '';
+        final response = await ApiClient.get('/zim/page', queryParameters: {
+          'article_id': articleId,
+        }).timeout(const Duration(seconds: 8));
+        final pageData = response.data;
+        html = pageData?['html']?.toString() ?? '';
         if (html.isNotEmpty) {
-          await ZimCacheService.savePage(articleId, html);
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('zim_page_$articleId', html);
+          } catch (_) {}
         }
       }
       if (!mounted) return;
       if (html.isNotEmpty) {
-        Navigator.push(context, MaterialPageRoute(
+        unawaited(Navigator.push(context, MaterialPageRoute(
           builder: (_) => KiwixView(initialHtml: html, title: title),
-        ));
+        )));
       } else {
         messenger.showSnackBar(SnackBar(content: Text(l10n.zimArticleNotFound)));
       }
@@ -292,9 +305,8 @@ class _SearchPageState extends State<SearchPage> {
 
 
   Set<String> _getAllGrades() {
-    return _searchIndex
-        .where((item) => item['isZim'] != true)
-        .map((item) => (item['originalObject'].grade ?? '').toString())
+    return _allResources
+        .map((r) => r.grade)
         .where((g) => g.isNotEmpty)
         .toSet();
   }
@@ -523,46 +535,46 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
   void _applyFilters() {
-    final textFiltered = _searchQuery.trim().isEmpty
-        ? List<Map<String, dynamic>>.from(_searchIndex)
-        : _searchIndex.where((item) {
-            return (item['searchKeywords'] as String)
-                .contains(_searchQuery.toLowerCase());
-          }).toList();
+    final query = _searchQuery.trim().toLowerCase();
+    final l10n = AppLocalizations.of(context)!;
 
-    final List<Map<String, dynamic>> results = textFiltered.where((item) {
-      if (item['isZim'] == true) return true;
-      final original = item['originalObject'];
-      if (_selectedTypes.isNotEmpty && !_selectedTypes.contains(original.type)) return false;
-      if (_selectedGrades.isNotEmpty && !_selectedGrades.contains(original.grade)) return false;
-      if (_subjectFilter.isNotEmpty && !(original.subject ?? '').toLowerCase().contains(_subjectFilter.toLowerCase())) return false;
-      return true;
-    }).toList();
+    final results = <Map<String, dynamic>>[];
+    for (final r in _allResources) {
+      if (r.type == ResourceType.kiwix) continue;
+      final keywords = '${r.title} ${r.subject} ${r.grade} ${r.type.name}'.toLowerCase();
+      if (query.isNotEmpty && !keywords.contains(query)) continue;
+      if (_selectedTypes.isNotEmpty && !_selectedTypes.contains(r.type)) continue;
+      if (_selectedGrades.isNotEmpty && !_selectedGrades.contains(r.grade)) continue;
+      if (_subjectFilter.isNotEmpty && !r.subject.toLowerCase().contains(_subjectFilter.toLowerCase())) continue;
+      results.add({'title': r.title, 'originalObject': r, 'isZim': false});
+    }
+    for (final article in _zimArticles) {
+      final title = article['title']?.toString() ?? l10n.zimUntitledArticleFallback;
+      if (query.isNotEmpty && !title.toLowerCase().contains(query)) continue;
+      final id = article['article_id']?.toString() ?? '';
+      if (id.isEmpty) continue;
+      results.add({'title': title, 'originalObject': null, 'isZim': true, 'articleId': id});
+    }
 
     results.sort((a, b) {
       if (a['isZim'] == true && b['isZim'] == true) {
-        final at = a['title'] as String? ?? '';
-        final bt = b['title'] as String? ?? '';
-        return at.compareTo(bt);
+        return ((a['title'] as String? ?? '')).compareTo(b['title'] as String? ?? '');
       }
       if (a['isZim'] == true) return 1;
       if (b['isZim'] == true) return -1;
       final oa = a['originalObject'];
       final ob = b['originalObject'];
       switch (_sortBy) {
-        case 'title_desc':
-          return (ob.title ?? '').compareTo(oa.title ?? '');
-        case 'type':
-          return (oa.type?.index ?? 0).compareTo(ob.type?.index ?? 0);
-        case 'grade':
-          return (oa.grade ?? '').compareTo(ob.grade ?? '');
-        default:
-          return (oa.title ?? '').compareTo(ob.title ?? '');
+        case 'title_desc': return (ob.title ?? '').compareTo(oa.title ?? '');
+        case 'type': return (oa.type?.index ?? 0).compareTo(ob.type?.index ?? 0);
+        case 'grade': return (oa.grade ?? '').compareTo(ob.grade ?? '');
+        default: return (oa.title ?? '').compareTo(ob.title ?? '');
       }
     });
 
@@ -640,7 +652,12 @@ class _SearchPageState extends State<SearchPage> {
             .logAction('search', metadata: value)
             .catchError((_) {});
         setState(() => _searchQuery = value);
-        _applyFilters();
+        _searchDebounce?.cancel();
+        _searchDebounce = Timer(const Duration(milliseconds: 200), () {
+          if (mounted) {
+            _applyFilters();
+          }
+        });
       },
                       style: tt.bodyLarge?.copyWith(color: cs.onSurface),
                       decoration: InputDecoration(
@@ -804,8 +821,7 @@ class _SearchPageState extends State<SearchPage> {
                                         ScaffoldMessenger.of(context);
                                     final wasSaved =
                                         _savedStatuses[original.id] ?? false;
-                                    await SaveResourceService.toggleSaveStatus(
-                                        original.id);
+                                    await _toggleSaveStatus(original.id);
                                     if (mounted) {
                                       setState(() => _savedStatuses[original.id] =
                                           !wasSaved);
@@ -949,7 +965,7 @@ class _SearchPageState extends State<SearchPage> {
         subjects.add(r.subject);
       }
     }
-    final scored = <_ScoredResource>[];
+    final scored = <(ResourceModel, int)>[];
     for (final r in _allResources) {
       final id = r.id;
       if (downloadedOrSaved.contains(id) || candidateIds.contains(id)) continue;
@@ -961,12 +977,12 @@ class _SearchPageState extends State<SearchPage> {
         if (favType != null && r.type == favType) score += 1;
       }
       if (score > 0) {
-        scored.add(_ScoredResource(r, score));
+        scored.add((r, score));
         candidateIds.add(id);
       }
     }
-    scored.sort((a, b) => b.score.compareTo(a.score));
-    return scored.take(6).map((s) => s.resource).toList();
+    scored.sort((a, b) => b.$2.compareTo(a.$2));
+    return scored.take(6).map((s) => s.$1).toList();
   }
 
   ResourceType? _mostFrequentType() {
@@ -984,10 +1000,4 @@ class _SearchPageState extends State<SearchPage> {
     if (counts.isEmpty) return null;
     return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
   }
-}
-
-class _ScoredResource {
-  final ResourceModel resource;
-  final int score;
-  _ScoredResource(this.resource, this.score);
 }

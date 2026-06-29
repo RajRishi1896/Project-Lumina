@@ -34,6 +34,7 @@ class KiwixView extends StatefulWidget {
 class _KiwixViewState extends State<KiwixView> {
   late final WebViewController _controller;
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -46,6 +47,11 @@ class _KiwixViewState extends State<KiwixView> {
           onPageStarted: (_) => setState(() => _isLoading = true),
           onPageFinished: (_) => setState(() => _isLoading = false),
           onWebResourceError: (error) {
+            if (!mounted) return;
+            setState(() {
+              _isLoading = false;
+              _errorMessage = error.description;
+            });
             debugPrint('Webview Error: ${error.description}');
           },
         ),
@@ -86,6 +92,33 @@ class _KiwixViewState extends State<KiwixView> {
             const Center(
               child: CircularProgressIndicator(
                 color: LuminaColors.saffron,
+              ),
+            ),
+          if (_errorMessage != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _errorMessage = null;
+                          _isLoading = true;
+                        });
+                        _controller.reload();
+                      },
+                      child: Text(l10n.errorRetryButton),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],

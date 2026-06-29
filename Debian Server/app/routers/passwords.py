@@ -3,8 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.async_db import db_conn
 from app.models import ChangePasswordRequest, ForceChangePasswordRequest, StatusResponse
-from app.dependencies import hash_password, verify_password, validate_password_strength, verify_teacher, verify_admin
-from app.encryption import _invalidate_tokens_for_user
+from app.dependencies import hash_password, verify_password, validate_password_strength, verify_teacher, verify_admin, invalidate_tokens_for_user
 from app.database import log_admin_action
 
 router = APIRouter()
@@ -24,8 +23,11 @@ async def change_password(data: ChangePasswordRequest, teacher_user: str = Depen
     Returns:
         Status dict indicating success.
     Raises:
-        HTTPException 400: If current password is incorrect or new password is weak.
+        HTTPException 400: If current password is incorrect or new password is weak,
+            or if the user is the default admin.
     """
+    if teacher_user == "admin":
+        raise HTTPException(status_code=400, detail="Cannot change the default admin password.")
     async with db_conn() as conn:
         c = conn.cursor()
         c.execute("SELECT hashed_password FROM users WHERE username = ?", (teacher_user,))
@@ -38,7 +40,7 @@ async def change_password(data: ChangePasswordRequest, teacher_user: str = Depen
         new_hash = hash_password(data.new_password)
         c.execute("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
         conn.commit()
-    await _invalidate_tokens_for_user(teacher_user)
+    await invalidate_tokens_for_user(teacher_user)
     return {"status": "success"}
 
 
@@ -71,7 +73,7 @@ async def force_change_password(data: ForceChangePasswordRequest, teacher_user: 
             new_hash = hash_password(data.new_password)
             c.execute("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
             conn.commit()
-            await _invalidate_tokens_for_user(teacher_user)
+            await invalidate_tokens_for_user(teacher_user)
             return {"status": "success"}
         except HTTPException:
             raise
@@ -104,7 +106,7 @@ async def force_reset_teacher_password(username: str, admin_user: str = Depends(
             c = conn.cursor()
             c.execute("UPDATE users SET hashed_password = ?, reset_required = 1 WHERE username = ?", (hashed, username))
             conn.commit()
-            await _invalidate_tokens_for_user(username)
+            await invalidate_tokens_for_user(username)
             await log_admin_action(admin_user, f"reset password for teacher {username}")
             return {"status": "success"}
         except Exception as e:

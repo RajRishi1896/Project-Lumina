@@ -9,9 +9,7 @@ from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.middleware import RateLimitMiddleware
-from app.encryption import EncryptedAPIRoute
-from app.database import DB_PATH
+from app.async_db import db_conn
 
 # Logging
 os.makedirs("data", exist_ok=True)
@@ -23,54 +21,36 @@ logging.basicConfig(handlers=[log_handler], level=logging.INFO, format='%(asctim
 async def lifespan(application: FastAPI):
     """Startup/shutdown lifecycle for background services.
 
-    On startup: run DB init, ZIM auto-cleaner, task queue, mDNS beacon,
-    and session pruning background tasks.
-    On shutdown: stop task queue and mDNS beacon.
+    On startup: run DB init, ZIM auto-cleaner, and session pruning.
+    On shutdown: cancel background tasks.
     """
     # --- STARTUP ---
-    from app.database import init_db, DB_PATH
-    import sqlite3
+    from app.database import init_db
 
     await asyncio.to_thread(init_db)
-    def _ensure_admin():
-        conn = sqlite3.connect(DB_PATH, timeout=5.0)
-        try:
-            cur = conn.cursor()
-            cur.execute('UPDATE users SET role = "admin" WHERE username = "admin"')
-            conn.commit()
-        finally:
-            conn.close()
-    await asyncio.to_thread(_ensure_admin)
+
+    async with db_conn() as conn:
+        cur = conn.cursor()
+        cur.execute('UPDATE users SET role = "admin" WHERE username = "admin"')
+        conn.commit()
 
     from app.zim_auto_cleaner import start_zim_auto_cleaner
-    from app.task_queue import start as start_task_queue, stop as stop_task_queue, register_handler
-    from app.thumb_worker import generate_thumbnail
 
     start_zim_auto_cleaner(interval_seconds=3600)
-    await start_task_queue(max_workers=2)
-    register_handler("generate_thumbnail", generate_thumbnail)
-    try:
-        from app.discovery import MeshBeacon
-        beacon = MeshBeacon(port=8000)
-        beacon.start()
-        application.state.beacon = beacon
-    except Exception:
-        pass
 
     # Session pruning background task
     async def prune_sessions():
         while True:
             await asyncio.sleep(3600)
             try:
-                conn = sqlite3.connect(DB_PATH)
-                conn.execute("DELETE FROM sessions WHERE last_accessed IS NOT NULL AND last_accessed < datetime('now', '-7 days')")
-                conn.execute("DELETE FROM sessions WHERE last_accessed IS NULL AND created_at < datetime('now', '-7 days')")
-                conn.execute("DELETE FROM refresh_tokens WHERE expires_at < datetime('now') OR used = 1")
-                conn.execute("DELETE FROM persistent_keys WHERE expires_at < datetime('now')")
-                conn.commit()
-                conn.close()
+                async with db_conn() as conn:
+                    conn.execute("DELETE FROM sessions WHERE last_accessed IS NOT NULL AND last_accessed < datetime('now', '-7 days')")
+                    conn.execute("DELETE FROM sessions WHERE last_accessed IS NULL AND created_at < datetime('now', '-7 days')")
+                    conn.execute("DELETE FROM refresh_tokens WHERE expires_at < datetime('now') OR used = 1")
+                    conn.execute("DELETE FROM persistent_keys WHERE expires_at < datetime('now')")
+                    conn.commit()
             except Exception:
-                pass
+                logging.exception("Session pruning failed")
     prune_task = asyncio.create_task(prune_sessions())
 
     yield  # application runs here
@@ -81,15 +61,6 @@ async def lifespan(application: FastAPI):
         await prune_task
     except asyncio.CancelledError:
         pass
-    await stop_task_queue()
-    state = getattr(application, 'state', None)
-    if state is not None:
-        beacon = getattr(state, 'beacon', None)
-        if beacon is not None:
-            try:
-                beacon.stop()
-            except Exception:
-                pass
 
 
 app = FastAPI(
@@ -114,7 +85,6 @@ app = FastAPI(
     ],
     lifespan=lifespan,
 )
-app.router.route_class = EncryptedAPIRoute
 
 # CORS
 app.add_middleware(
@@ -124,9 +94,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Rate limiter
-app.add_middleware(RateLimitMiddleware)
 
 # Security headers
 @app.middleware("http")

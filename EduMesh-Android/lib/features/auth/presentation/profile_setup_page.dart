@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
@@ -27,6 +28,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   List<String> _grades = [];
   bool _loading = true;
   bool _saving = false;
+  String? _loadError;
 
   @override
   void initState() {
@@ -40,21 +42,25 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       final res = await ApiClient.get('/grades');
       if (res.data is List) {
         final grades = (res.data as List).map((g) => (g is Map ? g['name']?.toString() ?? '' : g.toString())).where((n) => n.isNotEmpty).toList();
-        if (mounted) setState(() { _grades = grades; if (grades.isNotEmpty) _selectedGrade = grades[0]; _loading = false; });
+        if (mounted) setState(() { _grades = grades; _selectedGrade = grades.isNotEmpty ? grades[0] : ''; _loadError = grades.isEmpty ? AppLocalizations.of(context)!.errorNoServerNoCache : null; _loading = false; });
         return;
       }
-    } catch (_) { } if (mounted) setState(() => _loading = false);
+    } catch (_) {
+      if (mounted) setState(() { _loadError = AppLocalizations.of(context)!.errorNoServerNoCache; _loading = false; });
+      return;
+    }
+    if (mounted) setState(() { _loadError = AppLocalizations.of(context)!.errorNoServerNoCache; _loading = false; });
   }
 
   Future<void> _saveAndContinue() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty || _selectedGrade.isEmpty || _saving) return;
     setState(() => _saving = true);
-    MutationQueue().enqueue('/student/profile/update', method: 'POST', body: {'name': name, 'grade': _selectedGrade});
+    await MutationQueue().enqueue('/student/profile/update', method: 'POST', body: {'name': name, 'grade': _selectedGrade});
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
+    unawaited(Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const ConnectionGate(child: AppShell())),
-    );
+    ));
   }
 
   @override
@@ -88,6 +94,10 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               if (_loading)
                 const Center(child: CircularProgressIndicator())
               else ...[
+                if (_loadError != null) ...[
+                  Text(_loadError!, style: tt.bodyMedium?.copyWith(color: cs.error)),
+                  SizedBox(height: AppSpacing.sm.h),
+                ],
                 Text(l10n.labelDisplayName,
                     style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant)),
                 SizedBox(height: AppSpacing.sm.h),
@@ -108,7 +118,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                 DropdownButtonFormField<String>(
                   initialValue: _selectedGrade.isNotEmpty && _grades.contains(_selectedGrade) ? _selectedGrade : null,
                   items: _grades.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
-                  onChanged: (v) => setState(() => _selectedGrade = v ?? ''),
+                  onChanged: _grades.isEmpty ? null : (v) => setState(() => _selectedGrade = v ?? ''),
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: cs.surfaceContainerHighest,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -158,16 +159,16 @@ class AuthService {
               if (persistentKey != null && persistentKey.isNotEmpty) await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
               if (encryptionKey != null && encryptionKey.isNotEmpty) await _secureStorage.write(key: _encryptionKeyKey, value: encryptionKey);
               ApiClient.setAuth(token);
-              _saveSession(localUser['userId'], username);
+              unawaited(_saveSession(localUser['userId'], username));
               return 'ok';
             }
           }
         } catch (_) {
           // Server unreachable - only allow offline access
-          _saveSession(localUser['userId'], username);
+          unawaited(_saveSession(localUser['userId'], username));
           return 'local_only';
         }
-        _saveSession(localUser['userId'], username);
+        unawaited(_saveSession(localUser['userId'], username));
         return 'local_only';
       }
 

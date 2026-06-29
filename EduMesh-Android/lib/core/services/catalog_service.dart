@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/resource_model.dart';
 import '../network/api_client.dart';
 import '../storage/db_helper.dart';
+import '../utils/file_utils.dart';
 
 /// Singleton service that maintains a local cache of the server's resource
 /// catalog so the user can browse and queue downloads even when offline.
@@ -24,10 +25,10 @@ class CatalogService {
 
       final db = await DBHelper().database;
       await db.transaction((txn) async {
-        txn.delete('catalog');
+        await txn.delete('catalog');
         for (final item in data) {
           if (item is! Map) continue;
-          txn.insert('catalog', {
+          await txn.insert('catalog', {
             'id': (item['id'] ?? '').toString(),
             'title': (item['title'] ?? '').toString(),
             'type': (item['type'] ?? '').toString(),
@@ -74,14 +75,6 @@ class CatalogService {
     return rows.map(_rowToModel).toList();
   }
 
-  /// Returns distinct subject names from the cached catalog.
-  Future<List<String>> getSubjects() async {
-    final db = await DBHelper().database;
-    final rows = await db.rawQuery(
-        'SELECT DISTINCT subject FROM catalog WHERE subject IS NOT NULL AND subject != \'\' ORDER BY subject ASC');
-    return rows.map((r) => r['subject'] as String).toList();
-  }
-
   /// Full-text search across title, subject, grade, and type in the cached catalog.
   Future<List<ResourceModel>> searchCatalog(String query) async {
     if (query.trim().isEmpty) return [];
@@ -102,7 +95,7 @@ class CatalogService {
       title: (row['title'] ?? '').toString(),
       subject: (row['subject'] ?? '').toString(),
       grade: (row['grade'] ?? '').toString(),
-      type: _parseType((row['type'] ?? '').toString()),
+      type: parseResourceType((row['type'] ?? '').toString()),
       pdfUrl: (row['pdf_url'] as String?)?.isNotEmpty == true
           ? row['pdf_url'] as String
           : null,
@@ -110,22 +103,5 @@ class CatalogService {
     );
   }
 
-  ResourceType _parseType(String raw) {
-    switch (raw) {
-      case 'textbook':
-        return ResourceType.textbook;
-      case 'videos':
-        return ResourceType.videos;
-      case 'pyq':
-        return ResourceType.pyq;
-      case 'notes':
-        return ResourceType.notes;
-      case 'pastPaper':
-        return ResourceType.pastPaper;
-      case 'kiwix':
-        return ResourceType.kiwix;
-      default:
-        return ResourceType.notes;
-    }
-  }
+
 }

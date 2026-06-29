@@ -16,7 +16,6 @@ const List<Map<String, String?>> appLanguageOptions = [
   {'code': 'hi', 'label': 'हिन्दी'},
   {'code': 'kn', 'label': 'ಕನ್ನಡ'},
   {'code': 'fr', 'label': 'Français'},
-  {'code': null, 'label': 'More...'},
 ];
 
 /// Persists the choice to [SharedPreferences] so it survives restarts.

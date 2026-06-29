@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/constants/lumina_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/storage/db_helper.dart';
+import '../../core/utils/file_utils.dart';
 import '../../shared/services/download_service.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
@@ -61,23 +63,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
     );
     if (confirmed == true) {
       await DownloadService().deleteDownload(resourceId);
-      _load();
-    }
-  }
-
-  String _formatSize(int bytes, AppLocalizations l10n) {
-    if (bytes < 1024) return '$bytes${l10n.unitBytes}';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}${l10n.unitKilobytes}';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}${l10n.unitMegabytes}';
-  }
-
-  IconData _iconForType(String type) {
-    switch (type) {
-      case 'textbook': return Icons.menu_book;
-      case 'video': case 'videos': return Icons.play_circle;
-      case 'pyq': return Icons.description;
-      case 'kiwix': return Icons.language;
-      default: return Icons.article;
+      unawaited(_load());
     }
   }
 
@@ -118,9 +104,9 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                     return Card(
                       margin: EdgeInsets.only(bottom: AppSpacing.sm.h),
                       child: ListTile(
-                        leading: Icon(_iconForType(type), color: cs.primary),
+                        leading: Icon(iconForType(parseResourceType(type)), color: cs.primary),
                         title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                        subtitle: Text('$subject • ${_formatSize(size, l10n)}', style: tt.bodySmall),
+                        subtitle: Text('$subject • ${formatFileSize(size, l10n)}', style: tt.bodySmall),
                         trailing: IconButton(
                           icon: Icon(Icons.delete_outline, color: cs.error),
                           onPressed: () => _delete(resourceId, title),

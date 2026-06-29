@@ -24,9 +24,13 @@ class MainActivity : FlutterActivity() {
                 val totalBlocks = stat.blockCountLong
                 val availableBlocks = stat.availableBlocksLong
 
+                val apkFile = java.io.File(applicationInfo.sourceDir)
+                val apkSize = if (apkFile.exists()) apkFile.length() else 0L
+
                 val storageInfo = mapOf(
                     "totalBytes" to totalBlocks * blockSize,
-                    "availableBytes" to availableBlocks * blockSize
+                    "availableBytes" to availableBlocks * blockSize,
+                    "apkSize" to apkSize
                 )
                 result.success(storageInfo)
             } else {

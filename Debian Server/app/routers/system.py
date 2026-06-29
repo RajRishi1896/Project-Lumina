@@ -1,31 +1,41 @@
 """System routes — health, ping, captive portal, static files, whoami."""
 import time
 import os
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from app.database import _startup_time
 from app.dependencies import _extract_user
-from app.models import UptimeResponse, PingResponse, TaskStatusResponse, WhoamiResponse
+from app.models import StatusResponse, WhoamiResponse
 
 router = APIRouter()
 
-
-def _error_response(reason: str) -> FileResponse:
-    """Generate an error response for unauthorized or missing resources.
-
-    Args:
-        reason: The error reason string. "access_denied" returns 403; all others return 401.
-
-    Returns:
-        FileResponse serving the static error.html page, or a plain HTML fallback.
-    """
-    err_path = os.path.join("static", "error.html")
-    if os.path.isfile(err_path):
-        return FileResponse(err_path, status_code=403 if reason in ("access_denied",) else 401)
-    return HTMLResponse(content=f"<h1>Access Denied</h1><p>{reason}</p><a href='/welcome'>Back to Home</a>", status_code=403)
+STATIC_DIR = "static"
 
 
-@router.get("/api/health", response_model=UptimeResponse, summary="Health check endpoint", description="Returns server status and uptime in seconds since the application started.", tags=["System"], responses={200: {"description": "Server is healthy with uptime info"}})
+async def _error_response(reason: str) -> HTMLResponse:
+    """Render error page with the given reason."""
+    error_page = os.path.join(STATIC_DIR, "error.html")
+    try:
+        def _read_error_page():
+            with open(error_page, "r", encoding="utf-8") as f:
+                return f.read()
+        content = await asyncio.to_thread(_read_error_page)
+    except FileNotFoundError:
+        return HTMLResponse("<h1>Error</h1>", status_code=404)
+    reasons = {
+        "not_found": ("Page Not Found", "The page you are looking for does not exist.", "notfound", "Not Found"),
+        "access_denied": ("Access Denied", "You do not have permission to view this page.", "denied", "Access Denied"),
+        "session_expired": ("Session Expired", "Your session has expired. Please log in again.", "expired", "Session Expired"),
+    }
+    title, message, badge_cls, badge_text = reasons.get(reason, ("Error", "An error occurred.", "notfound", "Error"))
+    content = content.replace("{{TITLE}}", title).replace("{{MESSAGE}}", message).replace("{{BADGE}}", badge_cls).replace("{{BADGE_TEXT}}", badge_text)
+    return HTMLResponse(content, status_code={
+        "not_found": 404, "access_denied": 403, "session_expired": 401
+    }.get(reason, 500))
+
+
+@router.get("/api/health", summary="Health check endpoint", description="Returns server status and uptime in seconds since the application started.", tags=["System"], responses={200: {"description": "Server is healthy with uptime info"}})
 async def health():
     """Check the server's health and return uptime.
 
@@ -35,7 +45,7 @@ async def health():
     return {"status": "ok", "uptime": time.time() - _startup_time}
 
 
-@router.get("/ping", response_model=PingResponse, summary="Ping server", description="Simple liveness probe. Returns a pong response used by the Flutter app's connectivity heartbeat.", tags=["System"], responses={200: {"description": "Pong response indicating the server is alive"}})
+@router.get("/ping", response_model=StatusResponse, summary="Ping server", description="Simple liveness probe. Returns a pong response used by the Flutter app's connectivity heartbeat.", tags=["System"], responses={200: {"description": "Pong response indicating the server is alive"}})
 async def ping_server():
     """Respond to a liveness ping.
 
@@ -43,30 +53,6 @@ async def ping_server():
         Dict with a pong status.
     """
     return {"status": "pong"}
-
-
-@router.get("/api/task/{task_id}", response_model=TaskStatusResponse,
-            summary="Poll background task status",
-            description="Returns the current status and result of a background task previously enqueued via the task queue. Clients should poll this endpoint with the task ID returned by an enqueue operation.",
-            tags=["System"],
-            responses={200: {"description": "Task status and result (if completed)"}, 404: {"description": "Task ID not found"}})
-async def get_task_status(task_id: str):
-    """Get the status and result of a background task.
-
-    Args:
-        task_id: The task UUID returned by an enqueue operation.
-
-    Returns:
-        Dict with task id, type, status, result, and error fields.
-
-    Raises:
-        HTTPException 404: If the task ID is unknown.
-    """
-    from app.task_queue import get_task
-    task = get_task(task_id)
-    if task is None:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return task
 
 
 @router.get("/generate_204", summary="Captive portal detection bypass", description="Returns a 204 No Content response to trick Android's captive portal detection into thinking the network has internet access, preventing it from switching to cellular data.", tags=["System"], responses={204: {"description": "Empty response for captive portal bypass"}})
@@ -149,6 +135,8 @@ async def serve_static(path: str, request: Request):
     Raises:
         HTTPException 401: Propagated from _extract_user if the session is invalid.
     """
+    if ".." in path or path.startswith("/"):
+        return await _error_response("not_found")
     if path.endswith(".html"):
         clean = path[:-5]
         return RedirectResponse(url=f"/static/{clean}", status_code=301)
@@ -165,17 +153,17 @@ async def serve_static(path: str, request: Request):
         file_path = _resolve(path)
         if file_path:
             return FileResponse(file_path)
-        return _error_response("not_found")
+        return await _error_response("not_found")
 
     try:
         user = await _extract_user(request)
         if user["role"] not in ("teacher", "admin"):
-            return _error_response("access_denied")
+            return await _error_response("access_denied")
         file_path = _resolve(path)
         if file_path:
             return FileResponse(file_path)
-        return _error_response("not_found")
+        return await _error_response("not_found")
     except HTTPException as e:
         if e.status_code == 401:
-            return _error_response("session_expired")
-        return _error_response("access_denied")
+            return await _error_response("session_expired")
+        return await _error_response("access_denied")

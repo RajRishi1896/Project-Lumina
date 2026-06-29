@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from app.database import UPLOAD_DIR, THUMBNAILS_DIR
 from app.async_db import db_conn
-from app.thumb_utils import thumbnail_semaphore, find_video_thumb_time
+from app.thumb_utils import find_video_thumb_time
 
 router = APIRouter()
 
@@ -29,7 +29,11 @@ async def stream_file(filename: str, request: Request):
         HTTPException 404: If the file does not exist.
         HTTPException 416: If the Range header is invalid.
     """
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    if ".." in filename or filename.startswith("/"):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    file_path = os.path.normpath(os.path.join(UPLOAD_DIR, filename))
+    if not file_path.startswith(os.path.normpath(UPLOAD_DIR)):
+        raise HTTPException(status_code=400, detail="Invalid filename")
     if not await asyncio.to_thread(os.path.exists, file_path):
         raise HTTPException(status_code=404, detail="File not found")
     file_size = await asyncio.to_thread(os.path.getsize, file_path)
@@ -49,15 +53,18 @@ async def stream_file(filename: str, request: Request):
         content_length = end - start + 1
 
         async def _stream_chunk():
-            with open(file_path, "rb") as f:
-                f.seek(start)
+            file_handle = await asyncio.to_thread(open, file_path, "rb")
+            try:
+                await asyncio.to_thread(file_handle.seek, start)
                 remaining = content_length
                 while remaining > 0:
-                    chunk = await asyncio.to_thread(f.read, min(65536, remaining))
+                    chunk = await asyncio.to_thread(file_handle.read, min(65536, remaining))
                     if not chunk:
                         break
                     remaining -= len(chunk)
                     yield chunk
+            finally:
+                await asyncio.to_thread(file_handle.close)
 
         return StreamingResponse(
             _stream_chunk(),
@@ -91,7 +98,7 @@ async def resource_thumbnail(resource_id: int):
     """
     async with db_conn() as conn:
         c = conn.cursor()
-        c.execute("SELECT file_path, type FROM resources WHERE id = ?", (resource_id,))
+        c.execute("SELECT filename, resource_type FROM resources WHERE id = ?", (resource_id,))
         row = c.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Resource not found")
@@ -101,36 +108,35 @@ async def resource_thumbnail(resource_id: int):
         return FileResponse(thumb_path, media_type="image/png")
     if not await asyncio.to_thread(os.path.exists, file_path):
         raise HTTPException(status_code=404, detail="File not found")
-    async with thumbnail_semaphore:
-        try:
-            if rtype in ("textbook", "notes", "pyq", "pastPaper"):
-                try:
-                    import fitz
+    try:
+        if rtype in ("textbook", "notes", "pyq", "pastPaper"):
+            try:
+                import fitz
 
-                    def _gen_pdf_thumb(fp, tp):
-                        """Generate a 0.3x PNG thumbnail from the first page of a PDF. Runs in worker thread."""
-                        doc = fitz.open(fp)
-                        try:
-                            pix = doc[0].get_pixmap(matrix=fitz.Matrix(0.3, 0.3))
-                            pix.save(tp)
-                        finally:
-                            doc.close()
-                    await asyncio.to_thread(_gen_pdf_thumb, file_path, thumb_path)
-                except ImportError:
-                    raise HTTPException(status_code=404, detail="Thumbnail unavailable (PyMuPDF not installed)")
-            elif rtype == "videos":
-                thumb_time = await asyncio.to_thread(find_video_thumb_time, file_path)
-                ss = f"{int(thumb_time // 3600):02d}:{int((thumb_time % 3600) // 60):02d}:{int(thumb_time % 60):02d}"
-                result = await asyncio.to_thread(lambda: subprocess.run(
-                    ["ffmpeg", "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],
-                    capture_output=True, timeout=15
-                ))
-                if result.returncode != 0 or not os.path.exists(thumb_path):
-                    raise HTTPException(status_code=404, detail="Thumbnail generation failed")
-            else:
-                raise HTTPException(status_code=404, detail="No thumbnail for this type")
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Thumbnail error: {e}")
+                def _gen_pdf_thumb(fp, tp):
+                    """Generate a 0.3x PNG thumbnail from the first page of a PDF. Runs in worker thread."""
+                    doc = fitz.open(fp)
+                    try:
+                        pix = doc[0].get_pixmap(matrix=fitz.Matrix(0.3, 0.3))
+                        pix.save(tp)
+                    finally:
+                        doc.close()
+                await asyncio.to_thread(_gen_pdf_thumb, file_path, thumb_path)
+            except ImportError:
+                raise HTTPException(status_code=404, detail="Thumbnail unavailable (PyMuPDF not installed)")
+        elif rtype == "videos":
+            thumb_time = await asyncio.to_thread(find_video_thumb_time, file_path)
+            ss = f"{int(thumb_time // 3600):02d}:{int((thumb_time % 3600) // 60):02d}:{int(thumb_time % 60):02d}"
+            result = await asyncio.to_thread(lambda: subprocess.run(
+                ["ffmpeg", "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],
+                capture_output=True, timeout=15
+            ))
+            if result.returncode != 0 or not os.path.exists(thumb_path):
+                raise HTTPException(status_code=404, detail="Thumbnail generation failed")
+        else:
+            raise HTTPException(status_code=404, detail="No thumbnail for this type")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Thumbnail error: {e}")
     return FileResponse(thumb_path, media_type="image/png")

@@ -1,119 +1,133 @@
-"""Async SQLite helpers — wraps sqlite3 calls in asyncio.to_thread.
+"""Async SQLite helpers — wraps sqlite3 calls in a dedicated thread pool.
 
-All functions in this module open a fresh connection for each call
-and close it automatically.  For transactions spanning multiple
-statements, use `db_conn()` as an async context manager and run the
-SQL statements synchronously within the managed block.
+Every function opens its own connection and closes it automatically.
+A dedicated ThreadPoolExecutor (20 workers) prevents the 6-worker default
+from bottlenecking under 250 concurrent students.
+
+For multi-statement transactions, use ``db_conn()`` as an async context
+manager. For single-query hot paths, prefer the per-query helpers below.
 """
 import sqlite3
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from app.database import DB_PATH
 
 TIMEOUT = 5.0
 
+# Dedicated executor — 20 workers handles 250 concurrent students with
+# headroom for burst activity.  On 2-core Celeron the default is only 6.
+# ponytail: hardcoded cap, make configurable if deployed on 8+ core hw.
+_DB_EXECUTOR = ThreadPoolExecutor(max_workers=20, thread_name_prefix="db")
+
+
+def _connect():
+    """Open a connection and apply performance pragmas.
+
+    Every connection from this module goes through here so the pragmas
+    are always set — no sqlite3.connect() calls outside this module.
+    """
+    conn = sqlite3.connect(DB_PATH, timeout=TIMEOUT, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
+    conn.execute("PRAGMA cache_size=-8000")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    return conn
+
+
+async def db_fetch(sql: str, params: tuple = ()) -> list:
+    """Fetch all rows from a SELECT, running entirely in the thread pool.
+
+    Opens its own connection — safe for concurrent hot-path use.
+    """
+    def _fetch():
+        conn = _connect()
+        try:
+            return conn.execute(sql, params).fetchall()
+        finally:
+            conn.close()
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(_DB_EXECUTOR, _fetch)
+
+
+async def db_fetch_one(sql: str, params: tuple = ()):
+    """Fetch one row (or None) from a SELECT in the thread pool."""
+    def _fetch():
+        conn = _connect()
+        try:
+            return conn.execute(sql, params).fetchone()
+        finally:
+            conn.close()
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(_DB_EXECUTOR, _fetch)
+
+
+async def db_exec(sql: str, params: tuple = ()) -> int:
+    """Execute a write (INSERT/UPDATE/DELETE) with auto-commit.
+
+    Returns lastrowid (0 for non-INSERT statements).
+    """
+    def _exec():
+        conn = _connect()
+        try:
+            cur = conn.execute(sql, params)
+            conn.commit()
+            return cur.lastrowid
+        finally:
+            conn.close()
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(_DB_EXECUTOR, _exec)
+
+
+async def db_exec_many(sql: str, params_list: list[tuple]) -> None:
+    """Execute the same SQL with multiple parameter sets (batch INSERT/UPDATE).
+
+    Uses a single connection + transaction for the whole batch.  Prefer this
+    over calling ``db_exec`` in a loop when you need to insert many rows.
+    """
+    def _exec():
+        conn = _connect()
+        try:
+            conn.executemany(sql, params_list)
+            conn.commit()
+        finally:
+            conn.close()
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(_DB_EXECUTOR, _exec)
+
+
+async def db_run(func):
+    """Run a custom SQLite operation entirely in the DB thread pool.
+
+    Use this for short multi-statement transactions that do not fit the
+    single-query helpers. The callback receives a connection and may return
+    a value.
+    """
+    def _run():
+        conn = _connect()
+        try:
+            return func(conn)
+        finally:
+            conn.close()
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(_DB_EXECUTOR, _run)
+
 
 @asynccontextmanager
 async def db_conn():
-    """Async context manager that yields an open SQLite connection.
+    """Async context manager for multi-statement transactions.
 
-    The connection is automatically closed when the context manager exits.
-    Use this for multi-statement transactions.
+    Yields an open connection with pragmas already applied.  The *entire*
+    ``async with`` block runs inside the thread pool — no queries leak
+    onto the event loop.
 
-    Yields:
-        A sqlite3.Connection object.
+    Prefer the per-query helpers (``db_fetch`` etc.) for single-query
+    hot paths — they are leaner and avoid the context manager overhead.
     """
-    conn = await asyncio.to_thread(
-        lambda: sqlite3.connect(DB_PATH, timeout=TIMEOUT, check_same_thread=False)
-    )
+    loop = asyncio.get_running_loop()
+    conn = await loop.run_in_executor(_DB_EXECUTOR, _connect)
     try:
         yield conn
     finally:
-        await asyncio.to_thread(conn.close)
-
-
-async def db_exec(sql: str, params: tuple = ()) -> sqlite3.Cursor:
-    """Execute a SQL statement and commit, returning the cursor.
-
-    Opens a fresh connection, runs the statement, commits, and closes.
-
-    Args:
-        sql: SQL statement string.
-        params: Optional tuple of parameters for the statement.
-
-    Returns:
-        The sqlite3.Cursor after execution.
-    """
-    def _run():
-        conn = sqlite3.connect(DB_PATH, timeout=TIMEOUT)
-        try:
-            cur = conn.cursor()
-            cur.execute(sql, params)
-            conn.commit()
-            return cur
-        finally:
-            conn.close()
-    return await asyncio.to_thread(_run)
-
-
-async def db_fetchone(sql: str, params: tuple = ()):
-    """Execute a query and return the first matching row.
-
-    Args:
-        sql: SQL query string.
-        params: Optional tuple of parameters for the query.
-
-    Returns:
-        A single row as a sqlite3.Row or None if no match.
-    """
-    def _run():
-        conn = sqlite3.connect(DB_PATH, timeout=TIMEOUT)
-        try:
-            cur = conn.cursor()
-            cur.execute(sql, params)
-            return cur.fetchone()
-        finally:
-            conn.close()
-    return await asyncio.to_thread(_run)
-
-
-async def db_fetchall(sql: str, params: tuple = ()):
-    """Execute a query and return all matching rows.
-
-    Args:
-        sql: SQL query string.
-        params: Optional tuple of parameters for the query.
-
-    Returns:
-        List of rows as sqlite3.Row objects.
-    """
-    def _run():
-        conn = sqlite3.connect(DB_PATH, timeout=TIMEOUT)
-        try:
-            cur = conn.cursor()
-            cur.execute(sql, params)
-            return cur.fetchall()
-        finally:
-            conn.close()
-    return await asyncio.to_thread(_run)
-
-
-async def db_execute(sql: str, params: tuple = ()):
-    """Execute a SQL statement and commit without returning a cursor.
-
-    Fire-and-forget variant of db_exec for statements where the cursor
-    is not needed.
-
-    Args:
-        sql: SQL statement string.
-        params: Optional tuple of parameters for the statement.
-    """
-    def _run():
-        conn = sqlite3.connect(DB_PATH, timeout=TIMEOUT)
-        try:
-            cur = conn.cursor()
-            cur.execute(sql, params)
-            conn.commit()
-        finally:
-            conn.close()
-    await asyncio.to_thread(_run)
+        await loop.run_in_executor(_DB_EXECUTOR, conn.close)

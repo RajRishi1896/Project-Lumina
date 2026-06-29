@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../core/services/activity_tracker.dart';
+import '../../core/storage/db_helper.dart';
 import 'download_service.dart';
 import 'notification_service.dart';
 import 'connectivity_service.dart';
@@ -67,9 +69,9 @@ class DownloadQueue extends ChangeNotifier {
       _queue.add(_QueuedDownload(resourceId, url, fileName,
         title: title, subject: subject, grade: grade, type: type, mtime: mtime));
       notifyListeners();
-      if (!_processing) _processNext();
+      if (!_processing) unawaited(_processNext());
     } else {
-      await DownloadService().addPendingDownload(resourceId, url, fileName,
+      await DBHelper().addPendingDownload(resourceId, url, fileName,
         title: title, subject: subject, grade: grade, type: type, mtime: mtime);
       notifyListeners();
     }
@@ -94,12 +96,12 @@ class DownloadQueue extends ChangeNotifier {
     );
     if (path != null) {
       if (task.title.isNotEmpty) {
-        NotificationService().showDownloadComplete(task.title);
+        unawaited(NotificationService().showDownloadComplete(task.title));
       }
-      ActivityTracker().logKeyAction('download', resourceId: task.resourceId, metadata: task.title);
+      unawaited(ActivityTracker().logAction('download', resourceId: task.resourceId, metadata: task.title));
       _queue.removeAt(0);
       _finishTask();
-      if (_queue.isNotEmpty) _processNext();
+      if (_queue.isNotEmpty) unawaited(_processNext());
     } else if (task.retries > 0) {
       // Decrement retries and re-attempt with exponential backoff so transient
       // network or server issues have time to resolve.
@@ -108,14 +110,14 @@ class DownloadQueue extends ChangeNotifier {
       final retryCount = 5 - task.retries; // 0-indexed attempt number
       final delay = Duration(seconds: 3 * (1 << retryCount)); // 3s, 6s, 12s, 24s, 48s
       await Future.delayed(delay);
-      _processNext();
+      unawaited(_processNext());
     } else {
       if (task.title.isNotEmpty) {
-        NotificationService().showDownloadFailed(task.title);
+        unawaited(NotificationService().showDownloadFailed(task.title));
       }
       _queue.removeAt(0);
       _finishTask();
-      if (_queue.isNotEmpty) _processNext();
+      if (_queue.isNotEmpty) unawaited(_processNext());
     }
   }
 }

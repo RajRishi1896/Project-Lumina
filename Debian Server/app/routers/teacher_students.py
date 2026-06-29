@@ -77,16 +77,19 @@ async def teacher_student_analytics(scholar_id: str, teacher_user: str = Depends
     """
     async with db_conn() as conn:
         c = conn.cursor()
-        c.execute("SELECT name FROM scholars WHERE id = ?", (scholar_id,))
-        scholar = c.fetchone()
-        if not scholar:
-            raise HTTPException(status_code=404, detail="Student not found")
-        c.execute("SELECT total_seconds, streak_days FROM weekly_study WHERE scholar_id = ?", (scholar_id,))
+        c.execute("""
+            SELECT s.name,
+                COALESCE((SELECT total_seconds FROM weekly_study WHERE scholar_id = ?), 0),
+                COALESCE((SELECT streak_days FROM weekly_study WHERE scholar_id = ?), 0),
+                (SELECT COUNT(*) FROM scholar_downloads WHERE scholar_id = ?)
+            FROM scholars s WHERE s.id = ?
+        """, (scholar_id, scholar_id, scholar_id, scholar_id))
         row = c.fetchone()
-        week_secs = row[0] if row else 0
-        streak = row[1] if row and len(row) > 1 else 0
-        c.execute("SELECT COUNT(*) FROM scholar_downloads WHERE scholar_id = ?", (scholar_id,))
-        saved = c.fetchone()[0]
+        if not row:
+            raise HTTPException(status_code=404, detail="Student not found")
+        week_secs = row[1]
+        streak = row[2]
+        saved = row[3]
         c.execute("SELECT subject_name, minutes FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC", (scholar_id,))
         subjects = [{"name": row[0], "minutes": row[1]} for row in c.fetchall()]
     return {
@@ -217,7 +220,11 @@ async def update_teacher_name(data: NameUpdate, teacher_user: str = Depends(veri
 
     Returns:
         Status dict.
+    Raises:
+        HTTPException 400: If the user is the default admin.
     """
+    if teacher_user == "admin":
+        raise HTTPException(status_code=400, detail="Cannot modify the default admin profile.")
     async with db_conn() as conn:
         c = conn.cursor()
         c.execute("UPDATE users SET name = ? WHERE username = ?", (data.name.strip(), teacher_user))
@@ -238,7 +245,11 @@ async def update_teacher_department(data: DepartmentUpdate, teacher_user: str = 
 
     Returns:
         Status dict.
+    Raises:
+        HTTPException 400: If the user is the default admin.
     """
+    if teacher_user == "admin":
+        raise HTTPException(status_code=400, detail="Cannot modify the default admin profile.")
     async with db_conn() as conn:
         c = conn.cursor()
         c.execute("UPDATE users SET department = ? WHERE username = ?", (data.department.strip(), teacher_user))

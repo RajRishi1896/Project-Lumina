@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/app_spacing.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
@@ -40,6 +42,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   bool _controlsVisible = true;
   bool _loaded = false;
   bool _disposed = false;
+  Timer? _savePositionDebounce;
 
   String get _positionKey => 'pdf_pos_${widget.pdfUrl}';
 
@@ -67,7 +70,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getInt(_positionKey);
     if (saved != null && saved > 1) {
-      _pdfController.animateToPage(pageNumber: saved, duration: Duration.zero);
+      unawaited(_pdfController.animateToPage(pageNumber: saved, duration: Duration.zero));
     }
   }
 
@@ -87,7 +90,10 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         _totalPages = total;
         _loaded = true;
       });
-      _savePosition(page);
+      _savePositionDebounce?.cancel();
+      _savePositionDebounce = Timer(const Duration(milliseconds: 400), () {
+        _savePosition(page);
+      });
     }
   }
 
@@ -152,15 +158,15 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.lg),
+              SizedBox(height: AppSpacing.lg.h),
               Expanded(
                 child: GridView.builder(
                   shrinkWrap: true,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 6,
                     childAspectRatio: 1.2,
-                    crossAxisSpacing: 4,
-                    mainAxisSpacing: 4,
+                    crossAxisSpacing: AppSpacing.xs,
+                    mainAxisSpacing: AppSpacing.xs,
                   ),
                   itemCount: _totalPages,
                   itemBuilder: (_, i) {
@@ -199,6 +205,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   @override
   void dispose() {
     _disposed = true;
+    _savePositionDebounce?.cancel();
     _pdfController.removeListener(_onPageChanged);
     _pdfController.dispose();
     super.dispose();
@@ -220,8 +227,8 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
             GestureDetector(
               onTap: _showPagePicker,
               child: Container(
-                margin: const EdgeInsets.only(right: AppSpacing.md),
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                margin: EdgeInsets.only(right: AppSpacing.md.w),
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.sm.h),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
@@ -238,7 +245,6 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           children: [
             PdfViewPinch(
               controller: _pdfController,
-              scrollDirection: Axis.vertical,
               onDocumentError: (_) {
                 if (mounted) setState(() {});
               },
@@ -246,15 +252,15 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
             if (_controlsVisible) ...[
               if (_totalPages > 1)
                 Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 16,
+                  left: AppSpacing.md.w,
+                  right: AppSpacing.md.w,
+                  bottom: AppSpacing.md.h,
                   child: Container(
                     decoration: BoxDecoration(
                       color: cs.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.sm, AppSpacing.xs, AppSpacing.sm, AppSpacing.sm),
+                    padding: EdgeInsets.fromLTRB(AppSpacing.sm.w, AppSpacing.xs.h, AppSpacing.sm.w, AppSpacing.sm.h),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -269,7 +275,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                             GestureDetector(
                               onTap: _showPagePicker,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                                padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
                                 decoration: BoxDecoration(
                                   color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(8),
@@ -301,7 +307,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                         GestureDetector(
                           onTap: _showPagePicker,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                            padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
                             child: Text(l10n.pdfTapToJumpLabel,
                                 style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
                           ),

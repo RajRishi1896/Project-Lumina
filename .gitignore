@@ -1,35 +1,54 @@
-# Miscellaneous
-*.class
-# Flutter/Dart
+# === Build & Tool Artifacts ===
+**/analysis.txt
+build/
+.android/
+.ios/
 .dart_tool/
 .packages
-build/
+.pub/
+.pub-cache/
 .flutter-plugins
 .flutter-plugins-dependencies
+.flutter_plugins/
+**/doc/api/
+**/generated_plugin_registrant.dart
+**/GeneratedPluginRegistrant.java
+EduMesh-Android/lib/l10n/app_localizations*.dart
+Debian Server/venv/
+**/__pycache__/
+*.pyc
+*.class
+app.*.symbols
+app.*.map.json
 
-# Android/IntelliJ
+# === Runtime Data (regenerated on startup) ===
+Debian Server/data/
+Debian Server/uploads/
+Debian Server/thumbnails/
+Debian Server/zim_pages/
+Debian Server/profile_icons/
+
+# === Logs ===
+*.log
+
+# === IDE / Editor ===
 .idea/
 *.iml
+*.ipr
+*.iws
+.vscode/
 local.properties
 /.gradle/
 android/.gradle/
 
-# VS Code
-.vscode/
-
-# Generated files
-**/generated_plugin_registrant.dart
-**/GeneratedPluginRegistrant.java
-
-# macOS
+# === OS ===
 .DS_Store
+Thumbs.db
 
-# log files
-*.log
-
-*.pyc
+# === Misc ===
 *.swp
-.DS_Store
+*.swo
+*~
 .atom/
 .build/
 .buildlog/
@@ -37,43 +56,10 @@ android/.gradle/
 .svn/
 .swiftpm/
 migrate_working_dir/
-
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
- 
-# UI design assets (large, optional)
+coverage/
 assets/UI-Inspo/
 
-# AI Agent / Workspace Artifacts
+# === AI Agent Artifacts ===
 AGENTS.md
 COMPLIANCE_TRACKER.md
 IMPLEMENTATION_PLAN.md
@@ -81,10 +67,12 @@ IMPLEMENTATION_PLAN.md
 **/walkthrough.md
 **/task.md
 **/Implementation Plan.md
+**/Implementation Plan*/
 Markdown files/DESIGN.md
+Markdown files/i18n-debt.md
 docs/
-docs/*
+LMS Docs/
 
-# Ponytail (opencode plugin)
+# === Ocode plugins ===
 hooks/
 skills/

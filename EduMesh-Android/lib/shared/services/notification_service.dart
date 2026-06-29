@@ -52,7 +52,6 @@ class NotificationService {
           'download_channel',
           _channelName,
           description: _channelDescription,
-          importance: Importance.defaultImportance,
         ),
       );
     }
@@ -106,8 +105,6 @@ class NotificationService {
           android: AndroidNotificationDetails(
             'download_channel',
             _channelName,
-            importance: Importance.defaultImportance,
-            priority: Priority.defaultPriority,
           ),
           iOS: const DarwinNotificationDetails(),
         ),
@@ -149,8 +146,6 @@ class NotificationService {
           android: AndroidNotificationDetails(
             'download_channel',
             _channelName,
-            importance: Importance.defaultImportance,
-            priority: Priority.defaultPriority,
           ),
           iOS: const DarwinNotificationDetails(),
         ),

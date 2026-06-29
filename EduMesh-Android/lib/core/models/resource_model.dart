@@ -1,3 +1,5 @@
+import '../utils/file_utils.dart';
+
 /// The category of a learning resource.
 enum ResourceType {
   /// Textbooks and reference books.
@@ -64,32 +66,11 @@ class ResourceModel {
       title: json['title'] ?? '',
       subject: json['subject'] ?? kFallbackSubject,
       grade: json['grade'] ?? '',
-      type: _parseType(json['type']?.toString() ?? ''),
+      type: parseResourceType(json['type']?.toString() ?? ''),
       pdfUrl: json['pdfUrl'],
       mtime: (json['mtime'] as num?)?.toDouble() ?? 0,
       isDownloaded: json['isDownloaded'] == true,
     );
   }
 
-  static ResourceType _parseType(String type) {
-    switch (type.toLowerCase()) {
-      case 'textbook':
-        return ResourceType.textbook;
-      case 'videos':
-      case 'video':
-        return ResourceType.videos;
-      case 'pyq':
-        return ResourceType.pyq;
-      case 'pastpaper':
-      case 'past_paper':
-        return ResourceType.pastPaper;
-      case 'kiwix':
-        return ResourceType.kiwix;
-      case 'notes':
-      case 'note':
-        return ResourceType.notes;
-      default:
-        return ResourceType.notes;
-    }
-  }
 }

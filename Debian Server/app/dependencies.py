@@ -1,11 +1,9 @@
 """Authentication dependencies and password helpers for Lumina EduMesh Hub."""
-import re
-import sqlite3
-import asyncio
+import uuid
 import bcrypt as bcrypt_lib
 from datetime import datetime, timedelta
 from fastapi import HTTPException, Request
-from app.database import DB_PATH
+from app.async_db import db_fetch_one, db_exec, db_run
 
 
 def hash_password(password: str) -> str:
@@ -56,16 +54,10 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
     return True, ""
 
 
-def _is_stale_minutes(dt_str: str, minutes: int) -> bool:
-    """Check if a datetime string is more than N minutes old.
-    
-    Args:
-        dt_str: ISO datetime string from SQLite (e.g., '2026-06-11 12:00:00').
-        minutes: Threshold in minutes.
-    
-    Returns:
-        True if the datetime is older than the threshold or unparsable.
-    """
+def _is_session_stale(dt_str: str | None, minutes: int = 5) -> bool:
+    """Check if a datetime string is older than the given threshold."""
+    if dt_str is None:
+        return True
     try:
         dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
         return datetime.now() - dt > timedelta(minutes=minutes)
@@ -74,53 +66,27 @@ def _is_stale_minutes(dt_str: str, minutes: int) -> bool:
 
 
 async def _extract_user(request: Request) -> dict:
-    """Resolve the authenticated user from a request's session cookie or bearer token.
+    if hasattr(request.state, "_user"):
+        return request.state._user
 
-    Checks the sessions table for teacher/admin tokens and the scholars
-    table for student tokens. Updates the last_accessed timestamp on hit.
-
-    Args:
-        request: The incoming HTTP request.
-
-    Returns:
-        Dictionary with keys 'username' and 'role'.
-    """
     auth = request.headers.get("Authorization")
     cookie = request.cookies.get("lumina_session")
     if not cookie and not (auth and auth.startswith("Bearer ")):
         raise HTTPException(status_code=401, detail="Unauthorized: Session required.")
     token = cookie or (auth.removeprefix("Bearer ") if auth else "")
 
-    def _run():
-        conn = sqlite3.connect(DB_PATH, timeout=5.0)
-        try:
-            cur = conn.cursor()
-            cur.execute("SELECT s.username, s.role, s.last_accessed FROM sessions s JOIN users u ON s.username = u.username WHERE s.token = ?", (token,))
-            row = cur.fetchone()
-            if row:
-                try:
-                    # Only update last_accessed if >5min old — reduces DB writes
-                    if row[2] is None or _is_stale_minutes(row[2], 5):
-                        cur.execute("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
-                        conn.commit()
-                except Exception:
-                    pass
-                return {"username": row[0], "role": row[1]}
-            cur.execute("SELECT s.username, s.last_accessed FROM sessions s JOIN scholars sc ON s.username = sc.id WHERE s.token = ?", (token,))
-            row = cur.fetchone()
-            if row:
-                try:
-                    if row[1] is None or _is_stale_minutes(row[1], 5):
-                        cur.execute("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
-                        conn.commit()
-                except Exception:
-                    pass
-                return {"username": row[0], "role": "student"}
-            raise HTTPException(status_code=401, detail="Unauthorized: Invalid session.")
-        finally:
-            conn.close()
+    row = await db_fetch_one(
+        "SELECT username, role, last_accessed FROM sessions WHERE token = ? AND role IN ('admin', 'teacher', 'student') AND used = 0 AND expiry > datetime('now')",
+        (token,)
+    )
+    if row:
+        if _is_session_stale(row["last_accessed"]):
+            await db_exec("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
+        result = {"username": row["username"], "role": row["role"]}
+        request.state._user = result
+        return result
 
-    return await asyncio.to_thread(_run)
+    raise HTTPException(status_code=401, detail="Unauthorized: Invalid session.")
 
 
 async def verify_teacher(request: Request) -> str:
@@ -159,48 +125,51 @@ async def verify_admin(request: Request) -> str:
     return user["username"]
 
 
+async def generate_session_token(username: str, role: str) -> dict:
+    stoken = f"LUMINA_HUB-{uuid.uuid4().hex}"
+    rtoken = f"LUMINA_REF-{uuid.uuid4().hex}"
+    ptoken = f"LUMINA_PER-{uuid.uuid4().hex}"
+
+    def _create_tokens(conn):
+        conn.execute("DELETE FROM sessions WHERE username = ? AND rowid NOT IN (SELECT rowid FROM sessions WHERE username = ? ORDER BY rowid DESC LIMIT 5)", (username, username))
+        conn.execute("INSERT INTO sessions (token, username, role, encryption_key, used, expiry) VALUES (?, ?, ?, '', 0, datetime('now', '+1 day'))", (stoken, username, role))
+        conn.execute("INSERT INTO refresh_tokens (token, username, role, expires_at) VALUES (?, ?, ?, datetime('now', '+7 days'))", (rtoken, username, role))
+        conn.execute("INSERT INTO persistent_keys (token, username, role, expires_at) VALUES (?, ?, ?, datetime('now', '+365 days'))", (ptoken, username, role))
+        conn.commit()
+    await db_run(_create_tokens)
+    return {"session_token": stoken, "refresh_token": rtoken, "persistent_key": ptoken, "encryption_key": ""}
+
+
+async def invalidate_tokens_for_user(username: str):
+    def _delete_tokens(conn):
+        conn.execute("DELETE FROM sessions WHERE username = ?", (username,))
+        conn.execute("DELETE FROM refresh_tokens WHERE username = ?", (username,))
+        conn.execute("DELETE FROM persistent_keys WHERE username = ?", (username,))
+        conn.commit()
+    await db_run(_delete_tokens)
+
+
 async def verify_student(request: Request):
-    """Require a valid student session for the current request.
+    if hasattr(request.state, "_student_id"):
+        return request.state._student_id
 
-    Checks the sessions table for a student-role token and verifies the
-    associated scholar account still exists.
-
-    Args:
-        request: The incoming HTTP request.
-
-    Returns:
-        Scholar username (id) from the session.
-
-    Raises:
-        HTTPException: 401 if the session is missing, expired, or the
-            scholar account no longer exists.
-    """
     token = request.cookies.get("lumina_session") or request.headers.get("Authorization", "").removeprefix("Bearer ")
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    def _run():
-        conn = sqlite3.connect(DB_PATH, timeout=5.0)
-        try:
-            cur = conn.cursor()
-            cur.execute("SELECT username FROM sessions WHERE token = ? AND role = 'student'", (token,))
-            row = cur.fetchone()
-            if not row:
-                raise HTTPException(status_code=401, detail="Invalid or expired student session")
-            try:
-                cur.execute("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
-                conn.commit()
-            except Exception:
-                pass
-            cur.execute("SELECT id FROM scholars WHERE id = ?", (row[0],))
-            if not cur.fetchone():
-                raise HTTPException(status_code=401, detail="Account no longer exists.")
-            return row[0]
-        except HTTPException:
-            raise
-        except Exception:
-            raise HTTPException(status_code=401, detail="Not authenticated")
-        finally:
-            conn.close()
+    row = await db_fetch_one(
+        "SELECT username, last_accessed FROM sessions WHERE token = ? AND role = 'student' AND used = 0 AND expiry > datetime('now')",
+        (token,)
+    )
+    if not row:
+        raise HTTPException(status_code=401, detail="Invalid or expired student session")
 
-    return await asyncio.to_thread(_run)
+    if _is_session_stale(row["last_accessed"]):
+        await db_exec("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
+
+    exists = await db_fetch_one("SELECT id FROM scholars WHERE id = ?", (row["username"],))
+    if not exists:
+        raise HTTPException(status_code=401, detail="Account no longer exists.")
+
+    request.state._student_id = row["username"]
+    return row["username"]

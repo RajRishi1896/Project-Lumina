@@ -34,12 +34,6 @@ class AppSpacing {
   /// 64px — Standard page horizontal margin.
   static const double pageMargin = 64;
 
-  /// 80px — Top offset for hero sections.
-  static const double heroTop = 80;
-
-  /// 96px — Bottom offset for hero sections.
-  static const double heroBottom = 96;
-
   /// 4px — Small border radius.
   static const double radiusSm = 4;
 

@@ -4,13 +4,12 @@ import re
 import base64
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 import logging
-from app.database import DB_PATH, PROFILE_ICONS_DIR, auto_register_if_new
-from app.async_db import db_conn
+from app.database import PROFILE_ICONS_DIR
+from app.async_db import db_exec, db_exec_many, db_fetch, db_fetch_one, db_run
 from app.models import StudyTimeSync, SubjectTimeSync, IconUpload, StudentChangePasswordRequest, StatusResponse, RestoreResponse, StudentAnalyticsResponse, IconUploadResponse, StudentProfileResponse, WeeklyBreakdownResponse
-from app.dependencies import verify_student, hash_password, verify_password
-from app.encryption import _invalidate_tokens_for_user
+from app.dependencies import verify_student, hash_password, verify_password, invalidate_tokens_for_user
 
 router = APIRouter()
 
@@ -26,11 +25,10 @@ async def sync_downloads(resource_ids: list[str], student_id: str = Depends(veri
     Returns:
         Dict with a status field indicating success.
     """
-    await auto_register_if_new(student_id)
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.executemany("INSERT OR IGNORE INTO scholar_downloads (scholar_id, resource_id) VALUES (?, ?)", [(student_id, rid) for rid in resource_ids])
-        conn.commit()
+    await db_exec_many(
+        "INSERT OR IGNORE INTO scholar_downloads (scholar_id, resource_id) VALUES (?, ?)",
+        [(student_id, rid) for rid in resource_ids],
+    )
     return {"status": "ok"}
 
 
@@ -44,10 +42,8 @@ async def restore_profile(student_id: str = Depends(verify_student)):
     Returns:
         Dict with a download_history list of resource IDs.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT resource_id FROM scholar_downloads WHERE scholar_id = ?", (student_id,))
-        downloads = [r[0] for r in c.fetchall()]
+    rows = await db_fetch("SELECT resource_id FROM scholar_downloads WHERE scholar_id = ?", (student_id,))
+    downloads = [r[0] for r in rows]
     return {"download_history": downloads}
 
 
@@ -62,12 +58,10 @@ async def sync_study_time(data: StudyTimeSync, student_id: str = Depends(verify_
     Returns:
         Dict with a status field indicating success.
     """
-    await auto_register_if_new(student_id)
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("INSERT INTO weekly_study (scholar_id, total_seconds, streak_days, updated_at) VALUES (?, ?, ?, datetime('now')) ON CONFLICT(scholar_id) DO UPDATE SET total_seconds = ?, streak_days = ?, updated_at = datetime('now')",
-                  (student_id, data.total_seconds, data.streak_days, data.total_seconds, data.streak_days))
-        conn.commit()
+    await db_exec(
+        "INSERT INTO weekly_study (scholar_id, total_seconds, streak_days, updated_at) VALUES (?, ?, ?, datetime('now')) ON CONFLICT(scholar_id) DO UPDATE SET total_seconds = ?, streak_days = ?, updated_at = datetime('now')",
+        (student_id, data.total_seconds, data.streak_days, data.total_seconds, data.streak_days),
+    )
     return {"status": "ok"}
 
 
@@ -87,13 +81,13 @@ async def sync_subject_time(data: SubjectTimeSync, student_id: str = Depends(ver
     """
     if len(data.subjects) > 30:
         raise HTTPException(status_code=400, detail="Too many subjects (max 30)")
-    await auto_register_if_new(student_id)
-    async with db_conn() as conn:
+    def _replace_subject_minutes(conn):
         c = conn.cursor()
         c.execute("DELETE FROM subject_minutes WHERE scholar_id = ?", (student_id,))
         c.executemany("INSERT INTO subject_minutes (scholar_id, subject_name, minutes) VALUES (?, ?, ?)",
                       [(student_id, subj.name, subj.minutes) for subj in data.subjects])
         conn.commit()
+    await db_run(_replace_subject_minutes)
     return {"status": "ok"}
 
 
@@ -107,16 +101,17 @@ async def get_analytics(student_id: str = Depends(verify_student)):
     Returns:
         Dict with study_minutes_this_week, streak_days, resources_saved, and a subjects list.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT total_seconds, streak_days FROM weekly_study WHERE scholar_id = ?", (student_id,))
-        row = c.fetchone()
-        week_secs = row[0] if row else 0
-        streak = row[1] if row and len(row) > 1 else 0
-        c.execute("SELECT COUNT(*) FROM scholar_downloads WHERE scholar_id = ?", (student_id,))
-        saved = c.fetchone()[0]
-        c.execute("SELECT subject_name, minutes FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC", (student_id,))
-        subjects = [{"name": row[0], "minutes": row[1]} for row in c.fetchall()]
+    row = await db_fetch_one("""
+        SELECT
+            COALESCE((SELECT total_seconds FROM weekly_study WHERE scholar_id = ?), 0),
+            COALESCE((SELECT streak_days FROM weekly_study WHERE scholar_id = ?), 0),
+            (SELECT COUNT(*) FROM scholar_downloads WHERE scholar_id = ?)
+    """, (student_id, student_id, student_id))
+    week_secs = row[0] if row else 0
+    streak = row[1] if row else 0
+    saved = row[2] if row else 0
+    subject_rows = await db_fetch("SELECT subject_name, minutes FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC", (student_id,))
+    subjects = [{"name": row[0], "minutes": row[1]} for row in subject_rows]
     return {
         "study_minutes_this_week": week_secs // 60,
         "streak_days": streak,
@@ -141,7 +136,9 @@ async def update_student_profile(data: dict, student_id: str = Depends(verify_st
     """
     name = data.get("name")
     grade = data.get("grade")
-    async with db_conn() as conn:
+    ok = True
+    def _update_profile(conn):
+        nonlocal ok
         try:
             c = conn.cursor()
             if name:
@@ -149,9 +146,12 @@ async def update_student_profile(data: dict, student_id: str = Depends(verify_st
             if grade is not None:
                 c.execute("UPDATE scholars SET grade = ? WHERE id = ?", (grade.strip(), student_id))
             conn.commit()
-            return {"status": "success"}
         except Exception:
-            raise HTTPException(status_code=400, detail="Failed to update profile.")
+            ok = False
+    await db_run(_update_profile)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Failed to update profile.")
+    return {"status": "success"}
 
 
 @router.post("/student/profile/icon", response_model=IconUploadResponse, summary="Upload profile icon", description="Uploads a base64-encoded profile image for the student. Validates file magic bytes to confirm the format and enforces a 500KB size limit. Supports PNG, JPG, GIF, and WebP.", tags=["Profile"], responses={200: {"description": "Icon uploaded successfully"}, 400: {"description": "Invalid image data, format, or size exceeded"}})
@@ -240,25 +240,22 @@ async def student_change_password(data: StudentChangePasswordRequest, student_id
     Raises:
         HTTPException 400: If the current password is incorrect, password is not set, or the update fails.
     """
-    async with db_conn() as conn:
-        try:
-            c = conn.cursor()
-            c.execute("SELECT hashed_password FROM scholars WHERE id = ?", (student_id,))
-            row = c.fetchone()
-            if not row:
-                raise HTTPException(status_code=400, detail="Password not set. Contact your teacher.")
-            if not row[0]:
-                raise HTTPException(status_code=400, detail="Password not set. Contact your teacher.")
-            if not verify_password(data.old_password, row[0]):
-                raise HTTPException(status_code=400, detail="Incorrect current password.")
-            hashed = hash_password(data.new_password)
-            c.execute("UPDATE scholars SET hashed_password = ?, reset_required = 0 WHERE id = ?", (hashed, student_id))
-            conn.commit()
-            await _invalidate_tokens_for_user(student_id)
-            return {"status": "success"}
-        except Exception as e:
-            logging.error(f"student_change_password: {e}")
-            raise HTTPException(status_code=400, detail="Failed to change password")
+    try:
+        row = await db_fetch_one("SELECT hashed_password FROM scholars WHERE id = ?", (student_id,))
+        if not row or not row[0]:
+            raise HTTPException(status_code=400, detail="Password not set. Contact your teacher.")
+        password_ok = await asyncio.to_thread(verify_password, data.old_password, row[0])
+        if not password_ok:
+            raise HTTPException(status_code=400, detail="Incorrect current password.")
+        hashed = await asyncio.to_thread(hash_password, data.new_password)
+        await db_exec("UPDATE scholars SET hashed_password = ?, reset_required = 0 WHERE id = ?", (hashed, student_id))
+        await invalidate_tokens_for_user(student_id)
+        return {"status": "success"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"student_change_password: {e}")
+        raise HTTPException(status_code=400, detail="Failed to change password")
 
 
 @router.get("/student/profile", response_model=StudentProfileResponse, summary="Get student profile", description="Returns the student's display name, grade, and scholar ID.", tags=["Profile"], responses={200: {"description": "Profile retrieved successfully"}, 404: {"description": "Student not found"}})
@@ -274,13 +271,10 @@ async def get_student_profile(student_id: str = Depends(verify_student)):
     Raises:
         HTTPException 404: If the student record is not found.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT name, grade, id FROM scholars WHERE id = ?", (student_id,))
-        row = c.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Student not found")
-        return {"name": row[0], "grade": row[1] or "", "scholar_id": row[2]}
+    row = await db_fetch_one("SELECT name, grade, id FROM scholars WHERE id = ?", (student_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return {"name": row[0], "grade": row[1] or "", "scholar_id": row[2]}
 
 
 @router.get("/student/weekly-breakdown", response_model=WeeklyBreakdownResponse,
@@ -297,26 +291,22 @@ async def weekly_breakdown(student_id: str = Depends(verify_student)):
     Returns:
         Dict with weekly_data (day -> minutes mapping) and today_minutes.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("""
-            SELECT COALESCE(SUM(duration_seconds), 0) / 60 as minutes
-            FROM study_sessions
-            WHERE scholar_id = ?
-              AND date(start_time) = date('now')
-        """, (student_id,))
-        row = c.fetchone()
-        today_minutes = row[0] if row else 0
+    row = await db_fetch_one("""
+        SELECT COALESCE(SUM(duration_seconds), 0) / 60 as minutes
+        FROM study_sessions
+        WHERE scholar_id = ?
+          AND date(start_time) = date('now')
+    """, (student_id,))
+    today_minutes = row[0] if row else 0
 
-        c.execute("""
-            SELECT date(start_time) as day,
-                   COALESCE(SUM(duration_seconds), 0) / 60 as minutes
-            FROM study_sessions
-            WHERE scholar_id = ?
-              AND start_time >= datetime('now', '-7 days')
-            GROUP BY date(start_time)
-            ORDER BY day
-        """, (student_id,))
-        rows = c.fetchall()
+    rows = await db_fetch("""
+        SELECT date(start_time) as day,
+               COALESCE(SUM(duration_seconds), 0) / 60 as minutes
+        FROM study_sessions
+        WHERE scholar_id = ?
+          AND start_time >= datetime('now', '-7 days')
+        GROUP BY date(start_time)
+        ORDER BY day
+    """, (student_id,))
 
     return {"today_minutes": today_minutes, "weekly_data": {row[0]: row[1] for row in rows}}

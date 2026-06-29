@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
@@ -41,7 +42,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   int _resourcesSaved = 0;
   int _streakDays = 0;
   bool _showAllActivity = false;
-  List<_SubjectTime> _subjectBreakdown = [];
+  List<({String name, int minutes, Color color})> _subjectBreakdown = [];
   List<Map<String, dynamic>> _activityHistory = [];
   static const _subjectColors = [
     LuminaColors.academicTeal,
@@ -121,7 +122,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     await _tracker.sync();
     try {
       final analytics = await _tracker.getAnalytics();
-      final history = await _tracker.getActivityHistory(limit: 25);
+      final history = await _tracker.getActivityHistory();
       if (mounted) {
         setState(() {
           _studyMinutesToday = ((analytics['study_minutes_today'] ?? 0) as num).toInt();
@@ -129,10 +130,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           _resourcesSaved = ((analytics['resources_saved'] ?? 0) as num).toInt();
           _streakDays = ((analytics['streak_days'] ?? 0) as num).toInt();
           final subjects = analytics['subjects'] as List<dynamic>? ?? [];
-          _subjectBreakdown = subjects.map((s) => _SubjectTime(
-            s['name']?.toString() ?? '',
-            ((s['minutes'] ?? 0) as num).toInt(),
-            _colorForSubject(s['name']?.toString() ?? ''),
+          _subjectBreakdown = subjects.map((s) => (
+            name: s['name']?.toString() ?? '',
+            minutes: ((s['minutes'] ?? 0) as num).toInt(),
+            color: _colorForSubject(s['name']?.toString() ?? ''),
           )).toList();
           _activityHistory = history;
           _loading = false;
@@ -307,7 +308,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
       decoration: BoxDecoration(
         color: cs.surface,
-        border: Border(bottom: BorderSide(color: cs.outlineVariant, width: 1)),
+        border: Border(bottom: BorderSide(color: cs.outlineVariant)),
       ),
       child: Row(
         children: [
@@ -607,10 +608,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                             });
                             if (ctx.mounted) Navigator.pop(ctx);
                           }
-                          MutationQueue().enqueue('/student/profile/update', method: 'POST', body: {
+                          unawaited(MutationQueue().enqueue('/student/profile/update', method: 'POST', body: {
                             if (newName.isNotEmpty) 'name': newName,
                             if (selectedGrade.isNotEmpty) 'grade': selectedGrade,
-                          });
+                          }));
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -858,11 +859,4 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       ],
     );
   }
-}
-
-class _SubjectTime {
-  final String name;
-  final int minutes;
-  final Color color;
-  const _SubjectTime(this.name, this.minutes, this.color);
 }

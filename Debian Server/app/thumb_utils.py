@@ -6,8 +6,6 @@ import shutil
 import subprocess
 import logging
 
-thumbnail_semaphore = asyncio.Semaphore(2)
-
 
 async def get_zim_upload_max_size():
     """Calculate max ZIM upload size (total disk minus 1 GB reserve)."""

@@ -105,12 +105,6 @@ class DownloadService {
     }
   }
 
-  /// Check if a resource has been downloaded.
-  Future<bool> isDownloaded(String resourceId) async {
-    final downloaded = await DBHelper().getDownloadedIds();
-    return downloaded.contains(resourceId);
-  }
-
   /// Delete a downloaded file and its DB record.
   Future<void> deleteDownload(String resourceId) async {
     try {
@@ -132,48 +126,4 @@ class DownloadService {
     }
   }
 
-  /// Get all downloaded resource IDs.
-  Future<Set<String>> getAllDownloadedIds() async {
-    return await DBHelper().getDownloadedIds();
-  }
-
-  /// Add a resource to the persisted pending-download queue (offline-safe).
-  Future<void> addPendingDownload(String resourceId, String url, String fileName, {
-    String title = '',
-    String subject = '',
-    String grade = '',
-    String type = '',
-    double mtime = 0,
-  }) async {
-    await DBHelper().addPendingDownload(resourceId, url, fileName,
-      title: title, subject: subject, grade: grade, type: type, mtime: mtime);
-  }
-
-  /// Get all pending (offline-queued) downloads.
-  Future<List<Map<String, dynamic>>> getAllPendingDownloads() async {
-    return await DBHelper().getAllPendingDownloads();
-  }
-
-  /// Get set of pending download IDs.
-  Future<Set<String>> getAllPendingIds() async {
-    return await DBHelper().getPendingIds();
-  }
-
-  /// Clear all pending downloads from the persisted queue.
-  Future<void> clearAllPendingDownloads() async {
-    await DBHelper().clearAllPendingDownloads();
-  }
-
-  /// Remove a single pending download.
-  Future<void> removePendingDownload(String resourceId) async {
-    await DBHelper().removePendingDownload(resourceId);
-  }
-
-  /// Check if a resource has been downloaded OR is pending.
-  Future<bool> isDownloadedOrPending(String resourceId) async {
-    final downloaded = await DBHelper().getDownloadedIds();
-    if (downloaded.contains(resourceId)) return true;
-    final pending = await DBHelper().getPendingIds();
-    return pending.contains(resourceId);
-  }
 }

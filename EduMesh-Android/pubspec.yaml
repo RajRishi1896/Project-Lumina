@@ -12,7 +12,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: 0.20.2
-  cupertino_icons: ^1.0.2
+
   flutter_screenutil: ^5.9.0
   dio: ^5.4.0
   path_provider: ^2.1.2
@@ -20,25 +20,25 @@ dependencies:
   path: ^1.9.0
   shared_preferences: ^2.5.5
   webview_flutter: ^4.4.2
-  flutter_widget_from_html_core: ^0.15.0
+
   video_player: ^2.8.2
   chewie: ^1.7.1
   pdfx: ^2.0.0
   flutter_riverpod: ^3.3.1
   flutter_svg: ^2.3.0
-  package_info_plus: ^10.1.0
+
   crypto: ^3.0.7
   flutter_secure_storage: ^10.2.0
   app_settings: ^7.0.0
   wakelock_plus: ^1.6.1
   # Note: Bundle font files locally for offline use, or configure google_fonts cache
-  google_fonts: ^8.1.0
-  flutter_pdfview: ^1.0.0
+
+
   image_picker: ^1.1.2
   flutter_local_notifications: ^18.0.1
   connectivity_plus: ^6.0.3
   pointycastle: ^3.9.1
-  convert: ^3.1.1
+
 
 
 
@@ -51,6 +51,9 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+
+  assets:
+    - assets/images/
 
   fonts:
     - family: NotoSans

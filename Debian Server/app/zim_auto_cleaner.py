@@ -7,11 +7,10 @@ limit. Runs on a daemon thread started at server startup.
 
 import os
 import time
-import threading
 import logging
-from datetime import datetime
+from threading import Thread
 
-from lib.zim_settings import get_max_pages
+from app.zim_settings import get_max_pages
 
 # Directory where ZIM HTML pages are stored (must match zim_handler)
 ZIM_PAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'zim_pages')
@@ -44,7 +43,6 @@ def _clean_old_pages():
             logging.error(f"Failed to delete {old_file}: {e}")
 
 
-_cleaner_lock = threading.Lock()
 _cleaner_started = False
 
 
@@ -63,16 +61,13 @@ def start_zim_auto_cleaner(interval_seconds: int = 3600):
         the cleaner was already running.
     """
     global _cleaner_started
-    with _cleaner_lock:
-        if _cleaner_started:
-            return
-        _cleaner_started = True
+    if _cleaner_started:
+        return
+    _cleaner_started = True
 
     def _run():
         while True:
             _clean_old_pages()
             time.sleep(interval_seconds)
 
-    thread = threading.Thread(target=_run, daemon=True)
-    thread.start()
-    return thread
+    Thread(target=_run, daemon=True).start()

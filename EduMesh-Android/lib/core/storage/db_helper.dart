@@ -110,41 +110,6 @@ class DBHelper {
     ''');
   }
 
-  /// Inserts or ignores a resource record with the given [path], [title], and [type].
-  /// Returns the [id] of the existing or newly-inserted row.
-  Future<int> upsertResource(String path, String title, String type) async {
-    final db = await instance.database;
-    final res = await db.rawInsert('INSERT OR IGNORE INTO resources(path,title,type) VALUES(?,?,?)', [path, title, type]);
-    if (res == 0) {
-      final row = await db.query('resources', where: 'path=?', whereArgs: [path]);
-      return row.first['id'] as int;
-    }
-    return res;
-  }
-
-  /// Records an activity entry for the given [resourceId], [date], and [seconds].
-  Future<void> insertActivity(int resourceId, String date, int seconds) async {
-    final db = await instance.database;
-    await db.insert('activity', {'resource_id': resourceId, 'date': date, 'seconds': seconds});
-  }
-
-  /// A map of date strings to total seconds of activity for the last [days] days.
-  Future<Map<String,int>> getActivityTotalsForLastDays(int days) async {
-    final db = await instance.database;
-    final now = DateTime.now();
-    final start = now.subtract(Duration(days: days-1));
-    final rows = await db.rawQuery('''
-      SELECT date, SUM(seconds) as total FROM activity
-      WHERE date >= ?
-      GROUP BY date ORDER BY date ASC
-    ''', [start.toIso8601String().split('T')[0]]);
-    final Map<String,int> map = {};
-    for (final r in rows) {
-      map[r['date'] as String] = (r['total'] as int);
-    }
-    return map;
-  }
-
   /// Inserts or replaces a bookmark for the given [resourceId] with its metadata.
   Future<void> upsertBookmark(String resourceId, String title, String subject, String grade, String type, {String? pdfUrl}) async {
     final db = await database;
@@ -339,9 +304,4 @@ class DBHelper {
     }
   }
 
-  /// Closes the database connection. The database will be re-opened on the next access.
-  Future close() async {
-    final db = await instance.database;
-    db.close();
-  }
 }
