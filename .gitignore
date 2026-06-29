@@ -69,8 +69,7 @@ IMPLEMENTATION_PLAN.md
 **/Implementation Plan.md
 **/Implementation Plan*/
 Markdown files/DESIGN.md
-Markdown files/i18n-debt.md
-docs/
+docs/*
 LMS Docs/
 
 # === Ocode plugins ===
