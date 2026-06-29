@@ -107,7 +107,11 @@ async def add_security_headers(request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Cache-Control"] = "no-cache, private"
+    path = request.url.path
+    if path.startswith("/static/") or path.startswith("/files/"):
+        response.headers["Cache-Control"] = "public, max-age=3600"
+    else:
+        response.headers["Cache-Control"] = "no-cache, private"
     return response
 
 # Import routers
