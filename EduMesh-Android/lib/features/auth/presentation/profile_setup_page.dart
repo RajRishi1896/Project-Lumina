@@ -52,11 +52,21 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     if (mounted) setState(() { _loadError = AppLocalizations.of(context)!.errorNoServerNoCache; _loading = false; });
   }
 
+  Future<void> _retryLoadGrades() async {
+    setState(() { _loading = true; _loadError = null; });
+    await _loadGrades();
+  }
+
   Future<void> _saveAndContinue() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty || _selectedGrade.isEmpty || _saving) return;
+    if (name.isEmpty || _selectedGrade.isEmpty || _saving || _loadError != null) return;
     setState(() => _saving = true);
-    await MutationQueue().enqueue('/student/profile/update', method: 'POST', body: {'name': name, 'grade': _selectedGrade});
+    try {
+      await MutationQueue().enqueue('/student/profile/update', method: 'POST', body: {'name': name, 'grade': _selectedGrade});
+    } catch (_) {
+      if (mounted) setState(() => _saving = false);
+      return;
+    }
     if (!mounted) return;
     unawaited(Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const ConnectionGate(child: AppShell())),
@@ -96,6 +106,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               else ...[
                 if (_loadError != null) ...[
                   Text(_loadError!, style: tt.bodyMedium?.copyWith(color: cs.error)),
+                  SizedBox(height: AppSpacing.md.h),
+                  ElevatedButton.icon(
+                    onPressed: _saving ? null : _retryLoadGrades,
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: Text(l10n.errorRetryButton),
+                  ),
                   SizedBox(height: AppSpacing.sm.h),
                 ],
                 Text(l10n.labelDisplayName,
@@ -131,7 +147,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _saving ? null : _saveAndContinue,
+                  onPressed: _saving || _loadError != null || _selectedGrade.isEmpty ? null : _saveAndContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: cs.primary,
                     foregroundColor: cs.onPrimary,

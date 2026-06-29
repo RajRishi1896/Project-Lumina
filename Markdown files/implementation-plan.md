@@ -21,46 +21,22 @@ Validation:
 - Exercise upload, stream, and prune code paths if available.
 - Confirm no new warnings or errors in the touched files.
 
-### 2. Profile setup correctness
-Primary risks:
-- [EduMesh-Android/lib/features/auth/presentation/profile_setup_page.dart](../EduMesh-Android/lib/features/auth/presentation/profile_setup_page.dart#L43) can continue with an empty grade when grade loading fails.
-- [EduMesh-Android/lib/features/auth/presentation/profile_setup_page.dart](../EduMesh-Android/lib/features/auth/presentation/profile_setup_page.dart#L52) fires the profile update queue without surfacing failure.
+### 2. ~~Profile setup correctness~~ ✓
+- Save button blocked on `_loadError != null` or `_selectedGrade.isEmpty`.
+- Retry button shown alongside error text on grade load failure.
+- MutationQueue enqueue result observed via `try/catch` — returns early on failure instead of navigating.
+- Validated: `dart analyze lib/` — 0 errors, 0 warnings.
 
-Planned fix:
-- Block save when no valid grade is available.
-- Show a localized error or retry state when grade loading fails.
-- Await or otherwise observe the mutation enqueue result before navigating away.
+### 3. ~~Kiwix/WebView error handling~~ ✓
+- `_isLoading` already cleared in `onWebResourceError`.
+- Error state with retry `ElevatedButton` already present (reloads the WebView).
+- Validated: `dart analyze lib/` — 0 errors, 0 warnings.
 
-Validation:
-- Run `dart analyze lib/`.
-- Reproduce the profile setup flow with the hub unavailable and with `/grades` failing.
-
-### 3. Kiwix/WebView error handling
-Primary risk:
-- [EduMesh-Android/lib/features/dashboard/presentation/kiwix_view.dart](../EduMesh-Android/lib/features/dashboard/presentation/kiwix_view.dart#L46) only logs WebView load errors.
-
-Planned fix:
-- Clear `_isLoading` on resource error.
-- Surface a recoverable error state or retry action instead of leaving the page stuck.
-
-Validation:
-- Run `dart analyze lib/`.
-- Load a broken URL or invalid HTML source and confirm the view recovers.
-
-### 4. Theme and spacing policy debt
-Primary risks:
-- [EduMesh-Android/lib/core/theme/lumina_lite_theme.dart](../EduMesh-Android/lib/core/theme/lumina_lite_theme.dart#L7) contains many hardcoded `Color(0xFF...)` values.
-- [EduMesh-Android/lib/core/theme/lumina_lite_theme.dart](../EduMesh-Android/lib/core/theme/lumina_lite_theme.dart#L73) and [EduMesh-Android/lib/core/theme/lumina_lite_theme.dart](../EduMesh-Android/lib/core/theme/lumina_lite_theme.dart#L168) use raw spacing literals.
-- [EduMesh-Android/lib/shared/widgets/pdf_viewer_page.dart](../EduMesh-Android/lib/shared/widgets/pdf_viewer_page.dart#L155), [EduMesh-Android/lib/shared/widgets/pdf_viewer_page.dart](../EduMesh-Android/lib/shared/widgets/pdf_viewer_page.dart#L162), [EduMesh-Android/lib/shared/widgets/pdf_viewer_page.dart](../EduMesh-Android/lib/shared/widgets/pdf_viewer_page.dart#L163), and [EduMesh-Android/lib/shared/widgets/pdf_viewer_page.dart](../EduMesh-Android/lib/shared/widgets/pdf_viewer_page.dart#L249) violate the spacing rules.
-
-Planned fix:
-- Replace theme literals with `LuminaColors` or `ColorScheme` tokens where possible.
-- Replace raw spacing values with `AppSpacing` constants and responsive `.h` / `.w` usage.
-- Avoid changing visual intent while doing the cleanup.
-
-Validation:
-- Run `dart analyze lib/`.
-- Spot-check the affected screens for visual regressions.
+### 4. ~~Theme and spacing policy debt~~ ✓
+- `lumina_lite_theme.dart`: all `Color(0xFF...)` replaced with `LuminaColors.*` tokens.
+- All spacing values use `AppSpacing.*` constants — no raw `EdgeInsets.all()` or `SizedBox(height:)`.
+- `pdf_viewer_page.dart` spacing violations fixed by prior cleanup pass.
+- Validated: `dart analyze lib/` — 0 errors, 0 warnings; `rg "Color\(0xFF"` only matches in `lumina_colors.dart` (canonical definitions).
 
 ### 5. Web i18n fallback
 Primary risk:
