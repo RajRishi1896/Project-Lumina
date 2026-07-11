@@ -103,7 +103,7 @@ def init_db():
     conn.execute('PRAGMA cache_size=-8000')
     conn.execute('PRAGMA synchronous=NORMAL')
     c = conn.cursor()
-    c.execute('CREATE TABLE IF NOT EXISTS scholars (id TEXT PRIMARY KEY, name TEXT UNIQUE)')
+    c.execute('CREATE TABLE IF NOT EXISTS scholars (id TEXT PRIMARY KEY, name TEXT UNIQUE, hashed_password TEXT, reset_required INTEGER DEFAULT 0, grade TEXT DEFAULT "", username TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS resources (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, file_path TEXT, type TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, hashed_password TEXT, name TEXT, department TEXT, scholar_id TEXT, reset_required INTEGER DEFAULT 0, role TEXT NOT NULL DEFAULT "teacher")')
     c.execute("UPDATE scholars SET username = name WHERE username IS NULL OR username = ''")
@@ -140,6 +140,75 @@ def init_db():
     c.execute('CREATE TABLE IF NOT EXISTS refresh_tokens (token TEXT PRIMARY KEY, username TEXT, role TEXT, used INTEGER DEFAULT 0, expires_at TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
     c.execute('CREATE TABLE IF NOT EXISTS persistent_keys (token TEXT PRIMARY KEY, username TEXT, role TEXT, used INTEGER DEFAULT 0, expires_at TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS courses (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      subject TEXT DEFAULT '',
+      grade INTEGER DEFAULT 0,
+      language TEXT DEFAULT 'en',
+      cover_image TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      published INTEGER DEFAULT 0,
+      teacher_username TEXT DEFAULT '',
+      enrollment_count INTEGER DEFAULT 0
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS course_resources (
+      id TEXT PRIMARY KEY,
+      course_id TEXT NOT NULL,
+      resource_type TEXT NOT NULL DEFAULT 'textbook',
+      title TEXT DEFAULT '',
+      original_name TEXT DEFAULT '',
+      filename TEXT DEFAULT '',
+      file_size INTEGER DEFAULT 0,
+      position INTEGER NOT NULL DEFAULT 0,
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS course_progress (
+      student_id TEXT NOT NULL,
+      course_id TEXT NOT NULL,
+      current_position INTEGER DEFAULT 0,
+      completed_count INTEGER DEFAULT 0,
+      total_resources INTEGER DEFAULT 0,
+      completed INTEGER DEFAULT 0,
+      last_synced TEXT,
+      enrolled_at TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (student_id, course_id),
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS quiz_attempts (
+      id TEXT PRIMARY KEY,
+      student_id TEXT NOT NULL,
+      course_id TEXT NOT NULL,
+      resource_id TEXT NOT NULL,
+      attempt_number INTEGER NOT NULL DEFAULT 1,
+      score REAL DEFAULT 0,
+      passed INTEGER DEFAULT 0,
+      answers_json TEXT DEFAULT '',
+      started_at TEXT,
+      submitted_at TEXT DEFAULT (datetime('now')),
+      time_taken_seconds INTEGER DEFAULT 0,
+      quiz_version INTEGER DEFAULT 1,
+      threshold_at_submission REAL DEFAULT 0.0,
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+      FOREIGN KEY (resource_id) REFERENCES course_resources(id) ON DELETE CASCADE
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS similar_courses (
+      course_id TEXT NOT NULL,
+      similar_course_id TEXT NOT NULL,
+      created_by TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (course_id, similar_course_id),
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+      FOREIGN KEY (similar_course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_course_resources_course_id ON course_resources(course_id)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_course_progress_student ON course_progress(student_id)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_quiz_attempts_student ON quiz_attempts(student_id)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_similar_courses_similar ON similar_courses(similar_course_id)')
+
+    c.execute('CREATE TABLE IF NOT EXISTS subjects (name TEXT, symbol TEXT, class_name TEXT, PRIMARY KEY (name, class_name))')
     _migrate_schema(conn)
 
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='subjects'")
@@ -256,6 +325,7 @@ def _migrate_schema(conn):
             "license": "TEXT DEFAULT 'Internal Only'",
             "uploaded_by": "INTEGER DEFAULT NULL",
             "uploaded_at": "DATETIME DEFAULT CURRENT_TIMESTAMP",
+            "notes": "TEXT DEFAULT NULL",
         },
     }.items():
         existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}

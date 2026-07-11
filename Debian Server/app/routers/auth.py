@@ -7,7 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Form, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from app.async_db import db_conn, db_exec, db_fetch_one, db_run
-from app.models import ScholarReg, StudentLoginRequest, TokenRefreshRequest, TokenRenewRequest, ScholarRegisterResponse, StudentLoginResponse, LoginTokenResponse, TokenResponse
+from app.models import ScholarReg, StudentLoginRequest, ScholarRegisterResponse, StudentLoginResponse, LoginTokenResponse, TokenResponse
 from app.dependencies import hash_password, verify_password, validate_password_strength, generate_session_token
 
 router = APIRouter()
@@ -237,7 +237,7 @@ async def logout(request: Request, response: Response):
 
 
 @router.post("/student/refresh-token", response_model=TokenResponse, summary="Refresh an expired session", description="Exchanges a valid one-time-use refresh token for a new set of session, refresh, and persistent tokens. The old refresh token is marked as used to prevent replay.", tags=["Auth"], responses={401: {"description": "Invalid, used, or expired refresh token"}, 500: {"description": "Token refresh failed due to server error"}})
-async def refresh_session(data: TokenRefreshRequest, request: Request):
+async def refresh_session(data: dict, request: Request):
     """Refresh an expired session using a one-time refresh token.
 
     Args:
@@ -253,7 +253,7 @@ async def refresh_session(data: TokenRefreshRequest, request: Request):
     """
     async with db_conn() as conn:
         c = conn.cursor()
-        c.execute("SELECT username, role, used, expires_at FROM refresh_tokens WHERE token = ?", (data.refresh_token,))
+        c.execute("SELECT username, role, used, expires_at FROM refresh_tokens WHERE token = ?", (data.get('refresh_token'),))
         row = c.fetchone()
         if not row:
             raise HTTPException(status_code=401, detail="Invalid refresh token")
@@ -262,7 +262,7 @@ async def refresh_session(data: TokenRefreshRequest, request: Request):
         if row[3] and datetime.fromisoformat(row[3]) < datetime.now():
             raise HTTPException(status_code=401, detail="Refresh token expired")
         username, role = row[0], row[1]
-        c.execute("UPDATE refresh_tokens SET used = 1 WHERE token = ?", (data.refresh_token,))
+        c.execute("UPDATE refresh_tokens SET used = 1 WHERE token = ?", (data.get('refresh_token'),))
         conn.commit()
         tokens = await generate_session_token(username, role)
         return {
@@ -274,7 +274,7 @@ async def refresh_session(data: TokenRefreshRequest, request: Request):
 
 
 @router.post("/student/renew-session", response_model=TokenResponse, summary="Renew session with persistent key", description="Exchanges a valid one-time-use persistent key for a new set of session tokens without requiring re-authentication. The old persistent key is marked as used.", tags=["Auth"], responses={401: {"description": "Invalid, used, or expired persistent key"}, 500: {"description": "Session renewal failed due to server error"}})
-async def renew_session(data: TokenRenewRequest, request: Request):
+async def renew_session(data: dict, request: Request):
     """Renew a session using a one-time persistent key without re-authentication.
 
     Args:
@@ -290,7 +290,7 @@ async def renew_session(data: TokenRenewRequest, request: Request):
     """
     async with db_conn() as conn:
         c = conn.cursor()
-        c.execute("SELECT username, role, used, expires_at FROM persistent_keys WHERE token = ?", (data.persistent_key,))
+        c.execute("SELECT username, role, used, expires_at FROM persistent_keys WHERE token = ?", (data.get('persistent_key'),))
         row = c.fetchone()
         if not row:
             raise HTTPException(status_code=401, detail="Invalid persistent key")
@@ -299,7 +299,7 @@ async def renew_session(data: TokenRenewRequest, request: Request):
         if row[3] and datetime.fromisoformat(row[3]) < datetime.now():
             raise HTTPException(status_code=401, detail="Persistent key expired")
         username, role = row[0], row[1]
-        c.execute("UPDATE persistent_keys SET used = 1 WHERE token = ?", (data.persistent_key,))
+        c.execute("UPDATE persistent_keys SET used = 1 WHERE token = ?", (data.get('persistent_key'),))
         conn.commit()
         tokens = await generate_session_token(username, role)
         return {

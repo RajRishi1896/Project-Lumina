@@ -7,7 +7,7 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from app.async_db import db_conn
 from app.dependencies import verify_teacher
-from app.models import SubjectCreate, SubjectDeleteRequest, SubjectResponse, SubjectCreateResponse, StatusResponse, GradeInfo, GradeCreateResponse
+from app.models import SubjectCreate, SubjectResponse, SubjectCreateResponse, StatusResponse, GradeInfo
 
 router = APIRouter()
 
@@ -68,7 +68,7 @@ async def create_subject(subject: SubjectCreate, teacher_user: str = Depends(ver
              description="Deletes a subject by id or name, optionally transferring resources to another subject.",
              tags=["Subjects"],
              responses={400: {"description": "Invalid request or target subject missing"}, 401: {"description": "Unauthorized"}, 404: {"description": "Subject not found"}})
-async def delete_subject(data: SubjectDeleteRequest, teacher_user: str = Depends(verify_teacher)):
+async def delete_subject(data: dict, teacher_user: str = Depends(verify_teacher)):
     """Delete a subject and optionally transfer its resources.
 
     Args:
@@ -81,19 +81,19 @@ async def delete_subject(data: SubjectDeleteRequest, teacher_user: str = Depends
         try:
             c = conn.cursor()
             if data.id:
-                c.execute("SELECT name FROM subjects WHERE id = ?", (data.id,))
+                c.execute("SELECT name FROM subjects WHERE id = ?", (data.get('id'),))
             else:
-                c.execute("SELECT name FROM subjects WHERE name = ?", (data.name,))
+                c.execute("SELECT name FROM subjects WHERE name = ?", (data.get('name'),))
             row = c.fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="Subject not found.")
             subject_name = row[0]
 
-            if data.transfer_to:
-                c.execute("SELECT COUNT(*) FROM subjects WHERE name = ?", (data.transfer_to,))
+            if data.get('transfer_to'):
+                c.execute("SELECT COUNT(*) FROM subjects WHERE name = ?", (data.get('transfer_to'),))
                 if c.fetchone()[0] == 0:
                     raise HTTPException(status_code=400, detail="Target subject does not exist.")
-                c.execute("UPDATE resources SET subject = ? WHERE subject = ?", (data.transfer_to, subject_name))
+                c.execute("UPDATE resources SET subject = ? WHERE subject = ?", (data.get('transfer_to'), subject_name))
             else:
                 c.execute("SELECT file_path FROM resources WHERE subject = ?", (subject_name,))
                 files = [r[0] for r in c.fetchall()]
@@ -105,10 +105,10 @@ async def delete_subject(data: SubjectDeleteRequest, teacher_user: str = Depends
                             logging.warning(f"Could not remove physical file {fp}: {e}")
                 c.execute("DELETE FROM resources WHERE subject = ?", (subject_name,))
 
-            if data.id:
-                c.execute("DELETE FROM subjects WHERE id = ?", (data.id,))
+            if data.get('id'):
+                c.execute("DELETE FROM subjects WHERE id = ?", (data.get('id'),))
             else:
-                c.execute("DELETE FROM subjects WHERE name = ?", (data.name,))
+                c.execute("DELETE FROM subjects WHERE name = ?", (data.get('name'),))
             conn.commit()
             return {"status": "success"}
         except Exception as e:
@@ -134,7 +134,7 @@ async def get_grades(teacher_user: str = Depends(verify_teacher)):
     return [{"name": r[0]} for r in rows]
 
 
-@router.post("/grades", response_model=GradeCreateResponse,
+@router.post("/grades",
              summary="Create a grade",
              description="Creates a new grade level with a unique name (max 50 characters).",
              tags=["Subjects"],

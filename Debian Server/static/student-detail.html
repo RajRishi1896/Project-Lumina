@@ -1,6 +1,6 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head — theme detection, metadata, detail page styles -->
+<!-- Section: Head â€” theme detection, metadata, detail page styles -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -60,21 +60,7 @@
 </head>
 <body>
 
-    <!-- Section: Mobile Header — hamburger toggle + brand -->
-    <header class="mobile-header">
-        <div class="mobile-brand-horizontal">
-            <img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina">
-            <img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina">
-        </div>
-        <button class="menu-toggle" id="btn-toggleMobileMenu" data-i18n-aria-label="sidebar.toggle_menu" aria-label="Toggle Menu">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-    </header>
-
-    <!-- Section: Mobile Overlay — dark backdrop for sidebar on small screens -->
-    <div class="mobile-overlay" id="overlay-toggleMobileMenu"></div>
-
-    <!-- Section: Sidebar — nav links, user info, theme toggle, logout -->
+    <!-- Section: Sidebar â€” nav links, user info, theme toggle, logout -->
     <aside>
         <a href="/static/index" class="sidebar-brand-horizontal">
             <img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina">
@@ -123,18 +109,19 @@
         </a>
     </aside>
 
-    <!-- Section: Main Content — back link, student header, stat cards, subject breakdown, loading/error states -->
+    <!-- Section: Main Content â€” back link, student header, stat cards, subject breakdown, loading/error states -->
     <main>
+        <div id="app-content">
         <div class="student-detail-container" id="app">
             <a href="/static/students" class="back-link">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 <span data-i18n="student_detail_back">Back to</span> <span data-i18n="sidebar.students">Students</span>
             </a>
-            <!-- Section: Student Header — avatar, name, grade, last active -->
+            <!-- Section: Student Header â€” avatar, name, grade, last active -->
             <div class="student-header" id="studentHeader"></div>
-            <!-- Section: Stat Cards — time this week, streak, downloads -->
+            <!-- Section: Stat Cards â€” time this week, streak, downloads -->
             <div class="stat-grid" id="statGrid"></div>
-            <!-- Section: Subject Breakdown — horizontal bar chart per subject -->
+            <!-- Section: Subject Breakdown â€” horizontal bar chart per subject -->
             <div class="card" id="subjectCard">
                 <div class="card-title" id="subjectCardTitle" data-i18n="student_detail_subject_breakdown">Subject Breakdown</div>
                 <div class="subject-list" id="subjectList"></div>
@@ -143,170 +130,143 @@
             <div id="loadingState" class="empty-state" style="display:none;" data-i18n="student_detail_loading">Loading student data...</div>
             <div id="errorState" class="empty-state" style="display:none; color: var(--danger);" data-i18n="student_detail_failed">Failed to load student data.</div>
         </div>
+        </div>
     </main>
 
-    <!-- Section: Bottom Nav (Mobile) — tab bar hidden by default, shown via media query -->
-    <div id="bottomNav">
-        <a href="/static/index" class="bottom-nav-item" id="bottom-nav-home">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            <span data-i18n="sidebar.home">Home</span>
-        </a>
-        <a href="/static/manage-content" class="bottom-nav-item" id="bottom-nav-content">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span data-i18n="sidebar.content">Content</span>
-        </a>
-        <a href="/static/manage-security" class="bottom-nav-item" id="bottom-nav-security">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <span data-i18n="sidebar.security">Account</span>
-        </a>
-        <a href="/static/students" class="bottom-nav-item" id="bottom-nav-students">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span data-i18n="sidebar.students">Students</span>
-        </a>
-        <a href="/static/manage-help#teacher-guide" class="bottom-nav-item" id="bottom-nav-help">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-            <span data-i18n="sidebar.help">Guide</span>
-        </a>
-        <a href="/static/manage-danger" class="bottom-nav-item danger" id="bottom-nav-danger">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-            <span data-i18n="sidebar.danger">Danger</span>
-        </a>
-        <a href="/static/manage-settings" class="bottom-nav-item" id="bottom-nav-settings">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <span data-i18n="sidebar.settings">Settings</span>
-        </a>
-        <a href="/logout" class="bottom-nav-item" id="bottom-nav-logout">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            <span data-i18n="sidebar.logout">Logout</span>
-        </a>
-    </div>
+    <!-- Section: Bottom Nav (Mobile) â€” tab bar hidden by default, shown via media query -->
+    <div id="bottomNav"></div>
 
     <script src="/static/js/lumina.js" defer></script>
-    <!-- Section: Inline Scripts — student analytics rendering, API fetching -->
+    <!-- Section: Inline Scripts â€” student analytics rendering, API fetching -->
     <script>
-        const params = new URLSearchParams(window.location.search);
-        const studentId = params.get('id') || '';
-        const studentName = params.get('name') || 'Student';
-        const studentGrade = params.get('grade') || '';
-        const weekMinutes = parseInt(params.get('week')) || 0;
-        const streakDays = parseInt(params.get('streak')) || 0;
-        const dlCount = parseInt(params.get('dl')) || 0;
-        const lastActive = params.get('last') || '';
-        const avatarInitials = params.get('avatar') || studentName.split(' ').map(function(s){return s[0]}).join('').slice(0,2).toUpperCase();
-
         const subjectColors = ['#14b8a6','#6366f1','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981','#f97316'];
 
-        /**
-         * @param {string} isoStr - ISO date string
-         * @returns {string} Human-friendly relative time label
-         */
-        function timeAgo(isoStr) {
-            const now = new Date();
-            const d = new Date(isoStr);
-            const diff = Math.floor((now - d) / 1000);
-            if (diff < 60) return diff <= 5 ? __('time_just_now') : __('time_seconds_ago', {n: diff});
-            if (diff < 3600) return __('time_minutes_ago', {n: Math.floor(diff / 60)});
-            if (diff < 86400) return __('time_hours_ago', {n: Math.floor(diff / 3600)});
-            const days = Math.floor(diff / 86400);
-            if (days === 1) return __('time_yesterday');
-            if (days < 30) return __('time_days_ago', {n: days});
-            return d.toLocaleDateString();
-        }
+        _pageInitRegistry['students'] = function() {
+            const params = new URLSearchParams(window.location.search);
+            const studentId = params.get('id') || '';
+            const studentName = params.get('name') || 'Student';
+            const studentGrade = params.get('grade') || '';
+            const weekMinutes = parseInt(params.get('week')) || 0;
+            const streakDays = parseInt(params.get('streak')) || 0;
+            const dlCount = parseInt(params.get('dl')) || 0;
+            const lastActive = params.get('last') || '';
+            const avatarInitials = params.get('avatar') || studentName.split(' ').map(function(s){return s[0]}).join('').slice(0,2).toUpperCase();
 
-        /** Renders the student avatar, name, grade, and last active into #studentHeader. */
-        function renderHeader() {
-            const el = document.getElementById('studentHeader');
-            el.innerHTML =
-                '<div class="avatar-large">' + esc(avatarInitials) + '</div>' +
-                '<div class="student-info">' +
-                '<h1>' + esc(studentName) + '</h1>' +
-                '<div class="meta">' +
-                '<span>' + esc(studentGrade) + '</span>' +
-                (lastActive ? '<span class="meta-dot"></span><span>' + __('student_detail_last_updated') + ' ' + esc(timeAgo(lastActive)) + '</span>' : '') +
-                '</div></div>';
-        }
-
-        /**
-         * @param {number} weekMin - Total study minutes this week
-         * @param {number} streakVal - Consecutive day streak
-         * @param {number} dlVal - Number of downloads
-         * Renders three stat cards into #statGrid.
-         */
-        function renderStats(weekMin, streakVal, dlVal) {
-            const weekVal = (weekMin / 60).toFixed(1).replace(/\.0$/, '');
-            const grid = document.getElementById('statGrid');
-            const cards = [
-                { label:__('student_detail_time_this_week'), value:weekVal, unit:__('student_detail.hours') },
-                { label:__('student_detail_day_streak'), value:streakVal, unit:'' },
-                { label:__('student_detail_downloaded'), value:dlVal, unit:'' }
-            ];
-            grid.innerHTML = cards.map(function(c, idx){
-                const val = idx === 1 ? c.value : c.value + (c.unit ? ' <span class="stat-unit">' + c.unit + '</span>' : '');
-                return '<div class="stat-card">' +
-                    '<div class="stat-label">' + c.label + '</div>' +
-                    '<div class="stat-value">' + val + '</div></div>';
-            }).join('');
-        }
-
-        /**
-         * @param {Array} subjects - Array of {name, minutes} objects
-         * Renders subject breakdown into #subjectList with proportional bar fills.
-         */
-        function renderSubjects(subjects) {
-            /* Set the card title with the student's grade */
-            const titleEl = document.getElementById('subjectCardTitle');
-            if (studentGrade) {
-                titleEl.innerHTML = esc(studentGrade) + ' &mdash; ' + __('student_detail_subject_breakdown') + ' <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">' + __('student_detail_this_week') + '</span>';
-            } else {
-                titleEl.innerHTML = __('student_detail_subject_breakdown') + ' <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">' + __('student_detail_this_week') + '</span>';
+            /**
+             * @param {string} isoStr - ISO date string
+             * @returns {string} Human-friendly relative time label
+             */
+            function timeAgo(isoStr) {
+                const now = new Date();
+                const d = new Date(isoStr);
+                const diff = Math.floor((now - d) / 1000);
+                if (diff < 60) return diff <= 5 ? __('time_just_now') : __('time_seconds_ago', {n: diff});
+                if (diff < 3600) return __('time_minutes_ago', {n: Math.floor(diff / 60)});
+                if (diff < 86400) return __('time_hours_ago', {n: Math.floor(diff / 3600)});
+                const days = Math.floor(diff / 86400);
+                if (days === 1) return __('time_yesterday');
+                if (days < 30) return __('time_days_ago', {n: days});
+                return d.toLocaleDateString();
             }
-            if (!subjects || subjects.length === 0) {
-                document.getElementById('subjectList').innerHTML = '<div class="empty-state">' + __('student_detail_no_subject_data') + '</div>';
-                return;
-            }
-            const maxMin = Math.max.apply(null, subjects.map(function(s){ return s.minutes; }));
-            const list = document.getElementById('subjectList');
-            list.innerHTML = subjects.map(function(s, i){
-                const pct = (s.minutes / maxMin) * 100;
-                const color = subjectColors[i % subjectColors.length];
-                return '<div class="subject-row">' +
-                    '<span class="subject-name">' + esc(s.name) + '</span>' +
-                    '<div class="subject-bar-wrap">' +
-                    '<div class="subject-bar-track"><div class="subject-bar-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>' +
-                    '<span class="subject-minutes">' + __('student_detail.minutes_abbr', {n: s.minutes}) + '</span>' +
+
+            /** Renders the student avatar, name, grade, last active, and optional at-risk warning into #studentHeader. */
+            function renderHeader() {
+                const el = document.getElementById('studentHeader');
+                var atRiskDays = 3;
+                var daysSinceActive = lastActive ? (Date.now() - new Date(lastActive).getTime()) / 86400000 : 999;
+                var atRisk = daysSinceActive > atRiskDays;
+                var warningBanner = atRisk ? '<div style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.625rem; font-size: 0.85rem;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg> <span style="font-weight: 700; color: var(--warning);">At-risk</span> &mdash; No activity in ' + Math.floor(daysSinceActive) + ' days.</div>' : '';
+                el.innerHTML = warningBanner +
+                    '<div class="avatar-large">' + esc(avatarInitials) + '</div>' +
+                    '<div class="student-info">' +
+                    '<h1>' + esc(studentName) + '</h1>' +
+                    '<div class="meta">' +
+                    '<span>' + esc(studentGrade) + '</span>' +
+                    (lastActive ? '<span class="meta-dot"></span><span>' + __('student_detail_last_updated') + ' ' + esc(timeAgo(lastActive)) + '</span>' : '') +
                     '</div></div>';
-            }).join('');
-        }
-
-        /** Entry point — reads URL params, renders header, then fetches analytics from the API. */
-        function init() {
-            if (!studentId) {
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('errorState').style.display = '';
-                document.getElementById('errorState').textContent = __('student_detail_no_id');
-                return;
             }
-            renderHeader();
-            fetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); })
-            .then(function(analytics){
-                renderStats((analytics.study_minutes_this_week || 0), analytics.streak_days || 0, analytics.resources_saved || 0);
-                renderSubjects(analytics.subjects || []);
-                document.getElementById('loadingState').style.display = 'none';
-            }).catch(function(err){
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('errorState').style.display = '';
-                console.error('Failed to load student data', err);
-            });
-        }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            loadTranslations(currentLang);
+            /**
+             * @param {number} weekMin - Total study minutes this week
+             * @param {number} streakVal - Consecutive day streak
+             * @param {number} dlVal - Number of downloads
+             * Renders three stat cards into #statGrid.
+             */
+            function renderStats(weekMin, streakVal, dlVal) {
+                const weekVal = (weekMin / 60).toFixed(1).replace(/\.0$/, '');
+                const grid = document.getElementById('statGrid');
+                const cards = [
+                    { label:__('student_detail_time_this_week'), value:weekVal, unit:__('student_detail.hours') },
+                    { label:__('student_detail_day_streak'), value:streakVal, unit:'' },
+                    { label:__('student_detail_downloaded'), value:dlVal, unit:'' }
+                ];
+                grid.innerHTML = cards.map(function(c, idx){
+                    const val = idx === 1 ? c.value : c.value + (c.unit ? ' <span class="stat-unit">' + c.unit + '</span>' : '');
+                    return '<div class="stat-card">' +
+                        '<div class="stat-label">' + c.label + '</div>' +
+                        '<div class="stat-value">' + val + '</div></div>';
+                }).join('');
+            }
+
+            /**
+             * @param {Array} subjects - Array of {name, minutes} objects
+             * Renders subject breakdown into #subjectList with proportional bar fills.
+             */
+            function renderSubjects(subjects) {
+                /* Set the card title with the student's grade */
+                const titleEl = document.getElementById('subjectCardTitle');
+                if (studentGrade) {
+                    titleEl.innerHTML = esc(studentGrade) + ' &mdash; ' + __('student_detail_subject_breakdown') + ' <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">' + __('student_detail_this_week') + '</span>';
+                } else {
+                    titleEl.innerHTML = __('student_detail_subject_breakdown') + ' <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">' + __('student_detail_this_week') + '</span>';
+                }
+                if (!subjects || subjects.length === 0) {
+                    document.getElementById('subjectList').innerHTML = '<div class="empty-state">' + __('student_detail_no_subject_data') + '</div>';
+                    return;
+                }
+                const maxMin = Math.max.apply(null, subjects.map(function(s){ return s.minutes; }));
+                const list = document.getElementById('subjectList');
+                list.innerHTML = subjects.map(function(s, i){
+                    const pct = (s.minutes / maxMin) * 100;
+                    const color = subjectColors[i % subjectColors.length];
+                    return '<div class="subject-row">' +
+                        '<span class="subject-name">' + esc(s.name) + '</span>' +
+                        '<div class="subject-bar-wrap">' +
+                        '<div class="subject-bar-track"><div class="subject-bar-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>' +
+                        '<span class="subject-minutes">' + __('student_detail.minutes_abbr', {n: s.minutes}) + '</span>' +
+                        '</div></div>';
+                }).join('');
+            }
+
+            /** Entry point â€” reads URL params, renders header, then fetches analytics from the API. */
+            function init() {
+                if (!studentId) {
+                    document.getElementById('loadingState').style.display = 'none';
+                    document.getElementById('errorState').style.display = '';
+                    document.getElementById('errorState').textContent = __('student_detail_no_id');
+                    return;
+                }
+                renderHeader();
+                fetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); })
+                .then(function(analytics){
+                    renderStats((analytics.study_minutes_this_week || 0), analytics.streak_days || 0, analytics.resources_saved || 0);
+                    renderSubjects(analytics.subjects || []);
+                    document.getElementById('loadingState').style.display = 'none';
+                }).catch(function(err){
+                    document.getElementById('loadingState').style.display = 'none';
+                    document.getElementById('errorState').style.display = '';
+                    console.error('Failed to load student data', err);
+                });
+            }
+
             init();
-            setActiveNav('nav-students');
+
             document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
-        });
+        };
+
+        document.addEventListener('DOMContentLoaded', _pageInitRegistry['students']);
     </script>
 </body>
 </html>

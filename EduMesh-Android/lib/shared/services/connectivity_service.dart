@@ -94,7 +94,11 @@ class ConnectivityService extends ChangeNotifier {
     }
     await MutationQueue().flush();
     await CatalogService().syncCatalog();
+    await CatalogService().syncSimilarCourses();
   }
+
+  /// Performs a single connectivity check against the server.
+  Future<void> check() => _checkNow();
 
   /// Pings the server's `/ping` endpoint and returns whether it responded with 2xx.
   Future<bool> ping({Duration timeout = const Duration(seconds: 10)}) async {

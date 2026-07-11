@@ -44,6 +44,9 @@ class ResourceModel {
   /// The last-modified timestamp of the source file.
   final double mtime;
 
+  /// Optional teacher-provided notes for this resource.
+  final String? notes;
+
   /// Whether this resource has been downloaded to the device.
   bool isDownloaded;
 
@@ -57,6 +60,7 @@ class ResourceModel {
     this.isDownloaded = false,
     this.pdfUrl,
     this.mtime = 0,
+    this.notes,
   });
 
   /// Creates a [ResourceModel] from a JSON [map] returned by the API.
@@ -70,7 +74,20 @@ class ResourceModel {
       pdfUrl: json['pdfUrl'],
       mtime: (json['mtime'] as num?)?.toDouble() ?? 0,
       isDownloaded: json['isDownloaded'] == true,
+      notes: json['notes'] as String?,
     );
   }
 
+  /// Serializes this [ResourceModel] to a JSON-compatible map.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'subject': subject,
+    'grade': grade,
+    'type': type.name,
+    'pdfUrl': pdfUrl,
+    'mtime': mtime,
+    'isDownloaded': isDownloaded,
+    'notes': notes,
+  };
 }

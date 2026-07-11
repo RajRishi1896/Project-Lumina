@@ -2,7 +2,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.async_db import db_conn
-from app.models import ChangePasswordRequest, ForceChangePasswordRequest, StatusResponse
+from app.models import StatusResponse
 from app.dependencies import hash_password, verify_password, validate_password_strength, verify_teacher, verify_admin, invalidate_tokens_for_user
 from app.database import log_admin_action
 
@@ -14,7 +14,7 @@ router = APIRouter()
              description="Changes the authenticated teacher's password after verifying the current password.",
              tags=["Teacher"],
              responses={400: {"description": "Incorrect password, weak password, or update failed"}, 401: {"description": "Unauthorized"}})
-async def change_password(data: ChangePasswordRequest, teacher_user: str = Depends(verify_teacher)):
+async def change_password(data: dict, teacher_user: str = Depends(verify_teacher)):
     """Change the authenticated user's password.
 
     Args:
@@ -32,12 +32,12 @@ async def change_password(data: ChangePasswordRequest, teacher_user: str = Depen
         c = conn.cursor()
         c.execute("SELECT hashed_password FROM users WHERE username = ?", (teacher_user,))
         row = c.fetchone()
-        if not row or not verify_password(data.old_password, row[0]):
+        if not row or not verify_password(data.get('old_password'), row[0]):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password.")
-        valid, msg = validate_password_strength(data.new_password)
-        if not valid:
-            raise HTTPException(status_code=400, detail=msg)
-        new_hash = hash_password(data.new_password)
+            valid, msg = validate_password_strength(data.get('new_password'))
+            if not valid:
+                raise HTTPException(status_code=400, detail=msg)
+            new_hash = hash_password(data.get('new_password'))
         c.execute("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
         conn.commit()
     await invalidate_tokens_for_user(teacher_user)
@@ -49,7 +49,7 @@ async def change_password(data: ChangePasswordRequest, teacher_user: str = Depen
              description="Changes password when reset_required is set (used for first-login forced password reset).",
              tags=["Teacher"],
              responses={400: {"description": "Reset not required, weak password, or update failed"}, 401: {"description": "Unauthorized"}})
-async def force_change_password(data: ForceChangePasswordRequest, teacher_user: str = Depends(verify_teacher)):
+async def force_change_password(data: dict, teacher_user: str = Depends(verify_teacher)):
     """Force a password change when reset is required.
 
     Args:
@@ -67,10 +67,10 @@ async def force_change_password(data: ForceChangePasswordRequest, teacher_user: 
             row = c.fetchone()
             if not row or not row[0]:
                 raise HTTPException(status_code=400, detail="Password reset not required.")
-            valid, msg = validate_password_strength(data.new_password)
+            valid, msg = validate_password_strength(data.get('new_password'))
             if not valid:
                 raise HTTPException(status_code=400, detail=msg)
-            new_hash = hash_password(data.new_password)
+            new_hash = hash_password(data.get('new_password'))
             c.execute("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
             conn.commit()
             await invalidate_tokens_for_user(teacher_user)

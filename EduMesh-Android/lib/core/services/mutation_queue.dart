@@ -15,7 +15,7 @@ class MutationQueue {
   factory MutationQueue() => _instance;
   MutationQueue._internal();
 
-  static const int _maxRetries = 3;
+  static int _maxRetries(String priority) => priority == 'high' ? 10 : 3;
 
   /// Enqueues a mutation to be sent to the server.
   ///
@@ -23,7 +23,7 @@ class MutationQueue {
   /// without persisting. On network failure, persists to the
   /// `pending_mutations` table for later retry. If offline, persists
   /// immediately.
-  Future<void> enqueue(String endpoint, {required String method, required Map<String, dynamic> body}) async {
+  Future<void> enqueue(String endpoint, {required String method, required Map<String, dynamic> body, String priority = 'normal'}) async {
     if (ConnectivityService().isOnline) {
       try {
         await _executeMutation(endpoint, method, body);
@@ -39,6 +39,7 @@ class MutationQueue {
       'body': jsonEncode(body),
       'created_at': DateTime.now().millisecondsSinceEpoch,
       'retries': 0,
+      'priority': priority,
     });
   }
 
@@ -55,13 +56,18 @@ class MutationQueue {
       final endpoint = row['endpoint'] as String;
       final method = row['method'] as String;
       final body = jsonDecode(row['body'] as String) as Map<String, dynamic>;
+      final priority = (row['priority'] as String?) ?? 'normal';
+      final maxRetries = _maxRetries(priority);
       try {
         await _executeMutation(endpoint, method, body);
         await db.delete('pending_mutations', where: 'id = ?', whereArgs: [id]);
       } on DioException {
         final retries = (row['retries'] as int) + 1;
-        if (retries >= _maxRetries) {
-          debugPrint('MutationQueue: dropping mutation $id ($endpoint) after $_maxRetries retries');
+        if (retries >= maxRetries) {
+          if (priority == 'high') {
+            debugPrint('MutationQueue: DROPPED HIGH-PRIORITY mutation $id — quiz result may never sync');
+          }
+          debugPrint('MutationQueue: dropping mutation $id ($endpoint) after $maxRetries retries');
           await db.delete('pending_mutations', where: 'id = ?', whereArgs: [id]);
         } else {
           await db.update('pending_mutations', {'retries': retries}, where: 'id = ?', whereArgs: [id]);

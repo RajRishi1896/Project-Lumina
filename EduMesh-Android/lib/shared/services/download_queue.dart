@@ -16,6 +16,7 @@ class _QueuedDownload {
   final String grade;
   final String type;
   final double mtime;
+  final void Function(int received, int total)? onProgress;
 
   /// Remaining retry attempts before the download is abandoned (max 5).
   int retries = 5;
@@ -26,6 +27,7 @@ class _QueuedDownload {
     this.grade = '',
     this.type = '',
     this.mtime = 0,
+    this.onProgress,
   });
 }
 
@@ -63,11 +65,13 @@ class DownloadQueue extends ChangeNotifier {
     String grade = '',
     String type = '',
     double mtime = 0,
+    void Function(int received, int total)? onProgress,
   }) async {
     if (_queue.any((d) => d.resourceId == resourceId)) return;
     if (ConnectivityService().isOnline) {
       _queue.add(_QueuedDownload(resourceId, url, fileName,
-        title: title, subject: subject, grade: grade, type: type, mtime: mtime));
+        title: title, subject: subject, grade: grade, type: type, mtime: mtime,
+        onProgress: onProgress));
       notifyListeners();
       if (!_processing) unawaited(_processNext());
     } else {
@@ -93,6 +97,7 @@ class DownloadQueue extends ChangeNotifier {
       task.resourceId, task.url, task.fileName,
       title: task.title, subject: task.subject, grade: task.grade,
       type: task.type, mtime: task.mtime,
+      onProgress: task.onProgress,
     );
     if (path != null) {
       if (task.title.isNotEmpty) {

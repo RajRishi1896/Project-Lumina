@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -33,6 +32,8 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isConnected = false;
   bool _isChecking = true;
   Timer? _pingTimer;
+
+
 
   String _totalStorageUsedStr = 'Calculating...';
   String _totalCapacityStr = 'Calculating...';
@@ -66,7 +67,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _checkServer() async {
-    final connected = await ConnectivityService().ping();
+    final connected = await ConnectivityService().ping(timeout: const Duration(seconds: 10));
     if (mounted) {
       setState(() {
         _isConnected = connected;
@@ -84,13 +85,10 @@ class _DashboardPageState extends State<DashboardPage> {
           if (entity is File) appDataSize += await entity.length();
         }
       }
-      const channel = MethodChannel('com.edumesh.android/storage');
-      final info = await channel.invokeMethod<Map>('getStorageInfo');
-      final apkSize = info?['apkSize'] as int? ?? 65 * 1024 * 1024;
+      const apkSize = 65 * 1024 * 1024;
       final appUsedBytes = appDataSize + apkSize;
-      var totalBytes = (info?['totalBytes'] ?? (128 * 1024 * 1024 * 1024)) as num;
-      if (totalBytes == 0) totalBytes = 128 * 1024 * 1024 * 1024;
-      final availableBytes = info?['availableBytes'] ?? (64 * 1024 * 1024 * 1024);
+      const totalBytes = 128 * 1024 * 1024 * 1024; // ponytail: hardcoded, was MethodChannel
+      const availableBytes = 64 * 1024 * 1024 * 1024;
       final otherUsedBytes = (totalBytes - availableBytes - appUsedBytes).clamp(0, totalBytes);
 
       if (mounted) {

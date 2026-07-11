@@ -6,7 +6,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Response
 from app.database import log_admin_action, RETENTION_DELTAS
 from app.async_db import db_conn
-from app.models import LogRetentionUpdate, AuditLogResponse, SettingsResponse, StatusResponse
+from app.models import AuditLogResponse, SettingsResponse, StatusResponse
 from app.dependencies import verify_admin
 
 router = APIRouter()
@@ -63,7 +63,7 @@ async def get_admin_settings(admin_user: str = Depends(verify_admin)):
              description="Updates the log retention policy. Admin-only. Valid policies: 24h, 7d, 30d, 3m, 6m, never, none.",
              tags=["Admin"],
              responses={400: {"description": "Invalid retention policy"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
-async def set_admin_settings(data: LogRetentionUpdate, admin_user: str = Depends(verify_admin)):
+async def set_admin_settings(data: dict, admin_user: str = Depends(verify_admin)):
     """Update the log retention policy.
 
     Args:
@@ -74,13 +74,13 @@ async def set_admin_settings(data: LogRetentionUpdate, admin_user: str = Depends
     Raises:
         HTTPException 400: If the policy value is not recognized.
     """
-    if data.policy not in ("24h", "7d", "30d", "3m", "6m", "never", "none"):
+    if data.get('policy') not in ("24h", "7d", "30d", "3m", "6m", "never", "none"):
         raise HTTPException(status_code=400, detail="Invalid log retention policy.")
     async with db_conn() as conn:
         c = conn.cursor()
-        c.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('log_retention', ?)", (data.policy,))
+        c.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('log_retention', ?)", (data.get('policy'),))
         conn.commit()
-    await log_admin_action(admin_user, f"changed log retention policy to {data.policy}")
+    await log_admin_action(admin_user, f"changed log retention policy to {data.get('policy')}")
     return {"status": "success"}
 
 

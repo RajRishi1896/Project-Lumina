@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from app.database import log_admin_action
 from app.async_db import db_conn
-from app.models import TeacherCreate, AdminStudentCreate, StatusResponse, AdminStatusResponse, AdminSummary, AdminCreateResponse
+from app.models import TeacherCreate, AdminStudentCreate, StatusResponse, AdminSummary, AdminCreateResponse
 from app.dependencies import hash_password, verify_admin
 
 router = APIRouter()
@@ -56,7 +56,7 @@ async def enable_default_admin(admin_user: str = Depends(verify_admin)):
     return {"status": "success"}
 
 
-@router.get("/teacher/default-admin-status", response_model=AdminStatusResponse,
+@router.get("/teacher/default-admin-status",
              summary="Check default admin status",
              description="Returns whether the default admin account is currently enabled or disabled.",
              tags=["Admin"],

@@ -351,104 +351,157 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                       color: isGhost ? cs.surfaceContainerHighest : null,
                       child: Opacity(
                         opacity: isGhost ? 0.5 : 1.0,
-                        child: ListTile(
-                        leading: ResourceThumbnail(resource: item, size: 48),
-                        onTap: () async {
-                          if (item.pdfUrl == null) return;
-                          if (isGhost) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(l10n.snackbarNotDownloaded(item.title)),
-                              action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
-                                final rawUrl = item.pdfUrl;
-                                final url = (rawUrl != null && rawUrl.isNotEmpty) ? rawUrl : '/files/${item.id}';
-                                DownloadQueue().enqueue(item.id, url, '${item.title}.pdf',
-                                  title: item.title, subject: item.subject, grade: item.grade,
-                                  type: item.type.name, mtime: item.mtime,
-                                );
-                                if (mounted) setState(() => _pendingIds.add(item.id));
-                              }),
-                            ));
-                            return;
-                          }
-                          String url = item.pdfUrl!;
-                          if (isDl) {
-                            final downloads = await DBHelper().getDownloadedResources();
-                            final match = downloads.where((d) => d['resource_id'] == item.id);
-                            if (match.isNotEmpty) {
-                              final storedMtime = (match.first['mtime'] as num?)?.toDouble() ?? 0;
-                              if (item.mtime > storedMtime) {
-                                final tempDir = await getTemporaryDirectory();
-                                final dlPath = '${tempDir.path}/update_${item.id}_${DateTime.now().millisecondsSinceEpoch}.tmp';
-                                try {
-                                  await ApiClient.ensureInitialized();
-                                  await ApiClient.dio.download(widget.resourceType == 'textbooks' || widget.resourceType == 'notes' || widget.resourceType == 'pyqs' ? item.pdfUrl! : item.pdfUrl!, dlPath);
-                                  final oldPath = match.first['local_path'] as String?;
-                                  final newPath = oldPath ?? dlPath;
-                                  if (oldPath != null) {
-                                    final oldFile = File(oldPath);
-                                    if (await oldFile.exists()) await oldFile.delete();
-                                    await File(dlPath).rename(oldPath);
-                                  }
-                                  await DBHelper().insertDownload(item.id, newPath, item.title, item.subject, item.grade, item.type.name, mtime: item.mtime);
-                                  url = newPath;
-                                } catch (_) {
-                                  final localPath = match.first['local_path'] as String?;
-                                  if (localPath != null) url = localPath;
-                                }
-                              } else {
-                                final localPath = match.first['local_path'] as String?;
-                                if (localPath != null) url = localPath;
-                              }
-                            }
-                          }
-                          if (item.type == ResourceType.videos) {
-                            unawaited(Navigator.of(this.context).push(MaterialPageRoute(
-                              builder: (_) => VideoPlayerPage(
-                                title: item.title,
-                                videoUrl: url,
-                              ),
-                            )));
-                          } else {
-                            unawaited(Navigator.of(this.context).push(MaterialPageRoute(
-                              builder: (_) => PdfViewerPage(
-                                title: item.title,
-                                pdfUrl: url,
-                              ),
-                            )));
-                          }
-                        },
-                        subtitle: Text(l10n.resourceSubtitle(item.subject, item.grade)),
-                        trailing: Row(
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            IconButton(
-                              icon: Icon(
-                                _bookmarkedIds.contains(item.id) ? Icons.bookmark : Icons.bookmark_border,
-                                color: _bookmarkedIds.contains(item.id) ? cs.primary : cs.onSurfaceVariant,
-                              ),
-                              onPressed: () async {
-                                final saved = await _toggleSave(
-                                  item.id,
-                                  title: item.title,
-                                  subject: item.subject,
-                                  grade: item.grade,
-                                  type: item.type.name,
-                                  pdfUrl: item.pdfUrl,
-                                );
-                                if (mounted) {
-                                  setState(() {
-                                    if (saved) { _bookmarkedIds.add(item.id); }
-                                    else { _bookmarkedIds.remove(item.id); }
-                                  });
+                            InkWell(
+                              onTap: () async {
+                                if (item.pdfUrl == null) return;
+                                if (isGhost) {
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: Text(l10n.snackbarNotDownloaded(item.title)),
+                                    action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
+                                      final rawUrl = item.pdfUrl;
+                                      final url = (rawUrl != null && rawUrl.isNotEmpty) ? rawUrl : '/files/${item.id}';
+                                      DownloadQueue().enqueue(item.id, url, '${item.title}.pdf',
+                                        title: item.title, subject: item.subject, grade: item.grade,
+                                        type: item.type.name, mtime: item.mtime,
+                                      );
+                                      if (mounted) setState(() => _pendingIds.add(item.id));
+                                    }),
+                                  ));
+                                  return;
+                                }
+                                String url = item.pdfUrl!;
+                                if (isDl) {
+                                  final downloads = await DBHelper().getDownloadedResources();
+                                  final match = downloads.where((d) => d['resource_id'] == item.id);
+                                  if (match.isNotEmpty) {
+                                    final storedMtime = (match.first['mtime'] as num?)?.toDouble() ?? 0;
+                                    if (item.mtime > storedMtime) {
+                                      final tempDir = await getTemporaryDirectory();
+                                      final dlPath = '${tempDir.path}/update_${item.id}_${DateTime.now().millisecondsSinceEpoch}.tmp';
+                                      try {
+                                        await ApiClient.ensureInitialized();
+                                        await ApiClient.dio.download(widget.resourceType == 'textbooks' || widget.resourceType == 'notes' || widget.resourceType == 'pyqs' ? item.pdfUrl! : item.pdfUrl!, dlPath);
+                                        final oldPath = match.first['local_path'] as String?;
+                                        final newPath = oldPath ?? dlPath;
+                                        if (oldPath != null) {
+                                          final oldFile = File(oldPath);
+                                          if (await oldFile.exists()) await oldFile.delete();
+                                          await File(dlPath).rename(oldPath);
+                                        }
+                                        await DBHelper().insertDownload(item.id, newPath, item.title, item.subject, item.grade, item.type.name, mtime: item.mtime);
+                                        url = newPath;
+                                      } catch (_) {
+                                        final localPath = match.first['local_path'] as String?;
+                                        if (localPath != null) url = localPath;
+                                      }
+                                    } else {
+                                      final localPath = match.first['local_path'] as String?;
+                                      if (localPath != null) url = localPath;
+                                    }
+                                  }
+                                }
+                                if (item.type == ResourceType.videos) {
+                                  unawaited(Navigator.of(this.context).push(MaterialPageRoute(
+                                    builder: (_) => VideoPlayerPage(
+                                      title: item.title,
+                                      videoUrl: url,
+                                    ),
+                                  )));
+                                } else {
+                                  unawaited(Navigator.of(this.context).push(MaterialPageRoute(
+                                    builder: (_) => PdfViewerPage(
+                                      title: item.title,
+                                      pdfUrl: url,
+                                    ),
+                                  )));
                                 }
                               },
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
+                                child: Row(
+                                  children: [
+                                    ResourceThumbnail(resource: item, size: 48),
+                                    SizedBox(width: AppSpacing.md.w),
+                                    Expanded(
+                                      child: Text(
+                                        l10n.resourceSubtitle(item.subject, item.grade),
+                                        style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                                      ),
+                                    ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(
+                                            _bookmarkedIds.contains(item.id) ? Icons.bookmark : Icons.bookmark_border,
+                                            color: _bookmarkedIds.contains(item.id) ? cs.primary : cs.onSurfaceVariant,
+                                          ),
+                                          onPressed: () async {
+                                            final saved = await _toggleSave(
+                                              item.id,
+                                              title: item.title,
+                                              subject: item.subject,
+                                              grade: item.grade,
+                                              type: item.type.name,
+                                              pdfUrl: item.pdfUrl,
+                                            );
+                                            if (mounted) {
+                                              setState(() {
+                                                if (saved) { _bookmarkedIds.add(item.id); }
+                                                else { _bookmarkedIds.remove(item.id); }
+                                              });
+                                            }
+                                          },
+                                        ),
+                                        const SizedBox(width: AppSpacing.xs),
+                                        _buildDownloadButton(item, cs),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            const SizedBox(width: AppSpacing.xs),
-                            _buildDownloadButton(item, cs),
+                            if (item.notes != null && item.notes!.trim().isNotEmpty)
+                              Padding(
+                                padding: EdgeInsets.fromLTRB(AppSpacing.lg.w, 0, AppSpacing.lg.w, AppSpacing.sm.h),
+                                child: Card(
+                                  color: cs.tertiaryContainer,
+                                  margin: EdgeInsets.zero,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        left: BorderSide(color: cs.tertiary, width: 4),
+                                      ),
+                                    ),
+                                    padding: EdgeInsets.all(AppSpacing.md.w),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          l10n.teacherNotes,
+                                          style: tt.labelLarge?.copyWith(
+                                            color: cs.onTertiaryContainer,
+                                            fontWeight: AppSpacing.weightStrong,
+                                          ),
+                                        ),
+                                        SizedBox(height: AppSpacing.xs.h),
+                                        Text(
+                                          item.notes!,
+                                          style: tt.bodyMedium?.copyWith(color: cs.onTertiaryContainer),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
-                      ),
                       ),
                     );
                   },

@@ -618,6 +618,10 @@
       }
     }
   },
+  "teacherNotes": "Teacher Notes",
+  "@teacherNotes": {
+    "description": "Heading label for the teacher notes section on the resource detail page"
+  },
   "resourceTypeTextbooks": "Textbooks",
   "@resourceTypeTextbooks": {
     "description": "Card title for the Textbooks resource category"

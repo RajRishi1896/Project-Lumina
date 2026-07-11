@@ -33,6 +33,113 @@ let currentLang = localStorage.getItem('lumina-lang') || 'en';
  */
 const TRANSLATIONS = {
   en: {
+    "courses.page_title": "Lumina Hub | Courses",
+    "courses.title": "My Courses",
+    "courses.page_description": "Create and manage courses with quizzes and resources.",
+    "courses.create": "Create Course",
+    "courses.filter_subject": "Subject",
+    "courses.filter_grade": "Grade",
+    "courses.filter_all": "All",
+    "courses.search_label": "Search courses",
+    "courses.search_placeholder": "Search by title...",
+    "courses.th_title": "Title",
+    "courses.th_subject": "Subject",
+    "courses.th_grade": "Grade",
+    "courses.th_language": "Language",
+    "courses.th_status": "Status",
+    "courses.th_resources": "Resources",
+    "courses.th_actions": "Actions",
+    "courses.empty": "No courses created yet. Click \"Create Course\" to get started.",
+    "courses.status_published": "Published",
+    "courses.status_draft": "Draft",
+    "courses.edit": "Edit",
+    "courses.delete": "Delete",
+    "courses.export_zip": "Export ZIP",
+    "courses.back_to_list": "Back to Courses",
+    "courses.editor_new": "New Course",
+    "courses.editor_edit": "Edit Course",
+    "courses.editor_title_label": "Course Title",
+    "courses.editor_title_placeholder": "e.g. Algebra Fundamentals",
+    "courses.editor_subject_label": "Subject",
+    "courses.editor_subject_select": "Select subject...",
+    "courses.editor_grade_label": "Grade",
+    "courses.editor_language_label": "Language",
+    "courses.editor_desc_label": "Description",
+    "courses.editor_desc_placeholder": "Brief description of the course...",
+    "courses.similar_title": "Similar Courses",
+    "courses.similar_desc": "Link similar courses together so students can discover related content.",
+    "courses.similar_search_label": "Search courses",
+    "courses.similar_search_placeholder": "Type to search courses...",
+    "courses.similar_empty": "No linked courses yet.",
+    "courses.cover_title": "Cover Image",
+    "courses.cover_empty": "No image",
+    "courses.cover_remove": "Remove",
+    "courses.resources_title": "Course Resources",
+    "courses.add_resource": "Add Resource",
+    "courses.add_quiz": "Add Quiz",
+    "courses.resource_th_title": "Title",
+    "courses.resource_th_type": "Type",
+    "courses.resource_th_size": "Size",
+    "courses.resource_th_actions": "Actions",
+    "courses.resources_empty": "No resources added yet.",
+    "courses.remove": "Remove",
+    "courses.save_draft": "Save Draft",
+    "courses.publish": "Publish",
+    "courses.grade_label": "Grade {grade}",
+    "courses.confirm_delete_title": "Delete Course",
+    "courses.confirm_delete_body": "Are you sure you want to permanently delete \"{title}\"?",
+    "courses.confirm_delete_btn": "Delete",
+    "courses.notif.load_failed": "Could not load courses.",
+    "courses.notif.connection_error": "Connection error.",
+    "courses.notif.deleted": "Course deleted.",
+    "courses.notif.delete_failed": "Could not delete course.",
+    "courses.notif.saved": "Course saved successfully.",
+    "courses.notif.save_failed": "Could not save course.",
+    "courses.notif.title_required": "Please enter a course title.",
+    "courses.notif.question_text_required": "Please enter the question text.",
+    "courses.notif.answer_required": "Please enter the correct answer.",
+    "courses.notif.options_required": "Please add at least 2 options.",
+    "courses.notif.correct_required": "Please select the correct answer.",
+    "courses.notif.quiz_title_required": "Please enter a quiz title.",
+    "courses.notif.quiz_questions_required": "Please add at least one question.",
+    "courses.notif.save_course_first": "Please save the course first before adding a quiz.",
+    "courses.notif.quiz_saved": "Quiz saved successfully.",
+    "courses.notif.quiz_save_failed": "Could not save quiz.",
+    "courses.quiz_builder": "Quiz Builder",
+    "courses.quiz_title_label": "Quiz Title",
+    "courses.quiz_title_placeholder": "e.g. Chapter 1 Quiz",
+    "courses.quiz_time_label": "Time Limit (minutes)",
+    "courses.quiz_threshold_label": "Pass Threshold (%)",
+    "courses.quiz_attempts_label": "Max Attempts",
+    "courses.quiz_shuffle_label": "Shuffle questions",
+    "courses.quiz_questions_title": "Questions",
+    "courses.quiz_add_question": "Add Question",
+    "courses.quiz_questions_empty": "No questions added yet.",
+    "courses.quiz_edit_question": "Edit Question",
+    "courses.quiz_new_question": "New Question",
+    "courses.quiz_q_type_label": "Question Type",
+    "courses.quiz_q_type_mcq": "MCQ (Single)",
+    "courses.quiz_q_type_tf": "True / False",
+    "courses.quiz_q_type_fill": "Fill in the Blanks",
+    "courses.quiz_q_type_multi": "Multi-Select",
+    "courses.quiz_q_image_label": "Question Image (optional)",
+    "courses.quiz_q_text_label": "Question Text",
+    "courses.quiz_q_text_placeholder": "Enter the question...",
+    "courses.quiz_q_options_label": "Options",
+    "courses.quiz_add_option": "+ Add Option",
+    "courses.quiz_q_fill_label": "Correct Answer",
+    "courses.quiz_q_fill_placeholder": "Enter the correct answer...",
+    "courses.quiz_q_explanation_label": "Explanation (optional)",
+    "courses.quiz_q_explanation_placeholder": "Explain why this answer is correct...",
+    "courses.quiz_cancel": "Cancel",
+    "courses.quiz_save_question": "Save Question",
+    "courses.quiz_preview": "Preview",
+    "courses.quiz_save": "Save Quiz",
+    "courses.quiz_untitled": "Untitled Quiz",
+    "courses.preview_meta": "{count} questions | {time} min | pass: {threshold}%",
+    "courses.preview_question_num": "Q{n}",
+    "courses.preview_fill_input": "[Fill in the blank]",
+    "courses.preview_explanation": "Explanation",
     "content.general_subject": "General",
     "content.all_subjects": "All Subjects",
     "content.no_other_subjects": "No other subjects available",
@@ -54,7 +161,9 @@ const TRANSLATIONS = {
     "content.notif.pwd_fields_required": "Please fill in both fields.",
     "content.notif.pwd_mismatch": "Passwords do not match.",
     "content.notif.pwd_updated": "Password updated successfully. Reloading...",
-    "content.notif.pwd_update_failed": "Could not update password."
+    "content.notif.pwd_update_failed": "Could not update password.",
+    "content.library_th_downloads": "Downloads",
+    "content.library_th_notes": "Notes"
   }
 };
 /**
@@ -387,6 +496,55 @@ function renderUserInfo(username) {
     if (el) el.innerHTML = '<div style="font-weight: 800; font-size: 1rem; color: #fff; letter-spacing: -0.015em;">' + esc(username) + '</div>';
 }
 
+/**
+ * Shows a modal confirm dialog with configurable danger/teal styling.
+ * Returns a Promise that resolves to true (confirmed) or false (cancelled).
+ * @param {string} title - Modal title text
+ * @param {string} message - Modal body text
+ * @param {boolean} isDanger - If true, danger (red) styling; if false, teal
+ * @param {string} [confirmText] - Optional text for the confirm button
+ * @returns {Promise<boolean>}
+ */
+function showConfirm(title, message, isDanger, confirmText) {
+    if (isDanger === undefined) isDanger = true;
+    return new Promise(function(resolve) {
+        var modal = document.getElementById('globalConfirmModal');
+        var titleEl = document.getElementById('confirmModalTitle');
+        var textEl = document.getElementById('confirmModalText');
+        var confirmBtn = document.getElementById('confirmConfirmBtn');
+        var cancelBtn = document.getElementById('confirmCancelBtn');
+        var iconEl = document.getElementById('confirmModalIcon');
+        if (!modal || !titleEl || !textEl || !confirmBtn || !cancelBtn) { resolve(false); return; }
+        titleEl.innerText = title;
+        textEl.innerText = message;
+        if (isDanger) {
+            confirmBtn.style.background = 'var(--danger)';
+            confirmBtn.style.borderColor = 'var(--danger)';
+            iconEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>';
+            iconEl.style.background = 'rgba(239, 68, 68, 0.1)';
+            iconEl.style.color = 'var(--danger)';
+        } else {
+            confirmBtn.style.background = 'var(--teal)';
+            confirmBtn.style.borderColor = 'var(--teal)';
+            iconEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 16 16 12 12 8"></polyline><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
+            iconEl.style.background = 'rgba(0, 112, 131, 0.1)';
+            iconEl.style.color = 'var(--teal)';
+        }
+        if (confirmText) confirmBtn.innerText = confirmText;
+        modal.classList.remove('hidden');
+        var _confirmHandler = function() { cleanup(true); };
+        var _cancelHandler = function() { cleanup(false); };
+        confirmBtn.addEventListener('click', _confirmHandler);
+        cancelBtn.addEventListener('click', _cancelHandler);
+        function cleanup(value) {
+            modal.classList.add('hidden');
+            confirmBtn.removeEventListener('click', _confirmHandler);
+            cancelBtn.removeEventListener('click', _cancelHandler);
+            resolve(value);
+        }
+    });
+}
+
 /* ── Auth ─────────────────────────────────────────────────────────────────── */
 /** @type {string} Username of the currently logged-in user. Defaults to 'admin' until /whoami responds. */
 let loggedInUser = 'admin';
@@ -458,6 +616,57 @@ async function loadWhoAmI() {
     }
 }
 
+/**
+ * Checks whether the current session has reset_required=1.
+ * If so, shows the force password reset modal.
+ * Sets loggedInUser from /teacher/me response.
+ */
+async function checkSelfResetRequired() {
+    try {
+        var res = await fetch('/teacher/me');
+        if (res.ok) {
+            var me = await res.json();
+            loggedInUser = me.username;
+            if (me.reset_required === 1) {
+                document.getElementById('forceResetModal').classList.remove('hidden');
+            }
+        }
+    } catch (e) {
+        console.error("Error checking reset state", e);
+    }
+}
+
+/**
+ * Submits the force password reset. Validates passwords, then
+ * sends POST to /teacher/force-change-password. Reloads page on success.
+ */
+async function submitForcePasswordReset() {
+    var newPwd = document.getElementById('forceNewPwd').value;
+    var confirmPwd = document.getElementById('forceConfirmPwd').value;
+    if (!newPwd || !confirmPwd) {
+        return showNotification('forceResetNotif', __('content.notif.pwd_fields_required'), true);
+    }
+    if (newPwd !== confirmPwd) {
+        return showNotification('forceResetNotif', __('content.notif.pwd_mismatch'), true);
+    }
+    try {
+        var res = await fetch('/teacher/force-change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: loggedInUser || 'admin', new_password: newPwd })
+        });
+        if (res.ok) {
+            showNotification('forceResetNotif', __('content.notif.pwd_updated'), false);
+            setTimeout(function() { location.reload(); }, 1500);
+        } else {
+            var err = await res.json();
+            showNotification('forceResetNotif', err.detail || __('content.notif.pwd_update_failed'), true);
+        }
+    } catch (e) {
+        showNotification('forceResetNotif', __('content.notif.connection_error'), true);
+    }
+}
+
 /* ── Mobile Menu ─────────────────────────────────────────────────────────── */
 
 /** Toggle the mobile sidebar open/closed by toggling .open and .active classes. */
@@ -476,13 +685,140 @@ function toggleMobileMenu() {
  * @param {string} navId - The DOM id of the nav item to highlight (e.g. 'nav-home').
  * @returns {void}
  */
-function setActiveNav(navId) {
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
-    const nav = document.getElementById(navId);
-    if (nav) nav.classList.add('active');
-    const bottomNav = document.getElementById('bottom-' + navId);
-    if (bottomNav) bottomNav.classList.add('active');
+/* ── Sidebar + Bottom Nav Layout (removes ~1000 lines of duplicated HTML) ──── */
+
+/**
+ * Renders the sidebar (<aside>) and bottom nav (#bottomNav) into their container
+ * elements. Called once on DOMContentLoaded. Eliminates identical sidebar/nav
+ * HTML that was duplicated across all 8 dashboard pages.
+ */
+function renderLayout() {
+    var aside = document.querySelector('aside');
+    var bottomNav = document.getElementById('bottomNav');
+    if (!aside || !bottomNav) return;
+
+    // Render mobile header + overlay if not already present
+    if (!document.querySelector('.mobile-header')) {
+        var body = document.body;
+        var header = document.createElement('header');
+        header.className = 'mobile-header';
+        header.innerHTML = '<div class="mobile-brand-horizontal"><img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina"><img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina"></div><button class="menu-toggle" id="btn-toggleMobileMenu" data-i18n-aria-label="sidebar.toggle_menu" aria-label="Toggle Menu"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>';
+        var overlay = document.createElement('div');
+        overlay.className = 'mobile-overlay';
+        overlay.id = 'overlay-toggleMobileMenu';
+        body.insertBefore(overlay, body.firstChild);
+        body.insertBefore(header, overlay);
+    }
+
+    // Skip if already rendered (backward compat with pages still carrying static HTML)
+    if (aside.querySelector('.sidebar-brand-horizontal')) return;
+
+    var path = location.pathname.replace(/\/+$/, '');
+    var mapping = { '/static/index':'home','/static/courses':'courses','/static/manage-content':'content','/static/manage-security':'security','/static/students':'students','/static/student-detail':'students','/static/manage-help':'help','/static/manage-danger':'danger','/static/manage-settings':'settings' };
+    var key = mapping[path] || '';
+    var useAccount = key === 'security' && path === '/static/manage-security';
+
+    function idFor(k) { return useAccount && k === 'security' ? 'account' : k; }
+
+    /* All nav-item SVGs (inline, one per entry) */
+    var HOME_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+    var FILE_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    var LOCK_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+    var COURSES_SVG='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+    var USERS_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+    var HELP_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>';
+    var DANGER_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="danger-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>';
+    var GEAR_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+    var LOGOUT_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>';
+
+    var navList = [
+        { k:'home',     href:'/static/index',               svg:HOME_SVG,      sideLabel:'Home',           botLabel:'Home' },
+        { k:'courses',  href:'/static/courses',             svg:COURSES_SVG,   sideLabel:'Courses',        botLabel:'Courses' },
+        { k:'content',  href:'/static/manage-content',      svg:FILE_SVG,      sideLabel:'Content Manager',botLabel:'Content' },
+        { k:'security', href:'/static/manage-security',     svg:LOCK_SVG,   sideLabel:'Account',        botLabel:'Account' },
+        { k:'students', href:'/static/students',            svg:USERS_SVG,  sideLabel:'Students',       botLabel:'Students' },
+        { k:'help',     href:'/static/manage-help#teacher-guide',svg:HELP_SVG,sideLabel:'Teacher Guide', botLabel:'Guide' },
+        { k:'danger',   href:'/static/manage-danger',       svg:DANGER_SVG, sideLabel:'Danger Zone',    botLabel:'Danger' },
+        { k:'settings', href:'/static/manage-settings',     svg:GEAR_SVG,   sideLabel:'Settings',       botLabel:'Settings' },
+    ];
+
+    var sbNav = '', btmNav = '';
+    for (var i = 0; i < navList.length; i++) {
+        var n = navList[i];
+        var active = n.k === key;
+        var id = idFor(n.k);
+        var danger = n.k === 'danger' ? ' danger' : '';
+        sbNav += '<a href="' + n.href + '" class="nav-item' + (active ? ' active' : '') + danger + '" id="nav-' + id + '">' + n.svg + '<span data-i18n="sidebar.' + n.k + '">' + n.sideLabel + '</span></a>\n            ';
+        btmNav += '<a href="' + n.href + '" class="bottom-nav-item' + (active ? ' active' : '') + danger + '" id="bottom-nav-' + id + '">' + n.svg + '<span data-i18n="sidebar.' + n.k + '">' + n.botLabel + '</span></a>\n        ';
+    }
+
+    aside.innerHTML =
+        '<a href="/static/index" class="sidebar-brand-horizontal">' +
+            '<img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina">' +
+            '<img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina">' +
+        '</a>' +
+        '<div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem;font-size:0.85rem;color:var(--on-primary);"></div>' +
+        '<div class="sidebar-divider"></div>' +
+        '<nav>\n            ' + sbNav + '</nav>' +
+        '<div class="nav-spacer"></div>' +
+        '<div class="theme-toggle" id="btn-toggleTheme">' +
+            '<svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>' +
+            '<span id="themeLabel" data-i18n="sidebar.dark_mode">Dark Mode</span>' +
+        '</div>' +
+        '<a href="/logout" class="nav-logout">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
+
+    // bottom nav gets a logout item at the end
+    btmNav += '<a href="/logout" class="bottom-nav-item" id="bottom-nav-logout">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
+    bottomNav.innerHTML = btmNav;
+
+    // Wire theme toggle (static pages already have inline onclick)
+    var toggle = document.getElementById('btn-toggleTheme');
+    if (toggle && !toggle.getAttribute('onclick')) {
+        toggle.addEventListener('click', toggleTheme);
+    }
+}
+
+/**
+ * Injects global modal HTML (confirm modal, force-reset modal) into document.body.
+ * Called once on DOMContentLoaded. Creates the modals if they don't already exist.
+ */
+function renderModals() {
+    if (document.getElementById('globalConfirmModal')) return;
+
+    var confirmModal = document.createElement('div');
+    confirmModal.id = 'globalConfirmModal';
+    confirmModal.className = 'hidden';
+    confirmModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 30000; transition: all 0.3s ease;';
+    confirmModal.innerHTML =
+        '<div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.25rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">' +
+        '<div id="confirmModalIcon" style="margin: 0 auto 1.25rem; text-align: center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--danger)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></div>' +
+        '<h3 id="confirmModalTitle" style="font-size: 1.25rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Confirm Action</h3>' +
+        '<p id="confirmModalText" style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.75rem;">Are you sure you want to proceed?</p>' +
+        '<div style="display: flex; gap: 0.75rem; justify-content: flex-end; border-top: 1px solid var(--outline); padding-top: 1.25rem;">' +
+        '<button id="confirmCancelBtn" class="btn btn-outline" style="border-color: var(--outline); color: var(--on-surface); background: transparent; padding: 0.625rem 1.25rem;">Cancel</button>' +
+        '<button id="confirmConfirmBtn" class="btn" style="background: var(--danger); color: #fff; padding: 0.625rem 1.25rem;">Confirm</button></div></div>';
+
+    var resetModal = document.createElement('div');
+    resetModal.id = 'forceResetModal';
+    resetModal.className = 'hidden';
+    resetModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20000;';
+    resetModal.innerHTML =
+        '<div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.5rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">' +
+        '<div style="margin: 0 auto 1.5rem; text-align: center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' +
+        '<h3 style="font-size: 1.35rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Password Reset Required</h3>' +
+        '<p style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.5rem;">An administrator has forced a password reset on your account. You must change your password before you can proceed.</p>' +
+        '<div id="forceResetNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center;"></div>' +
+        '<div class="form-group" style="text-align: left; margin-bottom: 1rem;">' +
+        '<label for="forceNewPwd" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--on-surface); opacity: 0.7; margin-bottom: 0.375rem;">New Password</label>' +
+        '<input type="password" id="forceNewPwd" placeholder="Enter new password" style="width: 100%; padding: 0.65rem; border: 1px solid var(--outline); border-radius: 6px; background: var(--surface); color: var(--on-surface);">' +
+        '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div></div>' +
+        '<div class="form-group" style="text-align: left; margin-bottom: 1.5rem;">' +
+        '<label for="forceConfirmPwd" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--on-surface); opacity: 0.7; margin-bottom: 0.375rem;">Confirm New Password</label>' +
+        '<input type="password" id="forceConfirmPwd" placeholder="Confirm new password" style="width: 100%; padding: 0.65rem; border: 1px solid var(--outline); border-radius: 6px; background: var(--surface); color: var(--on-surface);"></div>' +
+        '<button id="btn-submitForcePasswordReset" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-size: 0.875rem;">Update and Continue</button></div>';
+
+    document.body.appendChild(confirmModal);
+    document.body.appendChild(resetModal);
 }
 
 /**
@@ -491,6 +827,37 @@ function setActiveNav(navId) {
  * Path-to-key mapping covers all static dashboard pages.
  */
 function initNav() {
+    renderLayout();
+    const path = location.pathname.replace(/\/+$/, '');
+    const mapping = {
+        '/static/index': 'home',
+        '/static/courses': 'courses',
+        '/static/manage-content': 'content',
+        '/static/manage-security': 'security',
+        '/static/students': 'students',
+        '/static/student-detail': 'students',
+        '/static/manage-help': 'help',
+        '/static/manage-danger': 'danger',
+        '/static/manage-settings': 'settings',
+    };
+    const key = mapping[path] || '';
+    if (key) {
+        const suffix = (key === 'security' && path === '/static/manage-security') ? 'account' : key;
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+        const navEl = document.getElementById('nav-' + suffix);
+        if (navEl) navEl.classList.add('active');
+        const bottomEl = document.getElementById('bottom-nav-' + suffix);
+        if (bottomEl) bottomEl.classList.add('active');
+    }
+}
+
+
+
+/* ── SPA Navigation ────────────────────────────────────────────────────────── */
+const _pageInitRegistry = {};
+
+function initCurrentPage() {
     const path = location.pathname.replace(/\/+$/, '');
     const mapping = {
         '/static/index': 'home',
@@ -502,85 +869,55 @@ function initNav() {
         '/static/manage-danger': 'danger',
         '/static/manage-settings': 'settings',
     };
-    const key = mapping[path] || '';
-    if (key) {
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
-        const navEl = document.getElementById('nav-' + key);
-        if (navEl) navEl.classList.add('active');
-        const bottomEl = document.getElementById('bottom-nav-' + key);
-        if (bottomEl) bottomEl.classList.add('active');
+    const key = mapping[path];
+    if (key && _pageInitRegistry[key]) _pageInitRegistry[key]();
+}
+
+async function navigateTo(url, pushHistory) {
+    if (pushHistory === undefined) pushHistory = true;
+    if (url === location.href) return;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) { window.location.href = url; return; }
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const newApp = doc.getElementById('app-content');
+        const currApp = document.getElementById('app-content');
+        if (newApp && currApp) currApp.innerHTML = newApp.innerHTML;
+        if (pushHistory) history.pushState({ url: url }, '', url);
+        const newTitle = doc.querySelector('title');
+        if (newTitle) document.title = newTitle.textContent;
+        initNav();
+        applyLanguage();
+        initCurrentPage();
+    } catch (e) {
+        window.location.href = url;
     }
 }
 
-/**
- * Saves the current page scroll position to sessionStorage before navigating away.
- * Keyed by the current pathname so it can be restored on return.
- */
-function saveScrollPosition() {
-    try {
-        sessionStorage.setItem('scroll:' + location.pathname, window.scrollY.toString());
-    } catch(e) { /* sessionStorage may be unavailable */ }
-}
-
-/**
- * Restores the saved scroll position for the current page on load.
- * Uses a short timeout to let the DOM paint before scrolling.
- */
-function restoreScrollPosition() {
-    try {
-        const saved = sessionStorage.getItem('scroll:' + location.pathname);
-        if (saved !== null) {
-            const pos = parseInt(saved, 10);
-            if (pos > 0) {
-                let attempts = 0;
-                (function tryScroll() {
-                    // Wait until page content is tall enough or we've tried for ~1s
-                    if (document.body.scrollHeight > pos || ++attempts > 10) {
-                        window.scrollTo(0, pos);
-                    } else {
-                        setTimeout(tryScroll, 100);
-                    }
-                })();
-            }
-        }
-    } catch(e) { /* ignore */ }
-}
-
-/**
- * Hides/shows the mobile header on scroll.
- * Adds .hidden-header class when scrolling down past 50px, removes on scroll up.
- */
-function initMobileHeaderScroll() {
-    let lastScroll = 0;
-    const header = document.querySelector('.mobile-header');
-    if (!header) return;
-    window.addEventListener('scroll', function() {
-        const current = window.pageYOffset || document.documentElement.scrollTop;
-        if (current > lastScroll && current > 50) {
-            header.classList.add('hidden-header');
-        } else {
-            header.classList.remove('hidden-header');
-        }
-        lastScroll = current;
-    }, { passive: true });
-}
+window.addEventListener('popstate', function(e) {
+    if (e.state && e.state.url) navigateTo(e.state.url, false);
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     initNav();
+    renderModals();
     if (!document.getElementById('welcomeLangBtn') && !document.querySelector('.lang-nav-wrap')) {
         initLangPicker();
     }
     loadTranslations(currentLang);
-    initMobileHeaderScroll();
-    try { history.scrollRestoration = 'manual'; } catch(e) { /* ignore */ }
-    restoreScrollPosition();
-    // Save scroll position before navigating to another dashboard page
-    document.addEventListener('click', function(e) {
-        const link = e.target.closest('a.bottom-nav-item, a.nav-item');
-        if (link && link.href && link.href.indexOf(location.hostname) !== -1) {
-            saveScrollPosition();
-        }
-    });
+    initCurrentPage();
+});
 
+/* Intercept sidebar and bottom-nav nav clicks for SPA */
+document.addEventListener('click', function(e) {
+    var link = e.target.closest('a');
+    if (!link) return;
+    var href = link.getAttribute('href');
+    if (!href || href.startsWith('http') || href.startsWith('//') || href.startsWith('#') || href.startsWith('/logout') || link.hasAttribute('download')) return;
+    var isNav = href.startsWith('/static/');
+    if (isNav) {
+        e.preventDefault();
+        navigateTo(href);
+    }
 });

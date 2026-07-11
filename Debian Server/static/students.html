@@ -1,6 +1,6 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head � theme detection, metadata, styles -->
+<!-- Section: Head ï¿½ theme detection, metadata, styles -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,7 @@
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
     <style>
-        /* === Page-specific layout � filter row, student cards, stat pills === */
+        /* === Page-specific layout ï¿½ filter row, student cards, stat pills === */
         .filter-row { display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; }
         .filter-row .form-group { margin-bottom: 0; }
         .grade-filter { min-width: 180px; }
@@ -26,6 +26,11 @@
         .student-name { font-weight: 700; font-size: 0.9rem; color: var(--teal); text-decoration: none; }
         .student-meta { font-size: 0.75rem; color: var(--text-muted); }
         .scholar-id { font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.7rem; color: var(--text-muted); background: var(--outline); padding: 0.1rem 0.4rem; border-radius: 4px; }
+        .student-card.at-risk { border-left: 3px solid var(--danger); }
+        .at-risk-icon { display: inline-flex; align-items: center; color: var(--danger); margin-right: 0.35rem; }
+        .at-risk-tooltip { font-size: 0.7rem; color: var(--danger); font-weight: 400; }
+        .at-risk-filter { display: flex; align-items: center; gap: 0.5rem; }
+        .at-risk-filter input { width: 48px; padding: 0.35rem 0.4rem; font-size: 0.8rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); background: var(--surface); color: var(--on-surface); text-align: center; }
         .student-stats { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
         .stat-pill { display: flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
         .stat-pill-value { font-size: 0.9rem; font-weight: 800; color: var(--primary); letter-spacing: -0.01em; }
@@ -39,18 +44,7 @@
 </head>
 <body>
 
-    <!-- Section: Mobile Header � hamburger toggle + brand -->
-    <header class="mobile-header">
-        <div class="mobile-brand-horizontal"><img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina"><img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina"></div>
-        <button class="menu-toggle" id="btn-toggleMobileMenu" data-i18n-aria-label="sidebar.toggle_menu" aria-label="Toggle Menu">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-    </header>
-
-    <!-- Section: Mobile Overlay � dark backdrop for sidebar on small screens -->
-    <div class="mobile-overlay" id="overlay-toggleMobileMenu"></div>
-
-    <!-- Section: Sidebar � nav links, user info, theme toggle, logout -->
+    <!-- Section: Sidebar ï¿½ nav links, user info, theme toggle, logout -->
     <aside>
         <a href="/static/index" class="sidebar-brand-horizontal"><img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"><img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"></a>
         <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
@@ -96,8 +90,9 @@
         </a>
     </aside>
 
-    <!-- Section: Main Content � page header, filter row, student card list -->
+    <!-- Section: Main Content ï¿½ page header, filter row, student card list -->
     <main>
+        <div id="app-content">
         <div class="page-header">
             <h1 data-i18n="students.title">Student Monitoring</h1>
             <p data-i18n="students.subtitle">View and monitor student activity, study time, and engagement across grades.</p>
@@ -117,6 +112,25 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </div>
             </div>
+            <div class="form-group" style="min-width: 150px;">
+                <label for="sortSelect" data-i18n="students.sort_label">Sort by</label>
+                <select id="sortSelect">
+                    <option value="name_asc" data-i18n="students.sort_name_asc">Name (A-Z)</option>
+                    <option value="name_desc" data-i18n="students.sort_name_desc">Name (Z-A)</option>
+                    <option value="grade_asc" data-i18n="students.sort_grade">Grade</option>
+                    <option value="recent" data-i18n="students.sort_recent">Last Active (Recent)</option>
+                    <option value="oldest" data-i18n="students.sort_oldest">Last Active (Oldest)</option>
+                    <option value="study_high" data-i18n="students.sort_study_high">Study Time (High)</option>
+                    <option value="study_low" data-i18n="students.sort_study_low">Study Time (Low)</option>
+                </select>
+            </div>
+            <div class="at-risk-filter">
+                <label for="atRiskDays" style="white-space: nowrap; font-size: 0.8rem;">At-risk &gt;</label>
+                <input type="number" id="atRiskDays" value="3" min="1" max="365">
+                <span style="font-size: 0.8rem; white-space: nowrap;">days</span>
+                <input type="checkbox" id="atRiskToggle" style="margin-left: 0.25rem;">
+                <label for="atRiskToggle" style="font-size: 0.8rem; cursor: pointer;">Filter</label>
+            </div>
             <button id="btn-loadStudents" class="btn btn-outline" style="padding:0.5rem 0.75rem; font-size:0.8rem; display:flex; align-items:center; gap:0.5rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                 <span data-i18n="students_refresh">Refresh</span>
@@ -126,49 +140,17 @@
         <div id="studentContainer">
             <div class="empty-state" data-i18n="students_loading">Loading students...</div>
         </div>
+        </div>
     </main>
 
-    <!-- Section: Bottom Nav � mobile tab bar (hidden by default, shown via media query) -->
-    <div id="bottomNav">
-        <a href="/static/index" class="bottom-nav-item" id="bottom-nav-home">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            <span data-i18n="sidebar.home">Home</span>
-        </a>
-        <a href="/static/manage-content" class="bottom-nav-item" id="bottom-nav-content">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span data-i18n="sidebar.content">Content</span>
-        </a>
-        <a href="/static/manage-security" class="bottom-nav-item" id="bottom-nav-security">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <span data-i18n="sidebar.security">Account</span>
-        </a>
-        <a href="/static/students" class="bottom-nav-item active" id="bottom-nav-students">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span data-i18n="sidebar.students">Students</span>
-        </a>
-        <a href="/static/manage-help#teacher-guide" class="bottom-nav-item" id="bottom-nav-help">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-            <span data-i18n="sidebar.help">Guide</span>
-        </a>
-        <a href="/static/manage-danger" class="bottom-nav-item danger" id="bottom-nav-danger">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-            <span data-i18n="sidebar.danger">Danger</span>
-        </a>
-        <a href="/static/manage-settings" class="bottom-nav-item" id="bottom-nav-settings">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <span data-i18n="sidebar.settings">Settings</span>
-        </a>
-        <a href="/logout" class="bottom-nav-item" id="bottom-nav-logout">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            <span data-i18n="sidebar.logout">Logout</span>
-        </a>
-    </div>
+    <!-- Section: Bottom Nav ï¿½ mobile tab bar (hidden by default, shown via media query) -->
+    <div id="bottomNav"></div>
 
-    <!-- Section: Toast Container � global notification area (top-right, fixed) -->
+    <!-- Section: Toast Container ï¿½ global notification area (top-right, fixed) -->
     <div id="globalToastContainer" style="position: fixed; top: 1.5rem; right: 1.5rem; z-index: 99999; display: flex; flex-direction: column; gap: 0.75rem; max-width: 380px; width: 100%; pointer-events: none;"></div>
 
     <script src="/static/js/lumina.js" defer></script>
-    <!-- Section: Inline Scripts � student list logic, filtering, rendering -->
+    <!-- Section: Inline Scripts ï¿½ student list logic, filtering, rendering -->
     <script>
         let allStudents = [];
         let allGrades = [];
@@ -190,16 +172,39 @@
             return new Date(iso).toLocaleDateString();
         }
 
-        /** Filters the global allStudents array by grade and name/ID search query, then re-renders. */
+        /** Filters the global allStudents array by grade, name/ID search, and at-risk threshold, then re-renders. */
         function applyFilters() {
             const grade = document.getElementById('gradeFilter').value;
             const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const atRiskOnly = document.getElementById('atRiskToggle').checked;
+            var atRiskDays = parseInt(document.getElementById('atRiskDays').value, 10) || 3;
+            const now = Date.now();
             let filtered = allStudents;
             if (grade) filtered = filtered.filter(function(s) { return s.grade === grade; });
             if (query) filtered = filtered.filter(function(s) {
                 return s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query);
             });
-            renderStudents(filtered);
+    if (atRiskOnly) {
+        filtered = filtered.filter(function(s) {
+            if (!s.last_active) return true;
+            var days = (now - new Date(s.last_active).getTime()) / 86400000;
+            return days > atRiskDays;
+        });
+    }
+    var sortBy = document.getElementById('sortSelect').value;
+    filtered.sort(function(a, b) {
+        switch (sortBy) {
+            case 'name_asc': return a.name.localeCompare(b.name);
+            case 'name_desc': return b.name.localeCompare(a.name);
+            case 'grade_asc': return (a.grade || '').localeCompare(b.grade || '') || a.name.localeCompare(b.name);
+            case 'recent': return (b.last_active || '').localeCompare(a.last_active || '');
+            case 'oldest': return (a.last_active || '').localeCompare(b.last_active || '');
+            case 'study_high': return (b.week_minutes || 0) - (a.week_minutes || 0);
+            case 'study_low': return (a.week_minutes || 0) - (b.week_minutes || 0);
+            default: return 0;
+        }
+    });
+    renderStudents(filtered);
         }
 
         /**
@@ -252,22 +257,29 @@
          */
         function renderStudents(list) {
             const container = document.getElementById('studentContainer');
+            var atRiskDays = parseInt(document.getElementById('atRiskDays').value, 10) || 3;
+            const now = Date.now();
             if (list.length === 0) {
                 container.innerHTML = '<div class="empty-state">' + __('students_none_registered') + '</div>';
                 return;
             }
             container.innerHTML = list.map(function(s) {
                 const detailUrl = 'student-detail.html?id=' + encodeURIComponent(s.id) + '&name=' + encodeURIComponent(s.name) + '&grade=' + encodeURIComponent(s.grade) + '&avatar=' + encodeURIComponent(s.avatar) + '&last=' + encodeURIComponent(s.last_active || '');
+                var daysSinceActive = s.last_active ? (now - new Date(s.last_active).getTime()) / 86400000 : 999;
+                var atRisk = daysSinceActive > atRiskDays;
+                var atRiskBadge = atRisk ? '<span class="at-risk-icon" title="Last studied ' + Math.floor(daysSinceActive) + ' days ago"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></span>' : '';
+                var atRiskClass = atRisk ? ' at-risk' : '';
                 const wh = ((s.week_minutes || 0) / 60).toFixed(1).replace(/\.0$/, '');
                 const st = s.streak || 0;
                 const dl = s.downloads || 0;
-                return '<div class="card student-card" data-href="' + detailUrl + '">' +
+                return '<div class="card student-card' + atRiskClass + '" data-href="' + detailUrl + '">' +
                     '<div class="student-row">' +
                     '<div class="student-avatar">' + esc(s.avatar) + '</div>' +
                     '<div class="student-body">' +
-                    '<a href="' + detailUrl + '" class="student-name">' + esc(s.name) + '</a>' +
+                    '<a href="' + detailUrl + '" class="student-name">' + atRiskBadge + esc(s.name) + '</a>' +
                     '<div class="student-meta">' +
                     esc(s.grade) + ' &middot; <span class="scholar-id">' + esc(s.id) + '</span> &middot; ' + __('students_last_updated') + ' ' + timeAgo(s.last_active) +
+                    (atRisk ? ' <span class="at-risk-tooltip">(' + Math.floor(daysSinceActive) + 'd)</span>' : '') +
                     '</div>' +
                     '</div>' +
                     '<div class="student-stats">' +
@@ -285,9 +297,7 @@
             _debounceTimer = setTimeout(applyFilters, 200);
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            loadTranslations(currentLang);
-            setActiveNav('nav-students');
+        _pageInitRegistry['students'] = function() {
             loadStudents();
             loadWhoAmI();
             document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
@@ -299,9 +309,14 @@
                 if (card && card.dataset.href) { window.location.href = card.dataset.href; }
             });
             document.getElementById('gradeFilter')?.addEventListener('change', applyFilters);
+            document.getElementById('sortSelect')?.addEventListener('change', applyFilters);
             document.getElementById('searchInput')?.addEventListener('input', debouncedApplyFilters);
+            document.getElementById('atRiskToggle')?.addEventListener('change', applyFilters);
+            document.getElementById('atRiskDays')?.addEventListener('input', applyFilters);
             document.addEventListener('languageChanged', function() { applyFilters(); });
-        });
+        };
+
+        document.addEventListener('DOMContentLoaded', _pageInitRegistry['students']);
     </script>
 </body>
 </html>

@@ -45,6 +45,29 @@ class CatalogService {
     }
   }
 
+  /// Fetches similar-course pairings from the server and replaces local cache.
+  Future<void> syncSimilarCourses() async {
+    try {
+      final resp = await ApiClient.get('/api/courses/similar-courses')
+          .timeout(const Duration(seconds: 15));
+      final data = resp.data;
+      if (data is! List) return;
+      final db = await DBHelper().database;
+      await db.transaction((txn) async {
+        await txn.delete('similar_courses');
+        for (final item in data) {
+          if (item is! Map) continue;
+          await txn.insert('similar_courses', {
+            'course_id': (item['course_id'] ?? '').toString(),
+            'similar_course_id': (item['similar_course_id'] ?? '').toString(),
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('CatalogService: similar-courses sync failed — $e');
+    }
+  }
+
   /// Returns all cached resources as [ResourceModel] instances.
   /// Optionally filtered by [subject], [grade], and/or [type].
   Future<List<ResourceModel>> getCatalog({

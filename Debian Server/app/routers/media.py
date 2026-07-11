@@ -1,12 +1,12 @@
 """File streaming and thumbnail generation routes."""
 import os
+import re
 import asyncio
 import subprocess
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from app.database import UPLOAD_DIR, THUMBNAILS_DIR
 from app.async_db import db_conn
-from app.thumb_utils import find_video_thumb_time
 
 router = APIRouter()
 
@@ -79,6 +79,30 @@ async def stream_file(filename: str, request: Request):
     return FileResponse(file_path, headers={"Accept-Ranges": "bytes"})
 
 
+def _find_video_thumb_time(file_path: str, max_search: int = 30) -> float:
+    """Find a suitable thumbnail timestamp by skipping black intros via ffmpeg blackdetect."""
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-i", file_path, "-vf", "blackdetect=d=0.3:pix_th=0.1",
+             "-f", "null", "-"],
+            capture_output=True, text=True, timeout=30
+        )
+        black_end = None
+        for m in re.finditer(r'black_duration:([\d.]+)\s*black_start:([\d.]+)',
+                             result.stderr):
+            duration = float(m.group(1))
+            start = float(m.group(2))
+            end = start + duration
+            if end > (black_end or 0):
+                black_end = end
+        if black_end is not None:
+            t = black_end + 1.0
+            return min(t, float(max_search))
+    except Exception:
+        pass
+    return 2.0
+
+
 @router.get("/api/thumbnail/{resource_id}",
             summary="Get resource thumbnail",
             description="Returns a cached or generated thumbnail for a resource. Supports PDF (via PyMuPDF) and video (via ffmpeg with black-intro skip).",
@@ -125,7 +149,7 @@ async def resource_thumbnail(resource_id: int):
             except ImportError:
                 raise HTTPException(status_code=404, detail="Thumbnail unavailable (PyMuPDF not installed)")
         elif rtype == "videos":
-            thumb_time = await asyncio.to_thread(find_video_thumb_time, file_path)
+            thumb_time = await asyncio.to_thread(_find_video_thumb_time, file_path)
             ss = f"{int(thumb_time // 3600):02d}:{int((thumb_time % 3600) // 60):02d}:{int(thumb_time % 60):02d}"
             result = await asyncio.to_thread(lambda: subprocess.run(
                 ["ffmpeg", "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],

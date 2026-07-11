@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
+import '../storage/db_helper.dart';
 import '../../shared/services/connectivity_service.dart';
 
 /// Tracks study sessions and user actions, persists them locally, and
@@ -66,6 +67,17 @@ class ActivityTracker {
       'metadata': jsonEncode(meta),
       'timestamp': DateTime.now().toIso8601String(),
     });
+    if (subject != null && subject.isNotEmpty && duration.inSeconds >= 30) {
+      try {
+        final db = await DBHelper().database;
+        await db.insert('activity', {
+          'resource_id': 0,
+          'date': DateTime.now().toIso8601String().substring(0, 10),
+          'subject': subject,
+          'seconds': duration.inSeconds,
+        });
+      } catch (_) {}
+    }
     await sync();
   }
 

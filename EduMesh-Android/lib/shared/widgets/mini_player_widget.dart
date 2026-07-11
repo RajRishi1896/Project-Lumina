@@ -20,6 +20,7 @@ class MiniPlayerWidget extends StatelessWidget {
       builder: (context, _) {
         final ctrl = MiniPlayerController();
         final cs = Theme.of(context).colorScheme;
+        if (ctrl.isQuizActive) return const SizedBox.shrink();
         if (!ctrl.isActive) return const SizedBox.shrink();
         return Align(
           alignment: Alignment.bottomCenter,

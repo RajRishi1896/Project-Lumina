@@ -4,13 +4,13 @@ import 'package:edumesh_android/features/dashboard/presentation/dashboard_page.d
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/features/dashboard/presentation/saved_resource_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/student_profile_page.dart';
-import 'package:edumesh_android/features/dashboard/presentation/search_page.dart';
+import 'package:edumesh_android/features/dashboard/presentation/browse_page.dart';
 import 'package:edumesh_android/shared/widgets/mini_player_widget.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// The main application shell with a 4-tab bottom navigation bar.
 ///
-/// Hosts the [DashboardPage], [SearchPage], [SavedResourcesPage],
+/// Hosts the [DashboardPage], [BrowsePage], [SavedResourcesPage],
 /// and [StudentProfilePage] in an [IndexedStack]
 /// and overlays the [MiniPlayerWidget] on top. Pressing back twice within
 /// two seconds exits the app via [SystemNavigator.pop].
@@ -27,7 +27,7 @@ class _AppShellState extends State<AppShell> {
 
   final List<Widget> _pages = [
     const DashboardPage(),
-    const SearchPage(),
+    const BrowsePage(),
     const SavedResourcesPage(),
     const StudentProfilePage(),
   ];

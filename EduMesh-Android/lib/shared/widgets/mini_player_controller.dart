@@ -21,9 +21,13 @@ class MiniPlayerController extends ChangeNotifier {
   String _title = '';
   String _videoUrl = '';
   bool _active = false;
+  bool _quizActive = false;
 
   /// Whether the mini-player overlay is currently visible.
   bool get isActive => _active;
+
+  /// Whether a quiz is currently active (mini-player should hide).
+  bool get isQuizActive => _quizActive;
 
   /// The video title displayed in the mini-player.
   String get title => _title;
@@ -66,6 +70,12 @@ class MiniPlayerController extends ChangeNotifier {
   /// controllers can be reused.
   void closeOnlyOverlay() {
     _active = false;
+    notifyListeners();
+  }
+
+  /// Sets the quiz-active flag. When `true` the mini-player widget hides.
+  void setQuizActive(bool value) {
+    _quizActive = value;
     notifyListeners();
   }
 

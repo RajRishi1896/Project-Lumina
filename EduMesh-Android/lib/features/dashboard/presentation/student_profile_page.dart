@@ -14,6 +14,8 @@ import 'package:path_provider/path_provider.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/mutation_queue.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
+import '../../../core/services/course_service.dart';
+import 'course_player_page.dart';
 
 final _whitespaceRE = RegExp(r'\s+');
 
@@ -39,8 +41,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   String _grade = '';
   int _studyMinutesToday = 0;
   int _studyMinutesThisWeek = 0;
-  int _resourcesSaved = 0;
   int _streakDays = 0;
+  int _coursesCompleted = 0;
   bool _showAllActivity = false;
   List<({String name, int minutes, Color color})> _subjectBreakdown = [];
   List<Map<String, dynamic>> _activityHistory = [];
@@ -127,7 +129,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         setState(() {
           _studyMinutesToday = ((analytics['study_minutes_today'] ?? 0) as num).toInt();
           _studyMinutesThisWeek = ((analytics['study_minutes_this_week'] ?? 0) as num).toInt();
-          _resourcesSaved = ((analytics['resources_saved'] ?? 0) as num).toInt();
           _streakDays = ((analytics['streak_days'] ?? 0) as num).toInt();
           final subjects = analytics['subjects'] as List<dynamic>? ?? [];
           _subjectBreakdown = subjects.map((s) => (
@@ -142,6 +143,11 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+    try {
+      _coursesCompleted = await CourseService().getCompletedCourseCount();
+      await CourseService().loadEnrolledCourses();
+      if (mounted) setState(() {});
+    } catch (_) {}
     try {
       final profile = await ApiClient.get('/student/profile');
       if (mounted && profile.data is Map) {
@@ -286,6 +292,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         _buildProfileCard(cs),
                         SizedBox(height: AppSpacing.xl.h),
                         _buildStatsRow(cs),
+                        SizedBox(height: AppSpacing.xxl.h),
+                        _buildMyCoursesSection(cs),
                         SizedBox(height: AppSpacing.xxl.h),
                         _buildSubjectBreakdown(cs),
                         SizedBox(height: AppSpacing.xxl.h),
@@ -657,7 +665,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           children: [
             _statRow(cs, l10n.statCardToday, '$_studyMinutesToday${l10n.suffixMinutes}', l10n.statCardThisWeek, _studyMinutesThisWeek < 60 ? '$_studyMinutesThisWeek${l10n.suffixMinutes}' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}${l10n.suffixHours}'),
             SizedBox(height: AppSpacing.md.h),
-            _statRow(cs, l10n.statCardSaved, '$_resourcesSaved', l10n.statCardStreak, '$_streakDays${l10n.suffixDays}'),
+            _statRow(cs, 'Courses Completed', '$_coursesCompleted', l10n.statCardStreak, '$_streakDays${l10n.suffixDays}'),
           ],
         ),
       ),
@@ -676,6 +684,78 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           Text(value2, style: tt.titleLarge?.copyWith(color: cs.onSurface)),
           Text(label2, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         ])),
+      ],
+    );
+  }
+
+  Widget _buildMyCoursesSection(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
+    final enrolled = CourseService().enrolledCourses;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('My Courses',
+            style: tt.titleLarge?.copyWith(color: cs.onSurface)),
+        SizedBox(height: AppSpacing.xs.h),
+        Text('Tap to resume',
+            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+        SizedBox(height: AppSpacing.md.h),
+        if (enrolled.isEmpty)
+          Container(
+            padding: EdgeInsets.all(AppSpacing.xl.w),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
+            ),
+            child: Center(
+              child: Text('No courses yet. Explore the catalog to get started.',
+                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+            ),
+          )
+        else
+          Container(
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
+            ),
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: enrolled.length,
+              itemBuilder: (context, index) {
+                final entry = enrolled[index];
+                final progress = entry.progress;
+                final total = (progress?['total_resources'] as num?)?.toInt() ?? 0;
+                final completed = (progress?['completed_count'] as num?)?.toInt() ?? 0;
+                final pct = total > 0 ? completed / total : 0.0;
+                return ListTile(
+                  title: Text(entry.course.title,
+                      style: tt.titleSmall?.copyWith(color: cs.onSurface)),
+                  subtitle: Padding(
+                    padding: EdgeInsets.only(top: AppSpacing.sm.h),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3.r),
+                      child: LinearProgressIndicator(
+                        value: pct,
+                        backgroundColor: cs.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation(cs.primary),
+                        minHeight: 6.h,
+                      ),
+                    ),
+                  ),
+                  trailing: TextButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => CoursePlayerPage(course: entry.course),
+                      ));
+                    },
+                    child: Text('Continue',
+                        style: tt.labelSmall?.copyWith(color: cs.primary)),
+                  ),
+                );
+              },
+            ),
+          ),
       ],
     );
   }

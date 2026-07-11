@@ -6,15 +6,26 @@ limit. Runs on a daemon thread started at server startup.
 """
 
 import os
+import json
 import time
 import logging
 from threading import Thread
 
-from app.zim_settings import get_max_pages
-
 # Directory where ZIM HTML pages are stored (must match zim_handler)
 ZIM_PAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'zim_pages')
 os.makedirs(ZIM_PAGES_DIR, exist_ok=True)
+
+_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'zim_cache_config.json')
+
+
+def _get_max_pages() -> int:
+    """Read max_pages from the ZIM cache config JSON, defaulting to 500."""
+    try:
+        with open(_CONFIG_PATH) as f:
+            cfg = json.load(f)
+        return int(cfg.get('max_pages', 500))
+    except Exception:
+        return 500
 
 
 def _clean_old_pages():
@@ -25,7 +36,7 @@ def _clean_old_pages():
     ``max_pages`` value (default 500).
     """
     try:
-        max_pages = get_max_pages()
+        max_pages = _get_max_pages()
     except Exception as e:
         logging.error(f"Failed to read max_pages: {e}")
         return

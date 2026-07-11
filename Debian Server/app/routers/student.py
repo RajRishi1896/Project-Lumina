@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse
 import logging
 from app.database import PROFILE_ICONS_DIR
 from app.async_db import db_exec, db_exec_many, db_fetch, db_fetch_one, db_run
-from app.models import StudyTimeSync, SubjectTimeSync, IconUpload, StudentChangePasswordRequest, StatusResponse, RestoreResponse, StudentAnalyticsResponse, IconUploadResponse, StudentProfileResponse, WeeklyBreakdownResponse
+from app.models import StudyTimeSync, SubjectTimeSync, StudentChangePasswordRequest, StatusResponse, RestoreResponse, StudentAnalyticsResponse, IconUploadResponse, StudentProfileResponse, WeeklyBreakdownResponse
 from app.dependencies import verify_student, hash_password, verify_password, invalidate_tokens_for_user
 
 router = APIRouter()
@@ -155,7 +155,7 @@ async def update_student_profile(data: dict, student_id: str = Depends(verify_st
 
 
 @router.post("/student/profile/icon", response_model=IconUploadResponse, summary="Upload profile icon", description="Uploads a base64-encoded profile image for the student. Validates file magic bytes to confirm the format and enforces a 500KB size limit. Supports PNG, JPG, GIF, and WebP.", tags=["Profile"], responses={200: {"description": "Icon uploaded successfully"}, 400: {"description": "Invalid image data, format, or size exceeded"}})
-async def upload_profile_icon(data: IconUpload, student_id: str = Depends(verify_student)):
+async def upload_profile_icon(data: dict, student_id: str = Depends(verify_student)):
     """Upload a base64-encoded profile icon for a student.
 
     Args:
@@ -169,12 +169,12 @@ async def upload_profile_icon(data: IconUpload, student_id: str = Depends(verify
         HTTPException 400: If the image data is invalid, too large, or the format is not allowed.
     """
     try:
-        raw = base64.b64decode(data.image_data)
+        raw = base64.b64decode(data.get('image_data'))
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid base64 image data.")
     if len(raw) > 500 * 1024:
         raise HTTPException(status_code=400, detail="Image too large (max 500KB)")
-    ext = data.image_ext.replace(".", "")
+    ext = (data.get('image_ext') or 'png').replace(".", "")
     ALLOWED_MAGIC = {
         b'\x89PNG\r\n\x1a\n': 'png',
         b'\xff\xd8\xff': 'jpg',

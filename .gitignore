@@ -23,6 +23,7 @@ app.*.map.json
 
 # === Runtime Data (regenerated on startup) ===
 Debian Server/data/
+**/test*.db
 Debian Server/uploads/
 Debian Server/thumbnails/
 Debian Server/zim_pages/

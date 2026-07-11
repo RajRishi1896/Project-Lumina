@@ -29,39 +29,12 @@ class StudentLoginRequest(BaseModel):
     password: str = Field(..., min_length=1, max_length=128, description="Scholar password.", example="mypassword")
 
 
-class TokenRefreshRequest(BaseModel):
-    """Session refresh using a refresh token."""
-    refresh_token: str = Field(..., min_length=1, description="Refresh token issued at login.", example="LUMINA_REF-abc123")
-
-
-class TokenRenewRequest(BaseModel):
-    """Long-lived session renewal using a persistent key."""
-    persistent_key: str = Field(..., min_length=1, description="Persistent key issued at login.", example="LUMINA_PER-abc123")
-
 
 class StudentChangePasswordRequest(BaseModel):
     """Password change request for a student account."""
     scholar_id: Optional[str] = Field(default="", max_length=100, description="Scholar identifier. Leave empty for self-service.", example="42")
     old_password: str = Field(..., max_length=128, description="Current password for verification.", example="oldpass")
     new_password: str = Field(..., min_length=8, max_length=128, description="Desired new password.", example="newpass123")
-
-
-class SubjectDeleteRequest(BaseModel):
-    """Subject deletion request with optional transfer target."""
-    id: Optional[str] = Field(default=None, max_length=100, description="Subject ID to delete.", example="subj_1")
-    name: Optional[str] = Field(default=None, max_length=100, description="Subject name to delete.", example="Mathematics")
-    transfer_to: Optional[str] = Field(default=None, max_length=100, description="Transfer resources to this subject.", example="Algebra")
-
-
-class ChangePasswordRequest(BaseModel):
-    """Password change request for a teacher or admin account."""
-    old_password: str = Field(..., description="Current password for verification.", example="currentPass1")
-    new_password: str = Field(..., min_length=8, description="Desired new password.", example="newPass123")
-
-
-class ForceChangePasswordRequest(BaseModel):
-    """Admin-forced password reset (no old password required)."""
-    new_password: str = Field(..., min_length=8, description="New password to assign.", example="newAdminPass1")
 
 
 class SubjectCreate(BaseModel):
@@ -83,23 +56,9 @@ class NameUpdate(BaseModel):
     """Teacher display name update request."""
     name: str = Field(..., min_length=1, max_length=100, description="New display name.", example="Dr. Smith")
 
-
 class DepartmentUpdate(BaseModel):
     """Teacher department update request."""
     department: str = Field(..., min_length=1, max_length=100, description="New department name.", example="Mathematics")
-
-
-class ProfileUpdate(BaseModel):
-    """Student profile update request."""
-    name: Optional[str] = Field(default=None, max_length=100, description="New display name.", example="Alice")
-    grade: Optional[str] = Field(default=None, max_length=50, description="New grade or class.", example="Grade 10")
-
-
-class IconUpload(BaseModel):
-    """Subject icon upload payload (base64-encoded image)."""
-    image_data: str = Field(..., description="Base64-encoded image data.", example="iVBORw0KGgo...")
-    image_ext: str = Field(default="png", description="File extension for the image.", example="png")
-
 
 class StudyTimeSync(BaseModel):
     """Aggregate study time sync from the student app."""
@@ -116,11 +75,6 @@ class SubjectTimeItem(BaseModel):
 class SubjectTimeSync(BaseModel):
     """Bulk per-subject study time sync payload."""
     subjects: list[SubjectTimeItem] = Field(default_factory=list, description="List of per-subject time entries.", example=[{"name": "Mathematics", "minutes": 45}])
-
-
-class LogRetentionUpdate(BaseModel):
-    """Log retention policy update request."""
-    policy: str = Field(..., description="Retention policy value. Supported: 24h, 7d, 30d, 3m, 6m, never, none.", example="30d")
 
 
 # ── Response Models ──────────────────────────────────────────────────────────
@@ -270,12 +224,6 @@ class GradeInfo(BaseModel):
     name: str = Field(..., description="Grade name.", example="Grade 10")
 
 
-class GradeCreateResponse(BaseModel):
-    """Grade creation response."""
-    status: str = Field(..., description="Operation status.", example="success")
-    name: str = Field(..., description="Created grade name.", example="Grade 10")
-
-
 class CatalogResourceResponse(BaseModel):
     """Resource catalog entry."""
     id: int = Field(..., description="Resource ID.", example=1)
@@ -285,6 +233,8 @@ class CatalogResourceResponse(BaseModel):
     subject: str = Field(..., description="Subject.", example="Mathematics")
     grade: str = Field(..., description="Grade level.", example="10")
     mtime: float = Field(..., description="Last modified timestamp.", example=1234567890.0)
+    downloads: int = Field(default=0, description="Number of unique student downloads.", example=12)
+    notes: Optional[str] = Field(default=None, description="Teacher note attached to the resource.", example="Cover this chapter after midterms.")
 
 
 class FileEntryResponse(BaseModel):
@@ -316,11 +266,6 @@ class DeleteResourceResponse(BaseModel):
     status: str = Field(..., description="Operation status.", example="success")
     action: str = Field(..., description="Delete action taken.", example="hard_deleted")
     download_count: Optional[int] = Field(default=None, description="Active download count if soft-deprecated.")
-
-
-class AdminStatusResponse(BaseModel):
-    """Default admin enabled status."""
-    enabled: bool = Field(..., description="Whether the default admin account is enabled.", example=True)
 
 
 class AdminSummary(BaseModel):
@@ -377,6 +322,114 @@ class ZimPageResponse(BaseModel):
     """ZIM article HTML content response."""
     id: str = Field(..., description="Article ID.", example="ABC123")
     html: str = Field(..., description="Raw HTML content of the article.", example="<html>...")
+
+
+# ── LMS Course Models ─────────────────────────────────────────────────────────
+
+class CourseCreate(BaseModel):
+    """Payload for creating a new course."""
+    title: str = Field(..., description="Course title", max_length=120)
+    description: str = Field("", description="Short summary")
+    subject: str = Field("General", description="From approved subject taxonomy")
+    grade: int = Field(0, description="Grade level 0-13", ge=0, le=13)
+    language: str = Field("en", description="ISO 639-1 code")
+
+
+class CourseResponse(BaseModel):
+    """Course metadata returned to clients."""
+    id: str = Field(..., description="UUID")
+    title: str
+    description: str = ""
+    subject: str = ""
+    grade: int = 0
+    language: str = "en"
+    cover_image: str = ""
+    published: int = 0
+    teacher_username: str = ""
+    enrollment_count: int = 0
+    created_at: str = ""
+    updated_at: str = ""
+
+
+class CourseDetail(CourseResponse):
+    """Full course detail including resources and similar courses."""
+    resources: list = []
+    similar_courses: list = []
+
+
+class CourseResourceResponse(BaseModel):
+    """A resource item within a course."""
+    id: str
+    course_id: str
+    resource_type: str
+    title: str = ""
+    original_name: str = ""
+    filename: str = ""
+    file_size: int = 0
+    position: int = 0
+
+
+class ProgressSync(BaseModel):
+    """Student progress sync payload."""
+    current_position: int = Field(0, ge=0)
+    completed_count: int = Field(0, ge=0)
+
+
+class EnrollResponse(BaseModel):
+    """Enrollment operation response."""
+    status: str = "ok"
+    course_id: str = ""
+    message: str = ""
+
+
+class QuizAttemptSubmit(BaseModel):
+    """Quiz attempt submission payload."""
+    attempt_id: str = Field(..., description="Client-generated UUID for idempotency")
+    attempt_number: int = Field(1, ge=1)
+    score: float = Field(0.0, ge=0.0, le=1.0)
+    passed: int = Field(0)
+    answers_json: str = ""
+    started_at: str = ""
+    submitted_at: str = ""
+    time_taken_seconds: int = 0
+    quiz_version: int = 1
+    threshold_at_submission: float = 0.0
+
+
+class QuizAttemptResponse(BaseModel):
+    """A stored quiz attempt record."""
+    id: str
+    student_id: str
+    course_id: str
+    resource_id: str
+    attempt_number: int
+    score: float = 0.0
+    passed: int = 0
+    answers_json: str = ""
+    started_at: str = ""
+    submitted_at: str = ""
+    time_taken_seconds: int = 0
+    quiz_version: int = 1
+    threshold_at_submission: float = 0.0
+
+
+class SimilarLinkCreate(BaseModel):
+    """Payload to link a course as similar."""
+    similar_course_id: str = Field(..., description="UUID of the course to link as similar")
+
+
+class SimilarLinkResponse(BaseModel):
+    """A similar-course link."""
+    course_id: str
+    similar_course_id: str
+    created_by: str = ""
+    created_at: str = ""
+
+
+class StatusResponse(BaseModel):
+    """Generic status response."""
+    status: str = "ok"
+    message: str = ""
 
 
 

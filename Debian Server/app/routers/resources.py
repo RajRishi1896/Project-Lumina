@@ -12,8 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from app.database import UPLOAD_DIR, log_admin_action
 from app.async_db import db_conn, db_exec, db_fetch, db_fetch_one
 from app.dependencies import verify_teacher
-from app.thumb_utils import get_zim_upload_max_size
-from app.models import CatalogResourceResponse, FileEntryResponse, LimitsResponse, UploadResponse, ZimUploadResponse, DeleteResourceResponse
+from app.models import CatalogResourceResponse, FileEntryResponse, LimitsResponse, UploadResponse, ZimUploadResponse, DeleteResourceResponse, StatusResponse
 
 router = APIRouter()
 
@@ -22,9 +21,14 @@ APPROVED_SUBJECTS = {
     'soc', 'his', 'geo', 'civ', 'cs', 'eco', 'com', 'gen',
 }
 
-def _check_disk_space():
-    """Check available disk space. Returns (total, used, free) bytes. Run via asyncio.to_thread."""
-    return shutil.disk_usage("/")
+
+async def _zim_upload_max_size():
+    """Calculate max ZIM upload size (total disk minus 1 GB reserve)."""
+    try:
+        _disk = await asyncio.to_thread(shutil.disk_usage, "/")
+        return max(0, _disk.total - 1024 * 1024 * 1024)
+    except Exception:
+        return 5000 * 1024 * 1024
 
 
 @router.get("/resources", response_model=list[CatalogResourceResponse],
@@ -78,7 +82,10 @@ async def list_resources(
     if conditions:
         where_clause = " WHERE " + " AND ".join(conditions)
 
-    query = f"SELECT id, title, filename, resource_type, subject, grade, language, source, license, status FROM resources{where_clause}"
+    query = f"""SELECT id, title, filename, resource_type, subject, grade, language, source, license, status,
+        COALESCE((SELECT COUNT(*) FROM scholar_downloads WHERE CAST(resources.id AS TEXT) = scholar_downloads.resource_id), 0) AS downloads,
+        notes
+        FROM resources{where_clause}"""
     rows = await db_fetch(query, tuple(params))
 
     result = []
@@ -101,6 +108,8 @@ async def list_resources(
             "pdfUrl": f"/files/{os.path.basename(r[2])}" if r[2] else "",
             "type": r[3], "subject": r[4] or "General",
             "grade": r[5] or "", "mtime": mtimes.get(r[0], 0.0),
+            "downloads": r[10] if len(r) > 10 else 0,
+            "notes": r[11] if len(r) > 11 else None,
         })
     return result
 
@@ -136,7 +145,7 @@ async def get_limits(teacher_user: str = Depends(verify_teacher)):
     Returns:
         Dict with zim_upload_max_size in bytes.
     """
-    return {"zim_upload_max_size": await get_zim_upload_max_size()}
+    return {"zim_upload_max_size": await _zim_upload_max_size()}
 
 
 @router.post("/teacher/upload", response_model=UploadResponse,
@@ -267,7 +276,7 @@ async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(v
         HTTPException 400: If the ZIP is invalid or contains path traversal.
         HTTPException 499: If client disconnects.
     """
-    total, used, free = await asyncio.to_thread(_check_disk_space)
+    total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
     free_gb = free // (2**30)
     if free_gb < 2:
         raise HTTPException(status_code=507, detail="Insufficient storage space for ZIM upload.")
@@ -281,7 +290,7 @@ async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(v
 
     chunk_size = 64 * 1024
     total_size = 0
-    max_size = await get_zim_upload_max_size()
+    max_size = await _zim_upload_max_size()
 
     def _flush_chunks(chunks):
         """Append chunks to file in a single open/write/close. Runs in worker thread."""
@@ -351,6 +360,30 @@ async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(v
     imported = await asyncio.to_thread(_process_archive)
     return {"status": "success", "imported": imported}
 
+
+@router.patch("/resources/{resource_id}/notes", response_model=StatusResponse,
+              summary="Update teacher notes on a resource",
+              description="Sets or clears the teacher note text on a resource. Passing null or empty string clears the note.",
+              tags=["Resources"],
+              responses={200: {"description": "Notes updated"}, 401: {"description": "Unauthorized"}, 404: {"description": "Resource not found"}})
+async def update_resource_notes(resource_id: int, data: dict, teacher_user: str = Depends(verify_teacher)):
+    """Set or clear the teacher note on a resource.
+
+    Args:
+        resource_id: The resource database id.
+        data: Notes payload with optional notes string.
+
+    Returns:
+        Status dict.
+    Raises:
+        HTTPException 404: If resource does not exist.
+    """
+    row = await db_fetch_one("SELECT id FROM resources WHERE id = ?", (resource_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="Resource not found.")
+    val = data.get('notes').strip() if data.get('notes') else None
+    await db_exec("UPDATE resources SET notes = ? WHERE id = ?", (val, resource_id))
+    return {"status": "ok"}
 
 @router.delete("/teacher/resources/{resource_id}", response_model=DeleteResourceResponse,
                summary="Delete a resource",

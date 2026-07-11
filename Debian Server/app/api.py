@@ -106,7 +106,6 @@ async def add_security_headers(request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
     path = request.url.path
     if path.startswith("/static/") or path.startswith("/files/"):
         response.headers["Cache-Control"] = "public, max-age=3600"
@@ -127,6 +126,8 @@ from app.routers.passwords import router as passwords_router
 from app.routers.admin_logs import router as admin_logs_router
 from app.routers.system_stats import router as system_stats_router
 from app.routers.system import router as system_router
+from app.routers.teacher_courses import router as teacher_courses_router
+from app.routers.student_courses import router as student_courses_router
 from zim_handler import router as zim_router
 
 app.include_router(auth_router)
@@ -141,6 +142,8 @@ app.include_router(passwords_router)
 app.include_router(admin_logs_router)
 app.include_router(system_stats_router)
 app.include_router(system_router)
+app.include_router(teacher_courses_router)
+app.include_router(student_courses_router)
 app.include_router(zim_router, prefix="/zim")
 
 # Static file mounts (must be after routes)

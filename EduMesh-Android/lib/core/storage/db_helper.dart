@@ -25,7 +25,7 @@ class DBHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 7, onCreate: _createDB, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 10, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   Future _createDB(Database db, int version) async {
@@ -43,6 +43,7 @@ class DBHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         resource_id INTEGER,
         date TEXT,
+        subject TEXT,
         seconds INTEGER
       );
     ''');
@@ -93,7 +94,8 @@ class DBHelper {
         method TEXT NOT NULL DEFAULT 'POST',
         body TEXT NOT NULL,
         created_at INTEGER NOT NULL,
-        retries INTEGER NOT NULL DEFAULT 0
+        retries INTEGER NOT NULL DEFAULT 0,
+        priority TEXT NOT NULL DEFAULT 'normal'
       )
     ''');
     await db.execute('''
@@ -107,6 +109,88 @@ class DBHelper {
         mtime REAL DEFAULT 0,
         synced_at INTEGER NOT NULL
       )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS courses (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        subject TEXT DEFAULT '',
+        grade INTEGER DEFAULT 0,
+        language TEXT DEFAULT 'en',
+        cover_image TEXT DEFAULT '',
+        published INTEGER DEFAULT 0,
+        teacher_username TEXT DEFAULT '',
+        enrollment_count INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT '',
+        updated_at TEXT DEFAULT '',
+        synced_at INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS course_resources (
+        id TEXT PRIMARY KEY,
+        course_id TEXT NOT NULL,
+        resource_type TEXT NOT NULL DEFAULT 'textbook',
+        title TEXT DEFAULT '',
+        original_name TEXT DEFAULT '',
+        filename TEXT DEFAULT '',
+        file_size INTEGER DEFAULT 0,
+        position INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS course_progress (
+        student_id TEXT NOT NULL,
+        course_id TEXT NOT NULL,
+        current_position INTEGER DEFAULT 0,
+        completed_count INTEGER DEFAULT 0,
+        total_resources INTEGER DEFAULT 0,
+        completed INTEGER DEFAULT 0,
+        last_synced TEXT DEFAULT '',
+        enrolled_at TEXT DEFAULT '',
+        PRIMARY KEY (student_id, course_id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS quiz_attempts (
+        id TEXT PRIMARY KEY,
+        student_id TEXT NOT NULL,
+        course_id TEXT NOT NULL,
+        resource_id TEXT NOT NULL,
+        attempt_number INTEGER NOT NULL DEFAULT 1,
+        score REAL DEFAULT 0.0,
+        passed INTEGER DEFAULT 0,
+        answers_json TEXT DEFAULT '',
+        started_at TEXT DEFAULT '',
+        submitted_at TEXT DEFAULT '',
+        time_taken_seconds INTEGER DEFAULT 0,
+        quiz_version INTEGER DEFAULT 1,
+        threshold_at_submission REAL DEFAULT 0.0,
+        sync_status INTEGER DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS similar_courses (
+        course_id TEXT NOT NULL,
+        similar_course_id TEXT NOT NULL,
+        PRIMARY KEY (course_id, similar_course_id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_cr_course_id ON course_resources(course_id)
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_cp_student ON course_progress(student_id)
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_qa_student ON quiz_attempts(student_id)
     ''');
   }
 
@@ -301,6 +385,25 @@ class DBHelper {
             )
           ''');
         } catch (_) { } }
+      if (v >= 8) {
+        try {
+          await db.execute('ALTER TABLE activity ADD COLUMN subject TEXT');
+        } catch (_) { } }
+      if (v >= 8) {
+        try {
+          await db.execute("ALTER TABLE pending_mutations ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal'");
+        } catch (_) {}
+      }
+      if (v >= 10) {
+        try { await db.execute('CREATE TABLE IF NOT EXISTS courses (id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT DEFAULT \'\', subject TEXT DEFAULT \'\', grade INTEGER DEFAULT 0, language TEXT DEFAULT \'en\', cover_image TEXT DEFAULT \'\', published INTEGER DEFAULT 0, teacher_username TEXT DEFAULT \'\', enrollment_count INTEGER DEFAULT 0, created_at TEXT DEFAULT \'\', updated_at TEXT DEFAULT \'\', synced_at INTEGER NOT NULL DEFAULT 0)'); } catch (_) {}
+        try { await db.execute('CREATE TABLE IF NOT EXISTS course_resources (id TEXT PRIMARY KEY, course_id TEXT NOT NULL, resource_type TEXT NOT NULL DEFAULT \'textbook\', title TEXT DEFAULT \'\', original_name TEXT DEFAULT \'\', filename TEXT DEFAULT \'\', file_size INTEGER DEFAULT 0, position INTEGER NOT NULL DEFAULT 0)'); } catch (_) {}
+        try { await db.execute('CREATE TABLE IF NOT EXISTS course_progress (student_id TEXT NOT NULL, course_id TEXT NOT NULL, current_position INTEGER DEFAULT 0, completed_count INTEGER DEFAULT 0, total_resources INTEGER DEFAULT 0, completed INTEGER DEFAULT 0, last_synced TEXT DEFAULT \'\', enrolled_at TEXT DEFAULT \'\', PRIMARY KEY (student_id, course_id))'); } catch (_) {}
+        try { await db.execute('CREATE TABLE IF NOT EXISTS quiz_attempts (id TEXT PRIMARY KEY, student_id TEXT NOT NULL, course_id TEXT NOT NULL, resource_id TEXT NOT NULL, attempt_number INTEGER NOT NULL DEFAULT 1, score REAL DEFAULT 0.0, passed INTEGER DEFAULT 0, answers_json TEXT DEFAULT \'\', started_at TEXT DEFAULT \'\', submitted_at TEXT DEFAULT \'\', time_taken_seconds INTEGER DEFAULT 0, quiz_version INTEGER DEFAULT 1, threshold_at_submission REAL DEFAULT 0.0, sync_status INTEGER DEFAULT 0)'); } catch (_) {}
+        try { await db.execute('CREATE TABLE IF NOT EXISTS similar_courses (course_id TEXT NOT NULL, similar_course_id TEXT NOT NULL, PRIMARY KEY (course_id, similar_course_id))'); } catch (_) {}
+        try { await db.execute('CREATE INDEX IF NOT EXISTS idx_cr_course_id ON course_resources(course_id)'); } catch (_) {}
+        try { await db.execute('CREATE INDEX IF NOT EXISTS idx_cp_student ON course_progress(student_id)'); } catch (_) {}
+        try { await db.execute('CREATE INDEX IF NOT EXISTS idx_qa_student ON quiz_attempts(student_id)'); } catch (_) {}
+      }
     }
   }
 
