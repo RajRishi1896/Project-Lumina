@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/lumina_colors.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -67,7 +68,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _checkServer() async {
-    final connected = await ConnectivityService().ping(timeout: const Duration(seconds: 10));
+    final connected = await ConnectivityService().ping();
     if (mounted) {
       setState(() {
         _isConnected = connected;
@@ -77,6 +78,22 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _calcTotalStorage() async {
+    // ponytail: use cached app size from SharedPreferences, compute in background.
+    // Recursive dir listing on eMMC takes 0.5-2s and blocks first render.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedSize = prefs.getInt('cached_app_size_bytes');
+      if (cachedSize != null && cachedSize > 0) {
+        _applyStorageValues(cachedSize);
+        // Re-compute in background and cache for next time
+        unawaited(_computeAndCacheStorage());
+        return;
+      }
+    } catch (_) {}
+    await _computeAndCacheStorage();
+  }
+
+  Future<void> _computeAndCacheStorage() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
       int appDataSize = 0;
@@ -87,7 +104,18 @@ class _DashboardPageState extends State<DashboardPage> {
       }
       const apkSize = 65 * 1024 * 1024;
       final appUsedBytes = appDataSize + apkSize;
-      const totalBytes = 128 * 1024 * 1024 * 1024; // ponytail: hardcoded, was MethodChannel
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('cached_app_size_bytes', appUsedBytes);
+      } catch (_) {}
+      _applyStorageValues(appUsedBytes);
+    } catch (e) {
+      if (mounted) { final l10n = AppLocalizations.of(context)!; setState(() => _appUsedStr = _otherUsedStr = _freeRemainingStr = l10n.storageUnknown); }
+    }
+  }
+
+  void _applyStorageValues(int appUsedBytes) {
+      const totalBytes = 128 * 1024 * 1024 * 1024;
       const availableBytes = 64 * 1024 * 1024 * 1024;
       final otherUsedBytes = (totalBytes - availableBytes - appUsedBytes).clamp(0, totalBytes);
 
@@ -106,9 +134,6 @@ class _DashboardPageState extends State<DashboardPage> {
           _totalStorageUsedStr = l10n.storageUsedLabel(((appUsedBytes + otherUsedBytes) / (1024 * 1024 * 1024)).toStringAsFixed(1));
         });
       }
-    } catch (e) {
-      if (mounted) { final l10n = AppLocalizations.of(context)!; setState(() => _appUsedStr = _otherUsedStr = _freeRemainingStr = l10n.storageUnknown); }
-    }
   }
 
   Future<void> _loadSubjects() async {

@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head â€” theme detection, metadata, detail page styles -->
+<!-- Section: Head — theme detection, metadata, detail page styles -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -60,56 +60,10 @@
 </head>
 <body>
 
-    <!-- Section: Sidebar â€” nav links, user info, theme toggle, logout -->
-    <aside>
-        <a href="/static/index" class="sidebar-brand-horizontal">
-            <img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina">
-            <img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina">
-        </a>
-        <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
-        <div class="sidebar-divider"></div>
-        <nav>
-            <a href="/static/index" class="nav-item" id="nav-home">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                <span data-i18n="sidebar.home">Home</span>
-            </a>
-            <a href="/static/manage-content" class="nav-item" id="nav-content">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span data-i18n="sidebar.content">Content</span>
-            </a>
-            <a href="/static/manage-security" class="nav-item" id="nav-security">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span data-i18n="sidebar.security">Account</span>
-            </a>
-            <a href="/static/students" class="nav-item" id="nav-students">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span data-i18n="sidebar.students">Students</span>
-            </a>
-            <a href="/static/manage-help#teacher-guide" class="nav-item" id="nav-help">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                <span data-i18n="sidebar.help">Teacher Guide</span>
-            </a>
-            <a href="/static/manage-danger" class="nav-item danger" id="nav-danger">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                <span data-i18n="sidebar.danger">Danger Zone</span>
-            </a>
-            <a href="/static/manage-settings" class="nav-item" id="nav-settings">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                <span data-i18n="sidebar.settings">Settings</span>
-            </a>
-        </nav>
-        <div class="nav-spacer"></div>
-        <div class="theme-toggle" id="btn-toggleTheme">
-            <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            <span id="themeLabel"><span data-i18n="sidebar.dark_mode">Dark Mode</span></span>
-        </div>
-        <a href="/logout" class="nav-logout">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            <span data-i18n="sidebar.logout">Log out</span>
-        </a>
-    </aside>
+    <!-- Section: Sidebar — empty, rendered by renderLayout() -->
+    <aside></aside>
 
-    <!-- Section: Main Content â€” back link, student header, stat cards, subject breakdown, loading/error states -->
+    <!-- Section: Main Content — back link, student header, stat cards, subject breakdown, loading/error states -->
     <main>
         <div id="app-content">
         <div class="student-detail-container" id="app">
@@ -117,13 +71,13 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 <span data-i18n="student_detail_back">Back to</span> <span data-i18n="sidebar.students">Students</span>
             </a>
-            <!-- Section: Student Header â€” avatar, name, grade, last active -->
+            <!-- Section: Student Header — avatar, name, grade, last active -->
             <div class="student-header" id="studentHeader"></div>
-            <!-- Section: Stat Cards â€” time this week, streak, downloads -->
+            <!-- Section: Stat Cards — time this week, streak, downloads -->
             <div class="stat-grid" id="statGrid"></div>
-            <!-- Section: Subject Breakdown â€” horizontal bar chart per subject -->
+            <!-- Section: Subject Breakdown — horizontal bar chart per subject -->
             <div class="card" id="subjectCard">
-                <div class="card-title" id="subjectCardTitle" data-i18n="student_detail_subject_breakdown">Subject Breakdown</div>
+                <div class="card-title" id="subjectCardTitle">Subject Breakdown</div>
                 <div class="subject-list" id="subjectList"></div>
             </div>
             <!-- Section: Loading / Error States -->
@@ -133,15 +87,15 @@
         </div>
     </main>
 
-    <!-- Section: Bottom Nav (Mobile) â€” tab bar hidden by default, shown via media query -->
+    <!-- Section: Bottom Nav (Mobile) — tab bar hidden by default, shown via media query -->
     <div id="bottomNav"></div>
 
-    <script src="/static/js/lumina.js" defer></script>
-    <!-- Section: Inline Scripts â€” student analytics rendering, API fetching -->
+    <script src="/static/js/lumina.js?v=5" defer></script>
+    <!-- Section: Inline Scripts — student analytics rendering, API fetching -->
     <script>
-        const subjectColors = ['#14b8a6','#6366f1','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981','#f97316'];
+        var subjectColors = ['#14b8a6','#6366f1','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981','#f97316'];
 
-        _pageInitRegistry['students'] = function() {
+        var _initStudentDetail = function() {
             const params = new URLSearchParams(window.location.search);
             const studentId = params.get('id') || '';
             const studentName = params.get('name') || 'Student';
@@ -152,10 +106,6 @@
             const lastActive = params.get('last') || '';
             const avatarInitials = params.get('avatar') || studentName.split(' ').map(function(s){return s[0]}).join('').slice(0,2).toUpperCase();
 
-            /**
-             * @param {string} isoStr - ISO date string
-             * @returns {string} Human-friendly relative time label
-             */
             function timeAgo(isoStr) {
                 const now = new Date();
                 const d = new Date(isoStr);
@@ -169,7 +119,6 @@
                 return d.toLocaleDateString();
             }
 
-            /** Renders the student avatar, name, grade, last active, and optional at-risk warning into #studentHeader. */
             function renderHeader() {
                 const el = document.getElementById('studentHeader');
                 var atRiskDays = 3;
@@ -186,34 +135,25 @@
                     '</div></div>';
             }
 
-            /**
-             * @param {number} weekMin - Total study minutes this week
-             * @param {number} streakVal - Consecutive day streak
-             * @param {number} dlVal - Number of downloads
-             * Renders three stat cards into #statGrid.
-             */
             function renderStats(weekMin, streakVal, dlVal) {
-                const weekVal = (weekMin / 60).toFixed(1).replace(/\.0$/, '');
+                var weekStr;
+                if (weekMin >= 60) { var h = Math.floor(weekMin / 60), m = weekMin % 60; weekStr = h + ' ' + __('students_hours_abbr') + (m > 0 ? ' ' + m + 'm' : ''); }
+                else if (weekMin > 0) { weekStr = weekMin + 'm'; }
+                else { weekStr = '—'; }
                 const grid = document.getElementById('statGrid');
                 const cards = [
-                    { label:__('student_detail_time_this_week'), value:weekVal, unit:__('student_detail.hours') },
-                    { label:__('student_detail_day_streak'), value:streakVal, unit:'' },
-                    { label:__('student_detail_downloaded'), value:dlVal, unit:'' }
+                    { label:__('student_detail_time_this_week'), value:weekStr },
+                    { label:__('student_detail_day_streak'), value:streakVal },
+                    { label:__('student_detail_downloaded'), value:dlVal }
                 ];
-                grid.innerHTML = cards.map(function(c, idx){
-                    const val = idx === 1 ? c.value : c.value + (c.unit ? ' <span class="stat-unit">' + c.unit + '</span>' : '');
+                grid.innerHTML = cards.map(function(c){
                     return '<div class="stat-card">' +
                         '<div class="stat-label">' + c.label + '</div>' +
-                        '<div class="stat-value">' + val + '</div></div>';
+                        '<div class="stat-value">' + c.value + '</div></div>';
                 }).join('');
             }
 
-            /**
-             * @param {Array} subjects - Array of {name, minutes} objects
-             * Renders subject breakdown into #subjectList with proportional bar fills.
-             */
             function renderSubjects(subjects) {
-                /* Set the card title with the student's grade */
                 const titleEl = document.getElementById('subjectCardTitle');
                 if (studentGrade) {
                     titleEl.innerHTML = esc(studentGrade) + ' &mdash; ' + __('student_detail_subject_breakdown') + ' <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted);">' + __('student_detail_this_week') + '</span>';
@@ -233,12 +173,11 @@
                         '<span class="subject-name">' + esc(s.name) + '</span>' +
                         '<div class="subject-bar-wrap">' +
                         '<div class="subject-bar-track"><div class="subject-bar-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>' +
-                        '<span class="subject-minutes">' + __('student_detail.minutes_abbr', {n: s.minutes}) + '</span>' +
+                        '<span class="subject-minutes">' + s.minutes + 'm</span>' +
                         '</div></div>';
                 }).join('');
             }
 
-            /** Entry point â€” reads URL params, renders header, then fetches analytics from the API. */
             function init() {
                 if (!studentId) {
                     document.getElementById('loadingState').style.display = 'none';
@@ -247,7 +186,12 @@
                     return;
                 }
                 renderHeader();
-                fetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics').then(function(r){ return r.json(); })
+                document.getElementById('loadingState').style.display = '';
+                fetch('/teacher/student/' + encodeURIComponent(studentId) + '/analytics', {credentials: 'include'})
+                .then(function(r){
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
                 .then(function(analytics){
                     renderStats((analytics.study_minutes_this_week || 0), analytics.streak_days || 0, analytics.resources_saved || 0);
                     renderSubjects(analytics.subjects || []);
@@ -265,8 +209,9 @@
             document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
         };
+        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['student-detail'] = _initStudentDetail;
 
-        document.addEventListener('DOMContentLoaded', _pageInitRegistry['students']);
+        document.addEventListener('DOMContentLoaded', _initStudentDetail);
     </script>
 </body>
 </html>

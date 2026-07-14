@@ -8,16 +8,16 @@
 <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
 <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
-<script src="/static/js/lumina.js" defer></script>
+    <script src="/static/js/lumina.js?v=5" defer></script>
 <style>
   .error-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:2rem; width:100%; box-sizing:border-box; }
   .error-card { background:var(--bg-surface); border-radius:1rem; padding:3rem; max-width:480px; width:100%; text-align:center; box-shadow:var(--card-shadow); }
-  .error-icon { width:72px; height:72px; margin:0 auto 1.5rem; background:var(--outline); border-radius:50%; display:flex; align-items:center; justify-content:center; }
-  .error-icon svg { width:36px; height:36px; stroke:var(--danger); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .error-icon { width:72px; height:72px; margin:0 auto 1.5rem; background:rgba(0,112,131,0.12); border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .error-icon svg { width:36px; height:36px; stroke:var(--teal); fill:var(--teal); fill-opacity:0.15; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   .error-card h1 { margin:0 0 .5rem; color:var(--text-primary); font-size:1.5rem; }
   .error-card p { margin:0 0 1.5rem; color:var(--text-secondary); line-height:1.6; }
   .error-card .actions { display:flex; gap:.75rem; justify-content:center; flex-wrap:wrap; }
-  .error-card .btn { display:inline-flex; align-items:center; gap:.5rem; padding:.75rem 1.5rem; background:var(--primary); color:var(--on-primary); border:none; border-radius:.5rem; font-size:.9rem; font-weight:700; cursor:pointer; text-decoration:none; transition:opacity .2s; }
+  .error-card .btn { display:inline-flex; align-items:center; gap:.5rem; padding:.75rem 1.5rem; background:var(--teal); color:#fff; border:none; border-radius:.5rem; font-size:.9rem; font-weight:700; cursor:pointer; text-decoration:none; transition:opacity .2s; }
   .error-card .btn:hover { opacity:.85; }
   .error-card .btn-outline { background:transparent; color:var(--text-primary); border:1px solid var(--outline); }
   .error-card .btn-outline:hover { background:var(--outline); }
@@ -68,8 +68,7 @@
  * via data-i18n / data-i18n-body attributes processed by applyLanguage().
  */
 document.addEventListener('DOMContentLoaded', function() {
-  const reason = new URLSearchParams(window.location.search).get('reason');
-  if (!reason) return;
+  const reason = new URLSearchParams(window.location.search).get('reason') || 'not_found';
   (function(){
     const titleEl = document.getElementById('errorTitle');
     const msgEl = document.getElementById('errorMessage');

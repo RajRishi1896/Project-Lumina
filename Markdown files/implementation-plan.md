@@ -119,12 +119,41 @@ Catching widget rendering errors would require mocking Dio, DB, connectivity
 ### 7. .gitignore
 Add explicit entry for test DB: `data/test.db`
 
-### 8. Assignments / Quizzes
-Fully scoped in `LMS Docs/LMS_Implementation_Plan.md` — data model (courses,
-quiz_attempts), API endpoints, web quiz builder, Flutter quiz player with
-offline-first design.
+### 8. LMS — Analytics Extension
+Extend `/student/analytics` to return course completion data so the teacher
+portal and student profile show accurate course stats.
 
-Refer to that document. This item tracks integration into the delivery timeline.
+**Server — `student.py`:**
+- Add `courses_completed` (count of course_progress where completed=1)
+- Add `courses_in_progress` (count where completed=0)
+- Add `courses` array with `{id, title, progress_percent}` for each enrolled course
+
+**Files:** `student.py`
+**~15 lines**
+
+### 9. LMS — Study/Quiz Reminder Notifications
+Add reminder scheduling to encourage consistent study habits.
+
+**Flutter — `notification_service.dart`:**
+- Add `study_reminder_channel` to notification channels
+- Add `scheduleStudyReminder()` / `scheduleQuizReminder()` methods
+- Use `android_alarm_manager` or `workmanager` for scheduling
+
+**Files:** `notification_service.dart`
+**~40 lines**
+
+### 10. LMS — Backlog Items
+Post-launch polish items from the LMS plan.
+
+**Server:**
+- Batch quiz submit endpoint (`POST /api/courses/{id}/quiz/submit-batch`) for
+  efficient offline sync of multiple attempts at once
+
+**Server provisioning:**
+- Add course backup/restore to `setup_hub.sh` (zips `courses/` directory)
+
+**Files:** `student_courses.py`, `setup_hub.sh`
+**~30 lines**
 
 ---
 
@@ -137,6 +166,9 @@ Refer to that document. This item tracks integration into the delivery timeline.
 - Students page shows at-risk flagging + sort-by
 - No page flash on sidebar navigation
 - Flutter resource detail shows teacher notes
+- Student analytics endpoint returns course completion data
+- Study/quiz reminder notifications schedule correctly
+- Batch quiz submit endpoint accepts and processes multiple attempts
 
 ## Recommended Commit Sequencing
 1. Download Counts
@@ -146,4 +178,6 @@ Refer to that document. This item tracks integration into the delivery timeline.
 5. Weakest Student Flagging
 6. Sort-by for Students Tab
 7. Tests
-8. Assignments / Quizzes
+8. LMS — Analytics Extension
+9. LMS — Study/Quiz Reminder Notifications
+10. LMS — Backlog Items

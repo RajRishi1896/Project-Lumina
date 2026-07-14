@@ -34,10 +34,10 @@ async def change_password(data: dict, teacher_user: str = Depends(verify_teacher
         row = c.fetchone()
         if not row or not verify_password(data.get('old_password'), row[0]):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password.")
-            valid, msg = validate_password_strength(data.get('new_password'))
-            if not valid:
-                raise HTTPException(status_code=400, detail=msg)
-            new_hash = hash_password(data.get('new_password'))
+        valid, msg = validate_password_strength(data.get('new_password'))
+        if not valid:
+            raise HTTPException(status_code=400, detail=msg)
+        new_hash = hash_password(data.get('new_password'))
         c.execute("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
         conn.commit()
     await invalidate_tokens_for_user(teacher_user)

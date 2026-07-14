@@ -141,15 +141,12 @@
   "resourceTypeVideosSubtitle": "ಪಾಠಗಳು ಮತ್ತು ಪರಿಕಲ್ಪನೆ ವಿವರಣೆಗಳನ್ನು ವೀಕ್ಷಿಸಿ",
   "resourceTypePyqs": "ಹಿಂದಿನ ವರ್ಷದ ಪ್ರಶ್ನೆಗಳು",
   "resourceTypePyqsSubtitle": "ಹಿಂದಿನ ವರ್ಷದ ಪ್ರಶ್ನೆಪತ್ರಿಕೆಗಳು ಮತ್ತು ಅಭ್ಯಾಸ ಸೆಟ್‌ಗಳು",
-  "resourceTypeNotes": "ಟಿಪ್ಪಣಿಗಳು",
-  "resourceTypeNotesSubtitle": "ತ್ವರಿತ ಪುನರಾವರ್ತನೆ ಟಿಪ್ಪಣಿಗಳು ಮತ್ತು ಸಾರಾಂಶಗಳು",
   "resourceCardOpenButton": "ತೆರೆಯಿರಿ",
   "savedResourcesTitle": "ಉಳಿಸಿದ ಸಂಪನ್ಮೂಲಗಳು",
   "tabAll": "ಎಲ್ಲಾ",
   "tabTextbooks": "ಪಠ್ಯಪುಸ್ತಕಗಳು",
   "tabVideos": "ವೀಡಿಯೊಗಳು",
   "tabPyqs": "ಪ್ರಶ್ನೆಗಳು",
-  "tabNotes": "ಟಿಪ್ಪಣಿಗಳು",
   "emptyStateAll": "ಇನ್ನೂ ಯಾವುದೇ ಸಂಪನ್ಮೂಲಗಳನ್ನು ಉಳಿಸಲಾಗಿಲ್ಲ.",
   "emptyStateByType": "ಯಾವುದೇ {type} ಉಳಿಸಲಾಗಿಲ್ಲ.",
   "headerMyProfile": "ನನ್ನ ಪ್ರೊಫೈಲ್",
@@ -270,6 +267,61 @@
   "resourceFallbackTitle": "Untitled",
   "subjectFallbackGeneral": "General",
   "subjectNameUnknown": "Unknown",
+
+  "browseMyCourses": "ನನ್ನ ಕೋರ್ಸ್‌ಗಳು",
+  "browseRecommended": "ನಿಮಗಾಗಿ ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ",
+  "browseSimilarCourses": "ಹೋಲುವ ಕೋರ್ಸ್‌ಗಳು",
+  "browseAllCourses": "ಎಲ್ಲಾ ಕೋರ್ಸ್‌ಗಳು",
+  "browseShowRecommended": "ಶಿಫಾರಸುಗಳನ್ನು ತೋರಿಸಿ",
+  "browseShowAll": "ಎಲ್ಲಾ ತೋರಿಸಿ",
+  "browseSearchHint": "ಕೋರ್ಸ್‌ಗಳನ್ನು ಹುಡುಕಿ...",
+  "browseEnroll": "ದಾಖಲಾಗಿ",
+  "browseClassLabel": "ತರಗತಿ {grade}",
+  "browseNoMatchingCourses": "ಹೊಂದಿಕೆಯಾಗುವ ಕೋರ್ಸ್‌ಗಳು ಇಲ್ಲ",
+  "browseNoCoursesAvailable": "ಯಾವುದೇ ಕೋರ್ಸ್‌ಗಳು ಲಭ್ಯವಿಲ್ಲ",
+  "browseCouldNotLoad": "ಕೋರ್ಸ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+  "browseProgressFormat": "{completed}/{total}",
+
+  "coursePlayerLocked": "ಮೊದಲು ಹಿಂದಿನ ಸಂಪನ್ಮೂಲವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ",
+  "coursePlayerDownloading": "ಕೋರ್ಸ್ ಡೌನ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
+  "coursePlayerDownloadFailed": "ಡೌನ್‌ಲೋಡ್ ವಿಫಲವಾಗಿದೆ. ಸಂಗ್ರಹಣೆ ಸ್ಥಳವನ್ನು ಪರಿಶೀಲಿಸಿ.",
+  "coursePlayerVideo": "ವಿಡಿಯೋ",
+  "coursePlayerQuiz": "ಕ್ವಿಜ್",
+  "coursePlayerPastPaper": "ಹಿಂದಿನ ಪೇಪರ",
+  "coursePlayerTextbook": "ಪಠ್ಯಪುಸ್ತಕ",
+  "coursePlayerNoResources": "ಈ ಕೋರ್ಸ್‌ನಲ್ಲಿ ಯಾವುದೇ ಸಂಪನ್ಮೂಲಗಳು ಇಲ್ಲ",
+  "coursePlayerDownloadPrompt": "ಎಲ್ಲಾ ಸಂಪನ್ಮೂಲಗಳನ್ನು ಆಫ್‌ಲೈನ್ ಅಧ್ಯಯನಕ್ಕಾಗಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
+  "coursePlayerDownloadButton": "ಕೋರ್ಸ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
+  "coursePlayerCompleted": "ಪೂರ್ಣಗೊಳಿಸಲಾಗಿದೆ",
+  "coursePlayerStart": "ಪ್ರಾರಭಿಸಿ",
+
+  "quizLoadingError": "ಕ್ವಿಜ್ ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
+  "quizNotAvailable": "ಕ್ವಿಜ್ ಲಭ್ಯವಿಲ್ಲ",
+  "quizQuestionOf": "ಪ್ರಶ್ನೆ {index} / {total}",
+  "quizTypeMcq": "ಬಹು ಆಯ್ಕೆ",
+  "quizTypeTrueFalse": "ಸತ್ಯ / ಸುಳ್ಳು",
+  "quizTypeFillBlanks": "ಖಾಲಿ ಜಾಗಗಳನ್ನು ತುಂಬಿಸಿ",
+  "quizTypeMultiSelect": "ಬಹು-ಆಯ್ಕೆ",
+  "quizTrue": "ಸತ್ಯ",
+  "quizFalse": "ಸುಳ್ಳು",
+  "quizFillBlanksHint": "ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಇಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ...",
+  "quizPrevious": "ಹಿಂದಿನ",
+  "quizSubmit": "ಸಲ್ಲಿಸಿ",
+  "quizNext": "ಮುಂದಿನ",
+  "quizPassed": "ಉತ್ತೀರ್ಣ!",
+  "quizFailed": "ವಿಫಲ",
+  "quizPassedMessage": "ಬಹಳ ಚೆನ್ನಾಗಿದೆ! ನೀವು ಕ್ವಿಜ್ ಪಾಸ್ ಮಾಡಿದ್ದೀರಿ.",
+  "quizFailedMessage": "ನೀವು ಪಾಸ್ ಆಗಿಲ್ಲ. ಕೆಳಗಿನ ಪ್ರಶ್ನೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.",
+  "quizScoreFraction": "{correct}/{total}",
+  "quizQuestionLabel": "ಪ್ರಶ್ನೆ {index}",
+  "quizExplanation": "ವಿವರಣೆ: {text}",
+  "quizBackToCourse": "ಕೋರ್ಸ್‌ಗೆ ಹಿಂತಿರುಗಿ",
+
+  "profileCoursesCompleted": "ಕೋರ್ಸ್‌ಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ",
+  "profileMyCourses": "ನನ್ನ ಕೋರ್ಸ್‌ಗಳು",
+  "profileTapToResume": "ಮುಂದುವರಿಯಲು ಟ್ಯಾಪ್ ಮಾಡಿ",
+  "profileNoCourses": "ಇನ್ನೂ ಯಾವುದೇ ಕೋರ್ಸ್‌ಗಳು ಇಲ್ಲ. ಪ್ರಾರಂಭಿಸಲು ಕ್ಯಾಟಲಾಗ್ ಅನ್ನು ಅನ್ವೇಷಿಸಿ.",
+
   "@appTitle": {
     "description": "Application branding title shown in the app bar and task switcher"
   },
@@ -772,12 +824,6 @@
   "@resourceTypePyqsSubtitle": {
     "description": "Card subtitle description for PYQs category"
   },
-  "@resourceTypeNotes": {
-    "description": "Card title for the Notes resource category"
-  },
-  "@resourceTypeNotesSubtitle": {
-    "description": "Card subtitle description for Notes category"
-  },
   "@resourceCardOpenButton": {
     "description": "Button label on each resource category card to open its resources"
   },
@@ -795,9 +841,6 @@
   },
   "@tabPyqs": {
     "description": "Tab label filtering saved PYQs"
-  },
-  "@tabNotes": {
-    "description": "Tab label filtering saved notes"
   },
   "@emptyStateAll": {
     "description": "Empty state when the All tab has no saved resources"
@@ -1294,5 +1337,203 @@
   },
   "@subjectNameUnknown": {
     "description": "Fallback text for an unknown subject name in subject breakdown"
+  },
+  "@browseMyCourses": {
+    "description": "Section header for the student's enrolled courses on the browse page"
+  },
+  "@browseRecommended": {
+    "description": "Section header for recommended courses section on the browse page"
+  },
+  "@browseSimilarCourses": {
+    "description": "Section header for teacher-defined similar courses"
+  },
+  "@browseAllCourses": {
+    "description": "Section header for the complete course catalog on the browse page"
+  },
+  "@browseShowRecommended": {
+    "description": "Toggle button to show only recommended courses"
+  },
+  "@browseShowAll": {
+    "description": "Toggle button to show all available courses"
+  },
+  "@browseSearchHint": {
+    "description": "Hint text inside the course search field on the browse page"
+  },
+  "@browseEnroll": {
+    "description": "Button label to enroll in a course"
+  },
+  "@browseClassLabel": {
+    "description": "Grade label shown on course cards, e.g. 'Class 10'",
+    "placeholders": {
+      "grade": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "@browseNoMatchingCourses": {
+    "description": "Empty state text when no courses match search or filters"
+  },
+  "@browseNoCoursesAvailable": {
+    "description": "Empty state text when no courses exist on the server"
+  },
+  "@browseCouldNotLoad": {
+    "description": "Error message shown when course catalog fails to load"
+  },
+  "@browseProgressFormat": {
+    "description": "Progress label on enrolled course cards showing completed/total resources",
+    "placeholders": {
+      "completed": {
+        "type": "int",
+        "example": "3"
+      },
+      "total": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "@coursePlayerLocked": {
+    "description": "Tooltip shown when tapping a locked course resource"
+  },
+  "@coursePlayerDownloading": {
+    "description": "Progress message shown during course download"
+  },
+  "@coursePlayerDownloadFailed": {
+    "description": "Error message when course download fails due to storage"
+  },
+  "@coursePlayerVideo": {
+    "description": "Label for video-type course resources"
+  },
+  "@coursePlayerQuiz": {
+    "description": "Label for quiz-type course resources"
+  },
+  "@coursePlayerPastPaper": {
+    "description": "Label for past paper-type course resources"
+  },
+  "@coursePlayerTextbook": {
+    "description": "Label for textbook-type course resources"
+  },
+  "@coursePlayerNoResources": {
+    "description": "Empty state when a course has no resources"
+  },
+  "@coursePlayerDownloadPrompt": {
+    "description": "Message above the download button prompting offline download"
+  },
+  "@coursePlayerDownloadButton": {
+    "description": "Button to download all course resources for offline use"
+  },
+  "@coursePlayerCompleted": {
+    "description": "Badge label shown on completed course resources"
+  },
+  "@coursePlayerStart": {
+    "description": "Button label on the first unlocked resource to begin the course"
+  },
+  "@quizLoadingError": {
+    "description": "Error message when quiz content fails to load"
+  },
+  "@quizNotAvailable": {
+    "description": "Fallback message when quiz data is missing"
+  },
+  "@quizQuestionOf": {
+    "description": "Progress indicator showing current question number out of total",
+    "placeholders": {
+      "index": {
+        "type": "int",
+        "example": "3"
+      },
+      "total": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "@quizTypeMcq": {
+    "description": "Label for multiple-choice question type"
+  },
+  "@quizTypeTrueFalse": {
+    "description": "Label for true/false question type"
+  },
+  "@quizTypeFillBlanks": {
+    "description": "Label for fill-in-the-blanks question type"
+  },
+  "@quizTypeMultiSelect": {
+    "description": "Label for multi-select question type"
+  },
+  "@quizTrue": {
+    "description": "True option label in true/false questions"
+  },
+  "@quizFalse": {
+    "description": "False option label in true/false questions"
+  },
+  "@quizFillBlanksHint": {
+    "description": "Hint text inside the fill-in-the-blanks answer text field"
+  },
+  "@quizPrevious": {
+    "description": "Button to navigate to the previous quiz question"
+  },
+  "@quizSubmit": {
+    "description": "Button to submit the completed quiz"
+  },
+  "@quizNext": {
+    "description": "Button to navigate to the next quiz question"
+  },
+  "@quizPassed": {
+    "description": "Pass/fail badge label when the student passed the quiz"
+  },
+  "@quizFailed": {
+    "description": "Pass/fail badge label when the student failed the quiz"
+  },
+  "@quizPassedMessage": {
+    "description": "Encouraging message shown after passing a quiz"
+  },
+  "@quizFailedMessage": {
+    "description": "Constructive message shown after failing a quiz"
+  },
+  "@quizScoreFraction": {
+    "description": "Score display showing correct answers out of total questions",
+    "placeholders": {
+      "correct": {
+        "type": "int",
+        "example": "7"
+      },
+      "total": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "@quizQuestionLabel": {
+    "description": "Heading label for each question in the results review",
+    "placeholders": {
+      "index": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "@quizExplanation": {
+    "description": "Label prefix for the explanation shown after a quiz question",
+    "placeholders": {
+      "text": {
+        "type": "String",
+        "example": "The Earth revolves around the Sun"
+      }
+    }
+  },
+  "@quizBackToCourse": {
+    "description": "Button on the results screen to return to the course player"
+  },
+  "@profileCoursesCompleted": {
+    "description": "Stat card label for count of completed courses on the profile page"
+  },
+  "@profileMyCourses": {
+    "description": "Section header for enrolled courses list on the profile page"
+  },
+  "@profileTapToResume": {
+    "description": "Subtitle below the My Courses section header, encouraging the student to continue"
+  },
+  "@profileNoCourses": {
+    "description": "Empty state message when the student has no enrolled courses"
   }
 }

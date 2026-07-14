@@ -6,8 +6,8 @@ import '../../l10n/app_localizations.dart';
 /// Parses a resource type string into a [ResourceType] enum value.
 ///
 /// Accepts common casing variants and plural forms: "textbook", "video"/"videos",
-/// "pyq", "pastpaper"/"past_paper", "kiwix", "notes"/"note".
-/// Defaults to [ResourceType.notes] for unrecognised input.
+/// "pyq", "pastpaper"/"past_paper", "kiwix".
+/// Defaults to [ResourceType.textbook] for unrecognised input.
 ResourceType parseResourceType(String type) {
   switch (type.toLowerCase()) {
     case 'textbook':
@@ -22,11 +22,8 @@ ResourceType parseResourceType(String type) {
       return ResourceType.pastPaper;
     case 'kiwix':
       return ResourceType.kiwix;
-    case 'notes':
-    case 'note':
-      return ResourceType.notes;
     default:
-      return ResourceType.notes;
+      return ResourceType.textbook;
   }
 }
 
@@ -49,8 +46,7 @@ IconData iconForType(ResourceType type) {
       return Icons.play_circle_rounded;
     case ResourceType.pyq:
       return Icons.assignment_rounded;
-    case ResourceType.notes:
-      return Icons.note_rounded;
+
     case ResourceType.kiwix:
       return Icons.language_rounded;
     case ResourceType.pastPaper:

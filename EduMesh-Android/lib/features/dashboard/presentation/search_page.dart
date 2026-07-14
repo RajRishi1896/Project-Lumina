@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
+import 'package:edumesh_android/core/models/zim_article_model.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
@@ -11,6 +15,7 @@ import 'package:edumesh_android/shared/services/download_service.dart';
 import '../../../core/services/activity_tracker.dart';
 import '../../../shared/services/download_queue.dart';
 import '../../../shared/services/connectivity_service.dart';
+import '../../../shared/services/zim_sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../shared/widgets/resource_thumbnail.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
@@ -46,7 +51,7 @@ class _SearchPageState extends State<SearchPage> {
   Set<String> _downloadedIds = {};
   Set<String> _pendingIds = {};
   final Set<String> _downloadingIds = {};
-  List<Map<String, dynamic>> _zimArticles = [];
+  List<ZimArticle> _zimArticles = [];
   List<Map<String, dynamic>> _filteredResults = [];
   bool _isLoading = true;
   String? _loadError;
@@ -93,8 +98,14 @@ class _SearchPageState extends State<SearchPage> {
           'offset': '0', 'limit': '500',
         }).timeout(const Duration(seconds: 8));
         if (zimResp.data is List) {
-          _zimArticles = (zimResp.data as List).cast<Map<String, dynamic>>();
+          final raw = (zimResp.data as List).cast<Map<String, dynamic>>();
+          _zimArticles = raw.map((j) => ZimArticle.fromJson(j)).toList();
         }
+      } catch (_) { }
+      // Sync ZIM articles into local DB for offline search
+      try {
+        await ZimSyncService.instance.syncFromHub();
+        _zimArticles = await ZimSyncService.instance.getAll();
       } catch (_) { }
       _applyFilters();
     } catch (_) {
@@ -173,10 +184,22 @@ class _SearchPageState extends State<SearchPage> {
     final l10n = AppLocalizations.of(context)!;
     try {
       String? html;
+      // Try reading from local file first (offline support)
       try {
-        final prefs = await SharedPreferences.getInstance();
-        html = prefs.getString('zim_page_$articleId');
+        final dir = await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/zim_$articleId.html');
+        if (await file.exists()) {
+          html = await file.readAsString();
+        }
       } catch (_) {}
+      // Fall back to SharedPreferences cache
+      if (html == null) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          html = prefs.getString('zim_page_$articleId');
+        } catch (_) {}
+      }
+      // Fetch from server if not cached locally
       if (html == null) {
         final response = await ApiClient.get('/zim/page', queryParameters: {
           'article_id': articleId,
@@ -203,6 +226,78 @@ class _SearchPageState extends State<SearchPage> {
         messenger.showSnackBar(SnackBar(content: Text(l10n.zimFailedToLoadArticle(e.toString()))));
       }
     }
+  }
+
+  Future<void> _downloadZimArticle(ZimArticle article) async {
+    try {
+      final res = await ApiClient.get('/zim/page', queryParameters: {
+        'article_id': article.articleId,
+      }).timeout(const Duration(seconds: 10));
+      var html = res.data['html'] as String? ?? '';
+      if (html.isEmpty) return;
+
+      // Inline all /zim/asset references as data URIs for full offline support.
+      final assetPattern = RegExp(
+        r"""(/zim/asset\?archive_id=[^"'&]+&path=([^"'&]+))""",
+      );
+      final matches = assetPattern.allMatches(html).toList();
+      // ponytail: fetch assets concurrently (5 at a time) instead of sequentially.
+      // A page with 20 images goes from 20 serial calls to ~4 batches.
+      const concurrency = 5;
+      for (var i = 0; i < matches.length; i += concurrency) {
+        final batch = matches.sublist(i, (i + concurrency).clamp(0, matches.length));
+        await Future.wait(batch.map((m) async {
+          final fullUrl = m.group(1)!;
+          final assetPath = Uri.decodeComponent(m.group(2)!);
+          try {
+            final assetResp = await ApiClient.get('/zim/asset', queryParameters: {
+              'archive_id': article.archiveId,
+              'path': assetPath,
+            }).timeout(const Duration(seconds: 5));
+            if (assetResp.data is List<int>) {
+              final bytes = assetResp.data as List<int>;
+              final mime = _guessMime(assetPath);
+              final b64 = base64Encode(bytes);
+              final dataUri = 'data:$mime;base64,$b64';
+              html = html.replaceAll(fullUrl, dataUri);
+            }
+          } catch (_) {
+            // Asset fetch failed — leave URL as-is, WebView may still load it online.
+          }
+        }));
+      }
+
+      // Save self-contained HTML to disk and SharedPreferences.
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/zim_${article.articleId}.html');
+      await file.writeAsString(html);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('zim_page_${article.articleId}', html);
+      } catch (_) {}
+
+      await ZimSyncService.instance.markDownloaded(article.articleId);
+      if (mounted) setState(() {});
+    } catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.snackbarDownloadFailed)),
+        );
+      }
+    }
+  }
+
+  String _guessMime(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    const mimeMap = {
+      'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+      'gif': 'image/gif', 'svg': 'image/svg+xml', 'webp': 'image/webp',
+      'css': 'text/css', 'js': 'application/javascript',
+      'woff': 'font/woff', 'woff2': 'font/woff2', 'ttf': 'font/ttf',
+      'mp4': 'video/mp4', 'webm': 'video/webm',
+    };
+    return mimeMap[ext] ?? 'application/octet-stream';
   }
 
   Widget _buildDownloadButton(dynamic original, ColorScheme cs) {
@@ -555,11 +650,16 @@ class _SearchPageState extends State<SearchPage> {
       results.add({'title': r.title, 'originalObject': r, 'isZim': false});
     }
     for (final article in _zimArticles) {
-      final title = article['title']?.toString() ?? l10n.zimUntitledArticleFallback;
+      final title = article.title.isNotEmpty ? article.title : l10n.zimUntitledArticleFallback;
       if (query.isNotEmpty && !title.toLowerCase().contains(query)) continue;
-      final id = article['article_id']?.toString() ?? '';
-      if (id.isEmpty) continue;
-      results.add({'title': title, 'originalObject': null, 'isZim': true, 'articleId': id});
+      if (article.articleId.isEmpty) continue;
+      results.add({
+        'title': title,
+        'originalObject': null,
+        'isZim': true,
+        'articleId': article.articleId,
+        'zimArticle': article,
+      });
     }
 
     results.sort((a, b) {
@@ -651,7 +751,9 @@ class _SearchPageState extends State<SearchPage> {
         ActivityTracker()
             .logAction('search', metadata: value)
             .catchError((_) {});
-        setState(() => _searchQuery = value);
+        // ponytail: update query without setState, apply filters after debounce.
+        // Original setState on every keystroke triggered 5-10 full rebuilds/sec.
+        _searchQuery = value;
         _searchDebounce?.cancel();
         _searchDebounce = Timer(const Duration(milliseconds: 200), () {
           if (mounted) {
@@ -742,6 +844,7 @@ class _SearchPageState extends State<SearchPage> {
                         final item = _filteredResults[index];
                         final isZim = item['isZim'] == true;
                         final dynamic original = item['originalObject'];
+                        final ZimArticle? zimArticle = item['zimArticle'];
 
                         final isOfflineUnavailable = !isZim && !ConnectivityService().isOnline && !_downloadedIds.contains(original.id.toString());
 
@@ -749,10 +852,22 @@ class _SearchPageState extends State<SearchPage> {
                           opacity: isOfflineUnavailable ? 0.45 : 1.0,
                           child: ListTile(
                           leading: isZim
-                              ? CircleAvatar(
-                                  backgroundColor: cs.primaryContainer,
-                                  child: Icon(Icons.article, color: cs.primary),
-                                )
+                              ? (zimArticle != null && zimArticle.hasThumbnail
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(6.r),
+                                      child: Image.network(
+                                        '${ApiClient.baseUrl}/zim/thumbnail?article_id=${zimArticle.articleId}',
+                                        width: 48, height: 48, fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => CircleAvatar(
+                                          backgroundColor: cs.primaryContainer,
+                                          child: Icon(Icons.article, color: cs.primary),
+                                        ),
+                                      ),
+                                    )
+                                  : CircleAvatar(
+                                      backgroundColor: cs.primaryContainer,
+                                      child: Icon(Icons.article, color: cs.primary),
+                                    ))
                               : ResourceThumbnail(resource: original, size: 48),
                           onTap: () {
                             if (isZim) {
@@ -805,7 +920,26 @@ class _SearchPageState extends State<SearchPage> {
                             ],
                           ),
                           trailing: isZim
-                              ? Icon(Icons.chevron_right, color: cs.onSurfaceVariant)
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (zimArticle != null)
+                                      IconButton(
+                                        icon: Icon(
+                                          ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
+                                              ? Icons.check_circle
+                                              : Icons.download_outlined,
+                                          color: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
+                                              ? LuminaColors.successGreen
+                                              : cs.primary,
+                                        ),
+                                        onPressed: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
+                                            ? null
+                                            : () => _downloadZimArticle(zimArticle),
+                                      ),
+                                    Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                                  ],
+                                )
                               : Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [

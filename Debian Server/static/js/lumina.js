@@ -74,6 +74,20 @@ const TRANSLATIONS = {
     "courses.cover_title": "Cover Image",
     "courses.cover_empty": "No image",
     "courses.cover_remove": "Remove",
+    "courses.add_chapter": "Add Chapter",
+    "courses.chapter_cancel": "Cancel",
+    "courses.chapter_delete_body": "Resources in this chapter will become ungrouped.",
+    "courses.chapter_delete_btn": "Delete",
+    "courses.chapter_delete_title": "Delete Chapter",
+    "courses.chapter_save": "Save",
+    "courses.chapter_save_failed": "Failed to save chapter.",
+    "courses.chapter_th_chapter": "Chapter",
+    "courses.chapter_title_label": "Chapter Title",
+    "courses.chapter_title_required": "Chapter title is required.",
+    "courses.chapters_empty": "No chapters yet. Add chapters to organize resources.",
+    "courses.chapters_title": "Chapters",
+    "courses.resources_label": "resources",
+    "courses.notif.save_course_first": "Save the course first, then add chapters.",
     "courses.resources_title": "Course Resources",
     "courses.add_resource": "Add Resource",
     "courses.add_quiz": "Add Quiz",
@@ -90,7 +104,10 @@ const TRANSLATIONS = {
     "courses.confirm_delete_body": "Are you sure you want to permanently delete \"{title}\"?",
     "courses.confirm_delete_btn": "Delete",
     "courses.notif.load_failed": "Could not load courses.",
+    "courses.import": "Import Course",
     "courses.notif.connection_error": "Connection error.",
+    "courses.notif.imported": "Course imported successfully.",
+    "courses.notif.import_failed": "Could not import course.",
     "courses.notif.deleted": "Course deleted.",
     "courses.notif.delete_failed": "Could not delete course.",
     "courses.notif.saved": "Course saved successfully.",
@@ -112,6 +129,7 @@ const TRANSLATIONS = {
     "courses.quiz_threshold_label": "Pass Threshold (%)",
     "courses.quiz_attempts_label": "Max Attempts",
     "courses.quiz_shuffle_label": "Shuffle questions",
+    "courses.quiz_custom": "Custom",
     "courses.quiz_questions_title": "Questions",
     "courses.quiz_add_question": "Add Question",
     "courses.quiz_questions_empty": "No questions added yet.",
@@ -156,6 +174,14 @@ const TRANSLATIONS = {
     "content.notif.delete_failed": "Could not delete resource.",
     "content.notif.network_error": "Network error.",
     "content.notif.transfer_target_required": "Please select a target subject to transfer files to.",
+    "content.topics_title": "Manage Topics",
+    "content.topics_th_subject": "Subject",
+    "content.topics_th_name": "Topic Name",
+    "content.topics_th_action": "Action",
+    "content.topics_empty": "No topics created yet.",
+    "content.topics_modal_title": "Add New Topic",
+    "content.topics_delete_title": "Delete Topic",
+    "content.topics_delete_confirm": "Delete \"{name}\"? Resources using this topic will be set to General.",
     "content.notif.subject_deleted": "Subject \"{name}\" deleted successfully.",
     "content.notif.subject_delete_failed": "Could not delete subject.",
     "content.notif.pwd_fields_required": "Please fill in both fields.",
@@ -163,7 +189,491 @@ const TRANSLATIONS = {
     "content.notif.pwd_updated": "Password updated successfully. Reloading...",
     "content.notif.pwd_update_failed": "Could not update password.",
     "content.library_th_downloads": "Downloads",
-    "content.library_th_notes": "Notes"
+    "content.library_th_topic": "Topic",
+    "content.upload_label_topic": "Chapter / Topic",
+    "content.upload_option_general_topic": "General (No Topic)",
+    "danger.manage_subjects": "Manage Subjects",
+    "app.tagline": "Your Offline Learning Network",
+    "app.title": "Lumina Hub",
+    "content.add_subject_button": "Add Subject",
+    "content.add_subject_label_class": "Class/Grade",
+    "content.add_subject_label_name": "Subject Name",
+    "content.add_subject_label_symbol": "Symbol",
+    "content.add_subject_placeholder_class": "All Classes",
+    "content.add_subject_placeholder_name": "e.g. Physics",
+    "content.add_subject_symbol_calculator": "Calculator",
+    "content.add_subject_symbol_placeholder": "Select a symbol...",
+    "content.add_subject_title": "Add New Subject",
+    "content.confirm_delete_btn": "Delete",
+    "content.confirm_ok_btn": "Confirm",
+    "content.delete": "Delete",
+    "content.grade": "Grade",
+    "content.library_empty": "No resources found.",
+    "content.library_filter_all_subjects": "All Subjects",
+    "content.library_filter_subject_label": "Filter Subject:",
+    "content.library_search_label": "Search resources",
+    "content.library_search_placeholder": "Search resources...",
+    "content.library_th_action": "Action",
+    "content.library_th_subject": "Subject",
+    "content.library_th_title": "Title",
+    "content.library_th_type": "Type",
+    "content.library_title": "Mesh Library",
+    "content.manage_subjects_empty": "No subjects found.",
+    "content.manage_subjects_search_label": "Search subjects",
+    "content.manage_subjects_search_placeholder": "Search by subject name...",
+    "content.manage_subjects_th_action": "Action",
+    "content.manage_subjects_th_class": "Class/Grade",
+    "content.manage_subjects_th_icon": "Icon",
+    "content.manage_subjects_th_name": "Subject Name",
+    "content.manage_subjects_title": "Manage Subjects & Syllabus",
+    "content.modal_cancel": "Cancel",
+    "content.modal_confirm": "Confirm",
+    "content.modal_confirm_action_text": "Are you sure you want to proceed?",
+    "content.modal_confirm_action_title": "Confirm Action",
+    "content.modal_confirm_deletion": "Delete Subject",
+    "content.modal_confirm_password_label": "Confirm New Password",
+    "content.modal_confirm_password_placeholder": "Confirm new password",
+    "content.modal_delete_permanently": "Delete Permanently",
+    "content.modal_delete_permanently_desc": "All resource files will be permanently deleted.",
+    "content.modal_delete_subject_title": "Delete Subject",
+    "content.modal_new_password_label": "New Password",
+    "content.modal_new_password_placeholder": "Enter new password",
+    "content.modal_password_requirement": "Must be 8+ chars, with uppercase, lowercase & a digit.",
+    "content.modal_password_reset_desc": "An administrator has forced a password reset on your account. Please set a new password to continue.",
+    "content.modal_password_reset_title": "Password Reset Required",
+    "content.modal_resource_file_action": "What should happen to resource files?",
+    "content.modal_transfer_resources": "Transfer to Another Subject",
+    "content.modal_transfer_resources_desc": "Resource files will be moved to the selected subject.",
+    "content.modal_transfer_to_subject": "Transfer to Subject",
+    "content.modal_update_continue": "Update and Continue",
+    "content.page_description": "Upload and manage educational resources.",
+    "content.page_title": "Content Manager",
+    "content.subject": "Subject",
+    "content.subtitle": "Upload and manage educational resources.",
+    "content.title": "Content Manager",
+    "content.upload": "Upload",
+    "content.upload_button": "Upload",
+    "content.upload_label_category": "Category",
+    "content.upload_label_file": "File",
+    "content.upload_label_subject": "Subject",
+    "content.upload_label_title": "Title",
+    "content.upload_option_general": "General",
+    "content.upload_option_zim": "ZIM Archive",
+    "content.upload_option_notes": "Notes",
+    "content.upload_option_pyq": "PYQ",
+    "content.upload_option_textbook": "Textbook",
+    "content.upload_option_video": "Video",
+    "content.upload_placeholder_title": "Enter resource title",
+    "content.upload_title": "Upload Resource",
+    "danger.alert.admin_disabled": "Default admin login disabled successfully.",
+    "danger.alert.admin_disabled_failed": "Could not disable default admin.",
+    "danger.alert.connection_error": "Error connecting to server.",
+    "danger.alert.delete_profile_failed": "Could not delete profile.",
+    "danger.page_title": "Lumina Hub | Danger Zone",
+    "danger.cancel": "Cancel",
+    "danger.confirm": "Confirm",
+    "danger.confirm.delete_btn": "Delete",
+    "danger.confirm.delete_admin": "Are you sure you want to delete admin profile \"{username}\"?",
+    "danger.confirm.delete_admin_title": "Delete Admin Profile",
+    "danger.confirm.delete_student": "Are you sure you want to permanently delete student \"{name}\"? This will wipe all download history and sync records.",
+    "danger.confirm.delete_student_title": "Delete Student Account",
+    "danger.confirm.delete_teacher": "Are you sure you want to delete teacher profile \"{username}\"?",
+    "danger.confirm.delete_teacher_title": "Delete Teacher Profile",
+    "danger.confirm.disable_admin": "Are you sure you want to disable the default admin login ('admin')? Make sure you have your teacher credentials saved! (To reset later, run ./reset_admin.sh)",
+    "danger.confirm.disable_admin_title": "Disable Default Admin",
+    "danger.confirm.force_reset_admin": "Are you sure you want to force password reset on admin \"{username}\"?",
+    "danger.confirm.force_reset_student": "Are you sure you want to force password reset on student \"{name}\"? They will be forced to change their password to continue using the mobile application.",
+    "danger.confirm.force_reset_teacher": "Are you sure you want to force password reset on teacher \"{username}\"?",
+    "danger.confirm.force_reset_title": "Force Password Reset",
+    "danger.confirm.ok_btn": "Confirm",
+    "danger.confirm_text": "Are you sure you want to proceed?",
+    "danger.confirm_title": "Confirm Action",
+    "danger.create": "Create",
+    "danger.create_account_title": "Create Account",
+    "danger.create_admin": "+ Create Admin",
+    "danger.create_student": "+ Create Student",
+    "danger.create_teacher": "+ Create Teacher",
+    "danger.default_account": "Default account",
+    "danger.delete": "Delete",
+    "danger.disable_default_admin": "Disable Default Admin Login (admin)",
+    "danger.error.both_fields": "Please fill in both fields.",
+    "danger.error.connection": "Error connecting to server.",
+    "danger.error.create_admin_failed": "Could not create admin account.",
+    "danger.error.create_student_failed": "Could not create student.",
+    "danger.error.create_teacher_failed": "Could not create teacher account.",
+    "danger.error.name_username_required": "Please fill in name and username.",
+    "danger.error.passwords_match": "Passwords do not match.",
+    "danger.error.required_fields": "Please fill in all required fields.",
+    "danger.error.update_failed": "Could not update password.",
+    "danger.empty_admins": "No admin accounts registered yet.",
+    "danger.empty_students": "No student accounts registered yet.",
+    "danger.empty_teachers": "No teacher accounts registered yet.",
+    "danger.force_reset_confirm_pwd_label": "Confirm New Password",
+    "danger.force_reset_confirm_pwd_placeholder": "Confirm new password",
+    "danger.force_reset_desc": "An administrator has forced a password reset on your account.",
+    "danger.force_reset_new_pwd_label": "New Password",
+    "danger.force_reset_new_pwd_placeholder": "Enter new password",
+    "danger.force_reset_pwd": "Force Reset Pwd",
+    "danger.force_reset_title": "Password Reset Required",
+    "danger.manage_admins": "Manage Admin Accounts",
+    "danger.manage_admins_desc": "Manage admin accounts for the hub.",
+    "danger.manage_students": "Manage Student Accounts",
+    "danger.manage_teachers": "Manage Teacher Accounts",
+    "danger.modal.create_admin_title": "Create Admin Account",
+    "danger.modal.create_student_title": "Create Student Account",
+    "danger.modal.create_teacher_title": "Create Teacher Account",
+    "danger.modal_department": "Department",
+    "danger.modal_department_placeholder": "e.g. Science",
+    "danger.modal_full_name": "Full Name",
+    "danger.modal_full_name_placeholder": "e.g. John Smith",
+    "danger.modal_grade_class": "Grade/Class",
+    "danger.modal_grade_class_placeholder": "e.g. Grade 10",
+    "danger.modal_password": "Password",
+    "danger.modal_password_placeholder": "Enter password",
+    "danger.modal_username": "Username",
+    "danger.modal_username_placeholder": "e.g. jsmith",
+    "danger.no_matching_admins": "No matching admin accounts found.",
+    "danger.no_matching_students": "No matching students found.",
+    "danger.no_matching_teachers": "No matching teachers found.",
+    "danger.notif.admin_created": "Admin account \"{username}\" created successfully.",
+    "danger.notif.admin_pwd_reset": "Admin \"{username}\" password reset to default.",
+    "danger.notif.admin_pwd_reset_failed": "Could not reset admin password.",
+    "danger.notif.delete_failed": "Could not delete account.",
+    "danger.notif.network_error": "Network error.",
+    "danger.notif.student_created": "Student \"{name}\" created successfully.",
+    "danger.notif.student_deleted": "Student \"{name}\" deleted.",
+    "danger.notif.student_pwd_reset": "Password for student \"{name}\" reset to default.",
+    "danger.notif.student_pwd_reset_failed": "Could not reset student password.",
+    "danger.notif.teacher_pwd_reset": "Teacher \"{username}\" password reset to default.",
+    "danger.notif.teacher_pwd_reset_failed": "Could not reset teacher password.",
+    "danger.password_hint": "Must be 8+ chars, with uppercase, lowercase & a digit.",
+    "danger.search_admins_label": "Search admins",
+    "danger.search_admins_placeholder": "Search by username, name or department...",
+    "danger.search_students_label": "Search students",
+    "danger.search_students_placeholder": "Search by student name or scholar ID...",
+    "danger.search_teachers_label": "Search teachers",
+    "danger.search_teachers_placeholder": "Search by username, full name or department...",
+    "danger.status_active": "Active",
+    "danger.status_reset_pending": "Reset Pending",
+    "danger.subtitle": "Perform critical hub administration cleanup, force resets, and content pruning.",
+    "danger.success.password_changed": "Password updated successfully. Reloading...",
+    "danger.table_action": "Action",
+    "danger.table_department": "Department",
+    "danger.table_full_name": "Full Name",
+    "danger.table_scholar_id": "Scholar ID",
+    "danger.table_status": "Status",
+    "danger.table_student_name": "Student Name",
+    "danger.table_username": "Username",
+    "danger.title": "Danger Zone",
+    "danger.update_and_continue": "Update and Continue",
+    "danger.manage_grades": "Manage Grades",
+    "danger.grade_name_label": "Grade Name",
+    "danger.add_grade_btn": "+ Add Grade",
+    "danger.table_grade_name": "Grade Name",
+    "danger.empty_grades": "No grades created yet.",
+    "danger.confirm.delete_grade_title": "Delete Grade",
+    "danger.confirm.delete_grade": "Delete grade \"{name}\"? Resources assigned to this grade will be permanently removed.",
+    "danger.notif.grade_created": "Grade \"{name}\" created successfully.",
+    "danger.notif.grade_deleted": "Grade \"{name}\" deleted.",
+    "danger.error.grade_name_required": "Please enter a grade name.",
+    "danger.error.grade_create_failed": "Could not create grade. It may already exist.",
+    "danger.error.grade_delete_failed": "Could not delete grade.",
+    "error.page_title": "Access Error - Lumina Hub",
+    "error_access_denied_badge": "Access Denied",
+    "error_access_denied_message": "This page requires teacher or administrator privileges. Please log in with an authorized account.",
+    "error_access_denied_title": "You don’t have access",
+    "error_back_home": "Back to Home",
+    "error_not_found_badge": "Not Found",
+    "error_not_found_message": "The page you’re looking for doesn’t exist or has been moved.",
+    "error_not_found_title": "Page Not Found",
+    "error_session_expired_badge": "Session Expired",
+    "error_session_expired_message": "Your session has expired or you are not logged in. Please log in again to continue.",
+    "error_session_expired_title": "Session Expired",
+    "help.admin": "Admin Tasks",
+    "help.admin_body": "<ul><li><strong>Danger Zone</strong> &mdash; Reset all data, force admin password reset, set log retention, and view audit logs.</li><li><strong>Settings</strong> &mdash; Toggle dark mode, view system info (Python version, database path, hostname).</li><li><strong>Setup script</strong> &mdash; Run <code>sudo ./setup_hub.sh</code> to provision the hotspot, install dependencies, and configure the systemd service from scratch.</li></ul>",
+    "help.getting_started": "Getting Started",
+    "help.getting_started_body": "<ul><li><strong>Connect</strong> &mdash; Join the <strong>EduMesh</strong> Wi-Fi hotspot broadcast by the Hub laptop. The captive portal opens automatically.</li><li><strong>Install the app</strong> &mdash; On the welcome page, download the EduMesh APK and install it on your Android phone. Enable \"Install from Unknown Sources\" if prompted.</li><li><strong>Register</strong> &mdash; Open the app, enter your name, and you are in. The Hub assigns you a permanent student ID.</li><li><strong>Start learning</strong> &mdash; Browse textbooks, videos, and other resources. Download them to use offline.</li></ul>",
+    "help.page_title": "Lumina Hub | Help & Documentation",
+    "help.subtitle": "How to use the Lumina Hub and EduMesh app.",
+    "help.teachers": "For Teachers",
+    "help.teachers_body": "<ul><li><strong>Upload resources</strong> &mdash; Go to Content Manager, select a PDF or video, give it a title and subject, and click Upload. Resources are available to all students immediately.</li><li><strong>Manage content</strong> &mdash; Filter by subject and grade to find resources. Click delete to remove any resource and its file.</li><li><strong>View students</strong> &mdash; Go to Students to see all registered students, filter by grade, or search by name. Each card shows weekly study time, streak, and saved resources.</li><li><strong>Detailed analytics</strong> &mdash; Click a student to see their full profile with study time breakdown and resource count.</li><li><strong>Change your password</strong> &mdash; Go to Account Settings to update your login credentials, display name, and department.</li></ul>",
+    "help.title": "Help & Instructions",
+    "help.tracking": "Student Tracking",
+    "help.tracking_body": "<ul><li><strong>Study time</strong> &mdash; The app tracks focused study sessions using the built-in timer. Total weekly minutes are synced to the Hub.</li><li><strong>Streak</strong> &mdash; Consecutive days the student uses the app. Calculated on the phone and synced to the Hub.</li><li><strong>Saved resources</strong> &mdash; Each time a student bookmarks or downloads a resource, the count is updated.</li><li><strong>Privacy</strong> &mdash; Individual events (which PDF was opened, what was searched) stay on the student&#39;s phone and are never sent to the Hub.</li></ul>",
+    "help.troubleshooting": "Troubleshooting",
+    "help.troubleshooting_body": "<ul><li><strong>App cannot connect</strong> &mdash; Ensure your phone is on the EduMesh Wi-Fi and the Hub laptop is powered on. Restart the app and wait a few seconds.</li><li><strong>Forgot your password</strong> &mdash; Plug a keyboard into the Hub laptop and run <code>sudo ./reset_admin.sh</code> in a terminal. This resets the admin password to <code>lumina2026</code>.</li><li><strong>App is slow</strong> &mdash; Close other apps, restart EduMesh, or clear app data from Android Settings and reinstall.</li><li><strong>Hub storage is full</strong> &mdash; Delete unused resources from Content Manager. Check disk usage on the <span data-i18n=\"sidebar.home\">Home</span> page. For advanced cleanup, run <code>sudo ./setup_hub.sh</code>.</li></ul>",
+    "index.page_title": "Lumina Hub | Dashboard",
+    "index.server_version": "Lumina Hub v1.0",
+    "index.unit_hours_short": "h",
+    "index.unit_minutes_short": "m",
+    "index.unit_seconds_short": "s",
+    "index.unit_gb": "GB",
+    "index.unit_percent": "%",
+    "index_info_disk": "Disk Usage",
+    "index_info_host": "Host",
+    "index_info_server": "Server",
+    "index_info_uptime": "Uptime",
+    "index_stat_battery": "Battery",
+    "index_stat_resources": "Resources",
+    "index_stat_storage": "Storage",
+    "index_stat_subjects": "Subjects",
+    "index_stat_uptime": "Uptime",
+    "index_system_info": "System Information",
+    "index_welcome_back": "Welcome back. Your local education server is running.",
+    "log.changed_retention": "changed log retention policy to {policy}",
+    "log.created_admin": "created admin account '{username}'",
+    "log.created_student": "created student account '{username}'",
+    "log.created_teacher": "created teacher account '{username}'",
+    "log.disabled_default_admin": "disabled the default admin account",
+    "log.enabled_default_admin": "enabled the default admin account",
+    "log.hard_deleted": "hard-deleted resource id={id} '{title}'",
+    "log.reset_teacher_password": "reset password for teacher {username}",
+    "log.soft_deprecated": "soft-deprecated resource id={id} '{title}' ({count} active downloads)",
+    "nav.download": "Download App",
+    "nav.help": "Help",
+    "nav.language": "Select Language",
+    "nav.theme": "Toggle Dark Mode",
+    "security.account_settings": "Account Settings",
+    "security.aria.hide_password": "Hide password",
+    "security.aria.show_password": "Show password",
+    "security.cancel": "Cancel",
+    "security.change_password_title2": "Change Admin Password",
+    "security.confirm": "Confirm",
+    "security.confirm.delete": "Delete",
+    "security.confirm.ok": "Confirm",
+    "security.confirm_action": "Confirm Action",
+    "security.confirm_new_password": "Confirm New Password",
+    "security.confirm_new_password_placeholder": "Confirm new password",
+    "security.confirm_proceed": "Are you sure you want to proceed?",
+    "security.error.both_fields": "Please fill in both fields.",
+    "security.error.connection": "Error connecting to server.",
+    "security.error.connection_error": "Connection error.",
+    "security.error.current_password": "Error: check your current password.",
+    "security.error.dept_empty": "Department cannot be empty.",
+    "security.error.digit": "Password must contain at least one digit.",
+    "security.error.lowercase": "Password must contain at least one lowercase letter.",
+    "security.error.name_empty": "Name cannot be empty.",
+    "security.error.password_length": "Password must be at least 8 characters long.",
+    "security.error.passwords_match": "Passwords do not match.",
+    "security.error.update_dept": "Could not update department.",
+    "security.error.update_failed": "Could not update password.",
+    "security.error.update_name": "Could not update name.",
+    "security.error.uppercase": "Password must contain at least one uppercase letter.",
+    "security.page_description": "Update your password, display name, and department.",
+    "security.page_title": "Lumina Hub | Account",
+    "security.password_reset_description": "An administrator has forced a password reset on your account. Please set a new password to continue.",
+    "security.password_reset_required": "Password Reset Required",
+    "security.success.force_password_changed": "Password updated successfully. Reloading...",
+    "security.success.password_updated": "Password updated.",
+    "security.success.profile_updated": "Profile updated successfully.",
+    "security.update_and_continue": "Update and Continue",
+    "security_change_password_title": "Change Admin Password",
+    "security_current_password": "Current Password",
+    "security_current_password_placeholder": "Enter current password",
+    "security_department": "Department",
+    "security_department_placeholder": "Enter your department",
+    "security_my_profile": "My Profile",
+    "security_name": "Name",
+    "security_name_placeholder": "Enter your display name",
+    "security_new_password": "New Password",
+    "security_new_password_placeholder": "Enter new password",
+    "security_password_requirements": "Must be 8+ chars, with uppercase, lowercase &amp; a digit.",
+    "security_save": "Save",
+    "security_show_password": "Show Password",
+    "security_update_password": "Update Password",
+    "settings.account_overview": "Account Overview",
+    "settings.action": "Action",
+    "settings.admin_log": "Live Admin Audit Log",
+    "settings.admin_log_desc": "Showing admin actions with pagination. Auto-prunes based on retention policy above.",
+    "settings.confirm.body": "Are you sure you want to proceed?",
+    "settings.confirm.cancel_btn": "Cancel",
+    "settings.confirm.delete_btn": "Delete",
+    "settings.confirm.ok_btn": "Confirm",
+    "settings.confirm.title": "Confirm Action",
+    "settings.connection_error": "Connection error.",
+    "settings.download_24h": "Last 24 Hours",
+    "settings.download_30d": "Last 30 Days",
+    "settings.download_7d": "Last 7 Days",
+    "settings.download_all": "All Logs",
+    "settings.download_logs": "Download Audit Logs",
+    "settings.download_logs_btn": "Download Logs (.txt)",
+    "settings.error.both_fields": "Please fill in both fields.",
+    "settings.error.connection": "Connection error.",
+    "settings.error.load_logs": "Failed to load logs.",
+    "settings.error.logs_connection": "Connection error loading logs.",
+    "settings.error.passwords_match": "Passwords do not match.",
+    "settings.error.retention_update_failed": "Could not update policy.",
+    "settings.error.update_failed": "Could not update password.",
+    "settings.loading": "Loading...",
+    "settings.loading_logs": "Loading logs...",
+    "settings.log_retention": "Log Retention Policy",
+    "settings.modal.confirm_password_label": "Confirm New Password",
+    "settings.modal.confirm_password_placeholder": "Confirm new password",
+    "settings.modal.new_password_label": "New Password",
+    "settings.modal.new_password_placeholder": "Enter new password",
+    "settings.modal.password_hint": "Must be 8+ chars, with uppercase, lowercase & a digit.",
+    "settings.modal.reset_body": "An administrator has forced a password reset on your account. You must change your password before you can proceed.",
+    "settings.modal.reset_title": "Password Reset Required",
+    "settings.modal.update_btn": "Update and Continue",
+    "settings.next": "Next",
+    "settings.no_admin_actions": "No admin actions recorded yet.",
+    "settings.page_of": "Page {current} of {total}",
+    "settings.page_title": "Lumina Hub | Settings & System Setup",
+    "settings.per_page": "Per page:",
+    "settings.previous": "Previous",
+    "settings.refresh": "Refresh",
+    "settings.retention_24h": "24 Hours",
+    "settings.retention_30d": "30 Days (Default)",
+    "settings.retention_3m": "3 Months",
+    "settings.retention_6m": "6 Months",
+    "settings.retention_7d": "7 Days",
+    "settings.retention_desc": "Configures how long admin audit logs are stored on the hub server. Pruning is completed automatically with low overhead.",
+    "settings.retention_disabled": "Don't Take Logs (Disabled)",
+    "settings.retention_duration": "Retention Duration",
+    "settings.retention_never": "Never Delete",
+    "settings.role_label": "Role:",
+    "settings.search_logs_placeholder": "Search logs...",
+    "settings.select_duration": "Select Duration to Download",
+    "settings.subtitle": "Manage system preferences and configure log retention policies.",
+    "settings.success.password_changed": "Password updated successfully. Reloading...",
+    "settings.success.retention_updated": "Retention policy successfully updated to \"{policy}\".",
+    "settings.timestamp": "Timestamp",
+    "settings.title": "Settings & System Setup",
+    "settings.username_label": "Username:",
+    "settings_language_description": "Choose your preferred language for the dashboard.",
+    "settings_language_title": "Language",
+    "sidebar.lang_search_placeholder": "Search languages...",
+    "sidebar.light_mode": "Light Mode",
+    "sidebar.courses": "Courses",
+    "sidebar.content": "Content Manager",
+    "sidebar.danger": "Danger Zone",
+    "sidebar.dark_mode": "Dark Mode",
+    "sidebar.help": "Teacher Guide",
+    "sidebar.home": "Home",
+    "sidebar.logout": "Log out",
+    "sidebar.security": "Account",
+    "sidebar.settings": "Settings",
+    "sidebar.students": "Students",
+    "sidebar.toggle_menu": "Toggle Menu",
+    "student_detail.active_days": "Active Days",
+    "student_detail.day_streak_label": "Day Streak",
+    "student_detail.days": "days",
+    "student_detail.downloaded_label": "Downloaded",
+    "student_detail.hours": "h",
+    "student_detail.minutes_abbr": "m",
+    "student_detail.page_title": "Student Detail - Lumina Hub",
+    "student_detail.resources_saved": "Resources Saved",
+    "student_detail.study_time": "Study Time",
+    "student_detail.time_this_week_label": "Time This Week",
+    "student_detail_back": "Back to",
+    "student_detail_day_streak": "Day Streak",
+    "student_detail_downloaded": "Downloaded",
+    "student_detail_failed": "Failed to load student data.",
+    "student_detail_last_updated": "Last updated",
+    "student_detail_loading": "Loading student data…",
+    "student_detail_no_id": "No student ID provided.",
+    "student_detail_no_subject_data": "No subject data available.",
+    "student_detail_subject_breakdown": "Subject Breakdown",
+    "student_detail_this_week": "(This Week)",
+    "student_detail_time_this_week": "Time This Week",
+    "student_unknown": "Student",
+    "students.all_grades": "All Grades",
+    "students.days_ago": "{n}d ago",
+    "students.filter_grade": "Filter by grade",
+    "students.hours_ago": "{n}h ago",
+    "students.just_now": "Just now",
+    "students.minutes_ago": "{n}m ago",
+    "students.never": "Never",
+    "students.search": "Search by name or ID…",
+    "students.sort_grade": "Grade",
+    "students.sort_label": "Sort by",
+    "students.sort_name_asc": "Name (A-Z)",
+    "students.sort_name_desc": "Name (Z-A)",
+    "students.sort_oldest": "Last Active (Oldest)",
+    "students.sort_recent": "Last Active (Recent)",
+    "students.sort_study_high": "Study Time (High)",
+    "students.sort_study_low": "Study Time (Low)",
+    "students.subtitle": "View and manage registered students.",
+    "students.title": "Students",
+    "students.yesterday": "Yesterday",
+    "students.page_title": "Students - Lumina Hub",
+    "students_connection_error": "Connection error. Check that the hub server is running.",
+    "students_days_abbr": "d",
+    "students_saved_abbr": "saved",
+    "students_failed_load": "Failed to load students.",
+    "students_hours_abbr": "h",
+    "students_last_updated": "Last updated",
+    "students_loading": "Loading students…",
+    "students_none_registered": "No students registered yet. Students will appear here once they register through the app.",
+    "students_refresh": "Refresh",
+    "students_search_label": "Search",
+    "students_unknown": "Unknown",
+    "teacher.help.body": "View setup guides, troubleshooting tips, and admin instructions.",
+    "teacher.help.header": "Need help?",
+    "teacher.help.link": "Teacher Guide",
+    "time_days_ago": "{n}d ago",
+    "time_hours_ago": "{n}h ago",
+    "time_just_now": "Just now",
+    "time_minutes_ago": "{n}m ago",
+    "time_seconds_ago": "{n}s ago",
+    "time_yesterday": "Yesterday",
+    "welcome.battery": "Battery",
+    "welcome.battery.percent": "{percent}%",
+    "welcome.page_title": "Lumina Hub | Welcome",
+    "welcome.show_password": "Show Password",
+    "welcome.hide_password": "Hide Password",
+    "welcome.display_name_error": "Please enter a name or skip.",
+    "welcome.lang_search_placeholder": "Search...",
+    "welcome.storage.used_pct": "{pct}% used",
+    "welcome.battery_unknown": "Unknown",
+    "welcome.connection_error": "Connection error. Please check your network connection.",
+    "welcome.display_name_placeholder": "Your display name",
+    "welcome.display_name_prompt": "Please enter your display name to personalize your experience.",
+    "welcome.display_name_save": "Save",
+    "welcome.display_name_skip": "Skip",
+    "welcome.display_name_title": "Set Your Display Name",
+    "welcome.download_offline": "Downloading for Offline",
+    "welcome.enter_both": "Please enter both username and password.",
+    "welcome.for_teachers": "For Teachers",
+    "welcome.getting_started": "Getting Started",
+    "welcome.guide.download_offline_body": "Tap the download icon on any resource to save it to your phone. Downloaded resources work <strong>even when you’re not connected</strong> to the EduMesh network. Perfect for studying anywhere.",
+    "welcome.guide.for_teachers_body": "Teachers can log in above using their credentials. Once logged in, you can <strong>upload resources</strong>, <strong>view student analytics</strong>, <strong>manage grades and subjects</strong>, and <strong>configure the hub</strong> — including changing passwords and managing storage. Visit the <strong>Teacher Guide</strong> in the sidebar after logging in for detailed instructions.",
+    "welcome.guide.getting_started_body": "<li><strong>Connect to Wi-Fi</strong> — Turn on your phone’s Wi-Fi and join the network named <strong>EduMesh</strong>. No password needed.</li><li><strong>Open the welcome page</strong> — Once connected, a login screen should appear automatically (captive portal). If not, open your browser and go to <strong>http://lumina.hub:8000</strong>.</li><li><strong>Download the app</strong> — Tap the <strong>Download App</strong> button in the top-right corner of this page to get the EduMesh APK.</li><li><strong>Install the app</strong> — Open the downloaded file and tap Install. If your phone asks, allow “Install from Unknown Sources” in Settings.</li><li><strong>Register</strong> — Open the EduMesh app, enter your name, and you’re in. You’ll be assigned a permanent student ID.</li><li><strong>Start learning</strong> — Browse textbooks, videos, past papers, and more. Tap any resource to view it, or download it to access offline.</li>",
+    "welcome.guide.tracking_privacy_body": "<p style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;\">The app tracks your <strong>study time</strong> using a built-in timer and counts your <strong>daily streak</strong> of consecutive study days. This helps teachers see how the class is engaging with materials.</p><p style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;margin-top:0.5rem;\"><strong>Your privacy matters.</strong> Individual details — like which PDF you opened or what you searched for — stay on your phone and are <strong>never sent</strong> to the Hub. Only your total weekly minutes, streak days, and resource count are shared.</p>",
+    "welcome.guide.troubleshooting_body": "<li><strong>Can’t connect to Wi-Fi?</strong> Make sure the Hub laptop is powered on and broadcasting. Ask your teacher to check.</li><li><strong>Captive portal not opening?</strong> Open your browser and manually go to <strong>http://lumina.hub:8000</strong>.</li><li><strong>App won’t install?</strong> Go to Settings > Security and enable “Install from Unknown Sources”. Then try again.</li><li><strong>App is slow or crashing?</strong> Close other apps, restart EduMesh, or clear app data from Android Settings and reinstall.</li>",
+    "welcome.guide.using_app_body": "<p style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;margin-bottom:0.75rem;\">The EduMesh app has four tabs at the bottom:</p><ul style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;padding-left:1.25rem;\"><li><strong>Dashboard</strong> — See your study stats, recent activity, and quick-access resources.</li><li><strong>Browse</strong> — Explore all available resources by subject or grade. Search by keyword.</li><li><strong>Saved</strong> — View resources you’ve bookmarked or downloaded for offline use.</li><li><strong>Profile</strong> — View your weekly study time, streak, and saved resource count.</li></ul>",
+    "welcome.hero.subtitle": "Access textbooks, videos, and study materials from the local mesh — no internet required.",
+    "welcome.hero.title": "Your Offline Learning Network",
+    "welcome.invalid_creds": "Invalid credentials. Please try again.",
+    "welcome.password": "Password",
+    "welcome.signin": "Sign In",
+    "welcome.step1": "Tap <strong>Download App</strong> in the top-right corner.",
+    "welcome.step2": "Install the EduMesh app on your phone.",
+    "welcome.step3": "Open the app to browse and download all available resources.",
+    "welcome.storage": "Storage",
+    "welcome.storage.used": "{used} GB / {total} GB used",
+    "welcome.storage_error": "Error loading storage info",
+    "welcome.system_error": "Error loading system info",
+    "welcome.teacher_login": "Educator Access",
+    "welcome.teacher_subtitle": "Manage resources and monitor the mesh network.",
+    "welcome.teacher_title": "Teacher Login",
+    "welcome.tracking_privacy": "Study Tracking &amp; Privacy",
+    "welcome.troubleshooting": "Troubleshooting",
+    "welcome.unavailable": "Unavailable",
+    "welcome.username": "Username",
+    "welcome.using_app": "Using the App",
+    "welcome.vitals": "Hub Vitals",
+    "welcome.courses_title": "Courses",
+    "welcome.published": "Published",
+    "welcome.drafts": "Drafts",
+    "welcome.quick_stats": "Quick Stats",
+    "welcome.stat_students": "Students",
+    "welcome.stat_resources": "Resources",
+    "welcome.stat_subjects": "Subjects",
+    "welcome.uptime": "Uptime",
+    "welcome.what_is": "What is Lumina Hub?",
+    "welcome.what_is_body": "Lumina Hub is a local mesh server that delivers educational resources — textbooks, lecture videos, and past papers — directly to your device without using cellular data or internet.",
+    "welcome_loading": "Loading…",
   }
 };
 /**
@@ -206,7 +716,7 @@ function __(key, params) {
 async function loadTranslations(code) {
     if (TRANSLATIONS[code] && code !== 'en') { applyLanguage(); return; }
     try {
-        const res = await fetch('/static/lang/' + code + '.json');
+        const res = await fetch('/static/lang/' + code + '.json', { credentials: 'include' });
         if (res.ok) {
             const data = await res.json();
             if (!TRANSLATIONS[code]) TRANSLATIONS[code] = {};
@@ -215,7 +725,7 @@ async function loadTranslations(code) {
             }
         }
         // Always ensure English fallback is fully loaded from en.json
-        const enRes = await fetch('/static/lang/en.json');
+        const enRes = await fetch('/static/lang/en.json', { credentials: 'include' });
         if (enRes.ok) {
             const enData = await enRes.json();
             if (!TRANSLATIONS.en) TRANSLATIONS.en = {};
@@ -244,6 +754,14 @@ function applyLanguage() {
                 el.setAttribute('placeholder', translated);
             } else if (el.tagName === 'META') {
                 el.setAttribute('content', translated);
+            } else if (el.children.length > 0) {
+                // Has child elements (e.g. SVG icons) — find and update the trailing text node
+                var last = el.lastChild;
+                if (last && last.nodeType === 3) {
+                    last.textContent = ' ' + translated;
+                } else {
+                    el.appendChild(document.createTextNode(' ' + translated));
+                }
             } else {
                 el.textContent = translated;
             }
@@ -326,10 +844,26 @@ function initLangPicker() {
 
     const wrap = document.createElement('div');
     wrap.id = 'langPickerWrap';
-    wrap.style.cssText = 'position:fixed;top:0.75rem;right:3.5rem;z-index:500;';
+    wrap.style.cssText = 'position:fixed;top:0.75rem;right:0.75rem;z-index:500;display:flex;align-items:center;gap:0.5rem;';
     const style = document.createElement('style');
     style.textContent = '.lang-option:hover{background:var(--outline)!important}.lang-option.active-lang,.lang-option.active-lang:hover{background:var(--teal)!important;color:#fff!important}';
     document.head.appendChild(style);
+
+    // Dark mode toggle button
+    const themeBtn = document.createElement('button');
+    themeBtn.id = 'themeToggleBtn';
+    themeBtn.style.cssText = 'height:36px;width:36px;border-radius:18px;border:1px solid var(--outline);background:var(--bg-surface);color:var(--text-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.08);transition:all 0.2s;';
+    function updateThemeIcon() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        themeBtn.innerHTML = isDark
+            ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+            : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    }
+    updateThemeIcon();
+    themeBtn.addEventListener('click', function() { toggleTheme(); updateThemeIcon(); });
+    themeBtn.addEventListener('mouseenter', function(){ themeBtn.style.background = 'var(--outline)'; });
+    themeBtn.addEventListener('mouseleave', function(){ themeBtn.style.background = 'var(--bg-surface)'; });
+    wrap.appendChild(themeBtn);
 
     const btn = document.createElement('button');
     btn.id = 'langPickerBtn';
@@ -489,11 +1023,13 @@ function showNotification(notifId, msg, isError) {
  * Render the logged-in user display in the sidebar.
  * Shared between the synchronous cached render and the async whoami fetch.
  * @param {string} username
+ * @param {string} [role] - Optional role (admin/teacher)
  * @returns {void}
  */
-function renderUserInfo(username) {
-    const el = document.getElementById('userInfo');
-    if (el) el.innerHTML = '<div style="font-weight: 800; font-size: 1rem; color: #fff; letter-spacing: -0.015em;">' + esc(username) + '</div>';
+function renderUserInfo(username, role) {
+    var el = document.getElementById('userInfo');
+    if (!el || !role) return;
+    el.innerHTML = '<div style="font-weight: 800; font-size: 1rem; color: #fff; letter-spacing: -0.015em;">' + esc(role.toUpperCase()) + '</div>';
 }
 
 /**
@@ -521,14 +1057,16 @@ function showConfirm(title, message, isDanger, confirmText) {
             confirmBtn.style.background = 'var(--danger)';
             confirmBtn.style.borderColor = 'var(--danger)';
             iconEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>';
-            iconEl.style.background = 'rgba(239, 68, 68, 0.1)';
+            iconEl.style.background = 'transparent';
             iconEl.style.color = 'var(--danger)';
+            modal.firstElementChild.style.border = '2px solid var(--danger)';
         } else {
             confirmBtn.style.background = 'var(--teal)';
             confirmBtn.style.borderColor = 'var(--teal)';
             iconEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 16 16 12 12 8"></polyline><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
-            iconEl.style.background = 'rgba(0, 112, 131, 0.1)';
+            iconEl.style.background = 'transparent';
             iconEl.style.color = 'var(--teal)';
+            modal.firstElementChild.style.border = '1px solid var(--outline)';
         }
         if (confirmText) confirmBtn.innerText = confirmText;
         modal.classList.remove('hidden');
@@ -581,9 +1119,11 @@ let adminDefaultEnabled = true;
  */
 (function renderCachedUser() {
     const cached = sessionStorage.getItem('lumina-user');
+    const cachedRole = sessionStorage.getItem('lumina-role');
     if (cached) {
         loggedInUser = cached;
-        renderUserInfo(cached);
+        userRole = cachedRole || 'admin';
+        renderUserInfo(cached, cachedRole);
     }
 })();
 
@@ -601,7 +1141,7 @@ let adminDefaultEnabled = true;
  */
 async function loadWhoAmI() {
     try {
-        const res = await fetch('/whoami');
+        const res = await fetch('/whoami', { credentials: 'include' });
         if (!res.ok) {
             window.location.href = '/static/error?reason=session_expired';
             return;
@@ -610,7 +1150,9 @@ async function loadWhoAmI() {
         loggedInUser = data.username;
         userRole = data.role;
         sessionStorage.setItem('lumina-user', data.username);
-        renderUserInfo(data.username);
+        sessionStorage.setItem('lumina-role', data.role);
+        renderUserInfo(data.username, data.role);
+        renderLayout();
     } catch (e) {
         console.error('Error loading whoami info', e);
     }
@@ -623,7 +1165,7 @@ async function loadWhoAmI() {
  */
 async function checkSelfResetRequired() {
     try {
-        var res = await fetch('/teacher/me');
+        var res = await fetch('/teacher/me', { credentials: 'same-origin' });
         if (res.ok) {
             var me = await res.json();
             loggedInUser = me.username;
@@ -685,7 +1227,6 @@ function toggleMobileMenu() {
  * @param {string} navId - The DOM id of the nav item to highlight (e.g. 'nav-home').
  * @returns {void}
  */
-/* ── Sidebar + Bottom Nav Layout (removes ~1000 lines of duplicated HTML) ──── */
 
 /**
  * Renders the sidebar (<aside>) and bottom nav (#bottomNav) into their container
@@ -695,26 +1236,19 @@ function toggleMobileMenu() {
 function renderLayout() {
     var aside = document.querySelector('aside');
     var bottomNav = document.getElementById('bottomNav');
-    if (!aside || !bottomNav) return;
-
-    // Render mobile header + overlay if not already present
-    if (!document.querySelector('.mobile-header')) {
-        var body = document.body;
-        var header = document.createElement('header');
-        header.className = 'mobile-header';
-        header.innerHTML = '<div class="mobile-brand-horizontal"><img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina"><img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="max-width:100%;height:32px;max-height:36px;" alt="Lumina"></div><button class="menu-toggle" id="btn-toggleMobileMenu" data-i18n-aria-label="sidebar.toggle_menu" aria-label="Toggle Menu"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>';
-        var overlay = document.createElement('div');
-        overlay.className = 'mobile-overlay';
-        overlay.id = 'overlay-toggleMobileMenu';
-        body.insertBefore(overlay, body.firstChild);
-        body.insertBefore(header, overlay);
+    if (!aside) return;
+    // Create bottomNav if missing (static pages don't have it)
+    if (!bottomNav) {
+        bottomNav = document.createElement('div');
+        bottomNav.id = 'bottomNav';
+        bottomNav.className = 'bottom-nav';
+        document.body.appendChild(bottomNav);
     }
 
-    // Skip if already rendered (backward compat with pages still carrying static HTML)
-    if (aside.querySelector('.sidebar-brand-horizontal')) return;
+    // Always re-render (role may have changed since last render)
 
     var path = location.pathname.replace(/\/+$/, '');
-    var mapping = { '/static/index':'home','/static/courses':'courses','/static/manage-content':'content','/static/manage-security':'security','/static/students':'students','/static/student-detail':'students','/static/manage-help':'help','/static/manage-danger':'danger','/static/manage-settings':'settings' };
+    var mapping = { '/static/index':'home','/static/courses':'courses','/static/manage-content':'content','/static/manage-security':'security','/static/students':'students','/static/student-detail':'students','/static/manage-help':'help','/static/manage-danger':'danger' };
     var key = mapping[path] || '';
     var useAccount = key === 'security' && path === '/static/manage-security';
 
@@ -728,19 +1262,19 @@ function renderLayout() {
     var USERS_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
     var HELP_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>';
     var DANGER_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="danger-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>';
-    var GEAR_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
     var LOGOUT_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>';
 
     var navList = [
         { k:'home',     href:'/static/index',               svg:HOME_SVG,      sideLabel:'Home',           botLabel:'Home' },
-        { k:'courses',  href:'/static/courses',             svg:COURSES_SVG,   sideLabel:'Courses',        botLabel:'Courses' },
         { k:'content',  href:'/static/manage-content',      svg:FILE_SVG,      sideLabel:'Content Manager',botLabel:'Content' },
+        { k:'courses',  href:'/static/courses',             svg:COURSES_SVG,   sideLabel:'Courses',        botLabel:'Courses' },
         { k:'security', href:'/static/manage-security',     svg:LOCK_SVG,   sideLabel:'Account',        botLabel:'Account' },
         { k:'students', href:'/static/students',            svg:USERS_SVG,  sideLabel:'Students',       botLabel:'Students' },
         { k:'help',     href:'/static/manage-help#teacher-guide',svg:HELP_SVG,sideLabel:'Teacher Guide', botLabel:'Guide' },
-        { k:'danger',   href:'/static/manage-danger',       svg:DANGER_SVG, sideLabel:'Danger Zone',    botLabel:'Danger' },
-        { k:'settings', href:'/static/manage-settings',     svg:GEAR_SVG,   sideLabel:'Settings',       botLabel:'Settings' },
     ];
+    if (userRole === 'admin') {
+        navList.push({ k:'danger',   href:'/static/manage-danger',       svg:DANGER_SVG, sideLabel:'Danger Zone',    botLabel:'Danger' });
+    }
 
     var sbNav = '', btmNav = '';
     for (var i = 0; i < navList.length; i++) {
@@ -761,21 +1295,11 @@ function renderLayout() {
         '<div class="sidebar-divider"></div>' +
         '<nav>\n            ' + sbNav + '</nav>' +
         '<div class="nav-spacer"></div>' +
-        '<div class="theme-toggle" id="btn-toggleTheme">' +
-            '<svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>' +
-            '<span id="themeLabel" data-i18n="sidebar.dark_mode">Dark Mode</span>' +
-        '</div>' +
-        '<a href="/logout" class="nav-logout">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
+        '<a href="/logout" class="nav-logout" onclick="sessionStorage.clear()">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
 
     // bottom nav gets a logout item at the end
-    btmNav += '<a href="/logout" class="bottom-nav-item" id="bottom-nav-logout">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
+    btmNav += '<a href="/logout" class="bottom-nav-item" id="bottom-nav-logout" onclick="sessionStorage.clear()">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
     bottomNav.innerHTML = btmNav;
-
-    // Wire theme toggle (static pages already have inline onclick)
-    var toggle = document.getElementById('btn-toggleTheme');
-    if (toggle && !toggle.getAttribute('onclick')) {
-        toggle.addEventListener('click', toggleTheme);
-    }
 }
 
 /**
@@ -787,7 +1311,7 @@ function renderModals() {
 
     var confirmModal = document.createElement('div');
     confirmModal.id = 'globalConfirmModal';
-    confirmModal.className = 'hidden';
+    confirmModal.className = 'hidden popup';
     confirmModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 30000; transition: all 0.3s ease;';
     confirmModal.innerHTML =
         '<div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.25rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">' +
@@ -800,7 +1324,7 @@ function renderModals() {
 
     var resetModal = document.createElement('div');
     resetModal.id = 'forceResetModal';
-    resetModal.className = 'hidden';
+    resetModal.className = 'hidden popup';
     resetModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20000;';
     resetModal.innerHTML =
         '<div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.5rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">' +
@@ -838,7 +1362,6 @@ function initNav() {
         '/static/student-detail': 'students',
         '/static/manage-help': 'help',
         '/static/manage-danger': 'danger',
-        '/static/manage-settings': 'settings',
     };
     const key = mapping[path] || '';
     if (key) {
@@ -856,18 +1379,19 @@ function initNav() {
 
 /* ── SPA Navigation ────────────────────────────────────────────────────────── */
 const _pageInitRegistry = {};
+let _isNavigating = false;
 
 function initCurrentPage() {
     const path = location.pathname.replace(/\/+$/, '');
     const mapping = {
         '/static/index': 'home',
+        '/static/courses': 'courses',
         '/static/manage-content': 'content',
         '/static/manage-security': 'security',
         '/static/students': 'students',
-        '/static/student-detail': 'students',
+        '/static/student-detail': 'student-detail',
         '/static/manage-help': 'help',
         '/static/manage-danger': 'danger',
-        '/static/manage-settings': 'settings',
     };
     const key = mapping[path];
     if (key && _pageInitRegistry[key]) _pageInitRegistry[key]();
@@ -876,8 +1400,10 @@ function initCurrentPage() {
 async function navigateTo(url, pushHistory) {
     if (pushHistory === undefined) pushHistory = true;
     if (url === location.href) return;
+    if (_isNavigating) return; // prevent concurrent navigation
+    _isNavigating = true;
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, { credentials: 'include' });
         if (!res.ok) { window.location.href = url; return; }
         const html = await res.text();
         const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -888,10 +1414,19 @@ async function navigateTo(url, pushHistory) {
         const newTitle = doc.querySelector('title');
         if (newTitle) document.title = newTitle.textContent;
         initNav();
+        await loadTranslations(currentLang);
         applyLanguage();
+        // Re-evaluate inline scripts from fetched page to register page inits
+        doc.querySelectorAll('script').forEach(function(script) {
+            if (!script.src) { try { eval(script.textContent); } catch(e) {} }
+        });
+        loadWhoAmI();
         initCurrentPage();
     } catch (e) {
+        console.error('SPA navigation failed:', e);
         window.location.href = url;
+    } finally {
+        _isNavigating = false;
     }
 }
 
@@ -900,13 +1435,34 @@ window.addEventListener('popstate', function(e) {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    initNav();
-    renderModals();
-    if (!document.getElementById('welcomeLangBtn') && !document.querySelector('.lang-nav-wrap')) {
-        initLangPicker();
+    try {
+        initNav();
+        renderModals();
+        if (!document.getElementById('welcomeLangBtn') && !document.querySelector('.lang-nav-wrap')) {
+            initLangPicker();
+        }
+    } catch(e) {
+        console.error('DOMContentLoaded init error:', e);
     }
-    loadTranslations(currentLang);
-    initCurrentPage();
+
+    loadTranslations(currentLang).then(function() {
+        applyLanguage();
+        if (document.getElementById('app-content')) {
+            loadWhoAmI();
+        }
+        initCurrentPage();
+    }).catch(function(e) {
+        console.error('DOMContentLoaded loadTranslations error:', e);
+        applyLanguage();
+        if (document.getElementById('app-content')) {
+            loadWhoAmI();
+        }
+        initCurrentPage();
+    });
+
+    // Global mobile menu toggle (works for both JS-created and static buttons)
+    document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
+    document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
 });
 
 /* Intercept sidebar and bottom-nav nav clicks for SPA */

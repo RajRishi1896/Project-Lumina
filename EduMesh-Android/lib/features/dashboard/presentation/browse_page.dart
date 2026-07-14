@@ -9,6 +9,7 @@ import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'package:edumesh_android/shared/services/connectivity_service.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'course_player_page.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 class BrowsePage extends StatefulWidget {
   const BrowsePage({super.key});
@@ -96,6 +97,7 @@ class _BrowsePageState extends State<BrowsePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -118,11 +120,11 @@ class _BrowsePageState extends State<BrowsePage> {
                 children: [
                   Icon(Icons.error_outline, size: 48.sp, color: cs.error),
                   SizedBox(height: AppSpacing.md.h),
-                  Text('Could not load courses', style: tt.bodyLarge?.copyWith(color: cs.onSurface)),
+                  Text(l10n.browseCouldNotLoad, style: tt.bodyLarge?.copyWith(color: cs.onSurface)),
                   SizedBox(height: AppSpacing.sm.h),
                   Text(_error!, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                   SizedBox(height: AppSpacing.lg.h),
-                  FilledButton(onPressed: _loadData, child: const Text('Retry')),
+                  FilledButton(onPressed: _loadData, child: Text(l10n.errorRetryButton)),
                 ],
               ),
             ),
@@ -143,31 +145,31 @@ class _BrowsePageState extends State<BrowsePage> {
               SizedBox(height: AppSpacing.md.h),
 
               if (_enrolledCourses.isNotEmpty) ...[
-                _buildSectionHeader(cs, tt, 'My Courses'),
+                _buildSectionHeader(cs, tt, l10n.browseMyCourses),
                 SizedBox(height: AppSpacing.sm.h),
                 _buildEnrolledList(cs, tt),
                 SizedBox(height: AppSpacing.section.h),
               ],
 
               if (_recommended.isNotEmpty && !_showAll) ...[
-                _buildSectionHeader(cs, tt, 'Recommended for You'),
+                _buildSectionHeader(cs, tt, l10n.sectionRecommendedForYou),
                 SizedBox(height: AppSpacing.sm.h),
                 _buildHorizontalList(_recommended, cs, tt),
                 SizedBox(height: AppSpacing.section.h),
               ],
 
               if (_similarCourses.isNotEmpty && !_showAll) ...[
-                _buildSectionHeader(cs, tt, 'Similar Courses'),
+                _buildSectionHeader(cs, tt, l10n.browseSimilarCourses),
                 SizedBox(height: AppSpacing.sm.h),
                 _buildHorizontalList(_similarCourses, cs, tt),
                 SizedBox(height: AppSpacing.section.h),
               ],
 
-              _buildSectionHeader(cs, tt, 'All Courses',
+              _buildSectionHeader(cs, tt, l10n.browseAllCourses,
                 trailing: _recommended.isNotEmpty
                   ? TextButton(
                       onPressed: () => setState(() => _showAll = !_showAll),
-                      child: Text(_showAll ? 'Show Recommended' : 'Show All'),
+                      child: Text(_showAll ? l10n.browseShowRecommended : l10n.browseShowAll),
                     )
                   : null,
               ),
@@ -192,6 +194,7 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
   Widget _buildSearchBar(ColorScheme cs, TextTheme tt) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: EdgeInsets.only(top: AppSpacing.lg.h),
       child: TextField(
@@ -203,7 +206,7 @@ class _BrowsePageState extends State<BrowsePage> {
           });
         },
         decoration: InputDecoration(
-          hintText: 'Search courses...',
+          hintText: l10n.browseSearchHint,
           prefixIcon: Icon(Icons.search_rounded, color: cs.onSurfaceVariant),
           suffixIcon: _searchQuery.isNotEmpty
             ? IconButton(
@@ -227,6 +230,7 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
   Widget _buildEnrolledList(ColorScheme cs, TextTheme tt) {
+    final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       height: 200.h,
       child: ListView.separated(
@@ -272,7 +276,7 @@ class _BrowsePageState extends State<BrowsePage> {
                       SizedBox(height: AppSpacing.xs.h),
                       LinearProgressIndicator(value: pct, backgroundColor: cs.surfaceContainerHighest),
                       SizedBox(height: AppSpacing.xs.h),
-                      Text('$completedCount / $totalResources',
+                      Text(l10n.browseProgressFormat(completedCount, totalResources),
                         style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                       const Spacer(),
                       SizedBox(
@@ -283,7 +287,7 @@ class _BrowsePageState extends State<BrowsePage> {
                               builder: (_) => CoursePlayerPage(course: course),
                             ));
                           },
-                          child: const Text('Continue'),
+                          child: Text(l10n.buttonContinue),
                         ),
                       ),
                     ],
@@ -313,6 +317,7 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
   Widget _buildCourseCard(Course course, ColorScheme cs, TextTheme tt) {
+    final l10n = AppLocalizations.of(context)!;
     final isEnrolled = _enrolledCourses.any((e) => e.course.id == course.id);
     return Card(
       child: InkWell(
@@ -353,7 +358,7 @@ class _BrowsePageState extends State<BrowsePage> {
                   ),
                   SizedBox(width: AppSpacing.xs.w),
                   Chip(
-                    label: Text('Class ${course.grade}', style: tt.labelSmall),
+                    label: Text(l10n.browseClassLabel(course.grade), style: tt.labelSmall),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
@@ -370,7 +375,7 @@ class _BrowsePageState extends State<BrowsePage> {
                         builder: (_) => CoursePlayerPage(course: course),
                       ));
                     },
-                    child: const Text('Continue'),
+                    child: Text(l10n.buttonContinue),
                   ),
                 )
               else
@@ -381,7 +386,7 @@ class _BrowsePageState extends State<BrowsePage> {
                       await CourseService().enroll(course.id);
                       if (mounted) await _loadData();
                     },
-                    child: const Text('Enroll'),
+                    child: Text(l10n.browseEnroll),
                   ),
                 ),
             ],
@@ -392,6 +397,7 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
   Widget _buildAllCoursesList(ColorScheme cs, TextTheme tt) {
+    final l10n = AppLocalizations.of(context)!;
     final courses = _filteredCourses;
     if (courses.isEmpty) {
       return Padding(
@@ -401,7 +407,7 @@ class _BrowsePageState extends State<BrowsePage> {
             children: [
               Icon(Icons.search_off, size: 40.sp, color: cs.onSurfaceVariant),
               SizedBox(height: AppSpacing.md.h),
-              Text(_searchQuery.isNotEmpty ? 'No matching courses' : 'No courses available',
+              Text(_searchQuery.isNotEmpty ? l10n.browseNoMatchingCourses : l10n.browseNoCoursesAvailable,
                 style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
             ],
           ),

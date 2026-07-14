@@ -108,7 +108,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
         _startTimer();
       } else {
         setState(() {
-          _error = 'Failed to load quiz';
+          _error = 'load_failed';
           _loading = false;
         });
       }
@@ -265,7 +265,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
               children: [
                 Icon(Icons.error_outline, size: 48.sp, color: cs.error),
                 SizedBox(height: AppSpacing.md.h),
-                Text(_error!, style: tt.bodyLarge),
+                Text(_error == 'load_failed' ? l10n.quizLoadingError : _error!, style: tt.bodyLarge),
                 SizedBox(height: AppSpacing.lg.h),
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -278,18 +278,18 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       );
     }
     if (_quiz == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: Text('Quiz not available'),
+          child: Text(l10n.quizNotAvailable),
         ),
       );
     }
 
-    if (_showResults) return _buildResultsScreen(cs, tt);
-    return _buildQuizScreen(cs, tt);
+    if (_showResults) return _buildResultsScreen(cs, tt, l10n);
+    return _buildQuizScreen(cs, tt, l10n);
   }
 
-  Widget _buildQuizScreen(ColorScheme cs, TextTheme tt) {
+  Widget _buildQuizScreen(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final answeredCount = _questions.length -
         _questions
             .where((q) {
@@ -307,12 +307,12 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
         child: SafeArea(
           child: Column(
             children: [
-              _buildAppBar(cs, tt, answeredCount),
+              _buildAppBar(cs, tt, answeredCount, l10n),
               Expanded(
                 child: _buildQuestionCard(
-                    _questions[_currentIndex], cs, tt),
+                    _questions[_currentIndex], cs, tt, l10n),
               ),
-              _buildBottomNav(cs, tt),
+              _buildBottomNav(cs, tt, l10n),
             ],
           ),
         ),
@@ -320,7 +320,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     );
   }
 
-  Widget _buildAppBar(ColorScheme cs, TextTheme tt, int answeredCount) {
+  Widget _buildAppBar(ColorScheme cs, TextTheme tt, int answeredCount, AppLocalizations l10n) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.lg.w,
@@ -344,7 +344,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                 ),
                 SizedBox(height: AppSpacing.xs.h),
                 Text(
-                  'Question ${_currentIndex + 1} of ${_questions.length}',
+                  l10n.quizQuestionOf(_currentIndex + 1, _questions.length),
                   style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                 ),
               ],
@@ -393,7 +393,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     );
   }
 
-  Widget _buildQuestionCard(QuizQuestion q, ColorScheme cs, TextTheme tt) {
+  Widget _buildQuestionCard(QuizQuestion q, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(AppSpacing.lg.w),
       child: Card(
@@ -402,7 +402,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildQuestionTypeBadge(q.type, cs, tt),
+              _buildQuestionTypeBadge(q.type, cs, tt, l10n),
               SizedBox(height: AppSpacing.md.h),
               if (q.image != null) ...[
                 ClipRRect(
@@ -425,7 +425,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                 ),
               ),
               SizedBox(height: AppSpacing.lg.h),
-              ..._buildOptions(q, cs, tt),
+              ..._buildOptions(q, cs, tt, l10n),
             ],
           ),
         ),
@@ -434,21 +434,21 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   }
 
   Widget _buildQuestionTypeBadge(
-      QuizQuestionType type, ColorScheme cs, TextTheme tt) {
+      QuizQuestionType type, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     String label;
     IconData icon;
     switch (type) {
       case QuizQuestionType.mcq:
-        label = 'Multiple Choice';
+        label = l10n.quizTypeMcq;
         icon = Icons.radio_button_checked;
       case QuizQuestionType.trueFalse:
-        label = 'True / False';
+        label = l10n.quizTypeTrueFalse;
         icon = Icons.toggle_on;
       case QuizQuestionType.fillBlanks:
-        label = 'Fill in the Blanks';
+        label = l10n.quizTypeFillBlanks;
         icon = Icons.edit_note;
       case QuizQuestionType.multiSelect:
-        label = 'Multi-Select';
+        label = l10n.quizTypeMultiSelect;
         icon = Icons.check_box;
     }
 
@@ -477,7 +477,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     );
   }
 
-  List<Widget> _buildOptions(QuizQuestion q, ColorScheme cs, TextTheme tt) {
+  List<Widget> _buildOptions(QuizQuestion q, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     switch (q.type) {
       case QuizQuestionType.mcq:
         return [
@@ -516,7 +516,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
             onChanged: (v) =>
                 setState(() => _answers[_currentIndex] = v),
             child: Column(
-              children: ['True', 'False'].map((opt) {
+              children: [l10n.quizTrue, l10n.quizFalse].map((opt) {
                 return Padding(
                   padding: EdgeInsets.only(bottom: AppSpacing.sm.h),
                   child: RadioListTile<String>(
@@ -541,7 +541,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
           TextField(
             controller: _fillController,
             decoration: InputDecoration(
-              hintText: 'Type your answer here...',
+              hintText: l10n.quizFillBlanksHint,
               border: OutlineInputBorder(
                 borderRadius:
                     BorderRadius.circular(AppSpacing.radiusMd.r),
@@ -593,7 +593,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     }
   }
 
-  Widget _buildBottomNav(ColorScheme cs, TextTheme tt) {
+  Widget _buildBottomNav(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final isFirst = _currentIndex == 0;
     final isLast = _currentIndex == _questions.length - 1;
 
@@ -609,7 +609,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
             OutlinedButton.icon(
               onPressed: () => _goToQuestion(_currentIndex - 1),
               icon: Icon(Icons.chevron_left, size: 20.sp),
-              label: const Text('Previous'),
+              label: Text(l10n.quizPrevious),
             )
           else
             const SizedBox.shrink(),
@@ -623,20 +623,20 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
             FilledButton.icon(
               onPressed: _submitted ? null : _submitQuiz,
               icon: Icon(Icons.check, size: 20.sp),
-              label: const Text('Submit'),
+              label: Text(l10n.quizSubmit),
             )
           else
             FilledButton.icon(
               onPressed: () => _goToQuestion(_currentIndex + 1),
               icon: Icon(Icons.chevron_right, size: 20.sp),
-              label: const Text('Next'),
+              label: Text(l10n.quizNext),
             ),
         ],
       ),
     );
   }
 
-  Widget _buildResultsScreen(ColorScheme cs, TextTheme tt) {
+  Widget _buildResultsScreen(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     return Scaffold(
       body: SafeArea(
         child: PopScope(
@@ -649,10 +649,10 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                   child: Column(
                     children: [
                       SizedBox(height: AppSpacing.section.h),
-                      _buildScoreCircle(cs, tt),
+                      _buildScoreCircle(cs, tt, l10n),
                       SizedBox(height: AppSpacing.lg.h),
                       Text(
-                        _passed ? 'Passed!' : 'Failed',
+                        _passed ? l10n.quizPassed : l10n.quizFailed,
                         style: tt.headlineSmall?.copyWith(
                           fontWeight: AppSpacing.weightDisplay,
                           color: _passed ? cs.primary : cs.error,
@@ -661,8 +661,8 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                       SizedBox(height: AppSpacing.sm.h),
                       Text(
                         _passed
-                            ? 'Great job! You passed the quiz.'
-                            : 'You did not pass. Review the questions below.',
+                            ? l10n.quizPassedMessage
+                            : l10n.quizFailedMessage,
                         style: tt.bodyMedium
                             ?.copyWith(color: cs.onSurfaceVariant),
                         textAlign: TextAlign.center,
@@ -670,14 +670,14 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                       SizedBox(height: AppSpacing.section.h),
                       ...List.generate(
                         _questions.length,
-                        (i) => _buildResultItem(i, cs, tt),
+                        (i) => _buildResultItem(i, cs, tt, l10n),
                       ),
                       SizedBox(height: AppSpacing.section.h),
                     ],
                   ),
                 ),
               ),
-              _buildResultsBottomBar(cs, tt),
+              _buildResultsBottomBar(cs, tt, l10n),
             ],
           ),
         ),
@@ -685,9 +685,10 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     );
   }
 
-  Widget _buildScoreCircle(ColorScheme cs, TextTheme tt) {
+  Widget _buildScoreCircle(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final pct = (_score * 100).round();
     final size = 140.r;
+    final correctCount = _correctAnswers.values.where((v) => v).length;
     return SizedBox(
       width: size,
       height: size,
@@ -716,7 +717,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                 ),
               ),
               Text(
-                '${_correctAnswers.values.where((v) => v).length} / ${_questions.length}',
+                l10n.quizScoreFraction(correctCount, _questions.length),
                 style: tt.bodySmall?.copyWith(
                   color: cs.onSurfaceVariant,
                 ),
@@ -728,7 +729,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     );
   }
 
-  Widget _buildResultItem(int index, ColorScheme cs, TextTheme tt) {
+  Widget _buildResultItem(int index, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final q = _questions[index];
     final correct = _correctAnswers[index] ?? false;
 
@@ -754,7 +755,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Question ${index + 1}',
+                          l10n.quizQuestionLabel(index + 1),
                           style: tt.labelSmall?.copyWith(
                             color: cs.onSurfaceVariant,
                           ),
@@ -781,7 +782,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                         BorderRadius.circular(AppSpacing.radiusSm.r),
                   ),
                   child: Text(
-                    'Explanation: ${q.explanation}',
+                    l10n.quizExplanation(q.explanation ?? ''),
                     style: tt.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
                     ),
@@ -795,7 +796,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     );
   }
 
-  Widget _buildResultsBottomBar(ColorScheme cs, TextTheme tt) {
+  Widget _buildResultsBottomBar(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     return Container(
       padding: EdgeInsets.all(AppSpacing.md.w),
       decoration: BoxDecoration(
@@ -807,7 +808,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
           width: double.infinity,
           child: FilledButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Back to Course'),
+            child: Text(l10n.quizBackToCourse),
           ),
         ),
       ),

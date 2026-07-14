@@ -29,7 +29,7 @@ class SavedResourcesPage extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return DefaultTabController(
-      length: 5,
+      length: 4,
       child: Scaffold(
         backgroundColor: cs.surface,
         appBar: AppBar(
@@ -51,7 +51,6 @@ class SavedResourcesPage extends StatelessWidget {
               Tab(text: l10n.tabTextbooks),
               Tab(text: l10n.tabVideos),
               Tab(text: l10n.tabPyqs),
-              Tab(text: l10n.tabNotes),
             ],
           ),
         ),
@@ -61,7 +60,6 @@ class SavedResourcesPage extends StatelessWidget {
             _SavedListByType(type: ResourceType.textbook),
             _SavedListByType(type: ResourceType.videos),
             _SavedListByType(type: ResourceType.pyq),
-            _SavedListByType(type: ResourceType.notes),
           ],
         ),
       ),

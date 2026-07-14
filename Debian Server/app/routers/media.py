@@ -108,7 +108,7 @@ def _find_video_thumb_time(file_path: str, max_search: int = 30) -> float:
             description="Returns a cached or generated thumbnail for a resource. Supports PDF (via PyMuPDF) and video (via ffmpeg with black-intro skip).",
             tags=["Resources"],
             responses={404: {"description": "Resource, file, or thumbnail not found"}, 500: {"description": "Thumbnail generation error"}})
-async def resource_thumbnail(resource_id: int):
+async def resource_thumbnail(resource_id: str):
     """Get a thumbnail image for a resource.
 
     Args:

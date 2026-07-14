@@ -25,13 +25,13 @@ class DBHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 10, onCreate: _createDB, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 12, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   Future _createDB(Database db, int version) async {
     await db.execute('''
       CREATE TABLE resources (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY,
         path TEXT UNIQUE,
         title TEXT,
         type TEXT
@@ -41,7 +41,7 @@ class DBHelper {
     await db.execute('''
       CREATE TABLE activity (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        resource_id INTEGER,
+        resource_id TEXT,
         date TEXT,
         subject TEXT,
         seconds INTEGER
@@ -184,6 +184,24 @@ class DBHelper {
     ''');
 
     await db.execute('''
+      CREATE TABLE IF NOT EXISTS zim_archives_local (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        article_count INTEGER DEFAULT 0,
+        language TEXT DEFAULT 'en'
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS zim_articles_local (
+        article_id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        archive_id TEXT,
+        has_thumbnail INTEGER DEFAULT 0,
+        is_downloaded INTEGER DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
       CREATE INDEX IF NOT EXISTS idx_cr_course_id ON course_resources(course_id)
     ''');
     await db.execute('''
@@ -308,6 +326,45 @@ class DBHelper {
     await db.delete('pending_downloads');
   }
 
+  Future<void> upsertZimArticle(String articleId, String title, String archiveId, {bool hasThumbnail = false}) async {
+    final db = await database;
+    await db.insert('zim_articles_local', {
+      'article_id': articleId,
+      'title': title,
+      'archive_id': archiveId,
+      'has_thumbnail': hasThumbnail ? 1 : 0,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> upsertZimArticlesBatch(List<Map<String, dynamic>> articles) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final a in articles) {
+        batch.insert('zim_articles_local', a, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getAllZimArticles() async {
+    final db = await database;
+    return await db.query('zim_articles_local');
+  }
+
+  Future<void> markZimArticleDownloaded(String articleId) async {
+    final db = await database;
+    await db.update('zim_articles_local', {'is_downloaded': 1},
+        where: 'article_id = ?', whereArgs: [articleId]);
+  }
+
+  Future<Set<String>> getDownloadedZimArticleIds() async {
+    final db = await database;
+    final rows = await db.query('zim_articles_local',
+        columns: ['article_id'], where: 'is_downloaded = 1');
+    return rows.map((r) => r['article_id'] as String).toSet();
+  }
+
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     for (var v = oldVersion + 1; v <= newVersion; v++) {
       if (v == 2) {
@@ -403,6 +460,35 @@ class DBHelper {
         try { await db.execute('CREATE INDEX IF NOT EXISTS idx_cr_course_id ON course_resources(course_id)'); } catch (_) {}
         try { await db.execute('CREATE INDEX IF NOT EXISTS idx_cp_student ON course_progress(student_id)'); } catch (_) {}
         try { await db.execute('CREATE INDEX IF NOT EXISTS idx_qa_student ON quiz_attempts(student_id)'); } catch (_) {}
+      }
+      if (v >= 11) {
+        try { await db.execute('CREATE TABLE IF NOT EXISTS zim_archives_local (id TEXT PRIMARY KEY, title TEXT NOT NULL, article_count INTEGER DEFAULT 0, language TEXT DEFAULT \'en\')'); } catch (_) {}
+        try { await db.execute('CREATE TABLE IF NOT EXISTS zim_articles_local (article_id TEXT PRIMARY KEY, title TEXT NOT NULL, archive_id TEXT, has_thumbnail INTEGER DEFAULT 0, is_downloaded INTEGER DEFAULT 0)'); } catch (_) {}
+      }
+      if (v == 12) {
+        try {
+          await db.execute('DROP TABLE IF EXISTS resources');
+          await db.execute('''
+            CREATE TABLE resources (
+              id TEXT PRIMARY KEY,
+              path TEXT UNIQUE,
+              title TEXT,
+              type TEXT
+            )
+          ''');
+        } catch (_) {}
+        try {
+          await db.execute('DROP TABLE IF EXISTS activity');
+          await db.execute('''
+            CREATE TABLE activity (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              resource_id TEXT,
+              date TEXT,
+              subject TEXT,
+              seconds INTEGER
+            )
+          ''');
+        } catch (_) {}
       }
     }
   }

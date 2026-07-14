@@ -77,26 +77,34 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
     super.dispose();
   }
 
+  Timer? _queueThrottle;
+
   void _onQueueChanged() {
     if (mounted) setState(() {});
-    DBHelper().getDownloadedIds().then((ids) {
-      if (mounted) setState(() => _downloadedIds = ids);
+    // ponytail: throttle DB query to max once per 3s during active downloads.
+    _queueThrottle?.cancel();
+    _queueThrottle = Timer(const Duration(seconds: 3), () {
+      DBHelper().getDownloadedIds().then((ids) {
+        if (mounted) setState(() => _downloadedIds = ids);
+      });
     });
   }
 
   Future<void> _loadResources() async {
     try {
-      final resp = await ApiClient.get('/resources');
+      final targetType = _resolveType(widget.resourceType);
+      final queryParams = <String, String>{
+        'subject': widget.subject,
+        'resource_type': targetType,
+      };
+      if (widget.grade.isNotEmpty) {
+        queryParams['grade'] = widget.grade;
+      }
+      final resp = await ApiClient.get('/resources', queryParameters: queryParams);
       if (!mounted) return;
       final all = (resp.data as List?)?.cast<Map<String, dynamic>>() ?? [];
-      final parsed = all.map((j) => ResourceModel.fromJson(j)).toList();
-      final targetType = _resolveType(widget.resourceType);
       setState(() {
-        items = parsed.where((r) =>
-          r.subject == widget.subject &&
-          r.grade == widget.grade &&
-          r.type.name == targetType
-        ).toList();
+        items = all.map((j) => ResourceModel.fromJson(j)).toList();
         _loading = false;
       });
       return;
@@ -385,7 +393,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                       final dlPath = '${tempDir.path}/update_${item.id}_${DateTime.now().millisecondsSinceEpoch}.tmp';
                                       try {
                                         await ApiClient.ensureInitialized();
-                                        await ApiClient.dio.download(widget.resourceType == 'textbooks' || widget.resourceType == 'notes' || widget.resourceType == 'pyqs' ? item.pdfUrl! : item.pdfUrl!, dlPath);
+                                        await ApiClient.dio.download(widget.resourceType == 'textbooks' || widget.resourceType == 'pyqs' ? item.pdfUrl! : item.pdfUrl!, dlPath);
                                         final oldPath = match.first['local_path'] as String?;
                                         final newPath = oldPath ?? dlPath;
                                         if (oldPath != null) {
@@ -466,40 +474,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                 ),
                               ),
                             ),
-                            if (item.notes != null && item.notes!.trim().isNotEmpty)
-                              Padding(
-                                padding: EdgeInsets.fromLTRB(AppSpacing.lg.w, 0, AppSpacing.lg.w, AppSpacing.sm.h),
-                                child: Card(
-                                  color: cs.tertiaryContainer,
-                                  margin: EdgeInsets.zero,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border(
-                                        left: BorderSide(color: cs.tertiary, width: 4),
-                                      ),
-                                    ),
-                                    padding: EdgeInsets.all(AppSpacing.md.w),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          l10n.teacherNotes,
-                                          style: tt.labelLarge?.copyWith(
-                                            color: cs.onTertiaryContainer,
-                                            fontWeight: AppSpacing.weightStrong,
-                                          ),
-                                        ),
-                                        SizedBox(height: AppSpacing.xs.h),
-                                        Text(
-                                          item.notes!,
-                                          style: tt.bodyMedium?.copyWith(color: cs.onTertiaryContainer),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
+
                           ],
                         ),
                       ),

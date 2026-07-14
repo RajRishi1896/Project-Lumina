@@ -1,5 +1,5 @@
 """Pydantic models for the Lumina EduMesh Hub API."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
 
@@ -146,7 +146,7 @@ class SubjectResponse(BaseModel):
 
 class RestoreResponse(BaseModel):
     """Download history restore response."""
-    download_history: list = Field(default_factory=list, description="List of downloaded resource IDs.", example=[1, 2, 3])
+    download_history: list = Field(default_factory=list, description="List of downloaded resource IDs.", example=["RES-a1b2c3d4", "RES-e5f6g7h8"])
 
 
 class StudentAnalyticsResponse(BaseModel):
@@ -221,12 +221,13 @@ class SubjectCreateResponse(BaseModel):
 
 class GradeInfo(BaseModel):
     """Grade level info."""
+    id: str = Field(..., description="Grade ID.", example="GRD-a1b2c3d4")
     name: str = Field(..., description="Grade name.", example="Grade 10")
 
 
 class CatalogResourceResponse(BaseModel):
     """Resource catalog entry."""
-    id: int = Field(..., description="Resource ID.", example=1)
+    id: str = Field(..., description="Resource ID.", example="GRD-00000000-SUBJ-00000000-a1b2c3d4")
     title: str = Field(..., description="Resource title.", example="Chapter 1")
     pdfUrl: str = Field(..., description="File download URL.", example="/files/abc.pdf")
     type: str = Field(..., description="Resource type.", example="textbook")
@@ -234,7 +235,7 @@ class CatalogResourceResponse(BaseModel):
     grade: str = Field(..., description="Grade level.", example="10")
     mtime: float = Field(..., description="Last modified timestamp.", example=1234567890.0)
     downloads: int = Field(default=0, description="Number of unique student downloads.", example=12)
-    notes: Optional[str] = Field(default=None, description="Teacher note attached to the resource.", example="Cover this chapter after midterms.")
+    topic_name: str = Field(default="", description="Topic name if assigned.", example="Chapter 1")
 
 
 class FileEntryResponse(BaseModel):
@@ -300,6 +301,8 @@ class HubStatsResponse(BaseModel):
     scholars: int = Field(..., description="Total registered scholars.", example=42)
     resources: int = Field(..., description="Total resources.", example=100)
     subjects: int = Field(..., description="Total subjects.", example=8)
+    published_courses: int = Field(default=0, description="Published courses.", example=5)
+    draft_courses: int = Field(default=0, description="Draft courses.", example=3)
     storage: str = Field(..., description="Storage usage string.", example="4.5 GB / 100.0 GB")
     storage_percent: float = Field(..., description="Storage usage percentage.", example=4.5)
     battery_percent: int = Field(..., description="Battery percentage.", example=85)
@@ -312,10 +315,23 @@ class StudentListResponse(BaseModel):
     students: list = Field(default_factory=list, description="List of student summaries.", example=[{"name": "Alice", "grade": "Grade 10"}])
 
 
+class ZimArchiveResponse(BaseModel):
+    """Response for a ZIM archive listing."""
+    id: str = Field(..., description="Archive UUID.", example="abc123")
+    filename: str = Field(..., description="Server filename.", example="wikipedia_en_2024-11.zim")
+    title: str = Field(..., description="Archive title.", example="Wikipedia EN")
+    article_count: int = Field(..., description="Number of articles in the archive.", example=65000)
+    language: str = Field(..., description="ISO 639-1 language code.", example="en")
+    uploaded_at: str = Field(..., description="Upload timestamp (ISO 8601).", example="2026-07-01T12:00:00")
+    file_size: int = Field(..., description="File size in bytes.", example=524288000)
+
+
 class ZimArticleResponse(BaseModel):
     """ZIM article metadata."""
     article_id: str = Field(..., description="Article unique ID.", example="ABC123")
     title: str = Field(..., description="Article title.", example="Photosynthesis")
+    archive_id: str = Field(default="", description="ID of the archive this article belongs to.", example="abc123")
+    has_thumbnail: bool = Field(default=False, description="Whether a thumbnail exists on disk.", example=False)
 
 
 class ZimPageResponse(BaseModel):
@@ -328,6 +344,7 @@ class ZimPageResponse(BaseModel):
 
 class CourseCreate(BaseModel):
     """Payload for creating a new course."""
+    model_config = ConfigDict(extra='ignore')
     title: str = Field(..., description="Course title", max_length=120)
     description: str = Field("", description="Short summary")
     subject: str = Field("General", description="From approved subject taxonomy")
@@ -349,24 +366,6 @@ class CourseResponse(BaseModel):
     enrollment_count: int = 0
     created_at: str = ""
     updated_at: str = ""
-
-
-class CourseDetail(CourseResponse):
-    """Full course detail including resources and similar courses."""
-    resources: list = []
-    similar_courses: list = []
-
-
-class CourseResourceResponse(BaseModel):
-    """A resource item within a course."""
-    id: str
-    course_id: str
-    resource_type: str
-    title: str = ""
-    original_name: str = ""
-    filename: str = ""
-    file_size: int = 0
-    position: int = 0
 
 
 class ProgressSync(BaseModel):
@@ -416,20 +415,6 @@ class QuizAttemptResponse(BaseModel):
 class SimilarLinkCreate(BaseModel):
     """Payload to link a course as similar."""
     similar_course_id: str = Field(..., description="UUID of the course to link as similar")
-
-
-class SimilarLinkResponse(BaseModel):
-    """A similar-course link."""
-    course_id: str
-    similar_course_id: str
-    created_by: str = ""
-    created_at: str = ""
-
-
-class StatusResponse(BaseModel):
-    """Generic status response."""
-    status: str = "ok"
-    message: str = ""
 
 
 

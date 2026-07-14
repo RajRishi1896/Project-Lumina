@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
-    <script src="/static/js/lumina.js"></script>
+    <script src="/static/js/lumina.js?v=5"></script>
     <!-- Section: CSS Variables / Design Tokens -->
     <style>
         :root {
@@ -122,11 +122,12 @@
         .hero {
             padding: 5rem 5% 6rem;
             text-align: center;
-            background: linear-gradient(160deg, var(--primary) 0%, #0D3B66 100%);
+            background: var(--primary);
             color: #fff;
             position: relative;
             overflow: hidden;
         }
+        [data-theme="dark"] .hero { background: #29324D; }
         .hero::after {
             content: '';
             position: absolute;
@@ -185,7 +186,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: #94A3B8;
+            color: var(--text-secondary);
             margin-bottom: 1rem;
         }
 
@@ -214,13 +215,7 @@
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
-        .status-dot {
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: var(--success);
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
 
         /* === Progress Bars === */
         .meter { margin-bottom: 1rem; }
@@ -255,7 +250,7 @@
         }
         .info-card p {
             font-size: 0.875rem;
-            color: #64748B;
+            color: var(--text-muted);
             line-height: 1.7;
         }
         .steps {
@@ -299,7 +294,7 @@
         }
         .login-card .subtitle {
             font-size: 0.8125rem;
-            color: #94A3B8;
+            color: var(--text-secondary);
             margin-bottom: 1.25rem;
         }
         .login-card input {
@@ -333,7 +328,7 @@
             transform: translateY(-50%);
             background: none;
             border: none;
-            color: #94A3B8;
+            color: var(--text-secondary);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -350,7 +345,7 @@
         }
         .login-error {
             background: rgba(229, 62, 62, 0.1);
-            color: #E53E3E;
+            color: var(--danger);
             border: 1px solid rgba(229, 62, 62, 0.2);
             padding: 0.625rem;
             border-radius: var(--radius-sm);
@@ -397,7 +392,7 @@
         /* === Modal Overlay === */
         .modal-overlay { position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000; }
         .modal { background:var(--surface);border-radius:12px;padding:1.5rem;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3); }
-        .modal input:focus { outline:none;border-color:var(--teal); }
+        .modal input:focus { border-color:var(--teal); }
         .btn-primary { background:var(--teal);color:#fff;border:none;border-radius:6px;cursor:pointer; }
         .btn-primary:hover { background:#005A6A; }
         .btn-outline { background:transparent;border:1px solid var(--outline);border-radius:6px;cursor:pointer;color:var(--on-surface); }
@@ -406,7 +401,7 @@
         .welcome-lang-option:hover { background:var(--outline); }
         .welcome-lang-option.active { background:var(--teal);color:#fff; }
         .welcome-lang-option.active:hover { background:var(--teal);color:#fff; }
-        .lang-code-label { font-size:0.7rem;opacity:0.6; }
+        .lang-code-label { font-size:0.7rem;color:var(--text-secondary); }
     </style>
 </head>
 <body>
@@ -470,6 +465,31 @@
                         <span id="batteryText" data-i18n="welcome_loading">Loading…</span>
                     </div>
                     <div class="meter-bar"><div id="batteryFill" class="meter-fill"></div></div>
+                </div>
+            </div>
+
+            <!-- Quick Stats Card -->
+            <div class="card" style="margin-top:0.75rem;">
+                <div class="status-row">
+                    <h2 data-i18n="welcome.quick_stats">Quick Stats</h2>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;padding-top:0.25rem;">
+                    <div style="text-align:center;">
+                        <div style="font-size:1.25rem;font-weight:800;color:var(--teal);" id="statStudents">-</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);" data-i18n="welcome.stat_students">Students</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:1.25rem;font-weight:800;color:var(--teal);" id="statResources">-</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);" data-i18n="welcome.stat_resources">Resources</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:1.25rem;font-weight:800;color:var(--teal);" id="statSubjects">-</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);" data-i18n="welcome.stat_subjects">Subjects</div>
+                    </div>
+                </div>
+                <div style="margin-top:0.6rem;padding-top:0.5rem;border-top:1px solid var(--outline);display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:0.75rem;color:var(--text-muted);" data-i18n="welcome.uptime">Uptime</span>
+                    <span style="font-size:0.75rem;font-weight:700;" id="statUptime">-</span>
                 </div>
             </div>
         </div>
@@ -538,7 +558,7 @@
     </div>
 
         <!-- Name Setup Modal -->
-        <div id="namePromptModal" class="modal-overlay" style="display:none;">
+        <div id="namePromptModal" class="modal-overlay popup" style="display:none;">
             <div class="modal">
                 <h3 style="margin-bottom:0.75rem;" data-i18n="welcome.display_name_title">Set Your Display Name</h3>
                 <p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:1rem;" data-i18n="welcome.display_name_prompt">Please enter your display name to personalize your experience.</p>
@@ -591,22 +611,74 @@
          */
         async function fetchStats() {
             try {
-                const res = await fetch('/stats');
-                const data = await res.json();
+                var res = await fetch('/stats');
+                var data = await res.json();
 
-                const sFill = document.getElementById('storageFill');
-                document.getElementById('storageText').innerText = __('welcome.storage.used_pct', { pct: data.storage_used_gb || Math.round(data.storage_percent) });
-                sFill.style.width = `${data.storage_percent}%`;
-                sFill.style.background = getMeterColor(data.storage_percent, false);
+                var sFill = document.getElementById('storageFill');
+                var sText = document.getElementById('storageText');
+                if (sText) {
+                    try { sText.innerText = __('welcome.storage.used_pct', { pct: data.storage_used_gb || Math.round(data.storage_percent) }); }
+                    catch(_) { sText.innerText = Math.round(data.storage_percent) + '% used'; }
+                }
+                if (sFill) {
+                    sFill.style.width = data.storage_percent + '%';
+                    sFill.style.background = getMeterColor(data.storage_percent, false);
+                }
 
-                const bFill = document.getElementById('batteryFill');
-                document.getElementById('batteryText').innerText = __('welcome.battery.percent', { percent: data.battery_percent });
-                bFill.style.width = `${data.battery_percent}%`;
-                bFill.style.background = getMeterColor(data.battery_percent, true);
+                var bFill = document.getElementById('batteryFill');
+                var bText = document.getElementById('batteryText');
+                if (bText) {
+                    try { bText.innerText = __('welcome.battery.percent', { percent: data.battery_percent }); }
+                    catch(_) { bText.innerText = data.battery_percent + '%'; }
+                }
+                if (bFill) {
+                    bFill.style.width = data.battery_percent + '%';
+                    bFill.style.background = getMeterColor(data.battery_percent, true);
+                }
+                // Quick stats
+                var el;
+                el = document.getElementById('statStudents'); if (el) el.textContent = data.scholars != null ? data.scholars : '-';
+                el = document.getElementById('statResources'); if (el) el.textContent = data.resources != null ? data.resources : '-';
+                el = document.getElementById('statSubjects'); if (el) el.textContent = data.subjects != null ? data.subjects : '-';
+                // Parse server uptime into seconds, then tick locally
+                startUptimeTicker(data.uptime || '0m 0s');
             } catch (e) {
-                document.getElementById('storageText').innerText = __('welcome.unavailable');
-                document.getElementById('batteryText').innerText = __('welcome.unavailable');
+                var sTextEl = document.getElementById('storageText');
+                var bTextEl = document.getElementById('batteryText');
+                if (sTextEl) sTextEl.innerText = 'Unavailable';
+                if (bTextEl) bTextEl.innerText = 'Unavailable';
             }
+        }
+
+        var _uptimeSeconds = 0;
+        var _uptimeInterval = null;
+
+        /** Parse server uptime string into seconds, then tick every second locally. */
+        function startUptimeTicker(uptimeStr) {
+            if (_uptimeInterval) clearInterval(_uptimeInterval);
+            _uptimeSeconds = 0;
+            var parts = uptimeStr.match(/(\d+)h|(\d+)m|(\d+)s/g) || [];
+            for (var i = 0; i < parts.length; i++) {
+                var n = parseInt(parts[i]);
+                if (parts[i].indexOf('h') !== -1) _uptimeSeconds += n * 3600;
+                else if (parts[i].indexOf('m') !== -1) _uptimeSeconds += n * 60;
+                else if (parts[i].indexOf('s') !== -1) _uptimeSeconds += n;
+            }
+            renderUptime();
+            _uptimeInterval = setInterval(function() {
+                _uptimeSeconds++;
+                renderUptime();
+            }, 1000);
+        }
+
+        function renderUptime() {
+            var h = Math.floor(_uptimeSeconds / 3600);
+            var m = Math.floor((_uptimeSeconds % 3600) / 60);
+            var s = _uptimeSeconds % 60;
+            var el = document.getElementById('statUptime');
+            if (!el) return;
+            if (h > 0) el.textContent = h + 'h ' + m + 'm';
+            else el.textContent = m + 'm ' + s + 's';
         }
 
         /**
@@ -737,13 +809,13 @@
         /* ── Language Selection ───────────────────────────────────────── */
 
         /** @type {Array<{code:string, name:string, native:string}>} Welcome page language options (hardcoded, not loaded from TRANSLATIONS) */
-        const WELCOME_LANGS = [
+        var WELCOME_LANGS = [
             { code:'en', name:'English', native:'English' },
             { code:'hi', name:'Hindi', native:'हिन्दी' },
             { code:'kn', name:'Kannada', native:'ಕನ್ನಡ' },
             { code:'fr', name:'French', native:'Français' },
         ];
-        let welcomeLang = localStorage.getItem('lumina-lang') || 'en';
+        var welcomeLang = localStorage.getItem('lumina-lang') || 'en';
 
         /**
          * Render the language dropdown list, filtered by search query.
@@ -768,18 +840,21 @@
          * the data-i18n attribute (textContent-only) cannot handle.
          */
         function populateGuide() {
-            const gs = document.getElementById('guideGettingStarted');
-            if (gs) gs.innerHTML = __('welcome.guide.getting_started_body');
-            const ua = document.getElementById('guideUsingApp');
-            if (ua) ua.innerHTML = __('welcome.guide.using_app_body');
-            const dl = document.getElementById('guideDownloadOffline');
-            if (dl) dl.innerHTML = __('welcome.guide.download_offline_body');
-            const tp = document.getElementById('guideTrackingPrivacy');
-            if (tp) tp.innerHTML = __('welcome.guide.tracking_privacy_body');
-            const tr = document.getElementById('guideTroubleshooting');
-            if (tr) tr.innerHTML = __('welcome.guide.troubleshooting_body');
-            const ft = document.getElementById('guideForTeachers');
-            if (ft) ft.innerHTML = __('welcome.guide.for_teachers_body');
+            if (typeof __ !== 'function') return;
+            try {
+                var gs = document.getElementById('guideGettingStarted');
+                if (gs) gs.innerHTML = __('welcome.guide.getting_started_body');
+                var ua = document.getElementById('guideUsingApp');
+                if (ua) ua.innerHTML = __('welcome.guide.using_app_body');
+                var dl = document.getElementById('guideDownloadOffline');
+                if (dl) dl.innerHTML = __('welcome.guide.download_offline_body');
+                var tp = document.getElementById('guideTrackingPrivacy');
+                if (tp) tp.innerHTML = __('welcome.guide.tracking_privacy_body');
+                var tr = document.getElementById('guideTroubleshooting');
+                if (tr) tr.innerHTML = __('welcome.guide.troubleshooting_body');
+                var ft = document.getElementById('guideForTeachers');
+                if (ft) ft.innerHTML = __('welcome.guide.for_teachers_body');
+            } catch(e) { console.error('populateGuide error:', e); }
         }
 
         /**
@@ -787,17 +862,19 @@
          * Persists to localStorage, updates the label, and closes the dropdown.
          * @param {string} code - Language code ('en', 'hi', 'kn', etc.)
          */
-        async function setWelcomeLang(code) {
+        function setWelcomeLang(code) {
             welcomeLang = code;
             currentLang = code;
             localStorage.setItem('lumina-lang', code);
             document.documentElement.setAttribute('lang', code);
-            const label = document.getElementById('welcomeLangLabel');
-            const langObj = WELCOME_LANGS.find(function(l){ return l.code === code; });
+            var label = document.getElementById('welcomeLangLabel');
+            var langObj = WELCOME_LANGS.find(function(l){ return l.code === code; });
             if (label && langObj) label.textContent = langObj.native;
             closeWelcomeLang();
-            await loadTranslations(code);
             populateGuide();
+            loadTranslations(code).then(function() {
+                populateGuide();
+            }).catch(function() {});
         }
 
         /**
@@ -825,7 +902,7 @@
         });
 
         // Wrap the global setLanguage so guide sections re-render via populateGuide
-        const _origSetLanguage = window.setLanguage;
+        var _origSetLanguage = window.setLanguage;
         window.setLanguage = async function(code) {
             if (code === currentLang) return;
             await _origSetLanguage(code);
@@ -833,36 +910,60 @@
         };
 
         // Initialize saved language on DOMContentLoaded
-        document.addEventListener('DOMContentLoaded', async function() {
-            const saved = localStorage.getItem('lumina-lang');
+        document.addEventListener('DOMContentLoaded', function() {
+            var saved = localStorage.getItem('lumina-lang');
             if (saved) { welcomeLang = saved; currentLang = saved; document.documentElement.setAttribute('lang', saved); }
-            await loadTranslations(welcomeLang);
-            populateGuide();
-            document.getElementById('welcomeLangSearch').addEventListener('input', function(){ renderWelcomeLangList(this.value); });
-            document.getElementById('welcomeLangList').addEventListener('click', function(e) { e.stopPropagation(); });
-            const label = document.getElementById('welcomeLangLabel');
-            const langObj = WELCOME_LANGS.find(function(l){ return l.code === welcomeLang; });
+            var label = document.getElementById('welcomeLangLabel');
+            var langObj = WELCOME_LANGS.find(function(l){ return l.code === welcomeLang; });
             if (label && langObj) label.textContent = langObj.native;
-            document.getElementById('btn-toggleWelcomeLang')?.addEventListener('click', toggleWelcomeLang);
-            document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
-            document.getElementById('btn-togglePassword')?.addEventListener('click', togglePasswordVisibility);
-            document.getElementById('welcomeLangList')?.addEventListener('click', function(e) {
-                const opt = e.target.closest('.welcome-lang-option');
+
+            // Register event listeners FIRST — never let populateGuide block them
+            var searchEl = document.getElementById('welcomeLangSearch');
+            if (searchEl) searchEl.addEventListener('input', function(){ renderWelcomeLangList(this.value); });
+            var listEl = document.getElementById('welcomeLangList');
+            if (listEl) listEl.addEventListener('click', function(e) { e.stopPropagation(); });
+            var toggleLangBtn = document.getElementById('btn-toggleWelcomeLang');
+            if (toggleLangBtn) toggleLangBtn.addEventListener('click', toggleWelcomeLang);
+            var toggleThemeBtn = document.getElementById('btn-toggleTheme');
+            if (toggleThemeBtn) toggleThemeBtn.addEventListener('click', toggleTheme);
+            var togglePwdBtn = document.getElementById('btn-togglePassword');
+            if (togglePwdBtn) togglePwdBtn.addEventListener('click', togglePasswordVisibility);
+            if (listEl) listEl.addEventListener('click', function(e) {
+                var opt = e.target.closest('.welcome-lang-option');
                 if (opt) { setWelcomeLang(opt.dataset.lang); }
+            });
+
+            // Then populate guide (wrapped — must not block listeners above)
+            try { populateGuide(); } catch(e) { console.error('Guide init error:', e); }
+
+            // Load full translations (non-blocking) and re-populate guide
+            loadTranslations(welcomeLang).then(function() {
+                try { populateGuide(); } catch(e) {}
+            }).catch(function() {
+                // Translation fetch failed — guide already populated with inline defaults
             });
         });
 
         // Deferred stats fetch — don't block initial render; refresh every 30s
-        setTimeout(() => { fetchStats(); setInterval(fetchStats, 30000); }, 500);
+        // Call immediately on DOMContentLoaded (if available) or after short delay
+        function startStatsPolling() {
+            fetchStats();
+            setInterval(fetchStats, 30000);
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() { setTimeout(startStatsPolling, 500); });
+        } else {
+            setTimeout(startStatsPolling, 500);
+        }
 
         // Clear login inputs on page load to prevent browser autofill interference
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                const userField = document.getElementById('username');
-                const passField = document.getElementById('password');
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                var userField = document.getElementById('username');
+                var passField = document.getElementById('password');
                 if (userField) userField.value = '';
                 if (passField) passField.value = '';
-            }, 50); // slight delay to override aggressive browser autofill
+            }, 50);
         });
     </script>
 </body>

@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head ï¿½ theme detection, metadata, page-specific styles -->
+<!-- Section: Head — theme detection, metadata, page-specific styles -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,53 +14,10 @@
 </head>
 <body>
 
-    <!-- Section: Sidebar ï¿½ nav links, user info, theme toggle, logout -->
-    <aside>
-        <a href="/static/index" class="sidebar-brand-horizontal"><img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"><img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"></a>
-        <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
-        <div class="sidebar-divider"></div>
-        <nav>
-            <a href="/static/index" class="nav-item" id="nav-home">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                <span data-i18n="sidebar.home">Home</span>
-            </a>
-            <a href="/static/manage-content" class="nav-item active" id="nav-content">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span data-i18n="sidebar.content">Content Manager</span>
-            </a>
-            <a href="/static/manage-security" class="nav-item" id="nav-security">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span data-i18n="sidebar.security">Account</span>
-            </a>
-            <a href="/static/students" class="nav-item" id="nav-students">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span data-i18n="sidebar.students">Students</span>
-            </a>
-            <a href="/static/manage-help#teacher-guide" class="nav-item" id="nav-help">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                <span data-i18n="sidebar.help">Teacher Guide</span>
-            </a>
-            <a href="/static/manage-danger" class="nav-item danger" id="nav-danger">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                <span data-i18n="sidebar.danger">Danger Zone</span>
-            </a>
-            <a href="/static/manage-settings" class="nav-item" id="nav-settings">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                <span data-i18n="sidebar.settings">Settings</span>
-            </a>
-        </nav>
-        <div class="nav-spacer"></div>
-        <div class="theme-toggle" id="btn-toggleTheme">
-            <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            <span id="themeLabel"><span data-i18n="sidebar.dark_mode">Dark Mode</span></span>
-        </div>
-        <a href="/logout" class="nav-logout">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            <span data-i18n="sidebar.logout">Log out</span>
-        </a>
-    </aside>
+    <!-- Section: Sidebar — empty, rendered by renderLayout() -->
+    <aside></aside>
 
-    <!-- Section: Main Content ï¿½ upload form, add/manage subjects, resource library -->
+    <!-- Section: Main Content — upload button, resource library, topic management -->
     <main>
         <div id="app-content">
         <div id="contentTab">
@@ -69,204 +26,255 @@
                 <p data-i18n="content.page_description">Upload and manage educational resources for your students.</p>
             </div>
 
-            <!-- Section: Upload Form ï¿½ title, category, subject, file picker, upload button -->
-            <div class="card">
-                <div class="card-title" data-i18n="content.upload_title">Upload Resource</div>
-                <div id="uploadNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-                <div class="form-grid form-grid-upload">
-                    <div class="form-group">
-                        <label for="title" data-i18n="content.upload_label_title">Title</label>
-                        <input type="text" id="title" placeholder="e.g. Physics 101" data-i18n="content.upload_placeholder_title">
-                    </div>
-                    <div class="form-group">
-                        <label for="type" data-i18n="content.upload_label_category">Category</label>
-                        <select id="type">
-                            <option value="textbook" data-i18n="content.upload_option_textbook">Textbook</option>
-                            <option value="khan" data-i18n="content.upload_option_video">Video</option>
-                            <option value="pyq" data-i18n="content.upload_option_pyq">Previous Year Paper (PYQ)</option>
-                            <option value="kiwix" data-i18n="content.upload_option_kiwix">Kiwix Archive (Wikipedia)</option>
-                            <option value="notes" data-i18n="content.upload_option_notes">Notes</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="subjectSelect" data-i18n="content.upload_label_subject">Subject</label>
-                        <select id="subjectSelect">
-                            <option value="General" data-i18n="content.upload_option_general">General</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="file" data-i18n="content.upload_label_file">File</label>
-                        <input type="file" id="file">
-                    </div>
-                    <button id="btn-upload" class="btn btn-primary"><span data-i18n="content.upload_button">Upload</span></button>
-                </div>
-            </div>
-
-            <!-- Section: Add New Subject ï¿½ name, class/grade, symbol icon dropdown, create button -->
-            <div class="card">
-                <div class="card-title" data-i18n="content.add_subject_title">Add New Subject</div>
-                <div id="subjectNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-                <div class="form-grid form-grid-subject">
-                    <div class="form-group">
-                        <label for="newSubjectName" data-i18n="content.add_subject_label_name">Subject Name</label>
-                        <input type="text" id="newSubjectName" placeholder="e.g. Biology" data-i18n="content.add_subject_placeholder_name" style="padding: 0.65rem 1rem; font-size: 0.95rem;">
-                    </div>
-                    <div class="form-group">
-                        <label for="newSubjectClass" data-i18n="content.add_subject_label_class">Class/Grade</label>
-                        <input type="text" id="newSubjectClass" placeholder="e.g. Class 10 (or leave blank)" data-i18n="content.add_subject_placeholder_class" style="padding: 0.65rem 1rem; font-size: 0.95rem;">
-                    </div>
-                    <div class="form-group">
-                        <label for="newSubjectSymbol" data-i18n="content.add_subject_label_symbol">Symbol</label>
-                        <div class="custom-dropdown" style="position: relative; user-select: none; width: 100%;">
-                            <input type="hidden" id="newSubjectSymbol" value="calculator">
-                            <div id="dropdownSelected" style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1rem; background: var(--surface); border: 1px solid var(--outline); border-radius: 6px; cursor: pointer; font-size: 0.95rem; color: var(--text);">
-                                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <span id="selectedIcon" style="display: flex; align-items: center; color: var(--teal);">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8.01" y1="10" y2="10"/><line x1="12" x2="12.01" y1="10" y2="10"/><line x1="16" x2="16.01" y1="10" y2="10"/><line x1="8" x2="8.01" y1="14" y2="14"/><line x1="12" x2="12.01" y1="14" y2="14"/><line x1="16" x2="16.01" y1="14" y2="14"/><line x1="8" x2="8.01" y1="18" y2="18"/><line x1="12" x2="16" y1="18" y2="18"/></svg>
-                                    </span>
-                                    <span id="selectedText" data-i18n="content.add_subject_symbol_calculator">Calculator</span>
-                                </div>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            </div>
-                            <div id="dropdownList" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--outline); border-radius: 6px; margin-top: 0.25rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); z-index: 50; max-height: 240px; overflow-y: auto;">
-                                <!-- Options will be dynamically populated here -->
-                            </div>
-                        </div>
-                    </div>
-                    <button id="btn-addSubject" class="btn btn-outline" style="padding: 0.65rem 1.25rem; font-size: 0.95rem;"><span data-i18n="content.add_subject_button">Create Subject</span></button>
-                </div>
-            </div>
-
-            <!-- Section: Manage Subjects & Syllabus ï¿½ searchable table of subjects with delete -->
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-                    <div class="card-title" style="margin-bottom: 0;" data-i18n="content.manage_subjects_title">Manage Subjects &amp; Syllabus</div>
-                    <div class="search-wrap-inline">
-                        <label for="subjectSearch" class="sr-only" data-i18n="content.manage_subjects_search_label">Search subjects</label>
-                        <input type="text" id="subjectSearch" placeholder="Search subjects..." data-i18n="content.manage_subjects_search_placeholder" style="width: 100%; padding: 0.35rem 0.5rem 0.35rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
-                        <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        </span>
-                    </div>
-                </div>
-
-                <table>
-                    <thead>
-                        <tr><th data-i18n="content.manage_subjects_th_name">Subject Name</th><th data-i18n="content.manage_subjects_th_class">Class/Grade</th><th data-i18n="content.manage_subjects_th_icon">Icon</th><th style="text-align: right;" data-i18n="content.manage_subjects_th_action">Action</th></tr>
-                    </thead>
-                    <tbody id="subjectManageTable">
-                        <tr><td colspan="4" class="empty-state" data-i18n="content.manage_subjects_empty">No subjects created yet.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Section: Mesh Library ï¿½ filterable resource table with download/delete actions -->
+            <!-- Section: Mesh Library — filterable resource table with search + upload button on same line -->
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
                     <div class="card-title" style="margin-bottom: 0;" data-i18n="content.library_title">Mesh Library</div>
-                    <div class="filter-inline-group" style="display: flex; align-items: center; gap: 0.5rem;">
-                        <div class="form-group" style="display: flex; gap: 0.25rem; margin-bottom: 0; flex-direction: row; align-items: center;">
-                            <label for="filterSubject" style="margin-bottom: 0; white-space: nowrap; font-size: 0.8rem;" data-i18n="content.library_filter_subject_label">Filter Subject:</label>
-                            <select id="filterSubject" style="padding: 0.3rem 0.4rem; width: auto; min-width: 120px; font-size: 0.8rem;">
-                                <option value="ALL" data-i18n="content.library_filter_all_subjects">All Subjects</option>
-                            </select>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div class="filter-inline-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div class="form-group" style="display: flex; gap: 0.25rem; margin-bottom: 0; flex-direction: row; align-items: center;">
+                                <label for="filterSubject" style="margin-bottom: 0; white-space: nowrap; font-size: 0.8rem;" data-i18n="content.library_filter_subject_label">Filter Subject:</label>
+                                <select id="filterSubject" style="padding: 0.3rem 0.4rem; width: auto; min-width: 120px; font-size: 0.8rem; background: var(--surface); color: var(--on-surface); border: 1px solid var(--outline); border-radius: var(--radius-sm); outline: none;">
+                                    <option value="ALL" data-i18n="content.library_filter_all_subjects">All Subjects</option>
+                                </select>
+                            </div>
+                            <div class="search-wrap-inline" style="width: 160px; position: relative;">
+                                <label for="resourceSearch" class="sr-only" data-i18n="content.library_search_label">Search resources</label>
+                                <input type="text" id="resourceSearch" placeholder="Search resources..." data-i18n="content.library_search_placeholder" style="width: 100%; padding: 0.3rem 0.4rem 0.3rem 1.8rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
+                                <span style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                </span>
+                            </div>
                         </div>
-                        <div class="search-wrap-inline" style="width: 160px;">
-                            <label for="resourceSearch" class="sr-only" data-i18n="content.library_search_label">Search resources</label>
-                            <input type="text" id="resourceSearch" placeholder="Search resources..." data-i18n="content.library_search_placeholder" style="width: 100%; padding: 0.3rem 0.4rem 0.3rem 1.8rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
-                            <span style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                            </span>
-                        </div>
+                        <button id="btn-openUploadModal" class="btn" style="background: var(--teal); color: #fff; white-space: nowrap; padding: 0.5rem 1rem; font-size: 0.875rem;"><span data-i18n="content.upload_button">+ Upload Resource</span></button>
                     </div>
                 </div>
                 <table>
                     <thead>
-                        <tr><th data-i18n="content.library_th_title">Title</th><th data-i18n="content.library_th_subject">Subject</th><th data-i18n="content.library_th_type">Type</th><th data-i18n="content.library_th_downloads">Downloads</th><th data-i18n="content.library_th_notes">Notes</th><th style="text-align: right;" data-i18n="content.library_th_action">Action</th></tr>
+                        <tr><th data-i18n="content.library_th_title">Title</th><th data-i18n="content.library_th_subject">Subject</th><th data-i18n="content.library_th_topic">Topic</th><th data-i18n="content.library_th_type">Type</th><th data-i18n="content.library_th_downloads">Downloads</th><th style="text-align: right;" data-i18n="content.library_th_action">Action</th></tr>
                     </thead>
                     <tbody id="resourceTable">
                         <tr><td colspan="6" class="empty-state" data-i18n="content.library_empty">No resources uploaded yet.</td></tr>
                     </tbody>
                 </table>
+                <div id="resourcePagination" style="display: none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--outline); flex-wrap: wrap;">
+                    <button id="btn-resourcePrevPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        <span data-i18n="settings.previous">Previous</span>
+                    </button>
+                    <span id="resourcePageInfo" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">Page 1 of 1</span>
+                    <button id="btn-resourceNextPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <span data-i18n="settings.next">Next</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                        <span data-i18n="settings.per_page">Per page:</span>
+                        <select id="resourcePerPageSelect" style="min-height: 44px; padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface); color: var(--on-surface); outline: none; cursor: pointer;">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Section: Manage Topics — searchable topic table with delete -->
+            <div class="card">
+                <div class="card-title" style="color: var(--teal); font-weight: 800;" data-i18n="content.topics_title">Manage Topics</div>
+                <div id="topicNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
+
+                <div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+                    <div style="flex: 1; position: relative;">
+                        <label for="topicSearch" class="sr-only">Search topics</label>
+                        <input type="text" id="topicSearch" placeholder="Search topics..." style="width: 100%; padding: 0.5rem 0.75rem 0.5rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.85rem; background: var(--surface); color: var(--on-surface); outline: none;">
+                        <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
+                    </div>
+                    <button id="btn-addTopic" class="btn" style="background: var(--teal); color: #fff; border-color: var(--teal); white-space: nowrap; padding: 0.5rem 1rem; font-size: 0.875rem;">+ Add Topic</button>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr><th data-i18n="content.topics_th_subject">Subject</th><th data-i18n="content.topics_th_name">Topic Name</th><th style="text-align: right;" data-i18n="content.topics_th_action">Action</th></tr>
+                    </thead>
+                    <tbody id="topicTable">
+                        <tr><td colspan="3" class="empty-state" style="text-align:center;" data-i18n="content.topics_empty">No topics created yet.</td></tr>
+                    </tbody>
+                </table>
+                <div id="topicPagination" style="display: none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--outline); flex-wrap: wrap;">
+                    <button id="btn-topicPrevPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        <span data-i18n="settings.previous">Previous</span>
+                    </button>
+                    <span id="topicPageInfo" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">Page 1 of 1</span>
+                    <button id="btn-topicNextPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <span data-i18n="settings.next">Next</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                        <span data-i18n="settings.per_page">Per page:</span>
+                        <select id="topicPerPageSelect" style="min-height: 44px; padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface); color: var(--on-surface); outline: none; cursor: pointer;">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Upload Resource Modal — inside app-content so SPA nav preserves it -->
+        <div id="uploadResourceModal" class="hidden popup" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;">
+            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:520px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--teal);">
+                <h3 style="font-size:1.15rem;font-weight:800;margin-top:0;margin-bottom:1.25rem;color:var(--teal);" data-i18n="content.upload_title">Upload Resource</h3>
+                <div id="uploadNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div style="grid-column:1/-1;">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_title">Title</label>
+                        <input type="text" id="title" placeholder="e.g. Physics 101" data-i18n="content.upload_placeholder_title" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_category">Category</label>
+                        <select id="type" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                            <option value="textbook" data-i18n="content.upload_option_textbook">Textbook</option>
+                            <option value="khan" data-i18n="content.upload_option_video">Video</option>
+                            <option value="pyq" data-i18n="content.upload_option_pyq">Previous Year Paper (PYQ)</option>
+                            <option value="kiwix" data-i18n="content.upload_option_zim">ZIM Archive</option>
+                            <option value="notes" data-i18n="content.upload_option_notes">Notes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_subject">Subject</label>
+                        <select id="subjectSelect" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                            <option value="General" data-i18n="content.upload_option_general">General</option>
+                        </select>
+                    </div>
+                    <div style="grid-column: 1/-1;">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_topic">Chapter / Topic</label>
+                        <select id="topicSelect" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                            <option value="" data-i18n="content.upload_option_general_topic">General (No Topic)</option>
+                        </select>
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_file">File</label>
+                        <input type="file" id="file" style="width:100%;padding:0.5rem;font-size:0.9rem;background:var(--surface);color:var(--on-surface);border:1px solid var(--outline);border-radius:var(--radius-sm);">
+                    </div>
+                </div>
+                <div style="display:flex;gap:0.75rem;justify-content:flex-end;border-top:1px solid var(--outline);padding-top:1rem;margin-top:1.25rem;">
+                    <button id="btn-closeUploadModal" class="btn btn-outline" style="border-color:var(--outline);color:var(--on-surface);background:transparent;padding:0.55rem 1.15rem;">Cancel</button>
+                    <button id="btn-upload" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:0.55rem 1.15rem;font-weight:700;"><span data-i18n="content.upload_button">Upload</span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Edit Topic Modal -->
+        <div id="editTopicModal" class="hidden popup" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;">
+            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:420px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--teal);">
+                <h3 style="font-size:1.15rem;font-weight:800;margin-top:0;margin-bottom:1.25rem;color:var(--teal);">Edit Topic</h3>
+                <div id="editTopicNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
+                <input type="hidden" id="editTopicId">
+                <div style="margin-bottom:1.25rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Topic Name</label>
+                    <input type="text" id="editTopicName" placeholder="e.g. Chapter 1" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                </div>
+                <div style="display:flex;gap:0.75rem;justify-content:flex-end;border-top:1px solid var(--outline);padding-top:1rem;">
+                    <button id="btn-closeEditTopic" class="btn btn-outline" style="border-color:var(--outline);color:var(--on-surface);background:transparent;padding:0.55rem 1.15rem;">Cancel</button>
+                    <button id="btn-saveEditTopic" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:0.55rem 1.15rem;font-weight:700;">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Add Topic Modal — inside app-content so SPA nav preserves it -->
+        <div id="addTopicModal" class="hidden popup" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;">
+            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:420px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--teal);">
+                <h3 style="font-size:1.15rem;font-weight:800;margin-top:0;margin-bottom:1.25rem;color:var(--teal);" data-i18n="content.topics_modal_title">Add New Topic</h3>
+                <div id="addTopicNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_subject">Subject</label>
+                    <select id="modalTopicSubject" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                        <option value="">Select subject...</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:1.25rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.topics_th_name">Topic Name</label>
+                    <input type="text" id="modalTopicName" placeholder="e.g. Chapter 1" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                </div>
+                <div style="display:flex;gap:0.75rem;justify-content:flex-end;border-top:1px solid var(--outline);padding-top:1rem;">
+                    <button id="btn-closeTopicModal" class="btn btn-outline" style="border-color:var(--outline);color:var(--on-surface);background:transparent;padding:0.55rem 1.15rem;">Cancel</button>
+                    <button id="btn-confirmAddTopic" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:0.55rem 1.15rem;font-weight:700;">Add Topic</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Edit Resource Modal -->
+        <div id="editResourceModal" class="hidden popup" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;">
+            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:520px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--teal);">
+                <h3 style="font-size:1.15rem;font-weight:800;margin-top:0;margin-bottom:1.25rem;color:var(--teal);">Edit Resource</h3>
+                <div id="editResNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
+                <input type="hidden" id="editResId">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div style="grid-column:1/-1;">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Title</label>
+                        <input type="text" id="editResTitle" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Type</label>
+                        <select id="editResType" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                            <option value="textbook">Textbook</option>
+                            <option value="khan">Video</option>
+                            <option value="pyq">Previous Year Paper (PYQ)</option>
+                            <option value="kiwix">ZIM Archive</option>
+                            <option value="notes">Notes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Subject</label>
+                        <select id="editResSubject" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;"></select>
+                    </div>
+                    <div style="grid-column: 1/-1;">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Chapter / Topic</label>
+                        <select id="editResTopic" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                            <option value="">General (No Topic)</option>
+                        </select>
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Language</label>
+                        <input type="text" id="editResLang" value="en" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                    </div>
+                </div>
+                <div style="display:flex;gap:0.75rem;justify-content:flex-end;border-top:1px solid var(--outline);padding-top:1rem;margin-top:1.25rem;">
+                    <button id="btn-closeEditResource" class="btn btn-outline" style="border-color:var(--outline);color:var(--on-surface);background:transparent;padding:0.55rem 1.15rem;">Cancel</button>
+                    <button id="btn-saveEditResource" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:0.55rem 1.15rem;font-weight:700;">Save</button>
+                </div>
             </div>
         </div>
         </div>
     </main>
 
-    <!-- Section: Bottom Navigation (Mobile) &#xEF;¿½ tab bar hidden by default, shown via media query -->
+    <!-- Section: Bottom Navigation (Mobile) — tab bar hidden by default, shown via media query -->
     <div id="bottomNav"></div>
 
-    <!-- Section: Subject Delete Modal ï¿½ radio options to delete resources or transfer to another subject -->
-    <div id="subjectDeleteModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 10000; transition: all 0.3s ease;">
-        <div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2rem; max-width: 480px; width: 95%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline);">
-            <h3 style="color: var(--danger); margin-top: 0; font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                <span data-i18n="content.modal_delete_subject_title">Delete Subject</span>
-            </h3>
-            <p style="color: var(--on-surface); opacity: 0.8; font-size: 0.875rem; margin-top: 0.5rem; line-height: 1.5;" id="deleteSubjectModalText"></p>
-
-            <div style="margin-top: 1.5rem;">
-                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--on-surface); opacity: 0.6; margin-bottom: 0.5rem;" data-i18n="content.modal_resource_file_action">RESOURCE FILE ACTION</label>
-                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                    <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; padding: 0.75rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); transition: all 0.2s;">
-                        <input type="radio" name="subjectAction" value="delete" checked style="margin-top: 0.2rem;">
-                        <div>
-                            <span style="font-size: 0.875rem; font-weight: 700; color: var(--on-surface); display: block;" data-i18n="content.modal_delete_permanently">Permanently Delete Resources</span>
-                            <span style="font-size: 0.75rem; color: var(--on-surface); opacity: 0.6;" data-i18n="content.modal_delete_permanently_desc">Completely delete all resource files associated with this subject.</span>
-                        </div>
-                    </label>
-                    <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; padding: 0.75rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); transition: all 0.2s;">
-                        <input type="radio" name="subjectAction" value="transfer" style="margin-top: 0.2rem;">
-                        <div>
-                            <span style="font-size: 0.875rem; font-weight: 700; color: var(--on-surface); display: block;" data-i18n="content.modal_transfer_resources">Transfer Resources to Another Subject</span>
-                            <span style="font-size: 0.75rem; color: var(--on-surface); opacity: 0.6;" data-i18n="content.modal_transfer_resources_desc">Reclassify all files to another subject before deletion.</span>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <div id="transferTargetContainer" class="hidden" style="margin-top: 1.25rem;">
-                <label for="transferTarget" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--on-surface); opacity: 0.6; margin-bottom: 0.375rem;" data-i18n="content.modal_transfer_to_subject">TRANSFER TO SUBJECT</label>
-                <select id="transferTarget" style="width: 100%; padding: 0.625rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); background: var(--surface); color: var(--on-surface);">
-                </select>
-            </div>
-
-            <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--outline); padding-top: 1.25rem;">
-                <button id="btn-closeDeleteSubjectModal" class="btn btn-outline" style="border-color: var(--outline); color: var(--on-surface); background: transparent;"><span data-i18n="content.modal_cancel">Cancel</span></button>
-                <button id="btn-confirmDeleteSubject" class="btn" style="background: var(--danger); color: #fff;"><span data-i18n="content.modal_confirm_deletion">Confirm Deletion</span></button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Section: Toast Container ï¿½ global notification area (top-right, fixed) -->
+    <!-- Section: Toast Container — global notification area (top-right, fixed) -->
     <div id="globalToastContainer" style="position: fixed; top: 1.5rem; right: 1.5rem; z-index: 99999; display: flex; flex-direction: column; gap: 0.75rem; max-width: 380px; width: 100%; pointer-events: none;"></div>
 
-    <script src="/static/js/lumina.js" defer></script>
-    <!-- Section: Inline Scripts ï¿½ resource/subject CRUD, upload handler, custom dropdown, modals -->
+    <script src="/static/js/lumina.js?v=5" defer></script>
+    <!-- Section: Inline Scripts — resource CRUD, upload handler, topics -->
     <script>
-        let allResources = [];
-        let allSubjects = [];
-        let activeDeleteSubjectName = '';
-
-        /** @type {Array<{value:string, label:string}>} Subject icon symbol picker options */
-        const symbolOptions = [
-            { value: 'calculator', label: 'Calculator' },
-            { value: 'atom', label: 'Atom' },
-            { value: 'globe', label: 'Globe' },
-            { value: 'book', label: 'Book' },
-            { value: 'laptop', label: 'Laptop' },
-            { value: 'microscope', label: 'Microscope' },
-            { value: 'compass', label: 'Compass' },
-            { value: 'code', label: 'Code' },
-            { value: 'folder', label: 'Folder' }
-        ];
+        var allResources = [];
+        var allSubjects = [];
+        var allTopics = [];
+        var _resourcePage = 1, _resourceFiltered = [], _perPage = 20;
+        var _topicPage = 1, _topicFiltered = [];
 
         /**
          * @param {string} symbol - The symbol key (e.g. 'calculator')
          * @returns {string} SVG markup for the given subject icon symbol
          */
         function getSymbolSvg(symbol) {
-            const svgs = {
+            var svgs = {
                 calculator: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8.01" y1="10" y2="10"/><line x1="12" x2="12.01" y1="10" y2="10"/><line x1="16" x2="16.01" y1="10" y2="10"/><line x1="8" x2="8.01" y1="14" y2="14"/><line x1="12" x2="12.01" y1="14" y2="14"/><line x1="16" x2="16.01" y1="14" y2="14"/><line x1="8" x2="8.01" y1="18" y2="18"/><line x1="12" x2="16" y1="18" y2="18"/></svg>',
                 atom: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(30 12 12)"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(90 12 12)"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(150 12 12)"/></svg>',
                 globe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
@@ -280,210 +288,121 @@
             return svgs[symbol] || svgs.folder;
         }
 
-        /** Builds the custom symbol dropdown list and attaches a click-outside listener. */
-        function initCustomDropdown() {
-            if (window._dropdownInitialized) return;
-            window._dropdownInitialized = true;
-            const list = document.getElementById('dropdownList');
-            if (!list) return;
-            list.innerHTML = symbolOptions.map(function(opt) {
-                return '<div data-option-value="' + opt.value + '" data-option-label="' + opt.label + '" class="custom-option" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 1rem; cursor: pointer; font-size: 0.95rem; color: var(--text);">' +
-                    '<span style="display: flex; align-items: center; color: var(--teal);">' + getSymbolSvg(opt.value) + '</span>' +
-                    '<span>' + opt.label + '</span>' +
-                    '</div>';
-            }).join('');
-
-            document.addEventListener('click', function(e) {
-                const sel = document.getElementById('dropdownSelected');
-                const list = document.getElementById('dropdownList');
-                if (sel && list && !sel.contains(e.target) && !list.contains(e.target)) {
-                    list.style.display = 'none';
-                }
-            });
-        }
-
-        /**
-         * Toggles the custom symbol dropdown on click.
-         * @param {Event} e - Click event
-         */
-        function toggleCustomDropdown(e) {
-            e.stopPropagation();
-            const list = document.getElementById('dropdownList');
-            if (list) {
-                list.style.display = list.style.display === 'none' ? 'block' : 'none';
-            }
-        }
-
-        /**
-         * Selects a custom symbol option, updating the hidden input and display.
-         * @param {string} val - The symbol value key
-         * @param {string} label - The human-readable label
-         */
-        function selectCustomOption(val, label) {
-            document.getElementById('newSubjectSymbol').value = val;
-            document.getElementById('selectedIcon').innerHTML = getSymbolSvg(val);
-            document.getElementById('selectedText').innerText = label;
-            document.getElementById('dropdownList').style.display = 'none';
-        }
-
-        /** Fetches subjects from the server (or demo data) and populates the subject select, filter, and manage table. */
+        /** Fetches subjects and grades from the server, populates subject select, filter, grade dropdown, and manage table. */
         async function loadSubjects() {
             try {
-                const res = await fetch('/subjects');
-                allSubjects = await res.json();
-                const subjectSelect = document.getElementById('subjectSelect');
-                const filterSubject = document.getElementById('filterSubject');
+                const [subRes, gradeRes] = await Promise.all([
+                    fetch('/subjects', { credentials: 'include' }),
+                    fetch('/grades', { credentials: 'include' })
+                ]);
+                allSubjects = await subRes.json();
 
-                const optionsHtml = allSubjects.map(function(s) {
-                    const display = s.class_name ? s.name + ' (' + s.class_name + ')' : s.name;
+                var optionsHtml = allSubjects.map(function(s) {
+                    var display = s.class_name ? s.name + ' (' + s.class_name + ')' : s.name;
                     return '<option value="' + esc(s.name) + '">' + esc(display) + '</option>';
                 }).join('');
-                if (subjectSelect) subjectSelect.innerHTML = optionsHtml || '<option value="General">' + __('content.general_subject') + '</option>';
-                if (filterSubject) filterSubject.innerHTML = '<option value="ALL">' + __('content.all_subjects') + '</option>' + optionsHtml;
+                var subjectSelect = document.getElementById('subjectSelect');
+                var filterSubject = document.getElementById('filterSubject');
+                if (subjectSelect) subjectSelect.innerHTML = '<option value="General">General</option>' + optionsHtml;
+                if (filterSubject) filterSubject.innerHTML = '<option value="ALL">' + __('content.all_subjects') + '</option>' + '<option value="General">General</option>' + optionsHtml;
 
-                // Populate the manage subjects table
-                const tbody = document.getElementById('subjectManageTable');
-                if (tbody) {
-                    if (allSubjects.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No subjects created yet.</td></tr>';
-                    } else {
-                        tbody.innerHTML = allSubjects.map(function(sub) {
-                            return '<tr>' +
-                                '<td data-label="Subject Name"><strong>' + esc(sub.name) + '</strong></td>' +
-                                '<td data-label="Class/Grade">' + esc(sub.class_name || 'All Classes') + '</td>' +
-                                '<td data-label="Icon"><span style="display: inline-flex; color: var(--teal);">' + getSymbolSvg(sub.symbol) + '</span></td>' +
-                                '<td data-label="Action" style="text-align: right;"><button data-subject-name="' + esc(sub.name) + '" class="btn btn-outline js-delete-subject" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);">Delete</button></td>' +
-                                '</tr>';
-                        }).join('');
-                    }
-                }
+                loadTopicsForSubject();
             } catch (e) {
                 console.error("Could not load subjects", e);
             }
         }
 
-        /**
-         * Creates a new subject via the server (or demo store).
-         * Validates the name, sends POST to /teacher/subjects, and refreshes the list.
-         */
-        async function addSubject() {
-            const name = document.getElementById('newSubjectName').value.trim();
-            const class_name = document.getElementById('newSubjectClass').value.trim() || 'All Classes';
-            const symbol = document.getElementById('newSubjectSymbol').value;
-            if (!name) return showNotification('subjectNotif', __('content.notif.subject_name_required'), true);
-
-            try {
-                const res = await fetch('/teacher/subjects', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: name, symbol: symbol, class_name: class_name })
-                });
-                if (res.ok) {
-                    document.getElementById('newSubjectName').value = '';
-                    document.getElementById('newSubjectClass').value = '';
-                    await loadSubjects();
-                    showNotification('subjectNotif', __('content.notif.subject_created', {name: name, class_name: class_name}), false);
-                } else {
-                    const err = await res.json();
-                    showNotification('subjectNotif', err.detail || __('content.notif.subject_create_failed'), true);
-                }
-            } catch (e) {
-                showNotification('subjectNotif', __('content.notif.connection_error'), true);
-            }
-        }
-
-        /** Fetches resources from the server (or demo data) and triggers the resource table render. */
+        /** Fetches resources from the server and triggers the resource table render. */
         async function loadResources() {
             try {
-                const res = await fetch('/resources');
+                var res = await fetch('/resources', { credentials: 'include' });
+                if (!res.ok) {
+                    document.getElementById('resourceTable').innerHTML = '<tr><td colspan="6" class="empty-state">Could not load resources (HTTP ' + res.status + ').</td></tr>';
+                    return;
+                }
                 allResources = await res.json();
                 filterResources();
             } catch (e) {
-                document.getElementById('resourceTable').innerHTML = '<tr><td colspan="4" class="empty-state">Could not load resources.</td></tr>';
+                console.error('loadResources failed:', e);
+                document.getElementById('resourceTable').innerHTML = '<tr><td colspan="6" class="empty-state">Could not load resources.</td></tr>';
             }
         }
 
-        /** Filters the resource table by subject and search query, then re-renders. */
+        /** Filters the resource table by subject and search query, resets to page 1, then re-renders. */
         function filterResources() {
-            const filterVal = document.getElementById('filterSubject').value;
-            const searchVal = (document.getElementById('resourceSearch') ? document.getElementById('resourceSearch').value : '').toLowerCase().trim();
-            let filtered = allResources;
+            var filterVal = document.getElementById('filterSubject').value;
+            var searchVal = (document.getElementById('resourceSearch') ? document.getElementById('resourceSearch').value : '').toLowerCase().trim();
+            _resourceFiltered = allResources;
             if (filterVal !== 'ALL') {
-                filtered = filtered.filter(function(r) { return r.subject === filterVal; });
+                _resourceFiltered = _resourceFiltered.filter(function(r) { return r.subject === filterVal; });
             }
             if (searchVal) {
-                filtered = filtered.filter(function(r) {
+                _resourceFiltered = _resourceFiltered.filter(function(r) {
                     return (r.title || '').toLowerCase().includes(searchVal) ||
                         (r.subject || '').toLowerCase().includes(searchVal) ||
                         (r.type || '').toLowerCase().includes(searchVal);
                 });
             }
-            if (filtered.length === 0) {
-                document.getElementById('resourceTable').innerHTML = '<tr><td colspan="6" class="empty-state">No resources found.</td></tr>';
-                return;
-            }
-            document.getElementById('resourceTable').innerHTML = filtered.map(function(r) {
-                let badgeClass = 'type-default';
-                if (r.type === 'textbook') badgeClass = 'type-textbook';
-                else if (r.type === 'video' || r.type === 'videos') badgeClass = 'type-videos';
-                else if (r.type === 'pyq' || r.type === 'pastPaper') badgeClass = 'type-pyq';
-                else if (r.type === 'kiwix') badgeClass = 'type-kiwix';
-                else if (r.type === 'notes') badgeClass = 'type-notes';
-
-                let subj = null;
-                for (let i = 0; i < allSubjects.length; i++) {
-                    if (allSubjects[i].name === r.subject) { subj = allSubjects[i]; break; }
-                }
-                const symbolSvg = getSymbolSvg(subj ? subj.symbol : 'folder');
-
-                let _url = r.url;
-                if (!_url.startsWith('/') && !_url.startsWith('http')) _url = '/files/' + encodeURIComponent(_url);
-                var dl = r.downloads || 0;
-                var notes = r.notes || '';
-                var notesPreview = notes.length > 60 ? esc(notes.slice(0, 60)) + '...' : esc(notes);
-                return '<tr>' +
-                    '<td data-label="Title"><strong>' + esc(r.title) + '</strong></td>' +
-                    '<td data-label="Subject"><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--teal);">' + symbolSvg + ' ' + esc(r.subject || 'General') + '</div></td>' +
-                    '<td data-label="Type"><span class="type-badge ' + badgeClass + '">' + esc(r.type) + '</span></td>' +
-                    '<td data-label="Downloads" style="text-align: center; font-weight: 700;">' + dl + '</td>' +
-                    '<td data-label="Notes" style="max-width: 180px; font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"' + (notes ? ' title="' + notesPreview + '"' : '') + '>' + (notes ? notesPreview : '<span style="opacity:0.4;">â€”</span>') + '</td>' +
-                    '<td data-label="Action" style="text-align: right;">' +
-                    '<a href="' + _url + '" class="btn btn-outline" download style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">Download</a> ' +
-                    '<button data-resource-id="' + r.id + '" data-resource-title="' + esc(r.title) + '" class="btn btn-outline js-delete-resource" style="color: var(--danger); border-color: var(--danger); margin-left: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.75rem;">Delete</button>' +
-                    '</td></tr>';
-            }).join('');
+            _resourcePage = 1;
+            renderResourcePage();
         }
 
-        /** Filters the subject manage table rows by search query. */
-        function filterManageSubjects() {
-            const query = (document.getElementById('subjectSearch') ? document.getElementById('subjectSearch').value : '').toLowerCase().trim();
-            const tbody = document.getElementById('subjectManageTable');
+        function renderResourcePage() {
+            var tbody = document.getElementById('resourceTable');
             if (!tbody) return;
-            const rows = tbody.querySelectorAll('tr');
-            let visibleCount = 0;
-            rows.forEach(function(row) {
-                if (row.querySelector('.empty-state')) return;
-                const cells = row.querySelectorAll('td');
-                const name = (cells[0] ? cells[0].textContent : '').toLowerCase();
-                const cls = (cells[1] ? cells[1].textContent : '').toLowerCase();
-                if (!query || name.includes(query) || cls.includes(query)) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            const noResultRow = tbody.querySelector('#subjectNoResults');
-            if (query && visibleCount === 0 && !tbody.querySelector('.empty-state')) {
-                if (!noResultRow) {
-                    const tr = document.createElement('tr');
-                    tr.id = 'subjectNoResults';
-                    tr.innerHTML = '<td colspan="4" class="empty-state">No subjects match your search.</td>';
-                    tbody.appendChild(tr);
-                }
-            } else if (noResultRow) {
-                noResultRow.remove();
+            var data = _resourceFiltered;
+            var totalPages = Math.max(1, Math.ceil(data.length / _perPage));
+            if (_resourcePage > totalPages) _resourcePage = totalPages;
+            var start = (_resourcePage - 1) * _perPage;
+            var pageItems = data.slice(start, start + _perPage);
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No resources found.</td></tr>';
+            } else {
+                tbody.innerHTML = pageItems.map(function(r) {
+                    var badgeClass = 'type-default';
+                    if (r.type === 'textbook') badgeClass = 'type-textbook';
+                    else if (r.type === 'video' || r.type === 'videos') badgeClass = 'type-videos';
+                    else if (r.type === 'pyq' || r.type === 'pastPaper') badgeClass = 'type-pyq';
+                    else if (r.type === 'kiwix') badgeClass = 'type-kiwix';
+                    else if (r.type === 'notes') badgeClass = 'type-notes';
+
+                    var subj = null;
+                    for (var i = 0; i < allSubjects.length; i++) {
+                        if (allSubjects[i].name === r.subject) { subj = allSubjects[i]; break; }
+                    }
+                    var symbolSvg = getSymbolSvg(subj ? subj.symbol : 'folder');
+
+                    var _url = r.pdfUrl || r.url || '';
+                    if (!_url.startsWith('/') && !_url.startsWith('http')) _url = '/files/' + encodeURIComponent(_url);
+                    var dl = r.downloads || 0;
+                    var topicLabel = r.topic_name || '';
+                    return '<tr>' +
+                        '<td data-label="Title"><strong>' + esc(r.title) + '</strong></td>' +
+                        '<td data-label="Subject"><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--teal);">' + symbolSvg + ' ' + esc(r.subject || 'General') + '</div></td>' +
+                        '<td data-label="Topic" style="font-size: 0.75rem; color: var(--text-muted);">' + (topicLabel ? esc(topicLabel) : '<span style="color:var(--text-muted);">General</span>') + '</td>' +
+                        '<td data-label="Type"><span class="type-badge ' + badgeClass + '">' + esc(r.type) + '</span></td>' +
+                        '<td data-label="Downloads" style="text-align: center; font-weight: 700;">' + dl + '</td>' +
+                        '<td data-label="Action" style="text-align: right;">' +
+                        '<button data-resource-id="' + r.id + '" data-resource-title="' + esc(r.title) + '" data-resource-subject="' + esc(r.subject) + '" data-resource-type="' + esc(r.type) + '" data-resource-topic="' + esc(r.topic_name || '') + '" class="btn btn-outline js-edit-resource" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">Edit</button> ' +
+                        '<a href="' + _url + '" class="btn btn-outline" download style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">Download</a> ' +
+                        '<button data-resource-id="' + r.id + '" data-resource-title="' + esc(r.title) + '" class="btn btn-outline js-delete-resource" style="color: var(--danger); border-color: var(--danger); margin-left: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.75rem;">Delete</button>' +
+                        '</td></tr>';
+                }).join('');
             }
+            _updateContentPagination('resource', _resourcePage, totalPages, data.length);
+        }
+
+        /** Opens the upload resource modal. */
+        function openUploadModal() {
+            document.getElementById('title').value = '';
+            document.getElementById('file').value = '';
+            document.getElementById('uploadNotif').style.display = 'none';
+            document.getElementById('uploadResourceModal').classList.remove('hidden');
+            document.getElementById('title').focus();
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadResourceModal').classList.add('hidden');
         }
 
         /**
@@ -491,207 +410,454 @@
          * Validates that both a title and a file are provided before sending.
          */
         async function upload() {
-            const file = document.getElementById('file').files[0];
-            const title = document.getElementById('title').value;
-            const type = document.getElementById('type').value;
-            const subject = document.getElementById('subjectSelect').value;
-            if (!file || !title) return showNotification('uploadNotif', __('content.notif.title_required'), true);
+            var file = document.getElementById('file').files[0];
+            var title = document.getElementById('title').value;
+            var type = document.getElementById('type').value;
+            var subject = document.getElementById('subjectSelect').value;
+            var topicId = document.getElementById('topicSelect')?.value || '';
+            if (!file || !title) return showAlert(__('content.notif.title_required'), true);
 
-            const formData = new FormData();
+            var btn = document.getElementById('btn-upload');
+            if (btn) { btn.disabled = true; }
+            var formData = new FormData();
             formData.append('file', file);
             try {
-                const res = await fetch('/teacher/upload?title=' + encodeURIComponent(title) + '&type=' + type + '&subject=' + encodeURIComponent(subject), {
-                    method: 'POST',
-                    body: formData
-                });
+                var res;
+                if (type === 'kiwix') {
+                    res = await fetch('/teacher/upload-zim', { method: 'POST', body: formData, credentials: 'include' });
+                } else {
+                    var url = '/teacher/upload?title=' + encodeURIComponent(title) + '&type=' + type + '&subject=' + encodeURIComponent(subject) + '&grade=0&language=en';
+                    if (topicId) url += '&topic_id=' + encodeURIComponent(topicId);
+                    res = await fetch(url, { method: 'POST', body: formData, credentials: 'include' });
+                }
                 if (res.ok) {
-                    document.getElementById('title').value = '';
-                    document.getElementById('file').value = '';
-                    showNotification('uploadNotif', __('content.notif.upload_ok'), false);
+                    closeUploadModal();
+                    showAlert(__('content.notif.upload_ok'), false);
                     loadResources();
                 } else {
-                    const err = await res.json();
-                    showNotification('uploadNotif', err.detail || __('content.notif.upload_failed'), true);
+                    var errText;
+                    try { var errJson = await res.json(); errText = errJson.detail || __('content.notif.upload_failed'); } catch(ex) { errText = __('content.notif.upload_failed'); }
+                    showAlert(errText, true);
                 }
             } catch (e) {
-                showNotification('uploadNotif', __('content.notif.connection_error'), true);
+                showAlert(__('content.notif.connection_error'), true);
+            } finally {
+                if (btn) { btn.disabled = false; }
             }
         }
 
-        /**
-         * Delete a resource by ID after user confirmation.
-         * @param {number} id - Resource database ID
-         * @param {string} title - Resource title for display in confirmation
-         */
+        /** Deletes a resource by ID after user confirmation. */
         async function deleteResource(id, title) {
-            const confirmed = await showConfirm(__('content.notif.delete_title'), __('content.notif.delete_confirm', {title: title}), true, __('content.confirm_delete_btn'));
+            var confirmed = await showConfirm(__('content.notif.delete_title'), __('content.notif.delete_confirm', {title: title}), true, __('content.confirm_delete_btn'));
             if (!confirmed) return;
             try {
-                const res = await fetch('/teacher/resources/' + id, { method: 'DELETE' });
+                var res = await fetch('/teacher/resources/' + id, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
-                    showNotification('uploadNotif', __('content.notif.delete_ok', {title: title}), false);
+                    showAlert(__('content.notif.delete_ok', {title: title}), false);
                     loadResources();
                 } else {
-                    showNotification('uploadNotif', __('content.notif.delete_failed'), true);
-                }
-            } catch (e) {
-                showNotification('uploadNotif', __('content.notif.network_error'), true);
-            }
-        }
-
-        /**
-         * Shows the subject delete modal with transfer/destroy options.
-         * Populates the transfer target dropdown with subjects other than the one being deleted.
-         * @param {string} name - The subject name to delete
-         */
-        async function promptDeleteSubject(name) {
-            activeDeleteSubjectName = name;
-            document.getElementById('deleteSubjectModalText').innerText = 'You are deleting the subject "' + name + '". What would you like to do with the textbooks and files that belong to this subject?';
-
-            // Populate transfer targets
-            try {
-                let subs = [];
-                const res = await fetch('/subjects');
-                subs = await res.json();
-                const otherSubs = subs.filter(function(s) { return s.name !== name; });
-                const select = document.getElementById('transferTarget');
-                if (otherSubs.length === 0) {
-                    select.innerHTML = '<option value="">' + __('content.no_other_subjects') + '</option>';
-                } else {
-                    select.innerHTML = otherSubs.map(function(s) { return '<option value="' + esc(s.name) + '">' + esc(s.name) + ' (' + esc(s.class_name) + ')</option>'; }).join('');
-                }
-            } catch (e) { console.error(e); }
-
-            document.getElementById('subjectDeleteModal').classList.remove('hidden');
-        }
-
-        /** Hides the subject delete modal and resets the radio selection to "delete". */
-        function closeDeleteSubjectModal() {
-            document.getElementById('subjectDeleteModal').classList.add('hidden');
-            // Reset radio button
-            const els = document.querySelectorAll('input[name="subjectAction"]');
-            if (els.length > 0) els[0].checked = true;
-            toggleTransferSelect(false);
-        }
-
-        /**
-         * Shows/hides the transfer target dropdown based on the radio selection.
-         * @param {boolean} show - Whether to show the transfer target container
-         */
-        function toggleTransferSelect(show) {
-            const container = document.getElementById('transferTargetContainer');
-            if (show) {
-                container.classList.remove('hidden');
-            } else {
-                container.classList.add('hidden');
-            }
-        }
-
-        /**
-         * Confirms and executes the subject deletion (with optional transfer).
-         * Calls /teacher/subjects/delete with the action choice.
-         */
-        async function confirmDeleteSubject() {
-            const action = document.querySelector('input[name="subjectAction"]:checked').value;
-            const transferTo = action === 'transfer' ? document.getElementById('transferTarget').value : null;
-
-            if (action === 'transfer' && !transferTo) {
-                showAlert(__('content.notif.transfer_target_required'), true);
-                return;
-            }
-
-            try {
-                const res = await fetch('/teacher/subjects/delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: activeDeleteSubjectName, transfer_to: transferTo })
-                });
-                if (res.ok) {
-                    closeDeleteSubjectModal();
-                    showNotification('subjectNotif', __('content.notif.subject_deleted', {name: activeDeleteSubjectName}), false);
-                    loadSubjects();
-                    loadResources();
-                } else {
-                    showAlert(__('content.notif.subject_delete_failed'), true);
+                    showAlert(__('content.notif.delete_failed'), true);
                 }
             } catch (e) {
                 showAlert(__('content.notif.network_error'), true);
             }
         }
 
+        // --- Topic management (for upload modal subject→topic flow) ---
+        var activeResourceTopics = [];
+
+        async function loadTopicsForSubject() {
+            var subject = document.getElementById('subjectSelect')?.value || '';
+            var topicSelect = document.getElementById('topicSelect');
+            if (!topicSelect) return;
+            if (!subject || subject === 'General') {
+                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+                return;
+            }
+            try {
+                var res = await fetch('/teacher/resource-topics?subject=' + encodeURIComponent(subject), { credentials: 'include' });
+                activeResourceTopics = await res.json();
+                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+                activeResourceTopics.forEach(function(t) {
+                    var opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.name;
+                    topicSelect.appendChild(opt);
+                });
+            } catch (e) {
+                activeResourceTopics = [];
+                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+            }
+        }
+
+        // --- Topic management section (all topics table) ---
+
+        async function loadAllTopics() {
+            try {
+                var res = await fetch('/teacher/resource-topics', { credentials: 'include' });
+                allTopics = await res.json();
+                filterTopics();
+            } catch (e) {
+                allTopics = [];
+                filterTopics();
+            }
+        }
+
+        function filterTopics() {
+            var query = (document.getElementById('topicSearch')?.value || '').toLowerCase().trim();
+            _topicFiltered = allTopics.filter(function(t) {
+                return !query || (t.name || '').toLowerCase().includes(query) || (t.subject || '').toLowerCase().includes(query);
+            });
+            _topicPage = 1;
+            renderTopicPage();
+        }
+
+        function renderTopicPage() {
+            var tbody = document.getElementById('topicTable');
+            if (!tbody) return;
+            var query = (document.getElementById('topicSearch')?.value || '').toLowerCase().trim();
+            var data = _topicFiltered;
+            var totalPages = Math.max(1, Math.ceil(data.length / _perPage));
+            if (_topicPage > totalPages) _topicPage = totalPages;
+            var start = (_topicPage - 1) * _perPage;
+            var pageItems = data.slice(start, start + _perPage);
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-state" style="text-align:center;">' + (query ? 'No topics match your search.' : __('content.topics_empty')) + '</td></tr>';
+            } else {
+                tbody.innerHTML = pageItems.map(function(t) {
+                    return '<tr>' +
+                        '<td data-label="Subject"><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--teal);">' + esc(t.subject) + '</div></td>' +
+                        '<td data-label="Topic Name"><strong>' + esc(t.name) + '</strong></td>' +
+                        '<td data-label="Action" style="text-align: right;">' +
+                            '<button data-topic-id="' + esc(t.id) + '" data-topic-name="' + esc(t.name) + '" class="btn btn-outline js-edit-topic" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; margin-right: 0.25rem;">Edit</button>' +
+                            '<button data-topic-id="' + esc(t.id) + '" data-topic-name="' + esc(t.name) + '" class="btn btn-outline js-delete-topic" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('content.delete') + '</span></button>' +
+                        '</td>' +
+                    '</tr>';
+                }).join('');
+            }
+            _updateContentPagination('topic', _topicPage, totalPages, data.length);
+        }
+
+        function openAddTopicModal() {
+            var select = document.getElementById('modalTopicSubject');
+            select.innerHTML = '<option value="">Select subject...</option>';
+            allSubjects.forEach(function(s) {
+                var opt = document.createElement('option');
+                opt.value = s.name;
+                opt.textContent = s.class_name ? s.name + ' (' + s.class_name + ')' : s.name;
+                select.appendChild(opt);
+            });
+            document.getElementById('modalTopicName').value = '';
+            document.getElementById('addTopicNotif').style.display = 'none';
+            document.getElementById('addTopicModal').classList.remove('hidden');
+            select.focus();
+        }
+
+        function closeAddTopicModal() {
+            document.getElementById('addTopicModal').classList.add('hidden');
+        }
+
+        async function confirmAddTopic() {
+            var subject = document.getElementById('modalTopicSubject').value;
+            var name = document.getElementById('modalTopicName').value.trim();
+            if (!subject) {
+                showNotification('addTopicNotif', 'Please select a subject.', true);
+                return;
+            }
+            if (!name) {
+                showNotification('addTopicNotif', 'Topic name is required.', true);
+                return;
+            }
+            try {
+                var res = await fetch('/teacher/resource-topics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ subject: subject, name: name })
+                });
+                if (res.ok) {
+                    closeAddTopicModal();
+                    loadAllTopics();
+                } else {
+                    var err = await res.json().catch(function() { return {}; });
+                    showNotification('addTopicNotif', err.detail || 'Failed to add topic.', true);
+                }
+            } catch (e) {
+                showNotification('addTopicNotif', 'Network error.', true);
+            }
+        }
+
+        async function deleteTopic(id, name) {
+            var count = allResources.filter(function(r) { return r.topic_id === id; }).length;
+            var result = await new Promise(function(resolve) {
+                var overlay = document.createElement('div');
+                overlay.className = 'popup';
+                overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;';
+                var btns = '';
+                if (count > 0) {
+                    btns = '<button id="topicXferBtn" style="width:100%;padding:0.6rem;background:var(--teal);color:#fff;border:2px solid var(--teal);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('content.topics_transfer_to_general') + '</button>';
+                    btns += '<button id="topicDelResBtn" style="width:100%;padding:0.6rem;background:var(--danger);color:#fff;border:2px solid var(--danger);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('content.topics_delete_with_resources') + '</button>';
+                } else {
+                    btns = '<button id="topicDelResBtn" style="width:100%;padding:0.6rem;background:var(--danger);color:#fff;border:2px solid var(--danger);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('content.confirm_delete_btn') + '</button>';
+                }
+                overlay.innerHTML = '<div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:440px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--danger);">'
+                    + '<div style="text-align:center;margin-bottom:1rem;color:var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></div>'
+                    + '<h3 style="font-size:1.15rem;font-weight:800;margin:0 0 0.5rem;color:var(--danger);text-align:center;">' + __('content.topics_delete_title') + '</h3>'
+                    + '<p style="font-size:0.9rem;color:var(--text-secondary);margin:0 0 0.75rem;text-align:center;">' + __('content.topics_delete_confirm', {name: name}) + '</p>'
+                    + (count > 0 ? '<p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 1.25rem;text-align:center;">' + count + ' resource(s) are assigned to this topic.</p>' : '<div style="margin-bottom:1rem;"></div>')
+                    + '<div style="display:flex;flex-direction:column;gap:0.5rem;">'
+                    + btns
+                    + '<button id="topicCancelBtn" style="width:100%;padding:0.6rem;background:transparent;color:var(--on-surface);border:1px solid var(--outline);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;">Cancel</button>'
+                    + '</div></div>';
+                document.body.appendChild(overlay);
+                function done(val) { overlay.remove(); resolve(val); }
+                var xferBtn = document.getElementById('topicXferBtn');
+                var delBtn = document.getElementById('topicDelResBtn');
+                if (xferBtn) xferBtn.addEventListener('click', function() { done('transfer'); });
+                if (delBtn) delBtn.addEventListener('click', function() { done('delete'); });
+                document.getElementById('topicCancelBtn').addEventListener('click', function() { done(null); });
+            });
+            if (!result) return;
+            var deleteRes = result === 'delete';
+            try {
+                var url = '/teacher/resource-topics/' + encodeURIComponent(id);
+                if (deleteRes) url += '?delete_resources=true';
+                var res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+                if (res.ok) {
+                    if (deleteRes) {
+                        showNotification('topicNotif', __('content.topics_deleted_with_resources', {name: name, count: count}), false);
+                    } else {
+                        showNotification('topicNotif', __('content.topics_deleted_transfer', {name: name}), false);
+                    }
+                    loadAllTopics();
+                    loadResources();
+                } else {
+                    var err = await res.json().catch(function() { return {}; });
+                    showNotification('topicNotif', err.detail || 'Failed to delete topic.', true);
+                }
+            } catch (e) {
+                showNotification('topicNotif', 'Network error.', true);
+            }
+        }
+
+        function openEditResource(id, title, subject, type, topicName) {
+            document.getElementById('editResId').value = id;
+            document.getElementById('editResTitle').value = title;
+            document.getElementById('editResType').value = type;
+            document.getElementById('editResLang').value = 'en';
+            document.getElementById('editResNotif').style.display = 'none';
+            document.getElementById('editResourceModal').dataset.currentTopic = topicName;
+            var sel = document.getElementById('editResSubject');
+            sel.innerHTML = '<option value="General">General</option>';
+            allSubjects.forEach(function(s) {
+                var display = s.class_name ? s.name + ' (' + s.class_name + ')' : s.name;
+                var opt = document.createElement('option');
+                opt.value = s.name;
+                opt.textContent = display;
+                sel.appendChild(opt);
+            });
+            sel.value = subject;
+            loadEditTopicsForSubject();
+            document.getElementById('editResourceModal').classList.remove('hidden');
+        }
+
+        async function loadEditTopicsForSubject() {
+            var subject = document.getElementById('editResSubject').value;
+            var topicSelect = document.getElementById('editResTopic');
+            if (!subject || subject === 'General') {
+                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+                return;
+            }
+            try {
+                var res = await fetch('/teacher/resource-topics?subject=' + encodeURIComponent(subject), { credentials: 'include' });
+                var topics = await res.json();
+                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+                topics.forEach(function(t) {
+                    var opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.name;
+                    topicSelect.appendChild(opt);
+                });
+                var currentTopicName = document.getElementById('editResourceModal').dataset.currentTopic || '';
+                for (var i = 0; i < topicSelect.options.length; i++) {
+                    if (topicSelect.options[i].textContent === currentTopicName) {
+                        topicSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            } catch (e) {
+                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+            }
+        }
+
+        async function saveResourceEdit() {
+            var id = document.getElementById('editResId').value;
+            var title = document.getElementById('editResTitle').value.trim();
+            var subject = document.getElementById('editResSubject').value;
+            var type = document.getElementById('editResType').value;
+            var topicId = document.getElementById('editResTopic').value || null;
+            var language = document.getElementById('editResLang').value.trim() || 'en';
+            if (!title) return showAlert('Title is required.', true);
+            try {
+                var res = await fetch('/teacher/resources/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title: title, subject: subject, type: type, topic_id: topicId, language: language })
+                });
+                if (res.ok) {
+                    document.getElementById('editResourceModal').classList.add('hidden');
+                    showAlert('Resource updated.', false);
+                    loadResources();
+                } else {
+                    var err = await res.json().catch(function() { return {}; });
+                    showAlert(err.detail || 'Failed to update resource.', true);
+                }
+            } catch (e) {
+                showAlert('Network error.', true);
+            }
+        }
+
+        function openEditTopic(id, name) {
+            document.getElementById('editTopicId').value = id;
+            document.getElementById('editTopicName').value = name;
+            document.getElementById('editTopicNotif').style.display = 'none';
+            document.getElementById('editTopicModal').classList.remove('hidden');
+            document.getElementById('editTopicName').focus();
+        }
+
+        async function saveTopicEdit() {
+            var id = document.getElementById('editTopicId').value;
+            var name = document.getElementById('editTopicName').value.trim();
+            if (!name) return showNotification('editTopicNotif', 'Topic name is required.', true);
+            try {
+                var res = await fetch('/teacher/resource-topics/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name: name })
+                });
+                if (res.ok) {
+                    document.getElementById('editTopicModal').classList.add('hidden');
+                    loadAllTopics();
+                } else {
+                    var err = await res.json().catch(function() { return {}; });
+                    showNotification('editTopicNotif', err.detail || 'Failed to update topic.', true);
+                }
+            } catch (e) {
+                showNotification('editTopicNotif', 'Network error.', true);
+            }
+        }
+
+        // --- Pagination helpers ---
+
+        function _updateContentPagination(key, page, totalPages, total) {
+            var el = document.getElementById(key + 'Pagination');
+            var pageInfo = document.getElementById(key + 'PageInfo');
+            var prevBtn = document.getElementById('btn-' + key + 'PrevPage');
+            var nextBtn = document.getElementById('btn-' + key + 'NextPage');
+            if (el) el.style.display = total > 0 ? 'flex' : 'none';
+            if (pageInfo) pageInfo.textContent = __('settings.page_of', {current: page, total: totalPages});
+            if (prevBtn) { prevBtn.disabled = page <= 1; prevBtn.style.opacity = page <= 1 ? '0.4' : '1'; }
+            if (nextBtn) { nextBtn.disabled = page >= totalPages; nextBtn.style.opacity = page >= totalPages ? '0.4' : '1'; }
+        }
+        function resourcePrevPage() { if (_resourcePage > 1) { _resourcePage--; renderResourcePage(); } }
+        function resourceNextPage() { var tp = Math.ceil(_resourceFiltered.length / _perPage); if (_resourcePage < tp) { _resourcePage++; renderResourcePage(); } }
+        function resourceChangePerPage(val) { _perPage = parseInt(val, 10) || 20; _resourcePage = 1; renderResourcePage(); }
+        function topicPrevPage() { if (_topicPage > 1) { _topicPage--; renderTopicPage(); } }
+        function topicNextPage() { var tp = Math.ceil(_topicFiltered.length / _perPage); if (_topicPage < tp) { _topicPage++; renderTopicPage(); } }
+        function topicChangePerPage(val) { _perPage = parseInt(val, 10) || 20; _topicPage = 1; renderTopicPage(); }
+
         // --- Init ---
-        _pageInitRegistry['content'] = function() {
-            initCustomDropdown();
+        var _initContent = function() {
+            document.getElementById('btn-resourcePrevPage')?.addEventListener('click', resourcePrevPage);
+            document.getElementById('btn-resourceNextPage')?.addEventListener('click', resourceNextPage);
+            document.getElementById('resourcePerPageSelect')?.addEventListener('change', function() { resourceChangePerPage(this.value); });
+            document.getElementById('btn-topicPrevPage')?.addEventListener('click', topicPrevPage);
+            document.getElementById('btn-topicNextPage')?.addEventListener('click', topicNextPage);
+            document.getElementById('topicPerPageSelect')?.addEventListener('change', function() { topicChangePerPage(this.value); });
+
             loadSubjects();
             loadResources();
+            loadAllTopics();
             loadWhoAmI();
             checkSelfResetRequired();
 
-            // Event listeners for onclick->addEventListener migration
             document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
+
+            // Upload modal
+            document.getElementById('btn-openUploadModal')?.addEventListener('click', openUploadModal);
+            document.getElementById('btn-closeUploadModal')?.addEventListener('click', closeUploadModal);
             document.getElementById('btn-upload')?.addEventListener('click', upload);
-            document.getElementById('dropdownSelected')?.addEventListener('click', toggleCustomDropdown);
-            document.getElementById('btn-addSubject')?.addEventListener('click', addSubject);
-            document.getElementById('btn-closeDeleteSubjectModal')?.addEventListener('click', closeDeleteSubjectModal);
-            document.getElementById('btn-confirmDeleteSubject')?.addEventListener('click', confirmDeleteSubject);
-            document.getElementById('btn-submitForcePasswordReset')?.addEventListener('click', submitForcePasswordReset);
 
-            // Search/input/focus/blur inline handlers migration
-            const subjectSearch = document.getElementById('subjectSearch');
-            if (subjectSearch) {
-                subjectSearch.addEventListener('input', filterManageSubjects);
-                subjectSearch.addEventListener('focus', function() { this.style.borderColor = 'var(--teal)'; });
-                subjectSearch.addEventListener('blur', function() { this.style.borderColor = 'var(--outline)'; });
-            }
+            document.getElementById('type')?.addEventListener('change', function() {
+                var sub = document.getElementById('subjectSelect');
+                if (this.value === 'kiwix') { sub.disabled = true; sub.value = 'General'; loadTopicsForSubject(); }
+                else { sub.disabled = false; }
+            });
+
+            document.getElementById('subjectSelect')?.addEventListener('change', function() {
+                var type = document.getElementById('type')?.value;
+                if (type !== 'kiwix') loadTopicsForSubject();
+            });
+
+            // Resource filters
             document.getElementById('filterSubject')?.addEventListener('change', filterResources);
-            const resourceSearch = document.getElementById('resourceSearch');
+            document.getElementById('filterGrade')?.addEventListener('change', filterResources);
+            document.getElementById('filterLang')?.addEventListener('change', filterResources);
+            var resourceSearch = document.getElementById('resourceSearch');
             if (resourceSearch) {
-                resourceSearch.addEventListener('input', filterResources);
-                resourceSearch.addEventListener('focus', function() { this.style.borderColor = 'var(--teal)'; });
-                resourceSearch.addEventListener('blur', function() { this.style.borderColor = 'var(--outline)'; });
-            }
-            const deleteRadio = document.querySelector('input[name="subjectAction"][value="delete"]');
-            const transferRadio = document.querySelector('input[name="subjectAction"][value="transfer"]');
-            if (deleteRadio) deleteRadio.addEventListener('change', function() { toggleTransferSelect(false); });
-            if (transferRadio) transferRadio.addEventListener('change', function() { toggleTransferSelect(true); });
-
-            // Event delegation for custom dropdown options
-            const dropdownList = document.getElementById('dropdownList');
-            if (dropdownList) {
-                dropdownList.addEventListener('click', function(e) {
-                    const option = e.target.closest('.custom-option');
-                    if (option) {
-                        selectCustomOption(option.dataset.optionValue, option.dataset.optionLabel);
-                    }
+                var resourceSearchDebounce = null;
+                resourceSearch.addEventListener('input', function() {
+                    clearTimeout(resourceSearchDebounce);
+                    resourceSearchDebounce = setTimeout(filterResources, 200);
                 });
             }
 
-            // Event delegation for delete subject buttons in subjectManageTable
-            const subjectTable = document.getElementById('subjectManageTable');
-            if (subjectTable) {
-                subjectTable.addEventListener('click', function(e) {
-                    const btn = e.target.closest('.js-delete-subject');
-                    if (btn) {
-                        promptDeleteSubject(btn.dataset.subjectName);
-                    }
-                });
-            }
-
-            // Event delegation for delete resource buttons in resourceTable
-            const resourceTable = document.getElementById('resourceTable');
+            // Resource table delete
+            var resourceTable = document.getElementById('resourceTable');
             if (resourceTable) {
                 resourceTable.addEventListener('click', function(e) {
-                    const btn = e.target.closest('.js-delete-resource');
-                    if (btn) {
-                        deleteResource(parseInt(btn.dataset.resourceId), btn.dataset.resourceTitle);
-                    }
+                    var btn = e.target.closest('.js-delete-resource');
+                    if (btn) deleteResource(btn.dataset.resourceId, btn.dataset.resourceTitle);
                 });
             }
-        };
 
-        document.addEventListener('DOMContentLoaded', _pageInitRegistry['content']);
+            // Topic management section
+            document.getElementById('btn-addTopic')?.addEventListener('click', openAddTopicModal);
+            document.getElementById('btn-closeTopicModal')?.addEventListener('click', closeAddTopicModal);
+            document.getElementById('btn-confirmAddTopic')?.addEventListener('click', confirmAddTopic);
+
+            var topicSearch = document.getElementById('topicSearch');
+            if (topicSearch) {
+                var topicSearchDebounce = null;
+                topicSearch.addEventListener('input', function() {
+                    clearTimeout(topicSearchDebounce);
+                    topicSearchDebounce = setTimeout(filterTopics, 200);
+                });
+            }
+
+            var topicTable = document.getElementById('topicTable');
+            if (topicTable) {
+                topicTable.addEventListener('click', function(e) {
+                    var btn = e.target.closest('.js-delete-topic');
+                    if (btn) deleteTopic(btn.dataset.topicId, btn.dataset.topicName);
+                });
+            }
+
+            document.getElementById('resourceTable')?.addEventListener('click', function(e) { if (e.target.closest('.js-edit-resource')) { var btn = e.target.closest('.js-edit-resource'); openEditResource(btn.dataset.resourceId, btn.dataset.resourceTitle, btn.dataset.resourceSubject, btn.dataset.resourceType, btn.dataset.resourceTopic); } });
+            document.getElementById('topicTable')?.addEventListener('click', function(e) { if (e.target.closest('.js-edit-topic')) { var btn = e.target.closest('.js-edit-topic'); openEditTopic(btn.dataset.topicId, btn.dataset.topicName); } });
+            document.getElementById('btn-saveEditResource')?.addEventListener('click', saveResourceEdit);
+            document.getElementById('btn-closeEditResource')?.addEventListener('click', function() { document.getElementById('editResourceModal').classList.add('hidden'); });
+            document.getElementById('btn-saveEditTopic')?.addEventListener('click', saveTopicEdit);
+            document.getElementById('btn-closeEditTopic')?.addEventListener('click', function() { document.getElementById('editTopicModal').classList.add('hidden'); });
+            document.getElementById('editResSubject')?.addEventListener('change', function() { loadEditTopicsForSubject(); });
+        };
+        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['content'] = _initContent;
+
+        document.addEventListener('DOMContentLoaded', _initContent);
     </script>
 
 </body>

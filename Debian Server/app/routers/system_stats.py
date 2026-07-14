@@ -46,6 +46,16 @@ async def get_stats():
             subject_count = c.fetchone()[0]
         except Exception:
             subject_count = 0
+        try:
+            c.execute("SELECT COUNT(*) FROM courses WHERE published = 1")
+            published_courses = c.fetchone()[0]
+        except Exception:
+            published_courses = 0
+        try:
+            c.execute("SELECT COUNT(*) FROM courses WHERE published = 0")
+            draft_courses = c.fetchone()[0]
+        except Exception:
+            draft_courses = 0
     total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
     battery_percent = 100
     try:
@@ -67,6 +77,7 @@ async def get_stats():
             total_str = f"{total / 1024**i:.1f} {unit}"
             break
     result = {"scholars": scholar_count, "resources": resource_count, "subjects": subject_count,
+              "published_courses": published_courses, "draft_courses": draft_courses,
               "storage": f"{used_str} / {total_str}", "storage_percent": (used / total) * 100,
               "battery_percent": battery_percent, "uptime": uptime_str, "disk_usage": f"{used_str} / {total_str}"}
     return result

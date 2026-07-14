@@ -62,8 +62,6 @@ class _ResourcePageState extends State<ResourcePage> {
             _resourceRow(context, l10n.resourceTypeVideos, l10n.resourceTypeVideosSubtitle, 'videos'),
             Divider(height: 1, color: cs.outlineVariant),
             _resourceRow(context, l10n.resourceTypePyqs, l10n.resourceTypePyqsSubtitle, 'pyqs'),
-            Divider(height: 1, color: cs.outlineVariant),
-            _resourceRow(context, l10n.resourceTypeNotes, l10n.resourceTypeNotesSubtitle, 'notes'),
           ],
         ),
       ),

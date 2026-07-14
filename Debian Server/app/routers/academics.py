@@ -1,11 +1,12 @@
-"""Subject and grade management routes."""
+"""Subject, grade, and resource topic management routes."""
 import os
 import sqlite3
 import logging
-import uuid
 import asyncio
-from fastapi import APIRouter, Depends, HTTPException
-from app.async_db import db_conn
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, Query
+from app.async_db import db_conn, db_exec, db_fetch
+from app.database import UPLOAD_DIR, gen_uid
 from app.dependencies import verify_teacher
 from app.models import SubjectCreate, SubjectResponse, SubjectCreateResponse, StatusResponse, GradeInfo
 
@@ -53,7 +54,7 @@ async def create_subject(subject: SubjectCreate, teacher_user: str = Depends(ver
         try:
             c = conn.cursor()
             class_val = subject.class_name or "All Classes"
-            subj_id = f"SUBJ-{uuid.uuid4().hex[:8]}"
+            subj_id = gen_uid("SUBJ")
             c.execute("INSERT INTO subjects (id, name, symbol, class_name) VALUES (?, ?, ?, ?)",
                       (subj_id, subject.name, subject.symbol, class_val))
             conn.commit()
@@ -63,57 +64,85 @@ async def create_subject(subject: SubjectCreate, teacher_user: str = Depends(ver
             raise HTTPException(status_code=400, detail="Failed to create subject")
 
 
-@router.post("/teacher/subjects/delete", response_model=StatusResponse,
-             summary="Delete a subject",
-             description="Deletes a subject by id or name, optionally transferring resources to another subject.",
-             tags=["Subjects"],
-             responses={400: {"description": "Invalid request or target subject missing"}, 401: {"description": "Unauthorized"}, 404: {"description": "Subject not found"}})
-async def delete_subject(data: dict, teacher_user: str = Depends(verify_teacher)):
-    """Delete a subject and optionally transfer its resources.
+@router.put("/teacher/subjects/{subject_id}",
+            summary="Edit a subject", tags=["Subjects"])
+async def update_subject(subject_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
+    allowed = {"name", "symbol", "class_name"}
+    fields = {k: v for k, v in data.items() if k in allowed and v is not None}
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update.")
+    async with db_conn() as conn:
+        c = conn.cursor()
+        c.execute("SELECT id, name FROM subjects WHERE id = ?", (subject_id,))
+        row = c.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Subject not found.")
+        old_name = row[1]
+        if "name" in fields:
+            c.execute("SELECT id FROM subjects WHERE name = ? AND id != ?", (fields["name"], subject_id))
+            if c.fetchone():
+                raise HTTPException(status_code=400, detail="A subject with that name already exists.")
+        set_parts = []
+        params = []
+        if "name" in fields:
+            set_parts.append("name = ?")
+            params.append(fields["name"])
+        if "symbol" in fields:
+            set_parts.append("symbol = ?")
+            params.append(fields["symbol"])
+        if "class_name" in fields:
+            set_parts.append("class_name = ?")
+            params.append(fields["class_name"])
+        if set_parts:
+            params.append(subject_id)
+            c.execute(f"UPDATE subjects SET {', '.join(set_parts)} WHERE id = ?", tuple(params))
+        if "name" in fields and fields["name"] != old_name:
+            c.execute("UPDATE resources SET subject = ? WHERE subject = ?", (fields["name"], old_name))
+            c.execute("UPDATE resource_topics SET subject = ? WHERE subject = ?", (fields["name"], old_name))
+        conn.commit()
+    return {"status": "ok"}
 
-    Args:
-        data: Delete request with id/name and optional transfer_to.
 
-    Returns:
-        Status dict indicating success.
-    """
+@router.delete("/teacher/subjects/{subject_id}", response_model=StatusResponse,
+               summary="Delete a subject",
+               description="Deletes a subject by id, optionally transferring resources to another subject.",
+               tags=["Subjects"],
+               responses={400: {"description": "Invalid request or target subject missing"}, 401: {"description": "Unauthorized"}, 404: {"description": "Subject not found"}})
+async def delete_subject(subject_id: str, transfer_to: str = Query(None), teacher_user: str = Depends(verify_teacher)):
     async with db_conn() as conn:
         try:
             c = conn.cursor()
-            if data.id:
-                c.execute("SELECT name FROM subjects WHERE id = ?", (data.get('id'),))
-            else:
-                c.execute("SELECT name FROM subjects WHERE name = ?", (data.get('name'),))
+            c.execute("SELECT name FROM subjects WHERE id = ?", (subject_id,))
             row = c.fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="Subject not found.")
             subject_name = row[0]
 
-            if data.get('transfer_to'):
-                c.execute("SELECT COUNT(*) FROM subjects WHERE name = ?", (data.get('transfer_to'),))
+            if transfer_to:
+                c.execute("SELECT COUNT(*) FROM subjects WHERE name = ?", (transfer_to,))
                 if c.fetchone()[0] == 0:
                     raise HTTPException(status_code=400, detail="Target subject does not exist.")
-                c.execute("UPDATE resources SET subject = ? WHERE subject = ?", (data.get('transfer_to'), subject_name))
+                c.execute("UPDATE resources SET subject = ? WHERE subject = ?", (transfer_to, subject_name))
             else:
-                c.execute("SELECT file_path FROM resources WHERE subject = ?", (subject_name,))
+                c.execute("SELECT filename FROM resources WHERE subject = ?", (subject_name,))
                 files = [r[0] for r in c.fetchall()]
-                for fp in files:
-                    if await asyncio.to_thread(os.path.exists, fp):
+                for fname in files:
+                    fp = os.path.join(UPLOAD_DIR, fname) if fname else None
+                    if fp and await asyncio.to_thread(os.path.exists, fp):
                         try:
                             await asyncio.to_thread(os.remove, fp)
                         except Exception as e:
                             logging.warning(f"Could not remove physical file {fp}: {e}")
                 c.execute("DELETE FROM resources WHERE subject = ?", (subject_name,))
 
-            if data.get('id'):
-                c.execute("DELETE FROM subjects WHERE id = ?", (data.get('id'),))
-            else:
-                c.execute("DELETE FROM subjects WHERE name = ?", (data.get('name'),))
+            c.execute("DELETE FROM subjects WHERE id = ?", (subject_id,))
             conn.commit()
             return {"status": "success"}
+        except HTTPException:
+            raise
         except Exception as e:
-            logging.error(f"delete_subject: {e}")
-            raise HTTPException(status_code=400, detail="Failed to delete subject")
+            logging.error(f"delete_subject: {e}", exc_info=True)
+            raise HTTPException(status_code=400, detail=f"Failed to delete subject: {e}")
 
 
 @router.get("/grades", response_model=list[GradeInfo],
@@ -129,9 +158,9 @@ async def get_grades(teacher_user: str = Depends(verify_teacher)):
     """
     async with db_conn() as conn:
         c = conn.cursor()
-        c.execute("SELECT name FROM grades ORDER BY name ASC")
+        c.execute("SELECT id, name FROM grades ORDER BY name ASC")
         rows = c.fetchall()
-    return [{"name": r[0]} for r in rows]
+    return [{"id": r[0], "name": r[1]} for r in rows]
 
 
 @router.post("/grades",
@@ -158,11 +187,31 @@ async def create_grade(data: dict, teacher_user: str = Depends(verify_teacher)):
     async with db_conn() as conn:
         try:
             c = conn.cursor()
-            c.execute("INSERT INTO grades (name) VALUES (?)", (name,))
+            c.execute("INSERT INTO grades (id, name) VALUES (?, ?)", (gen_uid("GRD"), name))
             conn.commit()
             return {"status": "success", "name": name}
         except sqlite3.IntegrityError:
             raise HTTPException(status_code=400, detail="Grade already exists.")
+
+
+@router.put("/grades/{grade_name}",
+            summary="Rename a grade", tags=["Subjects"])
+async def update_grade(grade_name: str, data: dict, teacher_user: str = Depends(verify_teacher)):
+    new_name = (data.get("new_name") or "").strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="new_name is required.")
+    async with db_conn() as conn:
+        c = conn.cursor()
+        c.execute("SELECT id FROM grades WHERE name = ?", (grade_name,))
+        if not c.fetchone():
+            raise HTTPException(status_code=404, detail="Grade not found.")
+        c.execute("SELECT id FROM grades WHERE name = ? AND name != ?", (new_name, grade_name))
+        if c.fetchone():
+            raise HTTPException(status_code=400, detail="A grade with that name already exists.")
+        c.execute("UPDATE grades SET name = ? WHERE name = ?", (new_name, grade_name))
+        c.execute("UPDATE resources SET grade = ? WHERE grade = ?", (new_name, grade_name))
+        conn.commit()
+    return {"status": "ok"}
 
 
 @router.delete("/grades/{name}", response_model=StatusResponse,
@@ -190,12 +239,117 @@ async def delete_grade(name: str, transfer_to: str = None, teacher_user: str = D
                 raise HTTPException(status_code=400, detail="Target grade does not exist.")
             c.execute("UPDATE resources SET grade = ? WHERE grade = ?", (transfer_to, name))
         else:
-            c.execute("SELECT file_path FROM resources WHERE grade = ?", (name,))
+            c.execute("SELECT filename FROM resources WHERE grade = ?", (name,))
             files = c.fetchall()
-            for (fp,) in files:
-                if await asyncio.to_thread(os.path.exists, fp):
+            for (fname,) in files:
+                fp = os.path.join(UPLOAD_DIR, fname) if fname else None
+                if fp and await asyncio.to_thread(os.path.exists, fp):
                     await asyncio.to_thread(os.remove, fp)
             c.execute("DELETE FROM resources WHERE grade = ?", (name,))
         c.execute("DELETE FROM grades WHERE name = ?", (name,))
         conn.commit()
     return {"status": "success"}
+
+
+# ─── Resource Topics (chapters within subjects) ────────────────────────────
+
+@router.get("/teacher/resource-topics",
+            summary="List resource topics",
+            description="Returns resource topics. Omit subject to list all.",
+            tags=["Subjects"])
+async def list_resource_topics(subject: str = Query(None, description="Subject name (omit for all)"),
+                               teacher_user: str = Depends(verify_teacher)):
+    if subject:
+        rows = await db_fetch(
+            "SELECT id, subject, name, position FROM resource_topics WHERE subject = ? ORDER BY position ASC",
+            (subject,))
+    else:
+        rows = await db_fetch(
+            "SELECT id, subject, name, position FROM resource_topics ORDER BY subject ASC, position ASC")
+    return [dict(r) for r in rows]
+
+
+@router.post("/teacher/resource-topics",
+             summary="Create a resource topic (chapter)",
+             tags=["Subjects"],
+             responses={201: {"description": "Topic created"}, 400: {"description": "Topic already exists"}})
+async def create_resource_topic(data: dict, teacher_user: str = Depends(verify_teacher)):
+    subject = (data.get("subject") or "").strip()
+    name = (data.get("name") or "").strip()
+    if not subject or not name:
+        raise HTTPException(status_code=400, detail="Subject and name are required.")
+    last = await db_fetch(
+        "SELECT COALESCE(MAX(position), -1) AS mp FROM resource_topics WHERE subject = ?",
+        (subject,))
+    mp = last[0]["mp"] if last and last[0]["mp"] is not None else -1
+    topic_id = gen_uid("RTOP")
+    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        await db_exec(
+            "INSERT INTO resource_topics (id, subject, name, position) VALUES (?, ?, ?, ?)",
+            (topic_id, subject, name, mp + 1))
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail=f"Topic '{name}' already exists for subject '{subject}'.")
+    return {"status": "ok", "id": topic_id, "subject": subject, "name": name}
+
+
+@router.put("/teacher/resource-topics/{topic_id}",
+            summary="Edit a resource topic", tags=["Subjects"])
+async def update_resource_topic(topic_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
+    allowed = {"name", "subject"}
+    fields = {k: v for k, v in data.items() if k in allowed and v is not None}
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update.")
+    row = await db_fetch("SELECT id, subject, name FROM resource_topics WHERE id = ?", (topic_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="Topic not found.")
+    old = row[0]
+    new_subject = fields.get("subject", old["subject"])
+    new_name = fields.get("name", old["name"])
+    if "name" in fields or "subject" in fields:
+        dup = await db_fetch(
+            "SELECT id FROM resource_topics WHERE subject = ? AND name = ? AND id != ?",
+            (new_subject, new_name, topic_id))
+        if dup:
+            raise HTTPException(status_code=400, detail=f"Topic '{new_name}' already exists for subject '{new_subject}'.")
+    set_parts = []
+    params = []
+    if "name" in fields:
+        set_parts.append("name = ?")
+        params.append(fields["name"])
+    if "subject" in fields:
+        set_parts.append("subject = ?")
+        params.append(fields["subject"])
+    params.append(topic_id)
+    await db_exec(f"UPDATE resource_topics SET {', '.join(set_parts)} WHERE id = ?", tuple(params))
+    return {"status": "ok"}
+
+
+@router.delete("/teacher/resource-topics/{topic_id}",
+               summary="Delete a resource topic",
+               tags=["Subjects"],
+               responses={200: {"description": "Deleted"}, 404: {"description": "Not found"}})
+async def delete_resource_topic(topic_id: str,
+                                delete_resources: bool = Query(False, description="Also hard-delete all resources in this topic"),
+                                teacher_user: str = Depends(verify_teacher)):
+    row = await db_fetch("SELECT id FROM resource_topics WHERE id = ?", (topic_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="Topic not found.")
+    if delete_resources:
+        resources = await db_fetch("SELECT id, filename FROM resources WHERE topic_id = ?", (topic_id,))
+        for r in resources:
+            if r["filename"]:
+                fpath = os.path.join(UPLOAD_DIR, r["filename"])
+                try:
+                    if await asyncio.to_thread(os.path.exists, fpath):
+                        await asyncio.to_thread(os.remove, fpath)
+                except Exception as e:
+                    logging.warning(f"Could not remove file {fpath}: {e}")
+            await db_exec("DELETE FROM scholar_downloads WHERE resource_id = ?", (r["id"],))
+            await db_exec("DELETE FROM resources WHERE id = ?", (r["id"],))
+        await db_exec("DELETE FROM resource_topics WHERE id = ?", (topic_id,))
+        return {"status": "ok", "message": f"Topic and {len(resources)} resource(s) deleted."}
+    else:
+        await db_exec("UPDATE resources SET topic_id = '' WHERE topic_id = ?", (topic_id,))
+        await db_exec("DELETE FROM resource_topics WHERE id = ?", (topic_id,))
+        return {"status": "ok", "message": "Topic deleted. Resources moved to General."}

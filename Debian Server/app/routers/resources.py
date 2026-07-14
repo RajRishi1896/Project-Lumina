@@ -1,44 +1,28 @@
 """Resource management, upload, and file listing routes."""
 import os
-import re
 import uuid
-import shutil
-import zipfile
 import sqlite3
 import asyncio
 import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Query
-from app.database import UPLOAD_DIR, log_admin_action
-from app.async_db import db_conn, db_exec, db_fetch, db_fetch_one
+from app.database import UPLOAD_DIR, log_admin_action, gen_composite_uid
+from app.async_db import db_conn, db_fetch, db_fetch_one
 from app.dependencies import verify_teacher
-from app.models import CatalogResourceResponse, FileEntryResponse, LimitsResponse, UploadResponse, ZimUploadResponse, DeleteResourceResponse, StatusResponse
+from app.models import CatalogResourceResponse, FileEntryResponse, LimitsResponse, UploadResponse, DeleteResourceResponse
 
 router = APIRouter()
 
-APPROVED_SUBJECTS = {
-    'math', 'sci', 'phy', 'chem', 'bio', 'eng', 'hin', 'kan',
-    'soc', 'his', 'geo', 'civ', 'cs', 'eco', 'com', 'gen',
-}
-
 
 async def _zim_upload_max_size():
-    """Calculate max ZIM upload size (total disk minus 1 GB reserve)."""
-    try:
-        _disk = await asyncio.to_thread(shutil.disk_usage, "/")
-        return max(0, _disk.total - 1024 * 1024 * 1024)
-    except Exception:
-        return 5000 * 1024 * 1024
+    from app.routers.resource_zim import _zim_upload_max_size as _inner
+    return await _inner()
 
 
 @router.get("/resources", response_model=list[CatalogResourceResponse],
-            summary="List all resources",
-            description="Returns the full resource catalog with id, title, file path, type, subject, grade, and modification time. Also mounted at /api/catalog for backward compatibility.",
-            tags=["Resources"])
+            summary="List all resources", tags=["Resources"])
 @router.get("/api/catalog", response_model=list[CatalogResourceResponse],
-            summary="List all resources (alias)",
-            description="Alias for /resources — returns the full resource catalog. Kept for backward compatibility with legacy clients.",
-            tags=["Resources"])
+            summary="List all resources (alias)", tags=["Resources"])
 async def list_resources(
     subject: Optional[str] = Query(None, description="Filter by subject"),
     grade: Optional[int] = Query(None, description="Filter by grade"),
@@ -47,61 +31,50 @@ async def list_resources(
     search: Optional[str] = Query(None, description="Search by title substring"),
     include_deprecated: bool = Query(False, description="Include deprecated resources"),
 ):
-    """List all resources in the catalog with optional filters.
-
-    Returns:
-        List of dicts with id, title, pdfUrl, type, subject, grade, and mtime.
-    """
     conditions = []
     params = []
-
     if not include_deprecated:
         conditions.append("status != 'deprecated'")
-
     if subject:
         conditions.append("subject = ?")
         params.append(subject)
-
     if grade is not None:
         conditions.append("grade = ?")
         params.append(grade)
-
     if language:
         conditions.append("language = ?")
         params.append(language)
-
     if resource_type:
         conditions.append("resource_type = ?")
         params.append(resource_type)
-
     if search:
         conditions.append("title LIKE ?")
         params.append(f"%{search}%")
-
     where_clause = ""
     if conditions:
         where_clause = " WHERE " + " AND ".join(conditions)
 
-    query = f"""SELECT id, title, filename, resource_type, subject, grade, language, source, license, status,
-        COALESCE((SELECT COUNT(*) FROM scholar_downloads WHERE CAST(resources.id AS TEXT) = scholar_downloads.resource_id), 0) AS downloads,
-        notes
-        FROM resources{where_clause}"""
+    query = f"""SELECT r.id, r.title, r.filename, r.resource_type, r.subject, r.grade, r.language, r.source, r.license, r.status,
+        COALESCE(sd.dl_count, 0) AS downloads, r.topic_id,
+        COALESCE(rt.name, '') AS topic_name
+        FROM resources r
+        LEFT JOIN (SELECT resource_id, COUNT(*) AS dl_count FROM scholar_downloads GROUP BY resource_id) sd
+            ON sd.resource_id = r.id
+        LEFT JOIN resource_topics rt ON rt.id = r.topic_id
+        {where_clause}"""
     rows = await db_fetch(query, tuple(params))
 
-    result = []
-    # Batch get all mtimes in one thread call
     def _get_all_mtimes():
         mtimes = {}
         for r in rows:
-            fpath = r[2]
             try:
-                mtimes[r[0]] = os.path.getmtime(fpath) if os.path.exists(fpath) else 0.0
+                mtimes[r[0]] = os.path.getmtime(r[2]) if r[2] and os.path.exists(r[2]) else 0.0
             except OSError:
                 mtimes[r[0]] = 0.0
         return mtimes
 
     mtimes = await asyncio.to_thread(_get_all_mtimes)
-
+    result = []
     for r in rows:
         result.append({
             "id": r[0], "title": r[1],
@@ -109,22 +82,14 @@ async def list_resources(
             "type": r[3], "subject": r[4] or "General",
             "grade": r[5] or "", "mtime": mtimes.get(r[0], 0.0),
             "downloads": r[10] if len(r) > 10 else 0,
-            "notes": r[11] if len(r) > 11 else None,
+            "topic_name": r[12] if len(r) > 12 else "",
         })
     return result
 
 
 @router.get("/api/files", response_model=list[FileEntryResponse],
-            summary="List uploaded files",
-            description="Returns a list of files in the upload directory with name and size.",
-            tags=["Resources"],
-            responses={401: {"description": "Unauthorized"}})
+            summary="List uploaded files", tags=["Resources"])
 async def list_files(teacher_user: str = Depends(verify_teacher)):
-    """List all files in the upload directory.
-
-    Returns:
-        List of dicts with name and size for each file.
-    """
     if not os.path.exists(UPLOAD_DIR):
         return []
     return await asyncio.to_thread(lambda: [
@@ -135,91 +100,49 @@ async def list_files(teacher_user: str = Depends(verify_teacher)):
 
 
 @router.get("/api/limits", response_model=LimitsResponse,
-            summary="Get upload limits",
-            description="Returns the maximum allowed ZIM upload size based on available disk space.",
-            tags=["Resources"],
-            responses={401: {"description": "Unauthorized"}})
+            summary="Get upload limits", tags=["Resources"])
 async def get_limits(teacher_user: str = Depends(verify_teacher)):
-    """Get upload size limits.
-
-    Returns:
-        Dict with zim_upload_max_size in bytes.
-    """
     return {"zim_upload_max_size": await _zim_upload_max_size()}
 
 
 @router.post("/teacher/upload", response_model=UploadResponse,
-             summary="Upload a resource",
-             description="Uploads a file as a learning resource with title, type, subject, and optional grade. Rejects uploads when disk is below 2 GB free.",
-             tags=["Resources"],
-             responses={400: {"description": "File too large or invalid"}, 401: {"description": "Unauthorized"}, 409: {"description": "Duplicate resource"}, 499: {"description": "Client disconnected"}, 507: {"description": "Insufficient storage"}})
+             summary="Upload a resource", tags=["Resources"])
 async def upload_resource(title: str = Query(..., description="Display title"),
                           type: str = Query(..., description="Resource type"),
-                          subject: str = Query("General", description="Subject from approved taxonomy"),
+                          subject: str = Query("General", description="Subject"),
                           grade: int = Query(0, description="Grade level (1-13)"),
                           language: str = Query("en", description="Language code (ISO 639-1)"),
-                          source: str = Query("Unknown", description="Originating institution or author"),
+                          source: str = Query("Unknown", description="Originating institution"),
                           license: str = Query("Internal Only", description="License identifier"),
+                          topic_id: str = Query("", description="Topic ID to assign"),
                           force_upload: bool = Query(False, description="Override duplicate check"),
                           file: UploadFile = File(...),
                           teacher_user: str = Depends(verify_teacher),
                           request: Request = None):
-    """Upload a file as a learning resource.
-
-    Args:
-        title: Display title for the resource.
-        type: Resource type (textbook, videos, notes, pyq, pastPaper, kiwix).
-        subject: Subject from approved taxonomy.
-        grade: Grade level (1-13).
-        language: Language code (ISO 639-1).
-        source: Originating institution or author.
-        license: License identifier.
-        force_upload: If true, skip duplicate check.
-        file: The uploaded file (max 100 MB).
-        request: FastAPI request object for disconnect detection.
-
-    Returns:
-        Status dict indicating success.
-    Raises:
-        HTTPException 507: If disk space is below 2 GB.
-        HTTPException 400: If file exceeds 100 MB, invalid subject, or invalid params.
-        HTTPException 409: If a duplicate resource exists and force_upload is not set.
-        HTTPException 499: If client disconnects mid-upload.
-    """
     total, used, free = await asyncio.to_thread(_check_disk_space)
-    free_gb = free // (2**30)
-    if free_gb < 2:
+    if free // (2**30) < 2:
         logging.error("Upload rejected: Hub storage critically low (< 2GB free).")
         raise HTTPException(status_code=507, detail="Hub storage is full. Please delete older files before uploading.")
-
-    normalized = subject.lower().strip().replace(' ', '_')
-    if normalized not in APPROVED_SUBJECTS:
-        raise HTTPException(status_code=400, detail=f"Invalid subject '{subject}'. Allowed: {', '.join(sorted(APPROVED_SUBJECTS))}")
-    validated_subject = normalized
-
     original_filename = file.filename or 'unnamed_file'
     ext = os.path.splitext(original_filename)[1]
     uuid_name = f"{uuid.uuid4().hex}{ext}"
     file_path = os.path.join(UPLOAD_DIR, uuid_name)
 
-    # Duplicate check
+    db_subject = await db_fetch_one("SELECT name FROM subjects WHERE name = ?", (subject,))
+    if not db_subject:
+        raise HTTPException(status_code=400, detail=f"Subject '{subject}' not found in the system.")
+
     if not force_upload:
         try:
             existing = await db_fetch_one("""SELECT id FROM resources
-                WHERE title = ? AND subject = ? AND grade = ?
-                AND language = ? AND resource_type = ?
-                AND status != 'deprecated'
-            """, (title, validated_subject, grade, language, type))
+                WHERE title = ? AND subject = ? AND grade = ? AND language = ? AND resource_type = ? AND status != 'deprecated'""",
+                (title, subject, grade, language, type))
         except sqlite3.OperationalError:
             existing = await db_fetch_one("""SELECT id FROM resources
-                WHERE title = ? AND subject = ? AND grade = ?
-                AND status != 'deprecated'
-            """, (title, validated_subject, grade))
+                WHERE title = ? AND subject = ? AND grade = ? AND status != 'deprecated'""",
+                (title, subject, grade))
         if existing:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Duplicate resource exists (id={existing[0]}). Use force_upload=true to override."
-            )
+            raise HTTPException(status_code=409, detail=f"Duplicate resource exists (id={existing[0]}). Use force_upload=true to override.")
 
     chunk_size = 64 * 1024
     total_size = 0
@@ -249,177 +172,64 @@ async def upload_resource(title: str = Query(..., description="Display title"),
             pass
         raise HTTPException(status_code=499, detail="Client disconnected")
     await file.close()
-    await db_exec("""INSERT INTO resources
-        (title, subject, grade, language, resource_type, filename, original_name, source, license, uploaded_by, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
-    """, (title, validated_subject, grade, language, type, uuid_name, original_filename, source, license, teacher_user))
+    async with db_conn() as conn:
+        resource_id = gen_composite_uid(conn, grade, subject, 'RES')
+        conn.execute("""INSERT INTO resources
+            (id, title, subject, grade, language, resource_type, filename, original_name, source, license, uploaded_by, status, topic_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)""",
+            (resource_id, title, subject, grade, language, type, uuid_name, original_filename, source, license, teacher_user, topic_id))
+        conn.commit()
     return {"status": "success", "filename": uuid_name, "original_name": original_filename}
 
 
-@router.post("/teacher/upload-zim", response_model=ZimUploadResponse,
-             summary="Upload ZIM archive",
-             description="Uploads and extracts a ZIM archive (as a ZIP) into the zim_pages directory. Rejects uploads when disk is below 2 GB free or file exceeds the computed limit.",
-             tags=["Resources"],
-             responses={400: {"description": "Invalid archive or filename"}, 401: {"description": "Unauthorized"}, 413: {"description": "File too large"}, 499: {"description": "Client disconnected"}, 507: {"description": "Insufficient storage"}})
-async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(verify_teacher), request: Request = None):
-    """Upload and extract a ZIM archive.
-
-    Args:
-        file: The zipped ZIM archive.
-        request: FastAPI request object for disconnect detection.
-
-    Returns:
-        Dict with status and list of imported filenames.
-    Raises:
-        HTTPException 507: If disk space is below 2 GB.
-        HTTPException 413: If file exceeds the max upload size.
-        HTTPException 400: If the ZIP is invalid or contains path traversal.
-        HTTPException 499: If client disconnects.
-    """
-    total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
-    free_gb = free // (2**30)
-    if free_gb < 2:
-        raise HTTPException(status_code=507, detail="Insufficient storage space for ZIM upload.")
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="Uploaded file has no filename.")
-
-    tmp_dir = os.path.join(UPLOAD_DIR, f"tmp_{uuid.uuid4().hex}")
-    safe_filename = re.sub(r'[^A-Za-z0-9_.-]', '_', file.filename or 'archive.zip')
-    archive_path = os.path.join(tmp_dir, safe_filename)
-    os.makedirs(tmp_dir, exist_ok=True)
-
-    chunk_size = 64 * 1024
-    total_size = 0
-    max_size = await _zim_upload_max_size()
-
-    def _flush_chunks(chunks):
-        """Append chunks to file in a single open/write/close. Runs in worker thread."""
-        with open(archive_path, "ab") as f:
-            for c in chunks:
-                f.write(c)
-
-    buf = []
-    while True:
-        chunk = await file.read(chunk_size)
-        if not chunk:
-            break
-        buf.append(chunk)
-        total_size += len(chunk)
-        if total_size > max_size:
-            raise HTTPException(
-                status_code=413,
-                detail=f"ZIM upload exceeds maximum size limit of {max_size // (1024 * 1024)} MiB."
-            )
-        if len(buf) >= 64:  # flush every ~4MB
-            await asyncio.to_thread(_flush_chunks, buf)
-            buf = []
-    if buf:
-        await asyncio.to_thread(_flush_chunks, buf)
-    if request and await request.is_disconnected():
-        raise HTTPException(status_code=499, detail="Client disconnected")
-
-    def _process_archive():
-        """Extract ZIP, validate paths, move HTML files to zim_pages dir. Runs in worker thread."""
-        try:
-            with zipfile.ZipFile(archive_path, "r") as zip_ref:
-                for entry in zip_ref.namelist():
-                    info = zip_ref.getinfo(entry)
-                    if '..' in entry or entry.startswith('/') or (entry.endswith('/') and os.path.islink(entry)):
-                        raise HTTPException(status_code=400, detail="ZIP contains invalid path entries.")
-                    if info.external_attr >> 28 == 0o120000:  # symlink
-                        raise HTTPException(status_code=400, detail="ZIP contains symlinks, rejected.")
-                zip_ref.extractall(tmp_dir)
-            imported = []
-            zim_target_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "zim_pages")
-            os.makedirs(zim_target_dir, exist_ok=True)
-            for root, _, files in os.walk(tmp_dir):
-                for fname in files:
-                    if not fname.lower().endswith('.html'):
-                        continue
-                    src = os.path.join(root, fname)
-                    if "__" not in fname:
-                        article_id = uuid.uuid4().hex[:8].upper()
-                        title = os.path.splitext(fname)[0]
-                        dest_name = f"{article_id}__{title}.html"
-                    else:
-                        dest_name = fname
-                    dest_path = os.path.join(zim_target_dir, dest_name)
-                    shutil.move(src, dest_path)
-                    imported.append(dest_name)
-            return imported
-        except zipfile.BadZipFile:
-            raise HTTPException(status_code=400, detail="Invalid ZIM/ZIP archive.")
-        except HTTPException:
-            raise
-        except Exception:
-            raise HTTPException(status_code=400, detail="Failed to extract archive.")
-        finally:
-            if os.path.exists(tmp_dir):
-                shutil.rmtree(tmp_dir, ignore_errors=True)
-
-    imported = await asyncio.to_thread(_process_archive)
-    return {"status": "success", "imported": imported}
-
-
-@router.patch("/resources/{resource_id}/notes", response_model=StatusResponse,
-              summary="Update teacher notes on a resource",
-              description="Sets or clears the teacher note text on a resource. Passing null or empty string clears the note.",
-              tags=["Resources"],
-              responses={200: {"description": "Notes updated"}, 401: {"description": "Unauthorized"}, 404: {"description": "Resource not found"}})
-async def update_resource_notes(resource_id: int, data: dict, teacher_user: str = Depends(verify_teacher)):
-    """Set or clear the teacher note on a resource.
-
-    Args:
-        resource_id: The resource database id.
-        data: Notes payload with optional notes string.
-
-    Returns:
-        Status dict.
-    Raises:
-        HTTPException 404: If resource does not exist.
-    """
-    row = await db_fetch_one("SELECT id FROM resources WHERE id = ?", (resource_id,))
-    if not row:
-        raise HTTPException(status_code=404, detail="Resource not found.")
-    val = data.get('notes').strip() if data.get('notes') else None
-    await db_exec("UPDATE resources SET notes = ? WHERE id = ?", (val, resource_id))
+@router.put("/teacher/resources/{resource_id}",
+            summary="Edit a resource", tags=["Resources"])
+async def update_resource(resource_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
+    allowed = {"title", "subject", "grade", "type", "language", "topic_id"}
+    fields = {k: v for k, v in data.items() if k in allowed and v is not None}
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update.")
+    async with db_conn() as conn:
+        c = conn.cursor()
+        c.execute("SELECT id FROM resources WHERE id = ?", (resource_id,))
+        if not c.fetchone():
+            raise HTTPException(status_code=404, detail="Resource not found.")
+        if "subject" in fields:
+            subj = await db_fetch_one("SELECT name FROM subjects WHERE name = ?", (fields["subject"],))
+            if not subj:
+                raise HTTPException(status_code=400, detail=f"Subject '{fields['subject']}' not found.")
+        set_parts = []
+        params = []
+        col_map = {"title": "title", "subject": "subject", "grade": "grade", "type": "resource_type", "language": "language", "topic_id": "topic_id"}
+        for k, v in fields.items():
+            set_parts.append(f"{col_map[k]} = ?")
+            params.append(v)
+        params.append(resource_id)
+        c.execute(f"UPDATE resources SET {', '.join(set_parts)} WHERE id = ?", tuple(params))
+        conn.commit()
     return {"status": "ok"}
 
+
+def _check_disk_space():
+    import shutil as _shutil
+    return _shutil.disk_usage("/")
+
+
 @router.delete("/teacher/resources/{resource_id}", response_model=DeleteResourceResponse,
-               summary="Delete a resource",
-               description="Deletes a resource by id. If any student has the resource in their downloads, soft-deprecates instead of hard-deleting. Logs the action.",
-               tags=["Resources"],
-               responses={400: {"description": "Failed to delete resource"}, 401: {"description": "Unauthorized"}, 404: {"description": "Resource not found"}})
-async def delete_resource(resource_id: int, teacher_user: str = Depends(verify_teacher)):
-    """Delete or deprecate a resource.
-
-    Soft-deprecates if any student has the resource in their downloads,
-    otherwise hard-deletes the file and DB record.
-
-    Args:
-        resource_id: The resource database id.
-
-    Returns:
-        Status dict indicating success and whether it was soft-deprecated.
-    Raises:
-        HTTPException 404: If resource does not exist.
-    """
+               summary="Delete a resource", tags=["Resources"])
+async def delete_resource(resource_id: str, teacher_user: str = Depends(verify_teacher)):
     async with db_conn() as conn:
         try:
             c = conn.cursor()
-            c.execute("SELECT id, filename, file_path, title FROM resources WHERE id = ?", (resource_id,))
+            c.execute("SELECT id, filename, title FROM resources WHERE id = ?", (resource_id,))
             row = c.fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="Resource not found.")
-            db_id, db_filename, db_file_path, db_title = row
-            file_path = db_file_path or (os.path.join(UPLOAD_DIR, db_filename) if db_filename else None)
-
-            # Check if any student has this resource in their downloads
-            c.execute("SELECT COUNT(*) FROM scholar_downloads WHERE resource_id = ?", (str(resource_id),))
+            db_id, db_filename, db_title = row
+            file_path = os.path.join(UPLOAD_DIR, db_filename) if db_filename else None
+            c.execute("SELECT COUNT(*) FROM scholar_downloads WHERE resource_id = ?", (resource_id,))
             download_count = c.fetchone()[0]
-
             if download_count > 0:
-                # Soft-deprecate — keep file and DB record
                 try:
                     c.execute("UPDATE resources SET status = 'deprecated', superseded_by = NULL WHERE id = ?", (resource_id,))
                     conn.commit()
@@ -429,22 +239,16 @@ async def delete_resource(resource_id: int, teacher_user: str = Depends(verify_t
                 await log_admin_action(teacher_user, f"soft-deprecated resource id={resource_id} '{db_title}' ({download_count} active downloads)")
                 return {"status": "success", "action": "soft_deprecated", "download_count": download_count}
             else:
-                # Hard-delete
                 if file_path and await asyncio.to_thread(os.path.exists, file_path):
                     try:
                         await asyncio.to_thread(os.remove, file_path)
                     except Exception as e:
                         logging.warning(f"Could not remove physical file {file_path}: {e}")
                 c.execute("DELETE FROM resources WHERE id = ?", (resource_id,))
-                c.execute("DELETE FROM scholar_downloads WHERE resource_id = ?", (str(resource_id),))
+                c.execute("DELETE FROM scholar_downloads WHERE resource_id = ?", (resource_id,))
                 conn.commit()
                 await log_admin_action(teacher_user, f"hard-deleted resource id={resource_id} '{db_title}'")
                 return {"status": "success", "action": "hard_deleted"}
         except Exception as e:
             logging.error(f"delete_resource: {e}")
             raise HTTPException(status_code=400, detail="Failed to delete resource")
-
-
-
-
-

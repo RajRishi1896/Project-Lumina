@@ -618,10 +618,6 @@
       }
     }
   },
-  "teacherNotes": "Teacher Notes",
-  "@teacherNotes": {
-    "description": "Heading label for the teacher notes section on the resource detail page"
-  },
   "resourceTypeTextbooks": "Textbooks",
   "@resourceTypeTextbooks": {
     "description": "Card title for the Textbooks resource category"
@@ -646,14 +642,6 @@
   "@resourceTypePyqsSubtitle": {
     "description": "Card subtitle description for PYQs category"
   },
-  "resourceTypeNotes": "Notes",
-  "@resourceTypeNotes": {
-    "description": "Card title for the Notes resource category"
-  },
-  "resourceTypeNotesSubtitle": "Quick revision notes and summaries",
-  "@resourceTypeNotesSubtitle": {
-    "description": "Card subtitle description for Notes category"
-  },
   "resourceCardOpenButton": "Open",
   "@resourceCardOpenButton": {
     "description": "Button label on each resource category card to open its resources"
@@ -677,10 +665,6 @@
   "tabPyqs": "PYQs",
   "@tabPyqs": {
     "description": "Tab label filtering saved PYQs"
-  },
-  "tabNotes": "Notes",
-  "@tabNotes": {
-    "description": "Tab label filtering saved notes"
   },
   "emptyStateAll": "No saved resources yet.",
   "@emptyStateAll": {
@@ -1297,5 +1281,257 @@
   "subjectNameUnknown": "Unknown",
   "@subjectNameUnknown": {
     "description": "Fallback text for an unknown subject name in subject breakdown"
+  },
+
+  "browseMyCourses": "My Courses",
+  "@browseMyCourses": {
+    "description": "Section header for the student's enrolled courses on the browse page"
+  },
+  "browseRecommended": "Recommended for You",
+  "@browseRecommended": {
+    "description": "Section header for recommended courses section on the browse page"
+  },
+  "browseSimilarCourses": "Similar Courses",
+  "@browseSimilarCourses": {
+    "description": "Section header for teacher-defined similar courses"
+  },
+  "browseAllCourses": "All Courses",
+  "@browseAllCourses": {
+    "description": "Section header for the complete course catalog on the browse page"
+  },
+  "browseShowRecommended": "Show Recommended",
+  "@browseShowRecommended": {
+    "description": "Toggle button to show only recommended courses"
+  },
+  "browseShowAll": "Show All",
+  "@browseShowAll": {
+    "description": "Toggle button to show all available courses"
+  },
+  "browseSearchHint": "Search courses...",
+  "@browseSearchHint": {
+    "description": "Hint text inside the course search field on the browse page"
+  },
+  "browseEnroll": "Enroll",
+  "@browseEnroll": {
+    "description": "Button label to enroll in a course"
+  },
+  "browseClassLabel": "Class {grade}",
+  "@browseClassLabel": {
+    "description": "Grade label shown on course cards, e.g. 'Class 10'",
+    "placeholders": {
+      "grade": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "browseNoMatchingCourses": "No matching courses",
+  "@browseNoMatchingCourses": {
+    "description": "Empty state text when no courses match search or filters"
+  },
+  "browseNoCoursesAvailable": "No courses available",
+  "@browseNoCoursesAvailable": {
+    "description": "Empty state text when no courses exist on the server"
+  },
+  "browseCouldNotLoad": "Could not load courses",
+  "@browseCouldNotLoad": {
+    "description": "Error message shown when course catalog fails to load"
+  },
+  "browseProgressFormat": "{completed}/{total}",
+  "@browseProgressFormat": {
+    "description": "Progress label on enrolled course cards showing completed/total resources",
+    "placeholders": {
+      "completed": {
+        "type": "int",
+        "example": "3"
+      },
+      "total": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+
+  "coursePlayerLocked": "Complete the previous resource first",
+  "@coursePlayerLocked": {
+    "description": "Tooltip shown when tapping a locked course resource"
+  },
+  "coursePlayerDownloading": "Downloading course...",
+  "@coursePlayerDownloading": {
+    "description": "Progress message shown during course download"
+  },
+  "coursePlayerDownloadFailed": "Download failed. Check storage space.",
+  "@coursePlayerDownloadFailed": {
+    "description": "Error message when course download fails due to storage"
+  },
+  "coursePlayerVideo": "Video",
+  "@coursePlayerVideo": {
+    "description": "Label for video-type course resources"
+  },
+  "coursePlayerQuiz": "Quiz",
+  "@coursePlayerQuiz": {
+    "description": "Label for quiz-type course resources"
+  },
+  "coursePlayerPastPaper": "Past Paper",
+  "@coursePlayerPastPaper": {
+    "description": "Label for past paper-type course resources"
+  },
+  "coursePlayerTextbook": "Textbook",
+  "@coursePlayerTextbook": {
+    "description": "Label for textbook-type course resources"
+  },
+  "coursePlayerNoResources": "No resources in this course",
+  "@coursePlayerNoResources": {
+    "description": "Empty state when a course has no resources"
+  },
+  "coursePlayerDownloadPrompt": "Download all resources to study offline",
+  "@coursePlayerDownloadPrompt": {
+    "description": "Message above the download button prompting offline download"
+  },
+  "coursePlayerDownloadButton": "Download Course",
+  "@coursePlayerDownloadButton": {
+    "description": "Button to download all course resources for offline use"
+  },
+  "coursePlayerCompleted": "Completed",
+  "@coursePlayerCompleted": {
+    "description": "Badge label shown on completed course resources"
+  },
+  "coursePlayerStart": "Start",
+  "@coursePlayerStart": {
+    "description": "Button label on the first unlocked resource to begin the course"
+  },
+
+  "quizLoadingError": "Failed to load quiz",
+  "@quizLoadingError": {
+    "description": "Error message when quiz content fails to load"
+  },
+  "quizNotAvailable": "Quiz not available",
+  "@quizNotAvailable": {
+    "description": "Fallback message when quiz data is missing"
+  },
+  "quizQuestionOf": "Question {index} of {total}",
+  "@quizQuestionOf": {
+    "description": "Progress indicator showing current question number out of total",
+    "placeholders": {
+      "index": {
+        "type": "int",
+        "example": "3"
+      },
+      "total": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "quizTypeMcq": "Multiple Choice",
+  "@quizTypeMcq": {
+    "description": "Label for multiple-choice question type"
+  },
+  "quizTypeTrueFalse": "True / False",
+  "@quizTypeTrueFalse": {
+    "description": "Label for true/false question type"
+  },
+  "quizTypeFillBlanks": "Fill in the Blanks",
+  "@quizTypeFillBlanks": {
+    "description": "Label for fill-in-the-blanks question type"
+  },
+  "quizTypeMultiSelect": "Multi-Select",
+  "@quizTypeMultiSelect": {
+    "description": "Label for multi-select question type"
+  },
+  "quizTrue": "True",
+  "@quizTrue": {
+    "description": "True option label in true/false questions"
+  },
+  "quizFalse": "False",
+  "@quizFalse": {
+    "description": "False option label in true/false questions"
+  },
+  "quizFillBlanksHint": "Type your answer here...",
+  "@quizFillBlanksHint": {
+    "description": "Hint text inside the fill-in-the-blanks answer text field"
+  },
+  "quizPrevious": "Previous",
+  "@quizPrevious": {
+    "description": "Button to navigate to the previous quiz question"
+  },
+  "quizSubmit": "Submit",
+  "@quizSubmit": {
+    "description": "Button to submit the completed quiz"
+  },
+  "quizNext": "Next",
+  "@quizNext": {
+    "description": "Button to navigate to the next quiz question"
+  },
+  "quizPassed": "Passed!",
+  "@quizPassed": {
+    "description": "Pass/fail badge label when the student passed the quiz"
+  },
+  "quizFailed": "Failed",
+  "@quizFailed": {
+    "description": "Pass/fail badge label when the student failed the quiz"
+  },
+  "quizPassedMessage": "Great job! You passed the quiz.",
+  "@quizPassedMessage": {
+    "description": "Encouraging message shown after passing a quiz"
+  },
+  "quizFailedMessage": "You did not pass. Review the questions below.",
+  "@quizFailedMessage": {
+    "description": "Constructive message shown after failing a quiz"
+  },
+  "quizScoreFraction": "{correct}/{total}",
+  "@quizScoreFraction": {
+    "description": "Score display showing correct answers out of total questions",
+    "placeholders": {
+      "correct": {
+        "type": "int",
+        "example": "7"
+      },
+      "total": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "quizQuestionLabel": "Question {index}",
+  "@quizQuestionLabel": {
+    "description": "Heading label for each question in the results review",
+    "placeholders": {
+      "index": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "quizExplanation": "Explanation: {text}",
+  "@quizExplanation": {
+    "description": "Label prefix for the explanation shown after a quiz question",
+    "placeholders": {
+      "text": {
+        "type": "String",
+        "example": "The Earth revolves around the Sun"
+      }
+    }
+  },
+  "quizBackToCourse": "Back to Course",
+  "@quizBackToCourse": {
+    "description": "Button on the results screen to return to the course player"
+  },
+
+  "profileCoursesCompleted": "Courses Completed",
+  "@profileCoursesCompleted": {
+    "description": "Stat card label for count of completed courses on the profile page"
+  },
+  "profileMyCourses": "My Courses",
+  "@profileMyCourses": {
+    "description": "Section header for enrolled courses list on the profile page"
+  },
+  "profileTapToResume": "Tap to resume",
+  "@profileTapToResume": {
+    "description": "Subtitle below the My Courses section header, encouraging the student to continue"
+  },
+  "profileNoCourses": "No courses yet. Explore the catalog to get started.",
+  "@profileNoCourses": {
+    "description": "Empty state message when the student has no enrolled courses"
   }
 }

@@ -1,65 +1,16 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head ï¿½ theme detection, metadata -->
+<!-- Section: Head -- theme detection, metadata -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="danger.page_title">Lumina Hub | Danger Zone</title>
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
-    <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
-
 </head>
 <body>
-
-    <!-- Section: Sidebar ï¿½ nav links, user info, theme toggle, logout -->
-    <aside>
-        <a href="/static/index" class="sidebar-brand-horizontal"><img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"><img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"></a>
-        <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
-        <div class="sidebar-divider"></div>
-        <nav>
-            <a href="/static/index" class="nav-item" id="nav-home">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                <span data-i18n="sidebar.home">Home</span>
-            </a>
-            <a href="/static/manage-content" class="nav-item" id="nav-content">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span data-i18n="sidebar.content">Content Manager</span>
-            </a>
-            <a href="/static/manage-security" class="nav-item" id="nav-security">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span data-i18n="sidebar.security">Account</span>
-            </a>
-            <a href="/static/students" class="nav-item" id="nav-students">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span data-i18n="sidebar.students">Students</span>
-            </a>
-            <a href="/static/manage-help#teacher-guide" class="nav-item" id="nav-help">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                <span data-i18n="sidebar.help">Teacher Guide</span>
-            </a>
-            <a href="/static/manage-danger" class="nav-item danger active" id="nav-danger">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                <span data-i18n="sidebar.danger">Danger Zone</span>
-            </a>
-            <a href="/static/manage-settings" class="nav-item" id="nav-settings">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                <span data-i18n="sidebar.settings">Settings</span>
-            </a>
-        </nav>
-        <div class="nav-spacer"></div>
-        <div class="theme-toggle" id="btn-toggleTheme">
-            <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            <span id="themeLabel"><span data-i18n="sidebar.dark_mode">Dark Mode</span></span>
-        </div>
-        <a href="/logout" class="nav-logout">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            <span data-i18n="sidebar.logout">Log out</span>
-        </a>
-    </aside>
-
-    <!-- Section: Main Content ï¿½ student/teacher account management, force reset, account creation -->
+    <aside></aside>
     <main>
         <div id="app-content">
         <div id="dangerTab">
@@ -68,19 +19,19 @@
                 <p data-i18n="danger.subtitle">Perform critical hub administration cleanup, force resets, and content pruning.</p>
             </div>
 
-            <!-- Section: Manage Student Accounts ï¿½ searchable table with force password reset and delete -->
-            <div class="card" style="border-left: 4px solid var(--danger);">
+            <div class="card">
                 <div class="card-title" data-i18n="danger.manage_students" style="color: var(--danger); font-weight: 800;">Manage Student Accounts</div>
                 <div id="studentDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-
-                <div style="margin-bottom: 1rem; position: relative;">
-                    <label for="studentDangerSearch" class="sr-only" data-i18n="danger.search_students_label">Search students</label>
-                    <input type="text" id="studentDangerSearch" data-i18n="danger.search_students_placeholder" placeholder="Search by student name or scholar ID..." style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
-                    <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    </span>
+                <div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+                    <div style="flex: 1; position: relative;">
+                        <label for="studentDangerSearch" class="sr-only" data-i18n="danger.search_students_label">Search students</label>
+                        <input type="text" id="studentDangerSearch" data-i18n="danger.search_students_placeholder" placeholder="Search by student name or scholar ID..." style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
+                        <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
+                    </div>
+                    <button id="btn-openCreateStudentModal" class="btn" style="background: var(--teal); color: #fff; white-space: nowrap; padding: 0.5rem 1rem; font-size: 0.875rem;"><span data-i18n="danger.create_student">+ Create Student</span></button>
                 </div>
-
                 <table>
                     <thead>
                         <tr><th data-i18n="danger.table_student_name">Student Name</th><th data-i18n="danger.table_username">Username</th><th data-i18n="danger.table_scholar_id">Scholar ID</th><th data-i18n="danger.table_status">Status</th><th data-i18n="danger.table_action" style="text-align: right;">Action</th></tr>
@@ -89,26 +40,42 @@
                         <tr><td colspan="5" class="empty-state" style="text-align:center;" data-i18n="danger.empty_students">No student accounts registered yet.</td></tr>
                     </tbody>
                 </table>
-                <div style="text-align: right;">
-                    <button id="btn-openCreateStudentModal" class="btn" style="background: var(--danger); color: #fff;"><span data-i18n="danger.create_student">+ Create Student</span></button>
+                <div id="studentPagination" style="display: none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--outline); flex-wrap: wrap;">
+                    <button id="btn-studentPrevPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        <span data-i18n="settings.previous">Previous</span>
+                    </button>
+                    <span id="studentPageInfo" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">Page 1 of 1</span>
+                    <button id="btn-studentNextPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <span data-i18n="settings.next">Next</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                        <span data-i18n="settings.per_page">Per page:</span>
+                        <select id="studentPerPageSelect" style="min-height: 44px; padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface); color: var(--on-surface); outline: none; cursor: pointer;">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </span>
                 </div>
             </div>
 
-            <!-- Section: Manage Admin Accounts ï¿½ searchable table with force password reset and delete -->
-            <div class="card" style="border-left: 4px solid var(--danger);">
+            <div class="card">
                 <div class="card-title" data-i18n="danger.manage_admins" style="color: var(--danger); font-weight: 800;">Manage Admin Accounts</div>
                 <div id="adminDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-
                 <p data-i18n="danger.manage_admins_desc" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;">Manage admin accounts for the hub.</p>
-
-                <div style="margin-bottom: 1rem; position: relative;">
-                    <label for="adminDangerSearch" class="sr-only" data-i18n="danger.search_admins_label">Search admins</label>
-                    <input type="text" id="adminDangerSearch" data-i18n="danger.search_admins_placeholder" placeholder="Search by username, name or department..." style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
-                    <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    </span>
+                <div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+                    <div style="flex: 1; position: relative;">
+                        <label for="adminDangerSearch" class="sr-only" data-i18n="danger.search_admins_label">Search admins</label>
+                        <input type="text" id="adminDangerSearch" data-i18n="danger.search_admins_placeholder" placeholder="Search by username, name or department..." style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
+                        <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
+                    </div>
+                    <button id="btn-openCreateAdminModal" class="btn" style="background: var(--teal); color: #fff; white-space: nowrap; padding: 0.5rem 1rem; font-size: 0.875rem;"><span data-i18n="danger.create_admin">+ Create Admin</span></button>
                 </div>
-
                 <table>
                     <thead>
                         <tr><th data-i18n="danger.table_full_name">Full Name</th><th data-i18n="danger.table_username">Username</th><th data-i18n="danger.table_scholar_id">Scholar ID</th><th data-i18n="danger.table_department">Department</th><th data-i18n="danger.table_status">Status</th><th data-i18n="danger.table_action" style="text-align: right;">Action</th></tr>
@@ -117,24 +84,41 @@
                         <tr><td colspan="6" class="empty-state" style="text-align:center;" data-i18n="danger.empty_admins">No admin accounts registered yet.</td></tr>
                     </tbody>
                 </table>
-                <div style="text-align: right;">
-                    <button id="btn-openCreateAdminModal" class="btn" style="background: var(--danger); color: #fff;"><span data-i18n="danger.create_admin">+ Create Admin</span></button>
+                <div id="adminPagination" style="display: none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--outline); flex-wrap: wrap;">
+                    <button id="btn-adminPrevPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        <span data-i18n="settings.previous">Previous</span>
+                    </button>
+                    <span id="adminPageInfo" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">Page 1 of 1</span>
+                    <button id="btn-adminNextPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <span data-i18n="settings.next">Next</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                        <span data-i18n="settings.per_page">Per page:</span>
+                        <select id="adminPerPageSelect" style="min-height: 44px; padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface); color: var(--on-surface); outline: none; cursor: pointer;">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </span>
                 </div>
             </div>
 
-            <!-- Section: Manage Teacher Accounts ï¿½ searchable table with force password reset, delete, and default admin disable -->
-            <div class="card" style="border-left: 4px solid var(--danger);">
+            <div class="card">
                 <div class="card-title" data-i18n="danger.manage_teachers" style="color: var(--danger); font-weight: 800;">Manage Teacher Accounts</div>
                 <div id="teacherDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-
-                <div style="margin-bottom: 1rem; position: relative;">
-                    <label for="teacherDangerSearch" class="sr-only" data-i18n="danger.search_teachers_label">Search teachers</label>
-                    <input type="text" id="teacherDangerSearch" data-i18n="danger.search_teachers_placeholder" placeholder="Search by username, full name or department..." style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
-                    <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    </span>
+                <div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+                    <div style="flex: 1; position: relative;">
+                        <label for="teacherDangerSearch" class="sr-only" data-i18n="danger.search_teachers_label">Search teachers</label>
+                        <input type="text" id="teacherDangerSearch" data-i18n="danger.search_teachers_placeholder" placeholder="Search by username, full name or department..." style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
+                        <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
+                    </div>
+                    <button id="btn-openCreateTeacherModal" class="btn" style="background: var(--teal); color: #fff; white-space: nowrap; padding: 0.5rem 1rem; font-size: 0.875rem;"><span data-i18n="danger.create_teacher">+ Create Teacher</span></button>
                 </div>
-
                 <table>
                     <thead>
                         <tr><th data-i18n="danger.table_full_name">Full Name</th><th data-i18n="danger.table_username">Username</th><th data-i18n="danger.table_scholar_id">Scholar ID</th><th data-i18n="danger.table_department">Department</th><th data-i18n="danger.table_status">Status</th><th data-i18n="danger.table_action" style="text-align: right;">Action</th></tr>
@@ -143,20 +127,168 @@
                         <tr><td colspan="6" class="empty-state" style="text-align:center;" data-i18n="danger.empty_teachers">No teacher accounts registered yet.</td></tr>
                     </tbody>
                 </table>
-                <div style="text-align: right;">
-                    <button id="btn-openCreateTeacherModal" class="btn" style="background: var(--danger); color: #fff;"><span data-i18n="danger.create_teacher">+ Create Teacher</span></button>
+                <div id="teacherPagination" style="display: none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--outline); flex-wrap: wrap;">
+                    <button id="btn-teacherPrevPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        <span data-i18n="settings.previous">Previous</span>
+                    </button>
+                    <span id="teacherPageInfo" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">Page 1 of 1</span>
+                    <button id="btn-teacherNextPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <span data-i18n="settings.next">Next</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                        <span data-i18n="settings.per_page">Per page:</span>
+                        <select id="teacherPerPageSelect" style="min-height: 44px; padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface); color: var(--on-surface); outline: none; cursor: pointer;">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </span>
                 </div>
                 <div id="disableAdminDangerContainer" style="margin-top: 1.5rem; display: none; text-align: right; border-top: 1px solid rgba(239, 68, 68, 0.2); padding-top: 1rem;">
                     <button id="btn-disableDefaultAdmin" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger); font-weight: 700;"><span data-i18n="danger.disable_default_admin">Disable Default Admin Login (admin)</span></button>
                 </div>
             </div>
 
+            <div class="card">
+                <div class="card-title" data-i18n="danger.manage_grades" style="color: var(--danger); font-weight: 800;">Manage Grades</div>
+                <div id="gradeDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
+                <div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+                    <div style="flex: 1; position: relative;">
+                        <input type="text" id="dangerGradeSearch" placeholder="Search grades..." style="width: 100%; padding: 0.5rem 0.75rem 0.5rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.85rem; background: var(--surface); color: var(--on-surface); outline: none;">
+                        <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
+                    </div>
+                    <button id="btn-addGrade" class="btn" style="background: var(--teal); color: #fff; border-color: var(--teal); white-space: nowrap; padding: 0.5rem 1rem; font-size: 0.875rem;"><span data-i18n="danger.add_grade_btn">+ Add Grade</span></button>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th data-i18n="danger.table_grade_name">Grade Name</th><th data-i18n="danger.table_action" style="text-align: right;">Action</th></tr>
+                    </thead>
+                    <tbody id="gradeDangerTable">
+                        <tr><td colspan="2" class="empty-state" style="text-align:center;" data-i18n="danger.empty_grades">Loading grades...</td></tr>
+                    </tbody>
+                </table>
+                <div id="gradePagination" style="display: none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--outline); flex-wrap: wrap;">
+                    <button id="btn-gradePrevPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        <span data-i18n="settings.previous">Previous</span>
+                    </button>
+                    <span id="gradePageInfo" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">Page 1 of 1</span>
+                    <button id="btn-gradeNextPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <span data-i18n="settings.next">Next</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                        <span data-i18n="settings.per_page">Per page:</span>
+                        <select id="gradePerPageSelect" style="min-height: 44px; padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface); color: var(--on-surface); outline: none; cursor: pointer;">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" data-i18n="danger.manage_subjects" style="color: var(--danger); font-weight: 800;">Manage Subjects</div>
+                <div id="subjectDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
+                <div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+                    <div style="flex: 1; position: relative;">
+                        <label for="dangerSubjectSearch" class="sr-only">Search subjects</label>
+                        <input type="text" id="dangerSubjectSearch" placeholder="Search subjects..." style="width: 100%; padding: 0.5rem 0.75rem 0.5rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.85rem; background: var(--surface); color: var(--on-surface); outline: none;">
+                        <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
+                    </div>
+                    <button id="btn-addDangerSubject" class="btn" style="background: var(--teal); color: #fff; border-color: var(--teal); white-space: nowrap; padding: 0.5rem 1rem; font-size: 0.875rem;">+ Add Subject</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>Subject Name</th><th>Class</th><th>Symbol</th><th style="text-align: right;">Action</th></tr>
+                    </thead>
+                    <tbody id="subjectDangerTable">
+                        <tr><td colspan="4" class="empty-state" style="text-align:center;">No subjects created yet.</td></tr>
+                    </tbody>
+                </table>
+                <div id="subjectPagination" style="display: none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--outline); flex-wrap: wrap;">
+                    <button id="btn-subjectPrevPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        <span data-i18n="settings.previous">Previous</span>
+                    </button>
+                    <span id="subjectPageInfo" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">Page 1 of 1</span>
+                    <button id="btn-subjectNextPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <span data-i18n="settings.next">Next</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                        <span data-i18n="settings.per_page">Per page:</span>
+                        <select id="subjectPerPageSelect" style="min-height: 44px; padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface); color: var(--on-surface); outline: none; cursor: pointer;">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </span>
+                </div>
+            </div>
+
         </div>
 
-        <!-- Section: Create Account Modal ï¿½ dynamic form for teacher or admin creation -->
-        <div id="createAccountModal" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:20000;">
-            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2.5rem;max-width:460px;width:90%;box-shadow:var(--card-shadow-hover);border:1px solid var(--outline);">
-                <h3 id="createModalTitle" data-i18n="danger.create_account_title" style="font-size:1.25rem;font-weight:800;margin-top:0;margin-bottom:1.5rem;">Create Account</h3>
+        <div id="addGradeModal" class="hidden popup" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;">
+            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:400px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--teal);">
+                <h3 style="font-size:1.15rem;font-weight:800;margin-top:0;margin-bottom:1.25rem;color:var(--teal);">Add New Grade</h3>
+                <div id="addGradeNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
+                <div style="margin-bottom:1.25rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Grade Name</label>
+                    <input type="text" id="modalGradeName" placeholder="e.g. Grade 10" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                </div>
+                <div style="display:flex;gap:0.75rem;justify-content:flex-end;border-top:1px solid var(--outline);padding-top:1rem;">
+                    <button id="btn-closeGradeModal" class="btn btn-outline" style="border-color:var(--outline);color:var(--on-surface);background:transparent;padding:0.55rem 1.15rem;">Cancel</button>
+                    <button id="btn-confirmAddGrade" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:0.55rem 1.15rem;font-weight:700;">Add Grade</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="addSubjectModal" class="hidden popup" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;">
+            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:440px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--teal);">
+                <h3 style="font-size:1.15rem;font-weight:800;margin-top:0;margin-bottom:1.25rem;color:var(--teal);">Add New Subject</h3>
+                <div id="addSubjectNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Subject Name</label>
+                    <input type="text" id="modalSubjectName" placeholder="e.g. Biology" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Symbol</label>
+                    <div style="position:relative;" id="symbolDropdownWrap">
+                        <input type="hidden" id="modalSubjectSymbol" value="folder">
+                        <div id="symbolDropdownSelected" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);cursor:pointer;">
+                            <div style="display:flex;align-items:center;gap:0.5rem;" id="symbolSelectedPreview"></div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div id="symbolDropdownList" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--outline);border-radius:var(--radius-sm);margin-top:0.25rem;box-shadow:0 4px 12px rgba(0,0,0,0.25);z-index:50;max-height:240px;overflow-y:auto;"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom:1.25rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Grade</label>
+                    <select id="modalSubjectClass" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                        <option value="">All Classes</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:0.75rem;justify-content:flex-end;border-top:1px solid var(--outline);padding-top:1rem;">
+                    <button id="btn-closeSubjectModal" class="btn btn-outline" style="border-color:var(--outline);color:var(--on-surface);background:transparent;padding:0.55rem 1.15rem;">Cancel</button>
+                    <button id="btn-confirmAddSubject" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:0.55rem 1.15rem;font-weight:700;">Add Subject</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="createAccountModal" class="hidden popup" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;">
+            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2.5rem;max-width:460px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--teal);">
+                <h3 id="createModalTitle" data-i18n="danger.create_account_title" style="font-size:1.25rem;font-weight:800;margin-top:0;margin-bottom:1.5rem;color:var(--teal);">Create Account</h3>
                 <div id="createModalNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
                 <div id="createModalFields"></div>
                 <div style="display:flex;gap:0.75rem;justify-content:flex-end;border-top:1px solid var(--outline);padding-top:1.25rem;margin-top:1.5rem;">
@@ -165,41 +297,71 @@
                 </div>
             </div>
         </div>
-        </div>
 
     </main>
 
-    <!-- Section: Bottom Nav (Mobile) ï¿½ tab bar hidden by default, shown via media query -->
     <div id="bottomNav"></div>
 
-    <script src="/static/js/lumina.js" defer></script>
-    <!-- Section: Inline Scripts ï¿½ student/teacher CRUD, password reset, admin creation, confirm modal -->
+    <script src="/static/js/lumina.js?v=5" defer></script>
     <script>
-        let activeDangerScholars = [];
-        let activeDangerTeachers = [];
-        let activeDangerAdmins = [];
+        var activeDangerScholars = [];
+        var activeDangerTeachers = [];
+        var activeDangerAdmins = [];
+        var activeGrades = [];
+        var activeDangerSubjects = [];
 
-        /** Loads admin profiles from server (or demo), then renders the filtered table. */
+        var _dangerPerPage = 20;
+        var _studentPage = 1, _studentFiltered = [];
+        var _teacherPage = 1, _teacherFiltered = [];
+        var _adminPage = 1, _adminFiltered = [];
+        var _gradePage = 1, _gradeFiltered = [];
+        var _subjectPage = 1, _subjectFiltered = [];
+
+        function _updateDangerPagination(key, page, totalPages, total) {
+            var el = document.getElementById(key + 'Pagination');
+            var pageInfo = document.getElementById(key + 'PageInfo');
+            var prevBtn = document.getElementById('btn-' + key + 'PrevPage');
+            var nextBtn = document.getElementById('btn-' + key + 'NextPage');
+            if (el) el.style.display = total > 0 ? 'flex' : 'none';
+            if (pageInfo) pageInfo.textContent = __('settings.page_of', {current: page, total: totalPages});
+            if (prevBtn) { prevBtn.disabled = page <= 1; prevBtn.style.opacity = page <= 1 ? '0.4' : '1'; }
+            if (nextBtn) { nextBtn.disabled = page >= totalPages; nextBtn.style.opacity = page >= totalPages ? '0.4' : '1'; }
+        }
+        function studentPrevPage() { if (_studentPage > 1) { _studentPage--; renderStudentPage(); } }
+        function studentNextPage() { var tp = Math.ceil(_studentFiltered.length / _dangerPerPage); if (_studentPage < tp) { _studentPage++; renderStudentPage(); } }
+        function studentChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _studentPage = 1; renderStudentPage(); }
+        function adminPrevPage() { if (_adminPage > 1) { _adminPage--; renderAdminPage(); } }
+        function adminNextPage() { var tp = Math.ceil(_adminFiltered.length / _dangerPerPage); if (_adminPage < tp) { _adminPage++; renderAdminPage(); } }
+        function adminChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _adminPage = 1; renderAdminPage(); }
+        function teacherPrevPage() { if (_teacherPage > 1) { _teacherPage--; renderTeacherPage(); } }
+        function teacherNextPage() { var tp = Math.ceil(_teacherFiltered.length / _dangerPerPage); if (_teacherPage < tp) { _teacherPage++; renderTeacherPage(); } }
+        function teacherChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _teacherPage = 1; renderTeacherPage(); }
+        function gradePrevPage() { if (_gradePage > 1) { _gradePage--; renderGradePage(); } }
+        function gradeNextPage() { var tp = Math.ceil(_gradeFiltered.length / _dangerPerPage); if (_gradePage < tp) { _gradePage++; renderGradePage(); } }
+        function gradeChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _gradePage = 1; renderGradePage(); }
+        function subjectPrevPage() { if (_subjectPage > 1) { _subjectPage--; renderSubjectPage(); } }
+        function subjectNextPage() { var tp = Math.ceil(_subjectFiltered.length / _dangerPerPage); if (_subjectPage < tp) { _subjectPage++; renderSubjectPage(); } }
+        function subjectChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _subjectPage = 1; renderSubjectPage(); }
+
         async function loadAdminProfiles() {
             try {
-                const res = await fetch('/api/admin/admins');
+                var res = await fetch('/api/admin/admins');
                 activeDangerAdmins = await res.json();
                 filterDangerAdmins();
             } catch (e) { console.error(e); }
         }
 
-        /** Loads student, teacher, and admin lists from server (or demo), then renders filtered tables. */
         async function loadDangerZone() {
             try {
-                const res = await fetch('/teacher/scholars');
+                var res = await fetch('/teacher/scholars');
                 activeDangerScholars = await res.json();
                 filterDangerStudents();
             } catch (e) { console.error(e); }
 
             try {
-                const res = await fetch('/teachers');
+                var res = await fetch('/teachers');
                 activeDangerTeachers = await res.json();
-                const disableDangerContainer = document.getElementById('disableAdminDangerContainer');
+                var disableDangerContainer = document.getElementById('disableAdminDangerContainer');
                 if (activeDangerTeachers.length === 0) {
                     if (disableDangerContainer) disableDangerContainer.style.display = 'none';
                 } else {
@@ -209,101 +371,377 @@
             } catch (e) { console.error(e); }
 
             await loadAdminProfiles();
+            loadGrades();
+            loadDangerSubjects();
         }
 
-        /** Filters and re-renders the student danger table by search query. */
-        function filterDangerStudents() {
-            const query = (document.getElementById('studentDangerSearch').value || '').toLowerCase().trim();
-            const tbody = document.getElementById('studentDangerTable');
-            const filtered = activeDangerScholars.filter(function(s) {
-                return s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query);
+        async function loadGrades() {
+            try {
+                var res = await fetch('/grades', { credentials: 'include' });
+                activeGrades = await res.json();
+                filterGrades();
+            } catch (e) { console.error(e); }
+        }
+
+        function filterGrades() {
+            var query = (document.getElementById('dangerGradeSearch').value || '').toLowerCase().trim();
+            _gradeFiltered = activeGrades.filter(function(g) {
+                var name = (g.name || g).toLowerCase();
+                return !query || name.includes(query);
             });
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state" style="text-align:center;">' + __('danger.no_matching_students') + '</td></tr>';
+            _gradePage = 1;
+            renderGradePage();
+        }
+
+        function renderGradePage() {
+            var tbody = document.getElementById('gradeDangerTable');
+            if (!tbody) return;
+            var data = _gradeFiltered;
+            var totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
+            if (_gradePage > totalPages) _gradePage = totalPages;
+            var start = (_gradePage - 1) * _dangerPerPage;
+            var pageItems = data.slice(start, start + _dangerPerPage);
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="empty-state" style="text-align:center;">' + (document.getElementById('dangerGradeSearch').value ? 'No grades match your search.' : __('danger.empty_grades')) + '</td></tr>';
+            } else {
+                tbody.innerHTML = pageItems.map(function(g) {
+                    var name = g.name || g;
+                    return '<tr>' +
+                        '<td><strong>' + esc(name) + '</strong></td>' +
+                        '<td style="text-align: right;">' +
+                            '<button data-grade-name="' + esc(name) + '" class="btn btn-outline js-danger-delete-grade" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete') + '</span></button>' +
+                        '</td>' +
+                    '</tr>';
+                }).join('');
+            }
+            _updateDangerPagination('grade', _gradePage, totalPages, data.length);
+        }
+
+        async function addGrade() {
+            var name = document.getElementById('modalGradeName').value.trim();
+            if (!name) {
+                showNotification('addGradeNotif', __('danger.error.grade_name_required'), true);
                 return;
             }
-            tbody.innerHTML = filtered.map(function(s) {
-                return '<tr>' +
-                    '<td data-i18n-data-label="danger.table_student_name"><strong>' + esc(s.name) + '</strong></td>' +
-                    '<td data-i18n-data-label="danger.table_username">' + esc(s.id) + '</td>' +
-                    '<td data-i18n-data-label="danger.table_scholar_id"><code>' + esc(s.id) + '</code></td>' +
-                    '<td data-i18n-data-label="danger.table_status">' + (s.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
-                    '<td data-i18n-data-label="danger.table_action" style="text-align: right;">' +
-                        '<button data-student-id="' + esc(s.id) + '" data-student-name="' + esc(s.name) + '" class="btn btn-outline js-danger-reset-student" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--warning); color: var(--warning); margin-right: 0.5rem;"><span>' + __('danger.force_reset_pwd') + '</span></button>' +
-                        '<button data-student-id="' + esc(s.id) + '" data-student-name="' + esc(s.name) + '" class="btn btn-outline js-danger-delete-student" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete') + '</span></button>' +
-                    '</td>' +
-                '</tr>';
-            }).join('');
+            try {
+                var res = await fetch('/grades', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name }),
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    document.getElementById('addGradeModal').classList.add('hidden');
+                    loadGrades();
+                } else {
+                    var err = await res.json().catch(function() { return {}; });
+                    showNotification('addGradeNotif', err.detail || __('danger.error.grade_create_failed'), true);
+                }
+            } catch (e) {
+                showNotification('addGradeNotif', __('danger.notif.network_error'), true);
+            }
         }
 
-        /** Filters and re-renders the teacher danger table by search query. */
+        async function deleteGrade(name) {
+            var confirmed = await showConfirm(__('danger.confirm.delete_grade_title'), __('danger.confirm.delete_grade', {name: name}), true, __('danger.confirm.delete_btn'));
+            if (!confirmed) return;
+            try {
+                var res = await fetch('/grades/' + encodeURIComponent(name), {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    showNotification('gradeDangerNotif', __('danger.notif.grade_deleted', {name: name}), false);
+                    loadGrades();
+                } else {
+                    var err = await res.json().catch(function() { return {}; });
+                    showNotification('gradeDangerNotif', err.detail || __('danger.error.grade_delete_failed'), true);
+                }
+            } catch (e) {
+                showNotification('gradeDangerNotif', __('danger.notif.network_error'), true);
+            }
+        }
+
+        function getSymbolSvg(symbol) {
+            var svgs = {
+                calculator: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8.01" y1="10" y2="10"/><line x1="12" x2="12.01" y1="10" y2="10"/><line x1="16" x2="16.01" y1="10" y2="10"/><line x1="8" x2="8.01" y1="14" y2="14"/><line x1="12" x2="12.01" y1="14" y2="14"/><line x1="16" x2="16.01" y1="14" y2="14"/><line x1="8" x2="8.01" y1="18" y2="18"/><line x1="12" x2="16" y1="18" y2="18"/></svg>',
+                atom: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(30 12 12)"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(90 12 12)"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(150 12 12)"/></svg>',
+                globe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+                book: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v18H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 5h10"/><path d="M6 9h10"/></svg>',
+                laptop: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2" ry="2"/><line x1="2" x2="22" y1="20" y2="20"/></svg>',
+                microscope: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg>',
+                compass: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+                code: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+                folder: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>'
+            };
+            return svgs[symbol] || svgs.folder;
+        }
+
+        function initSymbolDropdown(defaultVal) {
+            var symbols = ['calculator','atom','globe','book','laptop','microscope','compass','code','folder'];
+            var labels = {calculator:'Calculator',atom:'Atom',globe:'Globe',book:'Book',laptop:'Laptop',microscope:'Microscope',compass:'Compass',code:'Code',folder:'Folder'};
+            var list = document.getElementById('symbolDropdownList');
+            var hidden = document.getElementById('modalSubjectSymbol');
+            var preview = document.getElementById('symbolSelectedPreview');
+            if (!list || !hidden || !preview) return;
+            list.innerHTML = '';
+            symbols.forEach(function(s) {
+                var div = document.createElement('div');
+                div.style.cssText = 'display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.85rem;cursor:pointer;font-size:0.9rem;color:var(--on-surface);';
+                div.onmouseenter = function() { div.style.background = 'var(--surface-container-highest)'; };
+                div.onmouseleave = function() { div.style.background = 'transparent'; };
+                div.innerHTML = getSymbolSvg(s) + '<span>' + labels[s] + '</span>';
+                div.setAttribute('data-value', s);
+                div.addEventListener('click', function() {
+                    hidden.value = s;
+                    preview.innerHTML = getSymbolSvg(s) + '<span>' + labels[s] + '</span>';
+                    list.style.display = 'none';
+                });
+                list.appendChild(div);
+            });
+            hidden.value = defaultVal || 'folder';
+            preview.innerHTML = getSymbolSvg(hidden.value) + '<span>' + labels[hidden.value] + '</span>';
+            var selected = document.getElementById('symbolDropdownSelected');
+            if (selected) {
+                selected.onclick = function() { list.style.display = list.style.display === 'none' ? 'block' : 'none'; };
+            }
+            document.addEventListener('click', function(e) {
+                var wrap = document.getElementById('symbolDropdownWrap');
+                if (wrap && !wrap.contains(e.target)) list.style.display = 'none';
+            });
+        }
+
+        async function loadDangerSubjects() {
+            try {
+                var res = await fetch('/subjects', { credentials: 'include' });
+                activeDangerSubjects = await res.json();
+                filterDangerSubjects();
+                populateDangerSubjectClassDropdown();
+            } catch (e) { console.error(e); }
+        }
+
+        function populateDangerSubjectClassDropdown() {
+            var grades = activeGrades.map(function(g) { return g.name || g; });
+            ['dangerSubjectClass', 'modalSubjectClass'].forEach(function(id) {
+                var sel = document.getElementById(id);
+                if (!sel) return;
+                var existing = sel.querySelectorAll('option:not(:first-child)');
+                existing.forEach(function(o) { o.remove(); });
+                grades.forEach(function(name) {
+                    var opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    sel.appendChild(opt);
+                });
+            });
+        }
+
+        function filterDangerSubjects() {
+            var query = (document.getElementById('dangerSubjectSearch').value || '').toLowerCase().trim();
+            _subjectFiltered = activeDangerSubjects.filter(function(s) {
+                return !query || (s.name || '').toLowerCase().includes(query);
+            });
+            _subjectPage = 1;
+            renderSubjectPage();
+        }
+
+        function renderSubjectPage() {
+            var tbody = document.getElementById('subjectDangerTable');
+            if (!tbody) return;
+            var data = _subjectFiltered;
+            var totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
+            if (_subjectPage > totalPages) _subjectPage = totalPages;
+            var start = (_subjectPage - 1) * _dangerPerPage;
+            var pageItems = data.slice(start, start + _dangerPerPage);
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state" style="text-align:center;">No subjects found.</td></tr>';
+            } else {
+                tbody.innerHTML = pageItems.map(function(s) {
+                    var svg = getSymbolSvg(s.symbol || 'folder');
+                    return '<tr>' +
+                        '<td><strong>' + esc(s.name) + '</strong></td>' +
+                        '<td>' + esc(s.class_name || 'All') + '</td>' +
+                        '<td><span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.6rem; border-radius: 10px; font-size: 0.75rem; font-weight: 600; background: rgba(0,112,131,0.08); color: var(--teal);">' + svg + '</span></td>' +
+                        '<td style="text-align: right;">' +
+                            '<button data-subject-id="' + esc(s.id) + '" data-subject-name="' + esc(s.name) + '" data-subject-class="' + esc(s.class_name || '') + '" class="btn btn-outline js-danger-delete-subject" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>Delete</span></button>' +
+                        '</td>' +
+                    '</tr>';
+                }).join('');
+            }
+            _updateDangerPagination('subject', _subjectPage, totalPages, data.length);
+        }
+
+        async function addDangerSubject() {
+            var name = document.getElementById('modalSubjectName').value.trim();
+            var symbol = document.getElementById('modalSubjectSymbol').value;
+            var className = document.getElementById('modalSubjectClass').value;
+            if (!name) { showNotification('addSubjectNotif', 'Subject name is required.', true); return; }
+            try {
+                var res = await fetch('/teacher/subjects', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name: name, symbol: symbol, class_name: className })
+                });
+                if (res.ok) {
+                    document.getElementById('addSubjectModal').classList.add('hidden');
+                    loadDangerSubjects();
+                } else {
+                    var err = await res.json().catch(function() { return {}; });
+                    showNotification('addSubjectNotif', err.detail || 'Failed to add subject.', true);
+                }
+            } catch (e) {
+                showNotification('addSubjectNotif', 'Network error.', true);
+            }
+        }
+
+        async function deleteDangerSubject(id, name) {
+            var confirmed = await showConfirm('Delete Subject', 'Delete "' + name + '"? Resources using this subject will not be affected.', true, 'Delete');
+            if (!confirmed) return;
+            try {
+                var body = { id: id };
+                var res = await fetch('/teacher/subjects/' + encodeURIComponent(name), {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(body)
+                });
+                if (res.ok) {
+                    showNotification('subjectDangerNotif', 'Subject deleted.', false);
+                    loadDangerSubjects();
+                } else {
+                    var err = await res.json().catch(function() { return {}; });
+                    showNotification('subjectDangerNotif', err.detail || 'Failed to delete.', true);
+                }
+            } catch (e) {
+                showNotification('subjectDangerNotif', 'Network error.', true);
+            }
+        }
+
+        function filterDangerStudents() {
+            var query = (document.getElementById('studentDangerSearch').value || '').toLowerCase().trim();
+            _studentFiltered = activeDangerScholars.filter(function(s) {
+                return s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query);
+            });
+            _studentPage = 1;
+            renderStudentPage();
+        }
+
+        function renderStudentPage() {
+            var tbody = document.getElementById('studentDangerTable');
+            if (!tbody) return;
+            var data = _studentFiltered;
+            var totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
+            if (_studentPage > totalPages) _studentPage = totalPages;
+            var start = (_studentPage - 1) * _dangerPerPage;
+            var pageItems = data.slice(start, start + _dangerPerPage);
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state" style="text-align:center;">' + __('danger.no_matching_students') + '</td></tr>';
+            } else {
+                tbody.innerHTML = pageItems.map(function(s) {
+                    return '<tr>' +
+                        '<td data-i18n-data-label="danger.table_student_name"><strong>' + esc(s.name) + '</strong></td>' +
+                        '<td data-i18n-data-label="danger.table_username">' + esc(s.id) + '</td>' +
+                        '<td data-i18n-data-label="danger.table_scholar_id"><code>' + esc(s.id) + '</code></td>' +
+                        '<td data-i18n-data-label="danger.table_status">' + (s.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
+                        '<td data-i18n-data-label="danger.table_action">' +
+                            '<div style="display:flex;gap:0.5rem;justify-content:flex-end;flex-wrap:nowrap;">' +
+                            '<button data-student-id="' + esc(s.id) + '" data-student-name="' + esc(s.name) + '" class="btn btn-outline js-danger-reset-student" style="padding:0.4rem 0.75rem;font-size:0.75rem;border-color:var(--warning);color:var(--warning);white-space:nowrap;">' + __('danger.force_reset_pwd') + '</button>' +
+                            '<button data-student-id="' + esc(s.id) + '" data-student-name="' + esc(s.name) + '" class="btn btn-outline js-danger-delete-student" style="padding:0.4rem 0.75rem;font-size:0.75rem;border-color:var(--danger);color:var(--danger);white-space:nowrap;">' + __('danger.delete') + '</button>' +
+                            '</div>' +
+                        '</td>' +
+                    '</tr>';
+                }).join('');
+            }
+            _updateDangerPagination('student', _studentPage, totalPages, data.length);
+        }
+
         function filterDangerTeachers() {
-            const query = (document.getElementById('teacherDangerSearch').value || '').toLowerCase().trim();
-            const tbody = document.getElementById('teacherDangerTable');
-            const filtered = activeDangerTeachers.filter(function(t) {
+            var query = (document.getElementById('teacherDangerSearch').value || '').toLowerCase().trim();
+            _teacherFiltered = activeDangerTeachers.filter(function(t) {
                 return t.username.toLowerCase().includes(query) ||
                     t.name.toLowerCase().includes(query) ||
                     (t.department && t.department.toLowerCase().includes(query));
             });
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="text-align:center;">' + __('danger.no_matching_teachers') + '</td></tr>';
-                return;
-            }
-            tbody.innerHTML = filtered.map(function(t) {
-                return '<tr>' +
-                    '<td data-i18n-data-label="danger.table_full_name"><strong>' + esc(t.name) + '</strong></td>' +
-                    '<td data-i18n-data-label="danger.table_username">' + esc(t.username) + '</td>' +
-                    '<td data-i18n-data-label="danger.table_scholar_id">' + esc(t.scholar_id || 'â€”') + '</td>' +
-                    '<td data-i18n-data-label="danger.table_department">' + esc(t.department) + '</td>' +
-                    '<td data-i18n-data-label="danger.table_status">' + (t.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
-                    '<td data-i18n-data-label="danger.table_action" style="text-align: right;">' +
-                        '<button data-teacher-username="' + esc(t.username) + '" class="btn btn-outline js-danger-reset-teacher" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--warning); color: var(--warning); margin-right: 0.5rem;"><span>' + __('danger.force_reset_pwd') + '</span></button>' +
-                        '<button data-teacher-username="' + esc(t.username) + '" class="btn btn-outline js-danger-delete-teacher" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete') + '</span></button>' +
-                    '</td>' +
-                '</tr>';
-            }).join('');
+            _teacherPage = 1;
+            renderTeacherPage();
         }
 
-        /** Filters and re-renders the admin danger table by search query. */
+        function renderTeacherPage() {
+            var tbody = document.getElementById('teacherDangerTable');
+            if (!tbody) return;
+            var data = _teacherFiltered;
+            var totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
+            if (_teacherPage > totalPages) _teacherPage = totalPages;
+            var start = (_teacherPage - 1) * _dangerPerPage;
+            var pageItems = data.slice(start, start + _dangerPerPage);
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="text-align:center;">' + __('danger.no_matching_teachers') + '</td></tr>';
+            } else {
+                tbody.innerHTML = pageItems.map(function(t) {
+                    return '<tr>' +
+                        '<td data-i18n-data-label="danger.table_full_name"><strong>' + esc(t.name) + '</strong></td>' +
+                        '<td data-i18n-data-label="danger.table_username">' + esc(t.username) + '</td>' +
+                        '<td data-i18n-data-label="danger.table_scholar_id">' + esc(t.scholar_id || '') + '</td>' +
+                        '<td data-i18n-data-label="danger.table_department">' + esc(t.department) + '</td>' +
+                        '<td data-i18n-data-label="danger.table_status">' + (t.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
+                        '<td data-i18n-data-label="danger.table_action" style="text-align: right;">' +
+                            '<button data-teacher-username="' + esc(t.username) + '" class="btn btn-outline js-danger-reset-teacher" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--warning); color: var(--warning); margin-right: 0.5rem;"><span>' + __('danger.force_reset_pwd') + '</span></button>' +
+                            '<button data-teacher-username="' + esc(t.username) + '" class="btn btn-outline js-danger-delete-teacher" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete') + '</span></button>' +
+                        '</td>' +
+                    '</tr>';
+                }).join('');
+            }
+            _updateDangerPagination('teacher', _teacherPage, totalPages, data.length);
+        }
+
         function filterDangerAdmins() {
-            const query = (document.getElementById('adminDangerSearch').value || '').toLowerCase().trim();
-            const tbody = document.getElementById('adminDangerTable');
-            const filtered = activeDangerAdmins.filter(function(a) {
+            var query = (document.getElementById('adminDangerSearch').value || '').toLowerCase().trim();
+            _adminFiltered = activeDangerAdmins.filter(function(a) {
                 return a.username.toLowerCase().includes(query) ||
                     a.name.toLowerCase().includes(query) ||
-                    (                    a.department && a.department.toLowerCase().includes(query) ||
-                    (a.scholar_id && a.scholar_id.toLowerCase().includes(query)));
+                    (a.department && a.department.toLowerCase().includes(query)) ||
+                    (a.scholar_id && a.scholar_id.toLowerCase().includes(query));
             });
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="text-align:center;">' + __('danger.no_matching_admins') + '</td></tr>';
-                return;
-            }
-            tbody.innerHTML = filtered.map(function(a) {
-                return '<tr>' +
-                    '<td data-i18n-data-label="danger.table_full_name"><strong>' + esc(a.name) + '</strong></td>' +
-                    '<td data-i18n-data-label="danger.table_username">' + esc(a.username) + '</td>' +
-                    '<td data-i18n-data-label="danger.table_scholar_id" style="font-family: monospace; font-size: 0.8rem;">' + esc(a.scholar_id || '') + '</td>' +
-                    '<td data-i18n-data-label="danger.table_department">' + esc(a.department) + '</td>' +
-                    '<td data-i18n-data-label="danger.table_status">' + (a.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
-                    '<td data-i18n-data-label="danger.table_action" style="text-align: right;">' +
-                        (a.username !== 'admin' ? 
-                            '<button data-admin-username="' + esc(a.username) + '" class="btn btn-outline js-danger-reset-admin" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--warning); color: var(--warning); margin-right: 0.5rem;"><span>' + __('danger.force_reset_pwd') + '</span></button>' +
-                            '<button data-admin-username="' + esc(a.username) + '" class="btn btn-outline js-danger-delete-admin" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete') + '</span></button>'
-                        : '<span style="color:var(--text-muted);font-size:0.8rem;">' + __('danger.default_account') + '</span>') +
-                    '</td>' +
-                '</tr>';
-            }).join('');
+            _adminPage = 1;
+            renderAdminPage();
         }
 
-        /**
-         * Forces a password reset for a student ï¿½ sets reset_required=1.
-         * Uses apiFetch with cookie-based auth to POST /teacher/scholars/reset-password/{id}.
-         */
+        function renderAdminPage() {
+            var tbody = document.getElementById('adminDangerTable');
+            if (!tbody) return;
+            var data = _adminFiltered;
+            var totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
+            if (_adminPage > totalPages) _adminPage = totalPages;
+            var start = (_adminPage - 1) * _dangerPerPage;
+            var pageItems = data.slice(start, start + _dangerPerPage);
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="text-align:center;">' + __('danger.no_matching_admins') + '</td></tr>';
+            } else {
+                tbody.innerHTML = pageItems.map(function(a) {
+                    return '<tr>' +
+                        '<td data-i18n-data-label="danger.table_full_name"><strong>' + esc(a.name) + '</strong></td>' +
+                        '<td data-i18n-data-label="danger.table_username">' + esc(a.username) + '</td>' +
+                        '<td data-i18n-data-label="danger.table_scholar_id" style="font-family: monospace; font-size: 0.8rem;">' + esc(a.scholar_id || '') + '</td>' +
+                        '<td data-i18n-data-label="danger.table_department">' + esc(a.department) + '</td>' +
+                        '<td data-i18n-data-label="danger.table_status">' + (a.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
+                        '<td data-i18n-data-label="danger.table_action" style="text-align: right;">' +
+                            (a.username !== 'admin' ?
+                                '<button data-admin-username="' + esc(a.username) + '" class="btn btn-outline js-danger-reset-admin" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--warning); color: var(--warning); margin-right: 0.5rem;"><span>' + __('danger.force_reset_pwd') + '</span></button>' +
+                                '<button data-admin-username="' + esc(a.username) + '" class="btn btn-outline js-danger-delete-admin" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete') + '</span></button>'
+                            : '<span style="color:var(--text-muted);font-size:0.8rem;">' + __('danger.default_account') + '</span>') +
+                        '</td>' +
+                    '</tr>';
+                }).join('');
+            }
+            _updateDangerPagination('admin', _adminPage, totalPages, data.length);
+        }
+
         async function resetStudentPassword(id, name) {
-            const confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_student', {name: name}), false, __('danger.confirm.ok_btn'));
+            var confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_student', {name: name}), false, __('danger.confirm.ok_btn'));
             if (!confirmed) return;
             try {
-                const res = await fetch('/teacher/scholars/reset-password/' + id, { method: 'POST' });
+                var res = await fetch('/teacher/scholars/reset-password/' + id, { method: 'POST' });
                 if (res.ok) {
                     showNotification('studentDangerNotif', __('danger.notif.student_pwd_reset', {name: name}), false);
                     loadDangerZone();
@@ -315,15 +753,11 @@
             }
         }
 
-        /**
-         * Permanently deletes a student account and all associated data.
-         * Uses apiFetch to DELETE /teacher/scholars/{id}.
-         */
         async function deleteStudentAccount(id, name) {
-            const confirmed = await showConfirm(__('danger.confirm.delete_student_title'), __('danger.confirm.delete_student', {name: name}), true, __('danger.confirm.delete_btn'));
+            var confirmed = await showConfirm(__('danger.confirm.delete_student_title'), __('danger.confirm.delete_student', {name: name}), true, __('danger.confirm.delete_btn'));
             if (!confirmed) return;
             try {
-                const res = await fetch('/teacher/scholars/' + id, { method: 'DELETE' });
+                var res = await fetch('/teacher/scholars/' + id, { method: 'DELETE' });
                 if (res.ok) {
                     showNotification('studentDangerNotif', __('danger.notif.student_deleted', {name: name}), false);
                     loadDangerZone();
@@ -335,20 +769,16 @@
             }
         }
 
-        /**
-         * Forces a password reset for a teacher ï¿½ sets reset_required=1.
-         * Uses apiFetch to POST /teacher/reset-password/{username}.
-         */
         async function resetTeacherPassword(username) {
-            const confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_teacher', {username: username}), false, __('danger.confirm.ok_btn'));
+            var confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_teacher', {username: username}), false, __('danger.confirm.ok_btn'));
             if (!confirmed) return;
             try {
-                const res = await fetch('/teacher/reset-password/' + username, { method: 'POST' });
+                var res = await fetch('/teacher/reset-password/' + username, { method: 'POST' });
                 if (res.ok) {
                     showNotification('teacherDangerNotif', __('danger.notif.teacher_pwd_reset', {username: username}), false);
                     loadDangerZone();
                 } else {
-                    const err = await res.json();
+                    var err = await res.json();
                     showNotification('teacherDangerNotif', err.detail || __('danger.notif.teacher_pwd_reset_failed'), true);
                 }
             } catch (e) {
@@ -356,15 +786,11 @@
             }
         }
 
-        /**
-         * Permanently deletes a teacher profile and all associated data.
-         * Uses apiFetch to DELETE /teacher/profiles/{username}.
-         */
         async function deleteTeacherProfile(username) {
-            const confirmed = await showConfirm(__('danger.confirm.delete_teacher_title'), __('danger.confirm.delete_teacher', {username: username}), true, __('danger.confirm.delete_btn'));
+            var confirmed = await showConfirm(__('danger.confirm.delete_teacher_title'), __('danger.confirm.delete_teacher', {username: username}), true, __('danger.confirm.delete_btn'));
             if (!confirmed) return;
             try {
-                const res = await fetch('/teacher/profiles/' + username, { method: 'DELETE' });
+                var res = await fetch('/teacher/profiles/' + username, { method: 'DELETE' });
                 if (res.ok) {
                     loadDangerZone();
                 } else {
@@ -375,21 +801,16 @@
             }
         }
 
-        /**
-         * Reset an admin account's password to the default.
-         * Sends a POST request to /api/admin/reset-password/{username}.
-         * @param {string} username - The admin username to reset
-         */
         async function resetAdminPassword(username) {
-            const confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_admin', {username: username}), false, __('danger.confirm.ok_btn'));
+            var confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_admin', {username: username}), false, __('danger.confirm.ok_btn'));
             if (!confirmed) return;
             try {
-                const res = await fetch('/teacher/reset-password/' + username, { method: 'POST' });
+                var res = await fetch('/teacher/reset-password/' + username, { method: 'POST' });
                 if (res.ok) {
                     showNotification('adminDangerNotif', __('danger.notif.admin_pwd_reset', {username: username}), false);
                     loadDangerZone();
                 } else {
-                    const err = await res.json();
+                    var err = await res.json();
                     showNotification('adminDangerNotif', err.detail || __('danger.notif.admin_pwd_reset_failed'), true);
                 }
             } catch (e) {
@@ -397,16 +818,11 @@
             }
         }
 
-        /**
-         * Delete an admin profile from the system.
-         * Sends a DELETE request to /api/delete-user/{username} with role=admin.
-         * @param {string} username - The admin username to delete
-         */
         async function deleteAdminProfile(username) {
-            const confirmed = await showConfirm(__('danger.confirm.delete_admin_title'), __('danger.confirm.delete_admin', {username: username}), true, __('danger.confirm.delete_btn'));
+            var confirmed = await showConfirm(__('danger.confirm.delete_admin_title'), __('danger.confirm.delete_admin', {username: username}), true, __('danger.confirm.delete_btn'));
             if (!confirmed) return;
             try {
-                const res = await fetch('/teacher/profiles/' + username, { method: 'DELETE' });
+                var res = await fetch('/teacher/profiles/' + username, { method: 'DELETE' });
                 if (res.ok) {
                     loadDangerZone();
                 } else {
@@ -417,19 +833,15 @@
             }
         }
 
-        /**
-         * Disables the default admin login ('admin') permanently.
-         * Uses apiFetch to POST /teacher/disable-default-admin.
-         */
         async function disableDefaultAdmin() {
-            const confirmed = await showConfirm(__('danger.confirm.disable_admin_title'), __('danger.confirm.disable_admin'), true, __('danger.confirm.delete_btn'));
+            var confirmed = await showConfirm(__('danger.confirm.disable_admin_title'), __('danger.confirm.disable_admin'), true, __('danger.confirm.delete_btn'));
             if (!confirmed) return;
             try {
-                const res = await fetch('/teacher/disable-default-admin', { method: 'POST' });
+                var res = await fetch('/teacher/disable-default-admin', { method: 'POST' });
                 if (res.ok) {
                     showNotification('adminDangerNotif', __('danger.alert.admin_disabled'), false);
                 } else {
-                    const err = await res.json();
+                    var err = await res.json();
                     showNotification('adminDangerNotif', err.detail || __('danger.alert.admin_disabled_failed'), true);
                 }
             } catch (e) {
@@ -437,13 +849,12 @@
             }
         }
 
-        /** Creates a teacher account via the admin API. Validates fields, then POSTs to /api/admin/create-teacher. */
         async function dangerAddTeacherProfile() {
-            const name = document.getElementById('modalTeacherName').value.trim();
-            const department = document.getElementById('modalTeacherDept').value.trim();
-            const username = document.getElementById('modalTeacherUsername').value.trim();
-            const password = document.getElementById('modalTeacherPwd').value;
-            const notif = document.getElementById('createModalNotif');
+            var name = document.getElementById('modalTeacherName').value.trim();
+            var department = document.getElementById('modalTeacherDept').value.trim();
+            var username = document.getElementById('modalTeacherUsername').value.trim();
+            var password = document.getElementById('modalTeacherPwd').value;
+            var notif = document.getElementById('createModalNotif');
             if (!name || !username || !password) {
                 notif.style.display = 'block';
                 notif.style.background = 'rgba(239,68,68,0.1)';
@@ -452,7 +863,7 @@
                 return;
             }
             try {
-                const res = await fetch('/api/admin/create-teacher', {
+                var res = await fetch('/api/admin/create-teacher', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: username, password: password, name: name, department: department })
@@ -461,8 +872,8 @@
                     closeCreateModal();
                     loadDangerZone();
                 } else {
-                    let msg = __('danger.error.create_teacher_failed');
-                    try { const err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    var msg = __('danger.error.create_teacher_failed');
+                    try { var err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
                     notif.style.display = 'block';
                     notif.style.background = 'rgba(239,68,68,0.1)';
                     notif.style.color = 'var(--danger)';
@@ -476,13 +887,12 @@
             }
         }
 
-        /** Creates an admin account via POST /api/admin/create. */
         async function dangerCreateAdmin() {
-            const name = document.getElementById('modalAdminName').value.trim();
-            const department = document.getElementById('modalAdminDept').value.trim();
-            const username = document.getElementById('modalAdminUsername').value.trim();
-            const password = document.getElementById('modalAdminPwd').value;
-            const notif = document.getElementById('createModalNotif');
+            var name = document.getElementById('modalAdminName').value.trim();
+            var department = document.getElementById('modalAdminDept').value.trim();
+            var username = document.getElementById('modalAdminUsername').value.trim();
+            var password = document.getElementById('modalAdminPwd').value;
+            var notif = document.getElementById('createModalNotif');
             if (!name || !username || !password) {
                 notif.style.display = 'block';
                 notif.style.background = 'rgba(239,68,68,0.1)';
@@ -491,7 +901,7 @@
                 return;
             }
             try {
-                const res = await fetch('/api/admin/create', {
+                var res = await fetch('/api/admin/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: username, password: password, name: name, department: department })
@@ -501,8 +911,8 @@
                     showNotification('adminDangerNotif', __('danger.notif.admin_created', {username: username}), false);
                     loadDangerZone();
                 } else {
-                    let msg = __('danger.error.create_admin_failed');
-                    try { const err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    var msg = __('danger.error.create_admin_failed');
+                    try { var err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
                     notif.style.display = 'block';
                     notif.style.background = 'rgba(239,68,68,0.1)';
                     notif.style.color = 'var(--danger)';
@@ -516,39 +926,37 @@
             }
         }
 
-        /** Opens the create teacher modal with name, department, username, and password fields. */
         function openCreateTeacherModal() {
             document.getElementById('createModalTitle').textContent = __('danger.modal.create_teacher_title');
-            document.getElementById('createModalFields').innerHTML = `
-                <div class="form-group" style="margin-bottom:1rem;">
-                    <label for="modalTeacherName" data-i18n="danger.modal_full_name">Full Name</label>
-                    <input type="text" id="modalTeacherName" data-i18n="danger.modal_full_name_placeholder" placeholder="e.g. John Smith" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                </div>
-                <div class="form-group" style="margin-bottom:1rem;">
-                    <label for="modalTeacherDept" data-i18n="danger.modal_department">Department</label>
-                    <input type="text" id="modalTeacherDept" data-i18n="danger.modal_department_placeholder" placeholder="e.g. Science" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                </div>
-                <div class="form-group" style="margin-bottom:1rem;">
-                    <label for="modalTeacherUsername" data-i18n="danger.modal_username">Username</label>
-                    <input type="text" id="modalTeacherUsername" data-i18n="danger.modal_username_placeholder" placeholder="e.g. jsmith" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                </div>
-                <div class="form-group" style="margin-bottom:0.5rem;">
-                    <label for="modalTeacherPwd" data-i18n="danger.modal_password">Password</label>
-                    <input type="password" id="modalTeacherPwd" data-i18n="danger.modal_password_placeholder" placeholder="Enter password" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                    <div data-i18n="danger.password_hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>
-                </div>
-            `;
+            document.getElementById('createModalFields').innerHTML =
+                '<div class="form-group" style="margin-bottom:1rem;">' +
+                    '<label for="modalTeacherName" data-i18n="danger.modal_full_name">Full Name</label>' +
+                    '<input type="text" id="modalTeacherName" data-i18n="danger.modal_full_name_placeholder" placeholder="e.g. John Smith" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom:1rem;">' +
+                    '<label for="modalTeacherDept" data-i18n="danger.modal_department">Department</label>' +
+                    '<input type="text" id="modalTeacherDept" data-i18n="danger.modal_department_placeholder" placeholder="e.g. Science" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom:1rem;">' +
+                    '<label for="modalTeacherUsername" data-i18n="danger.modal_username">Username</label>' +
+                    '<input type="text" id="modalTeacherUsername" data-i18n="danger.modal_username_placeholder" placeholder="e.g. jsmith" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom:0.5rem;">' +
+                    '<label for="modalTeacherPwd" data-i18n="danger.modal_password">Password</label>' +
+                    '<input type="password" id="modalTeacherPwd" data-i18n="danger.modal_password_placeholder" placeholder="Enter password" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                    '<div data-i18n="danger.password_hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>' +
+                '</div>';
             document.getElementById('createModalNotif').style.display = 'none';
             _setCreateModalConfirmHandler(dangerAddTeacherProfile);
             document.getElementById('createAccountModal').classList.remove('hidden');
         }
 
         async function dangerCreateStudent() {
-            const name = document.getElementById('modalStudentName').value.trim();
-            const username = document.getElementById('modalStudentUsername').value.trim();
-            const grade = document.getElementById('modalStudentGrade').value.trim();
-            const password = document.getElementById('modalStudentPwd').value;
-            const notif = document.getElementById('createModalNotif');
+            var name = document.getElementById('modalStudentName').value.trim();
+            var username = document.getElementById('modalStudentUsername').value.trim();
+            var grade = document.getElementById('modalStudentGrade').value;
+            var password = document.getElementById('modalStudentPwd').value;
+            var notif = document.getElementById('createModalNotif');
             if (!name || !username) {
                 notif.style.display = 'block';
                 notif.style.background = 'rgba(239,68,68,0.1)';
@@ -557,18 +965,18 @@
                 return;
             }
             try {
-                const res = await fetch('/api/admin/create-student', {
+                var res = await fetch('/api/admin/create-student', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password: password || 'lumina2026', name, grade: grade || undefined })
+                    body: JSON.stringify({ username: username, password: password || 'lumina2026', name: name, grade: grade || undefined })
                 });
                 if (res.ok) {
                     closeCreateModal();
                     showNotification('studentDangerNotif', __('danger.notif.student_created', {name: name}), false);
                     loadDangerZone();
                 } else {
-                    let msg = __('danger.error.create_student_failed');
-                    try { const err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    var msg = __('danger.error.create_student_failed');
+                    try { var err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
                     notif.style.display = 'block';
                     notif.style.background = 'rgba(239,68,68,0.1)';
                     notif.style.color = 'var(--danger)';
@@ -582,69 +990,72 @@
             }
         }
 
-        /** Opens the create student modal with name, username, grade, and password fields. */
-        function openCreateStudentModal() {
+        async function openCreateStudentModal() {
             document.getElementById('createModalTitle').textContent = __('danger.modal.create_student_title');
-            document.getElementById('createModalFields').innerHTML = `
-                <div class="form-group" style="margin-bottom:1rem;">
-                    <label for="modalStudentName" data-i18n="danger.modal_full_name">Full Name</label>
-                    <input type="text" id="modalStudentName" data-i18n="danger.modal_full_name_placeholder" placeholder="e.g. Alice Johnson" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                </div>
-                <div class="form-group" style="margin-bottom:1rem;">
-                    <label for="modalStudentUsername" data-i18n="danger.modal_username">Username</label>
-                    <input type="text" id="modalStudentUsername" data-i18n="danger.modal_username_placeholder" placeholder="e.g. alicej" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                </div>
-                <div class="form-group" style="margin-bottom:1rem;">
-                    <label for="modalStudentGrade" data-i18n="danger.modal_grade_class">Grade/Class</label>
-                    <input type="text" id="modalStudentGrade" data-i18n="danger.modal_grade_class_placeholder" placeholder="e.g. Grade 10" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                </div>
-                <div class="form-group" style="margin-bottom:0.5rem;">
-                    <label for="modalStudentPwd" data-i18n="danger.modal_password">Password</label>
-                    <input type="password" id="modalStudentPwd" data-i18n="danger.modal_password_placeholder" placeholder="Defaults to lumina2026" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                </div>
-            `;
+            var gradeOpts = '<option value="">\u2014</option>';
+            try {
+                var gRes = await fetch('/grades', { credentials: 'include' });
+                var grades = await gRes.json();
+                grades.forEach(function(g) {
+                    var n = g.name || g;
+                    gradeOpts += '<option value="' + esc(n) + '">' + esc(n) + '</option>';
+                });
+            } catch (e) {}
+            document.getElementById('createModalFields').innerHTML =
+                '<div class="form-group" style="margin-bottom:1rem;">' +
+                    '<label for="modalStudentName" data-i18n="danger.modal_full_name">Full Name</label>' +
+                    '<input type="text" id="modalStudentName" data-i18n="danger.modal_full_name_placeholder" placeholder="e.g. Alice Johnson" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom:1rem;">' +
+                    '<label for="modalStudentUsername" data-i18n="danger.modal_username">Username</label>' +
+                    '<input type="text" id="modalStudentUsername" data-i18n="danger.modal_username_placeholder" placeholder="e.g. alicej" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom:1rem;">' +
+                    '<label for="modalStudentGrade" data-i18n="danger.modal_grade_class">Grade/Class</label>' +
+                    '<select id="modalStudentGrade" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' + gradeOpts + '</select>' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom:0.5rem;">' +
+                    '<label for="modalStudentPwd" data-i18n="danger.modal_password">Password</label>' +
+                    '<input type="password" id="modalStudentPwd" data-i18n="danger.modal_password_placeholder" placeholder="Defaults to lumina2026" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                '</div>';
             document.getElementById('createModalNotif').style.display = 'none';
             _setCreateModalConfirmHandler(dangerCreateStudent);
             document.getElementById('createAccountModal').classList.remove('hidden');
         }
 
-        /** Opens the create admin modal with username and password fields. */
         function openCreateAdminModal() {
             document.getElementById('createModalTitle').textContent = __('danger.modal.create_admin_title');
-            document.getElementById('createModalFields').innerHTML = `
-                <div class="form-group" style="margin-bottom:1rem;">
-                    <label for="modalAdminName" data-i18n="danger.modal_full_name">Full Name</label>
-                    <input type="text" id="modalAdminName" data-i18n="danger.modal_full_name_placeholder" placeholder="e.g. Admin User" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                </div>
-                <div class="form-group" style="margin-bottom:1rem;">
-                    <label for="modalAdminDept" data-i18n="danger.modal_department">Department</label>
-                    <input type="text" id="modalAdminDept" data-i18n="danger.modal_department_placeholder" placeholder="e.g. Administration" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                </div>
-                <div class="form-group" style="margin-bottom:1rem;">
-                    <label for="modalAdminUsername" data-i18n="danger.modal_username">Username</label>
-                    <input type="text" id="modalAdminUsername" data-i18n="danger.modal_username_placeholder" placeholder="e.g. admin2" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                </div>
-                <div class="form-group" style="margin-bottom:0.5rem;">
-                    <label for="modalAdminPwd" data-i18n="danger.modal_password">Password</label>
-                    <input type="password" id="modalAdminPwd" data-i18n="danger.modal_password_placeholder" placeholder="Enter password" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">
-                    <div data-i18n="danger.password_hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>
-                </div>
-            `;
+            document.getElementById('createModalFields').innerHTML =
+                '<div class="form-group" style="margin-bottom:1rem;">' +
+                    '<label for="modalAdminName" data-i18n="danger.modal_full_name">Full Name</label>' +
+                    '<input type="text" id="modalAdminName" data-i18n="danger.modal_full_name_placeholder" placeholder="e.g. Admin User" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom:1rem;">' +
+                    '<label for="modalAdminDept" data-i18n="danger.modal_department">Department</label>' +
+                    '<input type="text" id="modalAdminDept" data-i18n="danger.modal_department_placeholder" placeholder="e.g. Administration" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom:1rem;">' +
+                    '<label for="modalAdminUsername" data-i18n="danger.modal_username">Username</label>' +
+                    '<input type="text" id="modalAdminUsername" data-i18n="danger.modal_username_placeholder" placeholder="e.g. admin2" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom:0.5rem;">' +
+                    '<label for="modalAdminPwd" data-i18n="danger.modal_password">Password</label>' +
+                    '<input type="password" id="modalAdminPwd" data-i18n="danger.modal_password_placeholder" placeholder="Enter password" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                    '<div data-i18n="danger.password_hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>' +
+                '</div>';
             document.getElementById('createModalNotif').style.display = 'none';
             _setCreateModalConfirmHandler(dangerCreateAdmin);
             document.getElementById('createAccountModal').classList.remove('hidden');
         }
 
-        /** Hides the create account modal and resets the notification. */
         function closeCreateModal() {
             document.getElementById('createAccountModal').classList.add('hidden');
             document.getElementById('createModalNotif').style.display = 'none';
         }
 
-        let _currentCreateHandler = null;
-        /** @param {function|null} handler */
+        var _currentCreateHandler = null;
         function _setCreateModalConfirmHandler(handler) {
-            const btn = document.getElementById('createModalConfirmBtn');
+            var btn = document.getElementById('createModalConfirmBtn');
             if (!btn) return;
             if (_currentCreateHandler) {
                 btn.removeEventListener('click', _currentCreateHandler);
@@ -655,28 +1066,42 @@
             }
         }
 
-        let _debounceDangerStudents;
+        var _debounceDangerStudents;
         function debouncedFilterDangerStudents() {
             clearTimeout(_debounceDangerStudents);
             _debounceDangerStudents = setTimeout(filterDangerStudents, 200);
         }
-        let _debounceDangerTeachers;
+        var _debounceDangerTeachers;
         function debouncedFilterDangerTeachers() {
             clearTimeout(_debounceDangerTeachers);
             _debounceDangerTeachers = setTimeout(filterDangerTeachers, 200);
         }
-        let _debounceDangerAdmins;
+        var _debounceDangerAdmins;
         function debouncedFilterDangerAdmins() {
             clearTimeout(_debounceDangerAdmins);
             _debounceDangerAdmins = setTimeout(filterDangerAdmins, 200);
         }
 
-        _pageInitRegistry['danger'] = function() {
+        var _initDanger = function() {
+            document.getElementById('btn-studentPrevPage')?.addEventListener('click', studentPrevPage);
+            document.getElementById('btn-studentNextPage')?.addEventListener('click', studentNextPage);
+            document.getElementById('studentPerPageSelect')?.addEventListener('change', function() { studentChangePerPage(this.value); });
+            document.getElementById('btn-adminPrevPage')?.addEventListener('click', adminPrevPage);
+            document.getElementById('btn-adminNextPage')?.addEventListener('click', adminNextPage);
+            document.getElementById('adminPerPageSelect')?.addEventListener('change', function() { adminChangePerPage(this.value); });
+            document.getElementById('btn-teacherPrevPage')?.addEventListener('click', teacherPrevPage);
+            document.getElementById('btn-teacherNextPage')?.addEventListener('click', teacherNextPage);
+            document.getElementById('teacherPerPageSelect')?.addEventListener('change', function() { teacherChangePerPage(this.value); });
+            document.getElementById('btn-gradePrevPage')?.addEventListener('click', gradePrevPage);
+            document.getElementById('btn-gradeNextPage')?.addEventListener('click', gradeNextPage);
+            document.getElementById('gradePerPageSelect')?.addEventListener('change', function() { gradeChangePerPage(this.value); });
+            document.getElementById('btn-subjectPrevPage')?.addEventListener('click', subjectPrevPage);
+            document.getElementById('btn-subjectNextPage')?.addEventListener('click', subjectNextPage);
+            document.getElementById('subjectPerPageSelect')?.addEventListener('change', function() { subjectChangePerPage(this.value); });
             loadWhoAmI();
             checkSelfResetRequired();
             loadDangerZone();
 
-            // Event listeners for onclick->addEventListener migration
             document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
@@ -686,32 +1111,52 @@
             document.getElementById('btn-disableDefaultAdmin')?.addEventListener('click', disableDefaultAdmin);
             document.getElementById('btn-submitForcePasswordReset')?.addEventListener('click', submitForcePasswordReset);
             document.getElementById('btn-closeCreateModal')?.addEventListener('click', closeCreateModal);
+            document.getElementById('btn-addGrade')?.addEventListener('click', function() {
+                document.getElementById('modalGradeName').value = '';
+                document.getElementById('addGradeNotif').style.display = 'none';
+                document.getElementById('addGradeModal').classList.remove('hidden');
+                document.getElementById('modalGradeName').focus();
+            });
+            document.getElementById('btn-confirmAddGrade')?.addEventListener('click', addGrade);
+            document.getElementById('btn-closeGradeModal')?.addEventListener('click', function() {
+                document.getElementById('addGradeModal').classList.add('hidden');
+            });
 
-            // Search inputs: convert oninput/onfocus/onblur to addEventListener
-            const studentSearch = document.getElementById('studentDangerSearch');
+            var gradeSearch = document.getElementById('dangerGradeSearch');
+            if (gradeSearch) {
+                var gradeDebounce = null;
+                gradeSearch.addEventListener('input', function() {
+                    clearTimeout(gradeDebounce);
+                    gradeDebounce = setTimeout(filterGrades, 200);
+                });
+            }
+
+            var studentSearch = document.getElementById('studentDangerSearch');
             if (studentSearch) {
                 studentSearch.addEventListener('input', debouncedFilterDangerStudents);
-                studentSearch.addEventListener('focus', function() { this.style.borderColor = 'var(--teal)'; });
-                studentSearch.addEventListener('blur', function() { this.style.borderColor = 'var(--outline)'; });
             }
-            const adminSearch = document.getElementById('adminDangerSearch');
+            var adminSearch = document.getElementById('adminDangerSearch');
             if (adminSearch) {
                 adminSearch.addEventListener('input', debouncedFilterDangerAdmins);
-                adminSearch.addEventListener('focus', function() { this.style.borderColor = 'var(--teal)'; });
-                adminSearch.addEventListener('blur', function() { this.style.borderColor = 'var(--outline)'; });
             }
-            const teacherSearch = document.getElementById('teacherDangerSearch');
+            var teacherSearch = document.getElementById('teacherDangerSearch');
             if (teacherSearch) {
                 teacherSearch.addEventListener('input', debouncedFilterDangerTeachers);
-                teacherSearch.addEventListener('focus', function() { this.style.borderColor = 'var(--teal)'; });
-                teacherSearch.addEventListener('blur', function() { this.style.borderColor = 'var(--outline)'; });
             }
 
-            // Event delegation for student danger table buttons
-            const studentTable = document.getElementById('studentDangerTable');
+            var subjectSearch = document.getElementById('dangerSubjectSearch');
+            if (subjectSearch) {
+                var subjectDebounce = null;
+                subjectSearch.addEventListener('input', function() {
+                    clearTimeout(subjectDebounce);
+                    subjectDebounce = setTimeout(filterDangerSubjects, 200);
+                });
+            }
+
+            var studentTable = document.getElementById('studentDangerTable');
             if (studentTable) {
                 studentTable.addEventListener('click', function(e) {
-                    let btn = e.target.closest('.js-danger-reset-student');
+                    var btn = e.target.closest('.js-danger-reset-student');
                     if (btn) {
                         resetStudentPassword(btn.dataset.studentId, btn.dataset.studentName);
                         return;
@@ -723,11 +1168,10 @@
                 });
             }
 
-            // Event delegation for teacher danger table buttons
-            const teacherTable = document.getElementById('teacherDangerTable');
+            var teacherTable = document.getElementById('teacherDangerTable');
             if (teacherTable) {
                 teacherTable.addEventListener('click', function(e) {
-                    let btn = e.target.closest('.js-danger-reset-teacher');
+                    var btn = e.target.closest('.js-danger-reset-teacher');
                     if (btn) {
                         resetTeacherPassword(btn.dataset.teacherUsername);
                         return;
@@ -739,11 +1183,10 @@
                 });
             }
 
-            // Event delegation for admin danger table buttons
-            const adminTable = document.getElementById('adminDangerTable');
+            var adminTable = document.getElementById('adminDangerTable');
             if (adminTable) {
                 adminTable.addEventListener('click', function(e) {
-                    let btn = e.target.closest('.js-danger-reset-admin');
+                    var btn = e.target.closest('.js-danger-reset-admin');
                     if (btn) {
                         resetAdminPassword(btn.dataset.adminUsername);
                         return;
@@ -754,12 +1197,56 @@
                     }
                 });
             }
-        };
 
-        document.addEventListener('DOMContentLoaded', _pageInitRegistry['danger']);
+            var gradeTable = document.getElementById('gradeDangerTable');
+            if (gradeTable) {
+                gradeTable.addEventListener('click', function(e) {
+                    var btn = e.target.closest('.js-danger-delete-grade');
+                    if (btn) {
+                        deleteGrade(btn.dataset.gradeName);
+                    }
+                });
+            }
+
+            var btnAddSubject = document.getElementById('btn-addDangerSubject');
+            if (btnAddSubject) {
+                btnAddSubject.addEventListener('click', function() {
+                    document.getElementById('modalSubjectName').value = '';
+                    document.getElementById('modalSubjectClass').value = '';
+                    document.getElementById('addSubjectNotif').style.display = 'none';
+                    initSymbolDropdown('folder');
+                    document.getElementById('addSubjectModal').classList.remove('hidden');
+                    document.getElementById('modalSubjectName').focus();
+                });
+            }
+
+            var btnConfirmAdd = document.getElementById('btn-confirmAddSubject');
+            if (btnConfirmAdd) {
+                btnConfirmAdd.addEventListener('click', addDangerSubject);
+            }
+
+            var btnCloseSubjectModal = document.getElementById('btn-closeSubjectModal');
+            if (btnCloseSubjectModal) {
+                btnCloseSubjectModal.addEventListener('click', function() {
+                    document.getElementById('addSubjectModal').classList.add('hidden');
+                });
+            }
+
+            var subjectTable = document.getElementById('subjectDangerTable');
+            if (subjectTable) {
+                subjectTable.addEventListener('click', function(e) {
+                    var btn = e.target.closest('.js-danger-delete-subject');
+                    if (btn) {
+                        deleteDangerSubject(btn.dataset.subjectId, btn.dataset.subjectName);
+                    }
+                });
+            }
+        };
+        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['danger'] = _initDanger;
+
+        document.addEventListener('DOMContentLoaded', _initDanger);
     </script>
 
-    <!-- Section: Toast Container ï¿½ global notification area (top-right, fixed) -->
     <div id="globalToastContainer" style="position: fixed; top: 1.5rem; right: 1.5rem; z-index: 99999; display: flex; flex-direction: column; gap: 0.75rem; max-width: 380px; width: 100%; pointer-events: none;"></div>
 
 </body>

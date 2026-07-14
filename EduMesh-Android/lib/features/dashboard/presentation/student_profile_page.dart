@@ -665,7 +665,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           children: [
             _statRow(cs, l10n.statCardToday, '$_studyMinutesToday${l10n.suffixMinutes}', l10n.statCardThisWeek, _studyMinutesThisWeek < 60 ? '$_studyMinutesThisWeek${l10n.suffixMinutes}' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}${l10n.suffixHours}'),
             SizedBox(height: AppSpacing.md.h),
-            _statRow(cs, 'Courses Completed', '$_coursesCompleted', l10n.statCardStreak, '$_streakDays${l10n.suffixDays}'),
+            _statRow(cs, l10n.profileCoursesCompleted, '$_coursesCompleted', l10n.statCardStreak, '$_streakDays${l10n.suffixDays}'),
           ],
         ),
       ),
@@ -690,14 +690,15 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
 
   Widget _buildMyCoursesSection(ColorScheme cs) {
     final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
     final enrolled = CourseService().enrolledCourses;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('My Courses',
+        Text(l10n.profileMyCourses,
             style: tt.titleLarge?.copyWith(color: cs.onSurface)),
         SizedBox(height: AppSpacing.xs.h),
-        Text('Tap to resume',
+        Text(l10n.profileTapToResume,
             style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         SizedBox(height: AppSpacing.md.h),
         if (enrolled.isEmpty)
@@ -708,7 +709,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
             ),
             child: Center(
-              child: Text('No courses yet. Explore the catalog to get started.',
+              child: Text(l10n.profileNoCourses,
                   style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
             ),
           )
@@ -749,7 +750,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         builder: (_) => CoursePlayerPage(course: entry.course),
                       ));
                     },
-                    child: Text('Continue',
+                    child: Text(l10n.buttonContinue,
                         style: tt.labelSmall?.copyWith(color: cs.primary)),
                   ),
                 );

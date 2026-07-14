@@ -71,7 +71,7 @@ class ActivityTracker {
       try {
         final db = await DBHelper().database;
         await db.insert('activity', {
-          'resource_id': 0,
+          'resource_id': '',
           'date': DateTime.now().toIso8601String().substring(0, 10),
           'subject': subject,
           'seconds': duration.inSeconds,

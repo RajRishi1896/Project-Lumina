@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head ï¿½ theme detection, metadata -->
+<!-- Section: Head — theme detection, metadata -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,53 +13,10 @@
 </head>
 <body>
 
-    <!-- Section: Sidebar ï¿½ nav links, user info, theme toggle, logout -->
-    <aside>
-        <a href="/static/index" class="sidebar-brand-horizontal"><img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"><img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"></a>
-        <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
-        <div class="sidebar-divider"></div>
-        <nav>
-            <a href="/static/index" class="nav-item" id="nav-home">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                <span data-i18n="sidebar.home">Home</span>
-            </a>
-            <a href="/static/manage-content" class="nav-item" id="nav-content">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span data-i18n="sidebar.content">Content Manager</span>
-            </a>
-            <a href="/static/manage-security" class="nav-item active" id="nav-account">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span data-i18n="sidebar.security">Account</span>
-            </a>
-            <a href="/static/students" class="nav-item" id="nav-students">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span data-i18n="sidebar.students">Students</span>
-            </a>
-            <a href="/static/manage-help#teacher-guide" class="nav-item" id="nav-help">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                <span data-i18n="sidebar.help">Teacher Guide</span>
-            </a>
-            <a href="/static/manage-danger" class="nav-item danger" id="nav-danger">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                <span data-i18n="sidebar.danger">Danger Zone</span>
-            </a>
-            <a href="/static/manage-settings" class="nav-item" id="nav-settings">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                <span data-i18n="sidebar.settings">Settings</span>
-            </a>
-        </nav>
-        <div class="nav-spacer"></div>
-        <div class="theme-toggle" id="btn-toggleTheme">
-            <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            <span id="themeLabel"><span data-i18n="sidebar.dark_mode">Dark Mode</span></span>
-        </div>
-        <a href="/logout" class="nav-logout">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            <span data-i18n="sidebar.logout">Log out</span>
-        </a>
-    </aside>
+    <!-- Section: Sidebar — empty, rendered by renderLayout() -->
+    <aside></aside>
 
-    <!-- Section: Main Content ï¿½ password change, profile management -->
+    <!-- Section: Main Content — password, profile, and admin-only settings -->
     <main>
         <div id="app-content">
         <div class="page-header">
@@ -67,9 +24,9 @@
             <p data-i18n="security.page_description">Update your password, display name, and department.</p>
         </div>
 
-        <!-- Section: Change Admin Password ï¿½ current password, new password, toggle visibility -->
+        <!-- Section: Change Password — current password, new password, toggle visibility -->
         <div class="card">
-            <div class="card-title" data-i18n="security_change_password_title">Change Admin Password</div>
+            <div class="card-title" data-i18n="security_change_password_title">Change Password</div>
             <div id="securityNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
             <div class="security-form">
                 <div class="form-group">
@@ -101,7 +58,7 @@
             </div>
         </div>
 
-        <!-- Section: My Profile ï¿½ editable name and department -->
+        <!-- Section: My Profile — editable name and department -->
         <div class="card">
             <div class="card-title" data-i18n="security_my_profile">My Profile</div>
             <div id="profileNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
@@ -117,27 +74,376 @@
                 <button id="btn-saveMyProfile" class="btn btn-primary" data-i18n="security_save">Save</button>
             </div>
         </div>
+
+        <!-- Section: Account Overview — visible to all roles -->
+        <div class="card" id="accountOverviewCard">
+            <div class="card-title" data-i18n="settings.account_overview">Account Overview</div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+                <div><strong data-i18n="settings.username_label">Username:</strong> <span id="settingsUsername"><span data-i18n="settings.loading">Loading...</span></span></div>
+                <div><strong data-i18n="settings.role_label">Role:</strong> <span id="settingsUserRole"><span data-i18n="settings.loading">Loading...</span></span></div>
+            </div>
         </div>
 
+        <!-- Section: Log Retention Policy (Admin Only) -->
+        <div class="card" id="logRetentionCard" style="display: none;">
+            <div class="card-title" data-i18n="settings.log_retention">Log Retention Policy</div>
+            <div id="retentionNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; border: 1px solid transparent;"></div>
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label for="logRetentionSelect" data-i18n="settings.retention_duration">Retention Duration</label>
+                <select id="logRetentionSelect" style="max-width: min(260px, 100%); padding: 0.5rem; background: var(--surface); color: var(--on-surface); border: 1px solid var(--outline); border-radius: var(--radius-sm); outline: none;">
+                    <option value="24h" data-i18n="settings.retention_24h">24 Hours</option>
+                    <option value="7d" data-i18n="settings.retention_7d">7 Days</option>
+                    <option value="30d" data-i18n="settings.retention_30d">30 Days (Default)</option>
+                    <option value="3m" data-i18n="settings.retention_3m">3 Months</option>
+                    <option value="6m" data-i18n="settings.retention_6m">6 Months</option>
+                    <option value="never" data-i18n="settings.retention_never">Never Delete</option>
+                    <option value="none" data-i18n="settings.retention_disabled">Don't Take Logs (Disabled)</option>
+                </select>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;" data-i18n="settings.retention_desc">
+                Configures how long admin audit logs are stored on the hub server. Pruning is completed automatically with low overhead.
+            </p>
+        </div>
+
+        <!-- Section: Live Admin Audit Log (Admin Only) -->
+        <div class="card" id="adminLogCard" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                <div class="card-title" style="margin-bottom: 0;" data-i18n="settings.admin_log">Live Admin Audit Log</div>
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                    <div class="search-wrap-inline">
+                        <label for="adminLogSearch" class="sr-only" data-i18n="settings.search_logs_placeholder">Search admin logs</label>
+                        <input type="text" id="adminLogSearch" data-i18n="settings.search_logs_placeholder" placeholder="Search logs..." style="width: 100%; padding: 0.35rem 0.5rem 0.35rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
+                        <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
+                    </div>
+                    <button id="btn-loadAdminLogs" class="btn btn-outline" style="padding: 0.35rem 0.85rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        <span data-i18n="settings.refresh">Refresh</span>
+                    </button>
+                </div>
+            </div>
+            <div style="border: 1px solid var(--outline); border-radius: var(--radius-sm);">
+                <div style="max-height: 500px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr><th style="width: 180px; position: sticky; top: 0; background: var(--surface); z-index: 1;" data-i18n="settings.timestamp">Timestamp</th><th style="position: sticky; top: 0; background: var(--surface); z-index: 1;" data-i18n="settings.action">Action</th></tr>
+                        </thead>
+                        <tbody id="adminLogTable">
+                            <tr><td colspan="2" class="empty-state" data-i18n="settings.loading_logs">Loading logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="adminLogPagination" style="display: none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--outline); flex-wrap: wrap;">
+                <button id="btn-adminLogsPrevPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    <span data-i18n="settings.previous">Previous</span>
+                </button>
+                <span id="adminLogPageInfo" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">Page 1 of 1</span>
+                <button id="btn-adminLogsNextPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                    <span data-i18n="settings.next">Next</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                    <span data-i18n="settings.per_page">Per page:</span>
+                    <select id="adminLogPerPageSelect" style="min-height: 44px; padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface); color: var(--on-surface); outline: none; cursor: pointer;">
+                        <option value="5">5</option>
+                        <option value="8">8</option>
+                        <option value="10">10</option>
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                    </select>
+                </span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-top: 0.75rem;" data-i18n="settings.admin_log_desc">
+                Showing admin actions with pagination. Auto-prunes based on retention policy above.
+            </p>
+        </div>
+
+        <!-- Section: Download Logs (Admin Only) -->
+        <div class="card" id="downloadLogsCard" style="display: none;">
+            <div class="card-title" data-i18n="settings.download_logs">Download Audit Logs</div>
+            <div class="form-grid" style="align-items: flex-end; flex-wrap: wrap;">
+                <div class="form-group" style="margin-bottom: 0; flex: 1 1 200px;">
+                    <label for="downloadDurationSelect" data-i18n="settings.select_duration">Select Duration to Download</label>
+                    <select id="downloadDurationSelect" style="width: 100%; padding: 0.5rem; background: var(--surface); color: var(--on-surface); border: 1px solid var(--outline); border-radius: var(--radius-sm); outline: none;">
+                        <option value="24h" data-i18n="settings.download_24h">Last 24 Hours</option>
+                        <option value="7d" data-i18n="settings.download_7d">Last 7 Days</option>
+                        <option value="30d" data-i18n="settings.download_30d">Last 30 Days</option>
+                        <option value="all" data-i18n="settings.download_all">All Logs (Entire History)</option>
+                    </select>
+                </div>
+                <button id="btn-downloadLogs" class="btn btn-primary" style="padding: 0.65rem 1.25rem; font-size: 0.95rem;"><span data-i18n="settings.download_logs_btn">Download Logs (.txt)</span></button>
+            </div>
+        </div>
+
+        <!-- Section: Default Admin Account (Admin Only) -->
+        <div class="card" id="defaultAdminCard" style="display: none;">
+            <div class="card-title" style="color: var(--danger); font-weight: 800;">Default Admin Account</div>
+            <div id="defaultAdminNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; border: 1px solid transparent;"></div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <strong>Status:</strong>
+                    <span id="defaultAdminStatus" style="font-weight: 700;"></span>
+                </div>
+            </div>
+            <div id="defaultAdminSelfWarning" style="display: none; padding: 0.85rem 1rem; margin-bottom: 1rem; border-radius: var(--radius-sm); background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
+                <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 0.1rem;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <div>
+                        <div style="font-weight: 700; color: var(--danger); margin-bottom: 0.25rem;">You cannot disable the default admin while logged into it</div>
+                        <div>Log in with a different admin or teacher account first, then disable the default admin from that account. This prevents accidental lockout.</div>
+                    </div>
+                </div>
+            </div>
+            <div id="defaultAdminRiskWarning" style="display: none; padding: 0.85rem 1rem; margin-bottom: 1rem; border-radius: var(--radius-sm); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
+                <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--saffron)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 0.1rem;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <div>
+                        <div style="font-weight: 700; color: var(--saffron); margin-bottom: 0.25rem;">Risks of disabling the default admin</div>
+                        <ul style="margin: 0.25rem 0 0; padding-left: 1.2rem;">
+                            <li>The built-in admin account (username: admin) will be permanently blocked from login.</li>
+                            <li>If all other teacher accounts are deleted or locked, the hub will be inaccessible.</li>
+                            <li>Re-enabling requires physical access to the server or the Settings page from another admin account.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <button id="btn-disableDefaultAdmin" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--danger); color: var(--danger); font-weight: 700;">Disable Default Admin</button>
+                <button id="btn-enableDefaultAdmin" class="btn btn-outline" style="display: none; padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--success); color: var(--success); font-weight: 700;">Re-enable Default Admin</button>
+            </div>
+        </div>
+
+        </div>
     </main>
 
-    <!-- Section: Bottom Nav (Mobile) ï¿½ tab bar hidden by default, shown via media query -->
+    <!-- Section: Bottom Nav (Mobile) -->
     <div id="bottomNav"></div>
 
-    <script src="/static/js/lumina.js" defer></script>
-    <!-- Section: Inline Scripts ï¿½ password change, teacher CRUD, force reset, confirm modal -->
+    <script src="/static/js/lumina.js?v=5" defer></script>
+    <!-- Section: Inline Scripts — all page logic merged here -->
     <script>
-        /**
-         * Toggles password input visibility between text and password types.
-         * Updates the eye icon SVG accordingly.
-         * @param {string} inputId - The DOM id of the password input
-         * @param {string} eyeIconId - The DOM id of the eye icon SVG
-         * @param {string} btnId - The DOM id of the toggle button
-         */
+        /** Simple debounce utility. */
+        function debounce(fn, delay) {
+            var timer;
+            return function() {
+                clearTimeout(timer);
+                timer = setTimeout(function() { fn.apply(this, arguments); }, delay);
+            };
+        }
+        var debouncedFilterAdminLogs = null;
+        var _adminLogsAll = [];
+        var _adminLogsFiltered = [];
+        var _adminLogsPage = 1;
+        var _adminLogsPerPage = 20;
+
+        /** Shows/hides role-based content. Admin-only cards are hidden for non-admin. */
+        function updateUIForRole() {
+            var logRetentionCard = document.getElementById('logRetentionCard');
+            var adminLogCard = document.getElementById('adminLogCard');
+            var downloadLogsCard = document.getElementById('downloadLogsCard');
+            var defaultAdminCard = document.getElementById('defaultAdminCard');
+            var usernameEl = document.getElementById('settingsUsername');
+            var roleEl = document.getElementById('settingsUserRole');
+            if (usernameEl) usernameEl.textContent = loggedInUser;
+            if (roleEl) roleEl.textContent = userRole;
+            if (userRole === 'admin') {
+                if (logRetentionCard) logRetentionCard.style.display = 'block';
+                if (adminLogCard) adminLogCard.style.display = 'block';
+                if (downloadLogsCard) downloadLogsCard.style.display = 'block';
+                if (defaultAdminCard) defaultAdminCard.style.display = 'block';
+                loadRetentionSetting();
+                loadAdminLogs();
+                loadDefaultAdminStatus();
+            } else {
+                if (logRetentionCard) logRetentionCard.style.display = 'none';
+                if (adminLogCard) adminLogCard.style.display = 'none';
+                if (downloadLogsCard) downloadLogsCard.style.display = 'none';
+                if (defaultAdminCard) defaultAdminCard.style.display = 'none';
+            }
+        }
+
+        /** Loads the current log retention setting. */
+        async function loadRetentionSetting() {
+            try {
+                var res = await fetch('/api/admin/settings');
+                if (res.ok) {
+                    var data = await res.json();
+                    var sel = document.getElementById('logRetentionSelect');
+                    if (sel) sel.value = data.log_retention;
+                }
+            } catch (e) { console.error("Error loading log retention policy", e); }
+        }
+
+        /** Saves the log retention policy choice. */
+        async function saveRetentionPolicy(policy) {
+            try {
+                var res = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ policy: policy })
+                });
+                if (res.ok) {
+                    showNotification('retentionNotif', __('settings.success.retention_updated', {policy: policy}), false);
+                } else {
+                    var err = await res.json();
+                    showNotification('retentionNotif', err.detail || __('settings.error.retention_update_failed'), true);
+                }
+            } catch (e) {
+                showNotification('retentionNotif', __('settings.connection_error'), true);
+            }
+        }
+
+        /** Translate known admin log message patterns. */
+        function translateLogMsg(msg) {
+            var who = '';
+            var cleaned = msg;
+            var userMatch = msg.match(/^(\S+):\s*/);
+            if (userMatch) { who = userMatch[1] + ': '; cleaned = msg.slice(userMatch[0].length); }
+            var m, translated;
+            if (m = cleaned.match(/^disabled the default admin account$/)) translated = __('log.disabled_default_admin');
+            else if (m = cleaned.match(/^enabled the default admin account$/)) translated = __('log.enabled_default_admin');
+            else if (m = cleaned.match(/^created admin account '(.+)'$/)) translated = __('log.created_admin', {username: m[1]});
+            else if (m = cleaned.match(/^created teacher account '(.+)'$/)) translated = __('log.created_teacher', {username: m[1]});
+            else if (m = cleaned.match(/^created student account '(.+)'$/)) translated = __('log.created_student', {username: m[1]});
+            else if (m = cleaned.match(/^changed log retention policy to (.+)$/)) translated = __('log.changed_retention', {policy: m[1]});
+            else if (m = cleaned.match(/^reset password for teacher (.+)$/)) translated = __('log.reset_teacher_password', {username: m[1]});
+            else if (m = cleaned.match(/^soft-deprecated resource id=(\d+) '(.+)' \((\d+) active downloads\)$/)) translated = __('log.soft_deprecated', {id: m[1], title: m[2], count: m[3]});
+            else if (m = cleaned.match(/^hard-deleted resource id=(\d+) '(.+)'$/)) translated = __('log.hard_deleted', {id: m[1], title: m[2]});
+            if (translated) return who + translated;
+            return msg;
+        }
+
+        /** Renders the current page of filtered admin logs. */
+        function _renderAdminLogsPage() {
+            var tbody = document.getElementById('adminLogTable');
+            var pagination = document.getElementById('adminLogPagination');
+            var pageInfo = document.getElementById('adminLogPageInfo');
+            var prevBtn = document.getElementById('btn-adminLogsPrevPage');
+            var nextBtn = document.getElementById('btn-adminLogsNextPage');
+            if (!tbody) return;
+            var data = _adminLogsFiltered;
+            var totalPages = Math.max(1, Math.ceil(data.length / _adminLogsPerPage));
+            if (_adminLogsPage > totalPages) _adminLogsPage = totalPages;
+            var start = (_adminLogsPage - 1) * _adminLogsPerPage;
+            var pageItems = data.slice(start, start + _adminLogsPerPage);
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="empty-state">' + __('settings.no_admin_actions') + '</td></tr>';
+                if (pagination) pagination.style.display = 'none';
+                return;
+            }
+            tbody.innerHTML = pageItems.map(function(item) {
+                return '<tr><td data-label="Timestamp" style="white-space: nowrap; color: var(--text-muted); font-size: 0.8rem;">' + esc(item.t) + '</td><td data-label="Action" style="color: var(--on-surface);">' + esc(translateLogMsg(item.msg)) + '</td></tr>';
+            }).join('');
+            if (pagination) pagination.style.display = 'flex';
+            if (pageInfo) pageInfo.textContent = __('settings.page_of', {current: _adminLogsPage, total: totalPages});
+            if (prevBtn) { prevBtn.disabled = _adminLogsPage <= 1; prevBtn.style.opacity = _adminLogsPage <= 1 ? '0.4' : '1'; }
+            if (nextBtn) { nextBtn.disabled = _adminLogsPage >= totalPages; nextBtn.style.opacity = _adminLogsPage >= totalPages ? '0.4' : '1'; }
+        }
+
+        function adminLogsPrevPage() { if (_adminLogsPage > 1) { _adminLogsPage--; _renderAdminLogsPage(); } }
+        function adminLogsNextPage() { var totalPages = Math.ceil(_adminLogsFiltered.length / _adminLogsPerPage); if (_adminLogsPage < totalPages) { _adminLogsPage++; _renderAdminLogsPage(); } }
+        function adminLogsChangePerPage(val) { _adminLogsPerPage = parseInt(val, 10) || 8; _adminLogsPage = 1; _renderAdminLogsPage(); }
+
+        function filterAdminLogs() {
+            var query = (document.getElementById('adminLogSearch').value || '').toLowerCase().trim();
+            _adminLogsFiltered = !query ? [].concat(_adminLogsAll) : _adminLogsAll.filter(function(item) {
+                return item.t.toLowerCase().includes(query) || item.msg.toLowerCase().includes(query);
+            });
+            _adminLogsPage = 1;
+            _renderAdminLogsPage();
+        }
+
+        /** Fetches admin audit logs. */
+        async function loadAdminLogs() {
+            var tbody = document.getElementById('adminLogTable');
+            if (!tbody) return;
+            var searchInput = document.getElementById('adminLogSearch');
+            if (searchInput) searchInput.value = '';
+            try {
+                var res = await fetch('/admin/log?limit=50');
+                if (!res.ok) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">' + __('settings.error.load_logs') + '</td></tr>'; return; }
+                var data = await res.json();
+                var logs = data.log || [];
+                _adminLogsAll = logs.map(function(line) {
+                    var match = line.match(/^(\S+T\S+) - (.*)/);
+                    return match ? { t: match[1], msg: match[2] } : { t: '', msg: line };
+                });
+                _adminLogsFiltered = [].concat(_adminLogsAll);
+                _adminLogsPage = 1;
+                _renderAdminLogsPage();
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="2" class="empty-state">' + __('settings.error.logs_connection') + '</td></tr>';
+            }
+        }
+
+        function downloadLogs() {
+            var duration = document.getElementById('downloadDurationSelect').value;
+            window.open('/api/admin/logs/download?duration=' + duration);
+        }
+
+        /** Loads the current default admin account status. */
+        async function loadDefaultAdminStatus() {
+            try {
+                var res = await fetch('/teacher/default-admin-status');
+                if (!res.ok) return;
+                var data = await res.json();
+                var statusEl = document.getElementById('defaultAdminStatus');
+                var disableBtn = document.getElementById('btn-disableDefaultAdmin');
+                var enableBtn = document.getElementById('btn-enableDefaultAdmin');
+                var selfWarning = document.getElementById('defaultAdminSelfWarning');
+                var riskWarning = document.getElementById('defaultAdminRiskWarning');
+                var isSelf = loggedInUser === 'admin';
+                if (data.enabled) {
+                    if (statusEl) { statusEl.textContent = 'Enabled'; statusEl.style.color = 'var(--success)'; }
+                    if (isSelf) {
+                        if (selfWarning) selfWarning.style.display = 'block';
+                        if (riskWarning) riskWarning.style.display = 'none';
+                        if (disableBtn) { disableBtn.disabled = true; disableBtn.style.opacity = '0.4'; disableBtn.style.pointerEvents = 'none'; }
+                        if (enableBtn) enableBtn.style.display = 'none';
+                    } else {
+                        if (selfWarning) selfWarning.style.display = 'none';
+                        if (riskWarning) riskWarning.style.display = 'block';
+                        if (disableBtn) { disableBtn.disabled = false; disableBtn.style.opacity = '1'; disableBtn.style.pointerEvents = 'auto'; disableBtn.style.display = 'inline-flex'; }
+                        if (enableBtn) enableBtn.style.display = 'none';
+                    }
+                } else {
+                    if (statusEl) { statusEl.textContent = 'Disabled'; statusEl.style.color = 'var(--danger)'; }
+                    if (selfWarning) selfWarning.style.display = 'none';
+                    if (riskWarning) riskWarning.style.display = 'none';
+                    if (disableBtn) disableBtn.style.display = 'none';
+                    if (enableBtn) enableBtn.style.display = 'inline-flex';
+                }
+            } catch (e) { console.error('Failed to load default admin status', e); }
+        }
+
+        async function disableDefaultAdmin() {
+            var confirmed = await showConfirm('Disable Default Admin', 'The default admin account (username: admin) will be blocked from login. You must have at least one other admin or teacher account to do this. Continue?', true, 'Disable');
+            if (!confirmed) return;
+            try {
+                var res = await fetch('/teacher/disable-default-admin', { method: 'POST' });
+                if (res.ok) { showNotification('defaultAdminNotif', 'Default admin account has been disabled.', false); loadDefaultAdminStatus(); }
+                else { var err = await res.json(); showNotification('defaultAdminNotif', err.detail || 'Failed to disable default admin.', true); }
+            } catch (e) { showNotification('defaultAdminNotif', 'Network error.', true); }
+        }
+
+        async function enableDefaultAdmin() {
+            var confirmed = await showConfirm('Re-enable Default Admin', 'Reset the default admin password to lumina2026. Continue?', true, 'Re-enable');
+            if (!confirmed) return;
+            try {
+                var res = await fetch('/teacher/enable-default-admin', { method: 'POST' });
+                if (res.ok) { showNotification('defaultAdminNotif', 'Default admin account re-enabled. Password reset to lumina2026.', false); loadDefaultAdminStatus(); }
+                else { var err = await res.json(); showNotification('defaultAdminNotif', err.detail || 'Failed to re-enable.', true); }
+            } catch (e) { showNotification('defaultAdminNotif', 'Network error.', true); }
+        }
+
+        /** Toggles password input visibility. */
         function togglePasswordVisibility(inputId, eyeIconId, btnId) {
-            const pwdInput = document.getElementById(inputId);
-            const eyeIcon = document.getElementById(eyeIconId);
-            const toggleBtn = document.getElementById(btnId);
+            var pwdInput = document.getElementById(inputId);
+            var eyeIcon = document.getElementById(eyeIconId);
+            var toggleBtn = document.getElementById(btnId);
             if (pwdInput.type === 'password') {
                 pwdInput.type = 'text';
                 toggleBtn.setAttribute('aria-label', __('security.aria.hide_password'));
@@ -149,52 +455,40 @@
             }
         }
 
-        /**
-         * Changes the admin password. Validates complexity requirements, then
-         * sends POST to /teacher/change-password with old and new passwords.
-         * On success, redirects to home after a short delay.
-         */
         async function changePassword() {
-            const oldPwd = document.getElementById('oldPwd').value;
-            const newPwd = document.getElementById('newPwd').value;
+            var oldPwd = document.getElementById('oldPwd').value;
+            var newPwd = document.getElementById('newPwd').value;
             if (!oldPwd || !newPwd) return showNotification('securityNotif', __('security.error.both_fields'), true);
             if (newPwd.length < 8) return showNotification('securityNotif', __('security.error.password_length'), true);
             if (!/[A-Z]/.test(newPwd)) return showNotification('securityNotif', __('security.error.uppercase'), true);
             if (!/[a-z]/.test(newPwd)) return showNotification('securityNotif', __('security.error.lowercase'), true);
             if (!/\d/.test(newPwd)) return showNotification('securityNotif', __('security.error.digit'), true);
             try {
-                const res = await fetch('/teacher/change-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                var res = await fetch('/teacher/change-password', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ old_password: oldPwd, new_password: newPwd })
                 });
                 if (res.ok) {
                     showNotification('securityNotif', __('security.success.password_updated'), false);
-                    setTimeout(() => location.href = '/', 1500);
+                    setTimeout(function() { location.href = '/'; }, 1500);
                 } else {
-                    let msg = __('security.error.current_password');
-                    try { const err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    var msg = __('security.error.current_password');
+                    try { var err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
                     showNotification('securityNotif', msg, true);
                 }
             } catch (e) {
-                let msg = __('security.error.connection');
-                try { const err = await e.json?.(); if (err?.detail) msg = err.detail; } catch (_) {}
-                showNotification('securityNotif', msg, true);
+                var msg2 = __('security.error.connection');
+                try { var err2 = await e.json?.(); if (err2?.detail) msg2 = err2.detail; } catch (_) {}
+                showNotification('securityNotif', msg2, true);
             }
         }
 
-
-
-
-
-
-
-        /** Loads the current user's profile (name, department) into the profile form. */
+        /** Loads the current user's profile. */
         async function loadMyProfile() {
             try {
-                const res = await fetch('/teacher/me');
+                var res = await fetch('/teacher/me');
                 if (res.ok) {
-                    const me = await res.json();
+                    var me = await res.json();
                     document.getElementById('profileName').value = me.name || '';
                     document.getElementById('profileDepartment').value = me.department || '';
                     if (me.username === 'admin') {
@@ -212,70 +506,68 @@
                         document.getElementById('btn-saveMyProfile').style.opacity = '0.5';
                     }
                 }
-            } catch (e) {
-                console.error("Error loading profile", e);
-            }
+            } catch (e) { console.error("Error loading profile", e); }
         }
 
-        /** Saves the user's name and department via POST /teacher/profile/name and /teacher/profile/department. */
         async function saveMyProfile() {
-            const name = document.getElementById('profileName').value.trim();
-            const department = document.getElementById('profileDepartment').value.trim();
-            if (!name) {
-                return showNotification('profileNotif', __('security.error.name_empty'), true);
-            }
-            if (!department) {
-                return showNotification('profileNotif', __('security.error.dept_empty'), true);
-            }
+            var name = document.getElementById('profileName').value.trim();
+            var department = document.getElementById('profileDepartment').value.trim();
+            if (!name) return showNotification('profileNotif', __('security.error.name_empty'), true);
+            if (!department) return showNotification('profileNotif', __('security.error.dept_empty'), true);
             try {
-                const nameRes = await fetch('/teacher/profile/name', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name })
+                var nameRes = await fetch('/teacher/profile/name', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name })
                 });
                 if (!nameRes.ok) {
-                    let msg = __('security.error.update_name');
-                    try { const err = await nameRes.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    var msg = __('security.error.update_name');
+                    try { var err = await nameRes.json(); if (err.detail) msg = err.detail; } catch (_) {}
                     return showNotification('profileNotif', msg, true);
                 }
-                const deptRes = await fetch('/teacher/profile/department', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ department })
+                var deptRes = await fetch('/teacher/profile/department', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ department: department })
                 });
-                if (deptRes.ok) {
-                    showNotification('profileNotif', __('security.success.profile_updated'), false);
-                } else {
-                    let msg = __('security.error.update_dept');
-                    try { const err = await deptRes.json(); if (err.detail) msg = err.detail; } catch (_) {}
-                    showNotification('profileNotif', msg, true);
+                if (deptRes.ok) { showNotification('profileNotif', __('security.success.profile_updated'), false); }
+                else {
+                    var msg2 = __('security.error.update_dept');
+                    try { var err2 = await deptRes.json(); if (err2.detail) msg2 = err2.detail; } catch (_) {}
+                    showNotification('profileNotif', msg2, true);
                 }
-            } catch (e) {
-                showNotification('profileNotif', __('security.error.connection'), true);
-            }
+            } catch (e) { showNotification('profileNotif', __('security.error.connection'), true); }
         }
 
-        _pageInitRegistry['security'] = function() {
+        debouncedFilterAdminLogs = debounce(function() { filterAdminLogs(); }, 200);
+
+        var _initSecurity = function() {
             loadWhoAmI();
             checkSelfResetRequired();
             loadMyProfile();
+            updateUIForRole();
 
-            // Event listeners for onclick->addEventListener migration
             document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
-            document.getElementById('toggleOldPwdBtn')?.addEventListener('click', function() {
-                togglePasswordVisibility('oldPwd', 'eyeIconOld', 'toggleOldPwdBtn');
-            });
-            document.getElementById('toggleNewPwdBtn')?.addEventListener('click', function() {
-                togglePasswordVisibility('newPwd', 'eyeIconNew', 'toggleNewPwdBtn');
-            });
+            document.getElementById('toggleOldPwdBtn')?.addEventListener('click', function() { togglePasswordVisibility('oldPwd', 'eyeIconOld', 'toggleOldPwdBtn'); });
+            document.getElementById('toggleNewPwdBtn')?.addEventListener('click', function() { togglePasswordVisibility('newPwd', 'eyeIconNew', 'toggleNewPwdBtn'); });
             document.getElementById('btn-changePassword')?.addEventListener('click', changePassword);
             document.getElementById('btn-saveMyProfile')?.addEventListener('click', saveMyProfile);
             document.getElementById('btn-submitForcePasswordReset')?.addEventListener('click', submitForcePasswordReset);
+            document.getElementById('btn-loadAdminLogs')?.addEventListener('click', loadAdminLogs);
+            document.getElementById('btn-downloadLogs')?.addEventListener('click', downloadLogs);
+            document.getElementById('logRetentionSelect')?.addEventListener('change', function() { saveRetentionPolicy(this.value); });
+            document.getElementById('adminLogPerPageSelect')?.addEventListener('change', function() { adminLogsChangePerPage(this.value); });
+            var adminLogSearch = document.getElementById('adminLogSearch');
+            if (adminLogSearch) adminLogSearch.addEventListener('input', debouncedFilterAdminLogs);
+            document.getElementById('btn-adminLogsPrevPage')?.addEventListener('click', adminLogsPrevPage);
+            document.getElementById('btn-adminLogsNextPage')?.addEventListener('click', adminLogsNextPage);
+            document.getElementById('btn-disableDefaultAdmin')?.addEventListener('click', disableDefaultAdmin);
+            document.getElementById('btn-enableDefaultAdmin')?.addEventListener('click', enableDefaultAdmin);
+            document.addEventListener('languageChanged', function() { _renderAdminLogsPage(); });
         };
+        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['security'] = _initSecurity;
 
-        document.addEventListener('DOMContentLoaded', _pageInitRegistry['security']);
+        document.addEventListener('DOMContentLoaded', _initSecurity);
     </script>
 
 </body>

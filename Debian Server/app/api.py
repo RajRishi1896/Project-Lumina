@@ -108,7 +108,10 @@ async def add_security_headers(request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     path = request.url.path
     if path.startswith("/static/") or path.startswith("/files/"):
-        response.headers["Cache-Control"] = "public, max-age=3600"
+        if response.status_code >= 400:
+            response.headers["Cache-Control"] = "no-store"
+        else:
+            response.headers["Cache-Control"] = "public, max-age=300"
     else:
         response.headers["Cache-Control"] = "no-cache, private"
     return response
@@ -120,6 +123,7 @@ from app.routers.scholars import router as scholars_router
 from app.routers.teacher_students import router as teacher_students_router
 from app.routers.academics import router as academics_router
 from app.routers.resources import router as resources_router
+from app.routers.resource_zim import router as resource_zim_router
 from app.routers.media import router as media_router
 from app.routers.administration import router as administration_router
 from app.routers.passwords import router as passwords_router
@@ -127,6 +131,10 @@ from app.routers.admin_logs import router as admin_logs_router
 from app.routers.system_stats import router as system_stats_router
 from app.routers.system import router as system_router
 from app.routers.teacher_courses import router as teacher_courses_router
+from app.routers.teacher_course_resources import router as teacher_course_resources_router
+from app.routers.teacher_quizzes import router as teacher_quizzes_router
+from app.routers.teacher_topics import router as teacher_topics_router
+from app.routers.teacher_similar import router as teacher_similar_router
 from app.routers.student_courses import router as student_courses_router
 from zim_handler import router as zim_router
 
@@ -136,6 +144,7 @@ app.include_router(scholars_router)
 app.include_router(teacher_students_router)
 app.include_router(academics_router)
 app.include_router(resources_router)
+app.include_router(resource_zim_router)
 app.include_router(media_router)
 app.include_router(administration_router)
 app.include_router(passwords_router)
@@ -143,6 +152,10 @@ app.include_router(admin_logs_router)
 app.include_router(system_stats_router)
 app.include_router(system_router)
 app.include_router(teacher_courses_router)
+app.include_router(teacher_course_resources_router)
+app.include_router(teacher_quizzes_router)
+app.include_router(teacher_topics_router)
+app.include_router(teacher_similar_router)
 app.include_router(student_courses_router)
 app.include_router(zim_router, prefix="/zim")
 

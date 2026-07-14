@@ -11,16 +11,9 @@
 
 <style>
 .help-section { max-width: 100%; width: 100%; }
-.help-section .card { width: 100%; max-width: 100%; padding: 1.5rem; border-left: 4px solid var(--border); transition: border-color 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; }
-.help-section .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--accent, var(--primary)); opacity: 0; transition: opacity 0.3s; }
-.help-section .card:hover::before { opacity: 1; }
-.help-section .card::after { content: ''; position: absolute; bottom: 0; right: 0; width: 100px; height: 100px; border-radius: 100px 0 0 0; background: var(--accent, var(--primary)); opacity: 0.03; transition: opacity 0.3s; }
-.help-section .card:hover::after { opacity: 0.08; }
+.help-section .card { width: 100%; max-width: 100%; padding: 1.5rem; border-left: 4px solid var(--border); transition: border-color 0.2s, box-shadow 0.2s; }
 .help-section .card:hover { border-left-color: var(--accent, var(--primary)); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
 .help-section .section-title { font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.6rem; }
-.help-section .section-title .icon-circle { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; transition: transform 0.2s; }
-.help-section .section-title .icon-circle svg { width: 18px; height: 18px; }
-.help-section .card:hover .icon-circle { transform: scale(1.1); }
 .help-section ul, .help-section ol { padding-left: 1.5rem; line-height: 1.8; }
 .help-section li { margin-bottom: 0.5rem; }
 .help-section li::marker { color: var(--primary); }
@@ -34,32 +27,10 @@
 </head>
 <body>
 
-    <!-- Section: Sidebar ï¿½ navigation links, user info, theme toggle, logout -->
-    <aside>
-        <a href="/static/index" class="sidebar-brand-horizontal"><img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"><img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"></a>
-        <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
-        <div class="sidebar-divider"></div>
-        <nav>
-            <a href="/static/index" class="nav-item" id="nav-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span data-i18n="sidebar.home">Home</span></a>
-            <a href="/static/manage-content" class="nav-item" id="nav-content"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg><span data-i18n="sidebar.content">Content Manager</span></a>
-            <a href="/static/manage-security" class="nav-item" id="nav-security"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span data-i18n="sidebar.security">Account</span></a>
-            <a href="/static/students" class="nav-item" id="nav-students"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span data-i18n="sidebar.students">Students</span></a>
-            <a href="/static/manage-help#teacher-guide" class="nav-item active" id="nav-help"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span data-i18n="sidebar.help">Teacher Guide</span></a>
-            <a href="/static/manage-danger" class="nav-item danger" id="nav-danger"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg><span data-i18n="sidebar.danger">Danger Zone</span></a>
-            <a href="/static/manage-settings" class="nav-item" id="nav-settings"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span data-i18n="sidebar.settings">Settings</span></a>
-        </nav>
-        <div class="nav-spacer"></div>
-        <div class="theme-toggle" id="btn-toggleTheme">
-            <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            <span id="themeLabel"><span data-i18n="sidebar.dark_mode">Dark Mode</span></span>
-        </div>
-        <a href="/logout" class="nav-logout">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            <span data-i18n="sidebar.logout">Log out</span>
-        </a>
-    </aside>
+    <!-- Section: Sidebar — empty, rendered by renderLayout() -->
+    <aside></aside>
 
-    <!-- Section: Main Content ï¿½ hardcoded documentation cards -->
+    <!-- Section: Main Content — hardcoded documentation cards -->
     <main>
         <div id="app-content">
         <div class="page-header">
@@ -68,32 +39,32 @@
         </div>
 
         <!-- Section: Getting Started ï¿½ student onboarding steps -->
-        <div class="card help-section" style="--accent: var(--primary);">
-            <div class="section-title"><span class="icon-circle" style="background: var(--primary); color: var(--on-primary);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></span> <span data-i18n="help.getting_started">Getting Started</span></div>
+        <div class="card help-section">
+            <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><polygon points="5 3 19 12 5 21 5 3"/></svg> <span data-i18n="help.getting_started">Getting Started</span></div>
             <div id="help-getting-started-body" data-i18n-body="help.getting_started_body"></div>
         </div>
 
         <!-- Section: Teacher Guide ï¿½ uploading, managing, analytics, passwords -->
-        <div class="card help-section" style="--accent: #6366f1;" id="teacher-guide">
-            <div class="section-title"><span class="icon-circle" style="background: #6366f1; color: #fff;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span> <span data-i18n="help.teachers">For Teachers</span></div>
+        <div class="card help-section" id="teacher-guide">
+            <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#6366f1"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> <span data-i18n="help.teachers">For Teachers</span></div>
             <div id="help-teachers-body" data-i18n-body="help.teachers_body"></div>
         </div>
 
         <!-- Section: Student Tracking ï¿½ study time, streak, privacy -->
-        <div class="card help-section" style="--accent: #f59e0b;">
-            <div class="section-title"><span class="icon-circle" style="background: #f59e0b; color: #fff;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg></span> <span data-i18n="help.tracking">Student Tracking</span></div>
+        <div class="card help-section">
+            <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#f59e0b"><path d="M12 20v-6M6 20V10M18 20V4"/></svg> <span data-i18n="help.tracking">Student Tracking</span></div>
             <div id="help-tracking-body" data-i18n-body="help.tracking_body"></div>
         </div>
 
         <!-- Section: Troubleshooting ï¿½ connectivity, passwords, performance -->
-        <div class="card help-section" style="--accent: #ef4444;">
-            <div class="section-title"><span class="icon-circle" style="background: #ef4444; color: #fff;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></span> <span data-i18n="help.troubleshooting">Troubleshooting</span></div>
+        <div class="card help-section">
+            <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#ef4444"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg> <span data-i18n="help.troubleshooting">Troubleshooting</span></div>
             <div id="help-troubleshooting-body" data-i18n-body="help.troubleshooting_body"></div>
         </div>
 
         <!-- Section: Admin Tasks ï¿½ danger zone, settings, setup script -->
-        <div class="card help-section" style="--accent: #14b8a6;">
-            <div class="section-title"><span class="icon-circle" style="background: #14b8a6; color: #fff;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span> <span data-i18n="help.admin">Admin Tasks</span></div>
+        <div class="card help-section">
+            <div class="section-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#14b8a6"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> <span data-i18n="help.admin">Admin Tasks</span></div>
             <div id="help-admin-body" data-i18n-body="help.admin_body"></div>
         </div>
         </div>
@@ -103,15 +74,16 @@
     <div id="bottomNav"></div>
 
     <!-- Section: Scripts ï¿½ lumina.js shared + init -->
-    <script src="/static/js/lumina.js" defer></script>
+    <script src="/static/js/lumina.js?v=5" defer></script>
     <script>
-        _pageInitRegistry['help'] = function() {
+        var _initHelp = function() {
             document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
         };
+        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['help'] = _initHelp;
 
-        document.addEventListener('DOMContentLoaded', _pageInitRegistry['help']);
+        document.addEventListener('DOMContentLoaded', _initHelp);
     </script>
 
 </body>

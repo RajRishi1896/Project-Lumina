@@ -1,9 +1,44 @@
 """Authentication dependencies and password helpers for Lumina EduMesh Hub."""
+import time
 import uuid
 import bcrypt as bcrypt_lib
 from datetime import datetime, timedelta
 from fastapi import HTTPException, Request
 from app.async_db import db_fetch_one, db_exec, db_run
+
+# ponytail: per-token session cache. Avoids DB hit on every authenticated request.
+# TTL 60s, max 2000 entries. Upgrade to Redis-backed if multi-node.
+_session_cache: dict[str, tuple[dict, float]] = {}
+_SESSION_CACHE_TTL = 60  # seconds
+_SESSION_CACHE_MAX = 2000
+
+
+def _cache_get(token: str) -> dict | None:
+    entry = _session_cache.get(token)
+    if entry and (time.time() - entry[1]) < _SESSION_CACHE_TTL:
+        return entry[0]
+    _session_cache.pop(token, None)
+    return None
+
+
+def _cache_put(token: str, user: dict):
+    if len(_session_cache) > _SESSION_CACHE_MAX:
+        # ponytail: evict oldest quarter
+        cutoff = time.time() - _SESSION_CACHE_TTL
+        stale = [k for k, v in _session_cache.items() if v[1] < cutoff]
+        for k in stale[:len(stale) // 2 + 1]:
+            _session_cache.pop(k, None)
+    _session_cache[token] = (user, time.time())
+
+
+def _cache_invalidate(token: str):
+    _session_cache.pop(token, None)
+
+
+def _cache_invalidate_user(username: str):
+    to_del = [k for k, v in _session_cache.items() if v[0].get("username") == username]
+    for k in to_del:
+        _session_cache.pop(k, None)
 
 
 def hash_password(password: str) -> str:
@@ -71,9 +106,14 @@ async def _extract_user(request: Request) -> dict:
 
     auth = request.headers.get("Authorization")
     cookie = request.cookies.get("lumina_session")
-    if not cookie and not (auth and auth.startswith("Bearer ")):
+    if not cookie and (not auth or not auth.startswith("Bearer ")):
         raise HTTPException(status_code=401, detail="Unauthorized: Session required.")
     token = cookie or (auth.removeprefix("Bearer ") if auth else "")
+
+    cached = _cache_get(token)
+    if cached:
+        request.state._user = cached
+        return cached
 
     row = await db_fetch_one(
         "SELECT username, role, last_accessed FROM sessions WHERE token = ? AND role IN ('admin', 'teacher', 'student') AND used = 0 AND expiry > datetime('now')",
@@ -83,6 +123,7 @@ async def _extract_user(request: Request) -> dict:
         if _is_session_stale(row["last_accessed"]):
             await db_exec("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
         result = {"username": row["username"], "role": row["role"]}
+        _cache_put(token, result)
         request.state._user = result
         return result
 
@@ -126,6 +167,7 @@ async def verify_admin(request: Request) -> str:
 
 
 async def generate_session_token(username: str, role: str) -> dict:
+    _cache_invalidate_user(username)
     stoken = f"LUMINA_HUB-{uuid.uuid4().hex}"
     rtoken = f"LUMINA_REF-{uuid.uuid4().hex}"
     ptoken = f"LUMINA_PER-{uuid.uuid4().hex}"
@@ -141,6 +183,7 @@ async def generate_session_token(username: str, role: str) -> dict:
 
 
 async def invalidate_tokens_for_user(username: str):
+    _cache_invalidate_user(username)
     def _delete_tokens(conn):
         conn.execute("DELETE FROM sessions WHERE username = ?", (username,))
         conn.execute("DELETE FROM refresh_tokens WHERE username = ?", (username,))
@@ -157,6 +200,13 @@ async def verify_student(request: Request):
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # ponytail: check cache first (same token format, student role)
+    cache_key = f"student:{token}"
+    cached = _cache_get(token)
+    if cached and cached.get("role") == "student":
+        request.state._student_id = cached["username"]
+        return cached["username"]
+
     row = await db_fetch_one(
         "SELECT username, last_accessed FROM sessions WHERE token = ? AND role = 'student' AND used = 0 AND expiry > datetime('now')",
         (token,)
@@ -171,5 +221,7 @@ async def verify_student(request: Request):
     if not exists:
         raise HTTPException(status_code=401, detail="Account no longer exists.")
 
+    result = {"username": row["username"], "role": "student"}
+    _cache_put(token, result)
     request.state._student_id = row["username"]
     return row["username"]

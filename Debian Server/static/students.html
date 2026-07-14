@@ -9,86 +9,11 @@
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css">
-    <style>
-        /* === Page-specific layout ï¿½ filter row, student cards, stat pills === */
-        .filter-row { display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; }
-        .filter-row .form-group { margin-bottom: 0; }
-        .grade-filter { min-width: 180px; }
-        .search-wrap { position: relative; flex: 1; min-width: 220px; }
-        .search-inner { position: relative; }
-        .search-inner input { width: 100%; padding: 0.5rem 0.75rem 0.5rem 2rem; font-size: 0.85rem; }
-        .search-inner svg { position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-        .student-card { cursor: pointer; padding: 1.5rem; }
-        .student-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0; }
-        .student-row { display: flex; align-items: center; gap: 0.625rem; }
-        .student-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-        .student-name-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
-        .student-name { font-weight: 700; font-size: 0.9rem; color: var(--teal); text-decoration: none; }
-        .student-meta { font-size: 0.75rem; color: var(--text-muted); }
-        .scholar-id { font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.7rem; color: var(--text-muted); background: var(--outline); padding: 0.1rem 0.4rem; border-radius: 4px; }
-        .student-card.at-risk { border-left: 3px solid var(--danger); }
-        .at-risk-icon { display: inline-flex; align-items: center; color: var(--danger); margin-right: 0.35rem; }
-        .at-risk-tooltip { font-size: 0.7rem; color: var(--danger); font-weight: 400; }
-        .at-risk-filter { display: flex; align-items: center; gap: 0.5rem; }
-        .at-risk-filter input { width: 48px; padding: 0.35rem 0.4rem; font-size: 0.8rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); background: var(--surface); color: var(--on-surface); text-align: center; }
-        .student-stats { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
-        .stat-pill { display: flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
-        .stat-pill-value { font-size: 0.9rem; font-weight: 800; color: var(--primary); letter-spacing: -0.01em; }
-        @media (max-width: 768px) {
-            .filter-row .form-group { width: 100%; }
-            .grade-filter { min-width: 100%; }
-            .search-wrap { min-width: 100%; }
-            .student-row { flex-wrap: wrap; }
-        }
-    </style>
 </head>
 <body>
 
-    <!-- Section: Sidebar ï¿½ nav links, user info, theme toggle, logout -->
-    <aside>
-        <a href="/static/index" class="sidebar-brand-horizontal"><img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"><img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina"></a>
-        <div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem; font-size:0.85rem; color: var(--on-primary);"></div>
-        <div class="sidebar-divider"></div>
-        <nav>
-            <a href="/static/index" class="nav-item" id="nav-home">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                <span data-i18n="sidebar.home">Home</span>
-            </a>
-            <a href="/static/manage-content" class="nav-item" id="nav-content">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span data-i18n="sidebar.content">Content Manager</span>
-            </a>
-            <a href="/static/manage-security" class="nav-item" id="nav-security">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span data-i18n="sidebar.security">Account</span>
-            </a>
-            <a href="/static/students" class="nav-item active" id="nav-students">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span data-i18n="sidebar.students">Students</span>
-            </a>
-            <a href="/static/manage-help#teacher-guide" class="nav-item" id="nav-help">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                <span data-i18n="sidebar.help">Teacher Guide</span>
-            </a>
-            <a href="/static/manage-danger" class="nav-item danger" id="nav-danger">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                <span data-i18n="sidebar.danger">Danger Zone</span>
-            </a>
-            <a href="/static/manage-settings" class="nav-item" id="nav-settings">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                <span data-i18n="sidebar.settings">Settings</span>
-            </a>
-        </nav>
-        <div class="nav-spacer"></div>
-        <div class="theme-toggle" id="btn-toggleTheme">
-            <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            <span id="themeLabel"><span data-i18n="sidebar.dark_mode">Dark Mode</span></span>
-        </div>
-        <a href="/logout" class="nav-logout">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-            <span data-i18n="sidebar.logout">Log out</span>
-        </a>
-    </aside>
+    <!-- Section: Sidebar — empty, rendered by renderLayout() -->
+    <aside></aside>
 
     <!-- Section: Main Content ï¿½ page header, filter row, student card list -->
     <main>
@@ -101,20 +26,19 @@
         <div class="filter-row">
             <div class="form-group grade-filter">
                 <label for="gradeFilter" data-i18n="students.filter_grade">Grade</label>
-                <select id="gradeFilter">
+                <select id="gradeFilter" style="background:var(--surface);color:var(--on-surface);border:1px solid var(--outline);border-radius:var(--radius-sm);outline:none;">
                     <option value="" data-i18n="students.all_grades">All Grades</option>
                 </select>
             </div>
             <div class="form-group search-wrap">
-                <label for="searchInput" data-i18n="students_search_label">Search</label>
                 <div class="search-inner">
-                    <input type="text" id="searchInput" placeholder="Search by name or ID..." data-i18n="students.search">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="searchInput" placeholder="Search by name or ID..." data-i18n="students.search">
                 </div>
             </div>
-            <div class="form-group" style="min-width: 150px;">
+            <div class="form-group" style="min-width: 130px;">
                 <label for="sortSelect" data-i18n="students.sort_label">Sort by</label>
-                <select id="sortSelect">
+                <select id="sortSelect" style="background:var(--surface);color:var(--on-surface);border:1px solid var(--outline);border-radius:var(--radius-sm);outline:none;">
                     <option value="name_asc" data-i18n="students.sort_name_asc">Name (A-Z)</option>
                     <option value="name_desc" data-i18n="students.sort_name_desc">Name (Z-A)</option>
                     <option value="grade_asc" data-i18n="students.sort_grade">Grade</option>
@@ -133,7 +57,7 @@
             </div>
             <button id="btn-loadStudents" class="btn btn-outline" style="padding:0.5rem 0.75rem; font-size:0.8rem; display:flex; align-items:center; gap:0.5rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                <span data-i18n="students_refresh">Refresh</span>
+                <span class="refresh-label" data-i18n="students_refresh">Refresh</span>
             </button>
         </div>
 
@@ -149,11 +73,11 @@
     <!-- Section: Toast Container ï¿½ global notification area (top-right, fixed) -->
     <div id="globalToastContainer" style="position: fixed; top: 1.5rem; right: 1.5rem; z-index: 99999; display: flex; flex-direction: column; gap: 0.75rem; max-width: 380px; width: 100%; pointer-events: none;"></div>
 
-    <script src="/static/js/lumina.js" defer></script>
+    <script src="/static/js/lumina.js?v=5" defer></script>
     <!-- Section: Inline Scripts ï¿½ student list logic, filtering, rendering -->
     <script>
-        let allStudents = [];
-        let allGrades = [];
+        var allStudents = [];
+        var allGrades = [];
 
 
 
@@ -219,11 +143,20 @@
             const grade = gradeFilter ? gradeFilter.value : '';
             const url = '/teacher/students' + (grade ? '?grade=' + encodeURIComponent(grade) : '');
 
-            fetch(url).then(function(res) {
-                if (!res.ok) { container.innerHTML = '<div class="empty-state" style="color: var(--danger);">' + __('students_failed_load') + '</div>'; return null; }
-                return res.json();
-            }).then(function(data) {
-                if (!data) return;
+            Promise.all([
+                fetch(url, {credentials: 'include'}).then(function(r) { return r.ok ? r.json() : null; }),
+                fetch('/grades', {credentials: 'include'}).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; })
+            ]).then(function(results) {
+                var data = results[0];
+                var gradeList = results[1] || [];
+                if (!data) { container.innerHTML = '<div class="empty-state" style="color: var(--danger);">'; return; }
+
+                var gradeNameMap = {};
+                gradeList.forEach(function(g) {
+                    var num = (g.name || '').replace(/\D/g, '');
+                    if (num) gradeNameMap[num] = g.name;
+                });
+
                 const students = data.students || [];
                 allStudents = students.map(function(s) {
                     const nameParts = (s.name || '?').split(' ');
@@ -232,6 +165,7 @@
                         id: s.id || s.scholar_id || '',
                         name: s.name || __('students_unknown'),
                         grade: s.grade || '',
+                        gradeName: gradeNameMap[s.grade] || ('Class ' + (s.grade || '?')),
                         avatar: initials,
                         last_active: s.last_active || '',
                         week_minutes: (s.study_minutes_this_week || 0),
@@ -243,8 +177,11 @@
                 allStudents.forEach(function(s) {
                     if (s.grade && allGrades.indexOf(s.grade) === -1) allGrades.push(s.grade);
                 });
-                allGrades.sort();
-                gradeFilter.innerHTML = '<option value="">' + __('students.all_grades') + '</option>' + allGrades.map(function(g) { return '<option value="' + esc(g) + '">' + esc(g) + '</option>'; }).join('');
+                allGrades.sort(function(a, b) { return parseInt(a) - parseInt(b); });
+                gradeFilter.innerHTML = '<option value="">' + __('students.all_grades') + '</option>' + allGrades.map(function(g) {
+                    var label = gradeNameMap[g] || ('Class ' + g);
+                    return '<option value="' + esc(g) + '">' + esc(label) + '</option>';
+                }).join('');
                 renderStudents(allStudents);
             }).catch(function() {
                 container.innerHTML = '<div class="empty-state" style="color: var(--danger);">' + __('students_connection_error') + '</div>';
@@ -264,28 +201,34 @@
                 return;
             }
             container.innerHTML = list.map(function(s) {
-                const detailUrl = 'student-detail.html?id=' + encodeURIComponent(s.id) + '&name=' + encodeURIComponent(s.name) + '&grade=' + encodeURIComponent(s.grade) + '&avatar=' + encodeURIComponent(s.avatar) + '&last=' + encodeURIComponent(s.last_active || '');
+                const detailUrl = 'student-detail?id=' + encodeURIComponent(s.id) + '&name=' + encodeURIComponent(s.name) + '&grade=' + encodeURIComponent(s.gradeName) + '&avatar=' + encodeURIComponent(s.avatar) + '&last=' + encodeURIComponent(s.last_active || '');
                 var daysSinceActive = s.last_active ? (now - new Date(s.last_active).getTime()) / 86400000 : 999;
                 var atRisk = daysSinceActive > atRiskDays;
                 var atRiskBadge = atRisk ? '<span class="at-risk-icon" title="Last studied ' + Math.floor(daysSinceActive) + ' days ago"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></span>' : '';
                 var atRiskClass = atRisk ? ' at-risk' : '';
-                const wh = ((s.week_minutes || 0) / 60).toFixed(1).replace(/\.0$/, '');
+                var totalMins = s.week_minutes || 0;
+                var wh;
+                if (totalMins >= 60) { var h = Math.floor(totalMins / 60), m = totalMins % 60; wh = h + __('students_hours_abbr') + (m > 0 ? ' ' + m + 'm' : ''); }
+                else if (totalMins > 0) { wh = totalMins + 'm'; }
+                else { wh = '—'; }
                 const st = s.streak || 0;
                 const dl = s.downloads || 0;
                 return '<div class="card student-card' + atRiskClass + '" data-href="' + detailUrl + '">' +
                     '<div class="student-row">' +
                     '<div class="student-avatar">' + esc(s.avatar) + '</div>' +
                     '<div class="student-body">' +
+                    '<div class="student-name-row">' +
                     '<a href="' + detailUrl + '" class="student-name">' + atRiskBadge + esc(s.name) + '</a>' +
+                    '<div class="student-stats">' +
+                    '<span class="stat-pill"><span class="stat-pill-value">' + wh + '</span></span>' +
+                    '<span class="stat-pill"><span class="stat-pill-value">' + st + '<span style="font-weight:400;font-size:0.65rem;color:var(--text-muted);margin-left:0.1rem;">' + __('students_days_abbr') + '</span></span></span>' +
+                    '<span class="stat-pill"><span class="stat-pill-value">' + dl + '<span style="font-weight:400;font-size:0.65rem;color:var(--text-muted);margin-left:0.1rem;">' + __('students_saved_abbr') + '</span></span></span>' +
+                    '</div>' +
+                    '</div>' +
                     '<div class="student-meta">' +
-                    esc(s.grade) + ' &middot; <span class="scholar-id">' + esc(s.id) + '</span> &middot; ' + __('students_last_updated') + ' ' + timeAgo(s.last_active) +
+                    esc(s.gradeName) + ' &middot; <span class="scholar-id">' + esc(s.id) + '</span> &middot; ' + __('students_last_updated') + ' ' + timeAgo(s.last_active) +
                     (atRisk ? ' <span class="at-risk-tooltip">(' + Math.floor(daysSinceActive) + 'd)</span>' : '') +
                     '</div>' +
-                    '</div>' +
-                    '<div class="student-stats">' +
-                    '<span class="stat-pill"><span class="stat-pill-value">' + wh + '<span style="font-weight:400;font-size:0.65rem;color:var(--text-muted);margin-left:0.1rem;">' + __('students_hours_abbr') + '</span></span></span>' +
-                    '<span class="stat-pill"><span class="stat-pill-value">' + st + '<span style="font-weight:400;font-size:0.65rem;color:var(--text-muted);margin-left:0.1rem;">' + __('students_days_abbr') + '</span></span></span>' +
-                    '<span class="stat-pill"><span class="stat-pill-value">' + dl + '</span></span>' +
                     '</div>' +
                     '</div></div>';
             }).join('');
@@ -297,7 +240,7 @@
             _debounceTimer = setTimeout(applyFilters, 200);
         }
 
-        _pageInitRegistry['students'] = function() {
+        var _initStudents = function() {
             loadStudents();
             loadWhoAmI();
             document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
@@ -315,8 +258,9 @@
             document.getElementById('atRiskDays')?.addEventListener('input', applyFilters);
             document.addEventListener('languageChanged', function() { applyFilters(); });
         };
+        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['students'] = _initStudents;
 
-        document.addEventListener('DOMContentLoaded', _pageInitRegistry['students']);
+        document.addEventListener('DOMContentLoaded', _initStudents);
     </script>
 </body>
 </html>

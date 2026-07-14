@@ -17,6 +17,33 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PROFILE_ICONS_DIR, exist_ok=True)
 os.makedirs(THUMBNAILS_DIR, exist_ok=True)
 
+
+def gen_uid(prefix: str) -> str:
+    """Generate a UID like GRD-a1b2c3d4 or SUBJ-e5f6g7h8."""
+    return f"{prefix}-{uuid.uuid4().hex[:8]}"
+
+
+def gen_composite_uid(conn, grade: int, subject: str, prefix: str) -> str:
+    """Generate a composite UID like GRD-xxxx-SUBJ-xxxx-8hex.
+
+    Args:
+        conn: SQLite connection.
+        grade: Numeric grade (0=General, 9-12).
+        subject: Subject name string.
+        prefix: Item prefix (CRS or RES).
+    """
+    grade_uid = "GRD-00000000"
+    row = conn.execute("SELECT id FROM grades WHERE name = ?", (f"Grade {grade}" if grade else "General",)).fetchone()
+    if not row and grade:
+        row = conn.execute("SELECT id FROM grades WHERE name LIKE ?", (f"%{grade}%",)).fetchone()
+    if row:
+        grade_uid = row[0]
+    subject_uid = "SUBJ-00000000"
+    row = conn.execute("SELECT id FROM subjects WHERE name = ?", (subject or "General",)).fetchone()
+    if row:
+        subject_uid = row[0]
+    return f"{grade_uid}-{subject_uid}-{uuid.uuid4().hex[:8]}"
+
 _startup_time = time.time()
 
 admin_handler = RotatingFileHandler('data/admin_actions.log', maxBytes=2*1024*1024, backupCount=3)
@@ -104,7 +131,28 @@ def init_db():
     conn.execute('PRAGMA synchronous=NORMAL')
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS scholars (id TEXT PRIMARY KEY, name TEXT UNIQUE, hashed_password TEXT, reset_required INTEGER DEFAULT 0, grade TEXT DEFAULT "", username TEXT)')
-    c.execute('CREATE TABLE IF NOT EXISTS resources (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, file_path TEXT, type TEXT)')
+    c.execute('''CREATE TABLE IF NOT EXISTS resources (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        subject TEXT NOT NULL DEFAULT 'General',
+        grade INTEGER DEFAULT 0,
+        language TEXT NOT NULL DEFAULT 'en',
+        resource_type TEXT NOT NULL DEFAULT 'textbook',
+        filename TEXT,
+        original_name TEXT,
+        source TEXT DEFAULT 'Unknown',
+        license TEXT DEFAULT 'Internal Only',
+        uploaded_by INTEGER,
+        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        status TEXT NOT NULL DEFAULT 'approved',
+        description TEXT,
+        chapter TEXT,
+        year INTEGER,
+        superseded_by TEXT REFERENCES resources(id),
+        topic_id TEXT DEFAULT '',
+        file_path TEXT,
+        type TEXT
+    )''')
     c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, hashed_password TEXT, name TEXT, department TEXT, scholar_id TEXT, reset_required INTEGER DEFAULT 0, role TEXT NOT NULL DEFAULT "teacher")')
     c.execute("UPDATE scholars SET username = name WHERE username IS NULL OR username = ''")
     try:
@@ -119,18 +167,22 @@ def init_db():
         c.execute('CREATE INDEX IF NOT EXISTS idx_scholars_name ON scholars(name)')
     except Exception:
         pass
-    try:
-        c.execute('CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)')
-        c.execute('CREATE INDEX IF NOT EXISTS idx_resources_status ON resources(status)')
-        c.execute('CREATE INDEX IF NOT EXISTS idx_resources_subject ON resources(subject)')
-        c.execute('CREATE INDEX IF NOT EXISTS idx_resources_grade ON resources(grade)')
-        c.execute('CREATE INDEX IF NOT EXISTS idx_resources_type ON resources(resource_type)')
-        c.execute('CREATE INDEX IF NOT EXISTS idx_downloads_scholar ON scholar_downloads(scholar_id)')
-        c.execute('CREATE INDEX IF NOT EXISTS idx_subject_minutes_scholar ON subject_minutes(scholar_id)')
-        c.execute('CREATE INDEX IF NOT EXISTS idx_study_sessions_scholar ON study_sessions(scholar_id)')
-        c.execute('CREATE INDEX IF NOT EXISTS idx_weekly_study_scholar ON weekly_study(scholar_id)')
-    except Exception:
-        pass
+    # ponytail: each index in its own try — single try skips all on first failure
+    for _idx_sql in [
+        'CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)',
+        'CREATE INDEX IF NOT EXISTS idx_resources_status ON resources(status)',
+        'CREATE INDEX IF NOT EXISTS idx_resources_subject ON resources(subject)',
+        'CREATE INDEX IF NOT EXISTS idx_resources_grade ON resources(grade)',
+        'CREATE INDEX IF NOT EXISTS idx_resources_type ON resources(resource_type)',
+        'CREATE INDEX IF NOT EXISTS idx_downloads_scholar ON scholar_downloads(scholar_id)',
+        'CREATE INDEX IF NOT EXISTS idx_subject_minutes_scholar ON subject_minutes(scholar_id)',
+        'CREATE INDEX IF NOT EXISTS idx_study_sessions_scholar ON study_sessions(scholar_id)',
+        'CREATE INDEX IF NOT EXISTS idx_weekly_study_scholar ON weekly_study(scholar_id)',
+    ]:
+        try:
+            c.execute(_idx_sql)
+        except Exception:
+            pass
     c.execute('CREATE TABLE IF NOT EXISTS weekly_study (scholar_id TEXT PRIMARY KEY, total_seconds INTEGER DEFAULT 0, streak_days INTEGER DEFAULT 0, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
     c.execute('CREATE TABLE IF NOT EXISTS scholar_downloads (scholar_id TEXT, resource_id TEXT, PRIMARY KEY(scholar_id, resource_id))')
     c.execute('CREATE TABLE IF NOT EXISTS activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, scholar_id TEXT NOT NULL, action TEXT NOT NULL, timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (scholar_id) REFERENCES scholars(id))')
@@ -157,6 +209,7 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS course_resources (
       id TEXT PRIMARY KEY,
       course_id TEXT NOT NULL,
+      topic_id TEXT DEFAULT '',
       resource_type TEXT NOT NULL DEFAULT 'textbook',
       title TEXT DEFAULT '',
       original_name TEXT DEFAULT '',
@@ -203,13 +256,34 @@ def init_db():
       FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
       FOREIGN KEY (similar_course_id) REFERENCES courses(id) ON DELETE CASCADE
     )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS topics (
+      id TEXT PRIMARY KEY,
+      course_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      position INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS resource_topics (
+      id TEXT PRIMARY KEY,
+      subject TEXT NOT NULL,
+      name TEXT NOT NULL,
+      position INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(subject, name)
+    )''')
     c.execute('CREATE INDEX IF NOT EXISTS idx_course_resources_course_id ON course_resources(course_id)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_course_progress_student ON course_progress(student_id)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_quiz_attempts_student ON quiz_attempts(student_id)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_similar_courses_similar ON similar_courses(similar_course_id)')
+    # ponytail: composite indexes for hot query paths
+    c.execute('CREATE INDEX IF NOT EXISTS idx_resources_catalog ON resources(status, subject, grade, language, resource_type)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_study_sessions_scholar_start ON study_sessions(scholar_id, start_time)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_used ON refresh_tokens(token, used, expires_at)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_persistent_keys_token_used ON persistent_keys(token, used, expires_at)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_scholar_downloads_resource ON scholar_downloads(resource_id)')
 
-    c.execute('CREATE TABLE IF NOT EXISTS subjects (name TEXT, symbol TEXT, class_name TEXT, PRIMARY KEY (name, class_name))')
-    _migrate_schema(conn)
+    c.execute('CREATE TABLE IF NOT EXISTS subjects (id TEXT PRIMARY KEY, name TEXT, symbol TEXT, class_name TEXT, UNIQUE(name, class_name))')
 
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='subjects'")
     if c.fetchone():
@@ -217,16 +291,16 @@ def init_db():
         cols = [col[1] for col in c.fetchall()]
         if 'class_name' not in cols:
             try:
-                c.execute("SELECT name, symbol FROM subjects")
+                c.execute("SELECT id, name, symbol FROM subjects")
                 existing = c.fetchall()
                 c.execute("DROP TABLE subjects")
-                c.execute('CREATE TABLE subjects (name TEXT, symbol TEXT, class_name TEXT, PRIMARY KEY (name, class_name))')
-                for name, symbol in existing:
-                    c.execute("INSERT OR IGNORE INTO subjects (name, symbol, class_name) VALUES (?, ?, ?)", (name, symbol, 'All Classes'))
+                c.execute('CREATE TABLE subjects (id TEXT PRIMARY KEY, name TEXT, symbol TEXT, class_name TEXT, UNIQUE(name, class_name))')
+                for sid, name, symbol in existing:
+                    c.execute("INSERT OR IGNORE INTO subjects (id, name, symbol, class_name) VALUES (?, ?, ?, ?)", (sid or f"SUBJ-{uuid.uuid4().hex[:8]}", name, symbol, 'All Classes'))
             except Exception as e:
                 logging.error(f"Migration error: {e}")
     else:
-        c.execute('CREATE TABLE IF NOT EXISTS subjects (name TEXT, symbol TEXT, class_name TEXT, PRIMARY KEY (name, class_name))')
+        c.execute('CREATE TABLE IF NOT EXISTS subjects (id TEXT PRIMARY KEY, name TEXT, symbol TEXT, class_name TEXT, UNIQUE(name, class_name))')
 
     c.execute("SELECT rowid FROM subjects WHERE id IS NULL")
     for (rowid,) in c.fetchall():
@@ -236,20 +310,49 @@ def init_db():
     except Exception:
         pass
 
-    c.execute('CREATE TABLE IF NOT EXISTS grades (name TEXT PRIMARY KEY)')
+    c.execute('CREATE TABLE IF NOT EXISTS grades (id TEXT PRIMARY KEY, name TEXT UNIQUE)')
     c.execute('SELECT count(*) FROM grades')
     if c.fetchone()[0] == 0:
         for g in ["Grade 9", "Grade 10", "Grade 11", "Grade 12"]:
-            c.execute("INSERT OR IGNORE INTO grades (name) VALUES (?)", (g,))
+            c.execute("INSERT OR IGNORE INTO grades (id, name) VALUES (?, ?)", (f"GRD-{uuid.uuid4().hex[:8]}", g))
+
+    c.execute('''CREATE TABLE IF NOT EXISTS zim_archives (
+        id TEXT PRIMARY KEY,
+        filename TEXT NOT NULL,
+        title TEXT NOT NULL,
+        article_count INTEGER DEFAULT 0,
+        language TEXT DEFAULT 'en',
+        uploaded_by INTEGER,
+        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        file_size INTEGER DEFAULT 0,
+        zim_path TEXT DEFAULT ''
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS zim_articles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        archive_id TEXT REFERENCES zim_archives(id) ON DELETE CASCADE,
+        article_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        path TEXT NOT NULL,
+        namespace TEXT DEFAULT 'A',
+        has_thumbnail INTEGER DEFAULT 0
+    )''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_zim_articles_archive ON zim_articles(archive_id)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_zim_articles_title ON zim_articles(title)')
+
+    zim_cols = {row[1] for row in c.execute("PRAGMA table_info(zim_archives)").fetchall()}
+    if "zim_path" not in zim_cols:
+        c.execute("ALTER TABLE zim_archives ADD COLUMN zim_path TEXT DEFAULT ''")
+        logging.info("Added zim_path column to zim_archives table")
 
     try:
         default_pwd = hash_password("lumina2026")
         admin_id = f"LUMINA_01-T{uuid.uuid4().hex}"
         c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id) VALUES (?, ?, ?, ?, ?)", ("admin", default_pwd, "Administrator", "System", admin_id))
-        logging.info("═" * 50)
+        logging.info("=" * 50)
         logging.info("  DEFAULT ADMIN PASSWORD: lumina2026")
-        logging.info("  CHANGE IT IMMEDIATELY via Dashboard → Settings → Change Password")
-        logging.info("═" * 50)
+        logging.info("  CHANGE IT IMMEDIATELY via Dashboard > Settings > Change Password")
+        logging.info("=" * 50)
     except sqlite3.IntegrityError:
         pass
 
@@ -258,14 +361,14 @@ def init_db():
     c.execute('SELECT count(*) FROM subjects')
     if c.fetchone()[0] == 0:
         defaults = [
-            ("Mathematics", "calculator", "All Classes"),
-            ("Science", "atom", "All Classes"),
-            ("History", "globe", "All Classes"),
-            ("Literature", "book", "All Classes"),
-            ("Computer Science", "laptop", "All Classes"),
-            ("General", "folder", "All Classes"),
+            (f"SUBJ-{uuid.uuid4().hex[:8]}", "Mathematics", "calculator", "All Classes"),
+            (f"SUBJ-{uuid.uuid4().hex[:8]}", "Science", "atom", "All Classes"),
+            (f"SUBJ-{uuid.uuid4().hex[:8]}", "History", "globe", "All Classes"),
+            (f"SUBJ-{uuid.uuid4().hex[:8]}", "Literature", "book", "All Classes"),
+            (f"SUBJ-{uuid.uuid4().hex[:8]}", "Computer Science", "laptop", "All Classes"),
+            (f"SUBJ-{uuid.uuid4().hex[:8]}", "General", "folder", "All Classes"),
         ]
-        c.executemany("INSERT INTO subjects (name, symbol, class_name) VALUES (?, ?, ?)", defaults)
+        c.executemany("INSERT INTO subjects (id, name, symbol, class_name) VALUES (?, ?, ?, ?)", defaults)
 
     try:
         c.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
@@ -276,117 +379,18 @@ def init_db():
     c.execute("DELETE FROM weekly_study WHERE updated_at < datetime('now', '-7 days')")
 
     try:
+        c.execute('ALTER TABLE resources ADD COLUMN topic_id TEXT DEFAULT ""')
+    except sqlite3.OperationalError:
+        pass
+
+    try:
         c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
     except sqlite3.OperationalError:
         pass
-    _migrate_resources_v2(conn)
+    c.execute('CREATE INDEX IF NOT EXISTS idx_topics_course_id ON topics(course_id)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_course_resources_topic ON course_resources(topic_id)')
     conn.commit()
     conn.close()
-
-
-def _migrate_schema(conn):
-    """Add missing columns to all tables using PRAGMA introspection."""
-    for table, col_defs in {
-        "users": {
-            "name": "TEXT",
-            "department": "TEXT",
-            "scholar_id": "TEXT",
-            "role": "TEXT NOT NULL DEFAULT 'teacher'",
-            "reset_required": "INTEGER DEFAULT 0",
-        },
-        "scholars": {
-            "hashed_password": "TEXT",
-            "reset_required": "INTEGER DEFAULT 0",
-            "grade": "TEXT DEFAULT ''",
-            "username": "TEXT",
-        },
-        "weekly_study": {
-            "streak_days": "INTEGER DEFAULT 0",
-        },
-        "sessions": {
-            "role": "TEXT",
-            "encryption_key": "TEXT",
-            "last_accessed": "DATETIME",
-            "used": "INTEGER DEFAULT 0",
-            "expiry": "TEXT",
-        },
-        "subjects": {
-            "id": "TEXT",
-        },
-        "resources": {
-            "grade": "TEXT DEFAULT ''",
-            "description": "TEXT DEFAULT ''",
-            "chapter": "TEXT DEFAULT ''",
-            "year": "INTEGER DEFAULT NULL",
-            "superseded_by": "INTEGER DEFAULT NULL",
-            "language": "TEXT DEFAULT 'en'",
-            "resource_type": "TEXT DEFAULT 'textbook'",
-            "source": "TEXT DEFAULT 'Unknown'",
-            "license": "TEXT DEFAULT 'Internal Only'",
-            "uploaded_by": "INTEGER DEFAULT NULL",
-            "uploaded_at": "DATETIME DEFAULT CURRENT_TIMESTAMP",
-            "notes": "TEXT DEFAULT NULL",
-        },
-    }.items():
-        existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
-        for col, definition in col_defs.items():
-            if col not in existing:
-                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {definition}")
-
-
-def _migrate_resources_v2(conn):
-    """Migrate resources table to v2 schema with all required metadata columns.
-
-    Uses the caller's connection so we don't get 'database is locked' from
-    two simultaneous connections in the same thread.
-    """
-    c = conn.cursor()
-    # Check if migration already done
-    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='resources_v2'")
-    if c.fetchone():
-        return
-
-    c.execute('''CREATE TABLE resources_v2 (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        subject TEXT NOT NULL DEFAULT 'General',
-        grade INTEGER DEFAULT 0,
-        language TEXT NOT NULL DEFAULT 'en',
-        resource_type TEXT NOT NULL DEFAULT 'textbook',
-        filename TEXT,
-        original_name TEXT,
-        source TEXT DEFAULT 'Unknown',
-        license TEXT DEFAULT 'Internal Only',
-        uploaded_by INTEGER,
-        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        status TEXT NOT NULL DEFAULT 'approved',
-        description TEXT,
-        chapter TEXT,
-        year INTEGER,
-        superseded_by INTEGER REFERENCES resources_v2(id)
-    )''')
-
-    # Migrate existing data
-    try:
-        c.execute('''INSERT INTO resources_v2
-            (id, title, subject, grade, resource_type, filename, original_name, status)
-            SELECT id, title, COALESCE(subject, 'General'),
-                CAST(CASE WHEN grade IS NULL OR grade = '' THEN '0' ELSE grade END AS INTEGER),
-                COALESCE(type, 'textbook'),
-                COALESCE(file_path, ''), COALESCE(file_path, ''),
-                'approved'
-            FROM resources''')
-    except sqlite3.OperationalError:
-        # Old table may have different columns
-        pass
-
-    # Drop old table and rename
-    try:
-        c.execute('DROP TABLE IF EXISTS resources')
-        c.execute('ALTER TABLE resources_v2 RENAME TO resources')
-        logging.info("Resources table migrated to v2")
-    except sqlite3.OperationalError as e:
-        logging.warning(f"Could not complete migration: {e}")
 
 
 

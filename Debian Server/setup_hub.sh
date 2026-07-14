@@ -16,7 +16,7 @@ echo "-----------------------------------"
 # 1. Update and Install Core Dependencies
 echo "[INFO] Installing System dependencies..."
 apt update
-apt install -y python3 python3-pip python3-venv dnsmasq network-manager ufw
+apt install -y python3 python3-pip python3-venv dnsmasq network-manager ufw libzim-dev
 
 # 2. Create Directory Structure
 echo "[INFO] Creating Hub structure..."

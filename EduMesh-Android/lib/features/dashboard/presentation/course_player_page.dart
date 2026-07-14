@@ -10,6 +10,7 @@ import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
 import 'package:edumesh_android/shared/widgets/video_player_page.dart';
 import 'quiz_player_page.dart';
+import 'package:edumesh_android/l10n/app_localizations.dart';
 
 class CoursePlayerPage extends StatefulWidget {
   final Course course;
@@ -121,9 +122,10 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
   }
 
   void _openResource(CourseResource resource, int index) {
+    final l10n = AppLocalizations.of(context)!;
     if (!_isResourceUnlocked(index)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Complete the previous resource first')),
+        SnackBar(content: Text(l10n.coursePlayerLocked)),
       );
       return;
     }
@@ -161,16 +163,17 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
   }
 
   Future<void> _downloadCourse() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isDownloading = true);
     unawaited(showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const AlertDialog(
+      builder: (ctx) => AlertDialog(
         content: Row(
           children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 12),
-            Text('Downloading course...'),
+            const CircularProgressIndicator(),
+            SizedBox(width: 12.w),
+            Text(l10n.coursePlayerDownloading),
           ],
         ),
       ),
@@ -188,7 +191,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
         } else {
           setState(() => _isDownloading = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Download failed. Check storage space.')),
+            SnackBar(content: Text(l10n.coursePlayerDownloadFailed)),
           );
         }
       }
@@ -197,7 +200,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
         Navigator.of(context).pop();
         setState(() => _isDownloading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Download failed: ${e.toString()}')),
+          SnackBar(content: Text(l10n.coursePlayerDownloadFailed)),
         );
       }
     }
@@ -207,24 +210,25 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     switch (r.resourceType) {
       case CourseType.video: return Icons.play_circle_outline;
       case CourseType.quiz: return Icons.quiz_outlined;
-      case CourseType.notes: return Icons.article_outlined;
+
       case CourseType.pastPaper: return Icons.folder_outlined;
       case CourseType.textbook: return Icons.menu_book_outlined;
     }
   }
 
-  String _resourceTypeLabel(CourseResource r) {
+  String _resourceTypeLabel(CourseResource r, AppLocalizations l10n) {
     switch (r.resourceType) {
-      case CourseType.video: return 'Video';
-      case CourseType.quiz: return 'Quiz';
-      case CourseType.notes: return 'Notes';
-      case CourseType.pastPaper: return 'Past Paper';
-      case CourseType.textbook: return 'Textbook';
+      case CourseType.video: return l10n.coursePlayerVideo;
+      case CourseType.quiz: return l10n.coursePlayerQuiz;
+
+      case CourseType.pastPaper: return l10n.coursePlayerPastPaper;
+      case CourseType.textbook: return l10n.coursePlayerTextbook;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -234,17 +238,17 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       body: Column(
         children: [
           if (_showDownloadPrompt && !_isDownloaded)
-            _buildDownloadBanner(cs, tt),
+            _buildDownloadBanner(cs, tt, l10n),
           Expanded(
             child: _resources.isEmpty
               ? Center(
-                  child: Text('No resources in this course',
+                  child: Text(l10n.coursePlayerNoResources,
                       style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
                 )
               : ListView.builder(
                   padding: EdgeInsets.all(AppSpacing.lg.w),
                   itemCount: _resources.length,
-                  itemBuilder: (ctx, i) => _buildResourceItem(i, cs, tt),
+                  itemBuilder: (ctx, i) => _buildResourceItem(i, cs, tt, l10n),
                 ),
           ),
         ],
@@ -252,7 +256,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     );
   }
 
-  Widget _buildDownloadBanner(ColorScheme cs, TextTheme tt) {
+  Widget _buildDownloadBanner(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     return Container(
       width: double.infinity,
       color: cs.primaryContainer,
@@ -260,20 +264,20 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       child: Row(
         children: [
           Expanded(
-            child: Text('Download all resources to study offline',
+            child: Text(l10n.coursePlayerDownloadPrompt,
                 style: tt.bodyMedium?.copyWith(color: cs.onPrimaryContainer)),
           ),
           SizedBox(width: AppSpacing.md.w),
           FilledButton(
             onPressed: _isDownloading ? null : _downloadCourse,
-            child: const Text('Download Course'),
+            child: Text(l10n.coursePlayerDownloadButton),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildResourceItem(int index, ColorScheme cs, TextTheme tt) {
+  Widget _buildResourceItem(int index, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final r = _resources[index];
     final unlocked = _isResourceUnlocked(index);
     final completed = _completed[r.id] == true;
@@ -307,10 +311,10 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
           title: Text(r.title, style: tt.titleSmall?.copyWith(color: cs.onSurface)),
           subtitle: Text(
             completed
-                ? 'Completed'
+                ? l10n.coursePlayerCompleted
                 : unlocked
-                    ? _resourceTypeLabel(r)
-                    : 'Locked',
+                    ? _resourceTypeLabel(r, l10n)
+                    : l10n.coursePlayerLocked,
             style: tt.bodySmall?.copyWith(
               color: completed
                   ? LuminaColors.successGreen
@@ -322,7 +326,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
               : unlocked
                   ? FilledButton(
                       onPressed: () => _openResource(r, index),
-                      child: const Text('Start'),
+                      child: Text(l10n.coursePlayerStart),
                     )
                   : Icon(Icons.lock, color: cs.onSurfaceVariant, size: 20.sp),
           onTap: unlocked ? () => _openResource(r, index) : null,

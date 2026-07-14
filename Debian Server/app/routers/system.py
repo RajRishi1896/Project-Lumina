@@ -139,7 +139,8 @@ async def serve_static(path: str, request: Request):
         return await _error_response("not_found")
     if path.endswith(".html"):
         clean = path[:-5]
-        return RedirectResponse(url=f"/static/{clean}", status_code=301)
+        qs = "?" + request.url.query if request.url.query else ""
+        return RedirectResponse(url=f"/static/{clean}{qs}", status_code=301)
 
     def _resolve(p: str) -> str | None:
         fp = os.path.join("static", p)
@@ -149,15 +150,21 @@ async def serve_static(path: str, request: Request):
             return fp + ".html"
         return None
 
-    if path.startswith("css/") or path.startswith("js/") or path.startswith("assets/") or path.startswith("lang/") or path in ("welcome.html", "welcome", "error.html", "error"):
+    if path.startswith("css/") or path.startswith("js/") or path.startswith("assets/") or path.startswith("lang/") or path in ("welcome.html", "welcome"):
         file_path = _resolve(path)
         if file_path:
             return FileResponse(file_path)
         return await _error_response("not_found")
 
+    if path in ("error.html", "error"):
+        reason = request.query_params.get("reason", "not_found")
+        return await _error_response(reason)
+
     try:
         user = await _extract_user(request)
         if user["role"] not in ("teacher", "admin"):
+            return await _error_response("access_denied")
+        if user["role"] == "teacher" and path in ("manage-danger", "manage-settings", "manage-danger.html", "manage-settings.html"):
             return await _error_response("access_denied")
         file_path = _resolve(path)
         if file_path:

@@ -6,8 +6,6 @@ enum CourseType {
   video,
   /// Interactive quizzes.
   quiz,
-  /// Study notes and summaries.
-  notes,
   /// Past examination papers.
   pastPaper,
 }
@@ -286,13 +284,11 @@ class CourseResource {
         return CourseType.video;
       case 'quiz':
         return CourseType.quiz;
-      case 'notes':
-        return CourseType.notes;
       case 'pastpaper':
       case 'past_paper':
         return CourseType.pastPaper;
       default:
-        return CourseType.notes;
+        return CourseType.textbook;
     }
   }
 }

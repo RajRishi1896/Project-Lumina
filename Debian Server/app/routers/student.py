@@ -112,11 +112,29 @@ async def get_analytics(student_id: str = Depends(verify_student)):
     saved = row[2] if row else 0
     subject_rows = await db_fetch("SELECT subject_name, minutes FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC", (student_id,))
     subjects = [{"name": row[0], "minutes": row[1]} for row in subject_rows]
+    course_rows = await db_fetch("""SELECT c.id, c.title, cp.completed_count, cp.total_resources
+        FROM course_progress cp
+        JOIN courses c ON c.id = cp.course_id
+        WHERE cp.student_id = ? ORDER BY cp.enrolled_at DESC""", (student_id,))
+    course_list = []
+    completed = 0
+    in_progress = 0
+    for c in course_rows:
+        total = c[3] or 0
+        progress = (c[2] * 100 // total) if total > 0 else 0
+        course_list.append({"id": c[0], "title": c[1], "progress_percent": progress})
+        if c[2] >= total:
+            completed += 1
+        else:
+            in_progress += 1
     return {
         "study_minutes_this_week": week_secs // 60,
         "streak_days": streak,
         "resources_saved": saved,
         "subjects": subjects,
+        "courses_completed": completed,
+        "courses_in_progress": in_progress,
+        "courses": course_list,
     }
 
 

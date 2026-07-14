@@ -98,7 +98,7 @@ async def register_scholar(scholar: ScholarReg, request: Request):
         resp_data["persistent_key"] = tokens["persistent_key"]
         resp_data["encryption_key"] = tokens["encryption_key"]
         response = JSONResponse(resp_data)
-        response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, samesite="strict", secure=_secure_cookie(request), max_age=86400)
+        response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, samesite="lax", secure=_secure_cookie(request), max_age=86400)
         return response
 
 
@@ -119,13 +119,13 @@ async def student_login(data: StudentLoginRequest, request: Request):
         HTTPException 500: If the login process fails unexpectedly.
     """
     _check_rate_limit(request)
-    row = await db_fetch_one("SELECT id, hashed_password, reset_required FROM scholars WHERE username = ?", (data.username,))
+    row = await db_fetch_one("SELECT id, hashed_password, reset_required, name, grade FROM scholars WHERE username = ?", (data.username,))
 
     if not row:
         _record_failed_login(request)
         raise HTTPException(status_code=401, detail="Student account not found.")
 
-    scholar_id, hashed_pwd, reset_req = row
+    scholar_id, hashed_pwd, reset_req, srow_name, srow_grade = row
 
     pwd_to_check = hashed_pwd
     if not pwd_to_check:
@@ -139,9 +139,8 @@ async def student_login(data: StudentLoginRequest, request: Request):
 
     tokens = await generate_session_token(scholar_id, "student")
 
-    srow = await db_fetch_one("SELECT name, grade FROM scholars WHERE id = ?", (scholar_id,))
-    srow_name = srow[0] if srow else data.username
-    srow_grade = srow[1] if srow else ""
+    srow_name = srow_name or data.username
+    srow_grade = srow_grade or ""
 
     response = JSONResponse({
         "status": "ok", "scholar_id": scholar_id,
@@ -152,7 +151,7 @@ async def student_login(data: StudentLoginRequest, request: Request):
         "name": srow_name, "grade": srow_grade,
         "reset_required": bool(reset_req)
     })
-    response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, samesite="strict", max_age=86400, secure=_secure_cookie(request))
+    response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, samesite="lax", max_age=86400, secure=_secure_cookie(request))
     return response
 
 
@@ -199,7 +198,7 @@ async def login(response: Response, request: Request, username: str = Form(...),
     if not scholar_id:
         scholar_id = f"LUMINA_01-T{uuid.uuid4().hex}"
         await db_exec("UPDATE users SET scholar_id = ? WHERE username = ?", (scholar_id, username))
-    response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, max_age=86400, samesite="strict", secure=_secure_cookie(request))
+    response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, max_age=86400, samesite="lax", secure=_secure_cookie(request))
     return {
         "access_token": tokens["session_token"],
         "token_type": "bearer",
