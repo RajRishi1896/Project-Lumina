@@ -1,10 +1,705 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+<!-- Section: Head � theme detection, metadata -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecting...</title>
-    <script>window.location.replace('/static/manage-security');</script>
+    <title data-i18n="security.page_title">Lumina Hub | Account</title>
+    <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
+    <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
+    <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
+<link rel="stylesheet" href="/static/css/lumina.css">
 </head>
-<body></body>
+<body>
+    <a href="#app-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
+
+    <!-- Section: Sidebar � empty, rendered by renderLayout() -->
+    <aside></aside>
+
+    <!-- Section: Main Content � password, profile, and admin-only settings -->
+    <main>
+        <div id="app-content">
+        <div class="page-header" style="margin-bottom: 2.5rem;">
+            <h1 data-i18n="security.account_settings">Account Settings</h1>
+            <p data-i18n="security.page_description">Update your password, display name, and department.</p>
+        </div>
+
+        <!-- Section: Change Password � current password, new password, toggle visibility -->
+        <div class="card">
+            <div class="card-title" data-i18n="security_change_password_title">Change Password</div>
+            <div id="securityNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
+            <div class="security-form">
+                <div class="form-group">
+                    <label for="oldPwd" data-i18n="security_current_password">Current Password</label>
+                    <div class="password-container">
+                        <input type="password" id="oldPwd" placeholder="Enter current password" data-i18n="security_current_password_placeholder">
+                        <button type="button" class="toggle-password" id="toggleOldPwdBtn" data-password-input="oldPwd" data-eye-icon="eyeIconOld" aria-label="Toggle password visibility">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eyeIconOld">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="newPwd" data-i18n="security_new_password">New Password</label>
+                    <div class="password-container">
+                        <input type="password" id="newPwd" placeholder="Enter new password" data-i18n="security_new_password_placeholder">
+                        <button type="button" class="toggle-password" id="toggleNewPwdBtn" data-password-input="newPwd" data-eye-icon="eyeIconNew" aria-label="Toggle password visibility">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eyeIconNew">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;" data-i18n="security_password_requirements">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div>
+                </div>
+                <button id="btn-changePassword" class="btn btn-primary" data-i18n="security_update_password">Update Password</button>
+            </div>
+        </div>
+
+        <!-- Section: My Profile � editable name and department -->
+        <div class="card">
+            <div class="card-title" data-i18n="security_my_profile">My Profile</div>
+            <div id="profileNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
+            <div class="security-form" id="profileForm">
+                <div class="form-group">
+                    <label for="profileName" data-i18n="security_name">Name</label>
+                    <input type="text" id="profileName" placeholder="Enter your display name" data-i18n="security_name_placeholder">
+                </div>
+                <div class="form-group">
+                    <label for="profileDepartment" data-i18n="security_department">Department</label>
+                    <input type="text" id="profileDepartment" placeholder="Enter your department" data-i18n="security_department_placeholder">
+                </div>
+                <button id="btn-saveMyProfile" class="btn btn-primary" data-i18n="security_save">Save</button>
+            </div>
+        </div>
+
+        <!-- Section: Account Overview � visible to all roles -->
+        <div class="card" id="accountOverviewCard">
+            <div class="card-title" data-i18n="settings.account_overview">Account Overview</div>
+            <div class="flex flex-col gap-2" style="font-size: 0.9rem;">
+                <div><strong data-i18n="settings.username_label">Username:</strong> <span id="settingsUsername"><span data-i18n="settings.loading">Loading...</span></span></div>
+                <div><strong data-i18n="settings.role_label">Role:</strong> <span id="settingsUserRole"><span data-i18n="settings.loading">Loading...</span></span></div>
+            </div>
+        </div>
+
+        <!-- Section: Log Retention Policy (Admin Only) -->
+        <div class="card" id="logRetentionCard" style="display: none;">
+            <div class="card-title" data-i18n="settings.log_retention">Log Retention Policy</div>
+            <div id="retentionNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; border: 1px solid transparent;"></div>
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label for="logRetentionSelect" data-i18n="settings.retention_duration">Retention Duration</label>
+                <select id="logRetentionSelect" class="form-select" style="max-width: min(260px, 100%);">
+                    <option value="24h" data-i18n="settings.retention_24h">24 Hours</option>
+                    <option value="7d" data-i18n="settings.retention_7d">7 Days</option>
+                    <option value="30d" data-i18n="settings.retention_30d">30 Days (Default)</option>
+                    <option value="3m" data-i18n="settings.retention_3m">3 Months</option>
+                    <option value="6m" data-i18n="settings.retention_6m">6 Months</option>
+                    <option value="never" data-i18n="settings.retention_never">Never Delete</option>
+                    <option value="none" data-i18n="settings.retention_disabled">Don't Take Logs (Disabled)</option>
+                </select>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;" data-i18n="settings.retention_desc">
+                Configures how long admin audit logs are stored on the hub server. Pruning is completed automatically with low overhead.
+            </p>
+        </div>
+
+        <!-- Section: Live Admin Audit Log (Admin Only) -->
+        <div class="card" id="adminLogCard" style="display: none;">
+            <div class="flex flex-col mb-4 gap-2">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="card-title" style="margin-bottom: 0;" data-i18n="settings.admin_log">Live Admin Audit Log</div>
+                    <div class="flex flex-wrap items-center gap-2">
+                            <button id="btn-loadAdminLogs" class="btn btn-outline" style="padding: 0.35rem 0.85rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            <span data-i18n="settings.refresh">Refresh</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter row -->
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+                <div class="search-wrap-inline" style="flex: 1 1 180px; min-width: 140px;">
+                    <label for="adminLogSearch" class="sr-only">Search logs</label>
+                    <input type="text" id="adminLogSearch" placeholder="Search logs..." class="form-input">
+                    <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </span>
+                </div>
+                <select id="adminLogSeverityFilter" class="form-select">
+                    <option value="">All Severity</option>
+                    <option value="info">Info</option>
+                    <option value="notice">Notice</option>
+                    <option value="warning">Warning</option>
+                    <option value="error">Error</option>
+                    <option value="critical">Critical</option>
+                </select>
+                <select id="adminLogSuccessFilter" class="form-select">
+                    <option value="">All Results</option>
+                    <option value="true">Success</option>
+                    <option value="false">Failed</option>
+                </select>
+                <input type="text" id="adminLogUserFilter" placeholder="Filter by user..." style="padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; width: 140px; min-height: 44px;">
+            </div>
+
+            <!-- Active filter chips -->
+            <div id="adminLogChips" style="display: none; margin-bottom: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+
+            <!-- Log table -->
+            <div style="border: 1px solid var(--outline); border-radius: var(--radius-sm); overflow: hidden;">
+                <div style="max-height: 500px; overflow-y: auto;">
+                    <table style="table-layout: fixed; width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 150px;">Timestamp</th>
+                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 70px;">Severity</th>
+                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem;">Action</th>
+                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 100px;">User</th>
+                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 100px;">Result</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminLogTable">
+                            <tr><td colspan="5" class="empty-state">Loading logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="adminLogPagination" class="pagination" style="display: none;">
+                <button id="btn-adminLogsPrevPage" class="btn btn-outline pagination-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    <span data-i18n="settings.previous">Previous</span>
+                </button>
+                <span id="adminLogPageInfo" class="pagination-info">Page 1 of 1</span>
+                <button id="btn-adminLogsNextPage" class="btn btn-outline pagination-btn">
+                    <span data-i18n="settings.next">Next</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                    <span data-i18n="settings.per_page">Per page:</span>
+                    <select id="adminLogPerPageSelect" class="pagination-select">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-top: 0.75rem;" data-i18n="settings.admin_log_desc">
+                Showing admin actions with pagination. Auto-prunes based on retention policy above.
+            </p>
+        </div>
+
+        <!-- Section: Download Logs (Admin Only) -->
+        <div class="card" id="downloadLogsCard" style="display: none;">
+            <div class="card-title" data-i18n="settings.download_logs">Download Audit Logs</div>
+            <div class="form-grid">
+                <div class="form-group" style="margin-bottom: 0; flex: 1 1 200px;">
+                    <label for="downloadDurationSelect" data-i18n="settings.select_duration">Select Duration to Download</label>
+                    <select id="downloadDurationSelect" class="form-select">
+                        <option value="24h" data-i18n="settings.download_24h">Last 24 Hours</option>
+                        <option value="7d" data-i18n="settings.download_7d">Last 7 Days</option>
+                        <option value="30d" data-i18n="settings.download_30d">Last 30 Days</option>
+                        <option value="all" data-i18n="settings.download_all">All Logs (Entire History)</option>
+                    </select>
+                </div>
+                <button id="btn-downloadLogs" class="btn btn-primary" style="padding: 0.65rem 1.25rem; font-size: 0.95rem;"><span data-i18n="settings.download_logs_btn">Download Logs (.txt)</span></button>
+            </div>
+        </div>
+
+        <!-- Section: Default Admin Account (Admin Only) -->
+        <div class="card" id="defaultAdminCard" style="display: none;">
+            <div class="card-title" style="color: var(--danger); font-weight: 800;">Default Admin Account</div>
+            <div id="defaultAdminNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; border: 1px solid transparent;"></div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <strong>Status:</strong>
+                    <span id="defaultAdminStatus" style="font-weight: 700;"></span>
+                </div>
+            </div>
+            <div id="defaultAdminSelfWarning" style="display: none; padding: 0.85rem 1rem; margin-bottom: 1rem; border-radius: var(--radius-sm); background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
+                <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 0.1rem;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <div>
+                        <div style="font-weight: 700; color: var(--danger); margin-bottom: 0.25rem;">You cannot disable the default admin while logged into it</div>
+                        <div>Log in with a different admin account first, then disable the default admin from that account. This prevents accidental lockout.</div>
+                    </div>
+                </div>
+            </div>
+            <div id="defaultAdminRiskWarning" style="display: none; padding: 0.85rem 1rem; margin-bottom: 1rem; border-radius: var(--radius-sm); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
+                <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--saffron)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 0.1rem;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <div>
+                        <div style="font-weight: 700; color: var(--saffron); margin-bottom: 0.25rem;">Risks of disabling the default admin</div>
+                        <ul style="margin: 0.25rem 0 0; padding-left: 1.2rem;">
+                            <li>The built-in admin account (username: admin) will be permanently blocked from login.</li>
+                            <li>If all other teacher accounts are deleted or locked, the hub will be inaccessible.</li>
+                            <li>Re-enabling requires physical access to the server or the Settings page from another admin account.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <button id="btn-disableDefaultAdmin" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--danger); color: var(--danger); font-weight: 700;">Disable Default Admin</button>
+                <button id="btn-enableDefaultAdmin" class="btn btn-outline" style="display: none; padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--success); color: var(--success); font-weight: 700;">Re-enable Default Admin</button>
+            </div>
+        </div>
+
+        </div>
+    </main>
+
+    <!-- Section: Bottom Nav (Mobile) -->
+    <div id="bottomNav"></div>
+
+    <script src="/static/js/lumina.js?v=9" defer></script>
+    <!-- Section: Inline Scripts � all page logic merged here -->
+    <script>
+
+        var debouncedFilterAdminLogs = null;
+        var _adminLogsAll = [];
+        var _adminLogsFiltered = [];
+        var _adminLogsPage = 1;
+        var _adminLogInterval = null;
+        var _adminLogsPerPage = 25;
+
+        var SEVERITY_COLORS = {
+            info: 'var(--teal)',
+            notice: 'var(--primary)',
+            warning: 'var(--saffron)',
+            error: 'var(--danger)',
+            critical: 'var(--danger)'
+        };
+
+        var ACTION_LABELS = {
+            login: 'Login', logout: 'Logout', login_failed: 'Login Failed',
+            create_account: 'Create Account', delete_account: 'Delete Account',
+            reset_password: 'Reset Password', change_password: 'Change Password',
+            force_password_change: 'Force Pwd Change',
+            create_course: 'Create Course', update_course: 'Update Course',
+            delete_course: 'Delete Course', publish_course: 'Publish', unpublish_course: 'Unpublish',
+            enroll_course: 'Enroll', upload_resource: 'Upload Resource',
+            delete_resource: 'Delete Resource', deprecate_resource: 'Deprecate Resource',
+            create_quiz: 'Create Quiz', update_quiz: 'Update Quiz', delete_quiz: 'Delete Quiz',
+            upload_zim: 'Upload ZIM', delete_zim: 'Delete ZIM',
+            update_settings: 'Update Settings', change_settings: 'Change Settings',
+            create_grade: 'Create Grade', delete_grade: 'Delete Grade',
+            create_subject: 'Create Subject', delete_subject: 'Delete Subject',
+            create_topic: 'Create Topic', delete_topic: 'Delete Topic',
+            create_teacher: 'Create Teacher', delete_teacher: 'Delete Teacher',
+            reset_teacher_password: 'Reset Teacher Pwd', toggle_default_admin: 'Toggle Default Admin'
+        };
+
+        function _escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        function _formatTimestamp(ts) {
+            if (!ts) return '';
+            try {
+                var d = new Date(ts.replace('Z', '+00:00'));
+                return d.toLocaleString();
+            } catch (e) { return ts; }
+        }
+
+        function _renderSeverityBadge(severity) {
+            var color = SEVERITY_COLORS[severity] || 'var(--text-muted)';
+            return '<span style="display:inline-block;padding:0.1rem 0.45rem;border-radius:9999px;font-size:0.7rem;font-weight:700;background:' + color + '20;color:' + color + ';text-transform:capitalize;white-space:nowrap;">' + _escHtml(severity || 'info') + '</span>';
+        }
+
+        function _renderResultBadge(event) {
+            if (event.success === false) {
+                return '<span style="color:var(--danger);font-size:0.78rem;font-weight:700;">Failed</span>';
+            }
+            return '<span style="color:var(--success);font-size:0.78rem;">OK</span>';
+        }
+
+        function _renderExpandableRow(event, index) {
+            var detailId = 'logDetail_' + index;
+            var rid = event.request_id || (event.ctx && event.ctx.request_id) || '';
+            var details = [];
+            if (event.user) details.push('<div><strong>User:</strong> ' + _escHtml(event.user) + (event.role ? ' (' + _escHtml(event.role) + ')' : '') + '</div>');
+            if (event.target) details.push('<div><strong>Target:</strong> ' + _escHtml(event.target) + '</div>');
+            if (event.resource_type || event.resource_id || event.resource_name) {
+                var resParts = [event.resource_type, event.resource_name, event.resource_id].filter(Boolean).join(' ');
+                details.push('<div><strong>Resource:</strong> ' + _escHtml(resParts) + '</div>');
+            }
+            if (event.ip) details.push('<div><strong>IP:</strong> ' + _escHtml(event.ip) + '</div>');
+            if (event.method) details.push('<div><strong>Method:</strong> ' + _escHtml(event.method) + '</div>');
+            if (event.endpoint) details.push('<div><strong>Endpoint:</strong> ' + _escHtml(event.endpoint) + '</div>');
+            if (event.status) details.push('<div><strong>Status:</strong> ' + event.status + '</div>');
+            if (event.error) details.push('<div><strong>Error:</strong> <span style="color:var(--danger)">' + _escHtml(event.error) + '</span></div>');
+            if (rid) details.push('<div><strong>Request ID:</strong> <code style="font-size:0.75rem;background:var(--surface-container);padding:0.15rem 0.35rem;border-radius:3px;cursor:pointer;" onclick="navigator.clipboard.writeText(\'' + _escHtml(rid) + '\')" title="Click to copy">' + _escHtml(rid) + '</code></div>');
+            if (event.changes && typeof event.changes === 'object') {
+                details.push('<div><strong>Changes:</strong> <pre style="margin:0.25rem 0 0;padding:0.5rem;background:var(--surface-container);border-radius:4px;font-size:0.75rem;overflow-x:auto;">' + _escHtml(JSON.stringify(event.changes, null, 2)) + '</pre></div>');
+            }
+            if (event.ctx && Object.keys(event.ctx).length > 0 && Object.keys(event.ctx).some(function(k) { return k !== 'request_id'; })) {
+                var filteredCtx = Object.assign({}, event.ctx);
+                delete filteredCtx.request_id;
+                if (Object.keys(filteredCtx).length > 0) {
+                    details.push('<div><strong>Context:</strong> <pre style="margin:0.25rem 0 0;padding:0.5rem;background:var(--surface-container);border-radius:4px;font-size:0.75rem;overflow-x:auto;">' + _escHtml(JSON.stringify(filteredCtx, null, 2)) + '</pre></div>');
+                }
+            }
+            return '<tr style="cursor:pointer;" onclick="document.getElementById(\'' + detailId + '\').style.display=document.getElementById(\'' + detailId + '\').style.display===\'none\'?\'table-row\':\'none\'">' +
+                '<td style="padding:0.45rem 0.6rem;font-size:0.78rem;color:var(--text-muted);white-space:nowrap;">' + _formatTimestamp(event.ts) + '</td>' +
+                '<td style="padding:0.45rem 0.6rem;">' + _renderSeverityBadge(event.severity) + '</td>' +
+                '<td style="padding:0.45rem 0.6rem;font-size:0.82rem;font-weight:600;text-align:center;">' + _escHtml(ACTION_LABELS[event.action] || event.summary || event.action || '-') + '</td>' +
+                '<td style="padding:0.45rem 0.6rem;font-size:0.78rem;">' + _escHtml(event.user || '-') + '</td>' +
+                '<td style="padding:0.45rem 0.6rem;">' + _renderResultBadge(event) + '</td>' +
+                '</tr>' +
+                '<tr id="' + detailId + '" style="display:none;">' +
+                '<td colspan="5" style="padding:0.6rem 0.8rem;background:var(--surface-container);font-size:0.82rem;line-height:1.6;border-top:1px solid var(--outline);">' +
+                (details.length ? details.join('') : '<span style="color:var(--text-muted)">No additional details</span>') +
+                '</td></tr>';
+        }
+
+        function _renderAdminLogsPage() {
+            var tbody = document.getElementById('adminLogTable');
+            var pagination = document.getElementById('adminLogPagination');
+            var pageInfo = document.getElementById('adminLogPageInfo');
+            var prevBtn = document.getElementById('btn-adminLogsPrevPage');
+            var nextBtn = document.getElementById('btn-adminLogsNextPage');
+            if (!tbody) return;
+            var data = _adminLogsFiltered;
+            var totalPages = Math.max(1, Math.ceil(data.length / _adminLogsPerPage));
+            if (_adminLogsPage > totalPages) _adminLogsPage = totalPages;
+            var start = (_adminLogsPage - 1) * _adminLogsPerPage;
+            var pageItems = data.slice(start, start + _adminLogsPerPage);
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No matching log entries</td></tr>';
+                if (pagination) pagination.style.display = 'none';
+                return;
+            }
+            tbody.innerHTML = pageItems.map(function(item, i) { return _renderExpandableRow(item, start + i); }).join('');
+            if (pagination) pagination.style.display = 'flex';
+            if (pageInfo) pageInfo.textContent = 'Page ' + _adminLogsPage + ' of ' + totalPages;
+            if (prevBtn) { prevBtn.disabled = _adminLogsPage <= 1; prevBtn.style.opacity = _adminLogsPage <= 1 ? '0.4' : '1'; }
+            if (nextBtn) { nextBtn.disabled = _adminLogsPage >= totalPages; nextBtn.style.opacity = _adminLogsPage >= totalPages ? '0.4' : '1'; }
+        }
+
+        function adminLogsPrevPage() { if (_adminLogsPage > 1) { _adminLogsPage--; _renderAdminLogsPage(); } }
+        function adminLogsNextPage() { var totalPages = Math.ceil(_adminLogsFiltered.length / _adminLogsPerPage); if (_adminLogsPage < totalPages) { _adminLogsPage++; _renderAdminLogsPage(); } }
+        function adminLogsChangePerPage(val) { _adminLogsPerPage = parseInt(val, 10) || 25; _adminLogsPage = 1; _renderAdminLogsPage(); }
+
+        function _applyLogFilters() {
+            var search = (document.getElementById('adminLogSearch').value || '').toLowerCase().trim();
+            var sev = document.getElementById('adminLogSeverityFilter').value;
+            var success = document.getElementById('adminLogSuccessFilter').value;
+            var user = (document.getElementById('adminLogUserFilter').value || '').toLowerCase().trim();
+
+            _adminLogsFiltered = _adminLogsAll.filter(function(item) {
+                if (sev && item.severity !== sev) return false;
+                if (success === 'true' && item.success === false) return false;
+                if (success === 'false' && item.success !== false) return false;
+                if (user && !(item.user || '').toLowerCase().includes(user)) return false;
+                if (search) {
+                    var haystack = [item.action, item.user, item.target, item.resource_name, item.error, item.ip, item.endpoint, item.request_id || ''].join(' ').toLowerCase();
+                    if (!haystack.includes(search)) return false;
+                }
+                return true;
+            });
+            _adminLogsPage = 1;
+            _renderAdminLogsPage();
+        }
+
+        function _renderFilterChips() {
+            var chipsEl = document.getElementById('adminLogChips');
+            if (!chipsEl) return;
+            var chips = [];
+            var sev = document.getElementById('adminLogSeverityFilter').value;
+            var success = document.getElementById('adminLogSuccessFilter').value;
+            var user = document.getElementById('adminLogUserFilter').value.trim();
+            var search = document.getElementById('adminLogSearch').value.trim();
+            if (sev) chips.push({ label: 'Severity: ' + sev, clear: function() { document.getElementById('adminLogSeverityFilter').value = ''; } });
+            if (success) chips.push({ label: success === 'true' ? 'Success only' : 'Failed only', clear: function() { document.getElementById('adminLogSuccessFilter').value = ''; } });
+            if (user) chips.push({ label: 'User: ' + user, clear: function() { document.getElementById('adminLogUserFilter').value = ''; } });
+            if (search) chips.push({ label: 'Search: ' + search, clear: function() { document.getElementById('adminLogSearch').value = ''; } });
+            if (chips.length === 0) { chipsEl.style.display = 'none'; return; }
+            chipsEl.style.display = 'flex';
+            chipsEl.innerHTML = chips.map(function(c, i) {
+                return '<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.5rem;border-radius:9999px;font-size:0.75rem;background:var(--primary-container);color:var(--on-primary-container);font-weight:600;">' +
+                    _escHtml(c.label) +
+                    '<button onclick="_clearLogChip(' + i + ')" style="background:none;border:none;color:inherit;cursor:pointer;padding:0;line-height:1;font-size:1rem;">&times;</button></span>';
+            }).join('');
+            window._logChipClearFns = chips.map(function(c) { return c.clear; });
+        }
+
+        function _clearLogChip(i) {
+            if (window._logChipClearFns && window._logChipClearFns[i]) {
+                window._logChipClearFns[i]();
+                _applyLogFilters();
+                _renderFilterChips();
+            }
+        }
+
+        async function loadAdminLogs() {
+            var tbody = document.getElementById('adminLogTable');
+            if (!tbody) return;
+            try {
+                var res = await fetch('/admin/log?limit=200');
+                if (!res.ok) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Failed to load logs</td></tr>'; return; }
+                var data = await res.json();
+                _adminLogsAll = data.log || [];
+                _applyLogFilters();
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Connection error loading logs</td></tr>';
+            }
+        }
+
+        function updateUIForRole() {
+            var logRetentionCard = document.getElementById('logRetentionCard');
+            var adminLogCard = document.getElementById('adminLogCard');
+            var downloadLogsCard = document.getElementById('downloadLogsCard');
+            var defaultAdminCard = document.getElementById('defaultAdminCard');
+            var usernameEl = document.getElementById('settingsUsername');
+            var roleEl = document.getElementById('settingsUserRole');
+            if (usernameEl) usernameEl.textContent = loggedInUser;
+            if (roleEl) roleEl.textContent = userRole;
+            if (userRole === 'admin') {
+                if (logRetentionCard) logRetentionCard.style.display = 'block';
+                if (adminLogCard) adminLogCard.style.display = 'block';
+                if (downloadLogsCard) downloadLogsCard.style.display = 'block';
+                if (defaultAdminCard) defaultAdminCard.style.display = 'block';
+                loadRetentionSetting();
+                loadAdminLogs();
+                loadDefaultAdminStatus();
+                if (_adminLogInterval) clearInterval(_adminLogInterval);
+                _adminLogInterval = setInterval(loadAdminLogs, 15000);
+            } else {
+                if (logRetentionCard) logRetentionCard.style.display = 'none';
+                if (adminLogCard) adminLogCard.style.display = 'none';
+                if (downloadLogsCard) downloadLogsCard.style.display = 'none';
+                if (defaultAdminCard) defaultAdminCard.style.display = 'none';
+            }
+        }
+
+        /** Loads the current log retention setting. */
+        async function loadRetentionSetting() {
+            try {
+                var res = await fetch('/api/admin/settings');
+                if (res.ok) {
+                    var data = await res.json();
+                    var sel = document.getElementById('logRetentionSelect');
+                    if (sel) sel.value = data.log_retention;
+                }
+            } catch (e) { console.error("Error loading log retention policy", e); }
+        }
+
+        /** Saves the log retention policy choice. */
+        async function saveRetentionPolicy(policy) {
+            try {
+                var res = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ policy: policy })
+                });
+                if (res.ok) {
+                    showNotification('retentionNotif', __('settings.success.retention_updated', {policy: policy}), false);
+                    loadAdminLogs();
+                } else {
+                    var err = await res.json();
+                    showNotification('retentionNotif', err.detail || __('settings.error.retention_update_failed'), true);
+                }
+            } catch (e) {
+                showNotification('retentionNotif', __('settings.connection_error'), true);
+            }
+        }
+
+
+
+        /** Loads the current default admin account status. */
+        async function loadDefaultAdminStatus() {
+            try {
+                var res = await fetch('/teacher/default-admin-status');
+                if (!res.ok) return;
+                var data = await res.json();
+                var statusEl = document.getElementById('defaultAdminStatus');
+                var disableBtn = document.getElementById('btn-disableDefaultAdmin');
+                var enableBtn = document.getElementById('btn-enableDefaultAdmin');
+                var selfWarning = document.getElementById('defaultAdminSelfWarning');
+                var riskWarning = document.getElementById('defaultAdminRiskWarning');
+                var isSelf = loggedInUser === 'admin';
+                if (data.enabled) {
+                    if (statusEl) { statusEl.textContent = __('settings.status_enabled'); statusEl.style.color = 'var(--success)'; }
+                    if (isSelf) {
+                        if (selfWarning) selfWarning.style.display = 'block';
+                        if (riskWarning) riskWarning.style.display = 'none';
+                        if (disableBtn) { disableBtn.disabled = true; disableBtn.style.opacity = '0.4'; disableBtn.style.pointerEvents = 'none'; }
+                        if (enableBtn) enableBtn.style.display = 'none';
+                    } else {
+                        if (selfWarning) selfWarning.style.display = 'none';
+                        if (riskWarning) riskWarning.style.display = 'block';
+                        if (disableBtn) { disableBtn.disabled = false; disableBtn.style.opacity = '1'; disableBtn.style.pointerEvents = 'auto'; disableBtn.style.display = 'inline-flex'; }
+                        if (enableBtn) enableBtn.style.display = 'none';
+                    }
+                } else {
+                    if (statusEl) { statusEl.textContent = __('settings.status_disabled'); statusEl.style.color = 'var(--danger)'; }
+                    if (selfWarning) selfWarning.style.display = 'none';
+                    if (riskWarning) riskWarning.style.display = 'none';
+                    if (disableBtn) disableBtn.style.display = 'none';
+                    if (enableBtn) enableBtn.style.display = 'inline-flex';
+                }
+            } catch (e) { console.error('Failed to load default admin status', e); }
+        }
+
+        async function disableDefaultAdmin() {
+            var confirmed = await showConfirm(__('settings.confirm.disable_admin_title'), __('settings.confirm.disable_admin_body'), true, __('settings.confirm.disable_admin_btn'));
+            if (!confirmed) return;
+            try {
+                var res = await fetch('/teacher/disable-default-admin', { method: 'POST' });
+                if (res.ok) { showNotification('defaultAdminNotif', __('settings.notif.admin_disabled'), false); loadDefaultAdminStatus(); }
+                else { var err = await res.json(); showNotification('defaultAdminNotif', err.detail || __('settings.notif.disable_failed'), true); }
+            } catch (e) { showNotification('defaultAdminNotif', __('settings.connection_error'), true); }
+        }
+
+        async function enableDefaultAdmin() {
+            var confirmed = await showConfirm(__('settings.confirm.enable_admin_title'), __('settings.confirm.enable_admin_body'), true, __('settings.confirm.enable_admin_btn'));
+            if (!confirmed) return;
+            try {
+                var res = await fetch('/teacher/enable-default-admin', { method: 'POST' });
+                if (res.ok) { showNotification('defaultAdminNotif', __('settings.notif.admin_enabled'), false); loadDefaultAdminStatus(); }
+                else { var err = await res.json(); showNotification('defaultAdminNotif', err.detail || __('settings.notif.enable_failed'), true); }
+            } catch (e) { showNotification('defaultAdminNotif', __('settings.connection_error'), true); }
+        }
+
+        /** Toggles password input visibility. */
+        function togglePasswordVisibility(inputId, eyeIconId, btnId) {
+            var pwdInput = document.getElementById(inputId);
+            var eyeIcon = document.getElementById(eyeIconId);
+            var toggleBtn = document.getElementById(btnId);
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                toggleBtn.setAttribute('aria-label', __('security.aria.hide_password'));
+                eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+            } else {
+                pwdInput.type = 'password';
+                toggleBtn.setAttribute('aria-label', __('security.aria.show_password'));
+                eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+            }
+        }
+
+        async function changePassword() {
+            var oldPwd = document.getElementById('oldPwd').value;
+            var newPwd = document.getElementById('newPwd').value;
+            if (!oldPwd || !newPwd) return showNotification('securityNotif', __('security.error.both_fields'), true);
+            if (newPwd.length < 8) return showNotification('securityNotif', __('security.error.password_length'), true);
+            if (!/[A-Z]/.test(newPwd)) return showNotification('securityNotif', __('security.error.uppercase'), true);
+            if (!/[a-z]/.test(newPwd)) return showNotification('securityNotif', __('security.error.lowercase'), true);
+            if (!/\d/.test(newPwd)) return showNotification('securityNotif', __('security.error.digit'), true);
+            try {
+                var res = await fetch('/teacher/change-password', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ old_password: oldPwd, new_password: newPwd })
+                });
+                if (res.ok) {
+                    showNotification('securityNotif', __('security.success.password_updated'), false);
+                    setTimeout(function() { location.href = '/'; }, 1500);
+                } else {
+                    var msg = __('security.error.current_password');
+                    try { var err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    showNotification('securityNotif', msg, true);
+                }
+            } catch (e) {
+                var msg2 = __('security.error.connection');
+                try { var err2 = await e.json?.(); if (err2?.detail) msg2 = err2.detail; } catch (_) {}
+                showNotification('securityNotif', msg2, true);
+            }
+        }
+
+        /** Loads the current user's profile. */
+        async function loadMyProfile() {
+            try {
+                var res = await fetch('/teacher/me');
+                if (res.ok) {
+                    var me = await res.json();
+                    document.getElementById('profileName').value = me.name || '';
+                    document.getElementById('profileDepartment').value = me.department || '';
+                    if (me.username === 'admin') {
+                        document.getElementById('profileName').disabled = true;
+                        document.getElementById('profileDepartment').disabled = true;
+                        document.getElementById('profileName').style.opacity = '0.5';
+                        document.getElementById('profileDepartment').style.opacity = '0.5';
+                        document.getElementById('oldPwd').disabled = true;
+                        document.getElementById('newPwd').disabled = true;
+                        document.getElementById('oldPwd').style.opacity = '0.5';
+                        document.getElementById('newPwd').style.opacity = '0.5';
+                        document.getElementById('btn-changePassword').disabled = true;
+                        document.getElementById('btn-saveMyProfile').disabled = true;
+                        document.getElementById('btn-changePassword').style.opacity = '0.5';
+                        document.getElementById('btn-saveMyProfile').style.opacity = '0.5';
+                    }
+                }
+            } catch (e) { console.error("Error loading profile", e); }
+        }
+
+        async function saveMyProfile() {
+            var name = document.getElementById('profileName').value.trim();
+            var department = document.getElementById('profileDepartment').value.trim();
+            if (!name) return showNotification('profileNotif', __('security.error.name_empty'), true);
+            if (!department) return showNotification('profileNotif', __('security.error.dept_empty'), true);
+            try {
+                var nameRes = await fetch('/teacher/profile/name', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name })
+                });
+                if (!nameRes.ok) {
+                    var msg = __('security.error.update_name');
+                    try { var err = await nameRes.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    return showNotification('profileNotif', msg, true);
+                }
+                var deptRes = await fetch('/teacher/profile/department', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ department: department })
+                });
+                if (deptRes.ok) { showNotification('profileNotif', __('security.success.profile_updated'), false); }
+                else {
+                    var msg2 = __('security.error.update_dept');
+                    try { var err2 = await deptRes.json(); if (err2.detail) msg2 = err2.detail; } catch (_) {}
+                    showNotification('profileNotif', msg2, true);
+                }
+            } catch (e) { showNotification('profileNotif', __('security.error.connection'), true); }
+        }
+
+        var _initSettings = function() {
+            debouncedFilterAdminLogs = debounce(function() { _applyLogFilters(); _renderFilterChips(); }, 200);
+
+            loadWhoAmI().then(function() {
+                checkSelfResetRequired();
+                loadMyProfile().then(function() {
+                    updateUIForRole();
+                });
+            });
+
+            document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
+            document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
+            document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
+            document.getElementById('toggleOldPwdBtn')?.addEventListener('click', function() { togglePasswordVisibility('oldPwd', 'eyeIconOld', 'toggleOldPwdBtn'); });
+            document.getElementById('toggleNewPwdBtn')?.addEventListener('click', function() { togglePasswordVisibility('newPwd', 'eyeIconNew', 'toggleNewPwdBtn'); });
+            document.getElementById('btn-changePassword')?.addEventListener('click', changePassword);
+            document.getElementById('btn-saveMyProfile')?.addEventListener('click', saveMyProfile);
+            document.getElementById('btn-submitForcePasswordReset')?.addEventListener('click', submitForcePasswordReset);
+            document.getElementById('btn-loadAdminLogs')?.addEventListener('click', loadAdminLogs);
+            document.getElementById('btn-downloadLogs')?.addEventListener('click', function() {
+                var dur = document.getElementById('downloadDurationSelect')?.value || 'all';
+                window.open('/api/admin/logs/download?duration=' + encodeURIComponent(dur));
+            });
+            document.getElementById('logRetentionSelect')?.addEventListener('change', function() { saveRetentionPolicy(this.value); });
+            document.getElementById('adminLogPerPageSelect')?.addEventListener('change', function() { adminLogsChangePerPage(this.value); });
+            var adminLogSearch = document.getElementById('adminLogSearch');
+            if (adminLogSearch) adminLogSearch.addEventListener('input', debouncedFilterAdminLogs);
+            document.getElementById('adminLogSeverityFilter')?.addEventListener('change', function() { _applyLogFilters(); _renderFilterChips(); });
+            document.getElementById('adminLogSuccessFilter')?.addEventListener('change', function() { _applyLogFilters(); _renderFilterChips(); });
+            document.getElementById('adminLogUserFilter')?.addEventListener('input', debounce(function() { _applyLogFilters(); _renderFilterChips(); }, 200));
+            document.getElementById('btn-adminLogsPrevPage')?.addEventListener('click', adminLogsPrevPage);
+            document.getElementById('btn-adminLogsNextPage')?.addEventListener('click', adminLogsNextPage);
+            document.getElementById('btn-disableDefaultAdmin')?.addEventListener('click', disableDefaultAdmin);
+            document.getElementById('btn-enableDefaultAdmin')?.addEventListener('click', enableDefaultAdmin);
+            document.addEventListener('languageChanged', function() { _renderAdminLogsPage(); });
+        };
+        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['settings'] = _initSettings;
+
+        document.addEventListener('DOMContentLoaded', _initSettings);
+    </script>
+
+</body>
 </html>

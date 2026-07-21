@@ -1,12 +1,14 @@
-"""Authentication routes — register, login, token management, logout."""
+"""Authentication routes -- register, login, token management, logout."""
 import uuid
 import time
-import sqlite3
+
 import asyncio
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Form, status
 from fastapi.responses import JSONResponse, RedirectResponse
-from app.async_db import db_conn, db_exec, db_fetch_one, db_run
+from app.async_db import db_conn, db_exec, db_fetch_one
+from app.audit import audit, Action
+from app.metrics import incr
 from app.models import ScholarReg, StudentLoginRequest, ScholarRegisterResponse, StudentLoginResponse, LoginTokenResponse, TokenResponse
 from app.dependencies import hash_password, verify_password, validate_password_strength, generate_session_token
 
@@ -30,7 +32,7 @@ def _check_rate_limit(request: Request):
     # prune old entries
     attempts = [t for t in attempts if t > window_start]
     if len(attempts) >= _MAX_LOGIN_ATTEMPTS:
-        raise HTTPException(status_code=429, detail="Too many login attempts. Try again later.")
+        raise HTTPException(status_code=429, detail="Too many login attempts. Try again later.")  # i18n: user-facing error message
     _login_attempts[ip] = attempts
 
 
@@ -38,7 +40,7 @@ def _record_failed_login(request: Request):
     """Record a failed login attempt for rate limiting."""
     ip = request.client.host if request.client else "unknown"
     now = time.time()
-    # ponytail: cap dict size — drop oldest IPs if over limit
+    # ponytail: cap dict size -- drop oldest IPs if over limit
     if len(_login_attempts) > _MAX_IPS:
         cutoff = now - _LOGIN_WINDOW
         stale = [k for k, v in _login_attempts.items() if not v or v[-1] < cutoff]
@@ -62,7 +64,7 @@ async def register_scholar(scholar: ScholarReg, request: Request):
         request: The incoming HTTP request used to determine the secure scheme.
 
     Returns:
-        JSON with the scholar ID, session token, refresh token, persistent key, and encryption key.
+        JSON with the scholar ID, session token, refresh token, and persistent key.
 
     Raises:
         HTTPException 400: If the password fails strength validation or registration otherwise fails.
@@ -83,7 +85,7 @@ async def register_scholar(scholar: ScholarReg, request: Request):
         if scholar.password:
             valid, msg = validate_password_strength(pwd)
             if not valid:
-                raise HTTPException(status_code=400, detail=msg)
+                raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
         hashed = hash_password(pwd)
 
         if existing:
@@ -96,7 +98,6 @@ async def register_scholar(scholar: ScholarReg, request: Request):
         resp_data = {"id": full_id, "token": tokens["session_token"]}
         resp_data["refresh_token"] = tokens["refresh_token"]
         resp_data["persistent_key"] = tokens["persistent_key"]
-        resp_data["encryption_key"] = tokens["encryption_key"]
         response = JSONResponse(resp_data)
         response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, samesite="lax", secure=_secure_cookie(request), max_age=86400)
         return response
@@ -111,7 +112,7 @@ async def student_login(data: StudentLoginRequest, request: Request):
         request: The incoming HTTP request used to determine the secure scheme.
 
     Returns:
-        JSON with status, scholar ID, session token, refresh token, persistent key, encryption key, name, grade, and reset-required flag.
+        JSON with status, scholar ID, session token, refresh token, persistent key, name, grade, and reset-required flag.
 
     Raises:
         HTTPException 401: If the account is not found or credentials are invalid.
@@ -123,31 +124,41 @@ async def student_login(data: StudentLoginRequest, request: Request):
 
     if not row:
         _record_failed_login(request)
-        raise HTTPException(status_code=401, detail="Student account not found.")
+        incr("login_failed")
+        await audit(action=Action.LOGIN_FAILED, username=data.username, request=request,
+                    success=False, error="student account not found", role="student")
+        raise HTTPException(status_code=401, detail="Student account not found.")  # i18n: user-facing error message
 
     scholar_id, hashed_pwd, reset_req, srow_name, srow_grade = row
 
     pwd_to_check = hashed_pwd
     if not pwd_to_check:
         _record_failed_login(request)
-        raise HTTPException(status_code=401, detail="Password not set. Contact teacher to set your password.")
+        incr("login_failed")
+        await audit(action=Action.LOGIN_FAILED, username=data.username, request=request,
+                    success=False, error="password not set", role="student")
+        raise HTTPException(status_code=401, detail="Password not set. Contact teacher to set your password.")  # i18n: user-facing error message
 
     password_ok = await asyncio.to_thread(verify_password, data.password, pwd_to_check)
     if not password_ok:
         _record_failed_login(request)
-        raise HTTPException(status_code=401, detail="Invalid student credentials.")
+        incr("login_failed")
+        await audit(action=Action.LOGIN_FAILED, username=data.username, request=request,
+                    success=False, error="invalid password", role="student")
+        raise HTTPException(status_code=401, detail="Invalid student credentials.")  # i18n: user-facing error message
 
     tokens = await generate_session_token(scholar_id, "student")
 
     srow_name = srow_name or data.username
     srow_grade = srow_grade or ""
 
+    await audit(action=Action.LOGIN, username=data.username, request=request, role="student")
+    incr("login_success")
     response = JSONResponse({
         "status": "ok", "scholar_id": scholar_id,
         "token": tokens["session_token"],
         "refresh_token": tokens["refresh_token"],
         "persistent_key": tokens["persistent_key"],
-        "encryption_key": tokens["encryption_key"],
         "name": srow_name, "grade": srow_grade,
         "reset_required": bool(reset_req)
     })
@@ -166,38 +177,38 @@ async def login(response: Response, request: Request, username: str = Form(...),
         password: The account password.
 
     Returns:
-        Dict with access token, token type, username, name, department, scholar ID, role, reset-required flag, and encryption key.
+        Dict with access token, token type, username, name, department, scholar ID, role, and reset-required flag.
     """
     _check_rate_limit(request)
-    try:
-        row = await db_fetch_one("SELECT hashed_password, name, department, scholar_id, reset_required, role FROM users WHERE username = ?", (username,))
-        reset_req = row[4] if row else 0
-        if username == "admin":
-            reset_req = 0
-    except sqlite3.OperationalError:
-        row = await db_fetch_one("SELECT hashed_password, username as name, 'General' as department, scholar_id FROM users WHERE username = ?", (username,))
-        if row and not row[3]:
-            fallback_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-            await db_exec("UPDATE users SET scholar_id = ? WHERE username = ?", (fallback_id, username))
-            row = (row[0], row[1], row[2], fallback_id)
+    row = await db_fetch_one("SELECT hashed_password, name, department, scholar_id, reset_required, role FROM users WHERE username = ?", (username,))
+    reset_req = row[4] if row else 0
+    if username == "admin":
         reset_req = 0
 
     if not row:
         _record_failed_login(request)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")
+        incr("login_failed")
+        await audit(action=Action.LOGIN_FAILED, username=username, request=request,
+                    success=False, error="account not found")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")  # i18n: user-facing login error
     if row[0] == 'DISABLED':
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="This account has been disabled by an administrator.")
+        incr("login_failed")
+        await audit(action=Action.LOGIN_FAILED, username=username, request=request,
+                    success=False, error="account disabled", severity="warning")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="This account has been disabled by an administrator.")  # i18n: user-facing login error
     password_ok = await asyncio.to_thread(verify_password, password, row[0])
     if not password_ok:
         _record_failed_login(request)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")
+        incr("login_failed")
+        await audit(action=Action.LOGIN_FAILED, username=username, request=request,
+                    success=False, error="invalid password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")  # i18n: user-facing login error
 
-    user_role = row[5] if (row and len(row) > 5) else ("admin" if username == "admin" else "teacher")
+    user_role = row[5]
     tokens = await generate_session_token(username, user_role)
-    scholar_id = row[3] if (row and row[3]) else None
-    if not scholar_id:
-        scholar_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-        await db_exec("UPDATE users SET scholar_id = ? WHERE username = ?", (scholar_id, username))
+    scholar_id = row[3]
+    await audit(action=Action.LOGIN, username=username, request=request, role=user_role)
+    incr("login_success")
     response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, max_age=86400, samesite="lax", secure=_secure_cookie(request))
     return {
         "access_token": tokens["session_token"],
@@ -207,8 +218,7 @@ async def login(response: Response, request: Request, username: str = Form(...),
         "department": row[2] or "General",
         "scholar_id": scholar_id,
         "role": user_role,
-        "reset_required": reset_req or 0,
-        "encryption_key": tokens["encryption_key"]
+        "reset_required": reset_req or 0
     }
 
 
@@ -244,7 +254,7 @@ async def refresh_session(data: dict, request: Request):
         request: The incoming HTTP request (unused but required for FastAPI dependency injection).
 
     Returns:
-        Dict with new session token, refresh token, persistent key, and encryption key.
+        Dict with new session token, refresh token, and persistent key.
 
     Raises:
         HTTPException 401: If the refresh token is invalid, already used, or expired.
@@ -255,11 +265,11 @@ async def refresh_session(data: dict, request: Request):
         c.execute("SELECT username, role, used, expires_at FROM refresh_tokens WHERE token = ?", (data.get('refresh_token'),))
         row = c.fetchone()
         if not row:
-            raise HTTPException(status_code=401, detail="Invalid refresh token")
+            raise HTTPException(status_code=401, detail="Invalid refresh token")  # i18n: user-facing error message
         if row[2]:
-            raise HTTPException(status_code=401, detail="Refresh token already used")
+            raise HTTPException(status_code=401, detail="Refresh token already used")  # i18n: user-facing error message
         if row[3] and datetime.fromisoformat(row[3]) < datetime.now():
-            raise HTTPException(status_code=401, detail="Refresh token expired")
+            raise HTTPException(status_code=401, detail="Refresh token expired")  # i18n: user-facing error message
         username, role = row[0], row[1]
         c.execute("UPDATE refresh_tokens SET used = 1 WHERE token = ?", (data.get('refresh_token'),))
         conn.commit()
@@ -267,8 +277,7 @@ async def refresh_session(data: dict, request: Request):
         return {
             "token": tokens["session_token"],
             "refresh_token": tokens["refresh_token"],
-            "persistent_key": tokens["persistent_key"],
-            "encryption_key": tokens["encryption_key"]
+            "persistent_key": tokens["persistent_key"]
         }
 
 
@@ -281,7 +290,7 @@ async def renew_session(data: dict, request: Request):
         request: The incoming HTTP request (unused but required for FastAPI dependency injection).
 
     Returns:
-        Dict with new session token, refresh token, persistent key, and encryption key.
+        Dict with new session token, refresh token, and persistent key.
 
     Raises:
         HTTPException 401: If the persistent key is invalid, already used, or expired.
@@ -292,11 +301,11 @@ async def renew_session(data: dict, request: Request):
         c.execute("SELECT username, role, used, expires_at FROM persistent_keys WHERE token = ?", (data.get('persistent_key'),))
         row = c.fetchone()
         if not row:
-            raise HTTPException(status_code=401, detail="Invalid persistent key")
+            raise HTTPException(status_code=401, detail="Invalid persistent key")  # i18n: user-facing error message
         if row[2]:
-            raise HTTPException(status_code=401, detail="Persistent key already used")
+            raise HTTPException(status_code=401, detail="Persistent key already used")  # i18n: user-facing error message
         if row[3] and datetime.fromisoformat(row[3]) < datetime.now():
-            raise HTTPException(status_code=401, detail="Persistent key expired")
+            raise HTTPException(status_code=401, detail="Persistent key expired")  # i18n: user-facing error message
         username, role = row[0], row[1]
         c.execute("UPDATE persistent_keys SET used = 1 WHERE token = ?", (data.get('persistent_key'),))
         conn.commit()
@@ -304,6 +313,5 @@ async def renew_session(data: dict, request: Request):
         return {
             "token": tokens["session_token"],
             "refresh_token": tokens["refresh_token"],
-            "persistent_key": tokens["persistent_key"],
-            "encryption_key": tokens["encryption_key"]
+            "persistent_key": tokens["persistent_key"]
         }

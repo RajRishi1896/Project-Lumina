@@ -77,14 +77,6 @@ class LuminaApp extends ConsumerWidget {
     ref.read(themeModeProvider.notifier).load();
     final themeMode = ref.watch(themeModeProvider);
 
-    final l10n = AppLocalizations.of(context)!;
-    NotificationService().setLocalizedStrings(
-      channelName: l10n.downloadChannelName,
-      channelDescription: l10n.downloadChannelDescription,
-      downloadCompleteTitle: l10n.downloadCompleteNotificationTitle,
-      downloadFailedTitle: l10n.downloadFailedNotificationTitle,
-    );
-
     return ScreenUtilInit(
       designSize: const Size(360, 800),
       minTextAdapt: true,
@@ -92,16 +84,26 @@ class LuminaApp extends ConsumerWidget {
       builder: (context, child) {
         return MaterialApp(
           navigatorKey: navigatorKey,
-          title: l10n.materialAppTitle,
+          onGenerateTitle: (context) => AppLocalizations.of(context)!.materialAppTitle,
           theme: LuminaLiteTheme.lightTheme,
           darkTheme: LuminaLiteTheme.darkTheme,
-          themeMode: themeMode, 
+          themeMode: themeMode,
           debugShowCheckedModeBanner: false,
           locale: ref.watch(localeProvider),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: isLoggedIn 
-            ? const ConnectionGate(child: AppShell()) 
+          builder: (context, child) {
+            final l10n = AppLocalizations.of(context)!;
+            NotificationService().setLocalizedStrings(
+              channelName: l10n.downloadChannelName,
+              channelDescription: l10n.downloadChannelDescription,
+              downloadCompleteTitle: l10n.downloadCompleteNotificationTitle,
+              downloadFailedTitle: l10n.downloadFailedNotificationTitle,
+            );
+            return child!;
+          },
+          home: isLoggedIn
+            ? const ConnectionGate(child: AppShell())
             : const WelcomePage(),
         );
       },

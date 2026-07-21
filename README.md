@@ -12,9 +12,6 @@
 
 An offline-first educational mesh for rural schools. One repurposed laptop acts as a WiFi hotspot and content server. Students access textbooks, videos, and interactive content on their phones. No internet required.
 
-![Demo GIF](demo.gif)
-*Add a screen recording showing the app browsing resources, playing a video, and going offline.*
-
 ---
 
 ## Quick Start
@@ -27,7 +24,7 @@ cd "Debian Server" && python main.py
 cd "EduMesh-Android" && flutter run
 ```
 
-The server runs on `http://0.0.0.0:8000`. The app auto-discovers it via mDNS. Default admin login: `admin` / `lumina2026`.
+The server runs on `http://0.0.0.0:8000`. The app connects via DNS `lumina.hub` (3s timeout), falling back to `10.42.0.1:8000` if DNS resolution fails. Default admin login: `admin` / `lumina2026`.
 
 ---
 
@@ -37,7 +34,7 @@ The server runs on `http://0.0.0.0:8000`. The app auto-discovers it via mDNS. De
 - [Who This Is For](#who-this-is-for)
 - [Hardest Technical Challenges](#hardest-technical-challenges)
 - [Architecture](#architecture)
-- [Features (Android + Server)](#architecture)
+- [Features](#features)
 - [Lessons Learned](#lessons-learned)
 - [Performance Targets and Reality](#performance-targets-and-reality)
 - [Hard Trade-offs](#hard-trade-offs)
@@ -67,7 +64,7 @@ I called it Project Lumina. It's an offline-first educational mesh for places wh
 
 ## Hardest Technical Challenges
 
-**SQLite under 30 concurrent syncs.** The hub runs on 2 GB RAM with a 5400 RPM HDD. Thirty students syncing study time and downloads every 60 seconds would overwhelm a naive database. I switched to WAL mode, throttled `last_accessed` writes to a 5-minute staleness window (dropped write frequency by roughly 99.7%), and offloaded CPU-heavy work to a 2-worker async task queue. The queue has a 5-minute handler timeout so a stuck thumbnail generation never blocks the API.
+**SQLite under 30 concurrent syncs.** The hub runs on 2 GB RAM with a 5400 RPM HDD. Thirty students syncing study time and downloads every 60 seconds would overwhelm a naive database. I switched to WAL mode, throttled `last_accessed` writes to a 5-minute staleness window (dropped write frequency by roughly 99.7%), and offloaded CPU-heavy work to background async tasks with timeout controls.
 
 **Video thumbnails that skip black title cards.** Many educational videos start with a 5 to 15 second black screen. Taking a thumbnail at a fixed timestamp produces a black image. I used ffmpeg's `blackdetect` filter to find the first non-black frame, added one second, and capped at 30 seconds to avoid picking an ending frame. This runs in a background worker so it never blocks a request.
 
@@ -81,7 +78,7 @@ I called it Project Lumina. It's an offline-first educational mesh for places wh
 
 ```
 ┌───────────────────────────┐       WiFi Hotspot (10.42.0.1)        ┌───────────────────────┐
-│                           │ ◄─────── HTTP / mDNS ───────────────► │                       │ 
+│                           │ ◄─────── HTTP / DNS ────────────────► │                       │ 
 │   EduMesh Android App     │                                       │   Lumina Hub Server   │
 │   (Flutter 3.x)           │                                       │   (FastAPI + SQLite)  │
 │                           │                                       │                       │
@@ -111,20 +108,22 @@ I called it Project Lumina. It's an offline-first educational mesh for places wh
 │  └─────────────────────┘  │                                       │                       │
 │                           │                                       │  ┌─────────────────┐  │
 │  ┌─────────────────────┐  │                                       │  │ Background tasks│  │
-│  │ 5-tab Shell         │  │                                       │  │ thumbnail gen   │  │
+│  │ 4-tab Shell         │  │                                       │  │ thumbnail gen   │  │
 │  │ (double-back exit)  │  │                                       │  │ ZIM auto-clean  │  │
-│  └─────────────────────┘  │                                       │  │ mDNS broadcast  │  │
-│                           │                                       │  │ session prune   │  │
-└───────────────────────────┘                                       │  │ task queue (2 w)│  │
-                                                                     │  └─────────────────┘  │
-                                                                     └───────────────────────┘
+│  └─────────────────────┘  │                                       │  │ session prune   │  │
+│                           │                                       │  └─────────────────┘  │
+└───────────────────────────┘                                       └───────────────────────┘
 ```
 
 Two independent codebases, plain HTTP between them.
 
-### EduMesh Android App
+---
 
-A Flutter 3 app (55 Dart files, 40 dependencies) built for sub-$50 phones (1 to 2 GB RAM, MediaTek MT6739). The whole app works around one constraint: the hub might disappear at any moment.
+## Features
+
+### EduMesh Android App (Flutter)
+
+A Flutter 3 app (52 Dart files, 41 dependencies) built for sub-$50 phones (1 to 2 GB RAM, MediaTek MT6739). The whole app works around one constraint: the hub might disappear at any moment.
 
 **Offline infrastructure**
 
@@ -135,6 +134,7 @@ A Flutter 3 app (55 Dart files, 40 dependencies) built for sub-$50 phones (1 to 
 
 **Content experience**
 
+- **Course browser and player:** Browse, enroll, and track progress through structured courses. Courses contain resources organized by topics with teacher-authored quizzes.
 - **Video with picture-in-picture:** `MiniPlayerController` is a singleton. Navigate back from full-screen and playback continues in a mini overlay. Closing the overlay disposes both `VideoPlayerController` and `ChewieController`.
 - **PDF viewer:** `pdfx` with pinch-to-zoom (0.5x to 5.0x). Page position saved to `SharedPreferences`. A 6-column page grid for rapid navigation.
 - **ZIM article browser:** Fetches up to 500 articles (capped to prevent OOM on 1 GB phones). Displays them as searchable items with a WIKI badge.
@@ -144,44 +144,56 @@ A Flutter 3 app (55 Dart files, 40 dependencies) built for sub-$50 phones (1 to 
 
 - **Triple data fallback:** Every resource lookup tries server API, `CatalogService` SQLite cache, then `DBHelper` downloads table. Undownloaded resources appear as ghost items at 50% opacity when offline.
 - **Staleness detection:** Before opening a local file, the app compares cached mtime against the server. If outdated, it re-downloads automatically.
-- **Encryption:** AES-256-GCM on all POST/PUT bodies using a session-derived key. Bootstrapping paths like `/register` and `/token` bypass encryption.
 - **Token renewal:** 3-tier fallback (session token, 7-day refresh token, 365-day persistent key). The interceptor tries each on 401/403 before logging out.
 - **Server discovery:** DNS `lumina.hub` (3s timeout), fallback `10.42.0.1:8000`, then persisted fallback IP from `SharedPreferences`.
 
 **UX and accessibility**
 
-- **4 languages:** English, Hindi, Kannada, French. Roughly 290 translatable strings with ICU plurals. All fonts are bundled as `.ttf`. `GoogleFonts` is fallback only.
+- **4 languages:** English, Hindi, Kannada, French. 321 translatable strings with ICU plurals (Flutter), 606 keys (web). All fonts are bundled as `.ttf`. `GoogleFonts` is fallback only.
 - **Touch targets:** Every tappable element meets 48x48px minimum. `Semantics` labels on all controls. `Tooltip` on icon-only buttons.
 - **Double-back-to-exit:** `PopScope` with a 2-second window. First back press shows a SnackBar with an Exit button. Second press calls `SystemNavigator.pop()`.
-- **5-tab navigation:** Dashboard, Browse, Saved, Profile, Students. All tabs always visible regardless of role.
+- **4-tab navigation:** Dashboard, Browse, Saved, Profile. All tabs always visible regardless of role.
 
-### Lumina Hub Server
+### Lumina Hub Server (FastAPI)
 
-A FastAPI app (30 Python files, SQLite WAL) running on 2 to 8 GB RAM with a 5400 RPM HDD. It serves content, collects analytics, hosts a web dashboard, and exposes 70+ API endpoints.
+A FastAPI app (30 Python files, SQLite WAL) running on 2 to 8 GB RAM with a 5400 RPM HDD. It serves content, collects analytics, hosts a web dashboard, and exposes 100+ API endpoints.
 
-The API is split across 13 router modules ranging from 83 to 459 lines. The largest is `resources.py` (needs splitting). The smallest is `scholars.py`. Together they cover auth, student sync, teacher analytics, content CRUD, media streaming, account management, passwords, audit logs, system health, and ZIM serving.
+The API is split across 19 router modules plus `zim_handler.py`. Together they cover auth, student sync, teacher analytics, course management, content CRUD, media streaming, account management, passwords, audit logs, system health, and ZIM serving.
 
 | Router | Lines | Purpose |
 |---|---|---|
-| `auth.py` | 274 | Login, register, token management |
-| `student.py` | 322 | Sync, analytics, profile, icons |
-| `teacher_students.py` | 246 | Student listing, teacher analytics |
-| `academics.py` | 201 | Subjects and grades CRUD |
-| `resources.py` | 459 | Resource CRUD, upload, catalog, ZIM import |
-| `media.py` | 136 | HTTP Range streaming, thumbnails |
-| `administration.py` | 216 | Account management |
-| `passwords.py` | 112 | Password change, reset |
-| `admin_logs.py` | 149 | Audit log, settings, log download |
-| `system_stats.py` | 124 | Hub stats, health, time sync |
-| `system.py` | 180 | Health check, captive portal, static serving |
-| `zim_handler.py` | 149 | ZIM article list, search, serve |
-| `scholars.py` | 83 | Scholar listing, reset, delete |
+| `auth.py` | 293 | Login, register, token management |
+| `student.py` | 308 | Sync, analytics, profile, icons |
+| `student_courses.py` | 499 | Course browsing, enrollment, progress, quizzes |
+| `teacher_courses.py` | 237 | Course CRUD, publish toggle, similar suggestions |
+| `teacher_students.py` | 253 | Student listing, teacher analytics |
+| `teacher_course_resources.py` | 416 | Course resource upload, ZIP import/export |
+| `teacher_topics.py` | 141 | Course topic CRUD, ordering |
+| `teacher_quizzes.py` | 114 | Quiz creation and editing |
+| `teacher_similar.py` | 77 | Similar course links |
+| `academics.py` | 415 | Subjects, grades, resource topics CRUD |
+| `resources.py` | 332 | Resource CRUD, upload, catalog |
+| `resource_zim.py` | 261 | ZIM upload, processing, deletion |
+| `media.py` | 167 | HTTP Range streaming, thumbnails |
+| `administration.py` | 203 | Account management |
+| `passwords.py` | 114 | Password change, reset |
+| `admin_logs.py` | 140 | Audit log, settings, log download |
+| `system_stats.py` | 143 | Hub stats, health, time sync |
+| `system.py` | 164 | Health check, captive portal, static serving |
+| `scholars.py` | 84 | Scholar listing, reset, delete |
 
-One background service runs as an `asyncio` task inside the server process:
+Background services run as `asyncio` tasks inside the server process:
 
 - **zim_auto_cleaner.py** -- Hourly LRU-based pruning of ZIM cache. Configurable via a JSON config file with thread-safe access.
+- **Session pruning** -- Stale session cleanup runs periodically.
 
-Additional services (task queue, thumbnail worker, mDNS discovery, rate limiting middleware) are planned but not yet created.
+Additional services (task queue, thumbnail worker, mDNS discovery, rate limiting middleware, encrypted API routes) are planned but not yet created.
+
+### Web Dashboard
+
+A teacher/admin dashboard served from the hub (9 HTML pages, vanilla JS). Role-based access: students see the captive portal, teachers see the dashboard, admins see everything including danger-zone controls.
+
+Features: resource management, student analytics, course creation, grade/subject management, audit logs, system settings, and password management. Fully translated to 4 languages.
 
 ---
 
@@ -223,7 +235,7 @@ Measured on actual target hardware: MediaTek MT6739, 1 GB RAM, Android 8 (phone)
 
 **500-article ZIM limit.** ZIM archives can hold hundreds of thousands of articles. Loading them all would OOM a 1 GB phone. The 500-article cap guarantees the app never crashes on search. The downside: deep research across large archives needs multiple queries.
 
-**Smoke tests only.** I spent my limited time on offline reliability (mutation queue, download atomicity, Keystore recovery) instead of test coverage. That was the right call for v1. But now refactoring is riskier without an integration test suite.
+**Smoke tests only.** I spent my limited time on offline reliability (mutation queue, download atomicity, Keystore recovery) instead of test coverage. That was the right call for v1. But now refactoring is riskier without an integration test suite. A pytest suite with 6 async tests covers the core API paths.
 
 **.part file convention on FAT32.** The rename isn't truly atomic on FAT32 or exFAT, which is what most cheap SD cards use. But the .part convention still prevents corrupted files from masquerading as complete. A crash during rename leaves at most one orphaned file. The alternative (write to a temp dir, then move) has the same fundamental limitation on these filesystems.
 
@@ -234,22 +246,19 @@ Measured on actual target hardware: MediaTek MT6739, 1 GB RAM, Android 8 (phone)
 | Layer | Technology | Purpose |
 |---|---|---|
 | **Mobile app** | Flutter 3.x (Dart) | Cross-platform Android student client |
-| **State management** | Riverpod (`flutter_riverpod`) | Theme, locale, async data |
 | **HTTP client** | Dio 5 (`dio`) | API calls, interceptors, retry |
 | **Local database** | SQLite via `sqflite` | Offline cache, pending queues |
-| **AES encryption** | `pointycastle` (client), `cryptography` (server) | AES-256-GCM request/response |
+| **Secure storage** | `flutter_secure_storage` | Session tokens, credentials |
 | **Server** | FastAPI (Python) | REST API, background tasks, static files |
 | **DB** | SQLite WAL mode | Analytics, sessions, content metadata |
 | **Auth (server)** | bcrypt + JWT-style session tokens | Password hashing, role-based access |
 | **Auth (offline client)** | SHA-256 (local-only) | Offline credential verification |
-| **Rate limiting** | Custom `RateLimitMiddleware` | Per-IP throttling, 2 tiers |
 | **Thumbnails** | ffmpeg + PyMuPDF | Video black-intro skip, PDF 0.3x scale |
 | **Video streaming** | HTTP Range requests | 206 Partial Content for seek |
-| **Discovery** | mDNS/DNS-SD (`zeroconf`) | Zero-config hub discovery on LAN |
 | **Captive portal** | dnsmasq + NetworkManager | DNS hijack to hub welcome page |
 | **Frontend** | Vanilla HTML/CSS/JS | Teacher/admin dashboard (9 pages) |
-| **i18n (Flutter)** | ARB files + `flutter gen-l10n` | 4 languages, ICU plurals |
-| **i18n (Web)** | JSON lang files + `lumina.js` | 4 languages, 450 keys each |
+| **i18n (Flutter)** | ARB files + `flutter gen-l10n` | 4 languages, ICU plurals, 321 keys |
+| **i18n (Web)** | JSON lang files + `lumina.js` | 4 languages, 606 keys each |
 
 ---
 
@@ -269,11 +278,16 @@ The script provisions system dependencies, Python venv, UFW firewall, dnsmasq ca
 ### Commands
 
 ```bash
-flutter test                          # Run Flutter smoke test
+# Flutter app
 dart analyze lib/                     # Lint Flutter code
+flutter test                          # Run Flutter smoke test
 flutter gen-l10n                      # Regenerate localizations after ARB changes
+flutter build apk --release           # Build release APK
+
+# Server
 python main.py                        # Start server (dev)
 sudo systemctl restart lumina-hub     # Start server (prod)
+cd "Debian Server" && pytest          # Run API tests
 ```
 
 ---
@@ -282,16 +296,18 @@ sudo systemctl restart lumina-hub     # Start server (prod)
 
 | Area | Direction |
 |---|---|
-| **Learning Management** | Add quizzes, assignments, and teacher-graded assessments |
 | **Peer-to-peer sync** | Multi-hub federation for village clusters |
 | **Grade-level expansion** | Pre-primary (Grade 0) to competitive exam prep (Grade 13) |
 | **Richer offline states** | `ConnectionGate` shows a red banner today; extend to serve full cached-content fallback views |
+| **Background workers** | Task queue for thumbnail generation, ZIM processing, and long-running imports |
 
 ---
 
 ## Implementation Details
 
-For deep dives into specific design decisions (.part file atomicity, connectivity heartbeat, black-skip thumbnails, 3-tier token renewal, rate limiter internals, and more), see [Implementation Details](Markdown files/implementation-details.md).
+For deep dives into specific design decisions (.part file atomicity, connectivity heartbeat, black-skip thumbnails, 3-tier token renewal, and more), see [Implementation Details](Markdown files/implementation-details.md).
+
+For the LMS course/quiz system design, see [LMS Implementation Plan](LMS%20Docs/LMS_Implementation_Plan.md) and [LMS Edge Cases](LMS%20Docs/LMS_Edge_Cases_Deep_Dive.md).
 
 ---
 

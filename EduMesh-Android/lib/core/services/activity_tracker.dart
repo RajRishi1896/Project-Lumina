@@ -81,7 +81,7 @@ class ActivityTracker {
     await sync();
   }
 
-  /// Log a general user action with debouncing (15s cooldown).
+  /// Logs a general user action to local storage for later sync.
   Future<void> logAction(String action, {String? resourceId, String? metadata}) async {
     final prefs = await SharedPreferences.getInstance();
     await _storeLocal(prefs, {

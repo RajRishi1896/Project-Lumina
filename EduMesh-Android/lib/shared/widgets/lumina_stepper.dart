@@ -29,7 +29,8 @@ class LuminaStepper extends StatelessWidget {
           final isActive = stepIndex <= currentStep;
           final isPast = stepIndex < currentStep;
           
-          return Column(
+          return Flexible(
+            child: Column(
             children: [
               Container(
                 width: 24.w,
@@ -64,14 +65,17 @@ class LuminaStepper extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           );
         } else {
           final isActive = (index ~/ 2) < currentStep;
-          return Container(
+          return Flexible(
+            child: Container(
             width: 40.w,
             height: 2.h,
             margin: EdgeInsets.only(bottom: AppSpacing.md.h),
             color: isActive ? cs.primary : cs.outlineVariant,
+          ),
           );
         }
       }),

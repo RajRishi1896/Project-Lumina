@@ -12,6 +12,43 @@ function esc(str) {
     return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/`/g,'&#96;');
 }
 
+/**
+ * Debounce a function call.
+ * @param {Function} fn - Function to debounce
+ * @param {number} delay - Delay in milliseconds
+ * @returns {Function} Debounced function
+ */
+function debounce(fn, delay) {
+    var timer;
+    return function() {
+        clearTimeout(timer);
+        timer = setTimeout(function() { fn.apply(this, arguments); }, delay);
+    };
+}
+
+/**
+ * Focus trap utility for modal dialogs.
+ * Traps focus within the given element and restores focus to the trigger element on close.
+ * @param {HTMLElement} modal - The modal element to trap focus within
+ * @param {HTMLElement} trigger - The element that opened the modal (focus returns here on close)
+ * @returns {Object} Object with `activate` and `deactivate` methods
+ */
+/**
+ * Convert an ISO date string to a human-friendly relative time label.
+ * @param {string|null} iso - ISO date string or null
+ * @returns {string} Relative time string (e.g. "5 minutes ago")
+ */
+function timeAgo(iso) {
+    if (!iso) return __('students.never');
+    var diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (diff < 60) return __('students.just_now');
+    if (diff < 3600) return __('students.minutes_ago', {n: Math.floor(diff / 60)});
+    if (diff < 86400) return __('students.hours_ago', {n: Math.floor(diff / 3600)});
+    if (diff < 172800) return __('students.yesterday');
+    if (diff < 2592000) return __('students.days_ago', {n: Math.floor(diff / 86400)});
+    return new Date(iso).toLocaleDateString();
+}
+
 
 /* ── i18n / Language ──────────────────────────────────────────────────────── */
 
@@ -181,7 +218,9 @@ const TRANSLATIONS = {
     "content.topics_empty": "No topics created yet.",
     "content.topics_modal_title": "Add New Topic",
     "content.topics_delete_title": "Delete Topic",
-    "content.topics_delete_confirm": "Delete \"{name}\"? Resources using this topic will be set to General.",
+    "content.topics_delete_confirm": "Delete \"{name}\"? Resources will be moved to General unless transferred.",
+    "content.topics_deleted_with_resources": "Topic \"{name}\" and {count} resource(s) deleted.",
+    "content.topic_transfer.select_topic": "Select a topic to transfer resources to",
     "content.notif.subject_deleted": "Subject \"{name}\" deleted successfully.",
     "content.notif.subject_delete_failed": "Could not delete subject.",
     "content.notif.pwd_fields_required": "Please fill in both fields.",
@@ -275,6 +314,9 @@ const TRANSLATIONS = {
     "danger.confirm.delete_btn": "Delete",
     "danger.confirm.delete_admin": "Are you sure you want to delete admin profile \"{username}\"?",
     "danger.confirm.delete_admin_title": "Delete Admin Profile",
+    "danger.confirm.delete_subject_title": "Delete Subject",
+    "danger.confirm.delete_subject": "Delete \"{name}\"? Resources using this subject will not be affected.",
+    "danger.confirm.delete_subject_btn": "Delete",
     "danger.confirm.delete_student": "Are you sure you want to permanently delete student \"{name}\"? This will wipe all download history and sync records.",
     "danger.confirm.delete_student_title": "Delete Student Account",
     "danger.confirm.delete_teacher": "Are you sure you want to delete teacher profile \"{username}\"?",
@@ -296,6 +338,7 @@ const TRANSLATIONS = {
     "danger.default_account": "Default account",
     "danger.delete": "Delete",
     "danger.disable_default_admin": "Disable Default Admin Login (admin)",
+    "danger.error.subject_name_required": "Subject name is required.",
     "danger.error.both_fields": "Please fill in both fields.",
     "danger.error.connection": "Error connecting to server.",
     "danger.error.create_admin_failed": "Could not create admin account.",
@@ -340,6 +383,9 @@ const TRANSLATIONS = {
     "danger.notif.admin_pwd_reset_failed": "Could not reset admin password.",
     "danger.notif.delete_failed": "Could not delete account.",
     "danger.notif.network_error": "Network error.",
+    "danger.notif.subject_add_failed": "Failed to add subject.",
+    "danger.notif.subject_deleted": "Subject deleted.",
+    "danger.notif.subject_delete_failed": "Failed to delete.",
     "danger.notif.student_created": "Student \"{name}\" created successfully.",
     "danger.notif.student_deleted": "Student \"{name}\" deleted.",
     "danger.notif.student_pwd_reset": "Password for student \"{name}\" reset to default.",
@@ -378,6 +424,12 @@ const TRANSLATIONS = {
     "danger.error.grade_name_required": "Please enter a grade name.",
     "danger.error.grade_create_failed": "Could not create grade. It may already exist.",
     "danger.error.grade_delete_failed": "Could not delete grade.",
+    "danger.transfer.select_grade": "Select a grade to transfer resources to",
+    "danger.transfer.select_subject": "Select a subject to transfer resources to",
+    "danger.transfer.transfer_and_delete": "Transfer then Delete",
+    "danger.transfer.select_target": "Please select a target to transfer resources to",
+    "danger.transfer.done": "Resources transferred from \"{name}\" to \"{target}\".",
+    "danger.transfer.done_subject": "Resources transferred from \"{name}\" to \"{target}\".",
     "error.page_title": "Access Error - Lumina Hub",
     "error_access_denied_badge": "Access Denied",
     "error_access_denied_message": "This page requires teacher or administrator privileges. Please log in with an authorized account.",
@@ -539,6 +591,16 @@ const TRANSLATIONS = {
     "settings.success.retention_updated": "Retention policy successfully updated to \"{policy}\".",
     "settings.timestamp": "Timestamp",
     "settings.title": "Settings & System Setup",
+    "settings.confirm.disable_admin_title": "Disable Default Admin",
+    "settings.confirm.disable_admin_body": "The default admin account (username: admin) will be blocked from login. You must have at least one other admin or teacher account to do this. Continue?",
+    "settings.confirm.disable_admin_btn": "Disable",
+    "settings.confirm.enable_admin_title": "Re-enable Default Admin",
+    "settings.confirm.enable_admin_body": "Reset the default admin password to lumina2026. Continue?",
+    "settings.confirm.enable_admin_btn": "Re-enable",
+    "settings.notif.admin_disabled": "Default admin account has been disabled.",
+    "settings.notif.disable_failed": "Failed to disable default admin.",
+    "settings.notif.admin_enabled": "Default admin account re-enabled. Password reset to lumina2026.",
+    "settings.notif.enable_failed": "Failed to re-enable.",
     "settings.username_label": "Username:",
     "settings_language_description": "Choose your preferred language for the dashboard.",
     "settings_language_title": "Language",
@@ -580,6 +642,7 @@ const TRANSLATIONS = {
     "students.all_grades": "All Grades",
     "students.days_ago": "{n}d ago",
     "students.filter_grade": "Filter by grade",
+    "students.filter_at_risk": "At-risk filter",
     "students.hours_ago": "{n}h ago",
     "students.just_now": "Just now",
     "students.minutes_ago": "{n}m ago",
@@ -602,12 +665,15 @@ const TRANSLATIONS = {
     "students_saved_abbr": "saved",
     "students_failed_load": "Failed to load students.",
     "students_hours_abbr": "h",
+    "students_minutes_abbr": "m",
     "students_last_updated": "Last updated",
     "students_loading": "Loading students…",
     "students_none_registered": "No students registered yet. Students will appear here once they register through the app.",
     "students_refresh": "Refresh",
+    "students_filters": "Filters",
     "students_search_label": "Search",
     "students_unknown": "Unknown",
+    "students_ungraded": "Ungraded",
     "teacher.help.body": "View setup guides, troubleshooting tips, and admin instructions.",
     "teacher.help.header": "Need help?",
     "teacher.help.link": "Teacher Guide",
@@ -637,12 +703,12 @@ const TRANSLATIONS = {
     "welcome.for_teachers": "For Teachers",
     "welcome.getting_started": "Getting Started",
     "welcome.guide.download_offline_body": "Tap the download icon on any resource to save it to your phone. Downloaded resources work <strong>even when you’re not connected</strong> to the EduMesh network. Perfect for studying anywhere.",
-    "welcome.guide.for_teachers_body": "Teachers can log in above using their credentials. Once logged in, you can <strong>upload resources</strong>, <strong>view student analytics</strong>, <strong>manage grades and subjects</strong>, and <strong>configure the hub</strong> — including changing passwords and managing storage. Visit the <strong>Teacher Guide</strong> in the sidebar after logging in for detailed instructions.",
-    "welcome.guide.getting_started_body": "<li><strong>Connect to Wi-Fi</strong> — Turn on your phone’s Wi-Fi and join the network named <strong>EduMesh</strong>. No password needed.</li><li><strong>Open the welcome page</strong> — Once connected, a login screen should appear automatically (captive portal). If not, open your browser and go to <strong>http://lumina.hub:8000</strong>.</li><li><strong>Download the app</strong> — Tap the <strong>Download App</strong> button in the top-right corner of this page to get the EduMesh APK.</li><li><strong>Install the app</strong> — Open the downloaded file and tap Install. If your phone asks, allow “Install from Unknown Sources” in Settings.</li><li><strong>Register</strong> — Open the EduMesh app, enter your name, and you’re in. You’ll be assigned a permanent student ID.</li><li><strong>Start learning</strong> — Browse textbooks, videos, past papers, and more. Tap any resource to view it, or download it to access offline.</li>",
-    "welcome.guide.tracking_privacy_body": "<p style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;\">The app tracks your <strong>study time</strong> using a built-in timer and counts your <strong>daily streak</strong> of consecutive study days. This helps teachers see how the class is engaging with materials.</p><p style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;margin-top:0.5rem;\"><strong>Your privacy matters.</strong> Individual details — like which PDF you opened or what you searched for — stay on your phone and are <strong>never sent</strong> to the Hub. Only your total weekly minutes, streak days, and resource count are shared.</p>",
+    "welcome.guide.for_teachers_body": "Teachers can log in above using their credentials. Once logged in, you can <strong>upload resources</strong>, <strong>view student analytics</strong>, <strong>manage grades and subjects</strong>, and <strong>configure the hub</strong> -- including changing passwords and managing storage. Visit the <strong>Teacher Guide</strong> in the sidebar after logging in for detailed instructions.",
+    "welcome.guide.getting_started_body": "<li><strong>Connect to Wi-Fi</strong> -- Turn on your phone’s Wi-Fi and join the network named <strong>EduMesh</strong>. No password needed.</li><li><strong>Open the welcome page</strong> -- Once connected, a login screen should appear automatically (captive portal). If not, open your browser and go to <strong>http://lumina.hub:8000</strong>.</li><li><strong>Download the app</strong> -- Tap the <strong>Download App</strong> button in the top-right corner of this page to get the EduMesh APK.</li><li><strong>Install the app</strong> -- Open the downloaded file and tap Install. If your phone asks, allow “Install from Unknown Sources” in Settings.</li><li><strong>Register</strong> -- Open the EduMesh app, enter your name, and you’re in. You’ll be assigned a permanent student ID.</li><li><strong>Start learning</strong> -- Browse textbooks, videos, past papers, and more. Tap any resource to view it, or download it to access offline.</li>",
+    "welcome.guide.tracking_privacy_body": "<p style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;\">The app tracks your <strong>study time</strong> using a built-in timer and counts your <strong>daily streak</strong> of consecutive study days. This helps teachers see how the class is engaging with materials.</p><p style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;margin-top:0.5rem;\"><strong>Your privacy matters.</strong> Individual details -- like which PDF you opened or what you searched for -- stay on your phone and are <strong>never sent</strong> to the Hub. Only your total weekly minutes, streak days, and resource count are shared.</p>",
     "welcome.guide.troubleshooting_body": "<li><strong>Can’t connect to Wi-Fi?</strong> Make sure the Hub laptop is powered on and broadcasting. Ask your teacher to check.</li><li><strong>Captive portal not opening?</strong> Open your browser and manually go to <strong>http://lumina.hub:8000</strong>.</li><li><strong>App won’t install?</strong> Go to Settings > Security and enable “Install from Unknown Sources”. Then try again.</li><li><strong>App is slow or crashing?</strong> Close other apps, restart EduMesh, or clear app data from Android Settings and reinstall.</li>",
-    "welcome.guide.using_app_body": "<p style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;margin-bottom:0.75rem;\">The EduMesh app has four tabs at the bottom:</p><ul style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;padding-left:1.25rem;\"><li><strong>Dashboard</strong> — See your study stats, recent activity, and quick-access resources.</li><li><strong>Browse</strong> — Explore all available resources by subject or grade. Search by keyword.</li><li><strong>Saved</strong> — View resources you’ve bookmarked or downloaded for offline use.</li><li><strong>Profile</strong> — View your weekly study time, streak, and saved resource count.</li></ul>",
-    "welcome.hero.subtitle": "Access textbooks, videos, and study materials from the local mesh — no internet required.",
+    "welcome.guide.using_app_body": "<p style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;margin-bottom:0.75rem;\">The EduMesh app has four tabs at the bottom:</p><ul style=\"font-size:0.875rem;color:var(--text-secondary);line-height:1.7;padding-left:1.25rem;\"><li><strong>Dashboard</strong> -- See your study stats, recent activity, and quick-access resources.</li><li><strong>Browse</strong> -- Explore all available resources by subject or grade. Search by keyword.</li><li><strong>Saved</strong> -- View resources you’ve bookmarked or downloaded for offline use.</li><li><strong>Profile</strong> -- View your weekly study time, streak, and saved resource count.</li></ul>",
+    "welcome.hero.subtitle": "Access textbooks, videos, and study materials from the local mesh -- no internet required.",
     "welcome.hero.title": "Your Offline Learning Network",
     "welcome.invalid_creds": "Invalid credentials. Please try again.",
     "welcome.password": "Password",
@@ -657,7 +723,7 @@ const TRANSLATIONS = {
     "welcome.teacher_login": "Educator Access",
     "welcome.teacher_subtitle": "Manage resources and monitor the mesh network.",
     "welcome.teacher_title": "Teacher Login",
-    "welcome.tracking_privacy": "Study Tracking &amp; Privacy",
+    "welcome.tracking_privacy": "Study Tracking & Privacy",
     "welcome.troubleshooting": "Troubleshooting",
     "welcome.unavailable": "Unavailable",
     "welcome.username": "Username",
@@ -672,8 +738,54 @@ const TRANSLATIONS = {
     "welcome.stat_subjects": "Subjects",
     "welcome.uptime": "Uptime",
     "welcome.what_is": "What is Lumina Hub?",
-    "welcome.what_is_body": "Lumina Hub is a local mesh server that delivers educational resources — textbooks, lecture videos, and past papers — directly to your device without using cellular data or internet.",
+    "welcome.what_is_body": "Lumina Hub is a local mesh server that delivers educational resources -- textbooks, lecture videos, and past papers -- directly to your device without using cellular data or internet.",
     "welcome_loading": "Loading…",
+    "content.notif.select_subject": "Please select a subject.",
+    "content.notif.topic_name_required": "Topic name is required.",
+    "content.notif.topic_create_failed": "Failed to add topic.",
+    "content.notif.topic_delete_failed": "Failed to delete topic.",
+    "content.notif.topic_update_failed": "Failed to update topic.",
+    "content.notif.resource_updated": "Resource updated.",
+    "content.notif.resource_update_failed": "Failed to update resource.",
+    "content.notif.load_failed": "Could not load resources.",
+    "content.notif.title_required": "Title is required.",
+    "content.topics.resource_count": "{count} resource(s) are assigned to this topic.",
+    "content.topics.no_match": "No topics match your search.",
+    "content.topics.select_subject": "Select subject...",
+    "content.quiz.questions_empty": "No questions added yet.",
+    "content.quiz.export_empty": "Add at least one question before exporting.",
+    "content.quiz.file_description": "Quiz file",
+    "content.quiz.import_invalid": "Invalid quiz file: no questions found.",
+    "content.quiz.imported_count": "Imported {count} questions.",
+    "content.quiz.import_parse_error": "Failed to parse quiz file.",
+    "content.quiz.add_questions": "Add at least one question.",
+    "content.quiz.quiz_created": "Quiz created.",
+    "content.quiz.create_failed": "Failed to create quiz.",
+    "content.quiz.save_failed": "Save failed: {message}",
+    "content.quiz.edit_question": "Edit Question",
+    "content.quiz.new_question": "New Question",
+    "content.quiz.q_text_required": "Question text is required.",
+    "content.quiz.answer_required": "Answer is required.",
+    "content.quiz.options_required": "At least 2 options required.",
+    "content.quiz.correct_required": "Select a correct answer.",
+    "content.all_subjects_label": "All Subjects",
+    "content.load_resources_http_error": "Could not load resources (HTTP {status}).",
+    "content.library_no_resources": "No resources found.",
+    "content.topics_general_no_topic": "General (No Topic)",
+    "content.general": "General",
+    "courses.general_subject": "General",
+    "courses.quiz.export_empty": "Add at least one question before exporting.",
+    "courses.quiz.import_invalid": "Invalid quiz file: no questions found.",
+    "courses.quiz.imported_count": "Imported {count} questions.",
+    "courses.quiz.import_parse_error": "Failed to parse quiz file.",
+    "courses.quiz.save_failed": "Save failed: {message}",
+    "index.uptime_na": "N/A",
+    "settings.status_enabled": "Enabled",
+    "settings.status_disabled": "Disabled",
+    "danger.no_matching_grades": "No grades match your search.",
+    "danger.no_subjects_found": "No subjects found.",
+    "danger.delete_subject_btn": "Delete",
+    "danger.subject_class_all": "All",
   }
 };
 /**
@@ -734,7 +846,7 @@ async function loadTranslations(code) {
             }
         }
     } catch (e) {
-        // File not found — use defaults
+        // File not found -- use defaults
     }
     applyLanguage();
 }
@@ -755,7 +867,7 @@ function applyLanguage() {
             } else if (el.tagName === 'META') {
                 el.setAttribute('content', translated);
             } else if (el.children.length > 0) {
-                // Has child elements (e.g. SVG icons) — find and update the trailing text node
+                // Has child elements (e.g. SVG icons) -- find and update the trailing text node
                 var last = el.lastChild;
                 if (last && last.nodeType === 3) {
                     last.textContent = ' ' + translated;
@@ -867,6 +979,10 @@ function initLangPicker() {
 
     const btn = document.createElement('button');
     btn.id = 'langPickerBtn';
+    btn.setAttribute('aria-haspopup', 'listbox');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-controls', 'langDropdown');
+    btn.setAttribute('aria-label', 'Language selection');
     btn.style.cssText = 'height:36px;border-radius:18px;border:1px solid var(--outline);background:var(--bg-surface);color:var(--text-primary);cursor:pointer;display:flex;align-items:center;gap:0.4rem;padding:0 0.75rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);font-family:inherit;font-size:0.8rem;font-weight:700;transition:all 0.2s;';
     const initialLang = LANGUAGES.find(function(l){ return l.code === currentLang; }) || LANGUAGES[0];
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span id="langPickerLabel">' + esc(initialLang.native) + '</span>';
@@ -879,12 +995,13 @@ function initLangPicker() {
 
     const overlay = document.createElement('div');
     overlay.id = 'langOverlay';
-    overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:999;';
     overlay.addEventListener('click', closeLangPicker);
     document.body.appendChild(overlay);
 
     const dd = document.createElement('div');
     dd.id = 'langDropdown';
+    dd.setAttribute('role', 'listbox');
+    dd.setAttribute('aria-label', 'Available languages');
     dd.style.cssText = 'display:none;position:fixed;top:3.75rem;right:1rem;width:220px;background:var(--bg-surface);border:1px solid var(--outline);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.2);z-index:1000;overflow:hidden;';
     dd.innerHTML = '<div style="padding:0.5rem;border-bottom:1px solid var(--outline);"><input id="langSearch" type="text" placeholder="' + __('sidebar.lang_search_placeholder') + '" style="width:100%;padding:0.4rem 0.6rem;font-size:0.8rem;font-family:inherit;border:1px solid var(--outline);border-radius:6px;background:var(--bg-surface);color:var(--text-primary);outline:none;box-sizing:border-box;"></div><div id="langList" style="overflow-y:auto;max-height:220px;"></div>';
     document.body.appendChild(dd);
@@ -915,7 +1032,7 @@ function renderLangList(query) {
     const filtered = query ? LANGUAGES.filter(function(l){ return l.name.toLowerCase().indexOf(query) !== -1 || l.native.indexOf(query) !== -1 || l.code.indexOf(query) !== -1; }) : LANGUAGES;
     list.innerHTML = filtered.map(function(l) {
         const active = l.code === currentLang;
-        return '<div class="lang-option' + (active ? ' active-lang' : '') + '" data-code="' + l.code + '" style="padding:0.5rem 0.75rem;cursor:pointer;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;border-radius:6px;"><span>' + esc(l.native) + '</span><span style="font-size:0.7rem;opacity:0.6;">' + esc(l.name) + '</span></div>';
+        return '<div class="lang-option' + (active ? ' active-lang' : '') + '" data-code="' + l.code + '" role="option" aria-selected="' + active + '" style="padding:0.5rem 0.75rem;cursor:pointer;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;border-radius:6px;"><span>' + esc(l.native) + '</span><span style="font-size:0.7rem;opacity:0.6;">' + esc(l.name) + '</span></div>';
     }).join('');
 }
 
@@ -1029,7 +1146,7 @@ function showNotification(notifId, msg, isError) {
 function renderUserInfo(username, role) {
     var el = document.getElementById('userInfo');
     if (!el || !role) return;
-    el.innerHTML = '<div style="font-weight: 800; font-size: 1rem; color: #fff; letter-spacing: -0.015em;">' + esc(role.toUpperCase()) + '</div>';
+    el.innerHTML = '<div style="font-weight: 800; font-size: 1.2rem; color: #fff; letter-spacing: -0.015em;">' + esc(role.toUpperCase()) + '</div>';
 }
 
 /**
@@ -1038,6 +1155,75 @@ function renderUserInfo(username, role) {
  * @param {string} title - Modal title text
  * @param {string} message - Modal body text
  * @param {boolean} isDanger - If true, danger (red) styling; if false, teal
+ * @param {string} [confirmText] - Optional text for the confirm button
+ * @returns {Promise<boolean>}
+ */
+/**
+ * Focus trap utility for accessible modals.
+ * Traps focus within the given element, handles Escape key, and restores focus on exit.
+ * @param {HTMLElement} modal - The modal element to trap focus within
+ * @param {HTMLElement} triggerEl - The element that triggered the modal (for focus restoration)
+ * @returns {Object} Object with activate(), deactivate() methods
+ */
+function createFocusTrap(modal, triggerEl) {
+    var focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    var focusableElements = [];
+    var firstFocusable = null;
+    var lastFocusable = null;
+    var keydownHandler = null;
+
+    function updateFocusableElements() {
+        focusableElements = Array.prototype.slice.call(modal.querySelectorAll(focusableSelectors))
+            .filter(function(el) { return el.offsetParent !== null && !el.disabled; });
+        firstFocusable = focusableElements[0];
+        lastFocusable = focusableElements[focusableElements.length - 1];
+    }
+
+    function handleKeydown(e) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            deactivate();
+            return;
+        }
+        if (e.key !== 'Tab') return;
+        updateFocusableElements();
+        if (focusableElements.length === 0) return;
+        if (e.shiftKey) {
+            if (document.activeElement === firstFocusable) {
+                e.preventDefault();
+                lastFocusable.focus();
+            }
+        } else {
+            if (document.activeElement === lastFocusable) {
+                e.preventDefault();
+                firstFocusable.focus();
+            }
+        }
+    }
+
+    function activate() {
+        updateFocusableElements();
+        if (firstFocusable) firstFocusable.focus();
+        keydownHandler = handleKeydown;
+        document.addEventListener('keydown', keydownHandler);
+    }
+
+    function deactivate() {
+        document.removeEventListener('keydown', keydownHandler);
+        if (triggerEl && typeof triggerEl.focus === 'function') {
+            triggerEl.focus();
+        }
+    }
+
+    return { activate: activate, deactivate: deactivate };
+}
+
+/**
+ * Shows a confirmation modal with the given title and message.
+ * Returns a promise that resolves to true (confirmed) or false (cancelled).
+ * @param {string} title - Modal title
+ * @param {string} message - Modal body text
+ * @param {boolean} [isDanger=true] - If true, uses danger (red) styling; if false, teal
  * @param {string} [confirmText] - Optional text for the confirm button
  * @returns {Promise<boolean>}
  */
@@ -1069,12 +1255,23 @@ function showConfirm(title, message, isDanger, confirmText) {
             modal.firstElementChild.style.border = '1px solid var(--outline)';
         }
         if (confirmText) confirmBtn.innerText = confirmText;
+
+        // Capture the element that triggered the modal for focus restoration
+        var triggerEl = document.activeElement;
+
         modal.classList.remove('hidden');
+
+        // Set up focus trap
+        var focusTrap = createFocusTrap(modal, triggerEl);
+        focusTrap.activate();
+
         var _confirmHandler = function() { cleanup(true); };
         var _cancelHandler = function() { cleanup(false); };
         confirmBtn.addEventListener('click', _confirmHandler);
         cancelBtn.addEventListener('click', _cancelHandler);
+
         function cleanup(value) {
+            focusTrap.deactivate();
             modal.classList.add('hidden');
             confirmBtn.removeEventListener('click', _confirmHandler);
             cancelBtn.removeEventListener('click', _cancelHandler);
@@ -1151,8 +1348,8 @@ async function loadWhoAmI() {
         userRole = data.role;
         sessionStorage.setItem('lumina-user', data.username);
         sessionStorage.setItem('lumina-role', data.role);
-        renderUserInfo(data.username, data.role);
         renderLayout();
+        renderUserInfo(data.username, data.role);
     } catch (e) {
         console.error('Error loading whoami info', e);
     }
@@ -1170,7 +1367,13 @@ async function checkSelfResetRequired() {
             var me = await res.json();
             loggedInUser = me.username;
             if (me.reset_required === 1) {
-                document.getElementById('forceResetModal').classList.remove('hidden');
+                var resetModal = document.getElementById('forceResetModal');
+                resetModal.classList.remove('hidden');
+                // Activate focus trap for accessibility
+                var focusTrap = createFocusTrap(resetModal, null);
+                focusTrap.activate();
+                // Store for cleanup on submit
+                resetModal._focusTrap = focusTrap;
             }
         }
     } catch (e) {
@@ -1234,9 +1437,15 @@ function toggleMobileMenu() {
  * HTML that was duplicated across all 8 dashboard pages.
  */
 function renderLayout() {
+    if (window.__luminaLayoutRendered) return;
+    if (document.getElementById('welcome-content')) return;
+    window.__luminaLayoutRendered = true;
     var aside = document.querySelector('aside');
     var bottomNav = document.getElementById('bottomNav');
     if (!aside) return;
+    // Add ARIA attributes to sidebar
+    aside.setAttribute('role', 'navigation');
+    aside.setAttribute('aria-label', 'Main navigation');
     // Create bottomNav if missing (static pages don't have it)
     if (!bottomNav) {
         bottomNav = document.createElement('div');
@@ -1244,15 +1453,18 @@ function renderLayout() {
         bottomNav.className = 'bottom-nav';
         document.body.appendChild(bottomNav);
     }
+    // Add ARIA attributes to bottom nav
+    bottomNav.setAttribute('role', 'navigation');
+    bottomNav.setAttribute('aria-label', 'Bottom navigation');
 
     // Always re-render (role may have changed since last render)
 
     var path = location.pathname.replace(/\/+$/, '');
-    var mapping = { '/static/index':'home','/static/courses':'courses','/static/manage-content':'content','/static/manage-security':'security','/static/students':'students','/static/student-detail':'students','/static/manage-help':'help','/static/manage-danger':'danger' };
+    var mapping = { '/static/index':'home','/static/courses':'courses','/static/manage-content':'content','/static/manage-settings':'settings','/static/students':'students','/static/student-detail':'students','/static/manage-help':'help','/static/manage-danger':'danger' };
     var key = mapping[path] || '';
-    var useAccount = key === 'security' && path === '/static/manage-security';
+    var useAccount = key === 'settings' && path === '/static/manage-settings';
 
-    function idFor(k) { return useAccount && k === 'security' ? 'account' : k; }
+    function idFor(k) { return k === 'settings' ? 'account' : k; }
 
     /* All nav-item SVGs (inline, one per entry) */
     var HOME_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
@@ -1263,14 +1475,15 @@ function renderLayout() {
     var HELP_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>';
     var DANGER_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="danger-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>';
     var LOGOUT_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>';
+    var GEAR_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 
     var navList = [
-        { k:'home',     href:'/static/index',               svg:HOME_SVG,      sideLabel:'Home',           botLabel:'Home' },
-        { k:'content',  href:'/static/manage-content',      svg:FILE_SVG,      sideLabel:'Content Manager',botLabel:'Content' },
-        { k:'courses',  href:'/static/courses',             svg:COURSES_SVG,   sideLabel:'Courses',        botLabel:'Courses' },
-        { k:'security', href:'/static/manage-security',     svg:LOCK_SVG,   sideLabel:'Account',        botLabel:'Account' },
-        { k:'students', href:'/static/students',            svg:USERS_SVG,  sideLabel:'Students',       botLabel:'Students' },
-        { k:'help',     href:'/static/manage-help#teacher-guide',svg:HELP_SVG,sideLabel:'Teacher Guide', botLabel:'Guide' },
+        { k:'home',      href:'/static/index',               svg:HOME_SVG,      sideLabel:'Home',           botLabel:'Home' },
+        { k:'content',   href:'/static/manage-content',      svg:FILE_SVG,      sideLabel:'Content Manager',botLabel:'Content' },
+        { k:'courses',   href:'/static/courses',             svg:COURSES_SVG,   sideLabel:'Courses',        botLabel:'Courses' },
+        { k:'students',  href:'/static/students',            svg:USERS_SVG,     sideLabel:'Students',       botLabel:'Students' },
+        { k:'help',      href:'/static/manage-help#teacher-guide',svg:HELP_SVG,sideLabel:'Teacher Guide', botLabel:'Guide' },
+        { k:'settings',  href:'/static/manage-settings',     svg:GEAR_SVG,      sideLabel:'Settings',       botLabel:'Settings' },
     ];
     if (userRole === 'admin') {
         navList.push({ k:'danger',   href:'/static/manage-danger',       svg:DANGER_SVG, sideLabel:'Danger Zone',    botLabel:'Danger' });
@@ -1312,6 +1525,9 @@ function renderModals() {
     var confirmModal = document.createElement('div');
     confirmModal.id = 'globalConfirmModal';
     confirmModal.className = 'hidden popup';
+    confirmModal.setAttribute('role', 'dialog');
+    confirmModal.setAttribute('aria-modal', 'true');
+    confirmModal.setAttribute('aria-labelledby', 'confirmModalTitle');
     confirmModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 30000; transition: all 0.3s ease;';
     confirmModal.innerHTML =
         '<div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.25rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">' +
@@ -1325,17 +1541,20 @@ function renderModals() {
     var resetModal = document.createElement('div');
     resetModal.id = 'forceResetModal';
     resetModal.className = 'hidden popup';
+    resetModal.setAttribute('role', 'dialog');
+    resetModal.setAttribute('aria-modal', 'true');
+    resetModal.setAttribute('aria-labelledby', 'forceResetModalTitle');
     resetModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20000;';
     resetModal.innerHTML =
         '<div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.5rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">' +
         '<div style="margin: 0 auto 1.5rem; text-align: center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' +
-        '<h3 style="font-size: 1.35rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Password Reset Required</h3>' +
+        '<h3 id="forceResetModalTitle" style="font-size: 1.35rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Password Reset Required</h3>' +
         '<p style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.5rem;">An administrator has forced a password reset on your account. You must change your password before you can proceed.</p>' +
         '<div id="forceResetNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center;"></div>' +
         '<div class="form-group" style="text-align: left; margin-bottom: 1rem;">' +
         '<label for="forceNewPwd" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--on-surface); opacity: 0.7; margin-bottom: 0.375rem;">New Password</label>' +
         '<input type="password" id="forceNewPwd" placeholder="Enter new password" style="width: 100%; padding: 0.65rem; border: 1px solid var(--outline); border-radius: 6px; background: var(--surface); color: var(--on-surface);">' +
-        '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase &amp; a digit.</div></div>' +
+        '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;">Must be 8+ chars, with uppercase, lowercase & a digit.</div></div>' +
         '<div class="form-group" style="text-align: left; margin-bottom: 1.5rem;">' +
         '<label for="forceConfirmPwd" style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--on-surface); opacity: 0.7; margin-bottom: 0.375rem;">Confirm New Password</label>' +
         '<input type="password" id="forceConfirmPwd" placeholder="Confirm new password" style="width: 100%; padding: 0.65rem; border: 1px solid var(--outline); border-radius: 6px; background: var(--surface); color: var(--on-surface);"></div>' +
@@ -1351,13 +1570,14 @@ function renderModals() {
  * Path-to-key mapping covers all static dashboard pages.
  */
 function initNav() {
+    if (document.getElementById('welcome-content')) return;
     renderLayout();
     const path = location.pathname.replace(/\/+$/, '');
     const mapping = {
         '/static/index': 'home',
         '/static/courses': 'courses',
         '/static/manage-content': 'content',
-        '/static/manage-security': 'security',
+        '/static/manage-settings': 'settings',
         '/static/students': 'students',
         '/static/student-detail': 'students',
         '/static/manage-help': 'help',
@@ -1365,7 +1585,7 @@ function initNav() {
     };
     const key = mapping[path] || '';
     if (key) {
-        const suffix = (key === 'security' && path === '/static/manage-security') ? 'account' : key;
+        const suffix = (key === 'settings' && path === '/static/manage-settings') ? 'account' : key;
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
         const navEl = document.getElementById('nav-' + suffix);
@@ -1387,7 +1607,7 @@ function initCurrentPage() {
         '/static/index': 'home',
         '/static/courses': 'courses',
         '/static/manage-content': 'content',
-        '/static/manage-security': 'security',
+        '/static/manage-settings': 'settings',
         '/static/students': 'students',
         '/static/student-detail': 'student-detail',
         '/static/manage-help': 'help',

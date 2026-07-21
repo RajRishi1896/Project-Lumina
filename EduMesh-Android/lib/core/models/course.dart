@@ -1,3 +1,5 @@
+import '../recommendation/on_device_scorer.dart';
+
 /// The type of a course resource.
 enum CourseType {
   /// Textbooks and reference books.
@@ -295,30 +297,9 @@ class CourseResource {
 
 /// A course containing metadata and optionally its resources.
 class Course {
-  // -- Static cluster map --
-
-  /// Maps a subject ID to its cluster name.
-  static const Map<String, String> _clusterMap = {
-    'phy': 'science',
-    'chem': 'science',
-    'bio': 'science',
-    'sci': 'science',
-    'math': 'math',
-    'cs': 'math',
-    'soc': 'social',
-    'his': 'social',
-    'geo': 'social',
-    'civ': 'social',
-    'com': 'commerce',
-    'eco': 'commerce',
-    'eng': 'languages',
-    'hin': 'languages',
-    'kan': 'languages',
-  };
-
   /// Returns the cluster name for this course's subject.
-  /// Unknown subjects fall back to `'general'`.
-  String get cluster => _clusterMap[subject.toLowerCase()] ?? 'general';
+  /// Delegates to [OnDeviceScorer.clusterOf] as single source of truth.
+  String get cluster => OnDeviceScorer.clusterOf(subject);
 
   // -- Fields --
 

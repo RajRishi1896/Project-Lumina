@@ -4,7 +4,7 @@
 #          and configures NetworkManager with a WPA2-PSK profile.
 # Usage:   sudo ./start_hotspot.sh
 # Args:    None
-# Idempotent: Yes — deletes any existing LuminaHub connection profile before
+# Idempotent: Yes -- deletes any existing LuminaHub connection profile before
 #             recreating it.
 set -e
 

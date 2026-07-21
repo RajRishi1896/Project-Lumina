@@ -1,10 +1,8 @@
-"""System routes — health, ping, captive portal, static files, whoami."""
-import time
+"""System routes -- health, ping, captive portal, static files, whoami."""
 import os
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
-from app.database import _startup_time
 from app.dependencies import _extract_user
 from app.models import StatusResponse, WhoamiResponse
 
@@ -22,27 +20,17 @@ async def _error_response(reason: str) -> HTMLResponse:
                 return f.read()
         content = await asyncio.to_thread(_read_error_page)
     except FileNotFoundError:
-        return HTMLResponse("<h1>Error</h1>", status_code=404)
+        return HTMLResponse("<h1>Error</h1>", status_code=404)  # i18n: fallback error page when error.html file is missing
     reasons = {
-        "not_found": ("Page Not Found", "The page you are looking for does not exist.", "notfound", "Not Found"),
-        "access_denied": ("Access Denied", "You do not have permission to view this page.", "denied", "Access Denied"),
-        "session_expired": ("Session Expired", "Your session has expired. Please log in again.", "expired", "Session Expired"),
+        "not_found": ("Page Not Found", "The page you are looking for does not exist.", "notfound", "Not Found"),  # i18n: error page title and message
+        "access_denied": ("Access Denied", "You do not have permission to view this page.", "denied", "Access Denied"),  # i18n: error page title and message
+        "session_expired": ("Session Expired", "Your session has expired. Please log in again.", "expired", "Session Expired"),  # i18n: error page title and message
     }
     title, message, badge_cls, badge_text = reasons.get(reason, ("Error", "An error occurred.", "notfound", "Error"))
     content = content.replace("{{TITLE}}", title).replace("{{MESSAGE}}", message).replace("{{BADGE}}", badge_cls).replace("{{BADGE_TEXT}}", badge_text)
     return HTMLResponse(content, status_code={
         "not_found": 404, "access_denied": 403, "session_expired": 401
     }.get(reason, 500))
-
-
-@router.get("/api/health", summary="Health check endpoint", description="Returns server status and uptime in seconds since the application started.", tags=["System"], responses={200: {"description": "Server is healthy with uptime info"}})
-async def health():
-    """Check the server's health and return uptime.
-
-    Returns:
-        Dict with status and uptime in seconds.
-    """
-    return {"status": "ok", "uptime": time.time() - _startup_time}
 
 
 @router.get("/ping", response_model=StatusResponse, summary="Ping server", description="Simple liveness probe. Returns a pong response used by the Flutter app's connectivity heartbeat.", tags=["System"], responses={200: {"description": "Pong response indicating the server is alive"}})
@@ -164,7 +152,7 @@ async def serve_static(path: str, request: Request):
         user = await _extract_user(request)
         if user["role"] not in ("teacher", "admin"):
             return await _error_response("access_denied")
-        if user["role"] == "teacher" and path in ("manage-danger", "manage-settings", "manage-danger.html", "manage-settings.html"):
+        if user["role"] == "teacher" and path in ("manage-danger", "manage-danger.html"):
             return await _error_response("access_denied")
         file_path = _resolve(path)
         if file_path:

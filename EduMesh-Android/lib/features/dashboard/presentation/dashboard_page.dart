@@ -36,11 +36,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
 
 
-  String _totalStorageUsedStr = 'Calculating...';
-  String _totalCapacityStr = 'Calculating...';
-  String _appUsedStr = 'Calculating...';
-  String _otherUsedStr = 'Calculating...';
-  String _freeRemainingStr = 'Calculating...';
+  String _totalStorageUsedStr = '';
+  String _totalCapacityStr = '';
+  String _appUsedStr = '';
+  String _otherUsedStr = '';
+  String _freeRemainingStr = '';
 
   int _appFlex = 1;
   int _otherFlex = 1;
@@ -270,6 +270,8 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // Stub: recently-viewed section removed -- no activity history table to query.
+  // Re-add when a "recently viewed" data source is implemented.
   Widget _buildRecentlyViewedSection(BuildContext context) {
     return const SizedBox.shrink();
   }
@@ -332,7 +334,7 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_totalStorageUsedStr != 'Calculating...') ...[
+              if (_totalStorageUsedStr.isNotEmpty) ...[
                 Text(_totalStorageUsedStr, style: tt.titleSmall?.copyWith(color: cs.onSurface)),
                 SizedBox(height: AppSpacing.xs.h),
                 Text(_totalCapacityStr, style: tt.bodySmall?.copyWith(fontWeight: AppSpacing.weightDisplay, color: LuminaColors.academicTeal)),

@@ -81,7 +81,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
         });
       }
     } catch (e) {
-      debugPrint('CoursePlayerPage: _loadProgress failed — $e');
+      debugPrint('CoursePlayerPage: _loadProgress failed -- $e');
     }
   }
 
@@ -110,7 +110,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
         'current_position': newPos,
       }, where: 'course_id = ?', whereArgs: [widget.course.id]);
     } catch (e) {
-      debugPrint('CoursePlayerPage: _markCompleted failed — $e');
+      debugPrint('CoursePlayerPage: _markCompleted failed -- $e');
     }
   }
 

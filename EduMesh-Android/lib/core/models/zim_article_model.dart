@@ -3,12 +3,19 @@ library;
 
 /// A ZIM archive uploaded to the hub.
 class ZimArchive {
+  /// Server-assigned identifier (e.g. `ZIM-{uuid}`).
   final String id;
+  /// Original upload filename on the server filesystem.
   final String filename;
+  /// Human-readable archive title from ZIM metadata.
   final String title;
+  /// Number of articles extracted from this archive.
   final int articleCount;
+  /// ISO 639-1 language code (e.g. `en`, `hi`).
   final String language;
+  /// UTC ISO 8601 timestamp of when the archive was uploaded.
   final String uploadedAt;
+  /// Archive file size in bytes.
   final int fileSize;
 
   ZimArchive({
@@ -36,9 +43,13 @@ class ZimArchive {
 
 /// A single article within a ZIM archive.
 class ZimArticle {
+  /// Unique article identifier within the archive.
   final String articleId;
+  /// Human-readable article title.
   final String title;
+  /// Identifier of the parent [ZimArchive].
   final String archiveId;
+  /// Whether a thumbnail has been extracted for this article.
   final bool hasThumbnail;
 
   ZimArticle({

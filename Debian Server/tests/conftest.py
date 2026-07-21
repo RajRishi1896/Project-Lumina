@@ -1,9 +1,11 @@
 """pytest fixtures for Lumina Hub API tests."""
 import os
 import sys
+import json
 import tempfile
 import asyncio
 import logging
+import unittest.mock
 import pytest
 
 _tmp = tempfile.mkdtemp()
@@ -26,13 +28,20 @@ app.database.UPLOAD_DIR = _upload_dir
 app.database.THUMBNAILS_DIR = _thumb_dir
 app.database.PROFILE_ICONS_DIR = _profile_dir
 
-for h in app.database.admin_logger.handlers[:]:
-    app.database.admin_logger.removeHandler(h)
-h = logging.FileHandler(_admin_log)
-h.setFormatter(logging.Formatter('%(asctime)s - %(message)s', datefmt='%Y-%m-%dT%H:%M:%S'))
-app.database.admin_logger.addHandler(h)
+# Redirect audit log writes to the temp directory
+import app.audit
+app.audit._DB_PATH = _db_path
+_orig_write = app.audit._write_audit_line
+def _patched_write_audit_line(event, summary):
+    """Write audit events to the test temp directory instead of data/."""
+    try:
+        with open(_admin_log, "a") as f:
+            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+app.audit._write_audit_line = _patched_write_audit_line
 
-# Now safe to import the rest — DB values are already overridden
+# Now safe to import the rest -- DB values are already overridden
 from httpx import ASGITransport, AsyncClient
 from app.api import app
 

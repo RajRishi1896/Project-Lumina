@@ -1,4 +1,4 @@
-"""Async SQLite helpers — wraps sqlite3 calls in a dedicated thread pool.
+"""Async SQLite helpers -- wraps sqlite3 calls in a dedicated thread pool.
 
 Every function opens its own connection and closes it automatically.
 A dedicated ThreadPoolExecutor (20 workers) prevents the 6-worker default
@@ -15,7 +15,7 @@ from app.database import DB_PATH
 
 TIMEOUT = 5.0
 
-# Dedicated executor — 20 workers handles 250 concurrent students with
+# Dedicated executor -- 20 workers handles 250 concurrent students with
 # headroom for burst activity.  On 2-core Celeron the default is only 6.
 # ponytail: hardcoded cap, make configurable if deployed on 8+ core hw.
 _DB_EXECUTOR = ThreadPoolExecutor(max_workers=20, thread_name_prefix="db")
@@ -25,7 +25,7 @@ def _connect():
     """Open a connection and apply performance pragmas.
 
     Every connection from this module goes through here so the pragmas
-    are always set — no sqlite3.connect() calls outside this module.
+    are always set -- no sqlite3.connect() calls outside this module.
     """
     conn = sqlite3.connect(DB_PATH, timeout=TIMEOUT, check_same_thread=False)
     conn.row_factory = sqlite3.Row
@@ -39,7 +39,7 @@ def _connect():
 async def db_fetch(sql: str, params: tuple = ()) -> list:
     """Fetch all rows from a SELECT, running entirely in the thread pool.
 
-    Opens its own connection — safe for concurrent hot-path use.
+    Opens its own connection -- safe for concurrent hot-path use.
     """
     def _fetch():
         conn = _connect()
@@ -119,11 +119,11 @@ async def db_conn():
     """Async context manager for multi-statement transactions.
 
     Yields an open connection with pragmas already applied.  The *entire*
-    ``async with`` block runs inside the thread pool — no queries leak
+    ``async with`` block runs inside the thread pool -- no queries leak
     onto the event loop.
 
     Prefer the per-query helpers (``db_fetch`` etc.) for single-query
-    hot paths — they are leaner and avoid the context manager overhead.
+    hot paths -- they are leaner and avoid the context manager overhead.
     """
     loop = asyncio.get_running_loop()
     conn = await loop.run_in_executor(_DB_EXECUTOR, _connect)

@@ -1,6 +1,10 @@
 import '../models/course.dart';
 import '../storage/db_helper.dart';
 
+/// Offline recommendation engine that scores courses by cluster affinity, grade match, and recency.
+///
+/// Uses study-time data from the local activity table to rank subject clusters,
+/// then scores unenrolled published courses against that ranking.
 class OnDeviceScorer {
   static final Map<String, List<String>> _clusters = {
     'science': ['phy', 'chem', 'bio', 'sci'],
@@ -11,6 +15,7 @@ class OnDeviceScorer {
     'general': ['gen'],
   };
 
+  /// Returns the content cluster name for a given [subject] code.
   static String clusterOf(String subject) {
     for (final entry in _clusters.entries) {
       if (entry.value.contains(subject.toLowerCase())) return entry.key;
@@ -18,6 +23,7 @@ class OnDeviceScorer {
     return 'general';
   }
 
+  /// Scores all unenrolled published courses and returns them sorted by relevance.
   static Future<List<(Course, double)>> recommend(
       String studentId, String grade) async {
     final db = await DBHelper.instance.database;
@@ -129,6 +135,7 @@ class OnDeviceScorer {
     return scored;
   }
 
+  /// Returns the top [limit] recommended courses the student has not yet enrolled in.
   static Future<List<Course>> getRecommendedCourses(
       String studentId, String grade,
       {int limit = 8}) async {
@@ -136,6 +143,7 @@ class OnDeviceScorer {
     return scored.take(limit).map((e) => e.$1).toList();
   }
 
+  /// Returns the number of days since [c] was published, or -1 if the date is unparseable.
   static int _computeDaysSincePublished(Course c, [DateTime? now]) {
     final ts = c.createdAt ?? c.updatedAt;
     if (ts == null || ts.isEmpty) return -1;

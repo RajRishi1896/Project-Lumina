@@ -1,7 +1,7 @@
 # Implementation Plan
 
 Phase 1 (audit fixes, performance, i18n, theme) is complete. This plan covers
-Phase 2 — features and infrastructure for beta production test.
+Phase 2 -- features and infrastructure for beta production test.
 
 ## Execution Order
 
@@ -43,11 +43,11 @@ resource detail and web resource table tooltip.
 Eliminate white flash between page loads. ~100 lines JS, zero server changes.
 
 **In `lumina.js`:**
-- `navigateTo(url)` — fetch full HTML via `fetch()`, parse with `DOMParser`,
+- `navigateTo(url)` -- fetch full HTML via `fetch()`, parse with `DOMParser`,
   swap `#app-content` innerHTML, `history.pushState()`, re-run
   `applyLanguage()` + `initCurrentPage()`
-- `initCurrentPage()` — switch on URL path to call the right init function
-- `window.onpopstate` — handle back/forward via `navigateTo(url, false)`
+- `initCurrentPage()` -- switch on URL path to call the right init function
+- `window.onpopstate` -- handle back/forward via `navigateTo(url, false)`
 - Sidebar `<a>` clicks intercepted: `preventDefault()` → `navigateTo(url)`
 
 **In each of 9 HTML pages:**
@@ -62,7 +62,7 @@ Eliminate white flash between page loads. ~100 lines JS, zero server changes.
 ### 4. Weakest Student Flagging
 Surface students with zero activity in N days on the students list.
 
-**Server — new route in `teacher_students.py`:**
+**Server -- new route in `teacher_students.py`:**
 ```
 GET /teacher/at-risk-students?days=3
 ```
@@ -77,7 +77,7 @@ Query returns students with no activity in N days.
 ### 5. Sort-by for Students Tab
 Sort dropdown on the students list.
 
-**Frontend — `students.html`:**
+**Frontend -- `students.html`:**
 - Sort options: Name, Study Time (high/low), Last Active, Saved Resources
 - Client-side sort of existing card data
 
@@ -86,7 +86,7 @@ Sort dropdown on the students list.
 ### 6. Tests
 Run before beta prod: `pytest Debian\ Server/tests/ && flutter test`
 
-**Server tests — `Debian Server/tests/`:**
+**Server tests -- `Debian Server/tests/`:**
 ```
 tests/
   conftest.py     # TestClient fixture + test DB setup/teardown
@@ -99,7 +99,7 @@ tests/
   - Seed demo data: 1 admin, 1 teacher, 3 students, 3 resources, activity records
   - Teardown: remove `data/test.db` after session
 
-- `test_api.py` — 6 test functions:
+- `test_api.py` -- 6 test functions:
 
 | Test | Assertion |
 |------|-----------|
@@ -110,7 +110,7 @@ tests/
 | `test_rate_limiting` | 11 rapid failed logins → 11th returns 429 |
 | `test_list_resources` | `GET /resources` → 200 + returns seeded resources |
 
-**Flutter — keep existing 1 smoke test.** Validates `LuminaApp` renders a `MaterialApp`.
+**Flutter -- keep existing 1 smoke test.** Validates `LuminaApp` renders a `MaterialApp`.
 Catching widget rendering errors would require mocking Dio, DB, connectivity
 (~100× more test code, marginal value).
 
@@ -119,11 +119,11 @@ Catching widget rendering errors would require mocking Dio, DB, connectivity
 ### 7. .gitignore
 Add explicit entry for test DB: `data/test.db`
 
-### 8. LMS — Analytics Extension
+### 8. LMS -- Analytics Extension
 Extend `/student/analytics` to return course completion data so the teacher
 portal and student profile show accurate course stats.
 
-**Server — `student.py`:**
+**Server -- `student.py`:**
 - Add `courses_completed` (count of course_progress where completed=1)
 - Add `courses_in_progress` (count where completed=0)
 - Add `courses` array with `{id, title, progress_percent}` for each enrolled course
@@ -131,10 +131,10 @@ portal and student profile show accurate course stats.
 **Files:** `student.py`
 **~15 lines**
 
-### 9. LMS — Study/Quiz Reminder Notifications
+### 9. LMS -- Study/Quiz Reminder Notifications
 Add reminder scheduling to encourage consistent study habits.
 
-**Flutter — `notification_service.dart`:**
+**Flutter -- `notification_service.dart`:**
 - Add `study_reminder_channel` to notification channels
 - Add `scheduleStudyReminder()` / `scheduleQuizReminder()` methods
 - Use `android_alarm_manager` or `workmanager` for scheduling
@@ -142,7 +142,7 @@ Add reminder scheduling to encourage consistent study habits.
 **Files:** `notification_service.dart`
 **~40 lines**
 
-### 10. LMS — Backlog Items
+### 10. LMS -- Backlog Items
 Post-launch polish items from the LMS plan.
 
 **Server:**
@@ -159,9 +159,9 @@ Post-launch polish items from the LMS plan.
 
 ## Acceptance Criteria
 - Server starts and all endpoints respond correctly
-- `dart analyze lib/` — 0 errors, 0 warnings
-- `pytest tests/` — 6/6 pass
-- `flutter test` — 1/1 pass
+- `dart analyze lib/` -- 0 errors, 0 warnings
+- `pytest tests/` -- 6/6 pass
+- `flutter test` -- 1/1 pass
 - Manage-content shows download counts + teacher notes
 - Students page shows at-risk flagging + sort-by
 - No page flash on sidebar navigation
@@ -178,6 +178,6 @@ Post-launch polish items from the LMS plan.
 5. Weakest Student Flagging
 6. Sort-by for Students Tab
 7. Tests
-8. LMS — Analytics Extension
-9. LMS — Study/Quiz Reminder Notifications
-10. LMS — Backlog Items
+8. LMS -- Analytics Extension
+9. LMS -- Study/Quiz Reminder Notifications
+10. LMS -- Backlog Items

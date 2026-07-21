@@ -1,14 +1,14 @@
-"""Student course interaction — catalog, enroll, progress, quizzes, assets."""
+"""Student course interaction -- catalog, enroll, progress, quizzes, assets."""
 import os
 import json
-import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import FileResponse
-from app.database import UPLOAD_DIR, log_admin_action
-from app.async_db import db_conn, db_exec, db_fetch, db_fetch_one
+from app.database import UPLOAD_DIR
+from app.audit import audit, Action
+from app.async_db import db_exec, db_fetch, db_fetch_one
 from app.dependencies import verify_student
-from app.models import CourseResponse, ProgressSync, EnrollResponse, QuizAttemptSubmit, QuizAttemptResponse, StatusResponse
+from app.models import ProgressSync, EnrollResponse, QuizAttemptSubmit, QuizAttemptResponse
 
 router = APIRouter()
 COURSES_DIR = os.path.join(UPLOAD_DIR, "..", "courses")
@@ -114,7 +114,7 @@ async def get_course_detail(course_id: str, student_id: str = Depends(verify_stu
     """
     row = await db_fetch_one("SELECT id, title, description, subject, grade, language, cover_image, published, teacher_username, enrollment_count, created_at, updated_at FROM courses WHERE id = ?", (course_id,))
     if not row:
-        raise HTTPException(status_code=404, detail="Course not found.")
+        raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
 
     resources = await db_fetch(
         "SELECT id, course_id, resource_type, title, original_name, filename, file_size, position FROM course_resources WHERE course_id = ? ORDER BY position",
@@ -203,20 +203,23 @@ async def enroll_course(course_id: str, student_id: str = Depends(verify_student
     """
     course = await db_fetch_one("SELECT id, title FROM courses WHERE id = ? AND published = 1", (course_id,))
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found or not published.")
+        raise HTTPException(status_code=404, detail="Course not found or not published.")  # i18n: user-facing error message
 
     existing = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
     if existing:
-        raise HTTPException(status_code=409, detail="Already enrolled in this course.")
+        raise HTTPException(status_code=409, detail="Already enrolled in this course.")  # i18n: user-facing error message
 
     await db_exec(
         "INSERT INTO course_progress (student_id, course_id, current_position, completed_count, enrolled_at) VALUES (?, ?, 0, 0, datetime('now'))",
         (student_id, course_id)
     )
+    from app.metrics import incr
+    incr("enrollment")
     await db_exec("UPDATE courses SET enrollment_count = enrollment_count + 1 WHERE id = ?", (course_id,))
-    await log_admin_action(student_id, f"enrolled in course {course_id} '{course['title']}'")
+    await audit(action=Action.ENROLL_COURSE, username=student_id, resource_type="course",
+                resource_id=course_id, resource_name=course['title'])
 
-    return EnrollResponse(status="ok", course_id=course_id, message="Successfully enrolled.")
+    return EnrollResponse(status="ok", course_id=course_id, message="Successfully enrolled.")  # i18n: user-facing success message
 
 
 @router.post("/api/courses/{course_id}/unenroll", response_model=EnrollResponse,
@@ -237,12 +240,12 @@ async def unenroll_course(course_id: str, student_id: str = Depends(verify_stude
     """
     existing = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
     if not existing:
-        raise HTTPException(status_code=404, detail="Not enrolled in this course.")
+        raise HTTPException(status_code=404, detail="Not enrolled in this course.")  # i18n: user-facing error message
 
     await db_exec("DELETE FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
     await db_exec("UPDATE courses SET enrollment_count = MAX(0, enrollment_count - 1) WHERE id = ?", (course_id,))
 
-    return EnrollResponse(status="ok", course_id=course_id, message="Successfully unenrolled.")
+    return EnrollResponse(status="ok", course_id=course_id, message="Successfully unenrolled.")  # i18n: user-facing success message
 
 
 @router.get("/api/courses/{course_id}/progress",
@@ -266,7 +269,7 @@ async def get_progress(course_id: str, student_id: str = Depends(verify_student)
         (student_id, course_id)
     )
     if not row:
-        raise HTTPException(status_code=404, detail="Not enrolled in this course.")
+        raise HTTPException(status_code=404, detail="Not enrolled in this course.")  # i18n: user-facing error message
 
     return {
         "current_position": row["current_position"],
@@ -295,7 +298,7 @@ async def sync_progress(course_id: str, data: ProgressSync, student_id: str = De
     # Verify course exists
     course = await db_fetch_one("SELECT id FROM courses WHERE id = ?", (course_id,))
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found.")
+        raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
 
     await db_exec(
         """INSERT INTO course_progress (student_id, course_id, current_position, completed_count, last_synced, enrolled_at)
@@ -342,14 +345,14 @@ async def get_resource_url(course_id: str, resource_id: str, student_id: str = D
     """
     enrolled = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
     if not enrolled:
-        raise HTTPException(status_code=403, detail="Enrollment required to access course resources.")
+        raise HTTPException(status_code=403, detail="Enrollment required to access course resources.")  # i18n: user-facing error message
 
     row = await db_fetch_one(
         "SELECT filename, original_name, file_size FROM course_resources WHERE id = ? AND course_id = ?",
         (resource_id, course_id)
     )
     if not row:
-        raise HTTPException(status_code=404, detail="Resource not found.")
+        raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
 
     return {
         "url": f"/files/courses/{course_id}/resources/{row['filename']}",
@@ -378,7 +381,7 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
     """
     enrolled = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
     if not enrolled:
-        raise HTTPException(status_code=403, detail="Enrollment required to access quizzes.")
+        raise HTTPException(status_code=403, detail="Enrollment required to access quizzes.")  # i18n: user-facing error message
 
     quiz_path = os.path.join(COURSES_DIR, course_id, f"quiz_{resource_id}.json")
 
@@ -391,7 +394,7 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
     import asyncio
     quiz_data = await asyncio.to_thread(_read_quiz)
     if quiz_data is None:
-        raise HTTPException(status_code=404, detail="Quiz not found.")
+        raise HTTPException(status_code=404, detail="Quiz not found.")  # i18n: user-facing error message
 
     if "quiz_version" not in quiz_data:
         quiz_data["quiz_version"] = 1
@@ -405,7 +408,7 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
              tags=["Courses"],
              responses={403: {"description": "Not enrolled"}, 404: {"description": "Course or quiz not found"}})
 async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemptSubmit, student_id: str = Depends(verify_student)):
-    """Submit a quiz attempt. Idempotent — duplicate attempt_id returns existing record.
+    """Submit a quiz attempt. Idempotent -- duplicate attempt_id returns existing record.
 
     Args:
         course_id: UUID of the course.
@@ -425,11 +428,11 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
 
     enrolled = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
     if not enrolled:
-        raise HTTPException(status_code=403, detail="Enrollment required to submit quizzes.")
+        raise HTTPException(status_code=403, detail="Enrollment required to submit quizzes.")  # i18n: user-facing error message
 
     course = await db_fetch_one("SELECT id FROM courses WHERE id = ? AND published = 1", (course_id,))
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found or not published.")
+        raise HTTPException(status_code=404, detail="Course not found or not published.")  # i18n: user-facing error message
 
     await db_exec(
         """INSERT INTO quiz_attempts (id, student_id, course_id, resource_id, attempt_number, score, passed, answers_json, started_at, submitted_at, time_taken_seconds, quiz_version, threshold_at_submission)
@@ -440,6 +443,8 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
     )
 
     row = await db_fetch_one("SELECT * FROM quiz_attempts WHERE id = ?", (data.attempt_id,))
+    from app.metrics import incr
+    incr("quiz_attempt")
     return dict(row)
 
 
@@ -470,7 +475,7 @@ async def get_quiz_attempts(course_id: str, resource_id: str, student_id: str = 
 
 @router.get("/api/courses/{course_id}/asset/{path:path}",
             summary="Serve course asset file",
-            description="Serves static assets (images, PDFs, etc.) from the course's assets directory. Does not require enrollment — only that the course is published.",
+            description="Serves static assets (images, PDFs, etc.) from the course's assets directory. Does not require enrollment -- only that the course is published.",
             tags=["Courses"],
             responses={404: {"description": "Course or asset not found"}})
 async def serve_asset(course_id: str, path: str, student_id: str = Depends(verify_student)):
@@ -487,22 +492,14 @@ async def serve_asset(course_id: str, path: str, student_id: str = Depends(verif
     """
     course = await db_fetch_one("SELECT id FROM courses WHERE id = ? AND published = 1", (course_id,))
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found or not published.")
+        raise HTTPException(status_code=404, detail="Course not found or not published.")  # i18n: user-facing error message
 
     asset_path = os.path.normpath(os.path.join(COURSES_DIR, course_id, "assets", path))
     expected_prefix = os.path.normpath(os.path.join(COURSES_DIR, course_id, "assets"))
     if not asset_path.startswith(expected_prefix):
-        raise HTTPException(status_code=404, detail="Invalid asset path.")
+        raise HTTPException(status_code=404, detail="Invalid asset path.")  # i18n: user-facing error message
 
-    import asyncio
-
-    def _check_file():
-        if os.path.isfile(asset_path):
-            return True
-        return False
-
-    exists = await asyncio.to_thread(_check_file)
-    if not exists:
-        raise HTTPException(status_code=404, detail="Asset not found.")
+    if not await asyncio.to_thread(os.path.isfile, asset_path):
+        raise HTTPException(status_code=404, detail="Asset not found.")  # i18n: user-facing error message
 
     return FileResponse(asset_path)

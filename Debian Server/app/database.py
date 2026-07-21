@@ -5,7 +5,6 @@ import uuid
 import time
 import logging
 import asyncio
-from logging.handlers import RotatingFileHandler
 from datetime import datetime
 
 UPLOAD_DIR = "uploads"
@@ -44,13 +43,6 @@ def gen_composite_uid(conn, grade: int, subject: str, prefix: str) -> str:
         subject_uid = row[0]
     return f"{grade_uid}-{subject_uid}-{uuid.uuid4().hex[:8]}"
 
-_startup_time = time.time()
-
-admin_handler = RotatingFileHandler('data/admin_actions.log', maxBytes=2*1024*1024, backupCount=3)
-admin_logger = logging.getLogger('admin_actions')
-admin_logger.setLevel(logging.INFO)
-admin_logger.addHandler(admin_handler)
-
 RETENTION_DELTAS = {
     "24h": 86400,
     "7d": 604800,
@@ -60,68 +52,15 @@ RETENTION_DELTAS = {
 }
 
 
-async def log_admin_action(username: str, action: str):
-    now = datetime.now()
-    await asyncio.to_thread(_write_log, now.isoformat(), username, action)
-
-
-def _write_log(timestamp, username, action):
-    """Reads retention, writes log entry, prunes if needed. All sync, runs in worker thread."""
-    try:
-        conn = sqlite3.connect(DB_PATH, timeout=5.0)
-        try:
-            cur = conn.cursor()
-            cur.execute("SELECT value FROM settings WHERE key = 'log_retention'")
-            row = cur.fetchone()
-            retention = row[0] if row else "30d"
-        finally:
-            conn.close()
-    except Exception:
-        retention = "30d"
-
-    if retention == "none":
-        return
-
-    log_line = f"{timestamp} - {username}: {action}\n"
-    try:
-        with open("data/admin_actions.log", "a") as f:
-            f.write(log_line)
-    except Exception as e:
-        logging.error(f"Could not write admin action log: {e}")
-    _prune_logs_if_needed(retention)
-
-
-def _prune_logs_if_needed(retention):
-    # Throttle: only prune at most once per 60s to avoid rewriting the entire
-    # file on every single admin action (SSD wear / write amplification).
-    if retention == "never":
-        return
-    now = time.time()
-    if now - getattr(_prune_logs_if_needed, '_last_run', 0) < 60:
-        return
-    _prune_logs_if_needed._last_run = now
-
-    try:
-        delta = RETENTION_DELTAS.get(retention, 2592000)
-        cutoff = datetime.now().timestamp() - delta
-        kept_lines = []
-        if os.path.exists("data/admin_actions.log"):
-            with open("data/admin_actions.log", "r") as f:
-                for line in f:
-                    parts = line.split(" - ", 1)
-                    try:
-                        log_time = datetime.fromisoformat(parts[0])
-                        if log_time.timestamp() >= cutoff:
-                            kept_lines.append(line)
-                    except Exception:
-                        kept_lines.append(line)
-            with open("data/admin_actions.log", "w") as f:
-                f.writelines(kept_lines)
-    except Exception as e:
-        logging.error(f"Error pruning logs: {e}")
-
-
 def init_db():
+    """Initialise the SQLite database schema and seed default data.
+
+    Creates all tables idempotently (IF NOT EXISTS), runs composite indexes for
+    hot query paths, seeds default grades/subjects, and creates a default admin
+    account (username ``admin``, password ``lumina2026``) on first run.  Schema
+    migrations are wrapped in try/except so they pass silently when columns or
+    tables already exist.
+    """
     from app.dependencies import hash_password
 
     conn = sqlite3.connect(DB_PATH, timeout=5.0)
@@ -154,7 +93,6 @@ def init_db():
         type TEXT
     )''')
     c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, hashed_password TEXT, name TEXT, department TEXT, scholar_id TEXT, reset_required INTEGER DEFAULT 0, role TEXT NOT NULL DEFAULT "teacher")')
-    c.execute("UPDATE scholars SET username = name WHERE username IS NULL OR username = ''")
     try:
         c.execute('DROP INDEX IF EXISTS idx_scholars_name')
     except Exception:
@@ -167,7 +105,7 @@ def init_db():
         c.execute('CREATE INDEX IF NOT EXISTS idx_scholars_name ON scholars(name)')
     except Exception:
         pass
-    # ponytail: each index in its own try — single try skips all on first failure
+    # ponytail: each index in its own try -- single try skips all on first failure
     for _idx_sql in [
         'CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)',
         'CREATE INDEX IF NOT EXISTS idx_resources_status ON resources(status)',
@@ -187,7 +125,7 @@ def init_db():
     c.execute('CREATE TABLE IF NOT EXISTS scholar_downloads (scholar_id TEXT, resource_id TEXT, PRIMARY KEY(scholar_id, resource_id))')
     c.execute('CREATE TABLE IF NOT EXISTS activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, scholar_id TEXT NOT NULL, action TEXT NOT NULL, timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (scholar_id) REFERENCES scholars(id))')
     c.execute('CREATE TABLE IF NOT EXISTS study_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, scholar_id TEXT, start_time DATETIME, end_time DATETIME, duration_seconds INTEGER)')
-    c.execute('CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, username TEXT, used INTEGER DEFAULT 0, expiry TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
+    c.execute('CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, username TEXT, role TEXT, used INTEGER DEFAULT 0, expiry TEXT, last_accessed DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
     c.execute('CREATE TABLE IF NOT EXISTS subject_minutes (scholar_id TEXT NOT NULL, subject_name TEXT NOT NULL, minutes INTEGER DEFAULT 0, PRIMARY KEY (scholar_id, subject_name))')
     c.execute('CREATE TABLE IF NOT EXISTS refresh_tokens (token TEXT PRIMARY KEY, username TEXT, role TEXT, used INTEGER DEFAULT 0, expires_at TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
     c.execute('CREATE TABLE IF NOT EXISTS persistent_keys (token TEXT PRIMARY KEY, username TEXT, role TEXT, used INTEGER DEFAULT 0, expires_at TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
@@ -285,26 +223,6 @@ def init_db():
 
     c.execute('CREATE TABLE IF NOT EXISTS subjects (id TEXT PRIMARY KEY, name TEXT, symbol TEXT, class_name TEXT, UNIQUE(name, class_name))')
 
-    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='subjects'")
-    if c.fetchone():
-        c.execute("PRAGMA table_info(subjects)")
-        cols = [col[1] for col in c.fetchall()]
-        if 'class_name' not in cols:
-            try:
-                c.execute("SELECT id, name, symbol FROM subjects")
-                existing = c.fetchall()
-                c.execute("DROP TABLE subjects")
-                c.execute('CREATE TABLE subjects (id TEXT PRIMARY KEY, name TEXT, symbol TEXT, class_name TEXT, UNIQUE(name, class_name))')
-                for sid, name, symbol in existing:
-                    c.execute("INSERT OR IGNORE INTO subjects (id, name, symbol, class_name) VALUES (?, ?, ?, ?)", (sid or f"SUBJ-{uuid.uuid4().hex[:8]}", name, symbol, 'All Classes'))
-            except Exception as e:
-                logging.error(f"Migration error: {e}")
-    else:
-        c.execute('CREATE TABLE IF NOT EXISTS subjects (id TEXT PRIMARY KEY, name TEXT, symbol TEXT, class_name TEXT, UNIQUE(name, class_name))')
-
-    c.execute("SELECT rowid FROM subjects WHERE id IS NULL")
-    for (rowid,) in c.fetchall():
-        c.execute("UPDATE subjects SET id = ? WHERE rowid = ?", (f"SUBJ-{uuid.uuid4().hex[:8]}", rowid))
     try:
         c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_subjects_id ON subjects(id)')
     except Exception:
@@ -340,23 +258,18 @@ def init_db():
     c.execute('CREATE INDEX IF NOT EXISTS idx_zim_articles_archive ON zim_articles(archive_id)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_zim_articles_title ON zim_articles(title)')
 
-    zim_cols = {row[1] for row in c.execute("PRAGMA table_info(zim_archives)").fetchall()}
-    if "zim_path" not in zim_cols:
-        c.execute("ALTER TABLE zim_archives ADD COLUMN zim_path TEXT DEFAULT ''")
-        logging.info("Added zim_path column to zim_archives table")
-
     try:
         default_pwd = hash_password("lumina2026")
         admin_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-        c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id) VALUES (?, ?, ?, ?, ?)", ("admin", default_pwd, "Administrator", "System", admin_id))
+        c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, 'admin')", ("admin", default_pwd, "Administrator", "System", admin_id))
         logging.info("=" * 50)
-        logging.info("  DEFAULT ADMIN PASSWORD: lumina2026")
-        logging.info("  CHANGE IT IMMEDIATELY via Dashboard > Settings > Change Password")
+        logging.info("  DEFAULT ADMIN ACCOUNT CREATED")
+        logging.info("  Change the password immediately via Dashboard > Settings")
         logging.info("=" * 50)
     except sqlite3.IntegrityError:
         pass
 
-    # Do NOT force-reset admin password on every restart — let admin keep their password
+    # Do NOT force-reset admin password on every restart -- let admin keep their password
 
     c.execute('SELECT count(*) FROM subjects')
     if c.fetchone()[0] == 0:
@@ -377,11 +290,6 @@ def init_db():
         logging.error(f"Could not create settings table: {e}")
 
     c.execute("DELETE FROM weekly_study WHERE updated_at < datetime('now', '-7 days')")
-
-    try:
-        c.execute('ALTER TABLE resources ADD COLUMN topic_id TEXT DEFAULT ""')
-    except sqlite3.OperationalError:
-        pass
 
     try:
         c.execute('PRAGMA wal_checkpoint(TRUNCATE)')

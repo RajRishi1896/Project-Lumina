@@ -326,6 +326,7 @@ class DBHelper {
     await db.delete('pending_downloads');
   }
 
+  /// Inserts or replaces a ZIM article record in the local database.
   Future<void> upsertZimArticle(String articleId, String title, String archiveId, {bool hasThumbnail = false}) async {
     final db = await database;
     await db.insert('zim_articles_local', {
@@ -336,6 +337,7 @@ class DBHelper {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  /// Batch-inserts ZIM articles in a single transaction for efficiency.
   Future<void> upsertZimArticlesBatch(List<Map<String, dynamic>> articles) async {
     final db = await database;
     await db.transaction((txn) async {
@@ -347,17 +349,20 @@ class DBHelper {
     });
   }
 
+  /// Returns all stored ZIM article records.
   Future<List<Map<String, dynamic>>> getAllZimArticles() async {
     final db = await database;
     return await db.query('zim_articles_local');
   }
 
+  /// Marks an article as downloaded by setting `is_downloaded = 1`.
   Future<void> markZimArticleDownloaded(String articleId) async {
     final db = await database;
     await db.update('zim_articles_local', {'is_downloaded': 1},
         where: 'article_id = ?', whereArgs: [articleId]);
   }
 
+  /// Returns the IDs of all ZIM articles that have been downloaded locally.
   Future<Set<String>> getDownloadedZimArticleIds() async {
     final db = await database;
     final rows = await db.query('zim_articles_local',

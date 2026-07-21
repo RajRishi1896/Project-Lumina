@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../core/services/activity_tracker.dart';
 import '../../core/storage/db_helper.dart';
 import 'download_service.dart';
@@ -90,6 +91,9 @@ class DownloadQueue extends ChangeNotifier {
 
   Future<void> _processNext() async {
     if (_queue.isEmpty) return;
+    if (!_processing) {
+      await WakelockPlus.enable();
+    }
     _processing = true;
 
     final task = _queue.first;
@@ -105,7 +109,11 @@ class DownloadQueue extends ChangeNotifier {
       }
       unawaited(ActivityTracker().logAction('download', resourceId: task.resourceId, metadata: task.title));
       _queue.removeAt(0);
-      _finishTask();
+      if (_queue.isEmpty) {
+        await WakelockPlus.disable();
+        _processing = false;
+      }
+      notifyListeners();
       if (_queue.isNotEmpty) unawaited(_processNext());
     } else if (task.retries > 0) {
       // Decrement retries and re-attempt with exponential backoff so transient
@@ -121,7 +129,11 @@ class DownloadQueue extends ChangeNotifier {
         unawaited(NotificationService().showDownloadFailed(task.title));
       }
       _queue.removeAt(0);
-      _finishTask();
+      if (_queue.isEmpty) {
+        await WakelockPlus.disable();
+        _processing = false;
+      }
+      notifyListeners();
       if (_queue.isNotEmpty) unawaited(_processNext());
     }
   }

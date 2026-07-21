@@ -30,12 +30,12 @@ async def stream_file(filename: str, request: Request):
         HTTPException 416: If the Range header is invalid.
     """
     if ".." in filename or filename.startswith("/"):
-        raise HTTPException(status_code=400, detail="Invalid filename")
+        raise HTTPException(status_code=400, detail="Invalid filename")  # i18n: user-facing error message
     file_path = os.path.normpath(os.path.join(UPLOAD_DIR, filename))
     if not file_path.startswith(os.path.normpath(UPLOAD_DIR)):
-        raise HTTPException(status_code=400, detail="Invalid filename")
+        raise HTTPException(status_code=400, detail="Invalid filename")  # i18n: user-facing error message
     if not await asyncio.to_thread(os.path.exists, file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=404, detail="File not found")  # i18n: user-facing error message
     file_size = await asyncio.to_thread(os.path.getsize, file_path)
     range_header = request.headers.get("range")
     if range_header:
@@ -49,7 +49,7 @@ async def stream_file(filename: str, request: Request):
             start = int(start_str) if start_str else 0
             end = int(end_str) if end_str else file_size - 1
         if start >= file_size:
-            raise HTTPException(status_code=416, detail="Range not satisfiable")
+            raise HTTPException(status_code=416, detail="Range not satisfiable")  # i18n: user-facing error message
         content_length = end - start + 1
 
         async def _stream_chunk():
@@ -125,13 +125,14 @@ async def resource_thumbnail(resource_id: str):
         c.execute("SELECT filename, resource_type FROM resources WHERE id = ?", (resource_id,))
         row = c.fetchone()
     if not row:
-        raise HTTPException(status_code=404, detail="Resource not found")
-    file_path, rtype = row
+        raise HTTPException(status_code=404, detail="Resource not found")  # i18n: user-facing error message
+    file_path = os.path.join(UPLOAD_DIR, row[0]) if row[0] else None
+    rtype = row[1]
     thumb_path = os.path.join(THUMBNAILS_DIR, f"{resource_id}.png")
     if await asyncio.to_thread(os.path.exists, thumb_path):
         return FileResponse(thumb_path, media_type="image/png")
     if not await asyncio.to_thread(os.path.exists, file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=404, detail="File not found")  # i18n: user-facing error message
     try:
         if rtype in ("textbook", "notes", "pyq", "pastPaper"):
             try:
@@ -147,7 +148,7 @@ async def resource_thumbnail(resource_id: str):
                         doc.close()
                 await asyncio.to_thread(_gen_pdf_thumb, file_path, thumb_path)
             except ImportError:
-                raise HTTPException(status_code=404, detail="Thumbnail unavailable (PyMuPDF not installed)")
+                raise HTTPException(status_code=404, detail="Thumbnail unavailable (PyMuPDF not installed)")  # i18n: user-facing error message
         elif rtype == "videos":
             thumb_time = await asyncio.to_thread(_find_video_thumb_time, file_path)
             ss = f"{int(thumb_time // 3600):02d}:{int((thumb_time % 3600) // 60):02d}:{int(thumb_time % 60):02d}"
@@ -156,11 +157,11 @@ async def resource_thumbnail(resource_id: str):
                 capture_output=True, timeout=15
             ))
             if result.returncode != 0 or not os.path.exists(thumb_path):
-                raise HTTPException(status_code=404, detail="Thumbnail generation failed")
+                raise HTTPException(status_code=404, detail="Thumbnail generation failed")  # i18n: user-facing error message
         else:
-            raise HTTPException(status_code=404, detail="No thumbnail for this type")
+            raise HTTPException(status_code=404, detail="No thumbnail for this type")  # i18n: user-facing error message
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Thumbnail error: {e}")
+        raise HTTPException(status_code=500, detail=f"Thumbnail error: {e}")  # i18n: user-facing error message
     return FileResponse(thumb_path, media_type="image/png")

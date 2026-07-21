@@ -39,7 +39,9 @@ async def teacher_list_students(teacher_user: str = Depends(verify_teacher), gra
                 FROM scholars s
                 LEFT JOIN weekly_study w ON w.scholar_id = s.id
                 LEFT JOIN (SELECT scholar_id, COUNT(*) AS saved FROM scholar_downloads GROUP BY scholar_id) sv ON sv.scholar_id = s.id
+                LEFT JOIN users u ON u.scholar_id = s.id
                 {grade_filter}
+                {"AND " if grade else "WHERE "}(u.role IS NULL OR u.role = 'student')
                 ORDER BY last_active DESC NULLS LAST, s.name ASC
             """, params)
             students = []
@@ -56,7 +58,7 @@ async def teacher_list_students(teacher_user: str = Depends(verify_teacher), gra
                     "last_active": last_active or "",
                 })
         except sqlite3.OperationalError as e:
-            raise HTTPException(status_code=500, detail=f"Database error: {e}")
+            raise HTTPException(status_code=500, detail=f"Database error: {e}")  # i18n: user-facing error message
 
     return {"students": students}
 
@@ -78,15 +80,17 @@ async def teacher_student_analytics(scholar_id: str, teacher_user: str = Depends
     async with db_conn() as conn:
         c = conn.cursor()
         c.execute("""
-            SELECT s.name,
-                COALESCE((SELECT total_seconds FROM weekly_study WHERE scholar_id = ?), 0),
-                COALESCE((SELECT streak_days FROM weekly_study WHERE scholar_id = ?), 0),
-                (SELECT COUNT(*) FROM scholar_downloads WHERE scholar_id = ?)
-            FROM scholars s WHERE s.id = ?
-        """, (scholar_id, scholar_id, scholar_id, scholar_id))
+            SELECT s.name, COALESCE(w.total_seconds, 0), COALESCE(w.streak_days, 0),
+                   COALESCE(dl.cnt, 0)
+            FROM scholars s
+            LEFT JOIN weekly_study w ON w.scholar_id = s.id
+            LEFT JOIN (SELECT scholar_id, COUNT(*) AS cnt FROM scholar_downloads GROUP BY scholar_id) dl
+                   ON dl.scholar_id = s.id
+            WHERE s.id = ?
+        """, (scholar_id,))
         row = c.fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Student not found")
+            raise HTTPException(status_code=404, detail="Student not found")  # i18n: user-facing error message
         week_secs = row[1]
         streak = row[2]
         saved = row[3]
@@ -113,12 +117,8 @@ async def get_teachers(teacher_user: str = Depends(verify_teacher)):
     """
     async with db_conn() as conn:
         c = conn.cursor()
-        try:
-            c.execute("SELECT username, name, department, scholar_id, reset_required FROM users WHERE username != 'admin' ORDER BY name ASC")
-            rows = c.fetchall()
-        except sqlite3.OperationalError:
-            c.execute("SELECT username, name, department, scholar_id FROM users WHERE username != 'admin' ORDER BY name ASC")
-            rows = [(*r, 0) for r in c.fetchall()]
+        c.execute("SELECT username, name, department, scholar_id, reset_required FROM users WHERE username != 'admin' ORDER BY name ASC")
+        rows = c.fetchall()
     return [{"username": r[0], "name": r[1] or r[0], "department": r[2] or "General", "scholar_id": r[3] or "", "reset_required": r[4] or 0} for r in rows]
 
 
@@ -141,7 +141,7 @@ async def create_teacher_profile(teacher: TeacherCreate, admin_user: str = Depen
             c = conn.cursor()
             c.execute("SELECT username FROM users WHERE username = ?", (teacher.username,))
             if c.fetchone():
-                raise HTTPException(status_code=400, detail="Username already exists.")
+                raise HTTPException(status_code=400, detail="Username already exists.")  # i18n: user-facing error message
 
             display_name = teacher.name or teacher.username
             dept = teacher.department or "General"
@@ -156,7 +156,7 @@ async def create_teacher_profile(teacher: TeacherCreate, admin_user: str = Depen
             return {"status": "success", "username": teacher.username, "name": display_name, "department": dept, "scholar_id": full_id}
         except Exception as e:
             logging.error(f"create_teacher_profile: {e}")
-            raise HTTPException(status_code=400, detail="Failed to create teacher profile")
+            raise HTTPException(status_code=400, detail="Failed to create teacher profile")  # i18n: user-facing error message
 
 
 @router.delete("/teacher/profiles/{username}", response_model=StatusResponse,
@@ -176,7 +176,7 @@ async def delete_teacher_profile(username: str, admin_user: str = Depends(verify
         HTTPException 400: If attempting to delete the default admin.
     """
     if username == 'admin':
-        raise HTTPException(status_code=400, detail="Cannot delete admin account.")
+        raise HTTPException(status_code=400, detail="Cannot delete admin account.")  # i18n: user-facing error message
     async with db_conn() as conn:
         c = conn.cursor()
         c.execute("DELETE FROM users WHERE username = ?", (username,))
@@ -224,7 +224,7 @@ async def update_teacher_name(data: NameUpdate, teacher_user: str = Depends(veri
         HTTPException 400: If the user is the default admin.
     """
     if teacher_user == "admin":
-        raise HTTPException(status_code=400, detail="Cannot modify the default admin profile.")
+        raise HTTPException(status_code=400, detail="Cannot modify the default admin profile.")  # i18n: user-facing error message
     async with db_conn() as conn:
         c = conn.cursor()
         c.execute("UPDATE users SET name = ? WHERE username = ?", (data.name.strip(), teacher_user))
@@ -249,7 +249,7 @@ async def update_teacher_department(data: DepartmentUpdate, teacher_user: str = 
         HTTPException 400: If the user is the default admin.
     """
     if teacher_user == "admin":
-        raise HTTPException(status_code=400, detail="Cannot modify the default admin profile.")
+        raise HTTPException(status_code=400, detail="Cannot modify the default admin profile.")  # i18n: user-facing error message
     async with db_conn() as conn:
         c = conn.cursor()
         c.execute("UPDATE users SET department = ? WHERE username = ?", (data.department.strip(), teacher_user))

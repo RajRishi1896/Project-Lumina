@@ -15,7 +15,7 @@ class CatalogService {
   CatalogService._internal();
 
   /// Fetches the full catalog from the server and replaces the local cache.
-  /// Safe to call repeatedly — replaces the entire `catalog` table.
+  /// Safe to call repeatedly -- replaces the entire `catalog` table.
   Future<void> syncCatalog() async {
     try {
       final resp = await ApiClient.get('/api/catalog')
@@ -41,7 +41,7 @@ class CatalogService {
         }
       });
     } catch (e) {
-      debugPrint('CatalogService: sync failed — $e');
+      debugPrint('CatalogService: sync failed -- $e');
     }
   }
 
@@ -64,7 +64,7 @@ class CatalogService {
         }
       });
     } catch (e) {
-      debugPrint('CatalogService: similar-courses sync failed — $e');
+      debugPrint('CatalogService: similar-courses sync failed -- $e');
     }
   }
 

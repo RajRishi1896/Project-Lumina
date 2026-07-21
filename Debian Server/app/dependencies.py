@@ -31,10 +31,6 @@ def _cache_put(token: str, user: dict):
     _session_cache[token] = (user, time.time())
 
 
-def _cache_invalidate(token: str):
-    _session_cache.pop(token, None)
-
-
 def _cache_invalidate_user(username: str):
     to_del = [k for k, v in _session_cache.items() if v[0].get("username") == username]
     for k in to_del:
@@ -79,13 +75,13 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
         Tuple of (is_valid, error_message). Error message is empty when valid.
     """
     if len(password) < 8:
-        return False, "Password must be at least 8 characters"
+        return False, "Password must be at least 8 characters"  # i18n: user-facing validation message
     if not any(c.isupper() for c in password):
-        return False, "Password must contain an uppercase letter"
+        return False, "Password must contain an uppercase letter"  # i18n: user-facing validation message
     if not any(c.islower() for c in password):
-        return False, "Password must contain a lowercase letter"
+        return False, "Password must contain a lowercase letter"  # i18n: user-facing validation message
     if not any(c.isdigit() for c in password):
-        return False, "Password must contain a digit"
+        return False, "Password must contain a digit"  # i18n: user-facing validation message
     return True, ""
 
 
@@ -101,13 +97,23 @@ def _is_session_stale(dt_str: str | None, minutes: int = 5) -> bool:
 
 
 async def _extract_user(request: Request) -> dict:
+    """Extract and validate the session token from the incoming request.
+
+    Checks the ``lumina_session`` cookie first, then the ``Authorization``
+    header.  Returns a dict with ``username`` and ``role`` on success.
+    Results are cached in-memory for 60 seconds to avoid repeated DB hits.
+
+    Raises:
+        HTTPException: 401 if no valid session token is found.
+    """
     if hasattr(request.state, "_user"):
         return request.state._user
 
     auth = request.headers.get("Authorization")
     cookie = request.cookies.get("lumina_session")
     if not cookie and (not auth or not auth.startswith("Bearer ")):
-        raise HTTPException(status_code=401, detail="Unauthorized: Session required.")
+        _log_auth_failure("no_token", request)
+        raise HTTPException(status_code=401, detail="Unauthorized: Session required.")  # i18n: user-facing auth error
     token = cookie or (auth.removeprefix("Bearer ") if auth else "")
 
     cached = _cache_get(token)
@@ -127,46 +133,72 @@ async def _extract_user(request: Request) -> dict:
         request.state._user = result
         return result
 
-    raise HTTPException(status_code=401, detail="Unauthorized: Invalid session.")
+    _log_auth_failure("invalid_token", request)
+    raise HTTPException(status_code=401, detail="Unauthorized: Invalid session.")  # i18n: user-facing auth error
+
+
+def _log_auth_failure(reason: str, request: Request):
+    """Log authentication failure without blocking the request."""
+    import logging as _log
+    ip = ""
+    if hasattr(request, "client") and request.client:
+        ip = request.client.host
+    _log.warning(f"AUTH_FAIL reason={reason} ip={ip} path={request.url.path}")
 
 
 async def verify_teacher(request: Request) -> str:
-    """Require teacher or admin role for the current session.
-
-    Args:
-        request: The incoming HTTP request.
-
-    Returns:
-        Username of the authenticated teacher or admin.
-
-    Raises:
-        HTTPException: 401 if not authenticated, 403 if role is insufficient.
-    """
+    """Require teacher or admin role for the current session."""
     user = await _extract_user(request)
     if user["role"] not in ("teacher", "admin"):
-        raise HTTPException(status_code=403, detail="Teacher privilege required.")
+        import logging as _log
+        ip = ""
+        if hasattr(request, "client") and request.client:
+            ip = request.client.host
+        _log.warning(f"PERM_DENIED user={user['username']} role={user['role']} need=teacher ip={ip} path={request.url.path}")
+        raise HTTPException(status_code=403, detail="Teacher privilege required.")  # i18n: user-facing auth error
     return user["username"]
 
 
 async def verify_admin(request: Request) -> str:
-    """Require admin role for the current session.
+    """Require admin role for the current session."""
+    user = await _extract_user(request)
+    if user["role"] != "admin":
+        import logging as _log
+        ip = ""
+        if hasattr(request, "client") and request.client:
+            ip = request.client.host
+        _log.warning(f"PERM_DENIED user={user['username']} role={user['role']} need=admin ip={ip} path={request.url.path}")
+        raise HTTPException(status_code=403, detail="Admin privilege required.")  # i18n: user-facing auth error
+    return user["username"]
+
+
+async def verify_user(request: Request) -> str:
+    """Require any authenticated role (admin, teacher, or student).
 
     Args:
         request: The incoming HTTP request.
 
     Returns:
-        Username of the authenticated admin.
-
-    Raises:
-        HTTPException: 401 if not authenticated, 403 if not an admin.
+        Username of the authenticated user.
     """
     user = await _extract_user(request)
-    if user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Admin privilege required.")
     return user["username"]
 
 
 async def generate_session_token(username: str, role: str) -> dict:
+    """Create a session token, refresh token, and persistent key for a user.
+
+    Invalidates any existing cached sessions for this user, then inserts
+    new rows into ``sessions``, ``refresh_tokens``, and ``persistent_keys``.
+    Old sessions beyond the most recent 5 are pruned.
+
+    Args:
+        username: The authenticated user's username.
+        role: The user's role (``admin``, ``teacher``, or ``student``).
+
+    Returns:
+        Dict with ``session_token``, ``refresh_token``, and ``persistent_key``.
+    """
     _cache_invalidate_user(username)
     stoken = f"LUMINA_HUB-{uuid.uuid4().hex}"
     rtoken = f"LUMINA_REF-{uuid.uuid4().hex}"
@@ -174,15 +206,23 @@ async def generate_session_token(username: str, role: str) -> dict:
 
     def _create_tokens(conn):
         conn.execute("DELETE FROM sessions WHERE username = ? AND rowid NOT IN (SELECT rowid FROM sessions WHERE username = ? ORDER BY rowid DESC LIMIT 5)", (username, username))
-        conn.execute("INSERT INTO sessions (token, username, role, encryption_key, used, expiry) VALUES (?, ?, ?, '', 0, datetime('now', '+1 day'))", (stoken, username, role))
+        conn.execute("INSERT INTO sessions (token, username, role, used, expiry) VALUES (?, ?, ?, 0, datetime('now', '+1 day'))", (stoken, username, role))
         conn.execute("INSERT INTO refresh_tokens (token, username, role, expires_at) VALUES (?, ?, ?, datetime('now', '+7 days'))", (rtoken, username, role))
         conn.execute("INSERT INTO persistent_keys (token, username, role, expires_at) VALUES (?, ?, ?, datetime('now', '+365 days'))", (ptoken, username, role))
         conn.commit()
     await db_run(_create_tokens)
-    return {"session_token": stoken, "refresh_token": rtoken, "persistent_key": ptoken, "encryption_key": ""}
+    return {"session_token": stoken, "refresh_token": rtoken, "persistent_key": ptoken}
 
 
 async def invalidate_tokens_for_user(username: str):
+    """Clear all session, refresh, and persistent tokens for a user.
+
+    Removes cached entries from the in-memory session cache and deletes
+    all token rows from the database, effectively logging the user out.
+
+    Args:
+        username: The user whose tokens should be invalidated.
+    """
     _cache_invalidate_user(username)
     def _delete_tokens(conn):
         conn.execute("DELETE FROM sessions WHERE username = ?", (username,))
@@ -193,12 +233,24 @@ async def invalidate_tokens_for_user(username: str):
 
 
 async def verify_student(request: Request):
+    """FastAPI dependency that validates the session and enforces student role.
+
+    Extracts the session token, verifies it belongs to a ``student`` user,
+    confirms the scholar account still exists, and caches the result.
+
+    Returns:
+        The student's username (scholar ID).
+
+    Raises:
+        HTTPException: 401 if not authenticated or account deleted,
+            403 never (role is checked implicitly by the session query).
+    """
     if hasattr(request.state, "_student_id"):
         return request.state._student_id
 
     token = request.cookies.get("lumina_session") or request.headers.get("Authorization", "").removeprefix("Bearer ")
     if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail="Not authenticated")  # i18n: user-facing auth error
 
     # ponytail: check cache first (same token format, student role)
     cache_key = f"student:{token}"
@@ -212,14 +264,14 @@ async def verify_student(request: Request):
         (token,)
     )
     if not row:
-        raise HTTPException(status_code=401, detail="Invalid or expired student session")
+        raise HTTPException(status_code=401, detail="Invalid or expired student session")  # i18n: user-facing auth error
 
     if _is_session_stale(row["last_accessed"]):
         await db_exec("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
 
     exists = await db_fetch_one("SELECT id FROM scholars WHERE id = ?", (row["username"],))
     if not exists:
-        raise HTTPException(status_code=401, detail="Account no longer exists.")
+        raise HTTPException(status_code=401, detail="Account no longer exists.")  # i18n: user-facing auth error
 
     result = {"username": row["username"], "role": "student"}
     _cache_put(token, result)

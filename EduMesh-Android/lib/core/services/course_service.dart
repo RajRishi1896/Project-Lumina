@@ -3,9 +3,14 @@ import 'package:sqflite/sqflite.dart';
 import '../models/course.dart';
 import '../network/api_client.dart';
 import '../storage/db_helper.dart';
+import '../../features/auth/data/auth_service.dart';
 import '../../shared/services/download_queue.dart';
 import 'mutation_queue.dart';
 
+/// Singleton service managing the course catalog, enrollment, progress tracking, and quizzes.
+///
+/// Wraps the `/api/courses` endpoints and local SQLite cache. Notifies
+/// listeners on state changes so UI widgets rebuild automatically.
 class CourseService extends ChangeNotifier {
   static final CourseService _instance = CourseService._internal();
   factory CourseService() => _instance;
@@ -17,12 +22,22 @@ class CourseService extends ChangeNotifier {
   List<({Course course, Map<String, dynamic>? progress})> _enrolledCourses = [];
   final Map<String, double> _downloadProgress = {};
 
+  /// Whether a network request is currently in progress.
   bool get isLoading => _loading;
+
+  /// The most recent error message, or `null` if no error.
   String? get error => _error;
+
+  /// Locally cached course list from the last successful [fetchCatalog] call.
   List<Course> get cachedCourses => _cachedCourses;
+
+  /// Courses the current student is enrolled in, with their progress rows.
   List<({Course course, Map<String, dynamic>? progress})> get enrolledCourses => _enrolledCourses;
+
+  /// Per-resource download progress (0.0–1.0) keyed by resource ID.
   Map<String, double> get downloadProgress => Map.unmodifiable(_downloadProgress);
 
+  /// Fetches the course catalog from the hub, caches it locally, and returns it.
   Future<List<Course>> fetchCatalog({String? subject, int? grade, String? language, String? search, int page = 1, int perPage = 20}) async {
     _loading = true;
     _error = null;
@@ -78,6 +93,7 @@ class CourseService extends ChangeNotifier {
     }
   }
 
+  /// Fetches full course detail including resources, caches them locally, and returns the raw JSON.
   Future<Map<String, dynamic>?> fetchCourseDetail(String courseId) async {
     try {
       final resp = await ApiClient.get('/api/courses/$courseId');
@@ -106,18 +122,20 @@ class CourseService extends ChangeNotifier {
       }
       return null;
     } catch (e) {
-      debugPrint('CourseService: fetchCourseDetail failed — $e');
+      debugPrint('CourseService: fetchCourseDetail failed -- $e');
       return null;
     }
   }
 
+  /// Enrolls the current student in [courseId] and creates a local progress record.
   Future<bool> enroll(String courseId) async {
     try {
       final resp = await ApiClient.post('/api/courses/$courseId/enroll');
       if (resp.statusCode == 200 || resp.statusCode == 201) {
         final db = await DBHelper().database;
+        final studentId = await AuthService().getUniqueUserId() ?? '';
         await db.insert('course_progress', {
-          'student_id': '',
+          'student_id': studentId,
           'course_id': courseId,
           'current_position': 0,
           'completed_count': 0,
@@ -131,11 +149,12 @@ class CourseService extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      debugPrint('CourseService: enroll failed — $e');
+      debugPrint('CourseService: enroll failed -- $e');
       return false;
     }
   }
 
+  /// Unenrolls the current student from [courseId] and removes local progress data.
   Future<bool> unenroll(String courseId) async {
     try {
       final resp = await ApiClient.post('/api/courses/$courseId/unenroll');
@@ -148,11 +167,12 @@ class CourseService extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      debugPrint('CourseService: unenroll failed — $e');
+      debugPrint('CourseService: unenroll failed -- $e');
       return false;
     }
   }
 
+  /// Downloads all [resources] for [courseId] via [DownloadQueue], updating progress per resource.
   Future<bool> downloadCourse(String courseId, List<CourseResource> resources) async {
     _downloadProgress.clear();
     final totalBytes = resources.fold<int>(0, (sum, r) => sum + r.fileSize);
@@ -173,7 +193,7 @@ class CourseService extends ChangeNotifier {
         );
         succeeded++;
       } catch (e) {
-        debugPrint('CourseService: downloadCourse failed for ${resource.id} — $e');
+        debugPrint('CourseService: downloadCourse failed for ${resource.id} -- $e');
       }
     }
     if (succeeded == resources.length) {
@@ -188,6 +208,7 @@ class CourseService extends ChangeNotifier {
     return succeeded == resources.length;
   }
 
+  /// Pushes local progress to the hub and updates the local database.
   Future<bool> syncProgress(String courseId, int currentPosition, int completedCount) async {
     try {
       await ApiClient.dio.put('/api/courses/$courseId/progress', data: {
@@ -202,11 +223,12 @@ class CourseService extends ChangeNotifier {
       }, where: 'course_id = ?', whereArgs: [courseId]);
       return true;
     } catch (e) {
-      debugPrint('CourseService: syncProgress failed — $e');
+      debugPrint('CourseService: syncProgress failed -- $e');
       return false;
     }
   }
 
+  /// Submits a quiz attempt via [MutationQueue] for offline support, then persists locally.
   Future<void> submitQuiz(String courseId, String resourceId, Map<String, dynamic> attempt) async {
     await MutationQueue().enqueue(
       '/api/courses/$courseId/quiz/$resourceId/submit',
@@ -217,6 +239,7 @@ class CourseService extends ChangeNotifier {
     await _saveQuizAttemptLocally(attempt);
   }
 
+  /// Returns the locally cached course row for [courseId], or `null` if not found.
   Future<Map<String, dynamic>?> getCachedCourse(String courseId) async {
     try {
       final db = await DBHelper().database;
@@ -224,11 +247,12 @@ class CourseService extends ChangeNotifier {
       if (rows.isEmpty) return null;
       return rows.first;
     } catch (e) {
-      debugPrint('CourseService: getCachedCourse failed — $e');
+      debugPrint('CourseService: getCachedCourse failed -- $e');
       return null;
     }
   }
 
+  /// Returns all locally cached courses ordered by most recently synced.
   Future<List<Course>> getCachedCatalog() async {
     try {
       final db = await DBHelper().database;
@@ -250,11 +274,12 @@ class CourseService extends ChangeNotifier {
         );
       }).toList();
     } catch (e) {
-      debugPrint('CourseService: getCachedCatalog failed — $e');
+      debugPrint('CourseService: getCachedCatalog failed -- $e');
       return [];
     }
   }
 
+  /// Loads enrolled courses from local DB, fetching remote details for any not yet cached.
   Future<void> loadEnrolledCourses() async {
     try {
       final db = await DBHelper().database;
@@ -277,32 +302,35 @@ class CourseService extends ChangeNotifier {
       _enrolledCourses = result;
       notifyListeners();
     } catch (e) {
-      debugPrint('CourseService: loadEnrolledCourses failed — $e');
+      debugPrint('CourseService: loadEnrolledCourses failed -- $e');
     }
   }
 
+  /// Returns the count of courses marked as completed in local progress.
   Future<int> getCompletedCourseCount() async {
     try {
       final db = await DBHelper().database;
       final result = await db.rawQuery('SELECT COUNT(*) AS cnt FROM course_progress WHERE completed = 1');
       return Sqflite.firstIntValue(result) ?? 0;
     } catch (e) {
-      debugPrint('CourseService: getCompletedCourseCount failed — $e');
+      debugPrint('CourseService: getCompletedCourseCount failed -- $e');
       return 0;
     }
   }
 
+  /// Returns the count of courses that are enrolled but not yet completed.
   Future<int> getInProgressCount() async {
     try {
       final db = await DBHelper().database;
       final result = await db.rawQuery('SELECT COUNT(*) AS cnt FROM course_progress WHERE completed = 0');
       return Sqflite.firstIntValue(result) ?? 0;
     } catch (e) {
-      debugPrint('CourseService: getInProgressCount failed — $e');
+      debugPrint('CourseService: getInProgressCount failed -- $e');
       return 0;
     }
   }
 
+  /// Returns the completion ratio (0.0–1.0) for [courseId], or 0.0 if not enrolled.
   Future<double> getCourseProgress(String courseId) async {
     try {
       final db = await DBHelper().database;
@@ -315,7 +343,7 @@ class CourseService extends ChangeNotifier {
       final total = (rows.first['total_resources'] as num?)?.toInt() ?? 0;
       return total > 0 ? completed / total : 0.0;
     } catch (e) {
-      debugPrint('CourseService: getCourseProgress failed — $e');
+      debugPrint('CourseService: getCourseProgress failed -- $e');
       return 0.0;
     }
   }

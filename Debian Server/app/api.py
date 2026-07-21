@@ -1,7 +1,8 @@
-"""Lumina EduMesh Hub — FastAPI application entry point.
+"""Lumina EduMesh Hub -- FastAPI application entry point.
 All route handlers are in app/routers/.
 """
 import os
+import sys
 import logging
 import asyncio
 from contextlib import asynccontextmanager
@@ -14,7 +15,15 @@ from app.async_db import db_conn
 # Logging
 os.makedirs("data", exist_ok=True)
 log_handler = RotatingFileHandler('data/hub.log', maxBytes=5*1024*1024, backupCount=3)
-logging.basicConfig(handlers=[log_handler], level=logging.INFO, format='%(asctime)s - %(message)s')
+console_handler = logging.StreamHandler(sys.stdout)
+logging.basicConfig(
+    handlers=[log_handler, console_handler],
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+)
+logging.getLogger("lumina.middleware").setLevel(logging.INFO)
+
+_startup_time = __import__("time").time()
 
 
 @asynccontextmanager
@@ -28,11 +37,6 @@ async def lifespan(application: FastAPI):
     from app.database import init_db
 
     await asyncio.to_thread(init_db)
-
-    async with db_conn() as conn:
-        cur = conn.cursor()
-        cur.execute('UPDATE users SET role = "admin" WHERE username = "admin"')
-        conn.commit()
 
     from app.zim_auto_cleaner import start_zim_auto_cleaner
 
@@ -53,9 +57,25 @@ async def lifespan(application: FastAPI):
                 logging.exception("Session pruning failed")
     prune_task = asyncio.create_task(prune_sessions())
 
+    # Daily log retention pruning
+    from app.audit import _prune_logs_now
+    async def prune_admin_logs():
+        while True:
+            await asyncio.sleep(86400)
+            try:
+                await asyncio.to_thread(_prune_logs_now)
+            except Exception:
+                logging.exception("Admin log pruning failed")
+    log_prune_task = asyncio.create_task(prune_admin_logs())
+
     yield  # application runs here
 
     # --- SHUTDOWN ---
+    log_prune_task.cancel()
+    try:
+        await log_prune_task
+    except asyncio.CancelledError:
+        pass
     prune_task.cancel()
     try:
         await prune_task
@@ -95,6 +115,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Request ID, structured logging, and rate limiting
+from app.middleware import RequestIDMiddleware, RequestLoggingMiddleware, RateLimitMiddleware
+
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(RateLimitMiddleware, default_limit=200, default_window=60)
+
 # Security headers
 @app.middleware("http")
 async def add_security_headers(request, call_next):
@@ -103,6 +130,10 @@ async def add_security_headers(request, call_next):
     Adds X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, and
     Cache-Control headers to harden client-side security.
     """
+    from app.metrics import record_request
+    client_ip = request.client.host if request.client else "unknown"
+    record_request(client_ip)
+
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"

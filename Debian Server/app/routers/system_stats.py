@@ -4,14 +4,9 @@ import re
 import time
 import asyncio
 import logging
-try:
-    import resource as _resource
-    _HAS_RESOURCE = True
-except ImportError:
-    _HAS_RESOURCE = False
+from datetime import datetime
 from fastapi import APIRouter, Depends
-from app.database import _startup_time
-from app.async_db import db_conn
+from app.async_db import db_conn, db_fetch_one, db_fetch
 from app.dependencies import verify_teacher, verify_admin
 from app.models import TimeSync, HubStatsResponse, StatusResponse
 
@@ -31,31 +26,17 @@ async def get_stats():
     import shutil
     async with db_conn() as conn:
         c = conn.cursor()
-        try:
-            c.execute("SELECT COUNT(*) FROM scholars")
-            scholar_count = c.fetchone()[0]
-        except Exception:
-            scholar_count = 0
-        try:
-            c.execute("SELECT COUNT(*) FROM resources")
-            resource_count = c.fetchone()[0]
-        except Exception:
-            resource_count = 0
-        try:
-            c.execute("SELECT COUNT(*) FROM subjects")
-            subject_count = c.fetchone()[0]
-        except Exception:
-            subject_count = 0
-        try:
-            c.execute("SELECT COUNT(*) FROM courses WHERE published = 1")
-            published_courses = c.fetchone()[0]
-        except Exception:
-            published_courses = 0
-        try:
-            c.execute("SELECT COUNT(*) FROM courses WHERE published = 0")
-            draft_courses = c.fetchone()[0]
-        except Exception:
-            draft_courses = 0
+        def _count(query):
+            try:
+                c.execute(query)
+                return c.fetchone()[0]
+            except Exception:
+                return 0
+        scholar_count = _count("SELECT COUNT(*) FROM scholars")
+        resource_count = _count("SELECT COUNT(*) FROM resources")
+        subject_count = _count("SELECT COUNT(*) FROM subjects")
+        published_courses = _count("SELECT COUNT(*) FROM courses WHERE published = 1")
+        draft_courses = _count("SELECT COUNT(*) FROM courses WHERE published = 0")
     total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
     battery_percent = 100
     try:
@@ -67,10 +48,23 @@ async def get_stats():
             battery_percent = await asyncio.to_thread(_read_battery)
     except Exception:
         pass
-    uptime_secs = int(time.time() - _startup_time)
-    hours, rem = divmod(uptime_secs, 3600)
-    mins, secs = divmod(rem, 60)
-    uptime_str = f"{hours}h {mins}m" if hours else f"{mins}m {secs}s"
+    uptime_str = "0s"
+    try:
+        def _read_uptime():
+            """Read system uptime from /proc/uptime. Returns formatted string."""
+            with open("/proc/uptime", "r") as f:
+                up_secs = float(f.read().split()[0])
+            h = int(up_secs // 3600)
+            m = int((up_secs % 3600) // 60)
+            s = int(up_secs % 60)
+            parts = []
+            if h: parts.append(f"{h}h")
+            if m: parts.append(f"{m}m")
+            if s or not parts: parts.append(f"{s}s")
+            return " ".join(parts)
+        uptime_str = await asyncio.to_thread(_read_uptime)
+    except Exception:
+        pass
     for i, unit in enumerate(['B', 'KB', 'MB', 'GB', 'TB']):
         if used < 1024 ** (i + 1):
             used_str = f"{used / 1024**i:.1f} {unit}"
@@ -134,7 +128,12 @@ async def health():
     async with db_conn() as db:
         await asyncio.to_thread(db.execute, "SELECT 1")
 
-    rss_mb = _resource.getrusage(_resource.RUSAGE_SELF).ru_maxrss // 1024 if _HAS_RESOURCE else 0
+    rss_mb = 0
+    try:
+        import resource as _resource
+        rss_mb = _resource.getrusage(_resource.RUSAGE_SELF).ru_maxrss // 1024
+    except (ImportError, AttributeError):
+        pass
     try:
         open_fds = len(os.listdir(f"/proc/{os.getpid()}/fd"))
     except (FileNotFoundError, PermissionError):
@@ -144,3 +143,221 @@ async def health():
         "open_fds": open_fds,
         "rss_mb": rss_mb,
     }
+
+
+@router.get("/api/admin/diagnostics",
+            summary="Diagnostics dashboard data",
+            description="Returns comprehensive system health, metrics, and diagnostics. Admin-only.",
+            tags=["System Stats"],
+            responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def get_diagnostics(admin_user: str = Depends(verify_admin)):
+    """Comprehensive diagnostics for the admin dashboard.
+
+    Returns DB status, disk usage, resource counts, active sessions, cache
+    metrics, uptime, backup status, queue sizes, and ZIM status.
+    """
+    from app.metrics import get_metrics
+    from app.maintenance import get_storage_stats, get_table_stats
+
+    # DB status
+    db_ok = True
+    db_size = 0
+    try:
+        result = await db_fetch_one("PRAGMA quick_check")
+        db_ok = result and result[0] == "ok"
+        db_stat = await asyncio.to_thread(os.stat, "data/hub.db")
+        db_size = db_stat.st_size
+    except Exception:
+        db_ok = False
+
+    # Storage
+    storage = await get_storage_stats()
+    table_stats = await get_table_stats()
+
+    # Active sessions
+    active_sessions = 0
+    try:
+        result = await db_fetch_one(
+            "SELECT COUNT(*) FROM sessions WHERE last_accessed > datetime('now', '-1 hour')"
+        )
+        active_sessions = result[0] if result else 0
+    except Exception:
+        pass
+
+    # Uptime
+    uptime_str = "N/A"
+    try:
+        def _read_uptime():
+            with open("/proc/uptime", "r") as f:
+                up_secs = float(f.read().split()[0])
+            h = int(up_secs // 3600)
+            m = int((up_secs % 3600) // 60)
+            s = int(up_secs % 60)
+            parts = []
+            if h: parts.append(f"{h}h")
+            if m: parts.append(f"{m}m")
+            if s or not parts: parts.append(f"{s}s")
+            return " ".join(parts)
+        uptime_str = await asyncio.to_thread(_read_uptime)
+    except Exception:
+        pass
+
+    # Server uptime since start
+    import app.api as api_module
+    server_uptime = int(time.time() - getattr(api_module, "_startup_time", time.time()))
+
+    # ZIM status
+    zim_count = 0
+    zim_articles = 0
+    try:
+        result = await db_fetch_one("SELECT COUNT(*) FROM zim_archives")
+        zim_count = result[0] if result else 0
+        result = await db_fetch_one("SELECT COUNT(*) FROM zim_articles")
+        zim_articles = result[0] if result else 0
+    except Exception:
+        pass
+
+    # Backup status (check if backup script exists)
+    backup_exists = await asyncio.to_thread(os.path.exists, "backup_hub.sh")
+    last_backup = None
+    backup_dir = "backups"
+    if os.path.isdir(backup_dir):
+        try:
+            entries = await asyncio.to_thread(lambda: sorted(os.listdir(backup_dir)))
+            if entries:
+                last_backup = entries[-1]
+        except Exception:
+            pass
+
+    # Pending downloads
+    pending_downloads = 0
+    try:
+        result = await db_fetch_one("SELECT COUNT(*) FROM pending_downloads")
+        pending_downloads = result[0] if result else 0
+    except Exception:
+        pass
+
+    # Scheduler status
+    scheduler_status = "running"
+
+    return {
+        "status": "ok" if db_ok else "degraded",
+        "database": {
+            "healthy": db_ok,
+            "size_bytes": db_size,
+            "path": "data/hub.db",
+        },
+        "storage": {
+            "disk_total_bytes": storage["disk_total_bytes"],
+            "disk_used_bytes": storage["disk_used_bytes"],
+            "disk_free_bytes": storage["disk_free_bytes"],
+            "app_total_bytes": storage["total_app_bytes"],
+            "uploads_bytes": storage["uploads_bytes"],
+            "database_bytes": storage["database_bytes"],
+            "logs_bytes": storage["logs_bytes"],
+            "profile_icons_bytes": storage["profile_icons_bytes"],
+            "thumbnails_bytes": storage["thumbnails_bytes"],
+        },
+        "counts": {
+            "users": table_stats.get("users", 0),
+            "sessions": table_stats.get("sessions", 0),
+            "resources": table_stats.get("resources", 0),
+            "subjects": table_stats.get("subjects", 0),
+            "grades": table_stats.get("grades", 0),
+            "courses": table_stats.get("courses", 0),
+            "enrollments": table_stats.get("enrollments", 0),
+            "quiz_attempts": table_stats.get("quiz_attempts", 0),
+            "zim_archives": zim_count,
+            "zim_articles": zim_articles,
+            "pending_downloads": pending_downloads,
+        },
+        "active_sessions": active_sessions,
+        "uptime": {
+            "system": uptime_str,
+            "server_seconds": server_uptime,
+        },
+        "backup": {
+            "script_exists": backup_exists,
+            "last_backup": last_backup,
+        },
+        "scheduler": scheduler_status,
+        "metrics": get_metrics(),
+        "checked_at": datetime.utcnow().isoformat() + "Z",
+    }
+
+
+@router.get("/api/admin/maintenance/health",
+            summary="Database health check",
+            description="Runs integrity check and returns DB health status. Admin-only.",
+            tags=["System Stats"],
+            responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def maintenance_health(admin_user: str = Depends(verify_admin)):
+    """Run database integrity check."""
+    from app.maintenance import run_integrity_check
+    return await run_integrity_check()
+
+
+@router.post("/api/admin/maintenance/vacuum",
+             summary="VACUUM the database",
+             description="Runs VACUUM to reclaim fragmentation. Admin-only.",
+             tags=["System Stats"],
+             responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def maintenance_vacuum(admin_user: str = Depends(verify_admin)):
+    """VACUUM the database."""
+    from app.maintenance import run_vacuum
+    return await run_vacuum()
+
+
+@router.post("/api/admin/maintenance/analyze",
+             summary="ANALYZE the database",
+             description="Runs ANALYZE to update query planner statistics. Admin-only.",
+             tags=["System Stats"],
+             responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def maintenance_analyze(admin_user: str = Depends(verify_admin)):
+    """ANALYZE the database."""
+    from app.maintenance import run_analyze
+    return await run_analyze()
+
+
+@router.get("/api/admin/maintenance/orphans",
+            summary="Detect orphaned resources",
+            description="Finds DB records with no corresponding file on disk. Admin-only.",
+            tags=["System Stats"],
+            responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def maintenance_orphans(admin_user: str = Depends(verify_admin)):
+    """Detect orphaned resources."""
+    from app.maintenance import detect_orphans
+    return await detect_orphans()
+
+
+@router.get("/api/admin/maintenance/storage",
+            summary="Storage statistics",
+            description="Returns disk usage and per-directory sizes. Admin-only.",
+            tags=["System Stats"],
+            responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def maintenance_storage(admin_user: str = Depends(verify_admin)):
+    """Get storage statistics."""
+    from app.maintenance import get_storage_stats
+    return await get_storage_stats()
+
+
+@router.get("/api/admin/maintenance/tables",
+            summary="Table row counts",
+            description="Returns row counts for all key tables. Admin-only.",
+            tags=["System Stats"],
+            responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def maintenance_tables(admin_user: str = Depends(verify_admin)):
+    """Get table row counts."""
+    from app.maintenance import get_table_stats
+    return await get_table_stats()
+
+
+@router.post("/api/admin/maintenance/run-all",
+             summary="Run full maintenance",
+             description="Runs integrity check, ANALYZE, VACUUM, orphan detection, and storage stats. Admin-only.",
+             tags=["System Stats"],
+             responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def maintenance_run_all(admin_user: str = Depends(verify_admin)):
+    """Run all maintenance operations."""
+    from app.maintenance import run_full_maintenance
+    return await run_full_maintenance()

@@ -26,7 +26,7 @@ class LocaleNotifier extends Notifier<Locale> {
 
   /// Loads the persisted locale from [SharedPreferences].
   ///
-  /// Safe to call multiple times — only the first call reads storage.
+  /// Safe to call multiple times -- only the first call reads storage.
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;

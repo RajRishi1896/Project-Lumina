@@ -1,7 +1,7 @@
 #!/bin/bash
 # Purpose: Display the hub's IP address and a scannable QR code for student access.
 # Usage:   sudo ./show_hub_info.sh
-# Idempotent: Yes — read-only.
+# Idempotent: Yes -- read-only.
 
 ACTIVE=$(ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 if [ -z "$ACTIVE" ]; then

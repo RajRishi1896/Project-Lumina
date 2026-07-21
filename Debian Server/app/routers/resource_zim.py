@@ -9,11 +9,13 @@ import asyncio
 import logging
 import zipfile
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
-from app.database import UPLOAD_DIR, log_admin_action
+from app.database import UPLOAD_DIR, DB_PATH
 from app.async_db import db_exec, db_fetch
 from app.dependencies import verify_teacher
 
 router = APIRouter()
+
+_MIN_FREE_GB = 2  # reject uploads that leave less than this free
 
 
 def _zim_target_dir():
@@ -24,22 +26,35 @@ def _thumbs_dir():
     return os.path.join(_zim_target_dir(), "thumbs")
 
 
-async def _zim_upload_max_size():
+def _check_zim_magic(path: str) -> bool:
     try:
-        _disk = await asyncio.to_thread(shutil.disk_usage, "/")
-        return max(0, _disk.total - 1024 * 1024 * 1024)
+        with open(path, "rb") as f:
+            return f.read(4) == b'ZIM\x00'
     except Exception:
-        return 5000 * 1024 * 1024
+        return False
 
 
 @router.post("/teacher/upload-zim",
              summary="Upload ZIM archive", tags=["Resources"])
 async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(verify_teacher), request: Request = None):
-    total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
-    if free // (2**30) < 2:
-        raise HTTPException(status_code=507, detail="Insufficient storage space for ZIM upload.")
+    """Upload and process a ZIM archive.
+
+    Validates disk space, writes the file in chunks to a temp directory,
+    then processes it using libzim (binary ZIM) or ZIP fallback. Extracted
+    HTML articles are stored in ``zim_pages/`` and indexed in ``zim_articles``.
+    Thumbnails are extracted from the ZIM ``I`` namespace when available.
+
+    Returns:
+        Dict with status and list of imported article filenames.
+
+    Raises:
+        HTTPException: 400 for bad format, 413 if too large, 499 on disconnect.
+    """
+    _, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
+    if free // (2**30) < _MIN_FREE_GB:
+        raise HTTPException(status_code=507, detail=f"Insufficient storage. Need at least {_MIN_FREE_GB} GB free for ZIM upload.")  # i18n: user-facing error message
     if not file.filename:
-        raise HTTPException(status_code=400, detail="Uploaded file has no filename.")
+        raise HTTPException(status_code=400, detail="Uploaded file has no filename.")  # i18n: user-facing error message
 
     tmp_dir = os.path.join(UPLOAD_DIR, f"tmp_{uuid.uuid4().hex}")
     safe_filename = re.sub(r'[^A-Za-z0-9_.-]', '_', file.filename or 'archive.zim')
@@ -48,7 +63,7 @@ async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(v
 
     chunk_size = 64 * 1024
     total_size = 0
-    max_size = await _zim_upload_max_size()
+    max_size = free - (_MIN_FREE_GB * 1024 * 1024 * 1024)
 
     def _flush_chunks(chunks):
         with open(archive_path, "ab") as f:
@@ -63,38 +78,44 @@ async def upload_zim(file: UploadFile = File(...), teacher_user: str = Depends(v
         buf.append(chunk)
         total_size += len(chunk)
         if total_size > max_size:
-            raise HTTPException(status_code=413, detail=f"ZIM upload exceeds maximum size limit of {max_size // (1024 * 1024)} MiB.")
+            await asyncio.to_thread(shutil.rmtree, tmp_dir, True)
+            raise HTTPException(status_code=413, detail=f"Upload too large. Must leave at least {_MIN_FREE_GB} GB free on disk.")  # i18n: user-facing error message
         if len(buf) >= 64:
             await asyncio.to_thread(_flush_chunks, buf)
             buf = []
     if buf:
         await asyncio.to_thread(_flush_chunks, buf)
     if request and await request.is_disconnected():
-        raise HTTPException(status_code=499, detail="Client disconnected")
+        raise HTTPException(status_code=499, detail="Client disconnected")  # i18n: user-facing error message
 
-    is_zim_binary = await asyncio.to_thread(_check_zim_magic, archive_path)
-    if not is_zim_binary:
+    try:
+        result = await asyncio.to_thread(_process_zim_archive, archive_path, safe_filename, teacher_user, tmp_dir)
+        return {"status": "success", "imported": result}
+    finally:
         await asyncio.to_thread(shutil.rmtree, tmp_dir, True)
-        raise HTTPException(status_code=400, detail="Unsupported file format. Only ZIM archives (.zim) are accepted. The file does not have the ZIM magic signature.")
-
-    result = await asyncio.to_thread(_process_real_zim, archive_path, safe_filename, teacher_user)
-    await asyncio.to_thread(shutil.rmtree, tmp_dir, True)
-    return {"status": "success", "imported": result}
 
 
-def _check_zim_magic(path: str) -> bool:
+def _process_zim_archive(archive_path: str, filename: str, teacher_user: str, tmp_dir: str):
+    """Try libzim first (binary ZIM). If that fails, try ZIP extraction. Reject if neither works."""
     try:
-        with open(path, "rb") as f:
-            return f.read(4) == b'ZIM\x00'
+        imported = _process_with_libzim(archive_path, filename, teacher_user)
+        return imported
+    except HTTPException:
+        raise
     except Exception:
-        return False
+        logging.info(f"libzim failed for '{filename}', trying ZIP fallback")
+        try:
+            imported = _process_with_zip(archive_path, tmp_dir)
+            return imported
+        except (HTTPException, zipfile.BadZipFile):
+            raise
+        except Exception:
+            raise HTTPException(status_code=400, detail="Unsupported file format. Upload a valid ZIM archive (.zim).")  # i18n: user-facing error message
 
 
-def _process_real_zim(archive_path: str, filename: str, teacher_user: str):
-    try:
-        import libzim
-    except ImportError:
-        raise HTTPException(status_code=500, detail="ZIM parsing requires python-libzim. Install libzim-dev on the server.")
+def _process_with_libzim(archive_path: str, filename: str, teacher_user: str):
+    """Parse a ZIM archive using python-libzim (handles binary ZIM files)."""
+    import libzim
     zim_target_dir = _zim_target_dir()
     thumbs_dir = _thumbs_dir()
     os.makedirs(zim_target_dir, exist_ok=True)
@@ -106,10 +127,7 @@ def _process_real_zim(archive_path: str, filename: str, teacher_user: str):
     zim_stored_path = os.path.join(UPLOAD_DIR, f"{archive_id}.zim")
     shutil.move(archive_path, zim_stored_path)
 
-    try:
-        archive = libzim.Archive(zim_stored_path)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid ZIM archive file.")
+    archive = libzim.Archive(zim_stored_path)
 
     archive_title = getattr(archive, 'title', None) or os.path.splitext(filename)[0]
     archive_lang = getattr(archive, 'language', 'en') or 'en'
@@ -122,7 +140,7 @@ def _process_real_zim(archive_path: str, filename: str, teacher_user: str):
             ns_i_index[ns_entry.path.lower()] = ns_entry
 
     try:
-        conn = sqlite3.connect(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "hub.db"))
+        conn = sqlite3.connect(DB_PATH)
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute(
             "INSERT INTO zim_archives (id, filename, title, article_count, language, uploaded_by, file_size, zim_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -174,7 +192,7 @@ def _process_real_zim(archive_path: str, filename: str, teacher_user: str):
         conn.commit()
     except sqlite3.Error as e:
         logging.error(f"ZIM DB insert failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to index ZIM archive.")
+        raise HTTPException(status_code=500, detail="Failed to index ZIM archive.")  # i18n: user-facing error message
     finally:
         conn.close()
 
@@ -182,51 +200,50 @@ def _process_real_zim(archive_path: str, filename: str, teacher_user: str):
     return imported
 
 
-def _process_zip_archive(archive_path: str, tmp_dir: str):
-    try:
-        with zipfile.ZipFile(archive_path, "r") as zip_ref:
-            for entry in zip_ref.namelist():
-                info = zip_ref.getinfo(entry)
-                if '..' in entry or entry.startswith('/') or (entry.endswith('/') and os.path.islink(entry)):
-                    raise HTTPException(status_code=400, detail="ZIP contains invalid path entries.")
-                if info.external_attr >> 28 == 0o120000:
-                    raise HTTPException(status_code=400, detail="ZIP contains symlinks, rejected.")
-            zip_ref.extractall(tmp_dir)
-        imported = []
-        zim_target_dir = _zim_target_dir()
-        os.makedirs(zim_target_dir, exist_ok=True)
-        for root, _, files in os.walk(tmp_dir):
-            for fname in files:
-                if not fname.lower().endswith('.html'):
-                    continue
-                src = os.path.join(root, fname)
-                if "__" not in fname:
-                    article_id = uuid.uuid4().hex[:8].upper()
-                    title = os.path.splitext(fname)[0]
-                    dest_name = f"{article_id}__{title}.html"
-                else:
-                    dest_name = fname
-                dest_path = os.path.join(zim_target_dir, dest_name)
-                shutil.move(src, dest_path)
-                imported.append(dest_name)
-        return imported
-    except zipfile.BadZipFile:
-        raise HTTPException(status_code=400, detail="Invalid ZIM/ZIP archive.")
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=400, detail="Failed to extract archive.")
-    finally:
-        if os.path.exists(tmp_dir):
-            shutil.rmtree(tmp_dir, ignore_errors=True)
+def _process_with_zip(archive_path: str, tmp_dir: str):
+    """Extract HTML articles from a ZIP-based ZIM archive."""
+    with zipfile.ZipFile(archive_path, "r") as zip_ref:
+        for entry in zip_ref.namelist():
+            info = zip_ref.getinfo(entry)
+            if '..' in entry or entry.startswith('/') or (entry.endswith('/') and os.path.islink(entry)):
+                raise HTTPException(status_code=400, detail="ZIP contains invalid path entries.")  # i18n: user-facing error message
+            if info.external_attr >> 28 == 0o120000:
+                raise HTTPException(status_code=400, detail="ZIP contains symlinks, rejected.")  # i18n: user-facing error message
+        zip_ref.extractall(tmp_dir)
+    imported = []
+    zim_target_dir = _zim_target_dir()
+    os.makedirs(zim_target_dir, exist_ok=True)
+    for root, _, files in os.walk(tmp_dir):
+        for fname in files:
+            if not fname.lower().endswith('.html'):
+                continue
+            src = os.path.join(root, fname)
+            if "__" not in fname:
+                article_id = uuid.uuid4().hex[:8].upper()
+                title = os.path.splitext(fname)[0]
+                dest_name = f"{article_id}__{title}.html"
+            else:
+                dest_name = fname
+            dest_path = os.path.join(zim_target_dir, dest_name)
+            shutil.move(src, dest_path)
+            imported.append(dest_name)
+    return imported
 
 
 @router.delete("/teacher/zim/{archive_id}",
                summary="Delete a ZIM archive", tags=["Resources"])
 async def delete_zim_archive(archive_id: str, teacher_user: str = Depends(verify_teacher)):
+    """Delete a ZIM archive and all its extracted content.
+
+    Removes article HTML files, thumbnails, and database records for both
+    ``zim_articles`` and ``zim_archives``.
+
+    Raises:
+        HTTPException: 404 if archive not found.
+    """
     archive = await db_fetch("SELECT * FROM zim_archives WHERE id = ?", (archive_id,))
     if not archive:
-        raise HTTPException(status_code=404, detail="Archive not found.")
+        raise HTTPException(status_code=404, detail="Archive not found.")  # i18n: user-facing error message
     archive = archive[0]
     articles = await db_fetch("SELECT article_id FROM zim_articles WHERE archive_id = ?", (archive_id,))
     zim_target_dir = _zim_target_dir()

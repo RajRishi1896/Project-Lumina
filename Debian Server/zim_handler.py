@@ -1,4 +1,4 @@
-"""ZIM article router — DB-backed ZIM content with lazy asset fetching.
+"""ZIM article router -- DB-backed ZIM content with lazy asset fetching.
 
 Provides six endpoints under the ``/zim`` prefix: archive listing, article
 listing, article search, HTML page retrieval with rewritten asset paths,
@@ -29,7 +29,7 @@ os.makedirs(ZIM_PAGES_DIR, exist_ok=True)
 os.makedirs(ZIM_THUMBS_DIR, exist_ok=True)
 
 # ponytail: in-memory path→entry index per archive. Avoids O(N) linear scan
-# per /zim/asset request. Cache grows ~50 bytes per entry — 10K articles = 500KB.
+# per /zim/asset request. Cache grows ~50 bytes per entry -- 10K articles = 500KB.
 # Invalidate on archive delete (not implemented yet, acceptable ceiling).
 _zim_path_index: dict[str, dict[str, object]] = {}
 
@@ -202,7 +202,7 @@ async def get_zim_page(
         (article_id,),
     )
     if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
+        raise HTTPException(status_code=404, detail="Article not found")  # i18n: user-facing error message
     archive_id = article["archive_id"] or ""
     title = article["title"] or ""
 
@@ -212,7 +212,7 @@ async def get_zim_page(
     pattern = os.path.join(ZIM_PAGES_DIR, f"{article_id}__*.html")
     matches = await asyncio.to_thread(glob_mod.glob, pattern)
     if not matches:
-        raise HTTPException(status_code=404, detail="Article not found")
+        raise HTTPException(status_code=404, detail="Article not found")  # i18n: user-facing error message
 
     file_path = matches[0]
     try:
@@ -221,7 +221,7 @@ async def get_zim_page(
                 return f.read()
         html_content = await asyncio.to_thread(_read_file)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Article not found")
+        raise HTTPException(status_code=404, detail="Article not found")  # i18n: user-facing error message
 
     if archive_id:
         html_content = await asyncio.to_thread(
@@ -250,18 +250,18 @@ async def get_zim_asset(
     """Lazy-fetch an asset from the ZIM binary.
 
     Opens the .zim file, looks up the entry by path, and returns its bytes.
-    The file handle is not cached — each request opens/closes independently.
+    The file handle is not cached -- each request opens/closes independently.
     This is fine for ZIM serving (low concurrency per archive).
     """
     archive_row = await db_fetch_one(
         "SELECT zim_path FROM zim_archives WHERE id = ?", (archive_id,)
     )
     if not archive_row or not archive_row["zim_path"]:
-        raise HTTPException(status_code=404, detail="Archive not found or ZIM file missing.")
+        raise HTTPException(status_code=404, detail="Archive not found or ZIM file missing.")  # i18n: user-facing error message
 
     zim_path = archive_row["zim_path"]
     if not await asyncio.to_thread(os.path.isfile, zim_path):
-        raise HTTPException(status_code=500, detail="ZIM file not found on disk.")
+        raise HTTPException(status_code=500, detail="ZIM file not found on disk.")  # i18n: user-facing error message
 
     def _read_asset():
         try:
@@ -287,14 +287,14 @@ async def get_zim_asset(
                 data = bytes(data)
             return data, _get_mime(path)
         except ImportError:
-            raise HTTPException(status_code=500, detail="ZIM parsing requires python-libzim.")
+            raise HTTPException(status_code=500, detail="ZIM parsing requires python-libzim.")  # i18n: user-facing error message
         except Exception as e:
             logging.error(f"ZIM asset fetch error: {e}")
             return None, None
 
     data, mime = await asyncio.to_thread(_read_asset)
     if data is None:
-        raise HTTPException(status_code=404, detail="Asset not found in ZIM archive.")
+        raise HTTPException(status_code=404, detail="Asset not found in ZIM archive.")  # i18n: user-facing error message
     return Response(content=data, media_type=mime)
 
 
@@ -316,4 +316,4 @@ async def get_zim_thumbnail(
     thumb_path = os.path.join(ZIM_THUMBS_DIR, f"{article_id}.png")
     if await asyncio.to_thread(os.path.isfile, thumb_path):
         return FileResponse(thumb_path, media_type="image/png")
-    raise HTTPException(status_code=404, detail="Thumbnail not found")
+    raise HTTPException(status_code=404, detail="Thumbnail not found")  # i18n: user-facing error message

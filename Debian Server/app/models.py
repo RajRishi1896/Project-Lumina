@@ -90,7 +90,6 @@ class TokenResponse(BaseModel):
     token: str = Field(..., description="Session token.", example="abc123")
     refresh_token: str = Field(..., description="One-time refresh token.", example="LUMINA_REF-abc")
     persistent_key: str = Field(..., description="One-time persistent key.", example="LUMINA_PER-abc")
-    encryption_key: str = Field(..., description="AES-256-GCM encryption key for encrypted routes.", example="hexkey...")
 
 
 class LoginTokenResponse(BaseModel):
@@ -103,7 +102,6 @@ class LoginTokenResponse(BaseModel):
     scholar_id: str = Field(..., description="Scholar ID for the user.", example="LUMINA_01-Tabc")
     role: str = Field(..., description="User role: admin or teacher.", example="admin")
     reset_required: int = Field(..., description="Whether a password reset is required.", example=0)
-    encryption_key: str = Field(..., description="AES-256-GCM encryption key.", example="hexkey...")
 
 
 class ScholarRegisterResponse(BaseModel):
@@ -112,7 +110,6 @@ class ScholarRegisterResponse(BaseModel):
     token: str = Field(..., description="Session token.", example="abc123")
     refresh_token: str = Field(..., description="One-time refresh token.", example="LUMINA_REF-abc")
     persistent_key: str = Field(..., description="One-time persistent key.", example="LUMINA_PER-abc")
-    encryption_key: str = Field(..., description="AES-256-GCM encryption key.", example="hexkey...")
 
 
 class StudentLoginResponse(BaseModel):
@@ -122,7 +119,6 @@ class StudentLoginResponse(BaseModel):
     token: str = Field(..., description="Session token.", example="abc123")
     refresh_token: str = Field(..., description="One-time refresh token.", example="LUMINA_REF-abc")
     persistent_key: str = Field(..., description="One-time persistent key.", example="LUMINA_PER-abc")
-    encryption_key: str = Field(..., description="AES-256-GCM encryption key.", example="hexkey...")
     name: str = Field(..., description="Student display name.", example="Alice")
     grade: str = Field(..., description="Student grade or class.", example="Grade 10")
     reset_required: bool = Field(..., description="Whether a password reset is required.", example=False)
@@ -146,7 +142,7 @@ class SubjectResponse(BaseModel):
 
 class RestoreResponse(BaseModel):
     """Download history restore response."""
-    download_history: list = Field(default_factory=list, description="List of downloaded resource IDs.", example=["RES-a1b2c3d4", "RES-e5f6g7h8"])
+    download_history: list[str] = Field(default_factory=list, description="List of downloaded resource IDs.", example=["RES-a1b2c3d4", "RES-e5f6g7h8"])
 
 
 class StudentAnalyticsResponse(BaseModel):
@@ -354,62 +350,62 @@ class CourseCreate(BaseModel):
 
 class CourseResponse(BaseModel):
     """Course metadata returned to clients."""
-    id: str = Field(..., description="UUID")
-    title: str
-    description: str = ""
-    subject: str = ""
-    grade: int = 0
-    language: str = "en"
-    cover_image: str = ""
-    published: int = 0
-    teacher_username: str = ""
-    enrollment_count: int = 0
-    created_at: str = ""
-    updated_at: str = ""
+    id: str = Field(..., description="Unique course identifier.", example="CRS-abc123")
+    title: str = Field(..., description="Course title.", example="Introduction to Algebra")
+    description: str = Field("", description="Short course summary.", example="Basic algebra concepts")
+    subject: str = Field("", description="Subject category.", example="Mathematics")
+    grade: int = Field(0, description="Grade level (0=General, 1-13).", example=9)
+    language: str = Field("en", description="ISO 639-1 language code.", example="en")
+    cover_image: str = Field("", description="Cover image filename.", example="cover.png")
+    published: int = Field(0, description="Publish status (0=draft, 1=published, -1=archived).", example=1)
+    teacher_username: str = Field("", description="Username of the creating teacher.", example="teacher_john")
+    enrollment_count: int = Field(0, description="Number of enrolled students.", example=15)
+    created_at: str = Field("", description="Creation timestamp (ISO 8601).", example="2026-07-01T12:00:00")
+    updated_at: str = Field("", description="Last update timestamp (ISO 8601).", example="2026-07-15T10:30:00")
 
 
 class ProgressSync(BaseModel):
     """Student progress sync payload."""
-    current_position: int = Field(0, ge=0)
-    completed_count: int = Field(0, ge=0)
+    current_position: int = Field(0, ge=0, description="Index of the last viewed resource.", example=3)
+    completed_count: int = Field(0, ge=0, description="Number of resources completed.", example=2)
 
 
 class EnrollResponse(BaseModel):
     """Enrollment operation response."""
-    status: str = "ok"
-    course_id: str = ""
-    message: str = ""
+    status: str = Field("ok", description="Operation status.", example="ok")
+    course_id: str = Field("", description="Enrolled course identifier.", example="CRS-abc123")
+    message: str = Field("", description="Human-readable message.", example="Enrolled successfully")
 
 
 class QuizAttemptSubmit(BaseModel):
     """Quiz attempt submission payload."""
-    attempt_id: str = Field(..., description="Client-generated UUID for idempotency")
-    attempt_number: int = Field(1, ge=1)
-    score: float = Field(0.0, ge=0.0, le=1.0)
-    passed: int = Field(0)
-    answers_json: str = ""
-    started_at: str = ""
-    submitted_at: str = ""
-    time_taken_seconds: int = 0
-    quiz_version: int = 1
-    threshold_at_submission: float = 0.0
+    attempt_id: str = Field(..., description="Client-generated UUID for idempotency.", example="abc-123")
+    attempt_number: int = Field(1, ge=1, description="Sequential attempt number for this student/resource.", example=1)
+    score: float = Field(0.0, ge=0.0, le=1.0, description="Score as a fraction (0.0 to 1.0).", example=0.85)
+    passed: int = Field(0, description="Whether the attempt passed (1=yes, 0=no).", example=1)
+    answers_json: str = Field("", description="Serialized JSON of the student's answers.", example='[{"id":"q1","selected":"a"}]')
+    started_at: str = Field("", description="ISO 8601 timestamp when the quiz was started.", example="2026-07-15T10:00:00")
+    submitted_at: str = Field("", description="ISO 8601 timestamp when the quiz was submitted.", example="2026-07-15T10:15:00")
+    time_taken_seconds: int = Field(0, description="Total time taken in seconds.", example=900)
+    quiz_version: int = Field(1, description="Quiz version at time of attempt.", example=1)
+    threshold_at_submission: float = Field(0.0, description="Pass threshold at time of submission.", example=0.6)
 
 
 class QuizAttemptResponse(BaseModel):
     """A stored quiz attempt record."""
-    id: str
-    student_id: str
-    course_id: str
-    resource_id: str
-    attempt_number: int
-    score: float = 0.0
-    passed: int = 0
-    answers_json: str = ""
-    started_at: str = ""
-    submitted_at: str = ""
-    time_taken_seconds: int = 0
-    quiz_version: int = 1
-    threshold_at_submission: float = 0.0
+    id: str = Field(..., description="Attempt identifier.", example="abc-123")
+    student_id: str = Field(..., description="Student scholar ID.", example="LUMINA_01-abc")
+    course_id: str = Field(..., description="Course identifier.", example="CRS-abc123")
+    resource_id: str = Field(..., description="Quiz resource identifier.", example="quiz-abc123")
+    attempt_number: int = Field(..., description="Sequential attempt number.", example=1)
+    score: float = Field(0.0, description="Score as a fraction (0.0 to 1.0).", example=0.85)
+    passed: int = Field(0, description="Whether the attempt passed.", example=1)
+    answers_json: str = Field("", description="Serialized student answers.", example='[{"id":"q1","selected":"a"}]')
+    started_at: str = Field("", description="Quiz start timestamp.", example="2026-07-15T10:00:00")
+    submitted_at: str = Field("", description="Quiz submission timestamp.", example="2026-07-15T10:15:00")
+    time_taken_seconds: int = Field(0, description="Time taken in seconds.", example=900)
+    quiz_version: int = Field(1, description="Quiz version at time of attempt.", example=1)
+    threshold_at_submission: float = Field(0.0, description="Pass threshold at submission time.", example=0.6)
 
 
 class SimilarLinkCreate(BaseModel):

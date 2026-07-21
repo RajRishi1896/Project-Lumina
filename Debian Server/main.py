@@ -1,4 +1,4 @@
-"""Lumina EduMesh Hub — Uvicorn launcher.
+"""Lumina EduMesh Hub -- Uvicorn launcher.
 
 This module is the entry point for the EduMesh Hub server. It starts the
 FastAPI application (defined in app.api) via Uvicorn on 0.0.0.0:8000.
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         logging.info("Starting without SSL (no cert files found)")
 
     logging.info("Starting EduMesh Hub...")
-    # Single worker — SQLite WAL mode supports concurrent readers across
+    # Single worker -- SQLite WAL mode supports concurrent readers across
     # processes but multi-worker adds complexity (each worker has its own
     # in-memory state).  20-worker thread pool inside the single process
     # handles 250 concurrent students without issues.

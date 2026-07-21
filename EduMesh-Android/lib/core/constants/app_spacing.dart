@@ -4,57 +4,57 @@ import 'package:flutter/material.dart';
 class AppSpacing {
   AppSpacing._();
 
-  /// 4px — The base unit of the spacing grid.
+  /// 4px -- The base unit of the spacing grid.
   static const double xs = 4;
 
-  /// 8px — Small spacing between related elements.
+  /// 8px -- Small spacing between related elements.
   static const double sm = 8;
 
-  /// 12px — Medium spacing for element groups.
+  /// 12px -- Medium spacing for element groups.
   static const double md = 12;
 
-  /// 16px — Large spacing, used for card padding.
+  /// 16px -- Large spacing, used for card padding.
   static const double lg = 16;
 
-  /// 20px — Extra-large spacing.
+  /// 20px -- Extra-large spacing.
   static const double xl = 20;
 
-  /// 24px — Double extra-large spacing.
+  /// 24px -- Double extra-large spacing.
   static const double xxl = 24;
 
-  /// 32px — Section-level spacing between distinct content blocks.
+  /// 32px -- Section-level spacing between distinct content blocks.
   static const double section = 32;
 
-  /// 40px — Large section spacing.
+  /// 40px -- Large section spacing.
   static const double sectionLg = 40;
 
-  /// 48px — Minimum touch target size for interactive elements.
+  /// 48px -- Minimum touch target size for interactive elements.
   static const double touchTarget = 48;
 
-  /// 64px — Standard page horizontal margin.
+  /// 64px -- Standard page horizontal margin.
   static const double pageMargin = 64;
 
-  /// 4px — Small border radius.
+  /// 4px -- Small border radius.
   static const double radiusSm = 4;
 
-  /// 8px — Medium border radius.
+  /// 8px -- Medium border radius.
   static const double radiusMd = 8;
 
-  /// 12px — Large border radius.
+  /// 12px -- Large border radius.
   static const double radiusLg = 12;
 
-  /// 16px — Extra-large border radius.
+  /// 16px -- Extra-large border radius.
   static const double radiusXl = 16;
 
-  /// 9999px — Fully rounded (pill/circle) border radius.
+  /// 9999px -- Fully rounded (pill/circle) border radius.
   static const double radiusFull = 9999;
 
-  /// Font weight 400 — Used for body text.
+  /// Font weight 400 -- Used for body text.
   static const FontWeight weightBody = FontWeight.w400;
 
-  /// Font weight 700 — Used for strong emphasis and headings.
+  /// Font weight 700 -- Used for strong emphasis and headings.
   static const FontWeight weightStrong = FontWeight.w700;
 
-  /// Font weight 800 — Used for display and title text.
+  /// Font weight 800 -- Used for display and title text.
   static const FontWeight weightDisplay = FontWeight.w800;
 }

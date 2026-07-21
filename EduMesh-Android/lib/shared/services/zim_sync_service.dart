@@ -4,7 +4,7 @@ import '../../core/network/api_client.dart';
 import '../../core/storage/db_helper.dart';
 
 /// Fetches ZIM articles from the hub and persists them to the local SQLite
-/// cache so search works offline. Singleton — use [ZimSyncService.instance].
+/// cache so search works offline. Singleton -- use [ZimSyncService.instance].
 class ZimSyncService {
   static final ZimSyncService instance = ZimSyncService._();
   ZimSyncService._();

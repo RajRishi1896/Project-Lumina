@@ -61,7 +61,7 @@ def start_zim_auto_cleaner(interval_seconds: int = 3600):
     """Start a background daemon thread that prunes the ZIM cache.
 
     The cleaner runs indefinitely every ``interval_seconds`` (default
-    1 hour). It is safe to call multiple times — only the first call
+    1 hour). It is safe to call multiple times -- only the first call
     starts the thread.
 
     Args:

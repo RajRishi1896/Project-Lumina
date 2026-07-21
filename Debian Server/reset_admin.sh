@@ -3,7 +3,7 @@
 #          password to "lumina2026" by directly updating the SQLite database.
 # Usage:   sudo ./reset_admin.sh
 # Args:    None
-# Idempotent: Yes — always resets to the same password regardless of the
+# Idempotent: Yes -- always resets to the same password regardless of the
 #             current state.
 set -e
 

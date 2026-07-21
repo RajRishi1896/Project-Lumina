@@ -1,10 +1,10 @@
-"""Password management routes — change, force-change, and admin reset."""
+"""Password management routes -- change, force-change, and admin reset."""
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.async_db import db_conn
 from app.models import StatusResponse
 from app.dependencies import hash_password, verify_password, validate_password_strength, verify_teacher, verify_admin, invalidate_tokens_for_user
-from app.database import log_admin_action
+from app.audit import audit, Action
 
 router = APIRouter()
 
@@ -27,16 +27,16 @@ async def change_password(data: dict, teacher_user: str = Depends(verify_teacher
             or if the user is the default admin.
     """
     if teacher_user == "admin":
-        raise HTTPException(status_code=400, detail="Cannot change the default admin password.")
+        raise HTTPException(status_code=400, detail="Cannot change the default admin password.")  # i18n: user-facing error message
     async with db_conn() as conn:
         c = conn.cursor()
         c.execute("SELECT hashed_password FROM users WHERE username = ?", (teacher_user,))
         row = c.fetchone()
         if not row or not verify_password(data.get('old_password'), row[0]):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password.")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password.")  # i18n: user-facing error message
         valid, msg = validate_password_strength(data.get('new_password'))
         if not valid:
-            raise HTTPException(status_code=400, detail=msg)
+            raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
         new_hash = hash_password(data.get('new_password'))
         c.execute("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
         conn.commit()
@@ -66,10 +66,10 @@ async def force_change_password(data: dict, teacher_user: str = Depends(verify_t
             c.execute("SELECT reset_required FROM users WHERE username = ?", (teacher_user,))
             row = c.fetchone()
             if not row or not row[0]:
-                raise HTTPException(status_code=400, detail="Password reset not required.")
+                raise HTTPException(status_code=400, detail="Password reset not required.")  # i18n: user-facing error message
             valid, msg = validate_password_strength(data.get('new_password'))
             if not valid:
-                raise HTTPException(status_code=400, detail=msg)
+                raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
             new_hash = hash_password(data.get('new_password'))
             c.execute("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
             conn.commit()
@@ -79,7 +79,7 @@ async def force_change_password(data: dict, teacher_user: str = Depends(verify_t
             raise
         except Exception as e:
             logging.error(f"force_change_password: {e}")
-            raise HTTPException(status_code=400, detail="Failed to change password")
+            raise HTTPException(status_code=400, detail="Failed to change password")  # i18n: user-facing error message
 
 
 @router.post("/teacher/reset-password/{username}", response_model=StatusResponse,
@@ -99,7 +99,7 @@ async def force_reset_teacher_password(username: str, admin_user: str = Depends(
         HTTPException 400: If username is 'admin' or the reset fails.
     """
     if username == "admin":
-        raise HTTPException(status_code=400, detail="Cannot reset the default admin password. Use the Settings page to re-enable the default admin account.")
+        raise HTTPException(status_code=400, detail="Cannot reset the default admin password. Use the Settings page to re-enable the default admin account.")  # i18n: user-facing error message
     hashed = hash_password("lumina2026")
     async with db_conn() as conn:
         try:
@@ -107,8 +107,9 @@ async def force_reset_teacher_password(username: str, admin_user: str = Depends(
             c.execute("UPDATE users SET hashed_password = ?, reset_required = 1 WHERE username = ?", (hashed, username))
             conn.commit()
             await invalidate_tokens_for_user(username)
-            await log_admin_action(admin_user, f"reset password for teacher {username}")
+            await audit(action=Action.RESET_PASSWORD, username=admin_user, resource_type="account",
+                        resource_id=username, target_user=username)
             return {"status": "success"}
         except Exception as e:
             logging.error(f"force_reset_teacher_password: {e}")
-            raise HTTPException(status_code=400, detail="Failed to reset password")
+            raise HTTPException(status_code=400, detail="Failed to reset password")  # i18n: user-facing error message

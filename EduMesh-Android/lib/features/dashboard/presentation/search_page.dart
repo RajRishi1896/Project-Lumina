@@ -262,7 +262,7 @@ class _SearchPageState extends State<SearchPage> {
               html = html.replaceAll(fullUrl, dataUri);
             }
           } catch (_) {
-            // Asset fetch failed — leave URL as-is, WebView may still load it online.
+            // Asset fetch failed -- leave URL as-is, WebView may still load it online.
           }
         }));
       }

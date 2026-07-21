@@ -11,6 +11,7 @@ import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'course_player_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
+/// Course browsing page with enrollment, recommendations, similar courses, and search.
 class BrowsePage extends StatefulWidget {
   const BrowsePage({super.key});
 
@@ -45,6 +46,7 @@ class _BrowsePageState extends State<BrowsePage> {
     });
   }
 
+  /// Loads catalog, enrolled courses, recommendations, and similar courses from cache/remote.
   Future<void> _loadData() async {
     _loading = true;
     if (mounted) setState(() {});
@@ -77,6 +79,7 @@ class _BrowsePageState extends State<BrowsePage> {
     if (mounted) setState(() {});
   }
 
+  /// Courses matching the current search query, filtered from the full catalog.
   List<Course> get _filteredCourses {
     if (_searchQuery.isEmpty) return _allCourses;
     final q = _searchQuery.toLowerCase();

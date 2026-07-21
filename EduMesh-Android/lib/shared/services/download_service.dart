@@ -2,17 +2,9 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
-
 import '../../core/network/api_client.dart';
 import '../../core/storage/db_helper.dart';
 
-/// Service that manages file downloads from the Lumina hub to local storage.
-///
-/// Provides download-to-file with progress callbacks, resume-safe `.part` file
-/// handling, local database tracking, and an offline-aware pending-download
-/// queue. All downloaded files are stored under `LuminaResources/` within the
-/// app's documents directory.
 class DownloadService {
 
   Future<String> get _localPath async {
@@ -25,13 +17,10 @@ class DownloadService {
     return path;
   }
 
-  /// Downloads a file. Throws an exception if storage is full.
   Future<File?> downloadFile(String url, String fileName, {Function(int, int)? onProgress}) async {
     String? savePath;
     String? partPath;
     try {
-      await WakelockPlus.enable(); // EDGE CASE: Prevent Pocket Sleep WiFi Drops
-      
       await ApiClient.ensureInitialized();
       
       final baseDir = await _localPath;
@@ -74,8 +63,6 @@ class DownloadService {
       }
       debugPrint('Unexpected download error: $e');
       throw Exception('UNKNOWN_ERROR');
-    } finally {
-      await WakelockPlus.disable(); // Release wake lock
     }
   }
 

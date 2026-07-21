@@ -31,7 +31,6 @@ dependencies:
   flutter_secure_storage: ^10.2.0
   app_settings: ^7.0.0
   wakelock_plus: ^1.6.1
-  # Note: Bundle font files locally for offline use, or configure google_fonts cache
 
 
   image_picker: ^1.1.2
@@ -54,24 +53,4 @@ flutter:
   assets:
     - assets/images/
 
-  fonts:
-    - family: NotoSans
-      fonts:
-        - asset: assets/fonts/NotoSans-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/NotoSans-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/NotoSans-ExtraBold.ttf
-          weight: 800
-    - family: NotoSansDevanagari
-      fonts:
-        - asset: assets/fonts/NotoSansDevanagari-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/NotoSansDevanagari-Bold.ttf
-          weight: 700
-    - family: NotoSansKannada
-      fonts:
-        - asset: assets/fonts/NotoSansKannada-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/NotoSansKannada-Bold.ttf
-          weight: 700
+  # ponytail: no bundled fonts -- Android system Noto covers Devanagari/Kannada

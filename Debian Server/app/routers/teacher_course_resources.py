@@ -1,4 +1,4 @@
-"""Teacher course resource management — upload, ZIP import/export."""
+"""Teacher course resource management -- upload, ZIP import/export."""
 import os
 import io
 import re
@@ -12,7 +12,8 @@ import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
-from app.database import UPLOAD_DIR, DB_PATH, log_admin_action, gen_composite_uid
+from app.database import UPLOAD_DIR, DB_PATH, gen_composite_uid
+from app.audit import audit, Action
 from app.async_db import db_fetch, db_fetch_one
 from app.dependencies import verify_teacher
 from app.routers.teacher_courses import (
@@ -32,6 +33,15 @@ async def upload_course_resource(
     file: UploadFile = File(...),
     teacher_user: str = Depends(verify_teacher),
 ):
+    """Upload a single resource file to a course.
+
+    Writes the file in chunks to ``uploads/courses/{id}/resources/``, registers
+    it in ``course_resources`` with the next position index, and optionally
+    assigns it to a topic.
+
+    Returns:
+        The created course_resources row.
+    """
     await _ensure_course_owner(course_id, teacher_user)
     original_name = file.filename or "unnamed_file"
     resource_id = str(uuid.uuid4())
@@ -52,7 +62,9 @@ async def upload_course_resource(
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (resource_id, course_id, resource_type, disp_title, original_name, saved_name, total_size, next_pos, topic_id)
     )
-    await log_admin_action(teacher_user, f"Uploaded resource '{disp_title}' to course {course_id}")
+    await audit(action=Action.UPLOAD_COURSE_RESOURCE, username=teacher_user, resource_type="course_resource",
+                resource_id=resource_id, resource_name=disp_title,
+                context={"course_id": course_id, "file_size": total_size})
     row = await db_fetch_one("SELECT * FROM course_resources WHERE id = ?", (resource_id,))
     return dict(row)
 
@@ -64,6 +76,15 @@ async def upload_course_zip(
     file: UploadFile = File(...),
     teacher_user: str = Depends(verify_teacher),
 ):
+    """Import resources into an existing course from a ZIP archive.
+
+    Expects ``resources/`` entries for files, ``assets/`` for supplementary
+    files, ``quiz_*.json`` for quizzes, and an optional ``course.json``
+    metadata manifest.  Processes everything in a background thread.
+
+    Returns:
+        Counts of resources created, quizzes found, and assets extracted.
+    """
     await _ensure_course_owner(course_id, teacher_user)
 
     tmp_dir = os.path.join(COURSES_DIR, f"tmp_{uuid.uuid4().hex}")
@@ -85,7 +106,7 @@ async def upload_course_zip(
         buf.append(chunk)
         total_size += len(chunk)
         if total_size > 500 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="ZIP exceeds 500 MB limit.")
+            raise HTTPException(status_code=400, detail="ZIP exceeds 500 MB limit.")  # i18n: user-facing error message
         if len(buf) >= 64:
             await asyncio.to_thread(_flush, b"".join(buf))
             buf = []
@@ -100,7 +121,7 @@ async def upload_course_zip(
                 names = zf.namelist()
                 for name in names:
                     if '..' in name or name.startswith('/'):
-                        raise HTTPException(status_code=400, detail=f"ZIP contains invalid path: {name}")
+                        raise HTTPException(status_code=400, detail=f"ZIP contains invalid path: {name}")  # i18n: user-facing error message
 
                 resources_created = 0
                 quizzes_found = 0
@@ -168,15 +189,14 @@ async def upload_course_zip(
                         resources_created += 1
 
                 conn_sql.commit()
-                conn_sql.close()
                 return {"status": "ok", "resources_created": resources_created,
                         "quizzes_found": quizzes_found, "assets_extracted": assets_extracted}
         except zipfile.BadZipFile:
-            raise HTTPException(status_code=400, detail="Invalid ZIP archive.")
+            raise HTTPException(status_code=400, detail="Invalid ZIP archive.")  # i18n: user-facing error message
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to extract archive: {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to extract archive: {e}")  # i18n: user-facing error message, {e} is the exception detail
         finally:
             if os.path.exists(tmp_dir):
                 shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -187,9 +207,11 @@ async def upload_course_zip(
                 pass
 
     result = await asyncio.to_thread(_process)
-    await log_admin_action(teacher_user,
-        f"Imported ZIP into course {course_id}: {result['resources_created']} resources, "
-        f"{result['quizzes_found']} quizzes, {result['assets_extracted']} assets")
+    await audit(action=Action.IMPORT_ZIP, username=teacher_user, resource_type="course",
+                resource_id=course_id,
+                context={"resources_created": result['resources_created'],
+                         "quizzes_found": result['quizzes_found'],
+                         "assets_extracted": result['assets_extracted']})
     return result
 
 
@@ -200,6 +222,16 @@ async def import_course_zip(
     file: UploadFile = File(...),
     teacher_user: str = Depends(verify_teacher),
 ):
+    """Create a new course by importing a ZIP archive.
+
+    The ZIP must contain a ``course.json`` manifest with title, description,
+    subject, grade, language, and optionally topics/resources metadata.
+    Creates the course row, extracts resources/assets/quizzes, and maps
+    topic assignments from the manifest.
+
+    Returns:
+        201 with the new course_id and extraction counts.
+    """
     from app.database import gen_uid
     tmp_dir = os.path.join(COURSES_DIR, f"tmp_{uuid.uuid4().hex}")
     os.makedirs(tmp_dir, exist_ok=True)
@@ -220,7 +252,7 @@ async def import_course_zip(
         buf.append(chunk)
         total_size += len(chunk)
         if total_size > 500 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="ZIP exceeds 500 MB limit.")
+            raise HTTPException(status_code=400, detail="ZIP exceeds 500 MB limit.")  # i18n: user-facing error message
         if len(buf) >= 64:
             await asyncio.to_thread(_flush, b"".join(buf))
             buf = []
@@ -235,9 +267,9 @@ async def import_course_zip(
                 names = zf.namelist()
                 for name in names:
                     if '..' in name or name.startswith('/'):
-                        raise HTTPException(status_code=400, detail=f"ZIP contains invalid path: {name}")
+                        raise HTTPException(status_code=400, detail=f"ZIP contains invalid path: {name}")  # i18n: user-facing error message
                 if "course.json" not in names:
-                    raise HTTPException(status_code=400, detail="ZIP must contain course.json.")
+                    raise HTTPException(status_code=400, detail="ZIP must contain course.json.")  # i18n: user-facing error message
                 md = json.loads(zf.read("course.json"))
                 title = md.get("title", "Imported Course")
                 description = md.get("description", "")
@@ -314,11 +346,11 @@ async def import_course_zip(
             return {"status": "ok", "course_id": course_id, "resources_created": resources_created,
                     "quizzes_found": quizzes_found, "assets_extracted": assets_extracted}
         except zipfile.BadZipFile:
-            raise HTTPException(status_code=400, detail="Invalid ZIP archive.")
+            raise HTTPException(status_code=400, detail="Invalid ZIP archive.")  # i18n: user-facing error message
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to extract archive: {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to extract archive: {e}")  # i18n: user-facing error message, {e} is the exception detail
         finally:
             if os.path.exists(tmp_dir):
                 shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -329,18 +361,29 @@ async def import_course_zip(
                 pass
 
     result = await asyncio.to_thread(_process)
-    await log_admin_action(teacher_user,
-        f"Imported ZIP into course {result['course_id']}: {result['resources_created']} resources, "
-        f"{result['quizzes_found']} quizzes, {result['assets_extracted']} assets")
+    await audit(action=Action.IMPORT_ZIP, username=teacher_user, resource_type="course",
+                resource_id=result['course_id'],
+                context={"resources_created": result['resources_created'],
+                         "quizzes_found": result['quizzes_found'],
+                         "assets_extracted": result['assets_extracted']})
     return result
 
 
 @router.get("/api/teacher/courses/{course_id}/export",
             summary="Export course as ZIP", tags=["Teacher Courses"])
 async def export_course(course_id: str, teacher_user: str = Depends(verify_teacher)):
+    """Export a course as a ZIP archive.
+
+    Bundles ``course.json`` (full metadata + resources + topics manifest),
+    all resource files under ``resources/``, assets under ``assets/``, and
+    any ``quiz_*.json`` files.  Returns a streaming ZIP response.
+
+    Raises:
+        HTTPException: 404 if the course does not exist.
+    """
     row = await db_fetch_one("SELECT * FROM courses WHERE id = ?", (course_id,))
     if not row:
-        raise HTTPException(status_code=404, detail="Course not found.")
+        raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
     resources = await db_fetch(
         "SELECT * FROM course_resources WHERE course_id = ? ORDER BY position ASC", (course_id,))
     topics = await db_fetch(

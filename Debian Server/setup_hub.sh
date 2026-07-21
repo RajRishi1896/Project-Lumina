@@ -5,7 +5,7 @@
 #          kernel-level concurrency limits.
 # Usage:   sudo ./setup_hub.sh
 # Args:    None
-# Idempotent: Yes — safe to re-run as a repair install. Existing configs
+# Idempotent: Yes -- safe to re-run as a repair install. Existing configs
 #             are overwritten with the latest defaults.
 set -e
 cd "$(dirname "$0")" || exit 1
@@ -165,6 +165,9 @@ systemctl restart systemd-logind
 
 # 10. Nightly Reboot to clear RAM leaks (3:00 AM)
 ( crontab -l 2>/dev/null | grep -v "^[0#]*[0-9].*/sbin/shutdown.*-r"; echo "0 3 * * * /sbin/shutdown -r now" ) | crontab -
+
+# 10b. Daily Backup at 2:00 AM -- DB + profile icons only
+( crontab -l 2>/dev/null | grep -v "backup_hub.sh"; echo "0 2 * * * cd $(pwd) && ./backup_hub.sh >> data/backup.log 2>&1" ) | crontab -
 
 # 11. Auto-Repair File System on Power Loss
 if grep -q "fsck.repair=yes" /etc/default/grub; then

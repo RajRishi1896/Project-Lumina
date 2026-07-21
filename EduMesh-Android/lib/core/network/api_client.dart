@@ -139,7 +139,7 @@ class ApiClient {
   }
   
   /// The underlying [Dio] instance used for all HTTP requests.
-  /// Does NOT resolve the server base URL — call [ensureInitialized] first if needed.
+  /// Does NOT resolve the server base URL -- call [ensureInitialized] first if needed.
   static Dio get dio {
     return _dio;
   }

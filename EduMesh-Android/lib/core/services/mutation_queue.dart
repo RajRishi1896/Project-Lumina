@@ -29,7 +29,7 @@ class MutationQueue {
         await _executeMutation(endpoint, method, body);
         return;
       } on DioException {
-        // Network error — persist for retry
+        // Network error -- persist for retry
       }
     }
     final db = await DBHelper().database;
@@ -65,7 +65,7 @@ class MutationQueue {
         final retries = (row['retries'] as int) + 1;
         if (retries >= maxRetries) {
           if (priority == 'high') {
-            debugPrint('MutationQueue: DROPPED HIGH-PRIORITY mutation $id — quiz result may never sync');
+            debugPrint('MutationQueue: DROPPED HIGH-PRIORITY mutation $id -- quiz result may never sync');
           }
           debugPrint('MutationQueue: dropping mutation $id ($endpoint) after $maxRetries retries');
           await db.delete('pending_mutations', where: 'id = ?', whereArgs: [id]);

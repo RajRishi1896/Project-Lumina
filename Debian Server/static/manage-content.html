@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head — theme detection, metadata, page-specific styles -->
+<!-- Section: Head � theme detection, metadata, page-specific styles -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,63 +13,66 @@
 
 </head>
 <body>
-
-    <!-- Section: Sidebar — empty, rendered by renderLayout() -->
+    <a href="#app-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
+    <!-- Section: Sidebar � empty, rendered by renderLayout() -->
     <aside></aside>
 
-    <!-- Section: Main Content — upload button, resource library, topic management -->
+    <!-- Section: Main Content � upload button, resource library, topic management -->
     <main>
         <div id="app-content">
         <div id="contentTab">
-            <div class="page-header">
+            <div class="page-header" style="margin-bottom: 2.5rem;">
                 <h1 data-i18n="content.page_title">Content Manager</h1>
                 <p data-i18n="content.page_description">Upload and manage educational resources for your students.</p>
             </div>
 
-            <!-- Section: Mesh Library — filterable resource table with search + upload button on same line -->
+            <!-- Section: Mesh Library � filterable resource table with search + upload button on same line -->
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
-                    <div class="card-title" style="margin-bottom: 0;" data-i18n="content.library_title">Mesh Library</div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <div class="filter-inline-group" style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div class="form-group" style="display: flex; gap: 0.25rem; margin-bottom: 0; flex-direction: row; align-items: center;">
-                                <label for="filterSubject" style="margin-bottom: 0; white-space: nowrap; font-size: 0.8rem;" data-i18n="content.library_filter_subject_label">Filter Subject:</label>
-                                <select id="filterSubject" style="padding: 0.3rem 0.4rem; width: auto; min-width: 120px; font-size: 0.8rem; background: var(--surface); color: var(--on-surface); border: 1px solid var(--outline); border-radius: var(--radius-sm); outline: none;">
-                                    <option value="ALL" data-i18n="content.library_filter_all_subjects">All Subjects</option>
-                                </select>
-                            </div>
-                            <div class="search-wrap-inline" style="width: 160px; position: relative;">
-                                <label for="resourceSearch" class="sr-only" data-i18n="content.library_search_label">Search resources</label>
-                                <input type="text" id="resourceSearch" placeholder="Search resources..." data-i18n="content.library_search_placeholder" style="width: 100%; padding: 0.3rem 0.4rem 0.3rem 1.8rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
-                                <span style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                </span>
-                            </div>
+                <div class="flex flex-col gap-3 mb-3">
+                    <div class="card-title mb-0" data-i18n="content.library_title">Mesh Library</div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label for="filterSubject" class="text-sm" style="white-space: nowrap;" data-i18n="content.library_filter_subject_label">Filter Subject:</label>
+                        <select id="filterSubject" class="form-select" style="flex:0 1 160px;">
+                            <option value="ALL" data-i18n="content.library_filter_all_subjects">All Subjects</option>
+                        </select>
+                        <div class="search-wrap-inline" style="flex:1 1 200px;">
+                            <label for="resourceSearch" class="sr-only" data-i18n="content.library_search_label">Search resources</label>
+                            <input type="text" id="resourceSearch" placeholder="Search resources..." data-i18n="content.library_search_placeholder">
+                            <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </span>
                         </div>
-                        <button id="btn-openUploadModal" class="btn" style="background: var(--teal); color: #fff; white-space: nowrap; padding: 0.5rem 1rem; font-size: 0.875rem;"><span data-i18n="content.upload_button">+ Upload Resource</span></button>
+                        <button id="btn-openUploadModal" class="btn btn-primary" style="white-space: nowrap;"><span data-i18n="content.upload_button">+ Upload Resource</span></button>
                     </div>
                 </div>
-                <table>
+                <table class="table" >
                     <thead>
-                        <tr><th data-i18n="content.library_th_title">Title</th><th data-i18n="content.library_th_subject">Subject</th><th data-i18n="content.library_th_topic">Topic</th><th data-i18n="content.library_th_type">Type</th><th data-i18n="content.library_th_downloads">Downloads</th><th style="text-align: right;" data-i18n="content.library_th_action">Action</th></tr>
+                        <tr>
+                            <th data-i18n="content.library_th_title" style="width: 30%;">Title</th>
+                            <th data-i18n="content.library_th_subject" style="width: 14%;">Subject</th>
+                            <th data-i18n="content.library_th_topic" style="width: 14%;">Topic</th>
+                            <th data-i18n="content.library_th_type" style="width: 10%;">Type</th>
+                            <th data-i18n="content.library_th_downloads" style="width: 10%;">Downloads</th>
+                            <th data-i18n="content.library_th_action" style="width: 22%;">Action</th>
+                        </tr>
                     </thead>
                     <tbody id="resourceTable">
                         <tr><td colspan="6" class="empty-state" data-i18n="content.library_empty">No resources uploaded yet.</td></tr>
                     </tbody>
                 </table>
-                <div id="resourcePagination" style="display: none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--outline); flex-wrap: wrap;">
-                    <button id="btn-resourcePrevPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                <div id="resourcePagination" class="pagination" style="display: none;">
+                    <button id="btn-resourcePrevPage" class="btn btn-outline pagination-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                         <span data-i18n="settings.previous">Previous</span>
                     </button>
-                    <span id="resourcePageInfo" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">Page 1 of 1</span>
-                    <button id="btn-resourceNextPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                    <span id="resourcePageInfo" class="pagination-info">Page 1 of 1</span>
+                    <button id="btn-resourceNextPage" class="btn btn-outline pagination-btn">
                         <span data-i18n="settings.next">Next</span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                     </button>
-                    <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                    <span class="flex items-center gap-1 text-sm text-muted" style="margin-left: 0.5rem;">
                         <span data-i18n="settings.per_page">Per page:</span>
-                        <select id="resourcePerPageSelect" style="min-height: 44px; padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface); color: var(--on-surface); outline: none; cursor: pointer;">
+                        <select id="resourcePerPageSelect" class="pagination-select">
                             <option value="5">5</option>
                             <option value="10">10</option>
                             <option value="20" selected>20</option>
@@ -79,43 +82,52 @@
                 </div>
             </div>
 
-            <!-- Section: Manage Topics — searchable topic table with delete -->
+            <!-- Section: Manage Topics � searchable topic table with delete -->
             <div class="card">
-                <div class="card-title" style="color: var(--teal); font-weight: 800;" data-i18n="content.topics_title">Manage Topics</div>
+                <div class="flex flex-col mb-3 gap-3">
+                    <div class="card-title mb-0 text-teal font-extrabold" data-i18n="content.topics_title">Manage Topics</div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label for="topicFilterSubject" class="text-sm" style="white-space: nowrap;" data-i18n="content.library_filter_subject_label">Filter Subject:</label>
+                        <select id="topicFilterSubject" class="form-select" style="flex:0 1 160px;">
+                            <option value="ALL">All Subjects</option>
+                        </select>
+                        <div class="search-wrap-inline" style="flex:1 1 200px;">
+                            <label for="topicSearch" class="sr-only">Search topics</label>
+                            <input type="text" id="topicSearch" placeholder="Search topics...">
+                            <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </span>
+                        </div>
+                        <button id="btn-addTopic" class="btn btn-primary" style="white-space: nowrap;"><span data-i18n="content.topics_add_button">+ Add Topic</span></button>
+                    </div>
+                </div>
                 <div id="topicNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
 
-                <div style="margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center;">
-                    <div style="flex: 1; position: relative;">
-                        <label for="topicSearch" class="sr-only">Search topics</label>
-                        <input type="text" id="topicSearch" placeholder="Search topics..." style="width: 100%; padding: 0.5rem 0.75rem 0.5rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.85rem; background: var(--surface); color: var(--on-surface); outline: none;">
-                        <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        </span>
-                    </div>
-                    <button id="btn-addTopic" class="btn" style="background: var(--teal); color: #fff; border-color: var(--teal); white-space: nowrap; padding: 0.5rem 1rem; font-size: 0.875rem;">+ Add Topic</button>
-                </div>
-
-                <table>
+                <table class="table" >
                     <thead>
-                        <tr><th data-i18n="content.topics_th_subject">Subject</th><th data-i18n="content.topics_th_name">Topic Name</th><th style="text-align: right;" data-i18n="content.topics_th_action">Action</th></tr>
+                        <tr>
+                            <th data-i18n="content.topics_th_subject" style="width: 20%;">Subject</th>
+                            <th data-i18n="content.topics_th_name" style="width: 65%;">Topic Name</th>
+                            <th data-i18n="content.topics_th_action" style="width: 15%;">Action</th>
+                        </tr>
                     </thead>
                     <tbody id="topicTable">
-                        <tr><td colspan="3" class="empty-state" style="text-align:center;" data-i18n="content.topics_empty">No topics created yet.</td></tr>
+                        <tr><td colspan="3" class="empty-state" data-i18n="content.topics_empty">No topics created yet.</td></tr>
                     </tbody>
                 </table>
-                <div id="topicPagination" style="display: none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--outline); flex-wrap: wrap;">
-                    <button id="btn-topicPrevPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                <div id="topicPagination" class="pagination" style="display: none;">
+                    <button id="btn-topicPrevPage" class="btn btn-outline pagination-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                         <span data-i18n="settings.previous">Previous</span>
                     </button>
-                    <span id="topicPageInfo" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">Page 1 of 1</span>
-                    <button id="btn-topicNextPage" class="btn btn-outline" style="min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                    <span id="topicPageInfo" class="pagination-info">Page 1 of 1</span>
+                    <button id="btn-topicNextPage" class="btn btn-outline pagination-btn">
                         <span data-i18n="settings.next">Next</span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                     </button>
-                    <span style="display: flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                    <span class="flex items-center gap-1 text-sm text-muted" style="margin-left: 0.5rem;">
                         <span data-i18n="settings.per_page">Per page:</span>
-                        <select id="topicPerPageSelect" style="min-height: 44px; padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface); color: var(--on-surface); outline: none; cursor: pointer;">
+                        <select id="topicPerPageSelect" class="pagination-select">
                             <option value="5">5</option>
                             <option value="10">10</option>
                             <option value="20" selected>20</option>
@@ -126,142 +138,249 @@
             </div>
         </div>
 
-        <!-- Section: Upload Resource Modal — inside app-content so SPA nav preserves it -->
-        <div id="uploadResourceModal" class="hidden popup" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;">
-            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:520px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--teal);">
-                <h3 style="font-size:1.15rem;font-weight:800;margin-top:0;margin-bottom:1.25rem;color:var(--teal);" data-i18n="content.upload_title">Upload Resource</h3>
+        <!-- Section: Upload Resource Modal � inside app-content so SPA nav preserves it -->
+        <div id="uploadResourceModal" class="hidden popup modal-overlay">
+            <div class="modal creation">
+                <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="content.upload_title">Upload Resource</h3>
                 <div id="uploadNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div class="grid grid-cols-2 gap-4">
                     <div style="grid-column:1/-1;">
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_title">Title</label>
-                        <input type="text" id="title" placeholder="e.g. Physics 101" data-i18n="content.upload_placeholder_title" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                        <label class="form-label" data-i18n="content.upload_label_title">Title</label>
+                        <input type="text" id="title" placeholder="e.g. Physics 101" data-i18n="content.upload_placeholder_title" class="form-input">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_category">Category</label>
-                        <select id="type" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                        <label class="form-label" data-i18n="content.upload_label_category">Category</label>
+                        <select id="type" class="form-select">
                             <option value="textbook" data-i18n="content.upload_option_textbook">Textbook</option>
                             <option value="khan" data-i18n="content.upload_option_video">Video</option>
                             <option value="pyq" data-i18n="content.upload_option_pyq">Previous Year Paper (PYQ)</option>
                             <option value="kiwix" data-i18n="content.upload_option_zim">ZIM Archive</option>
                             <option value="notes" data-i18n="content.upload_option_notes">Notes</option>
+                            <option value="quiz">Quiz</option>
                         </select>
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_subject">Subject</label>
-                        <select id="subjectSelect" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                        <label class="form-label" data-i18n="content.upload_label_subject">Subject</label>
+                        <select id="subjectSelect" class="form-select">
                             <option value="General" data-i18n="content.upload_option_general">General</option>
                         </select>
                     </div>
                     <div style="grid-column: 1/-1;">
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_topic">Chapter / Topic</label>
-                        <select id="topicSelect" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                        <label class="form-label" data-i18n="content.upload_label_topic">Chapter / Topic</label>
+                        <select id="topicSelect" class="form-select">
                             <option value="" data-i18n="content.upload_option_general_topic">General (No Topic)</option>
                         </select>
                     </div>
-                    <div style="grid-column:1/-1;">
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_file">File</label>
-                        <input type="file" id="file" style="width:100%;padding:0.5rem;font-size:0.9rem;background:var(--surface);color:var(--on-surface);border:1px solid var(--outline);border-radius:var(--radius-sm);">
+                    <div id="fileInputWrap" style="grid-column:1/-1;">
+                        <label class="form-label" data-i18n="content.upload_label_file">File</label>
+                        <input type="file" id="file" class="form-input">
+                    </div>
+                    <div id="quizCreateWrap" style="grid-column:1/-1;display:none;">
+                        <label class="form-label">Quiz</label>
+                        <button id="btn-openQuizBuilder" type="button" class="btn btn-primary w-full">Open Quiz Builder</button>
+                        <div id="quizSummaryLine" style="display:none;margin-top:0.5rem;font-size:0.8rem;color:var(--text-secondary);"></div>
                     </div>
                 </div>
-                <div style="display:flex;gap:0.75rem;justify-content:flex-end;border-top:1px solid var(--outline);padding-top:1rem;margin-top:1.25rem;">
-                    <button id="btn-closeUploadModal" class="btn btn-outline" style="border-color:var(--outline);color:var(--on-surface);background:transparent;padding:0.55rem 1.15rem;">Cancel</button>
-                    <button id="btn-upload" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:0.55rem 1.15rem;font-weight:700;"><span data-i18n="content.upload_button">Upload</span></button>
+                <div class="modal-footer">
+                    <button id="btn-closeUploadModal" class="btn btn-outline">Cancel</button>
+                    <button id="btn-upload" class="btn btn-primary"><span data-i18n="content.upload_button">Upload</span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Standalone Quiz Builder Modal -->
+        <div id="quizBuilderModal" class="hidden popup modal-overlay" style="z-index:20001;">
+            <div class="modal" style="max-width:800px;width:95%;">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="modal-title" style="font-size:1.25rem;">Quiz Builder</h3>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-importQuiz" class="btn btn-outline btn-sm">Import Quiz</button>
+                        <button id="btn-exportQuiz" class="btn btn-outline btn-sm">Export Quiz</button>
+                        <input type="file" id="quizImportFile" accept=".json" style="display:none;">
+                        <button id="btn-closeQuizModal" class="modal-close">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quiz Settings -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Quiz Title</label>
+                        <input type="text" id="quizTitle" placeholder="e.g. Chapter 1 Quiz" maxlength="120" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Time Limit (minutes)</label>
+                        <select id="quizTimeLimit" class="form-select">
+                            <option value="0">Unlimited</option>
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="15">15</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="60">60</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Pass Threshold (%)</label>
+                        <input type="number" id="quizThreshold" value="60" min="0" max="100" class="form-input">
+                    </div>
+                </div>
+
+                <!-- Question List -->
+                <div class="mt-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-lg font-bold">Questions</h4>
+                        <button id="btn-addQuestion" class="btn btn-outline btn-sm">+ Add Question</button>
+                    </div>
+                    <div id="quizQuestionList">
+                        <p class="text-sm text-muted text-center p-4">No questions added yet.</p>
+                    </div>
+                </div>
+
+                <!-- Question Editor (in-modal) -->
+                <div id="questionEditor" style="display:none;margin-top:1.5rem;padding:1.25rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--surface-alt, var(--bg-surface));">
+                    <div class="flex items-center justify-between mb-4">
+                        <h5 class="font-bold text-base" style="margin:0;" id="questionEditorTitle">New Question</h5>
+                        <button id="btn-closeQuestionEditor" class="modal-close">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Question Type</label>
+                        <select id="qType" class="form-select">
+                            <option value="mcq">MCQ (Single)</option>
+                            <option value="tf">True / False</option>
+                            <option value="fill_blanks">Fill in the Blanks</option>
+                            <option value="multi">Multi-Select</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Question Text</label>
+                        <textarea id="qText" rows="3" maxlength="500" placeholder="Enter the question..." class="form-input" style="resize:vertical;"></textarea>
+                        <div class="text-xs text-muted mt-1" style="text-align:right;"><span id="qTextCount">0</span>/500</div>
+                    </div>
+                    <div id="qOptionsContainer">
+                        <label class="form-label">Options</label>
+                        <div id="qOptionsList"></div>
+                        <button id="btn-addOption" class="btn btn-outline btn-sm" style="margin-top:0.5rem;">+ Add Option</button>
+                    </div>
+                    <div id="qFillContainer" style="display:none;">
+                        <div class="mb-3">
+                            <label class="form-label">Correct Answer</label>
+                            <input type="text" id="qFillAnswer" placeholder="Enter the correct answer..." class="form-input">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Explanation (optional)</label>
+                        <textarea id="qExplanation" rows="2" maxlength="500" placeholder="Explain why this answer is correct..." class="form-input" style="resize:vertical;"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-2 mt-3">
+                        <button id="btn-cancelQuestion" class="btn btn-outline btn-sm">Cancel</button>
+                        <button id="btn-saveQuestion" class="btn btn-primary btn-sm">Save Question</button>
+                    </div>
+                </div>
+
+                <!-- Quiz Actions -->
+                <div class="modal-footer mt-6">
+                    <button id="btn-saveQuizResource" class="btn btn-primary">Save Quiz</button>
                 </div>
             </div>
         </div>
 
         <!-- Section: Edit Topic Modal -->
-        <div id="editTopicModal" class="hidden popup" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;">
-            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:420px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--teal);">
-                <h3 style="font-size:1.15rem;font-weight:800;margin-top:0;margin-bottom:1.25rem;color:var(--teal);">Edit Topic</h3>
+        <div id="editTopicModal" class="hidden popup modal-overlay">
+            <div class="modal creation">
+                <h3 class="modal-title creation" style="margin-bottom:1.25rem;">Edit Topic</h3>
                 <div id="editTopicNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
                 <input type="hidden" id="editTopicId">
-                <div style="margin-bottom:1.25rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Topic Name</label>
-                    <input type="text" id="editTopicName" placeholder="e.g. Chapter 1" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                <div class="mb-5">
+                    <label class="form-label">Topic Name</label>
+                    <input type="text" id="editTopicName" placeholder="e.g. Chapter 1" class="form-input">
                 </div>
-                <div style="display:flex;gap:0.75rem;justify-content:flex-end;border-top:1px solid var(--outline);padding-top:1rem;">
-                    <button id="btn-closeEditTopic" class="btn btn-outline" style="border-color:var(--outline);color:var(--on-surface);background:transparent;padding:0.55rem 1.15rem;">Cancel</button>
-                    <button id="btn-saveEditTopic" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:0.55rem 1.15rem;font-weight:700;">Save</button>
+                <div class="modal-footer">
+                    <button id="btn-closeEditTopic" class="btn btn-outline">Cancel</button>
+                    <button id="btn-saveEditTopic" class="btn btn-primary">Save</button>
                 </div>
             </div>
         </div>
 
-        <!-- Section: Add Topic Modal — inside app-content so SPA nav preserves it -->
-        <div id="addTopicModal" class="hidden popup" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;">
-            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:420px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--teal);">
-                <h3 style="font-size:1.15rem;font-weight:800;margin-top:0;margin-bottom:1.25rem;color:var(--teal);" data-i18n="content.topics_modal_title">Add New Topic</h3>
+        <!-- Section: Add Topic Modal � inside app-content so SPA nav preserves it -->
+        <div id="addTopicModal" class="hidden popup modal-overlay">
+            <div class="modal creation">
+                <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="content.topics_modal_title">Add New Topic</h3>
                 <div id="addTopicNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.upload_label_subject">Subject</label>
-                    <select id="modalTopicSubject" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                <div class="mb-4">
+                    <label class="form-label" data-i18n="content.upload_label_subject">Subject</label>
+                    <select id="modalTopicSubject" class="form-select">
                         <option value="">Select subject...</option>
                     </select>
                 </div>
-                <div style="margin-bottom:1.25rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;" data-i18n="content.topics_th_name">Topic Name</label>
-                    <input type="text" id="modalTopicName" placeholder="e.g. Chapter 1" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                <div class="mb-5">
+                    <label class="form-label" data-i18n="content.topics_th_name">Topic Name</label>
+                    <input type="text" id="modalTopicName" placeholder="e.g. Chapter 1" class="form-input">
                 </div>
-                <div style="display:flex;gap:0.75rem;justify-content:flex-end;border-top:1px solid var(--outline);padding-top:1rem;">
-                    <button id="btn-closeTopicModal" class="btn btn-outline" style="border-color:var(--outline);color:var(--on-surface);background:transparent;padding:0.55rem 1.15rem;">Cancel</button>
-                    <button id="btn-confirmAddTopic" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:0.55rem 1.15rem;font-weight:700;">Add Topic</button>
+                <div class="modal-footer">
+                    <button id="btn-closeTopicModal" class="btn btn-outline">Cancel</button>
+                    <button id="btn-confirmAddTopic" class="btn btn-primary">Add Topic</button>
                 </div>
             </div>
         </div>
 
         <!-- Section: Edit Resource Modal -->
-        <div id="editResourceModal" class="hidden popup" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;">
-            <div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:520px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--teal);">
-                <h3 style="font-size:1.15rem;font-weight:800;margin-top:0;margin-bottom:1.25rem;color:var(--teal);">Edit Resource</h3>
+        <div id="editResourceModal" class="hidden popup modal-overlay">
+            <div class="modal creation">
+                <h3 class="modal-title creation" style="margin-bottom:1.25rem;">Edit Resource</h3>
                 <div id="editResNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
                 <input type="hidden" id="editResId">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div class="grid grid-cols-2 gap-4">
                     <div style="grid-column:1/-1;">
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Title</label>
-                        <input type="text" id="editResTitle" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                        <label class="form-label">Title</label>
+                        <input type="text" id="editResTitle" class="form-input">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Type</label>
-                        <select id="editResType" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                        <label class="form-label">Type</label>
+                        <select id="editResType" class="form-select">
                             <option value="textbook">Textbook</option>
                             <option value="khan">Video</option>
                             <option value="pyq">Previous Year Paper (PYQ)</option>
                             <option value="kiwix">ZIM Archive</option>
                             <option value="notes">Notes</option>
+                            <option value="quiz">Quiz</option>
                         </select>
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Subject</label>
-                        <select id="editResSubject" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;"></select>
+                        <label class="form-label">Subject</label>
+                        <select id="editResSubject" class="form-select"></select>
                     </div>
                     <div style="grid-column: 1/-1;">
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Chapter / Topic</label>
-                        <select id="editResTopic" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                        <label class="form-label">Chapter / Topic</label>
+                        <select id="editResTopic" class="form-select">
                             <option value="">General (No Topic)</option>
                         </select>
                     </div>
                     <div style="grid-column:1/-1;">
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.35rem;">Language</label>
-                        <input type="text" id="editResLang" value="en" style="width:100%;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);outline:none;">
+                        <label class="form-label">Language</label>
+                        <input type="text" id="editResLang" value="en" class="form-input">
                     </div>
                 </div>
-                <div style="display:flex;gap:0.75rem;justify-content:flex-end;border-top:1px solid var(--outline);padding-top:1rem;margin-top:1.25rem;">
-                    <button id="btn-closeEditResource" class="btn btn-outline" style="border-color:var(--outline);color:var(--on-surface);background:transparent;padding:0.55rem 1.15rem;">Cancel</button>
-                    <button id="btn-saveEditResource" class="btn" style="background:var(--teal);color:#fff;border-color:var(--teal);padding:0.55rem 1.15rem;font-weight:700;">Save</button>
+                <div class="modal-footer">
+                    <button id="btn-closeEditResource" class="btn btn-outline">Cancel</button>
+                    <button id="btn-saveEditResource" class="btn btn-primary">Save</button>
                 </div>
             </div>
         </div>
         </div>
     </main>
 
-    <!-- Section: Bottom Navigation (Mobile) — tab bar hidden by default, shown via media query -->
+    <!-- Section: Bottom Navigation (Mobile) � tab bar hidden by default, shown via media query -->
     <div id="bottomNav"></div>
 
-    <!-- Section: Toast Container — global notification area (top-right, fixed) -->
-    <div id="globalToastContainer" style="position: fixed; top: 1.5rem; right: 1.5rem; z-index: 99999; display: flex; flex-direction: column; gap: 0.75rem; max-width: 380px; width: 100%; pointer-events: none;"></div>
+    <!-- Section: Toast Container � global notification area (top-right, fixed) -->
+    <div id="globalToastContainer" class="toast-container"></div>
 
-    <script src="/static/js/lumina.js?v=5" defer></script>
-    <!-- Section: Inline Scripts — resource CRUD, upload handler, topics -->
+    <script src="/static/js/lumina.js?v=9" defer></script>
+    <!-- Section: Inline Scripts � resource CRUD, upload handler, topics -->
     <script>
         var allResources = [];
         var allSubjects = [];
@@ -303,8 +422,10 @@
                 }).join('');
                 var subjectSelect = document.getElementById('subjectSelect');
                 var filterSubject = document.getElementById('filterSubject');
-                if (subjectSelect) subjectSelect.innerHTML = '<option value="General">General</option>' + optionsHtml;
-                if (filterSubject) filterSubject.innerHTML = '<option value="ALL">' + __('content.all_subjects') + '</option>' + '<option value="General">General</option>' + optionsHtml;
+                if (subjectSelect) subjectSelect.innerHTML = '<option value="General">' + __('content.upload_option_general') + '</option>' + optionsHtml;
+                if (filterSubject) filterSubject.innerHTML = '<option value="ALL">' + __('content.all_subjects') + '</option>' + '<option value="General">' + __('content.upload_option_general') + '</option>' + optionsHtml;
+                var topicFilterSubject = document.getElementById('topicFilterSubject');
+                if (topicFilterSubject) topicFilterSubject.innerHTML = '<option value="ALL">' + __('content.all_subjects_label') + '</option>' + '<option value="General">' + __('content.upload_option_general') + '</option>' + optionsHtml;
 
                 loadTopicsForSubject();
             } catch (e) {
@@ -317,14 +438,14 @@
             try {
                 var res = await fetch('/resources', { credentials: 'include' });
                 if (!res.ok) {
-                    document.getElementById('resourceTable').innerHTML = '<tr><td colspan="6" class="empty-state">Could not load resources (HTTP ' + res.status + ').</td></tr>';
+                    document.getElementById('resourceTable').innerHTML = '<tr><td colspan="6" class="empty-state">' + __('content.load_resources_http_error', {status: res.status}) + '</td></tr>';
                     return;
                 }
                 allResources = await res.json();
                 filterResources();
             } catch (e) {
                 console.error('loadResources failed:', e);
-                document.getElementById('resourceTable').innerHTML = '<tr><td colspan="6" class="empty-state">Could not load resources.</td></tr>';
+                document.getElementById('resourceTable').innerHTML = '<tr><td colspan="6" class="empty-state">' + __('content.notif.load_failed') + '</td></tr>';
             }
         }
 
@@ -347,6 +468,7 @@
             renderResourcePage();
         }
 
+        /** Renders the current page of filtered resources into the table body. */
         function renderResourcePage() {
             var tbody = document.getElementById('resourceTable');
             if (!tbody) return;
@@ -356,7 +478,7 @@
             var start = (_resourcePage - 1) * _perPage;
             var pageItems = data.slice(start, start + _perPage);
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No resources found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">' + __('content.library_no_resources') + '</td></tr>';
             } else {
                 tbody.innerHTML = pageItems.map(function(r) {
                     var badgeClass = 'type-default';
@@ -365,6 +487,7 @@
                     else if (r.type === 'pyq' || r.type === 'pastPaper') badgeClass = 'type-pyq';
                     else if (r.type === 'kiwix') badgeClass = 'type-kiwix';
                     else if (r.type === 'notes') badgeClass = 'type-notes';
+                    else if (r.type === 'quiz') badgeClass = 'type-quiz';
 
                     var subj = null;
                     for (var i = 0; i < allSubjects.length; i++) {
@@ -382,7 +505,7 @@
                         '<td data-label="Topic" style="font-size: 0.75rem; color: var(--text-muted);">' + (topicLabel ? esc(topicLabel) : '<span style="color:var(--text-muted);">General</span>') + '</td>' +
                         '<td data-label="Type"><span class="type-badge ' + badgeClass + '">' + esc(r.type) + '</span></td>' +
                         '<td data-label="Downloads" style="text-align: center; font-weight: 700;">' + dl + '</td>' +
-                        '<td data-label="Action" style="text-align: right;">' +
+                        '<td data-label="Action" style="text-align: left;">' +
                         '<button data-resource-id="' + r.id + '" data-resource-title="' + esc(r.title) + '" data-resource-subject="' + esc(r.subject) + '" data-resource-type="' + esc(r.type) + '" data-resource-topic="' + esc(r.topic_name || '') + '" class="btn btn-outline js-edit-resource" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">Edit</button> ' +
                         '<a href="' + _url + '" class="btn btn-outline" download style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">Download</a> ' +
                         '<button data-resource-id="' + r.id + '" data-resource-title="' + esc(r.title) + '" class="btn btn-outline js-delete-resource" style="color: var(--danger); border-color: var(--danger); margin-left: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.75rem;">Delete</button>' +
@@ -396,11 +519,15 @@
         function openUploadModal() {
             document.getElementById('title').value = '';
             document.getElementById('file').value = '';
+            document.getElementById('type').value = 'textbook';
             document.getElementById('uploadNotif').style.display = 'none';
             document.getElementById('uploadResourceModal').classList.remove('hidden');
             document.getElementById('title').focus();
+            onTypeChange();
+            _quizQuestions = [];
         }
 
+        /** Closes the upload resource modal. */
         function closeUploadModal() {
             document.getElementById('uploadResourceModal').classList.add('hidden');
         }
@@ -463,21 +590,25 @@
             }
         }
 
-        // --- Topic management (for upload modal subject→topic flow) ---
+        // --- Topic management (for upload modal subject?topic flow) ---
         var activeResourceTopics = [];
 
+        /**
+         * Fetches topics for the currently selected subject and populates the topic dropdown.
+         * Clears the dropdown if subject is General or empty.
+         */
         async function loadTopicsForSubject() {
             var subject = document.getElementById('subjectSelect')?.value || '';
             var topicSelect = document.getElementById('topicSelect');
             if (!topicSelect) return;
             if (!subject || subject === 'General') {
-                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+                topicSelect.innerHTML = '<option value="">' + __('content.topics_general_no_topic') + '</option>';
                 return;
             }
             try {
                 var res = await fetch('/teacher/resource-topics?subject=' + encodeURIComponent(subject), { credentials: 'include' });
                 activeResourceTopics = await res.json();
-                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+                topicSelect.innerHTML = '<option value="">' + __('content.topics_general_no_topic') + '</option>';
                 activeResourceTopics.forEach(function(t) {
                     var opt = document.createElement('option');
                     opt.value = t.id;
@@ -486,12 +617,13 @@
                 });
             } catch (e) {
                 activeResourceTopics = [];
-                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+                topicSelect.innerHTML = '<option value="">' + __('content.topics_general_no_topic') + '</option>';
             }
         }
 
         // --- Topic management section (all topics table) ---
 
+        /** Fetches all resource topics from the server and triggers the topic table render. */
         async function loadAllTopics() {
             try {
                 var res = await fetch('/teacher/resource-topics', { credentials: 'include' });
@@ -503,15 +635,19 @@
             }
         }
 
+        /** Filters the topic table by subject dropdown and search query, then re-renders. */
         function filterTopics() {
+            var subjectFilter = (document.getElementById('topicFilterSubject')?.value || 'ALL');
             var query = (document.getElementById('topicSearch')?.value || '').toLowerCase().trim();
             _topicFiltered = allTopics.filter(function(t) {
+                if (subjectFilter !== 'ALL' && t.subject !== subjectFilter) return false;
                 return !query || (t.name || '').toLowerCase().includes(query) || (t.subject || '').toLowerCase().includes(query);
             });
             _topicPage = 1;
             renderTopicPage();
         }
 
+        /** Renders the current page of filtered topics into the table body. */
         function renderTopicPage() {
             var tbody = document.getElementById('topicTable');
             if (!tbody) return;
@@ -522,14 +658,14 @@
             var start = (_topicPage - 1) * _perPage;
             var pageItems = data.slice(start, start + _perPage);
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="empty-state" style="text-align:center;">' + (query ? 'No topics match your search.' : __('content.topics_empty')) + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-state" style="text-align:center;">' + (query ? __('content.topics.no_match') : __('content.topics_empty')) + '</td></tr>';
             } else {
                 tbody.innerHTML = pageItems.map(function(t) {
                     return '<tr>' +
                         '<td data-label="Subject"><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--teal);">' + esc(t.subject) + '</div></td>' +
                         '<td data-label="Topic Name"><strong>' + esc(t.name) + '</strong></td>' +
-                        '<td data-label="Action" style="text-align: right;">' +
-                            '<button data-topic-id="' + esc(t.id) + '" data-topic-name="' + esc(t.name) + '" class="btn btn-outline js-edit-topic" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; margin-right: 0.25rem;">Edit</button>' +
+                        '<td data-label="Action" style="text-align: left;">' +
+                            '<button data-topic-id="' + esc(t.id) + '" data-topic-name="' + esc(t.name) + '" class="btn btn-outline js-edit-topic" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; margin-right: 0.25rem;">' + __('courses.edit') + '</button>' +
                             '<button data-topic-id="' + esc(t.id) + '" data-topic-name="' + esc(t.name) + '" class="btn btn-outline js-delete-topic" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('content.delete') + '</span></button>' +
                         '</td>' +
                     '</tr>';
@@ -538,9 +674,10 @@
             _updateContentPagination('topic', _topicPage, totalPages, data.length);
         }
 
+        /** Opens the add-topic modal with the subject dropdown populated from allSubjects. */
         function openAddTopicModal() {
             var select = document.getElementById('modalTopicSubject');
-            select.innerHTML = '<option value="">Select subject...</option>';
+            select.innerHTML = '<option value="">' + __('content.topics.select_subject') + '</option>';
             allSubjects.forEach(function(s) {
                 var opt = document.createElement('option');
                 opt.value = s.name;
@@ -553,19 +690,21 @@
             select.focus();
         }
 
+        /** Closes the add-topic modal. */
         function closeAddTopicModal() {
             document.getElementById('addTopicModal').classList.add('hidden');
         }
 
+        /** Validates and submits a new topic via POST to /teacher/resource-topics. */
         async function confirmAddTopic() {
             var subject = document.getElementById('modalTopicSubject').value;
             var name = document.getElementById('modalTopicName').value.trim();
             if (!subject) {
-                showNotification('addTopicNotif', 'Please select a subject.', true);
+                showNotification('addTopicNotif', __('content.notif.select_subject'), true);
                 return;
             }
             if (!name) {
-                showNotification('addTopicNotif', 'Topic name is required.', true);
+                showNotification('addTopicNotif', __('content.notif.topic_name_required'), true);
                 return;
             }
             try {
@@ -580,66 +719,92 @@
                     loadAllTopics();
                 } else {
                     var err = await res.json().catch(function() { return {}; });
-                    showNotification('addTopicNotif', err.detail || 'Failed to add topic.', true);
+                    showNotification('addTopicNotif', err.detail || __('content.notif.topic_create_failed'), true);
                 }
             } catch (e) {
-                showNotification('addTopicNotif', 'Network error.', true);
+                showNotification('addTopicNotif', __('content.notif.network_error'), true);
             }
         }
 
+        /**
+         * Deletes a topic with a transfer dropdown. Other topics in the same
+         * subject are listed so the user can transfer resources before deleting.
+         * @param {string} id - The topic ID.
+         * @param {string} name - The topic name for the confirmation dialog.
+         */
         async function deleteTopic(id, name) {
+            var topic = allTopics.find(function(t) { return t.id === id; }) || {};
+            var subject = topic.subject || '';
+            var others = allTopics.filter(function(t) { return t.id !== id && t.subject === subject; });
             var count = allResources.filter(function(r) { return r.topic_id === id; }).length;
             var result = await new Promise(function(resolve) {
                 var overlay = document.createElement('div');
                 overlay.className = 'popup';
                 overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;';
-                var btns = '';
-                if (count > 0) {
-                    btns = '<button id="topicXferBtn" style="width:100%;padding:0.6rem;background:var(--teal);color:#fff;border:2px solid var(--teal);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('content.topics_transfer_to_general') + '</button>';
-                    btns += '<button id="topicDelResBtn" style="width:100%;padding:0.6rem;background:var(--danger);color:#fff;border:2px solid var(--danger);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('content.topics_delete_with_resources') + '</button>';
-                } else {
-                    btns = '<button id="topicDelResBtn" style="width:100%;padding:0.6rem;background:var(--danger);color:#fff;border:2px solid var(--danger);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('content.confirm_delete_btn') + '</button>';
+                var xferHtml = '';
+                if (others.length > 0 && count > 0) {
+                    var opts = others.map(function(t) {
+                        return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>';
+                    }).join('');
+                    xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.5rem;">'
+                        + '<select id="topicXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--surface);color:var(--on-surface);font-size:0.875rem;">'
+                        + '<option value="">' + __('content.topic_transfer.select_topic') + '</option>' + opts + '</select>'
+                        + '<button id="topicXferBtn" style="width:100%;padding:0.6rem;background:var(--teal);color:#fff;border:2px solid var(--teal);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('danger.transfer.transfer_and_delete') + '</button>'
+                        + '</div>';
                 }
                 overlay.innerHTML = '<div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:440px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--danger);">'
                     + '<div style="text-align:center;margin-bottom:1rem;color:var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></div>'
                     + '<h3 style="font-size:1.15rem;font-weight:800;margin:0 0 0.5rem;color:var(--danger);text-align:center;">' + __('content.topics_delete_title') + '</h3>'
                     + '<p style="font-size:0.9rem;color:var(--text-secondary);margin:0 0 0.75rem;text-align:center;">' + __('content.topics_delete_confirm', {name: name}) + '</p>'
-                    + (count > 0 ? '<p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 1.25rem;text-align:center;">' + count + ' resource(s) are assigned to this topic.</p>' : '<div style="margin-bottom:1rem;"></div>')
-                    + '<div style="display:flex;flex-direction:column;gap:0.5rem;">'
-                    + btns
-                    + '<button id="topicCancelBtn" style="width:100%;padding:0.6rem;background:transparent;color:var(--on-surface);border:1px solid var(--outline);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;">Cancel</button>'
-                    + '</div></div>';
+                    + (count > 0 ? '<p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 0.75rem;text-align:center;">' + __('content.topics.resource_count', {count: count}) + '</p>' : '')
+                    + xferHtml
+                    + '<button id="topicDelBtn" style="width:100%;padding:0.6rem;background:var(--danger);color:#fff;border:2px solid var(--danger);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('content.confirm_delete_btn') + '</button>'
+                    + '<button id="topicCancelBtn" style="width:100%;padding:0.6rem;background:transparent;color:var(--on-surface);border:1px solid var(--outline);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;margin-top:0.5rem;">' + __('content.modal_cancel') + '</button>'
+                    + '</div>';
                 document.body.appendChild(overlay);
                 function done(val) { overlay.remove(); resolve(val); }
                 var xferBtn = document.getElementById('topicXferBtn');
-                var delBtn = document.getElementById('topicDelResBtn');
-                if (xferBtn) xferBtn.addEventListener('click', function() { done('transfer'); });
-                if (delBtn) delBtn.addEventListener('click', function() { done('delete'); });
+                var delBtn = document.getElementById('topicDelBtn');
+                if (xferBtn) xferBtn.addEventListener('click', function() {
+                    var target = document.getElementById('topicXferTarget').value;
+                    if (!target) { showNotification('topicNotif', __('danger.transfer.select_target'), true); return; }
+                    done({transfer_to: target});
+                });
+                if (delBtn) delBtn.addEventListener('click', function() { done({delete: true}); });
                 document.getElementById('topicCancelBtn').addEventListener('click', function() { done(null); });
             });
             if (!result) return;
-            var deleteRes = result === 'delete';
             try {
                 var url = '/teacher/resource-topics/' + encodeURIComponent(id);
-                if (deleteRes) url += '?delete_resources=true';
+                if (result.transfer_to) url += '?transfer_to=' + encodeURIComponent(result.transfer_to);
+                else if (result.delete) url += '?delete_resources=true';
                 var res = await fetch(url, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
-                    if (deleteRes) {
-                        showNotification('topicNotif', __('content.topics_deleted_with_resources', {name: name, count: count}), false);
+                    var data = await res.json().catch(function() { return {}; });
+                    if (result.transfer_to) {
+                        showNotification('topicNotif', data.message || __('danger.transfer.done', {name: name, target: data.transferred_to || ''}), false);
                     } else {
-                        showNotification('topicNotif', __('content.topics_deleted_transfer', {name: name}), false);
+                        showNotification('topicNotif', __('content.topics_deleted_with_resources', {name: name, count: count}), false);
                     }
                     loadAllTopics();
                     loadResources();
                 } else {
                     var err = await res.json().catch(function() { return {}; });
-                    showNotification('topicNotif', err.detail || 'Failed to delete topic.', true);
+                    showNotification('topicNotif', err.detail || __('content.notif.topic_delete_failed'), true);
                 }
             } catch (e) {
-                showNotification('topicNotif', 'Network error.', true);
+                showNotification('topicNotif', __('content.notif.network_error'), true);
             }
         }
 
+        /**
+         * Opens the edit-resource modal and populates fields with current values.
+         * @param {string} id - Resource ID.
+         * @param {string} title - Current resource title.
+         * @param {string} subject - Current resource subject.
+         * @param {string} type - Current resource type.
+         * @param {string} topicName - Current topic name for pre-selection.
+         */
         function openEditResource(id, title, subject, type, topicName) {
             document.getElementById('editResId').value = id;
             document.getElementById('editResTitle').value = title;
@@ -648,7 +813,7 @@
             document.getElementById('editResNotif').style.display = 'none';
             document.getElementById('editResourceModal').dataset.currentTopic = topicName;
             var sel = document.getElementById('editResSubject');
-            sel.innerHTML = '<option value="General">General</option>';
+            sel.innerHTML = '<option value="General">' + __('content.upload_option_general') + '</option>';
             allSubjects.forEach(function(s) {
                 var display = s.class_name ? s.name + ' (' + s.class_name + ')' : s.name;
                 var opt = document.createElement('option');
@@ -661,6 +826,7 @@
             document.getElementById('editResourceModal').classList.remove('hidden');
         }
 
+        /** Fetches topics for the edit-modal subject dropdown and pre-selects the current topic. */
         async function loadEditTopicsForSubject() {
             var subject = document.getElementById('editResSubject').value;
             var topicSelect = document.getElementById('editResTopic');
@@ -671,7 +837,7 @@
             try {
                 var res = await fetch('/teacher/resource-topics?subject=' + encodeURIComponent(subject), { credentials: 'include' });
                 var topics = await res.json();
-                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+                topicSelect.innerHTML = '<option value="">' + __('content.topics_general_no_topic') + '</option>';
                 topics.forEach(function(t) {
                     var opt = document.createElement('option');
                     opt.value = t.id;
@@ -686,10 +852,11 @@
                     }
                 }
             } catch (e) {
-                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+                topicSelect.innerHTML = '<option value="">' + __('content.topics_general_no_topic') + '</option>';
             }
         }
 
+        /** Saves edited resource metadata via PUT to /teacher/resources/:id. */
         async function saveResourceEdit() {
             var id = document.getElementById('editResId').value;
             var title = document.getElementById('editResTitle').value.trim();
@@ -697,7 +864,7 @@
             var type = document.getElementById('editResType').value;
             var topicId = document.getElementById('editResTopic').value || null;
             var language = document.getElementById('editResLang').value.trim() || 'en';
-            if (!title) return showAlert('Title is required.', true);
+            if (!title) return showAlert(__('content.notif.edit_title_required'), true);
             try {
                 var res = await fetch('/teacher/resources/' + id, {
                     method: 'PUT',
@@ -707,17 +874,22 @@
                 });
                 if (res.ok) {
                     document.getElementById('editResourceModal').classList.add('hidden');
-                    showAlert('Resource updated.', false);
+                    showAlert(__('content.notif.resource_updated'), false);
                     loadResources();
                 } else {
                     var err = await res.json().catch(function() { return {}; });
-                    showAlert(err.detail || 'Failed to update resource.', true);
+                    showAlert(err.detail || __('content.notif.resource_update_failed'), true);
                 }
             } catch (e) {
-                showAlert('Network error.', true);
+                showAlert(__('content.notif.network_error'), true);
             }
         }
 
+        /**
+         * Opens the edit-topic modal with the topic name pre-filled.
+         * @param {string} id - The topic ID.
+         * @param {string} name - The current topic name.
+         */
         function openEditTopic(id, name) {
             document.getElementById('editTopicId').value = id;
             document.getElementById('editTopicName').value = name;
@@ -726,10 +898,11 @@
             document.getElementById('editTopicName').focus();
         }
 
+        /** Saves edited topic name via PUT to /teacher/resource-topics/:id. */
         async function saveTopicEdit() {
             var id = document.getElementById('editTopicId').value;
             var name = document.getElementById('editTopicName').value.trim();
-            if (!name) return showNotification('editTopicNotif', 'Topic name is required.', true);
+            if (!name) return showNotification('editTopicNotif', __('content.notif.topic_name_required'), true);
             try {
                 var res = await fetch('/teacher/resource-topics/' + id, {
                     method: 'PUT',
@@ -742,10 +915,10 @@
                     loadAllTopics();
                 } else {
                     var err = await res.json().catch(function() { return {}; });
-                    showNotification('editTopicNotif', err.detail || 'Failed to update topic.', true);
+                    showNotification('editTopicNotif', err.detail || __('content.notif.topic_update_failed'), true);
                 }
             } catch (e) {
-                showNotification('editTopicNotif', 'Network error.', true);
+                showNotification('editTopicNotif', __('content.notif.network_error'), true);
             }
         }
 
@@ -767,6 +940,275 @@
         function topicPrevPage() { if (_topicPage > 1) { _topicPage--; renderTopicPage(); } }
         function topicNextPage() { var tp = Math.ceil(_topicFiltered.length / _perPage); if (_topicPage < tp) { _topicPage++; renderTopicPage(); } }
         function topicChangePerPage(val) { _perPage = parseInt(val, 10) || 20; _topicPage = 1; renderTopicPage(); }
+
+        // --- Quiz builder (standalone resource quiz) ---
+        var _quizQuestions = [];
+        var _editingQuestionIdx = -1;
+
+        /** Toggles file input vs quiz builder visibility based on the selected resource type. */
+        function onTypeChange() {
+            var type = document.getElementById('type').value;
+            var fileWrap = document.getElementById('fileInputWrap');
+            var quizWrap = document.getElementById('quizCreateWrap');
+            if (type === 'quiz') {
+                fileWrap.style.display = 'none';
+                quizWrap.style.display = '';
+            } else {
+                fileWrap.style.display = '';
+                quizWrap.style.display = 'none';
+            }
+            var sub = document.getElementById('subjectSelect');
+            if (type === 'kiwix' || type === 'quiz') { sub.disabled = true; sub.value = 'General'; loadTopicsForSubject(); }
+            else { sub.disabled = false; }
+        }
+
+        /** Opens the standalone quiz builder modal with empty state. */
+        function openQuizBuilderModal() {
+            _quizQuestions = [];
+            _editingQuestionIdx = -1;
+            document.getElementById('quizTitle').value = document.getElementById('title').value || '';
+            document.getElementById('quizTimeLimit').value = 10;
+            document.getElementById('quizThreshold').value = 60;
+            renderQuizQuestions();
+            closeQuestionEditor();
+            document.getElementById('quizBuilderModal').classList.remove('hidden');
+        }
+
+        /** Closes the quiz builder modal. */
+        function closeQuizBuilderModal() {
+            document.getElementById('quizBuilderModal').classList.add('hidden');
+        }
+
+        /** Renders the list of quiz questions with edit/delete buttons. */
+        function renderQuizQuestions() {
+            var el = document.getElementById('quizQuestionList');
+            if (!el) return;
+            if (_quizQuestions.length === 0) {
+                el.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);text-align:center;padding:1rem;">' + __('content.quiz.questions_empty') + '</p>';
+                return;
+            }
+            el.innerHTML = _quizQuestions.map(function(q, i) {
+                var typeLabel = q.type === 'mcq' ? 'MCQ' : q.type === 'tf' ? 'T/F' : q.type === 'multi' ? 'Multi' : 'Fill';
+                var preview = (q.text || '').substring(0, 60) + ((q.text || '').length > 60 ? '...' : '');
+                return '<div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.5rem;background:var(--surface);">' +
+                    '<span style="font-size:0.75rem;font-weight:700;background:var(--outline);padding:0.15rem 0.4rem;border-radius:4px;">' + esc(typeLabel) + '</span>' +
+                    '<span style="flex:1;font-size:0.85rem;">' + esc(preview) + '</span>' +
+                    '<button class="btn btn-outline js-edit-question" data-qindex="' + i + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">' + __('courses.edit') + '</button>' +
+                    '<button class="btn btn-outline js-delete-question" data-qindex="' + i + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">' + __('content.delete') + '</button>' +
+                    '</div>';
+            }).join('');
+        }
+
+        /**
+         * Opens the question editor for a new or existing question.
+         * @param {number} index - Question index to edit, or -1 for a new question.
+         */
+        function openQuestionEditor(index) {
+            _editingQuestionIdx = index;
+            document.getElementById('questionEditor').style.display = '';
+            document.getElementById('questionEditorTitle').textContent = index >= 0 ? __('content.quiz.edit_question') : __('content.quiz.new_question');
+            if (index >= 0 && _quizQuestions[index]) {
+                var q = _quizQuestions[index];
+                document.getElementById('qType').value = q.type;
+                document.getElementById('qText').value = q.text || '';
+                document.getElementById('qExplanation').value = q.explanation || '';
+                document.getElementById('qFillAnswer').value = q.correct_answer || '';
+                document.getElementById('qTextCount').textContent = (q.text || '').length;
+                onQTypeChange();
+                if (q.options) renderQOptions(q.options, q.correct_answer, q.type);
+                else renderQOptions(['', '', '', ''], 0, q.type);
+            } else {
+                document.getElementById('qType').value = 'mcq';
+                document.getElementById('qText').value = '';
+                document.getElementById('qExplanation').value = '';
+                document.getElementById('qFillAnswer').value = '';
+                document.getElementById('qTextCount').textContent = '0';
+                onQTypeChange();
+                renderQOptions(['', '', '', ''], 0, 'mcq');
+            }
+        }
+
+        /** Closes the inline question editor and resets the editing index. */
+        function closeQuestionEditor() {
+            document.getElementById('questionEditor').style.display = 'none';
+            _editingQuestionIdx = -1;
+        }
+
+        /** Toggles option editor vs fill-in-the-blanks input based on the selected question type. */
+        function onQTypeChange() {
+            var t = document.getElementById('qType').value;
+            document.getElementById('qOptionsContainer').style.display = t === 'fill_blanks' ? 'none' : '';
+            document.getElementById('qFillContainer').style.display = t !== 'fill_blanks' ? 'none' : '';
+            if (t === 'fill_blanks') document.getElementById('qOptionsList').innerHTML = '';
+            else if (t === 'tf') renderQOptions(['True', 'False'], 0, 'tf');
+            else renderQOptions(['', '', '', ''], 0, t);
+        }
+
+        /**
+         * Renders option inputs for MCQ/multi-select/true-false question types.
+         * @param {string[]} opts - Array of option text values.
+         * @param {number|number[]} correct - Index of correct answer, or array for multi-select.
+         * @param {string} type - Question type (mcq, tf, multi, fill_blanks).
+         */
+        function renderQOptions(opts, correct, type) {
+            var list = document.getElementById('qOptionsList');
+            var isMulti = type === 'multi';
+            list.innerHTML = opts.map(function(o, i) {
+                var checked = false;
+                if (type === 'tf') checked = (i === correct) || o === correct;
+                else if (isMulti) { var c = correct || []; checked = Array.isArray(c) && c.indexOf(o) !== -1; }
+                else checked = i === correct;
+                return '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">' +
+                    (isMulti
+                        ? '<input type="checkbox" class="q-correct-opt" data-optindex="' + i + '"' + (checked ? ' checked' : '') + '>'
+                        : '<input type="radio" class="q-correct-opt" name="qCorrectOpt" data-optindex="' + i + '"' + (checked ? ' checked' : '') + '>') +
+                    (type === 'tf'
+                        ? '<span style="font-size:0.9rem;font-weight:700;">' + esc(o) + '</span>'
+                        : '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="' + esc(o) + '" placeholder="Option ' + (i + 1) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">') +
+                    (type !== 'tf' ? '<button class="btn btn-outline js-remove-option" data-optindex="' + i + '" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">&times;</button>' : '') +
+                    '</div>';
+            }).join('');
+        }
+
+        /** Validates and saves the current question to _quizQuestions, then re-renders the list. */
+        function saveQuestion() {
+            var type = document.getElementById('qType').value;
+            var text = document.getElementById('qText').value.trim();
+            var explanation = document.getElementById('qExplanation').value.trim();
+            if (!text) return showAlert(__('content.quiz.q_text_required'), true);
+            var correct_answer, options;
+            if (type === 'fill_blanks') {
+                correct_answer = document.getElementById('qFillAnswer').value.trim();
+                if (!correct_answer) return showAlert(__('content.quiz.answer_required'), true);
+                options = null;
+            } else {
+                var optInputs = document.querySelectorAll('.q-opt-text');
+                options = Array.from(optInputs).map(function(inp) { return inp.value.trim(); }).filter(function(v) { return v; });
+                if (options.length < 2) return showAlert(__('content.quiz.options_required'), true);
+                var checkedInputs = document.querySelectorAll('.q-correct-opt:checked');
+                if (!checkedInputs.length) return showAlert(__('content.quiz.correct_required'), true);
+                var allOptInputs = Array.from(document.querySelectorAll('.q-opt-text'));
+                if (type === 'multi') {
+                    correct_answer = Array.from(checkedInputs).map(function(cb) {
+                        var idx = allOptInputs.indexOf(cb.closest('div').querySelector('.q-opt-text'));
+                        return options[idx];
+                    }).filter(function(v) { return v !== undefined; });
+                } else {
+                    var idx = allOptInputs.indexOf(checkedInputs[0].closest('div').querySelector('.q-opt-text'));
+                    correct_answer = idx;
+                }
+            }
+            var q = { type: type, text: text, options: options, correct_answer: correct_answer, explanation: explanation };
+            if (_editingQuestionIdx >= 0) _quizQuestions[_editingQuestionIdx] = q;
+            else _quizQuestions.push(q);
+            closeQuestionEditor();
+            renderQuizQuestions();
+        }
+
+        /**
+         * Deletes a question from the quiz by index and closes editor if it was being edited.
+         * @param {number} idx - Index of the question to remove.
+         */
+        function deleteQuestion(idx) { if (_editingQuestionIdx === idx) closeQuestionEditor(); _quizQuestions.splice(idx, 1); renderQuizQuestions(); }
+
+        /** Exports the quiz as a JSON file download. */
+        function exportQuiz() {
+            if (_quizQuestions.length === 0) { showAlert(__('content.quiz.export_empty'), true); return; }
+            var title = document.getElementById('quizTitle').value.trim() || 'quiz';
+            var payload = {
+                title: title,
+                time_limit_minutes: parseInt(document.getElementById('quizTimeLimit').value) || 0,
+                pass_threshold: parseInt(document.getElementById('quizThreshold').value) || 60,
+                questions: _quizQuestions
+            };
+            var json = JSON.stringify(payload, null, 2);
+            var filename = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
+            if (window.showSaveFilePicker) {
+                window.showSaveFilePicker({ suggestedName: filename, types: [{ description: 'Quiz file', accept: { 'application/json': ['.json'] } }] })
+                    .then(function(handle) { return handle.createWritable(); })
+                    .then(function(writable) { return writable.write(json).then(function() { return writable.close(); }); })
+                    .catch(function(e) { if (e.name !== 'AbortError') showAlert(__('content.quiz.save_failed', {message: e.message}), true); });
+            } else {
+                var blob = new Blob([json], { type: 'application/json' });
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            }
+        }
+
+        /** Triggers the hidden file input for quiz JSON import. */
+        function importQuiz() { document.getElementById('quizImportFile').click(); }
+
+        /**
+         * Handles the quiz import file input change event. Reads and parses the JSON file,
+         * populates _quizQuestions, and updates quiz settings.
+         * @param {Event} e - The file input change event.
+         */
+        function handleQuizImport(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    var data = JSON.parse(ev.target.result);
+                    if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+                        return showAlert(__('content.quiz.import_invalid'), true);
+                    }
+                    _quizQuestions = data.questions;
+                    if (data.title) document.getElementById('quizTitle').value = data.title;
+                    if (data.time_limit_minutes != null) document.getElementById('quizTimeLimit').value = data.time_limit_minutes;
+                    if (data.pass_threshold != null) document.getElementById('quizThreshold').value = data.pass_threshold;
+                    renderQuizQuestions();
+                    showAlert(__('content.quiz.imported_count', {count: _quizQuestions.length}), false);
+                } catch (err) {
+                    showAlert(__('content.quiz.import_parse_error'), true);
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        }
+
+        /** Saves the standalone quiz as a resource via POST to /teacher/upload-quiz. */
+        async function saveStandaloneQuiz() {
+            var title = document.getElementById('quizTitle').value.trim() || document.getElementById('title').value.trim();
+            if (!title) return showAlert(__('content.quiz.title_required'), true);
+            if (_quizQuestions.length === 0) return showAlert(__('content.quiz.add_questions'), true);
+            var subject = document.getElementById('subjectSelect').value;
+            var topicId = document.getElementById('topicSelect')?.value || '';
+            var payload = {
+                title: title,
+                subject: subject,
+                topic_id: topicId,
+                time_limit_minutes: parseInt(document.getElementById('quizTimeLimit').value) || 0,
+                pass_threshold: parseInt(document.getElementById('quizThreshold').value) || 60,
+                questions: _quizQuestions
+            };
+            var btn = document.getElementById('btn-upload');
+            if (btn) btn.disabled = true;
+            try {
+                var res = await fetch('/teacher/upload-quiz', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    closeQuizBuilderModal();
+                    closeUploadModal();
+                    showAlert(__('content.quiz.quiz_created'), false);
+                    loadResources();
+                } else {
+                    var err = await res.json().catch(function() { return {}; });
+                    showAlert(err.detail || __('content.quiz.create_failed'), true);
+                }
+            } catch (e) {
+                showAlert(__('content.notif.network_error'), true);
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
 
         // --- Init ---
         var _initContent = function() {
@@ -790,18 +1232,72 @@
             // Upload modal
             document.getElementById('btn-openUploadModal')?.addEventListener('click', openUploadModal);
             document.getElementById('btn-closeUploadModal')?.addEventListener('click', closeUploadModal);
-            document.getElementById('btn-upload')?.addEventListener('click', upload);
+            document.getElementById('btn-upload')?.addEventListener('click', function() {
+                if (document.getElementById('type').value === 'quiz') saveStandaloneQuiz();
+                else upload();
+            });
 
             document.getElementById('type')?.addEventListener('change', function() {
-                var sub = document.getElementById('subjectSelect');
-                if (this.value === 'kiwix') { sub.disabled = true; sub.value = 'General'; loadTopicsForSubject(); }
-                else { sub.disabled = false; }
+                onTypeChange();
             });
 
             document.getElementById('subjectSelect')?.addEventListener('change', function() {
                 var type = document.getElementById('type')?.value;
-                if (type !== 'kiwix') loadTopicsForSubject();
+                if (type !== 'kiwix' && type !== 'quiz') loadTopicsForSubject();
             });
+
+            // Quiz builder events
+            document.getElementById('btn-openQuizBuilder')?.addEventListener('click', openQuizBuilderModal);
+            document.getElementById('btn-closeQuizModal')?.addEventListener('click', closeQuizBuilderModal);
+            document.getElementById('btn-addQuestion')?.addEventListener('click', function() { openQuestionEditor(-1); });
+            document.getElementById('btn-closeQuestionEditor')?.addEventListener('click', closeQuestionEditor);
+            document.getElementById('btn-cancelQuestion')?.addEventListener('click', closeQuestionEditor);
+            document.getElementById('btn-saveQuestion')?.addEventListener('click', saveQuestion);
+            document.getElementById('qType')?.addEventListener('change', onQTypeChange);
+            document.getElementById('qText')?.addEventListener('input', function() { document.getElementById('qTextCount').textContent = this.value.length; });
+            document.getElementById('btn-addOption')?.addEventListener('click', function() {
+                var container = document.getElementById('qOptionsList');
+                var i = container.children.length;
+                var div = document.createElement('div');
+                div.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;';
+                var type = document.getElementById('qType').value;
+                div.innerHTML =
+                    (type === 'multi'
+                        ? '<input type="checkbox" class="q-correct-opt" data-optindex="' + i + '">'
+                        : '<input type="radio" class="q-correct-opt" name="qCorrectOpt" data-optindex="' + i + '">') +
+                    '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="" placeholder="Option ' + (i + 1) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">' +
+                    '<button class="btn btn-outline js-remove-option" data-optindex="' + i + '" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">&times;</button>';
+                container.appendChild(div);
+            });
+            var qOptList = document.getElementById('qOptionsList');
+            if (qOptList) {
+                qOptList.addEventListener('click', function(e) {
+                    if (e.target.closest('.js-remove-option')) {
+                        e.target.closest('.js-remove-option').parentElement.remove();
+                        var type = document.getElementById('qType').value;
+                        var isMulti = type === 'multi';
+                        Array.from(qOptList.children).forEach(function(div, i) {
+                            var inp = div.querySelector('.q-correct-opt');
+                            if (inp) { inp.dataset.optindex = i; inp.type = isMulti ? 'checkbox' : 'radio'; }
+                            var txt = div.querySelector('.q-opt-text');
+                            if (txt) txt.dataset.optindex = i;
+                        });
+                    }
+                });
+            }
+            var qListEl = document.getElementById('quizQuestionList');
+            if (qListEl) {
+                qListEl.addEventListener('click', function(e) {
+                    var editBtn = e.target.closest('.js-edit-question');
+                    var delBtn = e.target.closest('.js-delete-question');
+                    if (editBtn) openQuestionEditor(parseInt(editBtn.dataset.qindex));
+                    if (delBtn) deleteQuestion(parseInt(delBtn.dataset.qindex));
+                });
+            }
+            document.getElementById('btn-exportQuiz')?.addEventListener('click', exportQuiz);
+            document.getElementById('btn-importQuiz')?.addEventListener('click', importQuiz);
+            document.getElementById('quizImportFile')?.addEventListener('change', handleQuizImport);
+            document.getElementById('btn-saveQuizResource')?.addEventListener('click', saveStandaloneQuiz);
 
             // Resource filters
             document.getElementById('filterSubject')?.addEventListener('change', filterResources);
@@ -838,6 +1334,8 @@
                     topicSearchDebounce = setTimeout(filterTopics, 200);
                 });
             }
+            var topicFilterEl = document.getElementById('topicFilterSubject');
+            if (topicFilterEl) topicFilterEl.addEventListener('change', filterTopics);
 
             var topicTable = document.getElementById('topicTable');
             if (topicTable) {

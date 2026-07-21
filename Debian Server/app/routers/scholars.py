@@ -1,5 +1,4 @@
-"""Scholar management routes — list, reset password, delete."""
-import sqlite3
+"""Scholar management routes -- list, reset password, delete."""
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from app.async_db import db_conn
@@ -22,12 +21,8 @@ async def get_scholars(teacher_user: str = Depends(verify_teacher)):
     """
     async with db_conn() as conn:
         c = conn.cursor()
-        try:
-            c.execute("SELECT id, name, reset_required FROM scholars ORDER BY name ASC")
-            rows = c.fetchall()
-        except sqlite3.OperationalError:
-            c.execute("SELECT id, name FROM scholars ORDER BY name ASC")
-            rows = [(*r, 0) for r in c.fetchall()]
+        c.execute("SELECT id, name, reset_required FROM scholars ORDER BY name ASC")
+        rows = c.fetchall()
     return [{"id": r[0], "name": r[1], "reset_required": r[2] or 0} for r in rows]
 
 
@@ -54,7 +49,7 @@ async def teacher_reset_student_password(scholar_id: str, teacher_user: str = De
             return {"status": "success"}
         except Exception as e:
             logging.error(f"teacher_reset_student_password: {e}")
-            raise HTTPException(status_code=400, detail="Failed to reset password")
+            raise HTTPException(status_code=400, detail="Failed to reset password")  # i18n: user-facing error message
 
 
 @router.delete("/teacher/scholars/{scholar_id}", response_model=StatusResponse,
@@ -77,8 +72,13 @@ async def teacher_delete_student(scholar_id: str, teacher_user: str = Depends(ve
             c.execute("DELETE FROM scholars WHERE id = ?", (scholar_id,))
             c.execute("DELETE FROM activity_logs WHERE scholar_id = ?", (scholar_id,))
             c.execute("DELETE FROM scholar_downloads WHERE scholar_id = ?", (scholar_id,))
+            c.execute("DELETE FROM subject_minutes WHERE scholar_id = ?", (scholar_id,))
+            c.execute("DELETE FROM weekly_study WHERE scholar_id = ?", (scholar_id,))
+            c.execute("DELETE FROM study_sessions WHERE scholar_id = ?", (scholar_id,))
+            c.execute("DELETE FROM course_progress WHERE student_id = ?", (scholar_id,))
+            c.execute("UPDATE users SET scholar_id = NULL WHERE scholar_id = ?", (scholar_id,))
             conn.commit()
             return {"status": "success"}
         except Exception as e:
             logging.error(f"teacher_delete_student: {e}")
-            raise HTTPException(status_code=400, detail="Failed to delete student")
+            raise HTTPException(status_code=400, detail="Failed to delete student")  # i18n: user-facing error message

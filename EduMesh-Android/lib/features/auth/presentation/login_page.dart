@@ -22,7 +22,7 @@ final digitRE = RegExp(r'[0-9]');
 /// dialog flow. On successful auth it navigates to [ProfileSetupPage] (new
 /// users) or [AppShell] (returning users).
 ///
-/// Connection state is tracked via the [ConnectivityService] singleton —
+/// Connection state is tracked via the [ConnectivityService] singleton --
 /// inputs and buttons are disabled when the Hub is unreachable, and a
 /// guidance message is shown prompting the user to connect.
 class LoginPage extends StatefulWidget {

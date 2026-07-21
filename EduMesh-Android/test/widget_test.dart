@@ -5,12 +5,11 @@ import 'package:edumesh_android/main.dart';
 
 void main() {
   testWidgets('App renders smoke test', (WidgetTester tester) async {
-    // Build the app and verify it renders
     await tester.pumpWidget(
       const ProviderScope(
         child: LuminaApp(isLoggedIn: false),
       ),
     );
-    expect(find.byType(MaterialApp), findsOneWidget);
+    expect(find.byType(LuminaApp), findsOneWidget);
   });
 }

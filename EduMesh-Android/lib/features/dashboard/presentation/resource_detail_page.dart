@@ -189,7 +189,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       }
       await db.upsertBookmark(
         id,
-        title ?? 'Untitled',
+        title ?? '',
         subject ?? '',
         grade ?? '',
         type ?? '',

@@ -25,8 +25,8 @@ class WelcomePage extends StatefulWidget {
 }
 
 class _WelcomePageState extends State<WelcomePage> {
-  String _hubStrength = 'Checking...';
-  String _storageUsed = 'Calculating...';
+  String _hubStrength = '';
+  String _storageUsed = '';
   final ConnectivityService _connectivityService = ConnectivityService();
 
   @override
@@ -303,7 +303,7 @@ class _WelcomePageState extends State<WelcomePage> {
           _StatusItem(
             icon: Icons.wifi,
             label: l10n.statusHubStrength,
-            value: _hubStrength == 'Checking...'
+            value: _hubStrength.isEmpty
                 ? l10n.hubStrengthChecking
                 : _hubStrength,
             cs: cs,
@@ -311,11 +311,9 @@ class _WelcomePageState extends State<WelcomePage> {
           _StatusItem(
             icon: Icons.storage,
             label: l10n.statusLocalStorage,
-            value: _storageUsed == 'Calculating...'
+            value: _storageUsed.isEmpty
                 ? l10n.storageCalculating
-                : _storageUsed == 'Unknown'
-                    ? l10n.storageUnknown
-                    : _storageUsed,
+                : _storageUsed,
             cs: cs,
           ),
         ],

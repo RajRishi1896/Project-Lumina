@@ -1,11 +1,11 @@
-"""Teacher quiz management — create and save quiz resources."""
+"""Teacher quiz management -- create and save quiz resources."""
 import os
 import uuid
 import json
 import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException
-from app.database import log_admin_action
+from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch_one
 from app.dependencies import verify_teacher
 from app.routers.teacher_courses import COURSES_DIR, _ensure_course_owner
@@ -17,13 +17,22 @@ router = APIRouter()
              summary="Create a quiz resource for a course", tags=["Teacher Courses"],
              responses={201: {"description": "Quiz resource created"}, 400: {"description": "Invalid data"}})
 async def create_course_quiz(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
+    """Create a new quiz resource within a course.
+
+    Validates that questions is a non-empty list with required fields (id, type,
+    question). Saves the quiz as a JSON file and registers a course_resources
+    row with type ``quiz``.
+
+    Raises:
+        HTTPException: 400 if questions are missing or invalid.
+    """
     await _ensure_course_owner(course_id, teacher_user)
     questions = data.get("questions")
     if not isinstance(questions, list) or len(questions) == 0:
-        raise HTTPException(status_code=400, detail="Quiz must have at least one question.")
+        raise HTTPException(status_code=400, detail="Quiz must have at least one question.")  # i18n: user-facing error message
     for i, q in enumerate(questions):
         if not all(k in q for k in ("id", "type", "question")):
-            raise HTTPException(status_code=400, detail=f"Question at index {i} is missing one of: id, type, question.")
+            raise HTTPException(status_code=400, detail=f"Question at index {i} is missing one of: id, type, question.")  # i18n: user-facing error message
 
     resource_id = str(uuid.uuid4())
     title = data.get("title", "Quiz")
@@ -49,7 +58,9 @@ async def create_course_quiz(course_id: str, data: dict, teacher_user: str = Dep
            VALUES (?, ?, 'quiz', ?, ?, ?, ?, ?, ?)""",
         (resource_id, course_id, title, title + ".json", f"quiz_{resource_id}.json", file_size, next_pos, data.get("topic_id", ""))
     )
-    await log_admin_action(teacher_user, f"Created quiz '{title}' in course {course_id}")
+    await audit(action=Action.CREATE_QUIZ, username=teacher_user, resource_type="quiz",
+                resource_id=resource_id, resource_name=title,
+                context={"course_id": course_id, "question_count": len(questions)})
     row = await db_fetch_one("SELECT * FROM course_resources WHERE id = ?", (resource_id,))
     return dict(row)
 
@@ -57,21 +68,29 @@ async def create_course_quiz(course_id: str, data: dict, teacher_user: str = Dep
 @router.put("/api/teacher/courses/{course_id}/quiz/{resource_id}",
             summary="Save quiz JSON for a course resource", tags=["Teacher Courses"])
 async def save_course_quiz(course_id: str, resource_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
+    """Update an existing quiz's JSON content and bump its version number.
+
+    Increments ``quiz_version`` in the saved JSON to allow clients to
+    detect updates.
+
+    Raises:
+        HTTPException: 400 if quiz data invalid, 404 if resource not found.
+    """
     await _ensure_course_owner(course_id, teacher_user)
     resource = await db_fetch_one(
         "SELECT id FROM course_resources WHERE id = ? AND course_id = ?", (resource_id, course_id))
     if not resource:
-        raise HTTPException(status_code=404, detail="Resource not found in this course.")
+        raise HTTPException(status_code=404, detail="Resource not found in this course.")  # i18n: user-facing error message
 
     quiz = data.get("quiz")
     if not isinstance(quiz, dict):
-        raise HTTPException(status_code=400, detail="Body must contain a 'quiz' object.")
+        raise HTTPException(status_code=400, detail="Body must contain a 'quiz' object.")  # i18n: user-facing error message
     questions = quiz.get("questions")
     if not isinstance(questions, list) or len(questions) == 0:
-        raise HTTPException(status_code=400, detail="Quiz must have at least one question.")
+        raise HTTPException(status_code=400, detail="Quiz must have at least one question.")  # i18n: user-facing error message
     for i, q in enumerate(questions):
         if not all(k in q for k in ("id", "type", "question")):
-            raise HTTPException(status_code=400, detail=f"Question at index {i} is missing one of: id, type, question.")
+            raise HTTPException(status_code=400, detail=f"Question at index {i} is missing one of: id, type, question.")  # i18n: user-facing error message
 
     quiz_dir = os.path.join(COURSES_DIR, course_id)
     os.makedirs(quiz_dir, exist_ok=True)
@@ -93,5 +112,7 @@ async def save_course_quiz(course_id: str, resource_id: str, data: dict, teacher
         return quiz_version
 
     version = await asyncio.to_thread(_save)
-    await log_admin_action(teacher_user, f"Saved quiz v{version} for resource {resource_id} in course {course_id}")
+    await audit(action=Action.UPDATE_QUIZ, username=teacher_user, resource_type="quiz",
+                resource_id=resource_id,
+                context={"course_id": course_id, "quiz_version": version})
     return {"status": "ok", "quiz_version": version}

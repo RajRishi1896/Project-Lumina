@@ -296,7 +296,7 @@
   "@errorRegistrationFailed": {
     "description": "Error shown when the registration API call fails"
   },
-  "snackbarOfflineLogin": "Logged in offline — cannot connect to hub to save changes",
+  "snackbarOfflineLogin": "Logged in offline -- cannot connect to hub to save changes",
   "@snackbarOfflineLogin": {
     "description": "SnackBar message shown when login succeeds but only local authentication was available"
   },
@@ -490,7 +490,7 @@
   "@filterApplyButton": {
     "description": "Button to apply current filter selections"
   },
-  "snackbarAddedToQueueOffline": "Added to queue — will download when server is reachable",
+  "snackbarAddedToQueueOffline": "Added to queue -- will download when server is reachable",
   "@snackbarAddedToQueueOffline": {
     "description": "SnackBar shown when resource is queued for download while offline"
   },
@@ -562,7 +562,7 @@
   "@fileSizeUnknownFallback": {
     "description": "Fallback text in download dialog when sizeLabel is null"
   },
-  "pageTitleDetail": "{title} — {subject}",
+  "pageTitleDetail": "{title} -- {subject}",
   "@pageTitleDetail": {
     "description": "AppBar title on the resource detail page",
     "placeholders": {
@@ -1224,7 +1224,7 @@
       }
     }
   },
-  "connectionOfflineBanner": "Offline — some features may be unavailable",
+  "connectionOfflineBanner": "Offline -- some features may be unavailable",
   "@connectionOfflineBanner": {
     "description": "Banner text shown when the device is offline"
   },

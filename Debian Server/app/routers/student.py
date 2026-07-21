@@ -1,4 +1,4 @@
-"""Student routes — sync, analytics, profile, password."""
+"""Student routes -- sync, analytics, profile, password."""
 import os
 import re
 import base64
@@ -80,7 +80,7 @@ async def sync_subject_time(data: SubjectTimeSync, student_id: str = Depends(ver
         HTTPException 400: If more than 30 subjects are provided.
     """
     if len(data.subjects) > 30:
-        raise HTTPException(status_code=400, detail="Too many subjects (max 30)")
+        raise HTTPException(status_code=400, detail="Too many subjects (max 30)")  # i18n: user-facing error message
     def _replace_subject_minutes(conn):
         c = conn.cursor()
         c.execute("DELETE FROM subject_minutes WHERE scholar_id = ?", (student_id,))
@@ -102,39 +102,24 @@ async def get_analytics(student_id: str = Depends(verify_student)):
         Dict with study_minutes_this_week, streak_days, resources_saved, and a subjects list.
     """
     row = await db_fetch_one("""
-        SELECT
-            COALESCE((SELECT total_seconds FROM weekly_study WHERE scholar_id = ?), 0),
-            COALESCE((SELECT streak_days FROM weekly_study WHERE scholar_id = ?), 0),
-            (SELECT COUNT(*) FROM scholar_downloads WHERE scholar_id = ?)
-    """, (student_id, student_id, student_id))
+        SELECT COALESCE(w.total_seconds, 0), COALESCE(w.streak_days, 0),
+               COALESCE(dl.cnt, 0)
+        FROM scholars s
+        LEFT JOIN weekly_study w ON w.scholar_id = s.id
+        LEFT JOIN (SELECT scholar_id, COUNT(*) AS cnt FROM scholar_downloads GROUP BY scholar_id) dl
+               ON dl.scholar_id = s.id
+        WHERE s.id = ?
+    """, (student_id,))
     week_secs = row[0] if row else 0
     streak = row[1] if row else 0
     saved = row[2] if row else 0
     subject_rows = await db_fetch("SELECT subject_name, minutes FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC", (student_id,))
     subjects = [{"name": row[0], "minutes": row[1]} for row in subject_rows]
-    course_rows = await db_fetch("""SELECT c.id, c.title, cp.completed_count, cp.total_resources
-        FROM course_progress cp
-        JOIN courses c ON c.id = cp.course_id
-        WHERE cp.student_id = ? ORDER BY cp.enrolled_at DESC""", (student_id,))
-    course_list = []
-    completed = 0
-    in_progress = 0
-    for c in course_rows:
-        total = c[3] or 0
-        progress = (c[2] * 100 // total) if total > 0 else 0
-        course_list.append({"id": c[0], "title": c[1], "progress_percent": progress})
-        if c[2] >= total:
-            completed += 1
-        else:
-            in_progress += 1
     return {
         "study_minutes_this_week": week_secs // 60,
         "streak_days": streak,
         "resources_saved": saved,
         "subjects": subjects,
-        "courses_completed": completed,
-        "courses_in_progress": in_progress,
-        "courses": course_list,
     }
 
 
@@ -168,7 +153,7 @@ async def update_student_profile(data: dict, student_id: str = Depends(verify_st
             ok = False
     await db_run(_update_profile)
     if not ok:
-        raise HTTPException(status_code=400, detail="Failed to update profile.")
+        raise HTTPException(status_code=400, detail="Failed to update profile.")  # i18n: user-facing error message
     return {"status": "success"}
 
 
@@ -189,9 +174,9 @@ async def upload_profile_icon(data: dict, student_id: str = Depends(verify_stude
     try:
         raw = base64.b64decode(data.get('image_data'))
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid base64 image data.")
+        raise HTTPException(status_code=400, detail="Invalid base64 image data.")  # i18n: user-facing error message
     if len(raw) > 500 * 1024:
-        raise HTTPException(status_code=400, detail="Image too large (max 500KB)")
+        raise HTTPException(status_code=400, detail="Image too large (max 500KB)")  # i18n: user-facing error message
     ext = (data.get('image_ext') or 'png').replace(".", "")
     ALLOWED_MAGIC = {
         b'\x89PNG\r\n\x1a\n': 'png',
@@ -209,17 +194,13 @@ async def upload_profile_icon(data: dict, student_id: str = Depends(verify_stude
                 is_valid = True
                 break
     if not is_valid:
-        raise HTTPException(status_code=400, detail="Invalid image format")
-    if ext not in ("png", "jpg", "jpeg", "gif", "webp"):
+        raise HTTPException(status_code=400, detail="Invalid image format")  # i18n: user-facing error message
+    if ext not in ("png", "jpg", "gif", "webp"):
         ext = "png"
     safe_id = re.sub(r'[^A-Za-z0-9_-]', '_', student_id)
     filename = f"{safe_id}_icon.{ext}"
     filepath = os.path.join(PROFILE_ICONS_DIR, filename)
-    def _write_icon(filepath, raw):
-        with open(filepath, "wb") as f:
-            f.write(raw)
-
-    await asyncio.to_thread(_write_icon, filepath, raw)
+    await asyncio.to_thread(lambda: open(filepath, "wb").write(raw))
     return {"status": "ok", "filename": filename}
 
 
@@ -241,7 +222,7 @@ async def get_profile_icon(scholar_id: str):
         path = os.path.join(PROFILE_ICONS_DIR, f"{safe_id}_icon.{ext}")
         if await asyncio.to_thread(os.path.exists, path):
             return FileResponse(path, media_type=f"image/{ext}")
-    raise HTTPException(status_code=404, detail="No profile icon found.")
+    raise HTTPException(status_code=404, detail="No profile icon found.")  # i18n: user-facing error message
 
 
 @router.post("/student/change-password", response_model=StatusResponse, summary="Change student password", description="Changes the student's password after verifying the current password. Clears the reset-required flag on success.", tags=["Auth", "Profile"], responses={200: {"description": "Password changed successfully"}, 400: {"description": "Incorrect current password, password not set, or change failed"}})
@@ -261,10 +242,10 @@ async def student_change_password(data: StudentChangePasswordRequest, student_id
     try:
         row = await db_fetch_one("SELECT hashed_password FROM scholars WHERE id = ?", (student_id,))
         if not row or not row[0]:
-            raise HTTPException(status_code=400, detail="Password not set. Contact your teacher.")
+            raise HTTPException(status_code=400, detail="Password not set. Contact your teacher.")  # i18n: user-facing error message
         password_ok = await asyncio.to_thread(verify_password, data.old_password, row[0])
         if not password_ok:
-            raise HTTPException(status_code=400, detail="Incorrect current password.")
+            raise HTTPException(status_code=400, detail="Incorrect current password.")  # i18n: user-facing error message
         hashed = await asyncio.to_thread(hash_password, data.new_password)
         await db_exec("UPDATE scholars SET hashed_password = ?, reset_required = 0 WHERE id = ?", (hashed, student_id))
         await invalidate_tokens_for_user(student_id)
@@ -273,7 +254,7 @@ async def student_change_password(data: StudentChangePasswordRequest, student_id
         raise
     except Exception as e:
         logging.error(f"student_change_password: {e}")
-        raise HTTPException(status_code=400, detail="Failed to change password")
+        raise HTTPException(status_code=400, detail="Failed to change password")  # i18n: user-facing error message
 
 
 @router.get("/student/profile", response_model=StudentProfileResponse, summary="Get student profile", description="Returns the student's display name, grade, and scholar ID.", tags=["Profile"], responses={200: {"description": "Profile retrieved successfully"}, 404: {"description": "Student not found"}})
@@ -291,7 +272,7 @@ async def get_student_profile(student_id: str = Depends(verify_student)):
     """
     row = await db_fetch_one("SELECT name, grade, id FROM scholars WHERE id = ?", (student_id,))
     if not row:
-        raise HTTPException(status_code=404, detail="Student not found")
+        raise HTTPException(status_code=404, detail="Student not found")  # i18n: user-facing error message
     return {"name": row[0], "grade": row[1] or "", "scholar_id": row[2]}
 
 

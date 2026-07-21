@@ -11,6 +11,7 @@
 
 </head>
 <body>
+    <a href="#app-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
     <!-- Section: Sidebar -->
     <aside></aside>
 
@@ -18,7 +19,7 @@
     <main>
         <div id="app-content">
         <!-- Section: Page Header -->
-        <div class="page-header">
+        <div class="page-header" style="margin-bottom: 2.5rem;">
             <h1 data-i18n="app.title">Lumina Hub</h1>
             <p data-i18n="index_welcome_back">Welcome back. Your local education server is running.</p>
         </div>
@@ -50,11 +51,12 @@
     <div id="bottomNav"></div>
 
     <!-- Section: Scripts - shared JS + dashboard init -->
-    <script src="/static/js/lumina.js?v=5" defer></script>
+    <script src="/static/js/lumina.js?v=9" defer></script>
     <script>
         var _uptimeEl = document.getElementById('infoUptime');
         var _statUptimeEl = document.getElementById('statUptime');
-        var _uptimeSeconds = 0;
+        var _uptimeBase = 0; // Date.now() when server uptime was captured
+        var _uptimeServerSecs = 0; // server-reported seconds at capture time
 
         document.getElementById('infoHost').textContent = window.location.hostname;
 
@@ -95,16 +97,28 @@
                     document.getElementById('statResources').textContent = d.resources ?? '-';
                     document.getElementById('statStorage').textContent = d.storage ?? (d.disk_used ? d.disk_used + ' GB' : '-');
                     document.getElementById('statSubjects').textContent = d.subjects ?? '-';
-                    if (d.uptime) {
+                    if (d.uptime && d.uptime !== '0s') {
                         const parts = d.uptime.match(/(\d+)h\s*(\d+)m\s*(\d+)s|(\d+)h\s*(\d+)m|(\d+)m\s*(\d+)s|(\d+)s/);
                         if (parts) {
-                            if (parts[1]) _uptimeSeconds = parseInt(parts[1]) * 3600 + parseInt(parts[2]) * 60 + (parseInt(parts[3]) || 0);
-                            else if (parts[4]) _uptimeSeconds = parseInt(parts[4]) * 3600 + parseInt(parts[5]) * 60;
-                            else if (parts[6]) _uptimeSeconds = parseInt(parts[6]) * 60 + (parseInt(parts[7]) || 0);
-                            else if (parts[8]) _uptimeSeconds = parseInt(parts[8]);
+                            if (parts[1]) _uptimeServerSecs = parseInt(parts[1]) * 3600 + parseInt(parts[2]) * 60 + (parseInt(parts[3]) || 0);
+                            else if (parts[4]) _uptimeServerSecs = parseInt(parts[4]) * 3600 + parseInt(parts[5]) * 60;
+                            else if (parts[6]) _uptimeServerSecs = parseInt(parts[6]) * 60 + (parseInt(parts[7]) || 0);
+                            else if (parts[8]) _uptimeServerSecs = parseInt(parts[8]);
+                            if (_uptimeServerSecs > 0) {
+                                _uptimeBase = Date.now();
+                                _renderUptime();
+                                _startUptimeTick();
+                            } else {
+                                _uptimeEl.textContent = __('index.uptime_na');
+                                _statUptimeEl.textContent = __('index.uptime_na');
+                            }
+                        } else {
+                            _uptimeEl.textContent = __('index.uptime_na');
+                            _statUptimeEl.textContent = __('index.uptime_na');
                         }
-                        _uptimeEl.textContent = _formatUptime(_uptimeSeconds);
-                        _statUptimeEl.textContent = _formatUptimeShort(_uptimeSeconds);
+                    } else {
+                        _uptimeEl.textContent = __('index.uptime_na');
+                        _statUptimeEl.textContent = __('index.uptime_na');
                     }
                     if (d.battery_percent !== undefined) {
                         document.getElementById('statBattery').textContent = d.battery_percent + '%';
@@ -115,15 +129,17 @@
             } catch (e) { console.error('Stats load error', e); }
         }
 
-        // Tick uptime every second (clear old interval on SPA nav, recapture refs)
-        if (window._uptimeInterval) clearInterval(window._uptimeInterval);
-        window._uptimeInterval = setInterval(function() {
-            if (_uptimeSeconds > 0) {
-                _uptimeSeconds++;
-                _uptimeEl.textContent = _formatUptime(_uptimeSeconds);
-                _statUptimeEl.textContent = _formatUptimeShort(_uptimeSeconds);
-            }
-        }, 1000);
+        function _renderUptime() {
+            if (!_uptimeBase) return;
+            var secs = _uptimeServerSecs + Math.floor((Date.now() - _uptimeBase) / 1000);
+            _uptimeEl.textContent = _formatUptime(secs);
+            _statUptimeEl.textContent = _formatUptimeShort(secs);
+        }
+
+        function _startUptimeTick() {
+            if (window._uptimeInterval) clearInterval(window._uptimeInterval);
+            window._uptimeInterval = setInterval(_renderUptime, 1000);
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             loadStats();
