@@ -19,7 +19,7 @@
     <!-- Section: Main Content � password, profile, and admin-only settings -->
     <main>
         <div id="app-content">
-        <div class="page-header" style="margin-bottom: 2.5rem;">
+        <div class="page-header">
             <h1 data-i18n="security.account_settings">Account Settings</h1>
             <p data-i18n="security.page_description">Update your password, display name, and department.</p>
         </div>
@@ -122,24 +122,24 @@
             <!-- Filter row -->
             <div class="flex flex-wrap items-center gap-2 mb-3">
                 <div class="search-wrap-inline" style="flex: 1 1 180px; min-width: 140px;">
-                    <label for="adminLogSearch" class="sr-only">Search logs</label>
+                    <label for="adminLogSearch" class="sr-only" data-i18n="settings.search_logs_label">Search logs</label>
                     <input type="text" id="adminLogSearch" placeholder="Search logs..." class="form-input">
                     <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                     </span>
                 </div>
                 <select id="adminLogSeverityFilter" class="form-select">
-                    <option value="">All Severity</option>
-                    <option value="info">Info</option>
-                    <option value="notice">Notice</option>
-                    <option value="warning">Warning</option>
-                    <option value="error">Error</option>
-                    <option value="critical">Critical</option>
+                    <option value="" data-i18n="settings.severity_all">All Severity</option>
+                    <option value="info" data-i18n="settings.severity_info">Info</option>
+                    <option value="notice" data-i18n="settings.severity_notice">Notice</option>
+                    <option value="warning" data-i18n="settings.severity_warning">Warning</option>
+                    <option value="error" data-i18n="settings.severity_error">Error</option>
+                    <option value="critical" data-i18n="settings.severity_critical">Critical</option>
                 </select>
                 <select id="adminLogSuccessFilter" class="form-select">
-                    <option value="">All Results</option>
-                    <option value="true">Success</option>
-                    <option value="false">Failed</option>
+                    <option value="" data-i18n="settings.results_all">All Results</option>
+                    <option value="true" data-i18n="settings.results_success">Success</option>
+                    <option value="false" data-i18n="settings.results_failed">Failed</option>
                 </select>
                 <input type="text" id="adminLogUserFilter" placeholder="Filter by user..." style="padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; width: 140px; min-height: 44px;">
             </div>
@@ -153,15 +153,15 @@
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 150px;">Timestamp</th>
-                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 70px;">Severity</th>
-                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem;">Action</th>
-                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 100px;">User</th>
-                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 100px;">Result</th>
+                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 150px;" data-i18n="settings.timestamp">Timestamp</th>
+                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 70px;" data-i18n="settings.severity">Severity</th>
+                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem;" data-i18n="settings.action">Action</th>
+                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 100px;" data-i18n="settings.user">User</th>
+                                <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 100px;" data-i18n="settings.result">Result</th>
                             </tr>
                         </thead>
                         <tbody id="adminLogTable">
-                            <tr><td colspan="5" class="empty-state">Loading logs...</td></tr>
+                            <tr><td colspan="5" class="empty-state" data-i18n="settings.loading_logs">Loading logs...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -212,11 +212,11 @@
 
         <!-- Section: Default Admin Account (Admin Only) -->
         <div class="card" id="defaultAdminCard" style="display: none;">
-            <div class="card-title" style="color: var(--danger); font-weight: 800;">Default Admin Account</div>
+            <div class="card-title" style="color: var(--danger); font-weight: 800;" data-i18n="settings.default_admin_title">Default Admin Account</div>
             <div id="defaultAdminNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; border: 1px solid transparent;"></div>
             <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <strong>Status:</strong>
+                    <strong data-i18n="settings.status_label">Status:</strong>
                     <span id="defaultAdminStatus" style="font-weight: 700;"></span>
                 </div>
             </div>
@@ -224,8 +224,8 @@
                 <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 0.1rem;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <div>
-                        <div style="font-weight: 700; color: var(--danger); margin-bottom: 0.25rem;">You cannot disable the default admin while logged into it</div>
-                        <div>Log in with a different admin account first, then disable the default admin from that account. This prevents accidental lockout.</div>
+                        <div style="font-weight: 700; color: var(--danger); margin-bottom: 0.25rem;" data-i18n="settings.default_admin_self_warning_title">You cannot disable the default admin while logged into it</div>
+                        <div data-i18n="settings.default_admin_self_warning_body">Log in with a different admin account first, then disable the default admin from that account. This prevents accidental lockout.</div>
                     </div>
                 </div>
             </div>
@@ -233,18 +233,18 @@
                 <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--saffron)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 0.1rem;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <div>
-                        <div style="font-weight: 700; color: var(--saffron); margin-bottom: 0.25rem;">Risks of disabling the default admin</div>
+                        <div style="font-weight: 700; color: var(--saffron); margin-bottom: 0.25rem;" data-i18n="settings.default_admin_risk_title">Risks of disabling the default admin</div>
                         <ul style="margin: 0.25rem 0 0; padding-left: 1.2rem;">
-                            <li>The built-in admin account (username: admin) will be permanently blocked from login.</li>
-                            <li>If all other teacher accounts are deleted or locked, the hub will be inaccessible.</li>
-                            <li>Re-enabling requires physical access to the server or the Settings page from another admin account.</li>
+                            <li data-i18n="settings.default_admin_risk_1">The built-in admin account (username: admin) will be permanently blocked from login.</li>
+                            <li data-i18n="settings.default_admin_risk_2">If all other teacher accounts are deleted or locked, the hub will be inaccessible.</li>
+                            <li data-i18n="settings.default_admin_risk_3">Re-enabling requires physical access to the server or the Settings page from another admin account.</li>
                         </ul>
                     </div>
                 </div>
             </div>
             <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                <button id="btn-disableDefaultAdmin" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--danger); color: var(--danger); font-weight: 700;">Disable Default Admin</button>
-                <button id="btn-enableDefaultAdmin" class="btn btn-outline" style="display: none; padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--success); color: var(--success); font-weight: 700;">Re-enable Default Admin</button>
+                <button id="btn-disableDefaultAdmin" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--danger); color: var(--danger); font-weight: 700;"><span data-i18n="settings.disable_default_admin_btn">Disable Default Admin</span></button>
+                <button id="btn-enableDefaultAdmin" class="btn btn-outline" style="display: none; padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--success); color: var(--success); font-weight: 700;"><span data-i18n="settings.enable_default_admin_btn">Re-enable Default Admin</span></button>
             </div>
         </div>
 
@@ -349,7 +349,7 @@
                 '</tr>' +
                 '<tr id="' + detailId + '" style="display:none;">' +
                 '<td colspan="5" style="padding:0.6rem 0.8rem;background:var(--surface-container);font-size:0.82rem;line-height:1.6;border-top:1px solid var(--outline);">' +
-                (details.length ? details.join('') : '<span style="color:var(--text-muted)">No additional details</span>') +
+                (details.length ? details.join('') : '<span style="color:var(--text-muted)">' + __('settings.log_no_details') + '</span>') +
                 '</td></tr>';
         }
 
@@ -366,7 +366,7 @@
             var start = (_adminLogsPage - 1) * _adminLogsPerPage;
             var pageItems = data.slice(start, start + _adminLogsPerPage);
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No matching log entries</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">' + __('settings.no_matching_logs') + '</td></tr>';
                 if (pagination) pagination.style.display = 'none';
                 return;
             }
@@ -410,10 +410,10 @@
             var success = document.getElementById('adminLogSuccessFilter').value;
             var user = document.getElementById('adminLogUserFilter').value.trim();
             var search = document.getElementById('adminLogSearch').value.trim();
-            if (sev) chips.push({ label: 'Severity: ' + sev, clear: function() { document.getElementById('adminLogSeverityFilter').value = ''; } });
-            if (success) chips.push({ label: success === 'true' ? 'Success only' : 'Failed only', clear: function() { document.getElementById('adminLogSuccessFilter').value = ''; } });
-            if (user) chips.push({ label: 'User: ' + user, clear: function() { document.getElementById('adminLogUserFilter').value = ''; } });
-            if (search) chips.push({ label: 'Search: ' + search, clear: function() { document.getElementById('adminLogSearch').value = ''; } });
+            if (sev) chips.push({ label: __('settings.chip_severity') + sev, clear: function() { document.getElementById('adminLogSeverityFilter').value = ''; } });
+            if (success) chips.push({ label: success === 'true' ? __('settings.chip_success_only') : __('settings.chip_failed_only'), clear: function() { document.getElementById('adminLogSuccessFilter').value = ''; } });
+            if (user) chips.push({ label: __('settings.chip_user') + user, clear: function() { document.getElementById('adminLogUserFilter').value = ''; } });
+            if (search) chips.push({ label: __('settings.chip_search') + search, clear: function() { document.getElementById('adminLogSearch').value = ''; } });
             if (chips.length === 0) { chipsEl.style.display = 'none'; return; }
             chipsEl.style.display = 'flex';
             chipsEl.innerHTML = chips.map(function(c, i) {
@@ -437,12 +437,12 @@
             if (!tbody) return;
             try {
                 var res = await fetch('/admin/log?limit=200');
-                if (!res.ok) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Failed to load logs</td></tr>'; return; }
+                if (!res.ok) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">' + __('settings.error.load_logs') + '</td></tr>'; return; }
                 var data = await res.json();
                 _adminLogsAll = data.log || [];
                 _applyLogFilters();
             } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Connection error loading logs</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">' + __('settings.error.logs_connection') + '</td></tr>';
             }
         }
 

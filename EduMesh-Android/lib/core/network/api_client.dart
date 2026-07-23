@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
@@ -11,7 +12,7 @@ class ApiClient {
   static const String _defaultDomain = 'http://lumina.hub:8000';
   static String _baseUrl = _defaultDomain;
   static bool _initialized = false;
-  static bool _isRefreshing = false;
+  static Completer<void>? _refreshCompleter;
 
   /// Callback invoked when a token refresh fails and the user must be logged out.
   static void Function()? onForceLogout;
@@ -28,8 +29,20 @@ class ApiClient {
     if (kDebugMode) dio.interceptors.add(LogInterceptor());
     dio.interceptors.add(InterceptorsWrapper(
       onError: (error, handler) async {
-        if ((error.response?.statusCode == 401 || error.response?.statusCode == 403) && !_isRefreshing) {
-          _isRefreshing = true;
+        if (error.response?.statusCode == 401 || error.response?.statusCode == 403) {
+          if (_refreshCompleter != null) {
+            await _refreshCompleter!.future;
+            final newToken = await AuthService().getSessionToken();
+            error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+            try {
+              final retryResponse = await dio.fetch(error.requestOptions);
+              handler.resolve(retryResponse);
+              return;
+            } catch (_) { }
+            handler.next(error);
+            return;
+          }
+          _refreshCompleter = Completer<void>();
           try {
             if (await AuthService().refreshSession()) {
               final newToken = await AuthService().getSessionToken();
@@ -50,7 +63,8 @@ class ApiClient {
             await AuthService().logout();
             onForceLogout?.call();
           } finally {
-            _isRefreshing = false;
+            _refreshCompleter!.complete();
+            _refreshCompleter = null;
           }
         }
         handler.next(error);

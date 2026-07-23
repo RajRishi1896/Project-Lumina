@@ -10,7 +10,7 @@ Add persistence only if needed for historical analysis.
 import time
 import threading
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 
 _lock = threading.Lock()
 _start_time = time.time()
@@ -106,7 +106,7 @@ def get_metrics() -> dict:
             },
             "slow_endpoints": slow,
             "tracked_ips": len(_active_ips),
-            "collected_at": datetime.utcnow().isoformat() + "Z",
+            "collected_at": datetime.now(timezone.utc).isoformat(),
         }
 
 

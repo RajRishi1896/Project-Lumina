@@ -200,7 +200,10 @@ async def upload_profile_icon(data: dict, student_id: str = Depends(verify_stude
     safe_id = re.sub(r'[^A-Za-z0-9_-]', '_', student_id)
     filename = f"{safe_id}_icon.{ext}"
     filepath = os.path.join(PROFILE_ICONS_DIR, filename)
-    await asyncio.to_thread(lambda: open(filepath, "wb").write(raw))
+    def _write_icon():
+        with open(filepath, "wb") as f:
+            f.write(raw)
+    await asyncio.to_thread(_write_icon)
     return {"status": "ok", "filename": filename}
 
 

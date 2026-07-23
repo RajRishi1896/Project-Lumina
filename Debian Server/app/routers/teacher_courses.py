@@ -2,7 +2,7 @@
 import os
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from app.database import UPLOAD_DIR, gen_composite_uid
 from app.audit import audit, Action
@@ -79,9 +79,12 @@ async def _write_chunked(dest_path: str, file: UploadFile, max_size: int) -> int
     chunk_size = 64 * 1024
     total_size = 0
     chunk_buffer = b""
+    first_write = True
 
     def _flush(data):
-        mode = "ab" if os.path.exists(dest_path) else "wb"
+        nonlocal first_write
+        mode = "wb" if first_write else "ab"
+        first_write = False
         with open(dest_path, mode) as f:
             f.write(data)
 
@@ -135,7 +138,7 @@ async def create_course(data: CourseCreate, teacher_user: str = Depends(verify_t
     Returns:
         201 with the created course metadata.
     """
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     async with db_conn() as conn:
         course_id = gen_composite_uid(conn, data.grade, data.subject, 'CRS')
         conn.execute(
@@ -157,9 +160,18 @@ async def list_courses(teacher_user: str = Depends(verify_teacher)):
 
     Includes a resource_count subquery for each course.
     """
-    rows = await db_fetch(
-        "SELECT c.*, (SELECT COUNT(*) FROM course_resources WHERE course_id = c.id) AS resource_count FROM courses c WHERE c.published != -1 ORDER BY c.updated_at DESC"
-    )
+    # Non-admin teachers only see their own courses
+    user_role = await db_fetch_one("SELECT role FROM users WHERE username = ?", (teacher_user,))
+    is_admin = user_role and user_role["role"] == "admin"
+    if is_admin:
+        rows = await db_fetch(
+            "SELECT c.*, (SELECT COUNT(*) FROM course_resources WHERE course_id = c.id) AS resource_count FROM courses c WHERE c.published != -1 ORDER BY c.updated_at DESC"
+        )
+    else:
+        rows = await db_fetch(
+            "SELECT c.*, (SELECT COUNT(*) FROM course_resources WHERE course_id = c.id) AS resource_count FROM courses c WHERE c.published != -1 AND c.teacher_username = ? ORDER BY c.updated_at DESC",
+            (teacher_user,)
+        )
     return [_course_to_response(r) for r in rows]
 
 
@@ -196,7 +208,7 @@ async def update_course(course_id: str, data: CourseCreate, teacher_user: str = 
     Verifies ownership before updating. Logs the change to the audit log.
     """
     await _ensure_course_owner(course_id, teacher_user)
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     await db_exec(
         """UPDATE courses SET title = ?, description = ?, subject = ?, grade = ?, language = ?, updated_at = ?
            WHERE id = ?""",

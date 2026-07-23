@@ -3,7 +3,7 @@ import os
 import re
 import json
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Response, Query
 from app.audit import audit, Action
@@ -262,7 +262,7 @@ async def download_admin_logs(duration: str = "all", admin_user: str = Depends(v
         duration = "all"
 
     cutoff = None
-    now = datetime.now().timestamp()
+    now = datetime.now(timezone.utc).timestamp()
     from app.audit import _RETENTION_DELTAS
     delta = _RETENTION_DELTAS.get(duration)
     if delta is not None:

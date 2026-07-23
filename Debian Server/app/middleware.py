@@ -130,7 +130,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         window = self._default_window
 
         for prefix, (l, w) in ROUTE_RATE_LIMITS.items():
-            if path.startswith(prefix):
+            if path == prefix or path.startswith(prefix + "/"):
                 limit, window = l, w
                 break
 

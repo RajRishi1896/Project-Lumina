@@ -4,7 +4,7 @@ import re
 import sqlite3
 import logging
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.async_db import db_conn, db_exec, db_fetch
@@ -331,7 +331,7 @@ async def create_resource_topic(data: dict, teacher_user: str = Depends(verify_t
         (subject,))
     mp = last[0]["mp"] if last and last[0]["mp"] is not None else -1
     topic_id = gen_uid("RTOP")
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     try:
         await db_exec(
             "INSERT INTO resource_topics (id, subject, name, position) VALUES (?, ?, ?, ?)",

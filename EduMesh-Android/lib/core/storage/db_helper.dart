@@ -470,31 +470,6 @@ class DBHelper {
         try { await db.execute('CREATE TABLE IF NOT EXISTS zim_archives_local (id TEXT PRIMARY KEY, title TEXT NOT NULL, article_count INTEGER DEFAULT 0, language TEXT DEFAULT \'en\')'); } catch (_) {}
         try { await db.execute('CREATE TABLE IF NOT EXISTS zim_articles_local (article_id TEXT PRIMARY KEY, title TEXT NOT NULL, archive_id TEXT, has_thumbnail INTEGER DEFAULT 0, is_downloaded INTEGER DEFAULT 0)'); } catch (_) {}
       }
-      if (v == 12) {
-        try {
-          await db.execute('DROP TABLE IF EXISTS resources');
-          await db.execute('''
-            CREATE TABLE resources (
-              id TEXT PRIMARY KEY,
-              path TEXT UNIQUE,
-              title TEXT,
-              type TEXT
-            )
-          ''');
-        } catch (_) {}
-        try {
-          await db.execute('DROP TABLE IF EXISTS activity');
-          await db.execute('''
-            CREATE TABLE activity (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              resource_id TEXT,
-              date TEXT,
-              subject TEXT,
-              seconds INTEGER
-            )
-          ''');
-        } catch (_) {}
-      }
     }
   }
 

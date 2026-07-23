@@ -15,8 +15,8 @@
     <main>
         <div id="app-content">
         <div id="dangerTab">
-            <div class="page-header" style="margin-bottom: 2.5rem;">
-                <h1 data-i18n="danger.title" style="color: var(--danger); font-size: 2rem;">Danger Zone</h1>
+            <div class="page-header">
+                <h1 data-i18n="danger.title" style="color: var(--danger);">Danger Zone</h1>
                 <p data-i18n="danger.subtitle">Perform critical hub administration cleanup, force resets, and content pruning.</p>
             </div>
 
@@ -26,7 +26,7 @@
                 <div class="flex items-center gap-3 mb-4">
                     <div style="flex: 1; position: relative;">
                         <label for="studentDangerSearch" class="sr-only" data-i18n="danger.search_students_label">Search students</label>
-                        <input type="text" id="studentDangerSearch" data-i18n="danger.search_students_placeholder" placeholder="Search by student name or scholar ID..." style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
+                        <input type="text" id="studentDangerSearch" data-i18n="danger.search_students_placeholder" placeholder="Search by student name or scholar ID..." class="form-input" style="padding-left: 2.5rem;">
                         <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </span>
@@ -37,10 +37,10 @@
                     <thead>
                         <tr>
                             <th data-i18n="danger.table_student_name" style="width: 20%;">Student Name</th>
-                            <th data-i18n="danger.table_username" style="width: 25%;">Username</th>
+                            <th data-i18n="danger.table_username" style="width: 20%;">Username</th>
                             <th data-i18n="danger.table_scholar_id" style="width: 30%;">Scholar ID</th>
                             <th data-i18n="danger.table_status" style="width: 10%;">Status</th>
-                            <th data-i18n="danger.table_action" style="width: 15%;">Action</th>
+                            <th data-i18n="danger.table_action" style="width: 20%;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="studentDangerTable">
@@ -76,7 +76,7 @@
                 <div class="flex items-center gap-3 mb-4">
                     <div style="flex: 1; position: relative;">
                         <label for="adminDangerSearch" class="sr-only" data-i18n="danger.search_admins_label">Search admins</label>
-                        <input type="text" id="adminDangerSearch" data-i18n="danger.search_admins_placeholder" placeholder="Search by username, name or department..." style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
+                        <input type="text" id="adminDangerSearch" data-i18n="danger.search_admins_placeholder" placeholder="Search by username, name or department..." class="form-input" style="padding-left: 2.5rem;">
                         <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </span>
@@ -87,11 +87,11 @@
                     <thead>
                         <tr>
                             <th data-i18n="danger.table_full_name" style="width: 18%;">Full Name</th>
-                            <th data-i18n="danger.table_username" style="width: 18%;">Username</th>
-                            <th data-i18n="danger.table_scholar_id" style="width: 25%;">Scholar ID</th>
+                            <th data-i18n="danger.table_username" style="width: 16%;">Username</th>
+                            <th data-i18n="danger.table_scholar_id" style="width: 22%;">Scholar ID</th>
                             <th data-i18n="danger.table_department" style="width: 14%;">Department</th>
                             <th data-i18n="danger.table_status" style="width: 10%;">Status</th>
-                            <th data-i18n="danger.table_action" style="width: 15%;">Action</th>
+                            <th data-i18n="danger.table_action" style="width: 20%;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="adminDangerTable">
@@ -118,9 +118,7 @@
                         </select>
                     </span>
                 </div>
-                <div id="disableAdminDangerContainer" style="margin-top: 1.5rem; display: none; text-align: right; border-top: 1px solid color-mix(in srgb, var(--danger) 20%, transparent); padding-top: 1rem;">
-                    <button id="btn-disableDefaultAdmin" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger); font-weight: 700;"><span data-i18n="danger.disable_default_admin">Disable Default Admin Login (admin)</span></button>
-                </div>
+
             </div>
 
             <div class="card">
@@ -129,7 +127,7 @@
                 <div class="flex items-center gap-3 mb-4">
                     <div style="flex: 1; position: relative;">
                         <label for="teacherDangerSearch" class="sr-only" data-i18n="danger.search_teachers_label">Search teachers</label>
-                        <input type="text" id="teacherDangerSearch" data-i18n="danger.search_teachers_placeholder" placeholder="Search by username, full name or department..." style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none; transition: border-color var(--transition);">
+                        <input type="text" id="teacherDangerSearch" data-i18n="danger.search_teachers_placeholder" placeholder="Search by username, full name or department..." class="form-input" style="padding-left: 2.5rem;">
                         <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </span>
@@ -140,11 +138,11 @@
                     <thead>
                         <tr>
                             <th data-i18n="danger.table_full_name" style="width: 18%;">Full Name</th>
-                            <th data-i18n="danger.table_username" style="width: 18%;">Username</th>
-                            <th data-i18n="danger.table_scholar_id" style="width: 25%;">Scholar ID</th>
+                            <th data-i18n="danger.table_username" style="width: 15%;">Username</th>
+                            <th data-i18n="danger.table_scholar_id" style="width: 23%;">Scholar ID</th>
                             <th data-i18n="danger.table_department" style="width: 14%;">Department</th>
                             <th data-i18n="danger.table_status" style="width: 10%;">Status</th>
-                            <th data-i18n="danger.table_action" style="width: 15%;">Action</th>
+                            <th data-i18n="danger.table_action" style="width: 20%;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="teacherDangerTable">
@@ -178,7 +176,7 @@
                 <div id="gradeDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
                 <div class="flex items-center gap-3 mb-4">
                     <div style="flex: 1; position: relative;">
-                        <input type="text" id="dangerGradeSearch" placeholder="Search grades..." style="width: 100%; padding: 0.65rem 0.75rem 0.65rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none;">
+                        <input type="text" id="dangerGradeSearch" data-i18n="danger.search_grades_placeholder" placeholder="Search grades..." class="form-input" style="padding-left: 2rem;">
                         <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </span>
@@ -188,8 +186,8 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th data-i18n="danger.table_grade_name" style="width: 75%;">Grade Name</th>
-                            <th data-i18n="danger.table_action" style="width: 25%;">Action</th>
+                            <th data-i18n="danger.table_grade_name" style="width: 90%;">Grade Name</th>
+                            <th data-i18n="danger.table_action" style="width: 10%;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="gradeDangerTable">
@@ -223,21 +221,21 @@
                 <div id="subjectDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
                 <div class="flex items-center gap-3 mb-4">
                     <div style="flex: 1; position: relative;">
-                        <label for="dangerSubjectSearch" class="sr-only">Search subjects</label>
-                        <input type="text" id="dangerSubjectSearch" placeholder="Search subjects..." style="width: 100%; padding: 0.65rem 0.75rem 0.65rem 2rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--surface); color: var(--on-surface); outline: none;">
+                        <label for="dangerSubjectSearch" class="sr-only" data-i18n="danger.search_subjects_label">Search subjects</label>
+                        <input type="text" id="dangerSubjectSearch" data-i18n="danger.search_subjects_placeholder" placeholder="Search subjects..." class="form-input" style="padding-left: 2rem;">
                         <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </span>
                     </div>
-                    <button id="btn-addDangerSubject" class="btn btn-primary" style="white-space: nowrap; padding: 0.65rem 1.25rem; font-size: 0.875rem;">+ Add Subject</button>
+                    <button id="btn-addDangerSubject" class="btn btn-primary" style="white-space: nowrap; padding: 0.65rem 1.25rem; font-size: 0.875rem;"><span data-i18n="danger.add_subject_btn">+ Add Subject</span></button>
                 </div>
                 <table class="table">
                     <thead>
                         <tr>
-                            <th style="width: 30%;">Subject Name</th>
-                            <th style="width: 25%;">Class</th>
-                            <th style="width: 10%;">Symbol</th>
-                            <th style="width: 35%;">Action</th>
+                            <th data-i18n="danger.table_subject_name" style="width: 40%;">Subject Name</th>
+                            <th data-i18n="danger.table_class" style="width: 40%;">Class</th>
+                            <th data-i18n="danger.table_symbol" style="width: 10%;">Symbol</th>
+                            <th style="width: 10%;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="subjectDangerTable">
@@ -270,29 +268,29 @@
 
         <div id="addGradeModal" class="hidden popup modal-overlay">
             <div class="modal creation" style="max-width: 400px;">
-                <h3 class="modal-title creation" style="margin-bottom:1.25rem;">Add New Grade</h3>
+                <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="danger.add_new_grade_title">Add New Grade</h3>
                 <div id="addGradeNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
                 <div style="margin-bottom:1.25rem;">
-                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;">Grade Name</label>
-                    <input type="text" id="modalGradeName" placeholder="e.g. Grade 10" class="form-input">
+                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.grade_name_label">Grade Name</label>
+                    <input type="text" id="modalGradeName" data-i18n="danger.grade_name_placeholder" placeholder="e.g. Grade 10" class="form-input">
                 </div>
                 <div class="modal-footer" style="padding-top: 1rem; margin-top: 0;">
-                    <button id="btn-closeGradeModal" class="btn btn-outline" style="color: var(--on-surface);">Cancel</button>
-                    <button id="btn-confirmAddGrade" class="btn btn-primary" style="padding: 0.55rem 1.15rem;">Add Grade</button>
+                    <button id="btn-closeGradeModal" class="btn btn-outline" style="color: var(--on-surface);"><span data-i18n="danger.cancel">Cancel</span></button>
+                    <button id="btn-confirmAddGrade" class="btn btn-primary" style="padding: 0.55rem 1.15rem;"><span data-i18n="danger.add_grade_action">Add Grade</span></button>
                 </div>
             </div>
         </div>
 
         <div id="addSubjectModal" class="hidden popup modal-overlay">
             <div class="modal creation" style="max-width: 440px;">
-                <h3 class="modal-title creation" style="margin-bottom:1.25rem;">Add New Subject</h3>
+                <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="danger.add_new_subject_title">Add New Subject</h3>
                 <div id="addSubjectNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
                 <div style="margin-bottom:1rem;">
-                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;">Subject Name</label>
-                    <input type="text" id="modalSubjectName" placeholder="e.g. Biology" class="form-input">
+                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.subject_name_label">Subject Name</label>
+                    <input type="text" id="modalSubjectName" data-i18n="danger.subject_name_placeholder" placeholder="e.g. Biology" class="form-input">
                 </div>
                 <div style="margin-bottom:1rem;">
-                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;">Symbol</label>
+                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.symbol_label">Symbol</label>
                     <div style="position:relative;" id="symbolDropdownWrap">
                         <input type="hidden" id="modalSubjectSymbol" value="folder">
                         <div id="symbolDropdownSelected" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);cursor:pointer;">
@@ -303,14 +301,14 @@
                     </div>
                 </div>
                 <div style="margin-bottom:1.25rem;">
-                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;">Grade</label>
+                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.subject_grade_label">Grade</label>
                     <select id="modalSubjectClass" class="form-select">
-                        <option value="">All Classes</option>
+                        <option value="" data-i18n="danger.all_classes">All Classes</option>
                     </select>
                 </div>
                 <div class="modal-footer" style="padding-top: 1rem; margin-top: 0;">
-                    <button id="btn-closeSubjectModal" class="btn btn-outline" style="color: var(--on-surface);">Cancel</button>
-                    <button id="btn-confirmAddSubject" class="btn btn-primary" style="padding: 0.55rem 1.15rem;">Add Subject</button>
+                    <button id="btn-closeSubjectModal" class="btn btn-outline" style="color: var(--on-surface);"><span data-i18n="danger.cancel">Cancel</span></button>
+                    <button id="btn-confirmAddSubject" class="btn btn-primary" style="padding: 0.55rem 1.15rem;"><span data-i18n="danger.add_subject_action">Add Subject</span></button>
                 </div>
             </div>
         </div>
@@ -394,12 +392,6 @@
             try {
                 var res = await fetch('/teachers');
                 activeDangerTeachers = await res.json();
-                var disableDangerContainer = document.getElementById('disableAdminDangerContainer');
-                if (activeDangerTeachers.length === 0) {
-                    if (disableDangerContainer) disableDangerContainer.style.display = 'none';
-                } else {
-                    if (disableDangerContainer) disableDangerContainer.style.display = 'block';
-                }
                 filterDangerTeachers();
             } catch (e) { console.error(e); }
 
@@ -441,8 +433,8 @@
                 tbody.innerHTML = pageItems.map(function(g) {
                     var name = g.name || g;
                     return '<tr>' +
-                        '<td><strong>' + esc(name) + '</strong></td>' +
-                        '<td style="text-align: left;">' +
+                        '<td data-label="' + __('danger.table_grade_name') + '"><strong>' + esc(name) + '</strong></td>' +
+                        '<td data-label="' + __('danger.table_action') + '" style="text-align: left;">' +
                             '<button data-grade-name="' + esc(name) + '" class="btn btn-outline js-danger-delete-grade" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete') + '</span></button>' +
                         '</td>' +
                     '</tr>';
@@ -550,7 +542,7 @@
 
         function initSymbolDropdown(defaultVal) {
             var symbols = ['calculator','atom','globe','book','laptop','microscope','compass','code','folder'];
-            var labels = {calculator:'Calculator',atom:'Atom',globe:'Globe',book:'Book',laptop:'Laptop',microscope:'Microscope',compass:'Compass',code:'Code',folder:'Folder'};
+            var labels = {calculator:__('danger.symbol.calculator'),atom:__('danger.symbol.atom'),globe:__('danger.symbol.globe'),book:__('danger.symbol.book'),laptop:__('danger.symbol.laptop'),microscope:__('danger.symbol.microscope'),compass:__('danger.symbol.compass'),code:__('danger.symbol.code'),folder:__('danger.symbol.folder')};
             var list = document.getElementById('symbolDropdownList');
             var hidden = document.getElementById('modalSubjectSymbol');
             var preview = document.getElementById('symbolSelectedPreview');
@@ -631,10 +623,10 @@
                 tbody.innerHTML = pageItems.map(function(s) {
                     var svg = getSymbolSvg(s.symbol || 'folder');
                     return '<tr>' +
-                        '<td><strong>' + esc(s.name) + '</strong></td>' +
-                        '<td>' + esc(s.class_name || __('danger.subject_class_all')) + '</td>' +
-                        '<td><span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.6rem; border-radius: 10px; font-size: 0.75rem; font-weight: 600; background: rgba(0,112,131,0.08); color: var(--teal);">' + svg + '</span></td>' +
-                        '<td style="text-align: left;">' +
+                        '<td data-i18n-data-label="danger.table_subject_name"><strong>' + esc(s.name) + '</strong></td>' +
+                        '<td data-i18n-data-label="danger.table_class">' + esc(s.class_name || __('danger.subject_class_all')) + '</td>' +
+                        '<td data-i18n-data-label="danger.table_symbol"><span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.6rem; border-radius: 10px; font-size: 0.75rem; font-weight: 600; background: rgba(0,112,131,0.08); color: var(--teal);">' + svg + '</span></td>' +
+                        '<td data-label="' + __('danger.table_action') + '" style="text-align: left;">' +
                             '<button data-subject-id="' + esc(s.id) + '" data-subject-name="' + esc(s.name) + '" data-subject-class="' + esc(s.class_name || '') + '" class="btn btn-outline js-danger-delete-subject" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete_subject_btn') + '</span></button>' +
                         '</td>' +
                     '</tr>';
@@ -747,11 +739,11 @@
             } else {
                 tbody.innerHTML = pageItems.map(function(s) {
                     return '<tr>' +
-                        '<td data-i18n-data-label="danger.table_student_name"><strong>' + esc(s.name) + '</strong></td>' +
-                        '<td data-i18n-data-label="danger.table_username">' + esc(s.id) + '</td>' +
-                        '<td data-i18n-data-label="danger.table_scholar_id"><code>' + esc(s.id) + '</code></td>' +
-                        '<td data-i18n-data-label="danger.table_status">' + (s.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
-                        '<td data-i18n-data-label="danger.table_action">' +
+                        '<td data-label="' + __('danger.table_student_name') + '"><strong>' + esc(s.name) + '</strong></td>' +
+                        '<td data-label="' + __('danger.table_username') + '">' + esc(s.id) + '</td>' +
+                        '<td data-label="' + __('danger.table_scholar_id') + '"><code>' + esc(s.id) + '</code></td>' +
+                        '<td data-label="' + __('danger.table_status') + '">' + (s.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
+                        '<td data-label="' + __('danger.table_action') + '">' +
                             '<div style="display:flex;gap:0.5rem;justify-content:flex-end;flex-wrap:nowrap;">' +
                             '<button data-student-id="' + esc(s.id) + '" data-student-name="' + esc(s.name) + '" class="btn btn-outline js-danger-reset-student" style="padding:0.4rem 0.75rem;font-size:0.75rem;border-color:var(--warning);color:var(--warning);white-space:nowrap;">' + __('danger.force_reset_pwd') + '</button>' +
                             '<button data-student-id="' + esc(s.id) + '" data-student-name="' + esc(s.name) + '" class="btn btn-outline js-danger-delete-student" style="padding:0.4rem 0.75rem;font-size:0.75rem;border-color:var(--danger);color:var(--danger);white-space:nowrap;">' + __('danger.delete') + '</button>' +
@@ -787,12 +779,12 @@
             } else {
                 tbody.innerHTML = pageItems.map(function(t) {
                     return '<tr>' +
-                        '<td data-i18n-data-label="danger.table_full_name"><strong>' + esc(t.name) + '</strong></td>' +
-                        '<td data-i18n-data-label="danger.table_username">' + esc(t.username) + '</td>' +
-                        '<td data-i18n-data-label="danger.table_scholar_id">' + esc(t.scholar_id || '') + '</td>' +
-                        '<td data-i18n-data-label="danger.table_department">' + esc(t.department) + '</td>' +
-                        '<td data-i18n-data-label="danger.table_status">' + (t.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
-                        '<td data-i18n-data-label="danger.table_action" style="text-align: left;">' +
+                        '<td data-label="' + __('danger.table_full_name') + '"><strong>' + esc(t.name) + '</strong></td>' +
+                        '<td data-label="' + __('danger.table_username') + '">' + esc(t.username) + '</td>' +
+                        '<td data-label="' + __('danger.table_scholar_id') + '">' + esc(t.scholar_id || '') + '</td>' +
+                        '<td data-label="' + __('danger.table_department') + '">' + esc(t.department) + '</td>' +
+                        '<td data-label="' + __('danger.table_status') + '">' + (t.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
+                        '<td data-label="' + __('danger.table_action') + '" style="text-align: left;">' +
                             '<button data-teacher-username="' + esc(t.username) + '" class="btn btn-outline js-danger-reset-teacher" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--warning); color: var(--warning); margin-right: 0.5rem;"><span>' + __('danger.force_reset_pwd') + '</span></button>' +
                             '<button data-teacher-username="' + esc(t.username) + '" class="btn btn-outline js-danger-delete-teacher" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete') + '</span></button>' +
                         '</td>' +
@@ -827,12 +819,12 @@
             } else {
                 tbody.innerHTML = pageItems.map(function(a) {
                     return '<tr>' +
-                        '<td data-i18n-data-label="danger.table_full_name"><strong>' + esc(a.name) + '</strong></td>' +
-                        '<td data-i18n-data-label="danger.table_username">' + esc(a.username) + '</td>' +
-                        '<td data-i18n-data-label="danger.table_scholar_id" style="font-family: monospace; font-size: 0.8rem;">' + esc(a.scholar_id || '') + '</td>' +
-                        '<td data-i18n-data-label="danger.table_department">' + esc(a.department) + '</td>' +
-                        '<td data-i18n-data-label="danger.table_status">' + (a.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
-                        '<td data-i18n-data-label="danger.table_action" style="text-align: left;">' +
+                        '<td data-label="' + __('danger.table_full_name') + '"><strong>' + esc(a.name) + '</strong></td>' +
+                        '<td data-label="' + __('danger.table_username') + '">' + esc(a.username) + '</td>' +
+                        '<td data-label="' + __('danger.table_scholar_id') + '" style="font-family: monospace; font-size: 0.8rem;">' + esc(a.scholar_id || '') + '</td>' +
+                        '<td data-label="' + __('danger.table_department') + '">' + esc(a.department) + '</td>' +
+                        '<td data-label="' + __('danger.table_status') + '">' + (a.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
+                        '<td data-label="' + __('danger.table_action') + '" style="text-align: left;">' +
                             (a.username !== 'admin' ?
                                 '<button data-admin-username="' + esc(a.username) + '" class="btn btn-outline js-danger-reset-admin" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--warning); color: var(--warning); margin-right: 0.5rem;"><span>' + __('danger.force_reset_pwd') + '</span></button>' +
                                 '<button data-admin-username="' + esc(a.username) + '" class="btn btn-outline js-danger-delete-admin" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete') + '</span></button>'
@@ -952,23 +944,6 @@
                     loadDangerZone();
                 } else {
                     showNotification('adminDangerNotif', __('danger.alert.delete_profile_failed'), true);
-                }
-            } catch (e) {
-                showNotification('adminDangerNotif', __('danger.alert.connection_error'), true);
-            }
-        }
-
-        /** Disables the default admin login account after confirmation. */
-        async function disableDefaultAdmin() {
-            var confirmed = await showConfirm(__('danger.confirm.disable_admin_title'), __('danger.confirm.disable_admin'), true, __('danger.confirm.delete_btn'));
-            if (!confirmed) return;
-            try {
-                var res = await fetch('/teacher/disable-default-admin', { method: 'POST' });
-                if (res.ok) {
-                    showNotification('adminDangerNotif', __('danger.alert.admin_disabled'), false);
-                } else {
-                    var err = await res.json();
-                    showNotification('adminDangerNotif', err.detail || __('danger.alert.admin_disabled_failed'), true);
                 }
             } catch (e) {
                 showNotification('adminDangerNotif', __('danger.alert.connection_error'), true);
@@ -1249,7 +1224,6 @@
             document.getElementById('btn-openCreateStudentModal')?.addEventListener('click', openCreateStudentModal);
             document.getElementById('btn-openCreateAdminModal')?.addEventListener('click', openCreateAdminModal);
             document.getElementById('btn-openCreateTeacherModal')?.addEventListener('click', openCreateTeacherModal);
-            document.getElementById('btn-disableDefaultAdmin')?.addEventListener('click', disableDefaultAdmin);
             document.getElementById('btn-submitForcePasswordReset')?.addEventListener('click', submitForcePasswordReset);
             document.getElementById('btn-closeCreateModal')?.addEventListener('click', closeCreateModal);
             document.getElementById('btn-addGrade')?.addEventListener('click', function() {

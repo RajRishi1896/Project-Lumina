@@ -20,7 +20,6 @@ class AuthService {
   static const String _usernameKey = 'lumina_username';
   static const String _usersListKey = 'lumina_users_list_secure';
   static const String _sessionTokenKey = 'session_token';
-  static const String _encryptionKeyKey = 'lumina_encryption_key';
   static const String _refreshTokenKey = 'lumina_refresh_token';
   static const String _persistentKeyKey = 'lumina_persistent_key';
   static const String _gradeKey = 'lumina_grade';
@@ -45,11 +44,6 @@ class AuthService {
 
   /// The grade level stored for the logged-in student, or `null`.
   Future<String?> getStudentGrade() async => _secureStorage.read(key: _gradeKey);
-
-  /// The AES-256-GCM encryption key used for encrypting/decrypting API payloads, or `null`.
-  Future<String?> getEncryptionKey() async {
-    return _secureStorage.read(key: _encryptionKeyKey);
-  }
 
   /// The refresh token used to obtain a new session token, or `null`.
   Future<String?> getRefreshToken() async {
@@ -86,7 +80,6 @@ class AuthService {
       final String? token = data['token']?.toString();
       final String? refreshToken = data['refresh_token']?.toString();
       final String? persistentKey = data['persistent_key']?.toString();
-      final String? encryptionKey = data['encryption_key']?.toString();
 
       List<Map<String, dynamic>> users = await _getUsers();
       final existing = users.indexWhere((u) => u['username'] == username);
@@ -112,7 +105,6 @@ class AuthService {
 
       if (refreshToken != null) await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
       if (persistentKey != null) await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
-      if (encryptionKey != null) await _secureStorage.write(key: _encryptionKeyKey, value: encryptionKey);
 
       return true;
     } catch (e) {
@@ -154,10 +146,8 @@ class AuthService {
               if (name != null && name.isNotEmpty) await _secureStorage.write(key: _displayNameKey, value: name);
               final refreshToken = data['refresh_token']?.toString();
               final persistentKey = data['persistent_key']?.toString();
-              final encryptionKey = data['encryption_key']?.toString();
               if (refreshToken != null && refreshToken.isNotEmpty) await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
               if (persistentKey != null && persistentKey.isNotEmpty) await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
-              if (encryptionKey != null && encryptionKey.isNotEmpty) await _secureStorage.write(key: _encryptionKeyKey, value: encryptionKey);
               ApiClient.setAuth(token);
               unawaited(_saveSession(localUser['userId'], username));
               return 'ok';
@@ -190,10 +180,8 @@ class AuthService {
             await _secureStorage.write(key: _userIdKey, value: scholarId);
             final refreshToken = respData['refresh_token']?.toString();
             final persistentKey = respData['persistent_key']?.toString();
-            final encryptionKey = respData['encryption_key']?.toString();
             if (refreshToken != null && refreshToken.isNotEmpty) await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
             if (persistentKey != null && persistentKey.isNotEmpty) await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
-            if (encryptionKey != null && encryptionKey.isNotEmpty) await _secureStorage.write(key: _encryptionKeyKey, value: encryptionKey);
             if (name != null && name.isNotEmpty) {
               await _secureStorage.write(key: _usernameKey, value: name);
               await _secureStorage.write(key: _displayNameKey, value: name);
@@ -281,15 +269,11 @@ class AuthService {
           await _secureStorage.write(key: _sessionTokenKey, value: token);
           final newRefreshToken = data['refresh_token']?.toString();
           final persistentKey = data['persistent_key']?.toString();
-          final encryptionKey = data['encryption_key']?.toString();
           if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
             await _secureStorage.write(key: _refreshTokenKey, value: newRefreshToken);
           }
           if (persistentKey != null && persistentKey.isNotEmpty) {
             await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
-          }
-          if (encryptionKey != null && encryptionKey.isNotEmpty) {
-            await _secureStorage.write(key: _encryptionKeyKey, value: encryptionKey);
           }
           ApiClient.setAuth(token);
           return true;
@@ -320,15 +304,11 @@ class AuthService {
           await _secureStorage.write(key: _sessionTokenKey, value: token);
           final newRefreshToken = data['refresh_token']?.toString();
           final newPersistentKey = data['persistent_key']?.toString();
-          final encryptionKey = data['encryption_key']?.toString();
           if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
             await _secureStorage.write(key: _refreshTokenKey, value: newRefreshToken);
           }
           if (newPersistentKey != null && newPersistentKey.isNotEmpty) {
             await _secureStorage.write(key: _persistentKeyKey, value: newPersistentKey);
-          }
-          if (encryptionKey != null && encryptionKey.isNotEmpty) {
-            await _secureStorage.write(key: _encryptionKeyKey, value: encryptionKey);
           }
           ApiClient.setAuth(token);
           return true;

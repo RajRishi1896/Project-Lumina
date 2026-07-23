@@ -1,5 +1,5 @@
 """Teacher similar-course linking."""
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from app.audit import audit, Action
 from app.async_db import db_fetch, db_fetch_one, db_exec
@@ -44,7 +44,7 @@ async def add_similar_course(course_id: str, data: SimilarLinkCreate, teacher_us
         (course_id, data.similar_course_id))
     if dup:
         raise HTTPException(status_code=400, detail="Similar link already exists.")  # i18n: user-facing error message
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     await db_exec(
         "INSERT INTO similar_courses (course_id, similar_course_id, created_by, created_at) VALUES (?, ?, ?, ?)",
         (course_id, data.similar_course_id, teacher_user, now))

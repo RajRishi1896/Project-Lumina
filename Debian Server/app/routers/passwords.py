@@ -1,4 +1,5 @@
 """Password management routes -- change, force-change, and admin reset."""
+import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.async_db import db_conn
@@ -32,12 +33,12 @@ async def change_password(data: dict, teacher_user: str = Depends(verify_teacher
         c = conn.cursor()
         c.execute("SELECT hashed_password FROM users WHERE username = ?", (teacher_user,))
         row = c.fetchone()
-        if not row or not verify_password(data.get('old_password'), row[0]):
+        if not row or not await asyncio.to_thread(verify_password, data.get('old_password'), row[0]):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password.")  # i18n: user-facing error message
         valid, msg = validate_password_strength(data.get('new_password'))
         if not valid:
             raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
-        new_hash = hash_password(data.get('new_password'))
+        new_hash = await asyncio.to_thread(hash_password, data.get('new_password'))
         c.execute("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
         conn.commit()
     await invalidate_tokens_for_user(teacher_user)
@@ -70,7 +71,7 @@ async def force_change_password(data: dict, teacher_user: str = Depends(verify_t
             valid, msg = validate_password_strength(data.get('new_password'))
             if not valid:
                 raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
-            new_hash = hash_password(data.get('new_password'))
+            new_hash = await asyncio.to_thread(hash_password, data.get('new_password'))
             c.execute("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
             conn.commit()
             await invalidate_tokens_for_user(teacher_user)
@@ -100,7 +101,7 @@ async def force_reset_teacher_password(username: str, admin_user: str = Depends(
     """
     if username == "admin":
         raise HTTPException(status_code=400, detail="Cannot reset the default admin password. Use the Settings page to re-enable the default admin account.")  # i18n: user-facing error message
-    hashed = hash_password("lumina2026")
+    hashed = await asyncio.to_thread(hash_password, "lumina2026")
     async with db_conn() as conn:
         try:
             c = conn.cursor()

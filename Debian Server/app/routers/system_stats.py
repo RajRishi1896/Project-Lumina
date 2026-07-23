@@ -4,7 +4,7 @@ import re
 import time
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from app.async_db import db_conn, db_fetch_one, db_fetch
 from app.dependencies import verify_teacher, verify_admin
@@ -221,7 +221,7 @@ async def get_diagnostics(admin_user: str = Depends(verify_admin)):
     backup_exists = await asyncio.to_thread(os.path.exists, "backup_hub.sh")
     last_backup = None
     backup_dir = "backups"
-    if os.path.isdir(backup_dir):
+    if await asyncio.to_thread(os.path.isdir, backup_dir):
         try:
             entries = await asyncio.to_thread(lambda: sorted(os.listdir(backup_dir)))
             if entries:
@@ -282,7 +282,7 @@ async def get_diagnostics(admin_user: str = Depends(verify_admin)):
         },
         "scheduler": scheduler_status,
         "metrics": get_metrics(),
-        "checked_at": datetime.utcnow().isoformat() + "Z",
+        "checked_at": datetime.now(timezone.utc).isoformat(),
     }
 
 

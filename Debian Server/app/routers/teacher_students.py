@@ -1,4 +1,5 @@
 """Student listing, analytics, and teacher profile management routes."""
+import asyncio
 import sqlite3
 import logging
 import uuid
@@ -28,8 +29,12 @@ async def teacher_list_students(teacher_user: str = Depends(verify_teacher), gra
     async with db_conn() as conn:
         try:
             c = conn.cursor()
-            grade_filter = "WHERE s.grade = ?" if grade else ""
-            params = (grade,) if grade else ()
+            conditions = ["(u.role IS NULL OR u.role = 'student')"]
+            params = []
+            if grade:
+                conditions.append("s.grade = ?")
+                params.append(grade)
+            where_clause = "WHERE " + " AND ".join(conditions)
             c.execute(f"""
                 SELECT s.id, s.name, s.username, s.grade,
                        COALESCE(w.total_seconds, 0) AS week_secs,
@@ -40,8 +45,7 @@ async def teacher_list_students(teacher_user: str = Depends(verify_teacher), gra
                 LEFT JOIN weekly_study w ON w.scholar_id = s.id
                 LEFT JOIN (SELECT scholar_id, COUNT(*) AS saved FROM scholar_downloads GROUP BY scholar_id) sv ON sv.scholar_id = s.id
                 LEFT JOIN users u ON u.scholar_id = s.id
-                {grade_filter}
-                {"AND " if grade else "WHERE "}(u.role IS NULL OR u.role = 'student')
+                {where_clause}
                 ORDER BY last_active DESC NULLS LAST, s.name ASC
             """, params)
             students = []
@@ -147,9 +151,9 @@ async def create_teacher_profile(teacher: TeacherCreate, admin_user: str = Depen
             dept = teacher.department or "General"
             unique_suffix = uuid.uuid4().hex
             full_id = f"LUMINA_01-T{unique_suffix}"
-            c.execute("INSERT OR IGNORE INTO scholars (id, name) VALUES (?, ?)", (full_id, display_name))
+            c.execute("INSERT INTO scholars (id, name) VALUES (?, ?)", (full_id, display_name))
 
-            hashed_pwd = hash_password(teacher.password)
+            hashed_pwd = await asyncio.to_thread(hash_password, teacher.password)
             c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id) VALUES (?, ?, ?, ?, ?)",
                       (teacher.username, hashed_pwd, display_name, dept, full_id))
             conn.commit()

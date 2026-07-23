@@ -9,7 +9,7 @@ import sqlite3
 import shutil
 import zipfile
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
 from app.database import UPLOAD_DIR, DB_PATH, gen_composite_uid
@@ -276,7 +276,7 @@ async def import_course_zip(
                 subject = md.get("subject", "gen")
                 grade = md.get("grade", 0)
                 language = md.get("language", "en")
-                now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
                 conn_sql = sqlite3.connect(DB_PATH, timeout=5.0)
                 conn_sql.row_factory = sqlite3.Row

@@ -189,7 +189,7 @@ async def upload_resource(title: str = Query(..., description="Display title"),
         resource_id = gen_composite_uid(conn, grade, subject, 'RES')
         conn.execute("""INSERT INTO resources
             (id, title, subject, grade, language, resource_type, filename, original_name, source, license, uploaded_by, status, topic_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)""",
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)""",
             (resource_id, title, subject, grade, language, type, uuid_name, original_filename, source, license, teacher_user, topic_id))
         conn.commit()
     from app.metrics import incr

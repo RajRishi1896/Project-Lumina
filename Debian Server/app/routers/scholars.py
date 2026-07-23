@@ -1,4 +1,5 @@
 """Scholar management routes -- list, reset password, delete."""
+import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from app.async_db import db_conn
@@ -40,7 +41,7 @@ async def teacher_reset_student_password(scholar_id: str, teacher_user: str = De
     Returns:
         Status dict indicating success.
     """
-    hashed = hash_password("lumina2026")
+    hashed = await asyncio.to_thread(hash_password, "lumina2026")
     async with db_conn() as conn:
         try:
             c = conn.cursor()

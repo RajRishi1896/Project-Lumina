@@ -5,7 +5,6 @@ import uuid
 import time
 import logging
 import asyncio
-from datetime import datetime
 
 UPLOAD_DIR = "uploads"
 DB_PATH = "data/hub.db"
@@ -288,8 +287,6 @@ def init_db():
         c.execute('INSERT OR IGNORE INTO settings (key, value) VALUES ("log_retention", "30d")')
     except Exception as e:
         logging.error(f"Could not create settings table: {e}")
-
-    c.execute("DELETE FROM weekly_study WHERE updated_at < datetime('now', '-7 days')")
 
     try:
         c.execute('PRAGMA wal_checkpoint(TRUNCATE)')

@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from app.database import UPLOAD_DIR, DB_PATH
 from app.async_db import db_exec, db_fetch
 from app.dependencies import verify_teacher
+from zim_handler import invalidate_zim_cache
 
 router = APIRouter()
 
@@ -258,4 +259,5 @@ async def delete_zim_archive(archive_id: str, teacher_user: str = Depends(verify
             await asyncio.to_thread(os.remove, thumb_fp)
     await db_exec("DELETE FROM zim_articles WHERE archive_id = ?", (archive_id,))
     await db_exec("DELETE FROM zim_archives WHERE id = ?", (archive_id,))
+    invalidate_zim_cache(archive_id)
     return {"status": "success"}

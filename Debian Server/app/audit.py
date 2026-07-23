@@ -19,10 +19,13 @@ import time
 import asyncio
 import logging
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 _DB_PATH = None  # lazy import to avoid circular import at module load
+_RETENTION_CACHE: Optional[str] = None  # cached retention value, avoids DB open per event
+_RETENTION_CACHE_TS: float = 0  # last cache refresh timestamp
+_RETENTION_CACHE_TTL: float = 300  # refresh every 5 minutes
 _RETENTION_DELTAS = {
     "24h": 86400,
     "7d": 604800,
@@ -168,7 +171,7 @@ async def audit(
         request: FastAPI Request object -- extracts IP and User-Agent automatically.
     """
     event_id = uuid.uuid4().hex[:12]
-    timestamp = datetime.utcnow().isoformat() + "Z"
+    timestamp = datetime.now(timezone.utc).isoformat()
 
     # Extract IP from request if provided
     if request and not ip:
@@ -298,27 +301,36 @@ def _build_summary(action, username, resource_name, resource_id, target_user, ch
     return " ".join(parts) + " " + verb if parts else verb
 
 
-def _write_audit_line(event: dict, summary: str):
-    """Write one JSON line + human-readable fallback. Runs in worker thread."""
+def _get_retention_cached() -> str:
+    """Return the log retention setting, cached for 5 minutes to avoid a DB open per audit event."""
+    global _RETENTION_CACHE, _RETENTION_CACHE_TS
+    now = time.time()
+    if _RETENTION_CACHE is not None and (now - _RETENTION_CACHE_TS) < _RETENTION_CACHE_TTL:
+        return _RETENTION_CACHE
     try:
         conn = sqlite3.connect(_get_db_path(), timeout=5.0)
         try:
             cur = conn.cursor()
             cur.execute("SELECT value FROM settings WHERE key = 'log_retention'")
             row = cur.fetchone()
-            retention = row[0] if row else "30d"
+            _RETENTION_CACHE = row[0] if row else "30d"
         finally:
             conn.close()
     except Exception:
-        retention = "30d"
+        _RETENTION_CACHE = "30d"
+    _RETENTION_CACHE_TS = now
+    return _RETENTION_CACHE
+
+
+def _write_audit_line(event: dict, summary: str):
+    """Write one JSON line + human-readable fallback. Runs in worker thread."""
+    retention = _get_retention_cached()
 
     if retention == "none":
         return
 
     # JSON line for machine parsing
     json_line = json.dumps(event, ensure_ascii=False)
-    # Human-readable fallback
-    ts = event.get("ts", "")
     log_line = f"{json_line}\n"
 
     try:

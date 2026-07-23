@@ -3,14 +3,14 @@ import uuid
 import time
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Form, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from app.async_db import db_conn, db_exec, db_fetch_one
 from app.audit import audit, Action
 from app.metrics import incr
 from app.models import ScholarReg, StudentLoginRequest, ScholarRegisterResponse, StudentLoginResponse, LoginTokenResponse, TokenResponse
-from app.dependencies import hash_password, verify_password, validate_password_strength, generate_session_token
+from app.dependencies import hash_password, verify_password, validate_password_strength, generate_session_token, invalidate_tokens_for_user
 
 router = APIRouter()
 
@@ -81,12 +81,13 @@ async def register_scholar(scholar: ScholarReg, request: Request):
             unique_suffix = uuid.uuid4().hex
             full_id = f"LUMINA_01-{unique_suffix}"
 
-        pwd = scholar.password or "lumina2026"
-        if scholar.password:
-            valid, msg = validate_password_strength(pwd)
-            if not valid:
-                raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
-        hashed = hash_password(pwd)
+        if not scholar.password:
+            raise HTTPException(status_code=400, detail="Password is required")  # i18n: user-facing validation message
+        pwd = scholar.password
+        valid, msg = validate_password_strength(pwd)
+        if not valid:
+            raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
+        hashed = await asyncio.to_thread(hash_password, pwd)
 
         if existing:
             c.execute("UPDATE scholars SET hashed_password = ?, name = ?, reset_required = 0 WHERE id = ?", (hashed, display_name, full_id))
@@ -235,12 +236,10 @@ async def logout(request: Request, response: Response):
     """
     token = request.cookies.get("lumina_session")
     if token:
-        async with db_conn() as conn:
-            c = conn.cursor()
-            c.execute("DELETE FROM sessions WHERE token = ?", (token,))
-            c.execute("DELETE FROM refresh_tokens WHERE token = ?", (token,))
-            c.execute("DELETE FROM persistent_keys WHERE token = ?", (token,))
-            conn.commit()
+        # Extract username from the session to properly invalidate all tokens
+        row = await db_fetch_one("SELECT username FROM sessions WHERE token = ?", (token,))
+        if row:
+            await invalidate_tokens_for_user(row["username"])
     response.delete_cookie(key="lumina_session", path="/")
     return RedirectResponse(url="/welcome")
 
@@ -268,7 +267,7 @@ async def refresh_session(data: dict, request: Request):
             raise HTTPException(status_code=401, detail="Invalid refresh token")  # i18n: user-facing error message
         if row[2]:
             raise HTTPException(status_code=401, detail="Refresh token already used")  # i18n: user-facing error message
-        if row[3] and datetime.fromisoformat(row[3]) < datetime.now():
+        if row[3] and datetime.fromisoformat(row[3]).replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
             raise HTTPException(status_code=401, detail="Refresh token expired")  # i18n: user-facing error message
         username, role = row[0], row[1]
         c.execute("UPDATE refresh_tokens SET used = 1 WHERE token = ?", (data.get('refresh_token'),))
@@ -304,7 +303,7 @@ async def renew_session(data: dict, request: Request):
             raise HTTPException(status_code=401, detail="Invalid persistent key")  # i18n: user-facing error message
         if row[2]:
             raise HTTPException(status_code=401, detail="Persistent key already used")  # i18n: user-facing error message
-        if row[3] and datetime.fromisoformat(row[3]) < datetime.now():
+        if row[3] and datetime.fromisoformat(row[3]).replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
             raise HTTPException(status_code=401, detail="Persistent key expired")  # i18n: user-facing error message
         username, role = row[0], row[1]
         c.execute("UPDATE persistent_keys SET used = 1 WHERE token = ?", (data.get('persistent_key'),))

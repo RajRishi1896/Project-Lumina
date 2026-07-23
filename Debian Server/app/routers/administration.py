@@ -1,5 +1,6 @@
 """Admin management -- default admin toggling and admin/teacher/student CRUD."""
 import uuid
+import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from app.database import gen_composite_uid
@@ -48,7 +49,7 @@ async def enable_default_admin(admin_user: str = Depends(verify_admin)):
     Returns:
         Status dict indicating success.
     """
-    hashed = hash_password("lumina2026")
+    hashed = await asyncio.to_thread(hash_password, "lumina2026")
     async with db_conn() as conn:
         c = conn.cursor()
         c.execute("UPDATE users SET hashed_password = ? WHERE username = 'admin'", (hashed,))
@@ -123,7 +124,7 @@ async def _create_user(data: TeacherCreate, admin_user: str, role: str, default_
             display_name = data.name or data.username
             dept = data.department or default_dept
             user_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-            hashed_pwd = hash_password(data.password)
+            hashed_pwd = await asyncio.to_thread(hash_password, data.password)
             c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, ?)",
                       (data.username, hashed_pwd, display_name, dept, user_id, role))
             conn.commit()
@@ -191,7 +192,7 @@ async def create_student(data: AdminStudentCreate, admin_user: str = Depends(ver
             display_name = data.name or data.username
             scholar_id = f"LUMINA_01-{uuid.uuid4().hex}"
             pwd = data.password or "lumina2026"
-            hashed_pwd = hash_password(pwd)
+            hashed_pwd = await asyncio.to_thread(hash_password, pwd)
             if data.grade:
                 c.execute("INSERT INTO scholars (id, username, name, hashed_password, reset_required, grade) VALUES (?, ?, ?, ?, 0, ?)",
                           (scholar_id, data.username, display_name, hashed_pwd, data.grade))

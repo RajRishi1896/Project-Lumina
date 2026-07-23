@@ -22,7 +22,7 @@
         <div id="app-content">
         <!-- Section 1: Course List (default view) -->
         <div id="courseListSection">
-            <div class="page-header flex flex-wrap gap-4 justify-between items-start" style="margin-bottom: 2.5rem;">
+            <div class="page-header flex flex-wrap gap-4 justify-between items-start">
                 <div>
                     <h1 data-i18n="courses.title">My Courses</h1>
                     <p data-i18n="courses.page_description">Create and manage courses with quizzes and resources.</p>
@@ -47,7 +47,7 @@
                     <div class="flex flex-wrap gap-3 items-center">
                         <label for="courseFilterSubject" class="text-sm text-muted whitespace-nowrap" data-i18n="courses.th_subject">Subject</label>
                         <select id="courseFilterSubject" class="form-select" style="flex:0 1 160px;">
-                            <option value="ALL" data-i18n="courses.filter_all">All Subjects</option>
+                            <option value="ALL" data-i18n="courses.filter_all">All</option>
                         </select>
                         <label for="courseFilterGrade" class="text-sm text-muted whitespace-nowrap" data-i18n="courses.th_grade">Grade</label>
                         <select id="courseFilterGrade" class="form-select" style="flex:0 1 120px;">
@@ -67,10 +67,10 @@
                             <th data-i18n="courses.th_title" style="width: 25%;">Title</th>
                             <th data-i18n="courses.th_subject" style="width: 18%;">Subject</th>
                             <th data-i18n="courses.th_grade" style="width: 8%;">Grade</th>
-                            <th data-i18n="courses.th_language" style="width: 8%;">Language</th>
-                            <th data-i18n="courses.th_status" style="width: 12%;">Status</th>
-                            <th data-i18n="courses.th_resources" style="width: 8%; text-align:center;">Resources</th>
-                            <th data-i18n="courses.th_actions" style="width: 21%;">Actions</th>
+                            <th data-i18n="courses.th_language" style="width: 11%;">Language</th>
+                            <th data-i18n="courses.th_status" style="width: 10%;">Status</th>
+                            <th data-i18n="courses.th_resources" style="width: 10%;">Resources</th>
+                            <th data-i18n="courses.th_actions" style="width: 24%;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="courseTable">
@@ -102,7 +102,7 @@
 
         <!-- Section 2: Course Editor (hidden by default) -->
         <div id="courseEditorSection" class="hidden">
-            <div class="page-header flex flex-wrap gap-3 justify-between items-center" style="margin-bottom: 2.5rem;">
+            <div class="page-header flex flex-wrap gap-3 justify-between items-center">
                 <div>
                     <a id="btn-backToCourses" href="#" class="back-link flex items-center gap-2 text-sm text-teal font-bold no-underline mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -259,7 +259,7 @@
                 <div class="form-group">
                     <label for="quizTimeLimit" data-i18n="courses.quiz_time_label">Time Limit (minutes)</label>
                     <select id="quizTimeLimit" class="form-select">
-                        <option value="0">Unlimited</option>
+                        <option value="0" data-i18n="courses.quiz_unlimited">Unlimited</option>
                         <option value="5">5</option>
                         <option value="10" selected>10</option>
                         <option value="15">15</option>
@@ -271,7 +271,7 @@
                         <option value="120">120</option>
                         <option value="custom" data-i18n="courses.quiz_custom">Custom</option>
                     </select>
-                    <input type="number" id="quizTimeLimitCustom" min="1" max="999" placeholder="Minutes" class="form-input mt-1" style="display:none;">
+                    <input type="number" id="quizTimeLimitCustom" min="1" max="999" placeholder="Minutes" data-i18n="courses.quiz_minutes_placeholder" class="form-input mt-1" style="display:none;">
                 </div>
                 <div class="form-group">
                     <label for="quizThreshold" data-i18n="courses.quiz_threshold_label">Pass Threshold (%)</label>
@@ -280,7 +280,7 @@
                 <div class="form-group">
                     <label for="quizMaxAttempts" data-i18n="courses.quiz_attempts_label">Max Attempts</label>
                     <select id="quizMaxAttempts" class="form-select">
-                        <option value="0">Unlimited</option>
+                        <option value="0" data-i18n="courses.quiz_unlimited">Unlimited</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3" selected>3</option>
@@ -288,7 +288,7 @@
                         <option value="10">10</option>
                         <option value="custom" data-i18n="courses.quiz_custom">Custom</option>
                     </select>
-                    <input type="number" id="quizMaxAttemptsCustom" min="1" max="999" placeholder="Attempts" class="form-input mt-1" style="display:none;">
+                    <input type="number" id="quizMaxAttemptsCustom" min="1" max="999" placeholder="Attempts" data-i18n="courses.quiz_attempts_placeholder" class="form-input mt-1" style="display:none;">
                 </div>
             </div>
             <div class="form-group flex items-center gap-2 mt-2">
@@ -367,8 +367,8 @@
             <!-- Quiz Actions -->
             <div class="flex justify-between mt-6 pt-5 border-t border-outline">
                 <div class="flex gap-2">
-                    <button id="btn-importQuiz" class="btn btn-outline text-xs">Import Quiz</button>
-                    <button id="btn-exportQuiz" class="btn btn-outline text-xs">Export Quiz</button>
+                    <button id="btn-importQuiz" class="btn btn-outline text-xs"><span data-i18n="courses.quiz_import">Import Quiz</span></button>
+                    <button id="btn-exportQuiz" class="btn btn-outline text-xs"><span data-i18n="courses.quiz_export">Export Quiz</span></button>
                     <input type="file" id="quizImportFile" accept=".json" class="hidden">
                 </div>
                 <div class="flex gap-3">
@@ -479,21 +479,15 @@
                     var resourceCount = c.resource_count || 0;
                     return '<tr data-course-id="' + c.id + '">' +
                         '<td data-label="' + __('courses.th_title') + '"><strong>' + esc(c.title) + '</strong></td>' +
-                        '<td data-label="' + __('courses.th_subject') + '">' + esc(c.subject || 'General') + '</td>' +
+                        '<td data-label="' + __('courses.th_subject') + '">' + esc(c.subject || __('courses.general_subject')) + '</td>' +
                         '<td data-label="' + __('courses.th_grade') + '">' + esc(c.grade || '-') + '</td>' +
                         '<td data-label="' + __('courses.th_language') + '">' + esc(c.language || 'en') + '</td>' +
                         '<td data-label="' + __('courses.th_status') + '">' + statusHtml + '</td>' +
-                        '<td data-label="' + __('courses.th_resources') + '" style="text-align:center;font-weight:700;">' + resourceCount + '</td>' +
+                        '<td data-label="' + __('courses.th_resources') + '" style="font-weight:700;">' + resourceCount + '</td>' +
                         '<td data-label="' + __('courses.th_actions') + '" style="text-align:right;white-space:nowrap;">' +
-                        '<button class="btn btn-outline js-edit-course" data-course-id="' + c.id + '" style="padding:0.35rem 0.6rem;font-size:0.75rem;" title="' + __('courses.edit') + '">' +
-                        '   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
-                        '</button> ' +
-                        '<button class="btn btn-outline js-delete-course" data-course-id="' + c.id + '" data-course-title="' + esc(c.title) + '" style="padding:0.35rem 0.6rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);" title="' + __('courses.delete') + '">' +
-                        '   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
-                        '</button> ' +
-                        '<button class="btn btn-outline js-export-course" data-course-id="' + c.id + '" style="padding:0.35rem 0.6rem;font-size:0.75rem;" title="' + __('courses.export_zip') + '">' +
-                        '   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-                        '</button>' +
+                        '<button class="btn btn-outline js-edit-course" data-course-id="' + c.id + '" style="padding:0.4rem 0.75rem;font-size:0.75rem;">' + __('courses.edit') + '</button> ' +
+                        '<button class="btn btn-outline js-delete-course" data-course-id="' + c.id + '" data-course-title="' + esc(c.title) + '" style="padding:0.4rem 0.75rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);margin-left:0.5rem;">' + __('courses.delete') + '</button> ' +
+                        '<button class="btn btn-outline js-export-course" data-course-id="' + c.id + '" style="padding:0.4rem 0.75rem;font-size:0.75rem;margin-left:0.5rem;">' + __('courses.export_zip') + '</button>' +
                         '</td></tr>';
                 }).join('');
             }
@@ -944,7 +938,7 @@
             if (type === 'fill_blanks') {
                 document.getElementById('qOptionsList').innerHTML = '';
             } else if (type === 'tf') {
-                renderOptions(['True', 'False'], 0, 'tf');
+                renderOptions([__('courses.quiz_true'), __('courses.quiz_false')], 0, 'tf');
             } else {
                 renderOptions(['', '', '', ''], 0, type);
             }
@@ -970,7 +964,7 @@
                         : '<input type="radio" class="q-correct-opt" name="qCorrectOpt" data-optindex="' + i + '" ' + (checked ? 'checked' : '') + '>') +
                     (type === 'tf'
                         ? '<span style="font-size:0.9rem;font-weight:700;">' + esc(opt) + '</span>'
-                        : '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="' + esc(opt) + '" placeholder="Option ' + (i + 1) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">') +
+                        : '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="' + esc(opt) + '" placeholder="' + __('courses.quiz_option_placeholder').replace('{n}', i + 1) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">') +
                     (type !== 'tf' ? '<button class="btn btn-outline js-remove-option" data-optindex="' + i + '" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">&times;</button>' : '') +
                     '</div>';
             }).join('');
@@ -1133,7 +1127,7 @@
             var json = JSON.stringify(payload, null, 2);
             var filename = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
             if (window.showSaveFilePicker) {
-                window.showSaveFilePicker({ suggestedName: filename, types: [{ description: 'Quiz file', accept: { 'application/json': ['.json'] } }] })
+                window.showSaveFilePicker({ suggestedName: filename, types: [{ description: __('courses.quiz_file_description'), accept: { 'application/json': ['.json'] } }] })
                     .then(function(handle) { return handle.createWritable(); })
                     .then(function(writable) { return writable.write(json).then(function() { return writable.close(); }); })
                     .catch(function(e) { if (e.name !== 'AbortError') showAlert(__('courses.quiz.save_failed', {message: e.message}), true); });
@@ -1418,7 +1412,7 @@
                     (type === 'multi'
                         ? '<input type="checkbox" class="q-correct-opt" data-optindex="' + i + '">'
                         : '<input type="radio" class="q-correct-opt" name="qCorrectOpt" data-optindex="' + i + '">') +
-                    '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="" placeholder="Option ' + (i + 1) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">' +
+                    '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="" placeholder="' + __('courses.quiz_option_placeholder').replace('{n}', i + 1) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">' +
                     '<button class="btn btn-outline js-remove-option" data-optindex="' + i + '" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">&times;</button>';
                 container.appendChild(div);
             });

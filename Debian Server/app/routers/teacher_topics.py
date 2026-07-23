@@ -1,5 +1,5 @@
 """Teacher topic (chapter) management for courses."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.database import gen_uid
@@ -29,7 +29,7 @@ async def create_topic(course_id: str, data: dict, teacher_user: str = Depends(v
         "SELECT COALESCE(MAX(position), -1) AS mp FROM topics WHERE course_id = ?", (course_id,))
     next_pos = (last["mp"] if last and last["mp"] is not None else -1) + 1
     topic_id = gen_uid("TPC")
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     await db_exec(
         "INSERT INTO topics (id, course_id, title, description, position, created_at) VALUES (?, ?, ?, ?, ?, ?)",
         (topic_id, course_id, title, data.get("description", ""), next_pos, now))

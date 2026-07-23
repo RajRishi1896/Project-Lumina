@@ -21,7 +21,7 @@
     <main>
         <div id="app-content">
         <div id="contentTab">
-            <div class="page-header" style="margin-bottom: 2.5rem;">
+            <div class="page-header">
                 <h1 data-i18n="content.page_title">Content Manager</h1>
                 <p data-i18n="content.page_description">Upload and manage educational resources for your students.</p>
             </div>
@@ -93,7 +93,7 @@
                         </select>
                         <div class="search-wrap-inline" style="flex:1 1 200px;">
                             <label for="topicSearch" class="sr-only">Search topics</label>
-                            <input type="text" id="topicSearch" placeholder="Search topics...">
+                            <input type="text" id="topicSearch" placeholder="Search topics..." data-i18n="content.topics_search_placeholder">
                             <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </span>
@@ -194,8 +194,8 @@
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="modal-title" style="font-size:1.25rem;">Quiz Builder</h3>
                     <div class="flex items-center gap-2">
-                        <button id="btn-importQuiz" class="btn btn-outline btn-sm">Import Quiz</button>
-                        <button id="btn-exportQuiz" class="btn btn-outline btn-sm">Export Quiz</button>
+                        <button id="btn-importQuiz" class="btn btn-outline btn-sm" data-i18n="content.quiz.import_button">Import Quiz</button>
+                        <button id="btn-exportQuiz" class="btn btn-outline btn-sm" data-i18n="content.quiz.export_button">Export Quiz</button>
                         <input type="file" id="quizImportFile" accept=".json" style="display:none;">
                         <button id="btn-closeQuizModal" class="modal-close">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -212,7 +212,7 @@
                     <div>
                         <label class="form-label">Time Limit (minutes)</label>
                         <select id="quizTimeLimit" class="form-select">
-                            <option value="0">Unlimited</option>
+                            <option value="0" data-i18n="content.quiz.unlimited">Unlimited</option>
                             <option value="5">5</option>
                             <option value="10" selected>10</option>
                             <option value="15">15</option>
@@ -276,7 +276,7 @@
                         <textarea id="qExplanation" rows="2" maxlength="500" placeholder="Explain why this answer is correct..." class="form-input" style="resize:vertical;"></textarea>
                     </div>
                     <div class="flex justify-end gap-2 mt-3">
-                        <button id="btn-cancelQuestion" class="btn btn-outline btn-sm">Cancel</button>
+                        <button id="btn-cancelQuestion" class="btn btn-outline btn-sm" data-i18n="content.modal_cancel">Cancel</button>
                         <button id="btn-saveQuestion" class="btn btn-primary btn-sm">Save Question</button>
                     </div>
                 </div>
@@ -291,16 +291,16 @@
         <!-- Section: Edit Topic Modal -->
         <div id="editTopicModal" class="hidden popup modal-overlay">
             <div class="modal creation">
-                <h3 class="modal-title creation" style="margin-bottom:1.25rem;">Edit Topic</h3>
+                <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="content.topics_edit_title">Edit Topic</h3>
                 <div id="editTopicNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
                 <input type="hidden" id="editTopicId">
                 <div class="mb-5">
-                    <label class="form-label">Topic Name</label>
-                    <input type="text" id="editTopicName" placeholder="e.g. Chapter 1" class="form-input">
+                    <label class="form-label" data-i18n="content.topics_th_name">Topic Name</label>
+                    <input type="text" id="editTopicName" placeholder="e.g. Chapter 1" data-i18n="content.topics_placeholder" class="form-input">
                 </div>
                 <div class="modal-footer">
-                    <button id="btn-closeEditTopic" class="btn btn-outline">Cancel</button>
-                    <button id="btn-saveEditTopic" class="btn btn-primary">Save</button>
+                    <button id="btn-closeEditTopic" class="btn btn-outline" data-i18n="content.modal_cancel">Cancel</button>
+                    <button id="btn-saveEditTopic" class="btn btn-primary" data-i18n="content.save">Save</button>
                 </div>
             </div>
         </div>
@@ -318,10 +318,10 @@
                 </div>
                 <div class="mb-5">
                     <label class="form-label" data-i18n="content.topics_th_name">Topic Name</label>
-                    <input type="text" id="modalTopicName" placeholder="e.g. Chapter 1" class="form-input">
+                    <input type="text" id="modalTopicName" placeholder="e.g. Chapter 1" data-i18n="content.topics_placeholder" class="form-input">
                 </div>
                 <div class="modal-footer">
-                    <button id="btn-closeTopicModal" class="btn btn-outline">Cancel</button>
+                    <button id="btn-closeTopicModal" class="btn btn-outline" data-i18n="content.modal_cancel">Cancel</button>
                     <button id="btn-confirmAddTopic" class="btn btn-primary">Add Topic</button>
                 </div>
             </div>
@@ -330,7 +330,7 @@
         <!-- Section: Edit Resource Modal -->
         <div id="editResourceModal" class="hidden popup modal-overlay">
             <div class="modal creation">
-                <h3 class="modal-title creation" style="margin-bottom:1.25rem;">Edit Resource</h3>
+                <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="content.resource_edit_title">Edit Resource</h3>
                 <div id="editResNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
                 <input type="hidden" id="editResId">
                 <div class="grid grid-cols-2 gap-4">
@@ -360,13 +360,13 @@
                         </select>
                     </div>
                     <div style="grid-column:1/-1;">
-                        <label class="form-label">Language</label>
+                        <label class="form-label" data-i18n="content.resource_language_label">Language</label>
                         <input type="text" id="editResLang" value="en" class="form-input">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button id="btn-closeEditResource" class="btn btn-outline">Cancel</button>
-                    <button id="btn-saveEditResource" class="btn btn-primary">Save</button>
+                    <button id="btn-closeEditResource" class="btn btn-outline" data-i18n="content.modal_cancel">Cancel</button>
+                    <button id="btn-saveEditResource" class="btn btn-primary" data-i18n="content.save">Save</button>
                 </div>
             </div>
         </div>
@@ -500,15 +500,15 @@
                     var dl = r.downloads || 0;
                     var topicLabel = r.topic_name || '';
                     return '<tr>' +
-                        '<td data-label="Title"><strong>' + esc(r.title) + '</strong></td>' +
-                        '<td data-label="Subject"><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--teal);">' + symbolSvg + ' ' + esc(r.subject || 'General') + '</div></td>' +
-                        '<td data-label="Topic" style="font-size: 0.75rem; color: var(--text-muted);">' + (topicLabel ? esc(topicLabel) : '<span style="color:var(--text-muted);">General</span>') + '</td>' +
-                        '<td data-label="Type"><span class="type-badge ' + badgeClass + '">' + esc(r.type) + '</span></td>' +
-                        '<td data-label="Downloads" style="text-align: center; font-weight: 700;">' + dl + '</td>' +
-                        '<td data-label="Action" style="text-align: left;">' +
-                        '<button data-resource-id="' + r.id + '" data-resource-title="' + esc(r.title) + '" data-resource-subject="' + esc(r.subject) + '" data-resource-type="' + esc(r.type) + '" data-resource-topic="' + esc(r.topic_name || '') + '" class="btn btn-outline js-edit-resource" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">Edit</button> ' +
-                        '<a href="' + _url + '" class="btn btn-outline" download style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">Download</a> ' +
-                        '<button data-resource-id="' + r.id + '" data-resource-title="' + esc(r.title) + '" class="btn btn-outline js-delete-resource" style="color: var(--danger); border-color: var(--danger); margin-left: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.75rem;">Delete</button>' +
+                        '<td data-i18n-data-label="content.library_th_title"><strong>' + esc(r.title) + '</strong></td>' +
+                        '<td data-i18n-data-label="content.library_th_subject"><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--teal);">' + symbolSvg + ' ' + esc(r.subject || 'General') + '</div></td>' +
+                        '<td data-i18n-data-label="content.library_th_topic" style="font-size: 0.75rem; color: var(--text-muted);">' + (topicLabel ? esc(topicLabel) : '<span style="color:var(--text-muted);">General</span>') + '</td>' +
+                        '<td data-i18n-data-label="content.library_th_type"><span class="type-badge ' + badgeClass + '">' + esc(r.type) + '</span></td>' +
+                        '<td data-i18n-data-label="content.library_th_downloads" style="font-weight: 700;">' + dl + '</td>' +
+                        '<td data-i18n-data-label="content.library_th_action" style="text-align: left;">' +
+                        '<button data-resource-id="' + r.id + '" data-resource-title="' + esc(r.title) + '" data-resource-subject="' + esc(r.subject) + '" data-resource-type="' + esc(r.type) + '" data-resource-topic="' + esc(r.topic_name || '') + '" class="btn btn-outline js-edit-resource" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">' + __('courses.edit') + '</button> ' +
+                        '<a href="' + _url + '" class="btn btn-outline" download style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">' + __('content.download') + '</a> ' +
+                        '<button data-resource-id="' + r.id + '" data-resource-title="' + esc(r.title) + '" class="btn btn-outline js-delete-resource" style="color: var(--danger); border-color: var(--danger); margin-left: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.75rem;">' + __('content.delete') + '</button>' +
                         '</td></tr>';
                 }).join('');
             }
@@ -662,9 +662,9 @@
             } else {
                 tbody.innerHTML = pageItems.map(function(t) {
                     return '<tr>' +
-                        '<td data-label="Subject"><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--teal);">' + esc(t.subject) + '</div></td>' +
-                        '<td data-label="Topic Name"><strong>' + esc(t.name) + '</strong></td>' +
-                        '<td data-label="Action" style="text-align: left;">' +
+                        '<td data-i18n-data-label="content.topics_th_subject"><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--teal);">' + esc(t.subject) + '</div></td>' +
+                        '<td data-i18n-data-label="content.topics_th_name"><strong>' + esc(t.name) + '</strong></td>' +
+                        '<td data-i18n-data-label="content.topics_th_action" style="text-align: left;">' +
                             '<button data-topic-id="' + esc(t.id) + '" data-topic-name="' + esc(t.name) + '" class="btn btn-outline js-edit-topic" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; margin-right: 0.25rem;">' + __('courses.edit') + '</button>' +
                             '<button data-topic-id="' + esc(t.id) + '" data-topic-name="' + esc(t.name) + '" class="btn btn-outline js-delete-topic" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('content.delete') + '</span></button>' +
                         '</td>' +

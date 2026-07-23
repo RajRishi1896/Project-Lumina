@@ -9,9 +9,9 @@ from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one
 from app.dependencies import verify_student
 from app.models import ProgressSync, EnrollResponse, QuizAttemptSubmit, QuizAttemptResponse
+from app.routers.teacher_courses import COURSES_DIR
 
 router = APIRouter()
-COURSES_DIR = os.path.join(UPLOAD_DIR, "..", "courses")
 
 
 @router.get("/api/courses/similar-courses",

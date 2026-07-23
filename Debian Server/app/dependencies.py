@@ -2,7 +2,7 @@
 import time
 import uuid
 import bcrypt as bcrypt_lib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Request
 from app.async_db import db_fetch_one, db_exec, db_run
 
@@ -90,8 +90,8 @@ def _is_session_stale(dt_str: str | None, minutes: int = 5) -> bool:
     if dt_str is None:
         return True
     try:
-        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-        return datetime.now() - dt > timedelta(minutes=minutes)
+        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) - dt > timedelta(minutes=minutes)
     except (ValueError, TypeError):
         return True
 
@@ -253,7 +253,6 @@ async def verify_student(request: Request):
         raise HTTPException(status_code=401, detail="Not authenticated")  # i18n: user-facing auth error
 
     # ponytail: check cache first (same token format, student role)
-    cache_key = f"student:{token}"
     cached = _cache_get(token)
     if cached and cached.get("role") == "student":
         request.state._student_id = cached["username"]

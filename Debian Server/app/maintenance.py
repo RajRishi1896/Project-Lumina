@@ -54,7 +54,7 @@ async def detect_orphans() -> dict:
     orphaned = []
     for row in rows:
         fpath = os.path.join("uploads", row[1])
-        if not os.path.exists(fpath):
+        if not await asyncio.to_thread(os.path.exists, fpath):
             orphaned.append({"id": row[0], "filename": row[1]})
     return {"orphaned_count": len(orphaned), "orphaned": orphaned}
 
@@ -122,8 +122,8 @@ async def get_storage_stats() -> dict:
 async def get_table_stats() -> dict:
     """Return row counts for key tables."""
     tables = ["users", "sessions", "resources", "subjects", "grades",
-              "courses", "enrollments", "quiz_attempts", "zim_archives",
-              "zim_articles", "pending_downloads", "activity", "settings"]
+              "courses", "course_progress", "quiz_attempts", "zim_archives",
+              "zim_articles", "settings"]
     stats = {}
     for t in tables:
         try:

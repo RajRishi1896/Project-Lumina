@@ -30,8 +30,21 @@ os.makedirs(ZIM_THUMBS_DIR, exist_ok=True)
 
 # ponytail: in-memory path→entry index per archive. Avoids O(N) linear scan
 # per /zim/asset request. Cache grows ~50 bytes per entry -- 10K articles = 500KB.
-# Invalidate on archive delete (not implemented yet, acceptable ceiling).
-_zim_path_index: dict[str, dict[str, object]] = {}
+_zim_path_index: dict[str, object] = {}
+
+
+def invalidate_zim_cache(archive_id: str) -> None:
+    """Remove all cached entries for a ZIM archive.
+    
+    Called when an archive is deleted to prevent serving stale assets.
+    """
+    prefix = f"{archive_id}:"
+    keys_to_delete = [k for k in _zim_path_index if k.startswith(prefix)]
+    for k in keys_to_delete:
+        _zim_path_index.pop(k, None)
+    if keys_to_delete:
+        logging.info(f"Invalidated {len(keys_to_delete)} ZIM cache entries for archive {archive_id}")
+
 
 # MIME type mapping for ZIM assets
 _MIME_MAP = {
