@@ -31,14 +31,6 @@ class _QueuedDownload {
   });
 }
 
-/// Progress information for an active download.
-class DownloadProgress {
-  final int bytesReceived;
-  final int totalBytes;
-  final double percent;
-  const DownloadProgress({required this.bytesReceived, required this.totalBytes, required this.percent});
-}
-
 /// Singleton queue that manages sequential file downloads with offline support.
 ///
 /// When online, downloads are processed one at a time. When offline, items are
@@ -52,9 +44,6 @@ class DownloadQueue extends ChangeNotifier {
 
   final List<_QueuedDownload> _queue = [];
   bool _processing = false;
-
-  /// Maps resource ID → download progress for active downloads.
-  final ValueNotifier<Map<String, DownloadProgress>> progress = ValueNotifier({});
 
   /// The set of resource IDs currently in the queue.
   Set<String> get queuedIds => _queue.map((d) => d.resourceId).toSet();
@@ -113,12 +102,6 @@ class DownloadQueue extends ChangeNotifier {
         title: task.title, subject: task.subject, grade: task.grade,
         type: task.type, mtime: task.mtime,
         onProgress: (received, total) {
-          final p = DownloadProgress(
-            bytesReceived: received,
-            totalBytes: total,
-            percent: total > 0 ? received / total : 0.0,
-          );
-          progress.value = {...progress.value, task.resourceId: p};
           if (total > 0 && _progressNotifThrottle.elapsed >= const Duration(milliseconds: 500)) {
             _progressNotifThrottle.reset();
             final pct = received * 100 ~/ total;
@@ -131,9 +114,6 @@ class DownloadQueue extends ChangeNotifier {
       _lastErrorIsPermanent = e.toString().contains('STORAGE_FULL');
       path = null;
     }
-    try {
-      progress.value = {...progress.value}..remove(task.resourceId);
-    } catch (_) {}
     try { await NotificationService().cancelProgressNotification(notifId); } catch (_) {}
     if (path != null) {
       try { await DBHelper().removePendingDownload(task.resourceId); } catch (_) {}

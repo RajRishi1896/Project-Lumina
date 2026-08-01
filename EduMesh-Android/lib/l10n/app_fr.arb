@@ -1575,5 +1575,19 @@
   "sectionRecentlyAccessed": "Récemment consultés",
   "browseNotConnected": "Non connecté au serveur",
   "browseNoCoursesOffline": "Connectez-vous au hub pour voir les cours",
-  "zimNoArticlesOffline": "Connectez-vous au hub pour parcourir les articles"
+  "zimNoArticlesOffline": "Connectez-vous au hub pour parcourir les articles",
+  "cardReady": "Prêt",
+  "@cardReady": {
+    "description": "Status chip label on a resource card when the file is downloaded and available offline. Max 8 characters in English."
+  },
+  "cardPages": "{count, plural, one{1 page} other{{count} pages}}",
+  "@cardPages": {
+    "description": "Metadata segment on a resource card showing the page count of a PDF. Placeholder: total page count from server metadata.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "48"
+      }
+    }
+  }
 }

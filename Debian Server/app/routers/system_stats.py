@@ -269,14 +269,6 @@ async def get_diagnostics(admin_user: str = Depends(verify_admin)):
         except Exception:
             pass
 
-    # Pending downloads
-    pending_downloads = 0
-    try:
-        result = await db_fetch_one("SELECT COUNT(*) FROM pending_downloads")
-        pending_downloads = result[0] if result else 0
-    except Exception:
-        pass
-
     # Scheduler status
     scheduler_status = "running"
 
@@ -309,7 +301,6 @@ async def get_diagnostics(admin_user: str = Depends(verify_admin)):
             "quiz_attempts": table_stats.get("quiz_attempts", 0),
             "zim_archives": zim_count,
             "zim_articles": zim_articles,
-            "pending_downloads": pending_downloads,
         },
         "active_sessions": active_sessions,
         "uptime": {

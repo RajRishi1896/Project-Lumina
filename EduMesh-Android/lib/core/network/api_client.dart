@@ -5,6 +5,7 @@ import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/auth/data/auth_service.dart';
+import '../../shared/services/discovery_service.dart';
 
 /// A singleton HTTP client wrapper around [Dio] that handles server discovery,
 /// token-based authentication, and automatic retry on 401/403 responses.
@@ -149,22 +150,37 @@ class ApiClient {
     try {
       final prefs = await SharedPreferences.getInstance();
       final fallbackIp = prefs.getString('server_fallback_ip');
-      if (fallbackIp != null && fallbackIp.isNotEmpty) {
-        _baseUrl = 'http://$fallbackIp:8000';
-        debugPrint('ApiClient: Using fallback IP $fallbackIp');
-      } else {
-        try {
-          final result = await InternetAddress.lookup('lumina.hub')
-              .timeout(const Duration(seconds: 3));
-          if (result.isNotEmpty) {
-            _baseUrl = _defaultDomain;
-            debugPrint('ApiClient: DNS lookup succeeded, using default domain');
+        if (fallbackIp != null && fallbackIp.isNotEmpty) {
+          _baseUrl = 'http://$fallbackIp:8000';
+          debugPrint('ApiClient: Using fallback IP $fallbackIp');
+        } else {
+          var discovered = false;
+          try {
+            final result = await InternetAddress.lookup('lumina.hub')
+                .timeout(const Duration(seconds: 3));
+            if (result.isNotEmpty) {
+              _baseUrl = _defaultDomain;
+              discovered = true;
+              debugPrint('ApiClient: DNS lookup succeeded, using default domain');
+            }
+          } catch (_) {
+            debugPrint('ApiClient: DNS lookup failed');
           }
-        } catch (_) {
-          _baseUrl = 'http://10.42.0.1:8000';
-          debugPrint('ApiClient: DNS failed, falling back to 10.42.0.1');
+          if (!discovered) {
+            final mdnsUrl = await HubDiscoveryService().findHubBaseUrl();
+            if (mdnsUrl != null) {
+              _baseUrl = mdnsUrl;
+              debugPrint('ApiClient: mDNS discovered hub at $mdnsUrl');
+              final host = Uri.tryParse(mdnsUrl)?.host;
+              if (host != null && host.isNotEmpty) {
+                await prefs.setString('server_fallback_ip', host);
+              }
+            } else {
+              _baseUrl = 'http://10.42.0.1:8000';
+              debugPrint('ApiClient: DNS and mDNS failed, falling back to 10.42.0.1');
+            }
+          }
         }
-      }
       _dio.options.baseUrl = _baseUrl;
       _initialized = true;
     } catch (e) {

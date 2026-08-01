@@ -54,23 +54,10 @@ class AuthService {
     return _secureStorage.read(key: _sessionTokenKey);
   }
 
-  /// The grade level stored for the logged-in student, or `null`.
-  Future<String?> getStudentGrade() async => _secureStorage.read(key: _gradeKey);
-
   /// The grade level, defaulting to "General" if not set.
   Future<String> getGradeOrDefault() async {
     final g = await _secureStorage.read(key: _gradeKey);
     return (g != null && g.isNotEmpty) ? g : 'General';
-  }
-
-  /// The refresh token used to obtain a new session token, or `null`.
-  Future<String?> getRefreshToken() async {
-    return _secureStorage.read(key: _refreshTokenKey);
-  }
-
-  /// The persistent key used to renew a session when the refresh token has expired, or `null`.
-  Future<String?> getPersistentKey() async {
-    return _secureStorage.read(key: _persistentKeyKey);
   }
 
   /// Registers a new student account with the hub and persists credentials locally.
@@ -243,15 +230,6 @@ class AuthService {
     await _secureStorage.write(key: _displayNameKey, value: name);
   }
 
-  /// Whether the student has set a display name that differs from their username.
-  Future<bool> hasDisplayName() async {
-    final name = await _secureStorage.read(key: _displayNameKey);
-    if (name == null || name.isEmpty) return false;
-    final username = await _secureStorage.read(key: _usernameKey);
-    if (username == null || username.isEmpty) return true;
-    return name != username;
-  }
-
   /// Updates the student's display name on the hub and persists it locally.
   Future<bool> setDisplayName(String name) async {
     await _secureStorage.write(key: _displayNameKey, value: name);
@@ -357,14 +335,6 @@ class AuthService {
     } catch (_) {
       return false;
     }
-  }
-
-  /// Persists the student's display name to secure storage.
-  ///
-  /// Used by [StudentProfilePage] when the user edits their profile name so the
-  /// value survives app restarts and is available offline.
-  Future<void> saveUsername(String name) async {
-    await _secureStorage.write(key: _usernameKey, value: name);
   }
 
   /// Persists the student's grade level to secure storage.

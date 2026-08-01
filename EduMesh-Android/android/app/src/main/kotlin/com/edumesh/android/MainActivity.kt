@@ -1,7 +1,10 @@
 package com.edumesh.android
 
 import android.content.ComponentName
+import android.content.Context
 import android.content.pm.PackageManager
+import android.net.wifi.WifiManager
+import android.os.Bundle
 import android.os.Environment
 import android.os.StatFs
 import io.flutter.embedding.android.FlutterActivity
@@ -11,6 +14,25 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val STORAGE_CHANNEL = "com.edumesh.android/storage"
     private val ICON_CHANNEL = "com.edumesh.android/app_icon"
+
+    // Held for the app's lifetime so mDNS multicast packets reach the app.
+    private var multicastLock: WifiManager.MulticastLock? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        ensureInitialized(applicationContext)
+        val wifi = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val lock = wifi.createMulticastLock("edumesh_mdns")
+        lock.setReferenceCounted(true)
+        lock.acquire()
+        multicastLock = lock
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        multicastLock?.let { if (it.isHeld) it.release() }
+        multicastLock = null
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

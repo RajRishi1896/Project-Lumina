@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/models/course.dart';
+import 'package:edumesh_android/core/models/resource_model.dart';
 import 'package:edumesh_android/core/services/course_service.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
@@ -9,6 +10,7 @@ import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
 import 'package:edumesh_android/shared/widgets/video_player_page.dart';
+import 'package:edumesh_android/shared/widgets/resource_thumbnail.dart';
 import 'package:edumesh_android/core/services/recent_resources.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'quiz_player_page.dart';
@@ -214,16 +216,6 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     }
   }
 
-  IconData _resourceIcon(CourseResource r) {
-    switch (r.resourceType) {
-      case CourseType.video: return Icons.play_circle_outline;
-      case CourseType.quiz: return Icons.quiz_outlined;
-
-      case CourseType.pastPaper: return Icons.folder_outlined;
-      case CourseType.textbook: return Icons.menu_book_outlined;
-    }
-  }
-
   String _resourceTypeLabel(CourseResource r, AppLocalizations l10n) {
     switch (r.resourceType) {
       case CourseType.video: return l10n.coursePlayerVideo;
@@ -231,6 +223,16 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
 
       case CourseType.pastPaper: return l10n.coursePlayerPastPaper;
       case CourseType.textbook: return l10n.coursePlayerTextbook;
+    }
+  }
+
+  /// Maps a course resource type to the shared catalog [ResourceType].
+  ResourceType _toResourceType(CourseType t) {
+    switch (t) {
+      case CourseType.video: return ResourceType.videos;
+      case CourseType.quiz: return ResourceType.quiz;
+      case CourseType.pastPaper: return ResourceType.pastPaper;
+      case CourseType.textbook: return ResourceType.textbook;
     }
   }
 
@@ -295,55 +297,36 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     final completed = _completed[r.id] == true;
     final isCurrent = index == _currentPosition && !completed;
 
-    return Card(
-      margin: EdgeInsets.only(bottom: AppSpacing.md.h),
-      color: completed
+    return ResourceCard(
+      resourceId: r.id,
+      title: r.title,
+      type: _toResourceType(r.resourceType),
+      fileSize: r.fileSize,
+      pageCount: r.pageCount,
+      durationSeconds: r.durationSeconds,
+      subtitle: completed
+          ? l10n.coursePlayerCompleted
+          : unlocked
+              ? _resourceTypeLabel(r, l10n)
+              : l10n.coursePlayerLocked,
+      isReady: _localPaths.containsKey(r.id),
+      opacity: unlocked ? 1.0 : 0.6,
+      backgroundColor: completed
           ? cs.primaryContainer.withValues(alpha: 0.3)
           : isCurrent
               ? cs.primaryContainer.withValues(alpha: 0.18)
               : unlocked
                   ? cs.surfaceContainerLow
                   : cs.surfaceContainerHighest.withValues(alpha: 0.5),
-      child: Opacity(
-        opacity: unlocked ? 1.0 : 0.6,
-        child: ListTile(
-          leading: Icon(
-            completed
-                ? Icons.check_circle
-                : unlocked
-                    ? _resourceIcon(r)
-                    : Icons.lock_outline,
-            color: completed
-                ? LuminaColors.successGreen
-                : unlocked
-                    ? cs.primary
-                    : cs.onSurfaceVariant,
-            size: 28.sp,
-          ),
-          title: Text(r.title, style: tt.titleSmall?.copyWith(color: cs.onSurface)),
-          subtitle: Text(
-            completed
-                ? l10n.coursePlayerCompleted
-                : unlocked
-                    ? _resourceTypeLabel(r, l10n)
-                    : l10n.coursePlayerLocked,
-            style: tt.bodySmall?.copyWith(
-              color: completed
-                  ? LuminaColors.successGreen
-                  : cs.onSurfaceVariant,
-            ),
-          ),
-          trailing: completed
-              ? Icon(Icons.check_circle, color: LuminaColors.successGreen, size: 24.sp)
-              : unlocked
-                  ? FilledButton(
-                      onPressed: () => _openResource(r, index),
-                      child: Text(l10n.coursePlayerStart),
-                    )
-                  : Icon(Icons.lock, color: cs.onSurfaceVariant, size: 20.sp),
-          onTap: unlocked ? () => _openResource(r, index) : null,
-        ),
-      ),
+      trailing: completed
+          ? Icon(Icons.check_circle, color: LuminaColors.successGreen, size: 24.sp)
+          : unlocked
+              ? FilledButton(
+                  onPressed: () => _openResource(r, index),
+                  child: Text(l10n.coursePlayerStart),
+                )
+              : Icon(Icons.lock, color: cs.onSurfaceVariant, size: 20.sp),
+      onTap: unlocked ? () => _openResource(r, index) : null,
     );
   }
 }

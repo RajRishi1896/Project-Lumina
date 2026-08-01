@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
@@ -53,7 +54,10 @@ class DownloadService {
 
       final sink = partFile.openWrite(mode: FileMode.append);
       try {
-        await response.data!.stream.pipe(sink);
+        // ponytail: IOSink is a StreamConsumer<List<int>>; cast to the
+        // Uint8List-typed consumer pipe() expects. No buffer, no copy.
+        await response.data!.stream
+            .pipe(sink as StreamConsumer<Uint8List>);
       } finally {
         await sink.close();
       }

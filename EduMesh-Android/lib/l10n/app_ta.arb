@@ -352,5 +352,19 @@
   "sectionRecentlyAccessed": "சமீபத்தில் அணுகியவை",
   "browseNotConnected": "சர்வருடன் இணைக்கப்படவில்லை",
   "browseNoCoursesOffline": "பாடநெறிகளைக் காண ஹப்புடன் இணைக்கவும்",
-  "zimNoArticlesOffline": "கட்டுரைகளை உலாவ ஹப்புடன் இணைக்கவும்"
+  "zimNoArticlesOffline": "கட்டுரைகளை உலாவ ஹப்புடன் இணைக்கவும்",
+  "cardReady": "தயார்",
+  "@cardReady": {
+    "description": "Status chip label on a resource card when the file is downloaded and available offline. Max 8 characters in English."
+  },
+  "cardPages": "{count, plural, one{1 பக்கம்} other{{count} பக்கங்கள்}}",
+  "@cardPages": {
+    "description": "Metadata segment on a resource card showing the page count of a PDF. Placeholder: total page count from server metadata.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "48"
+      }
+    }
+  }
 }

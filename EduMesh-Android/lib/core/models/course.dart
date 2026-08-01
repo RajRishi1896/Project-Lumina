@@ -249,6 +249,12 @@ class CourseResource {
   /// The file size in bytes.
   final int fileSize;
 
+  /// The page count for PDF-type resources (0 when unknown).
+  final int pageCount;
+
+  /// The duration in seconds for video resources (0 when unknown).
+  final int durationSeconds;
+
   /// The display order position within the course.
   final int position;
 
@@ -261,6 +267,8 @@ class CourseResource {
     this.originalName,
     this.filename,
     required this.fileSize,
+    this.pageCount = 0,
+    this.durationSeconds = 0,
     required this.position,
   });
 
@@ -285,6 +293,8 @@ class CourseResource {
       originalName: json['original_name'] as String?,
       filename: json['filename'] as String?,
       fileSize: (json['file_size'] as num?)?.toInt() ?? 0,
+      pageCount: (json['page_count'] as num?)?.toInt() ?? 0,
+      durationSeconds: (json['duration_seconds'] as num?)?.toInt() ?? 0,
       position: (json['position'] as num?)?.toInt() ?? 0,
     );
   }
@@ -298,6 +308,8 @@ class CourseResource {
     if (originalName != null) 'original_name': originalName,
     if (filename != null) 'filename': filename,
     'file_size': fileSize,
+    'page_count': pageCount,
+    'duration_seconds': durationSeconds,
     'position': position,
   };
 

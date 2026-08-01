@@ -48,6 +48,9 @@ class CatalogService {
             'grade': (item['grade'] ?? '').toString(),
             'pdf_url': (item['pdfUrl'] ?? '').toString(),
             'mtime': (item['mtime'] as num?)?.toDouble() ?? 0,
+            'file_size': (item['file_size'] as num?)?.toInt() ?? 0,
+            'page_count': (item['page_count'] as num?)?.toInt() ?? 0,
+            'duration_seconds': (item['duration_seconds'] as num?)?.toInt() ?? 0,
             'synced_at': DateTime.now().millisecondsSinceEpoch,
           });
         }
@@ -119,20 +122,6 @@ class CatalogService {
     return rows.map(_rowToModel).toList();
   }
 
-  /// Full-text search across title, subject, grade, and type in the cached catalog.
-  Future<List<ResourceModel>> searchCatalog(String query) async {
-    if (query.trim().isEmpty) return [];
-    final db = await DBHelper().database;
-    final term = '%${query.trim()}%';
-    final rows = await db.query(
-      'catalog',
-      where: 'title LIKE ? OR subject LIKE ? OR grade LIKE ? OR type LIKE ?',
-      whereArgs: [term, term, term, term],
-      orderBy: 'title ASC',
-    );
-    return rows.map(_rowToModel).toList();
-  }
-
   ResourceModel _rowToModel(Map<String, dynamic> row) {
     return ResourceModel(
       id: (row['id'] ?? '').toString(),
@@ -144,6 +133,9 @@ class CatalogService {
           ? row['pdf_url'] as String
           : null,
       mtime: (row['mtime'] as num?)?.toDouble() ?? 0,
+      fileSize: (row['file_size'] as num?)?.toInt() ?? 0,
+      pageCount: (row['page_count'] as num?)?.toInt() ?? 0,
+      durationSeconds: (row['duration_seconds'] as num?)?.toInt() ?? 0,
     );
   }
 

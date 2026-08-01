@@ -21,9 +21,9 @@ class CourseService extends ChangeNotifier {
 
   /// Returns the current student's scholar ID, or '' if unavailable.
   Future<String> _getStudentId() async => (await AuthService().getUniqueUserId()) ?? '';
+
   List<Course> _cachedCourses = [];
   List<({Course course, Map<String, dynamic>? progress})> _enrolledCourses = [];
-  final Map<String, double> _downloadProgress = {};
 
   /// Whether a network request is currently in progress.
   bool get isLoading => _loading;
@@ -36,9 +36,6 @@ class CourseService extends ChangeNotifier {
 
   /// Courses the current student is enrolled in, with their progress rows.
   List<({Course course, Map<String, dynamic>? progress})> get enrolledCourses => _enrolledCourses;
-
-  /// Per-resource download progress (0.0–1.0) keyed by resource ID.
-  Map<String, double> get downloadProgress => Map.unmodifiable(_downloadProgress);
 
   /// Fetches the course catalog from the hub, caches it locally, and returns it.
   Future<List<Course>> fetchCatalog({String? subject, int? grade, String? language, String? search, int page = 1, int perPage = 20}) async {
@@ -121,6 +118,8 @@ class CourseService extends ChangeNotifier {
                 'original_name': (r['original_name'] ?? '').toString(),
                 'filename': (r['filename'] ?? '').toString(),
                 'file_size': (r['file_size'] as num?)?.toInt() ?? 0,
+                'page_count': (r['page_count'] as num?)?.toInt() ?? 0,
+                'duration_seconds': (r['duration_seconds'] as num?)?.toInt() ?? 0,
                 'position': (r['position'] as num?)?.toInt() ?? 0,
               }, conflictAlgorithm: ConflictAlgorithm.replace);
             }
@@ -162,28 +161,8 @@ class CourseService extends ChangeNotifier {
     }
   }
 
-  /// Unenrolls the current student from [courseId] and removes local progress data.
-  Future<bool> unenroll(String courseId) async {
-    try {
-      final resp = await ApiClient.post('/api/courses/$courseId/unenroll');
-      if (resp.statusCode == 200) {
-        final db = await DBHelper().database;
-        final studentId = await _getStudentId();
-        await db.delete('course_progress', where: 'course_id = ? AND student_id = ?', whereArgs: [courseId, studentId]);
-        _enrolledCourses.removeWhere((e) => e.course.id == courseId);
-        notifyListeners();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      debugPrint('CourseService: unenroll failed -- $e');
-      return false;
-    }
-  }
-
   /// Downloads all [resources] for [courseId] via [DownloadQueue], updating progress per resource.
   Future<bool> downloadCourse(String courseId, List<CourseResource> resources) async {
-    _downloadProgress.clear();
     final totalBytes = resources.fold<int>(0, (sum, r) => sum + r.fileSize);
     if (!await _hasEnoughStorage(totalBytes)) return false;
     int succeeded = 0;
@@ -206,30 +185,8 @@ class CourseService extends ChangeNotifier {
         debugPrint('CourseService: downloadCourse failed for ${resource.id} -- $e');
       }
     }
-    _downloadProgress.clear();
     notifyListeners();
     return succeeded == resources.length;
-  }
-
-  /// Pushes local progress to the hub and updates the local database.
-  Future<bool> syncProgress(String courseId, int currentPosition, int completedCount) async {
-    try {
-      await ApiClient.dio.put('/api/courses/$courseId/progress', data: {
-        'current_position': currentPosition,
-        'completed_count': completedCount,
-      });
-      final db = await DBHelper().database;
-      final studentId = await _getStudentId();
-      await db.update('course_progress', {
-        'current_position': currentPosition,
-        'completed_count': completedCount,
-        'last_synced': DateTime.now().toIso8601String(),
-      }, where: 'course_id = ? AND student_id = ?', whereArgs: [courseId, studentId]);
-      return true;
-    } catch (e) {
-      debugPrint('CourseService: syncProgress failed -- $e');
-      return false;
-    }
   }
 
   /// Submits a quiz attempt via [MutationQueue] for offline support, then persists locally.
@@ -241,19 +198,6 @@ class CourseService extends ChangeNotifier {
       priority: 'high',
     );
     await _saveQuizAttemptLocally(attempt);
-  }
-
-  /// Returns the locally cached course row for [courseId], or `null` if not found.
-  Future<Map<String, dynamic>?> getCachedCourse(String courseId) async {
-    try {
-      final db = await DBHelper().database;
-      final rows = await db.query('courses', where: 'id = ?', whereArgs: [courseId]);
-      if (rows.isEmpty) return null;
-      return rows.first;
-    } catch (e) {
-      debugPrint('CourseService: getCachedCourse failed -- $e');
-      return null;
-    }
   }
 
   /// Returns all locally cached courses ordered by most recently synced.
@@ -380,38 +324,6 @@ class CourseService extends ChangeNotifier {
     } catch (e) {
       debugPrint('CourseService: getCompletedCourseCount failed -- $e');
       return 0;
-    }
-  }
-
-  /// Returns the count of courses that are enrolled but not yet completed.
-  Future<int> getInProgressCount() async {
-    try {
-      final db = await DBHelper().database;
-      final studentId = await _getStudentId();
-      final result = await db.rawQuery('SELECT COUNT(*) AS cnt FROM course_progress WHERE completed = 0 AND student_id = ?', [studentId]);
-      return Sqflite.firstIntValue(result) ?? 0;
-    } catch (e) {
-      debugPrint('CourseService: getInProgressCount failed -- $e');
-      return 0;
-    }
-  }
-
-  /// Returns the completion ratio (0.0–1.0) for [courseId], or 0.0 if not enrolled.
-  Future<double> getCourseProgress(String courseId) async {
-    try {
-      final db = await DBHelper().database;
-      final studentId = await _getStudentId();
-      final rows = await db.query('course_progress',
-        columns: ['completed_count', 'total_resources'],
-        where: 'course_id = ? AND student_id = ?', whereArgs: [courseId, studentId],
-      );
-      if (rows.isEmpty) return 0.0;
-      final completed = (rows.first['completed_count'] as num?)?.toInt() ?? 0;
-      final total = (rows.first['total_resources'] as num?)?.toInt() ?? 0;
-      return total > 0 ? completed / total : 0.0;
-    } catch (e) {
-      debugPrint('CourseService: getCourseProgress failed -- $e');
-      return 0.0;
     }
   }
 

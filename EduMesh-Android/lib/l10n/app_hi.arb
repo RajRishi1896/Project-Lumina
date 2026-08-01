@@ -1570,5 +1570,19 @@
   "sectionRecentlyAccessed": "हाल में खोले गए",
   "browseNotConnected": "सर्वर से कनेक्ट नहीं है",
   "browseNoCoursesOffline": "कोर्स देखने के लिए हब से कनेक्ट करें",
-  "zimNoArticlesOffline": "लेख देखने के लिए हब से कनेक्ट करें"
+  "zimNoArticlesOffline": "लेख देखने के लिए हब से कनेक्ट करें",
+  "cardReady": "तैयार",
+  "@cardReady": {
+    "description": "Status chip label on a resource card when the file is downloaded and available offline. Max 8 characters in English."
+  },
+  "cardPages": "{count, plural, one{1 पेज} other{{count} पेज}}",
+  "@cardPages": {
+    "description": "Metadata segment on a resource card showing the page count of a PDF. Placeholder: total page count from server metadata.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "48"
+      }
+    }
+  }
 }

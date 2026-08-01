@@ -932,32 +932,64 @@ class _SearchPageState extends State<SearchPage> {
 
                       final isOfflineUnavailable = !isZim && !ConnectivityService().isOnline && !_downloadedIds.contains(original.id.toString());
 
-                      return Opacity(
+                      if (isZim) {
+                        return _buildZimResultTile(
+                            item, zimArticle, cs, tt, l10n);
+                      }
+                      final subtitle = [
+                        original.subject,
+                        original.grade,
+                      ].where((s) => s != null && s.toString().trim().isNotEmpty)
+                          .map((s) => s.toString())
+                          .join(' \u00B7 ');
+                      return ResourceCard(
+                        resourceId: original.id.toString(),
+                        title: (item['title'] as String?) ?? original.title ?? '',
+                        type: original.type,
+                        fileSize: original.fileSize,
+                        pageCount: original.pageCount,
+                        durationSeconds: original.durationSeconds,
+                        subtitle: subtitle.isEmpty ? null : subtitle,
+                        isReady: _downloadedIds.contains(original.id.toString()),
                         opacity: isOfflineUnavailable ? 0.45 : 1.0,
-                        child: ListTile(
-                        leading: isZim
-                            ? (zimArticle != null && zimArticle.hasThumbnail
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(6.r),
-                                    child: Image.network(
-                                      '${ApiClient.baseUrl}/zim/thumbnail?article_id=${zimArticle.articleId}',
-                                      width: 48, height: 48, fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => CircleAvatar(
-                                        backgroundColor: cs.primaryContainer,
-                                        child: Icon(Icons.article, color: cs.primary),
-                                      ),
-                                    ),
-                                  )
-                                : CircleAvatar(
-                                    backgroundColor: cs.primaryContainer,
-                                    child: Icon(Icons.article, color: cs.primary),
-                                  ))
-                            : ResourceThumbnail(resource: original, size: 48),
+                        backgroundColor: isOfflineUnavailable ? cs.surfaceContainerHighest : null,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                _savedStatuses[original.id] ?? false
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_border,
+                                color: cs.primary,
+                              ),
+                              onPressed: () async {
+                                final messenger =
+                                    ScaffoldMessenger.of(context);
+                                final wasSaved =
+                                    _savedStatuses[original.id] ?? false;
+                                await _toggleSaveStatus(original.id);
+                                if (mounted) {
+                                  setState(() => _savedStatuses[original.id] =
+                                      !wasSaved);
+                                }
+                                messenger.hideCurrentSnackBar();
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(wasSaved
+                                        ? l10n.snackbarRemovedFromSaved
+                                        : l10n.snackbarAddedToSaved),
+                                    duration:
+                                        const Duration(milliseconds: 600),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            _buildDownloadButton(original, cs),
+                          ],
+                        ),
                         onTap: () {
-                          if (isZim) {
-                            _openZimArticle(item['articleId'] as String, item['title'] as String);
-                            return;
-                          }
                           if (isOfflineUnavailable) {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text(l10n.snackbarNotDownloaded(original.title)),
@@ -989,94 +1021,6 @@ class _SearchPageState extends State<SearchPage> {
                             ),
                           );
                         },
-                        title: Row(
-                          children: [
-                            if (isZim)
-                              Padding(
-                                padding: EdgeInsets.only(right: AppSpacing.sm.w),
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 6.w, vertical: 2.h),
-                                  decoration: BoxDecoration(
-                                    color: cs.primary,
-                                    borderRadius:
-                                        BorderRadius.circular(4.r),
-                                  ),
-                                  child: Text(
-                                    l10n.badgeKiwixWiki,
-                                    style: tt.labelSmall?.copyWith(
-                                      color: cs.onPrimary,
-                                      fontWeight: AppSpacing.weightStrong,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            Expanded(
-                              child: Text(item['title'],
-                                  style:
-                                      tt.bodyLarge?.copyWith(color: cs.onSurface)),
-                            ),
-                          ],
-                        ),
-                        trailing: isZim
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (zimArticle != null)
-                                    IconButton(
-                                      icon: Icon(
-                                        ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
-                                            ? Icons.check_circle
-                                            : Icons.download_outlined,
-                                        color: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
-                                            ? LuminaColors.successGreen
-                                            : cs.primary,
-                                      ),
-                                      onPressed: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
-                                          ? null
-                                          : () => _downloadZimArticle(zimArticle),
-                                    ),
-                                  Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-                                ],
-                              )
-                            : Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  _savedStatuses[original.id] ?? false
-                                      ? Icons.bookmark
-                                      : Icons.bookmark_border,
-                                  color: cs.primary,
-                                ),
-                                onPressed: () async {
-                                  final messenger =
-                                      ScaffoldMessenger.of(context);
-                                  final wasSaved =
-                                      _savedStatuses[original.id] ?? false;
-                                  await _toggleSaveStatus(original.id);
-                                  if (mounted) {
-                                    setState(() => _savedStatuses[original.id] =
-                                        !wasSaved);
-                                  }
-                                  messenger.hideCurrentSnackBar();
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(wasSaved
-                                          ? l10n.snackbarRemovedFromSaved
-                                          : l10n.snackbarAddedToSaved),
-                                      duration:
-                                          const Duration(milliseconds: 600),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: AppSpacing.xs),
-                              _buildDownloadButton(original, cs),
-                            ],
-                          ),
-                      ),
                       );
                     },
                     childCount: _filteredResults.length,
@@ -1105,6 +1049,76 @@ class _SearchPageState extends State<SearchPage> {
         ],
       ),
       body: body,
+    );
+  }
+
+  Widget _buildZimResultTile(Map<String, dynamic> item, ZimArticle? zimArticle,
+      ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    return ListTile(
+      leading: zimArticle != null && zimArticle.hasThumbnail
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(6.r),
+              child: Image.network(
+                '${ApiClient.baseUrl}/zim/thumbnail?article_id=${zimArticle.articleId}',
+                width: 48, height: 48, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => CircleAvatar(
+                  backgroundColor: cs.primaryContainer,
+                  child: Icon(Icons.article, color: cs.primary),
+                ),
+              ),
+            )
+          : CircleAvatar(
+              backgroundColor: cs.primaryContainer,
+              child: Icon(Icons.article, color: cs.primary),
+            ),
+      onTap: () =>
+          _openZimArticle(item['articleId'] as String, item['title'] as String),
+      title: Row(
+        children: [
+          Padding(
+            padding: EdgeInsets.only(right: AppSpacing.sm.w),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: cs.primary,
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+              child: Text(
+                l10n.badgeKiwixWiki,
+                style: tt.labelSmall?.copyWith(
+                  color: cs.onPrimary,
+                  fontWeight: AppSpacing.weightStrong,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(item['title'],
+                style: tt.bodyLarge?.copyWith(color: cs.onSurface)),
+          ),
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (zimArticle != null)
+            IconButton(
+              icon: Icon(
+                ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
+                    ? Icons.check_circle
+                    : Icons.download_outlined,
+                color: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
+                    ? LuminaColors.successGreen
+                    : cs.primary,
+              ),
+              onPressed: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
+                  ? null
+                  : () => _downloadZimArticle(zimArticle),
+            ),
+          Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+        ],
+      ),
     );
   }
 

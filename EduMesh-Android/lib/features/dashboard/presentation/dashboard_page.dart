@@ -21,8 +21,8 @@ import '../../../core/services/recent_resources.dart';
 /// The main dashboard page displayed after login.
 ///
 /// Shows a search bar, recently-viewed resources, subject category grid, and a
-/// local storage usage section. Periodically pings the server to display
-/// connection status.
+/// local storage usage section. Connection status comes from the
+/// [ConnectivityService] heartbeat -- no duplicate polling here.
 class DashboardPage extends StatefulWidget {
   /// Called when the user taps the search bar -- switch to Browse tab.
   final VoidCallback? onBrowseTap;
@@ -36,9 +36,6 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   bool _isConnected = false;
   bool _isChecking = true;
-  Timer? _pingTimer;
-
-
 
   String _totalStorageUsedStr = '';
   String _totalCapacityStr = '';
@@ -58,8 +55,8 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _checkServer();
-    _pingTimer = Timer.periodic(const Duration(seconds: 60), (_) => _checkServer());
+    ConnectivityService().addListener(_onConnectivityChanged);
+    _onConnectivityChanged();
     _calcTotalStorage();
     _loadSubjects();
     _loadRecentResources();
@@ -67,18 +64,16 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   void dispose() {
-    _pingTimer?.cancel();
+    ConnectivityService().removeListener(_onConnectivityChanged);
     super.dispose();
   }
 
-  Future<void> _checkServer() async {
-    final connected = await ConnectivityService().ping();
-    if (mounted) {
-      setState(() {
-        _isConnected = connected;
-        _isChecking = false;
-      });
-    }
+  void _onConnectivityChanged() {
+    if (!mounted) return;
+    setState(() {
+      _isConnected = ConnectivityService().isOnline;
+      _isChecking = false;
+    });
   }
 
   Future<void> _calcTotalStorage() async {

@@ -52,6 +52,15 @@ class ResourceModel {
   /// The topic name assigned to this resource (e.g. "Chapter 1").
   final String topicName;
 
+  /// The file size in bytes (0 when unknown).
+  final int fileSize;
+
+  /// The page count for PDF-type resources (0 when unknown).
+  final int pageCount;
+
+  /// The duration in seconds for video resources (0 when unknown).
+  final int durationSeconds;
+
   /// Creates a [ResourceModel] with the given metadata.
   ResourceModel({
     required this.id,
@@ -63,6 +72,9 @@ class ResourceModel {
     this.pdfUrl,
     this.mtime = 0,
     this.topicName = '',
+    this.fileSize = 0,
+    this.pageCount = 0,
+    this.durationSeconds = 0,
   });
 
   /// Creates a [ResourceModel] from a JSON [map] returned by the API.
@@ -77,6 +89,9 @@ class ResourceModel {
       mtime: (json['mtime'] as num?)?.toDouble() ?? 0,
       isDownloaded: json['isDownloaded'] == true,
       topicName: (json['topic_name'] as String?) ?? '',
+      fileSize: (json['file_size'] as num?)?.toInt() ?? 0,
+      pageCount: (json['page_count'] as num?)?.toInt() ?? 0,
+      durationSeconds: (json['duration_seconds'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -91,5 +106,8 @@ class ResourceModel {
     'mtime': mtime,
     'isDownloaded': isDownloaded,
     'topic_name': topicName,
+    'file_size': fileSize,
+    'page_count': pageCount,
+    'duration_seconds': durationSeconds,
   };
 }

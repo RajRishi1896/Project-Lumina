@@ -26,7 +26,7 @@ class DBHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 14, onCreate: _createDB, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 15, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   Future _createDB(Database db, int version) async {
@@ -108,6 +108,9 @@ class DBHelper {
         grade TEXT,
         pdf_url TEXT,
         mtime REAL DEFAULT 0,
+        file_size INTEGER DEFAULT 0,
+        page_count INTEGER DEFAULT 0,
+        duration_seconds INTEGER DEFAULT 0,
         synced_at INTEGER NOT NULL
       )
     ''');
@@ -139,6 +142,8 @@ class DBHelper {
         original_name TEXT DEFAULT '',
         filename TEXT DEFAULT '',
         file_size INTEGER DEFAULT 0,
+        page_count INTEGER DEFAULT 0,
+        duration_seconds INTEGER DEFAULT 0,
         position INTEGER NOT NULL DEFAULT 0
       )
     ''');
@@ -331,17 +336,18 @@ class DBHelper {
     return await db.query('pending_downloads', orderBy: 'added_at ASC');
   }
 
-  /// Removes every entry from the pending downloads queue.
-  Future<void> clearAllPendingDownloads() async {
-    final db = await database;
-    await db.delete('pending_downloads');
-  }
-
   /// Marks an article as downloaded by setting `is_downloaded = 1`.
+  ///
+  /// Uses INSERT OR REPLACE so the row exists even when no prior INSERT ever
+  /// populated `zim_articles_local` (the table was previously write-only).
+  /// The existing title (if any) is preserved.
   Future<void> markZimArticleDownloaded(String articleId) async {
     final db = await database;
-    await db.update('zim_articles_local', {'is_downloaded': 1},
-        where: 'article_id = ?', whereArgs: [articleId]);
+    await db.rawInsert(
+      'INSERT OR REPLACE INTO zim_articles_local (article_id, title, is_downloaded) '
+      'VALUES (?, COALESCE((SELECT title FROM zim_articles_local WHERE article_id = ?), ""), 1)',
+      [articleId, articleId],
+    );
   }
 
   /// Returns the IDs of all ZIM articles that have been downloaded locally.
@@ -508,6 +514,13 @@ class DBHelper {
       if (v >= 13) {
         try { await db.execute('ALTER TABLE zim_articles_local ADD COLUMN path TEXT DEFAULT \'\''); } catch (_) {}
         try { await db.execute('ALTER TABLE zim_articles_local ADD COLUMN namespace TEXT DEFAULT \'A\''); } catch (_) {}
+      }
+      if (v >= 15) {
+        try { await db.execute('ALTER TABLE catalog ADD COLUMN file_size INTEGER DEFAULT 0'); } catch (_) {}
+        try { await db.execute('ALTER TABLE catalog ADD COLUMN page_count INTEGER DEFAULT 0'); } catch (_) {}
+        try { await db.execute('ALTER TABLE catalog ADD COLUMN duration_seconds INTEGER DEFAULT 0'); } catch (_) {}
+        try { await db.execute('ALTER TABLE course_resources ADD COLUMN page_count INTEGER DEFAULT 0'); } catch (_) {}
+        try { await db.execute('ALTER TABLE course_resources ADD COLUMN duration_seconds INTEGER DEFAULT 0'); } catch (_) {}
       }
     }
   }

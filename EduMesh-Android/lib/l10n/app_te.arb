@@ -352,5 +352,19 @@
   "sectionRecentlyAccessed": "ఇటీవల యాక్సెస్ చేసినవి",
   "browseNotConnected": "సర్వర్‌కు కనెక్ట్ చేయబడలేదు",
   "browseNoCoursesOffline": "కోర్సులు చూడటానికి హబ్‌కు కనెక్ట్ చేయండి",
-  "zimNoArticlesOffline": "వ్యాసాలు బ్రౌజ్ చేయడానికి హబ్‌కు కనెక్ట్ చేయండి"
+  "zimNoArticlesOffline": "వ్యాసాలు బ్రౌజ్ చేయడానికి హబ్‌కు కనెక్ట్ చేయండి",
+  "cardReady": "సిద్ధం",
+  "@cardReady": {
+    "description": "Status chip label on a resource card when the file is downloaded and available offline. Max 8 characters in English."
+  },
+  "cardPages": "{count, plural, one{1 పేజీ} other{{count} పేజీలు}}",
+  "@cardPages": {
+    "description": "Metadata segment on a resource card showing the page count of a PDF. Placeholder: total page count from server metadata.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "48"
+      }
+    }
+  }
 }

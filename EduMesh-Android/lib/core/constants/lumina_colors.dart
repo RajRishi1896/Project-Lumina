@@ -44,6 +44,24 @@ class LuminaColors {
   /// A blue colour for chart differentiation.
   static const Color chartBlue = Color(0xFF2563EB);
 
+  /// The saturated blue text colour for the VIDEO type badge.
+  static const Color badgeVideo = Color(0xFF1D4ED8);
+
+  /// The muted blue chip background for the VIDEO type badge.
+  static const Color badgeVideoBg = Color(0xFFDBEAFE);
+
+  /// The saturated orange text colour for the PDF type badge.
+  static const Color badgePdf = Color(0xFF9A3412);
+
+  /// The muted orange chip background for the PDF type badge.
+  static const Color badgePdfBg = Color(0xFFFFEDD5);
+
+  /// The saturated green text colour for the INTERACTIVE type badge.
+  static const Color badgeInteractive = Color(0xFF047857);
+
+  /// The muted green chip background for the INTERACTIVE type badge.
+  static const Color badgeInteractiveBg = Color(0xFFD1FAE5);
+
   /// A gold colour for the welcome page CTA button.
   static const Color ctaGold = Color(0xFFF8BC4B);
 

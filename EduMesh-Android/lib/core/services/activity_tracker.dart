@@ -27,12 +27,6 @@ class ActivityTracker {
     _autoSyncTimer = Timer.periodic(const Duration(seconds: 60), (_) => sync());
   }
 
-  /// Stop the periodic auto-sync timer.
-  void stopAutoSync() {
-    _autoSyncTimer?.cancel();
-    _autoSyncTimer = null;
-  }
-
   /// Record the start of a focused study session.
   Future<void> startStudySession({String? subject}) async {
     _studyStartTime = ApiClient.correctedNow();

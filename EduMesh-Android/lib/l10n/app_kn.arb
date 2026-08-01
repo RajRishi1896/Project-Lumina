@@ -1575,5 +1575,19 @@
   "sectionRecentlyAccessed": "ಇತ್ತೀಚೆಗೆ ಪ್ರವೇಶಿಸಿದ",
   "browseNotConnected": "ಸರ್ವರ್‌ಗೆ ಸಂಪರ್ಕಿಸಲಾಗಿಲ್ಲ",
   "browseNoCoursesOffline": "ಕೋರ್ಸ್‌ಗಳನ್ನು ನೋಡಲು ಹಬ್‌ಗೆ ಸಂಪರ್ಕಿಸಿ",
-  "zimNoArticlesOffline": "ಲೇಖನಗಳನ್ನು ನೋಡಲು ಹಬ್‌ಗೆ ಸಂಪರ್ಕಿಸಿ"
+  "zimNoArticlesOffline": "ಲೇಖನಗಳನ್ನು ನೋಡಲು ಹಬ್‌ಗೆ ಸಂಪರ್ಕಿಸಿ",
+  "cardReady": "ಸಿದ್ಧ",
+  "@cardReady": {
+    "description": "Status chip label on a resource card when the file is downloaded and available offline. Max 8 characters in English."
+  },
+  "cardPages": "{count, plural, one{1 ಪುಟ} other{{count} ಪುಟಗಳು}}",
+  "@cardPages": {
+    "description": "Metadata segment on a resource card showing the page count of a PDF. Placeholder: total page count from server metadata.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "48"
+      }
+    }
+  }
 }

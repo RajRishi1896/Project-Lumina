@@ -99,6 +99,11 @@ async def lifespan(application: FastAPI):
                 logging.exception("Session pruning failed")
     prune_task = asyncio.create_task(prune_sessions())
 
+    # mDNS discovery -- optional, never blocks startup if zeroconf is absent
+    from app.discovery import HubDiscovery
+    hub_discovery = HubDiscovery()
+    await hub_discovery.start()
+
     # Daily log retention pruning
     from app.audit import _prune_logs_now
     async def prune_admin_logs():
@@ -113,6 +118,7 @@ async def lifespan(application: FastAPI):
     yield  # application runs here
 
     # --- SHUTDOWN ---
+    await hub_discovery.stop()
     reindex_task.cancel()
     try:
         await reindex_task
