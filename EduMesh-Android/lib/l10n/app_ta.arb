@@ -366,5 +366,28 @@
         "example": "48"
       }
     }
+  },
+
+  "shareFindingDevices": "அருகிலுள்ள சாதனங்களைத் தேடுகிறது…",
+  "@shareFindingDevices": {
+    "description": "Snackbar shown while the app listens for nearby students' phones that have the requested file. User just tapped Download. Keep short."
+  },
+  "shareDownloadingFrom": "{name} இன் போனிலிருந்து டவுன்லோட் ஆகிறது",
+  "@shareDownloadingFrom": {
+    "description": "Snackbar shown when a peer phone has the file and the download from it starts. {name} is the peer's display name or username.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Priya"
+      }
+    }
+  },
+  "shareSettingsTitle": "பதிவிறக்கிய கோப்புகளைப் பகிரவும்",
+  "@shareSettingsTitle": {
+    "description": "Settings sheet toggle title: lets nearby students download files saved on this phone."
+  },
+  "shareSettingsDescription": "அருகிலுள்ள மாணவர்கள் நீங்கள் சேமித்த கோப்புகளை டவுன்லோட் செய்ய அனுமதிக்கவும்",
+  "@shareSettingsDescription": {
+    "description": "Settings sheet toggle subtitle explaining the share setting to the student."
   }
 }

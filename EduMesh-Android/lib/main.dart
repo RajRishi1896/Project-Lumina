@@ -21,6 +21,7 @@ import 'package:edumesh_android/core/services/activity_tracker.dart';
 import 'package:edumesh_android/core/providers/locale_provider.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import 'package:edumesh_android/shared/services/download_service.dart';
+import 'package:edumesh_android/shared/services/share_server.dart';
 
 /// The global [NavigatorState] key used for out-of-widget navigation.
 ///
@@ -85,6 +86,14 @@ void main() async {
       child: LuminaApp(isLoggedIn: isLoggedIn),
     ),
   );
+
+  // Start peer-to-peer file sharing after the first frame, only when the
+  // student left the share setting ON. Safe: start() binds nothing if OFF.
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    try {
+      await ShareServer().start();
+    } catch (_) {}
+  });
 }
 
 Future<void> _initBackgroundService() async {

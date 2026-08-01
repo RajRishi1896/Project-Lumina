@@ -237,6 +237,7 @@ class CatalogResourceResponse(BaseModel):
     topic_name: str = Field(default="", description="Topic name if assigned.", example="Chapter 1")
     page_count: int = Field(default=0, description="Number of pages for PDF resources (0 when unknown).", example=120)
     duration_seconds: int = Field(default=0, description="Duration in seconds for video resources (0 when unknown).", example=900)
+    file_size: int = Field(default=0, description="File size in bytes (0 when unknown).", example=1048576)
 
 
 class FileEntryResponse(BaseModel):

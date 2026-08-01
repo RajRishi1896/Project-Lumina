@@ -266,6 +266,32 @@
             <div id="wifiBandNote" style="display: none; margin-top: 0.75rem; padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); font-size: 0.8rem; color: var(--text-secondary);" data-i18n="settings.wifi_band_unsupported">Your WiFi adapter only supports one band. Band switching is not available.</div>
         </div>
 
+        <!-- Section: Peer Hubs (Admin Only) -->
+        <div class="card" id="peerHubsCard" style="display: none;">
+            <div class="flex flex-wrap items-center justify-between gap-4" style="margin-bottom: 0.75rem;">
+                <div class="card-title" style="margin-bottom: 0;" data-i18n="settings.peers.title">Peer Hubs</div>
+                <button id="btn-addPeerHub" class="btn btn-primary" style="padding: 0.45rem 0.95rem; font-size: 0.85rem;"><span data-i18n="settings.peers.add">Add Peer Hub</span></button>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 1rem;" data-i18n="settings.peers.description">Connect this hub to other Lumina hubs to share approved resources. Only approved resources are shared -- student data never leaves the hub.</p>
+            <div id="peersNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; border: 1px solid transparent;"></div>
+            <div style="border: 1px solid var(--outline); border-radius: var(--radius-sm); overflow: hidden;">
+                <table class="table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 0.5rem 0.6rem; font-size: 0.78rem;" data-i18n="settings.peers.name">Name</th>
+                            <th style="padding: 0.5rem 0.6rem; font-size: 0.78rem;" data-i18n="settings.peers.address">Address</th>
+                            <th style="padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 110px;" data-i18n="settings.peers.resources">Resources</th>
+                            <th style="padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 160px;" data-i18n="settings.peers.last_sync">Last sync</th>
+                            <th style="padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 170px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="peersTable">
+                        <tr><td colspan="5" class="empty-state" data-i18n="settings.peers.empty">No peer hubs connected yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Section: Server Reboot (Admin Only) -->
         <div class="card" id="rebootCard" style="display: none;">
             <div class="card-title" style="color: var(--danger); font-weight: 800;" data-i18n="settings.reboot_title">Reboot Server</div>
@@ -273,8 +299,33 @@
             <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem;" data-i18n="settings.reboot_hint">Restart the hub server. All connected devices will temporarily lose access for about 60 seconds.</div>
             <button id="btn-reboot" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--danger); color: var(--danger); font-weight: 700;" data-i18n="settings.reboot_btn">Reboot Server</button>
         </div>
-
         </div>
+
+        <div id="addPeerModal" class="hidden popup modal-overlay">
+            <div class="modal creation" style="max-width: 460px;">
+                <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="settings.peers.add">Add Peer Hub</h3>
+                <div id="addPeerNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
+                <div style="margin-bottom:1rem;">
+                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="settings.peers.ip_label">Peer address</label>
+                    <input type="text" id="peerIpInput" class="form-input" placeholder="e.g. 192.168.1.20" data-i18n="settings.peers.ip_placeholder">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <button id="btn-discoverPeers" class="btn btn-outline" style="padding:0.4rem 0.9rem;font-size:0.8rem;"><span data-i18n="settings.peers.discover">Discover</span></button>
+                    <span style="font-size:0.75rem;color:var(--text-muted);margin-left:0.5rem;" data-i18n="settings.peers.discover_hint">Find hubs on this network</span>
+                </div>
+                <div id="discoveredList" style="display:none;margin-bottom:1rem;max-height:160px;overflow-y:auto;border:1px solid var(--outline);border-radius:var(--radius-sm);"></div>
+                <div style="margin-bottom:1.25rem;">
+                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="settings.peers.pair_code">Pairing code</label>
+                    <input type="text" id="peerCodeInput" class="form-input" inputmode="numeric" maxlength="6" placeholder="6-digit code" data-i18n="settings.peers.code_placeholder" style="letter-spacing:0.2em;font-weight:700;">
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.375rem;line-height:1.4;" data-i18n="settings.peers.enter_code">Ask the other hub's admin for their pairing code and enter it here.</p>
+                </div>
+                <div class="modal-footer" style="padding-top: 1rem; margin-top: 0;">
+                    <button id="btn-closeAddPeerModal" class="btn btn-outline" style="color: var(--on-surface);"><span data-i18n="danger.cancel">Cancel</span></button>
+                    <button id="btn-confirmPairPeer" class="btn btn-primary" style="padding: 0.55rem 1.15rem;"><span data-i18n="settings.peers.pair_btn">Pair</span></button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- Section: Bottom Nav (Mobile) -->
@@ -484,6 +535,7 @@
             var defaultAdminCard = document.getElementById('defaultAdminCard');
             var wifiBandCard = document.getElementById('wifiBandCard');
             var rebootCard = document.getElementById('rebootCard');
+            var peerHubsCard = document.getElementById('peerHubsCard');
             var usernameEl = document.getElementById('settingsUsername');
             var roleEl = document.getElementById('settingsUserRole');
             if (usernameEl) usernameEl.textContent = loggedInUser;
@@ -495,6 +547,7 @@
                 if (defaultAdminCard) defaultAdminCard.style.display = 'block';
                 if (wifiBandCard) wifiBandCard.style.display = 'block';
                 if (rebootCard) rebootCard.style.display = 'block';
+                if (peerHubsCard) { peerHubsCard.style.display = 'block'; loadPeers(); }
                 loadRetentionSetting();
                 loadAdminLogs();
                 loadDefaultAdminStatus();
@@ -508,6 +561,7 @@
                 if (defaultAdminCard) defaultAdminCard.style.display = 'none';
                 if (wifiBandCard) wifiBandCard.style.display = 'none';
                 if (rebootCard) rebootCard.style.display = 'none';
+                if (peerHubsCard) peerHubsCard.style.display = 'none';
             }
         }
 
@@ -664,6 +718,112 @@
             }
         }
 
+        /** Loads and renders the paired peers table. */
+        async function loadPeers() {
+            var tbody = document.getElementById('peersTable');
+            if (!tbody) return;
+            try {
+                var res = await fetch('/api/peers');
+                if (!res.ok) return;
+                var peers = await res.json();
+                if (peers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">' + __('settings.peers.empty') + '</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = peers.map(function(p) {
+                    return '<tr>' +
+                        '<td data-label="' + __('settings.peers.name') + '" style="padding:0.5rem 0.6rem;font-size:0.82rem;font-weight:700;">' + esc(p.name || p.base_url) + '</td>' +
+                        '<td data-label="' + __('settings.peers.address') + '" style="padding:0.5rem 0.6rem;font-size:0.78rem;color:var(--text-muted);word-break:break-all;">' + esc(p.base_url) + '</td>' +
+                        '<td data-label="' + __('settings.peers.resources') + '" style="padding:0.5rem 0.6rem;font-size:0.82rem;">' + (p.resource_count || 0) + '</td>' +
+                        '<td data-label="' + __('settings.peers.last_sync') + '" style="padding:0.5rem 0.6rem;font-size:0.78rem;color:var(--text-muted);white-space:nowrap;">' + (p.last_sync ? _formatTimestamp(p.last_sync) : __('students.never')) + '</td>' +
+                        '<td style="padding:0.5rem 0.6rem;text-align:right;white-space:nowrap;">' +
+                            '<button class="btn btn-outline" style="padding:0.3rem 0.7rem;font-size:0.75rem;margin-right:0.35rem;" onclick="syncPeer(\'' + esc(p.id) + '\')"><span>' + __('settings.peers.sync') + '</span></button>' +
+                            '<button class="btn btn-outline" style="padding:0.3rem 0.7rem;font-size:0.75rem;border-color:var(--danger);color:var(--danger);" onclick="removePeer(\'' + esc(p.id) + '\',\'' + esc(p.name || p.base_url).replace(/'/g, "\\'") + '\')"><span>' + __('settings.peers.remove') + '</span></button>' +
+                        '</td></tr>';
+                }).join('');
+            } catch (e) { console.error('Failed to load peers', e); }
+        }
+
+        /** Unpairs a peer after a destructive confirmation. */
+        async function removePeer(id, name) {
+            var ok = await showConfirm(__('settings.peers.remove_confirm_title'), __('settings.peers.remove_confirm_body', {name: esc(name)}), true, __('settings.peers.remove'));
+            if (!ok) return;
+            try {
+                var res = await fetch('/api/peers/' + encodeURIComponent(id), { method: 'DELETE' });
+                if (res.ok) { showNotification('peersNotif', __('settings.peers.notif_removed'), false); loadPeers(); }
+                else { var err = await res.json(); showNotification('peersNotif', err.detail || __('settings.peers.error_unreachable'), true); }
+            } catch (e) { showNotification('peersNotif', __('settings.connection_error'), true); }
+        }
+
+        /** Triggers an immediate catalog refresh for one peer. */
+        async function syncPeer(id) {
+            try {
+                var res = await fetch('/api/peers/' + encodeURIComponent(id) + '/sync', { method: 'POST' });
+                if (res.ok) { showNotification('peersNotif', __('settings.peers.notif_synced'), false); loadPeers(); }
+                else { var err = await res.json(); showNotification('peersNotif', err.detail || __('settings.connection_error'), true); }
+            } catch (e) { showNotification('peersNotif', __('settings.connection_error'), true); }
+        }
+
+        /** Browses the LAN for EduMeshHub mDNS services and lists them. */
+        async function discoverPeers() {
+            var listEl = document.getElementById('discoveredList');
+            try {
+                var res = await fetch('/api/peers/discover');
+                if (!res.ok) return;
+                var hubs = await res.json();
+                listEl.style.display = 'block';
+                if (hubs.length === 0) {
+                    listEl.innerHTML = '<div style="padding:0.5rem 0.75rem;font-size:0.8rem;color:var(--text-muted);">' + __('settings.peers.discover_empty') + '</div>';
+                } else {
+                    listEl.innerHTML = hubs.map(function(h) {
+                        var addr = h.ip + ':' + (h.port || 8000);
+                        return '<div role="button" tabindex="0" style="padding:0.45rem 0.75rem;cursor:pointer;font-size:0.82rem;display:flex;justify-content:space-between;gap:0.5rem;border-bottom:1px solid var(--outline);" onclick="useDiscovered(\'' + esc(addr) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')useDiscovered(\'' + esc(addr) + '\')">' +
+                            '<span style="font-weight:600;">' + esc(h.name) + '</span><span style="color:var(--text-muted);">' + esc(addr) + '</span></div>';
+                    }).join('');
+                }
+            } catch (e) {
+                listEl.style.display = 'block';
+                listEl.innerHTML = '<div style="padding:0.5rem 0.75rem;font-size:0.8rem;color:var(--text-muted);">' + __('settings.peers.error_unreachable') + '</div>';
+            }
+        }
+
+        /** Fills the address input from a discovered hub. */
+        function useDiscovered(addr) {
+            document.getElementById('peerIpInput').value = addr;
+        }
+
+        /** Pairs with the hub at the entered address using the entered code. */
+        async function pairPeer() {
+            var raw = document.getElementById('peerIpInput').value.trim();
+            var code = document.getElementById('peerCodeInput').value.trim();
+            if (!raw) return showNotification('addPeerNotif', __('settings.peers.error_unreachable'), true);
+            if (!code) return showNotification('addPeerNotif', __('settings.peers.enter_code'), true);
+            var host = raw, port = 8000;
+            if (host.indexOf(':') !== -1) {
+                var parts = host.split(':');
+                host = parts[0];
+                var maybePort = parseInt(parts[1], 10);
+                if (!isNaN(maybePort) && maybePort > 0) port = maybePort;
+            }
+            try {
+                var res = await fetch('/api/peers/pair', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip: host, port: port, code: code })
+                });
+                var data = null;
+                try { data = await res.json(); } catch (e) {}
+                if (res.ok) {
+                    showNotification('peersNotif', __('settings.peers.notif_paired', {name: (data && (data.name || data.id)) || host}), false);
+                    document.getElementById('addPeerModal').classList.add('hidden');
+                    loadPeers();
+                } else if (res.status === 403) {
+                    showNotification('addPeerNotif', __('settings.peers.error_invalid_code'), true);
+                } else {
+                    showNotification('addPeerNotif', (data && data.detail) || __('settings.peers.error_unreachable'), true);
+                }
+            } catch (e) { showNotification('addPeerNotif', __('settings.peers.error_unreachable'), true); }
+        }
+
         /** Toggles password input visibility. */
         function togglePasswordVisibility(inputId, eyeIconId, btnId) {
             var pwdInput = document.getElementById(inputId);
@@ -799,7 +959,17 @@
             document.getElementById('btn-wifi5ghz')?.addEventListener('click', function() { switchWifiBand('a'); });
             document.getElementById('btn-wifi2ghz')?.addEventListener('click', function() { switchWifiBand('bg'); });
             document.getElementById('btn-reboot')?.addEventListener('click', rebootServer);
-            document.addEventListener('languageChanged', function() { _renderAdminLogsPage(); });
+            document.getElementById('btn-addPeerHub')?.addEventListener('click', function() {
+                document.getElementById('peerIpInput').value = '';
+                document.getElementById('peerCodeInput').value = '';
+                document.getElementById('discoveredList').style.display = 'none';
+                document.getElementById('addPeerNotif').style.display = 'none';
+                document.getElementById('addPeerModal').classList.remove('hidden');
+            });
+            document.getElementById('btn-closeAddPeerModal')?.addEventListener('click', function() { document.getElementById('addPeerModal').classList.add('hidden'); });
+            document.getElementById('btn-confirmPairPeer')?.addEventListener('click', pairPeer);
+            document.getElementById('btn-discoverPeers')?.addEventListener('click', discoverPeers);
+            document.addEventListener('languageChanged', function() { _renderAdminLogsPage(); loadPeers(); });
         };
         if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['settings'] = _initSettings;
 

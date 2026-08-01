@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <img src="https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter" alt="Flutter">
   <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi" alt="FastAPI">
   <img src="https://img.shields.io/badge/SQLite-WAL-003B57?logo=sqlite" alt="SQLite WAL">
@@ -149,7 +149,7 @@ A Flutter 3 app (52 Dart files, 41 dependencies) built for sub-$50 phones (1 to 
 
 **UX and accessibility**
 
-- **4 languages:** English, Hindi, Kannada, French. 321 translatable strings with ICU plurals (Flutter), 606 keys (web). All fonts are bundled as `.ttf`. `GoogleFonts` is fallback only.
+- **4 languages:** English, Hindi, Kannada, French. 338 translatable strings with ICU plurals (Flutter), 703 keys (web). All fonts are bundled as `.ttf`. `GoogleFonts` is fallback only.
 - **Touch targets:** Every tappable element meets 48x48px minimum. `Semantics` labels on all controls. `Tooltip` on icon-only buttons.
 - **Double-back-to-exit:** `PopScope` with a 2-second window. First back press shows a SnackBar with an Exit button. Second press calls `SystemNavigator.pop()`.
 - **4-tab navigation:** Dashboard, Browse, Saved, Profile. All tabs always visible regardless of role.
@@ -158,7 +158,7 @@ A Flutter 3 app (52 Dart files, 41 dependencies) built for sub-$50 phones (1 to 
 
 A FastAPI app (30 Python files, SQLite WAL) running on 2 to 8 GB RAM with a 5400 RPM HDD. It serves content, collects analytics, hosts a web dashboard, and exposes 100+ API endpoints.
 
-The API is split across 19 router modules plus `zim_handler.py`. Together they cover auth, student sync, teacher analytics, course management, content CRUD, media streaming, account management, passwords, audit logs, system health, and ZIM serving.
+The API is split across 20 router modules plus `zim_handler.py`. Together they cover auth, student sync, teacher analytics, course management, content CRUD, media streaming, account management, passwords, audit logs, system health, and ZIM serving.
 
 | Router | Lines | Purpose |
 |---|---|---|
@@ -257,8 +257,8 @@ Measured on actual target hardware: MediaTek MT6739, 1 GB RAM, Android 8 (phone)
 | **Video streaming** | HTTP Range requests | 206 Partial Content for seek |
 | **Captive portal** | dnsmasq + NetworkManager | DNS hijack to hub welcome page |
 | **Frontend** | Vanilla HTML/CSS/JS | Teacher/admin dashboard (9 pages) |
-| **i18n (Flutter)** | ARB files + `flutter gen-l10n` | 4 languages, ICU plurals, 321 keys |
-| **i18n (Web)** | JSON lang files + `lumina.js` | 4 languages, 606 keys each |
+| **i18n (Flutter)** | ARB files + `flutter gen-l10n` | 4 languages, ICU plurals, 338 keys |
+| **i18n (Web)** | JSON lang files + `lumina.js` | 4 languages, 703 keys each |
 
 ---
 

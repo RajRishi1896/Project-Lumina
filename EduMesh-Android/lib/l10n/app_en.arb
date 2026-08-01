@@ -1615,5 +1615,28 @@
         "example": "48"
       }
     }
+  },
+
+  "shareFindingDevices": "Finding nearby devices…",
+  "@shareFindingDevices": {
+    "description": "Snackbar shown while the app listens for nearby students' phones that have the requested file. User just tapped Download. Keep short."
+  },
+  "shareDownloadingFrom": "Downloading from {name}'s phone",
+  "@shareDownloadingFrom": {
+    "description": "Snackbar shown when a peer phone has the file and the download from it starts. {name} is the peer's display name or username.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Priya"
+      }
+    }
+  },
+  "shareSettingsTitle": "Share downloaded files",
+  "@shareSettingsTitle": {
+    "description": "Settings sheet toggle title: lets nearby students download files saved on this phone."
+  },
+  "shareSettingsDescription": "Let nearby students download files you have saved.",
+  "@shareSettingsDescription": {
+    "description": "Settings sheet toggle subtitle explaining the share setting to the student."
   }
 }

@@ -1589,5 +1589,28 @@
         "example": "48"
       }
     }
+  },
+
+  "shareFindingDevices": "ಹತ್ತಿರದ ಸಾಧನಗಳನ್ನು ಹುಡುಕುತ್ತಿದೆ…",
+  "@shareFindingDevices": {
+    "description": "Snackbar shown while the app listens for nearby students' phones that have the requested file. User just tapped Download. Keep short."
+  },
+  "shareDownloadingFrom": "{name} ಅವರ ಫೋನ್‌ನಿಂದ ಡೌನ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ",
+  "@shareDownloadingFrom": {
+    "description": "Snackbar shown when a peer phone has the file and the download from it starts. {name} is the peer's display name or username.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Priya"
+      }
+    }
+  },
+  "shareSettingsTitle": "ಡೌನ್‌ಲೋಡ್ ಮಾಡಿದ ಫೈಲ್‌ಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಿ",
+  "@shareSettingsTitle": {
+    "description": "Settings sheet toggle title: lets nearby students download files saved on this phone."
+  },
+  "shareSettingsDescription": "ಹತ್ತಿರದ ವಿದ್ಯಾರ್ಥಿಗಳಿಗೆ ನೀವು ಉಳಿಸಿದ ಫೈಲ್‌ಗಳನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಲು ಅವಕಾಶ ನೀಡಿ",
+  "@shareSettingsDescription": {
+    "description": "Settings sheet toggle subtitle explaining the share setting to the student."
   }
 }

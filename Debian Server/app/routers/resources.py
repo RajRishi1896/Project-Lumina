@@ -68,7 +68,7 @@ async def list_resources(
     query = f"""SELECT r.id, r.title, r.filename, r.resource_type, r.subject, r.grade, r.language, r.source, r.license, r.status,
         COALESCE(sd.dl_count, 0) AS downloads, r.topic_id,
         COALESCE(rt.name, '') AS topic_name,
-        r.page_count, r.duration_seconds
+        r.page_count, r.duration_seconds, r.file_size
         FROM resources r
         LEFT JOIN (SELECT resource_id, COUNT(*) AS dl_count FROM scholar_downloads GROUP BY resource_id) sd
             ON sd.resource_id = r.id
@@ -98,6 +98,31 @@ async def list_resources(
             "topic_name": r[12] if len(r) > 12 else "",
             "page_count": r[13] if len(r) > 13 else 0,
             "duration_seconds": r[14] if len(r) > 14 else 0,
+            "file_size": r[15] if len(r) > 15 else 0,
+        })
+
+    # Merge cached resources from paired peer hubs. Same dict shape as local
+    # items; ids are prefixed "peer:{peer_id}:{peer_resource_id}" so they stay
+    # unique and the client can route downloads through /peer/file/... . No
+    # dedupe against local titles -- v1 shows both (id prefix keeps them apart).
+    peer_rows = await db_fetch("""
+        SELECT pr.peer_id, pr.peer_resource_id, pr.title, pr.subject, pr.grade,
+               pr.resource_type, pr.file_size, pr.page_count, pr.duration_seconds,
+               pr.mtime, p.name AS peer_name
+        FROM peer_resources pr JOIN peers p ON p.id = pr.peer_id""")
+    for pr in peer_rows:
+        result.append({
+            "id": f"peer:{pr['peer_id']}:{pr['peer_resource_id']}",
+            "title": pr["title"],
+            "pdfUrl": f"/peer/file/{pr['peer_id']}/{pr['peer_resource_id']}",
+            "type": pr["resource_type"], "subject": pr["subject"] or "General",
+            "grade": str(pr["grade"]) if pr["grade"] is not None else "",
+            "mtime": float(pr["mtime"] or 0.0),
+            "downloads": 0,
+            "topic_name": "",
+            "page_count": pr["page_count"] or 0,
+            "duration_seconds": pr["duration_seconds"] or 0,
+            "file_size": pr["file_size"] or 0,
         })
     return result
 

@@ -115,10 +115,19 @@ async def lifespan(application: FastAPI):
                 logging.exception("Admin log pruning failed")
     log_prune_task = asyncio.create_task(prune_admin_logs())
 
+    # Hub federation -- hourly refresh of paired peers' resource catalogs
+    from app.peer_refresh import peer_refresh_loop
+    peer_refresh_task = asyncio.create_task(peer_refresh_loop(interval_seconds=3600))
+
     yield  # application runs here
 
     # --- SHUTDOWN ---
     await hub_discovery.stop()
+    peer_refresh_task.cancel()
+    try:
+        await peer_refresh_task
+    except asyncio.CancelledError:
+        pass
     reindex_task.cancel()
     try:
         await reindex_task
@@ -155,6 +164,7 @@ app = FastAPI(
         {"name": "Admin Logs", "description": "Audit logs, admin settings, and log download."},
         {"name": "System Stats", "description": "Hub statistics, health endpoint, and time sync."},
         {"name": "System", "description": "Health checks, captive portal, static file serving, and user identity."},
+        {"name": "Federation", "description": "Hub-to-hub pairing, signed peer endpoints, and peer resource sharing."},
     ],
     lifespan=lifespan,
 )
@@ -221,6 +231,7 @@ from app.routers.teacher_topics import router as teacher_topics_router
 from app.routers.teacher_similar import router as teacher_similar_router
 from app.routers.teacher_quiz_resources import router as teacher_quiz_resources_router
 from app.routers.student_courses import router as student_courses_router
+from app.routers.federation import router as federation_router
 from zim_handler import router as zim_router
 
 app.include_router(auth_router)
@@ -243,6 +254,7 @@ app.include_router(teacher_topics_router)
 app.include_router(teacher_similar_router)
 app.include_router(student_courses_router)
 app.include_router(teacher_quiz_resources_router)
+app.include_router(federation_router)
 app.include_router(zim_router, prefix="/zim")
 
 # Static file mounts (must be after routes)

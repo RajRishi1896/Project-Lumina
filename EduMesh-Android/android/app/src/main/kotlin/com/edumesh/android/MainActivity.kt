@@ -20,7 +20,6 @@ class MainActivity : FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ensureInitialized(applicationContext)
         val wifi = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val lock = wifi.createMulticastLock("edumesh_mdns")
         lock.setReferenceCounted(true)

@@ -366,5 +366,28 @@
         "example": "48"
       }
     }
+  },
+
+  "shareFindingDevices": "సమీప పరికరాల కోసం వెతుకుతోంది…",
+  "@shareFindingDevices": {
+    "description": "Snackbar shown while the app listens for nearby students' phones that have the requested file. User just tapped Download. Keep short."
+  },
+  "shareDownloadingFrom": "{name} ఫోన్ నుండి డౌన్‌లోడ్ అవుతోంది",
+  "@shareDownloadingFrom": {
+    "description": "Snackbar shown when a peer phone has the file and the download from it starts. {name} is the peer's display name or username.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Priya"
+      }
+    }
+  },
+  "shareSettingsTitle": "డౌన్‌లోడ్ చేసిన ఫైల్‌లను భాగస్వామ్యం చేయండి",
+  "@shareSettingsTitle": {
+    "description": "Settings sheet toggle title: lets nearby students download files saved on this phone."
+  },
+  "shareSettingsDescription": "సమీప విద్యార్థులు మీరు సేవ్ చేసిన ఫైల్‌లను డౌన్‌లోడ్ చేయడానికి అనుమతించండి",
+  "@shareSettingsDescription": {
+    "description": "Settings sheet toggle subtitle explaining the share setting to the student."
   }
 }

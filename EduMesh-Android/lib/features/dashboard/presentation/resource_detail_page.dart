@@ -9,6 +9,7 @@ import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
 import 'package:edumesh_android/shared/services/download_service.dart';
 import 'package:edumesh_android/shared/services/download_queue.dart';
+import 'package:edumesh_android/shared/services/share_server.dart';
 import 'package:edumesh_android/shared/services/connectivity_service.dart';
 import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
 import 'package:edumesh_android/shared/widgets/resource_thumbnail.dart';
@@ -313,6 +314,47 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
               duration: const Duration(milliseconds: 600),
             ));
           } else {
+            final onlineNow = ConnectivityService().isOnline;
+            if (onlineNow) {
+              final peerRawUrl = item.pdfUrl;
+              final peerUrl = _isServerUrl(peerRawUrl) ? peerRawUrl! : '/files/$resourceId';
+              final peerExt = peerUrl.contains('.') ? '.${peerUrl.split('.').last.split('?').first}' : '.pdf';
+              final peerFileName = '${item.title}$peerExt';
+              messenger.showSnackBar(SnackBar(
+                content: Text(l10n.shareFindingDevices),
+                duration: const Duration(milliseconds: 2500),
+              ));
+              final peerPath = await ShareServer().discoverAndDownload(
+                item,
+                peerFileName,
+                subject: item.subject,
+                grade: item.grade,
+                type: item.type.name,
+                onPeerFound: (name) {
+                  if (mounted) setState(() => _pendingIds.add(resourceId));
+                  messenger.hideCurrentSnackBar();
+                  messenger.showSnackBar(SnackBar(
+                    content: Text(l10n.shareDownloadingFrom(name)),
+                    duration: const Duration(seconds: 3),
+                  ));
+                },
+              );
+              if (peerPath != null) {
+                if (mounted) {
+                  setState(() {
+                    _pendingIds.remove(resourceId);
+                    _downloadedIds.add(resourceId);
+                  });
+                }
+                messenger.showSnackBar(SnackBar(
+                  content: Text(l10n.snackbarDownloadComplete),
+                  duration: const Duration(milliseconds: 600),
+                ));
+                return;
+              }
+              messenger.hideCurrentSnackBar();
+            }
+
             final rawUrl = item.pdfUrl;
             final url = _isServerUrl(rawUrl) ? rawUrl! : '/files/$resourceId';
             final ext = url.contains('.') ? '.${url.split('.').last.split('?').first}' : '.pdf';

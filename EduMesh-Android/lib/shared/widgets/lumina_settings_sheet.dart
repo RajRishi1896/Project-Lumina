@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:app_settings/app_settings.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/network/api_client.dart';
 import '../../../shared/services/connectivity_service.dart';
+import '../../../shared/services/share_server.dart';
 import '../../../features/auth/data/auth_service.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../../features/auth/presentation/welcome_page.dart';
@@ -90,6 +92,9 @@ class LuminaSettingsSheet extends ConsumerWidget {
               },
             );
           }),
+
+          // Share files toggle
+          const _ShareToggleTile(),
 
           // Storage
           ListTile(
@@ -185,6 +190,53 @@ class LuminaSettingsSheet extends ConsumerWidget {
           SizedBox(height: AppSpacing.sm.h),
         ],
       ),
+    );
+  }
+}
+
+/// A settings toggle that controls whether nearby students may download
+/// files saved on this phone. When switched ON the [ShareServer] starts
+/// serving; when OFF it stops.
+class _ShareToggleTile extends StatefulWidget {
+  const _ShareToggleTile();
+
+  @override
+  State<_ShareToggleTile> createState() => _ShareToggleTileState();
+}
+
+class _ShareToggleTileState extends State<_ShareToggleTile> {
+  bool _enabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() => _enabled = prefs.getBool(ShareServer.enabledPrefKey) ?? false);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: Icon(Icons.share, color: cs.primary),
+      title: Text(l10n.shareSettingsTitle),
+      subtitle: Text(l10n.shareSettingsDescription),
+      value: _enabled,
+      onChanged: (val) async {
+        setState(() => _enabled = val);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(ShareServer.enabledPrefKey, val);
+        if (val) {
+          unawaited(ShareServer().start().catchError((_) {}));
+        } else {
+          unawaited(ShareServer().stop());
+        }
+      },
     );
   }
 }

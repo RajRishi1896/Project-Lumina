@@ -1,0 +1,496 @@
+"""Hub-to-hub federation: peer pairing, signed requests, and LAN discovery.
+
+A peer is another Lumina hub on the same LAN. After pairing, both hubs
+derive a shared secret from the 6-digit pairing code and sign every
+``/peer/*`` request with it. Only approved resources are ever exchanged
+-- student data never leaves its own hub.
+
+Pairing flow:
+1. Hub A calls ``GET /peer/hello`` on hub B to confirm it is reachable.
+2. Hub A posts B's 6-digit pairing code (shown on B's Settings page)
+   plus A's own public key to ``POST /peer/pair`` on B.
+3. Both sides derive ``shared_secret = hmac_sha256(key=code,
+   msg=public keys sorted lexicographically)`` -- identical on both sides
+   regardless of perspective.
+4. Every later request carries ``X-Peer-Sig`` / ``X-Peer-Ts`` /
+   ``X-Peer-Nonce`` headers. The receiver verifies timestamp (within 300s),
+   signature, and a one-time nonce to prevent replay.
+
+The Ed25519 keypair is stored in ``data/peer_key.pem`` (created on first
+use). It is not strictly required by the current HMAC scheme -- the
+pairing code is the real credential -- but the design mandates persistent
+keys, and they give a future upgrade path to full public-key auth without
+changing the pairing UX.
+"""
+
+import asyncio
+import hashlib
+import hmac
+import logging
+import os
+import secrets
+import socket
+import time
+import uuid
+
+from fastapi import HTTPException, Request
+from fastapi.responses import FileResponse, StreamingResponse
+
+from app.async_db import db_exec, db_fetch, db_fetch_one
+from app.database import UPLOAD_DIR
+
+logger = logging.getLogger("lumina.peer")
+
+DATA_DIR = "data"
+KEY_PATH = os.path.join(DATA_DIR, "peer_key.pem")
+CODE_TTL = 600          # pairing code lifetime, seconds
+MAX_SIG_SKEW = 300      # accepted peer clock skew, seconds
+_NONCE_TTL = 300        # replay-protection window
+_NONCE_MAX = 1000
+
+# ponytail: in-memory nonce cache -- single-hub, fine for a LAN of hubs.
+_nonce_cache: dict[str, float] = {}   # nonce -> expiry timestamp
+_pairing_code: str | None = None
+_pairing_code_expiry: float = 0.0
+
+
+class PeerManager:
+    """Singleton managing this hub's keypair and pairing state."""
+
+    _instance: "PeerManager | None" = None
+
+    def __new__(cls) -> "PeerManager":
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self) -> None:
+        self._private_key = None
+        self._public_key_pem: str | None = None
+
+    def _load_keypair(self) -> None:
+        """Load the Ed25519 keypair from disk, generating it on first use."""
+        if self._private_key is not None:
+            return
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        os.makedirs(DATA_DIR, exist_ok=True)
+        if os.path.exists(KEY_PATH):
+            with open(KEY_PATH, "rb") as f:
+                self._private_key = serialization.load_pem_private_key(f.read(), password=None)
+        else:
+            self._private_key = Ed25519PrivateKey.generate()
+            with open(KEY_PATH, "wb") as f:
+                f.write(self._private_key.private_bytes(
+                    serialization.Encoding.PEM,
+                    serialization.PrivateFormat.PKCS8,
+                    serialization.NoEncryption(),
+                ))
+        self._public_key_pem = self._private_key.public_key().public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        ).decode()
+
+    @property
+    def public_key_pem(self) -> str:
+        """This hub's Ed25519 public key in PEM form."""
+        self._load_keypair()
+        return self._public_key_pem
+
+    def generate_pairing_code(self) -> str:
+        """Generate and store a fresh 6-digit pairing code (10-minute expiry)."""
+        global _pairing_code, _pairing_code_expiry
+        self._load_keypair()
+        _pairing_code = f"{secrets.randbelow(1_000_000):06d}"
+        _pairing_code_expiry = time.time() + CODE_TTL
+        logger.info("New pairing code generated (expires in %ds)", CODE_TTL)
+        return _pairing_code
+
+    def current_pairing_code(self) -> str | None:
+        """Return the active pairing code, or None if expired."""
+        if _pairing_code and time.time() < _pairing_code_expiry:
+            return _pairing_code
+        return None
+
+    async def pair(self, ip_or_url: str, code: str) -> dict:
+        """Pair with the hub at ``ip_or_url`` using its 6-digit pairing code.
+
+        Calls the peer's public endpoints, derives the shared secret from
+        both public keys, and stores the peer row.
+
+        Args:
+            ip_or_url: Host or URL of the peer hub (e.g. ``192.168.1.20``).
+            code: The 6-digit pairing code shown on the peer's Settings page.
+
+        Returns:
+            Dict with ``id``, ``name``, and ``base_url`` of the new peer.
+
+        Raises:
+            HTTPException: 502 if the peer is unreachable, 403 if the code
+                is wrong.
+        """
+        base = normalize_base_url(ip_or_url)
+        try:
+            hello = await _http_get_json(f"{base}/peer/hello")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.warning("Peer hello failed for %s: %s", base, exc)
+            raise HTTPException(status_code=502, detail="Could not reach the peer hub")
+        my_pub = self.public_key_pem
+        try:
+            resp = await _http_post_json(
+                f"{base}/peer/pair",
+                {"code": code, "public_key": my_pub},
+                extra_headers={"X-Peer-Name": socket.gethostname()},
+            )
+        except HTTPException as exc:
+            if exc.status_code == 403:
+                raise HTTPException(status_code=403, detail="Invalid or expired pairing code")
+            raise
+        except Exception as exc:
+            logger.warning("Peer pair request failed for %s: %s", base, exc)
+            raise HTTPException(status_code=502, detail="Could not reach the peer hub")
+        if not resp.get("ok"):
+            raise HTTPException(status_code=403, detail="Invalid or expired pairing code")
+        peer_pub = str(resp.get("public_key") or "")
+        secret = derive_shared_secret(code, peer_pub, my_pub)
+        peer_id = f"peer-{uuid.uuid4().hex[:8]}"
+        name = str(hello.get("name") or "") or f"peer-{_host_of(base)}"
+        await db_exec(
+            """INSERT INTO peers (id, name, base_url, public_key, shared_secret, ip_address, paired_at)
+               VALUES (?, ?, ?, ?, ?, ?, datetime('now'))""",
+            (peer_id, name, base, peer_pub, secret, _host_of(base)),
+        )
+        logger.info("Paired with %s (%s)", name, base)
+        return {"id": peer_id, "name": name, "base_url": base}
+
+    async def request_catalog(self, peer: dict) -> list[dict]:
+        """Fetch a paired peer's approved resource catalog (signed)."""
+        path = "/peer/catalog"
+        return await _http_get_json(
+            peer["base_url"] + path, headers=signed_headers(peer["shared_secret"], path)
+        )
+
+
+def derive_shared_secret(code: str, pub_a: str, pub_b: str) -> str:
+    """Derive the shared secret both hubs agree on.
+
+    HMAC-SHA256 keyed with the pairing code over the two public keys
+    sorted lexicographically, so either side computes the same value.
+
+    Args:
+        code: The 6-digit pairing code.
+        pub_a: A public key PEM string.
+        pub_b: The other public key PEM string.
+
+    Returns:
+        Hex digest of the derived secret.
+    """
+    ordered = b"".join(sorted((pub_a.encode(), pub_b.encode())))
+    return hmac.new(code.encode(), ordered, hashlib.sha256).hexdigest()
+
+
+def signed_headers(secret: str, path_with_query: str) -> dict[str, str]:
+    """Build X-Peer-* headers for a signed request.
+
+    Signature is ``hex(hmac_sha256(f"{unix_ts}:{path_with_query}",
+    shared_secret))`` -- the same canonical form the receiver verifies.
+    """
+    ts = str(int(time.time()))
+    nonce = secrets.token_hex(16)
+    sig = hmac.new(
+        secret.encode(), f"{ts}:{path_with_query}".encode(), hashlib.sha256
+    ).hexdigest()
+    return {"X-Peer-Ts": ts, "X-Peer-Nonce": nonce, "X-Peer-Sig": sig}
+
+
+def _nonce_ok(nonce: str) -> bool:
+    """Accept a nonce once; reject replays. Evicts expired entries when full."""
+    now = time.time()
+    if nonce in _nonce_cache:
+        return False
+    if len(_nonce_cache) >= _NONCE_MAX:
+        expired = [k for k, v in _nonce_cache.items() if v < now]
+        for k in expired:
+            _nonce_cache.pop(k, None)
+    _nonce_cache[nonce] = now + _NONCE_TTL
+    return True
+
+
+async def verify_peer_sig(request: Request) -> dict:
+    """FastAPI dependency -- require a valid signed request from a paired peer.
+
+    Checks the X-Peer-Ts / X-Peer-Sig / X-Peer-Nonce headers against every
+    paired peer's shared secret. Returns the matching peer row.
+
+    Raises:
+        HTTPException: 401 for missing, expired, replayed, or unsigned headers.
+    """
+    ts_h = request.headers.get("x-peer-ts")
+    sig = request.headers.get("x-peer-sig")
+    nonce = request.headers.get("x-peer-nonce")
+    if not (ts_h and sig and nonce):
+        raise HTTPException(status_code=401, detail="Missing peer signature headers")
+    try:
+        ts = int(ts_h)
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid peer timestamp")
+    if abs(time.time() - ts) > MAX_SIG_SKEW:
+        raise HTTPException(status_code=401, detail="Peer signature expired")
+    if not _nonce_ok(nonce):
+        raise HTTPException(status_code=401, detail="Peer request replayed")
+    canonical = request.url.path
+    if request.url.query:
+        canonical += f"?{request.url.query}"
+    for peer in await get_peers():
+        secret = peer.get("shared_secret") or ""
+        if not secret:
+            continue
+        expected = hmac.new(
+            secret.encode(), f"{ts_h}:{canonical}".encode(), hashlib.sha256
+        ).hexdigest()
+        if hmac.compare_digest(expected, sig):
+            return peer
+    raise HTTPException(status_code=401, detail="Invalid peer signature")
+
+
+async def handle_pair_request(code: str, public_key: str, name: str | None, client_ip: str) -> dict:
+    """Process an incoming pairing request from another hub.
+
+    Verifies the 6-digit code, derives the shared secret, and stores the
+    pairing peer (named from the X-Peer-Name header or the source IP).
+
+    Args:
+        code: The pairing code sent by the remote hub.
+        public_key: The remote hub's Ed25519 public key (PEM).
+        name: Optional hub name from the X-Peer-Name header.
+        client_ip: Source IP of the pairing request.
+
+    Returns:
+        Dict with ``ok``, ``public_key`` (ours), and ``id``.
+
+    Raises:
+        HTTPException: 403 if the code is wrong or expired.
+    """
+    if not _pairing_code or not hmac.compare_digest(_pairing_code, code) or time.time() > _pairing_code_expiry:
+        raise HTTPException(status_code=403, detail="Invalid or expired pairing code")
+    my_pub = PeerManager().public_key_pem
+    secret = derive_shared_secret(code, public_key, my_pub)
+    peer_id = f"peer-{uuid.uuid4().hex[:8]}"
+    host = client_ip or "unknown"
+    await db_exec(
+        """INSERT INTO peers (id, name, base_url, public_key, shared_secret, ip_address, paired_at)
+           VALUES (?, ?, ?, ?, ?, ?, datetime('now'))""",
+        (peer_id, name or f"peer-{host}", f"http://{host}:8000", public_key, secret, host),
+    )
+    logger.info("Incoming pairing from %s (%s)", name or host, host)
+    return {"ok": True, "public_key": my_pub, "id": peer_id}
+
+
+async def get_peers() -> list[dict]:
+    """Return all paired peers ordered by name."""
+    rows = await db_fetch("SELECT * FROM peers ORDER BY name")
+    return [dict(r) for r in rows]
+
+
+async def get_peer(peer_id: str) -> dict | None:
+    """Return a single paired peer by id, or None."""
+    row = await db_fetch_one("SELECT * FROM peers WHERE id = ?", (peer_id,))
+    return dict(row) if row else None
+
+
+async def fetch_file(peer: dict, resource_id: str, range_header: str | None) -> tuple[int, dict, object]:
+    """Stream a file from a paired peer, forwarding the Range header.
+
+    Args:
+        peer: The peer row from the database.
+        resource_id: The resource id on the peer hub.
+        range_header: The client's raw ``Range`` header to forward, if any.
+
+    Returns:
+        Tuple of (status_code, response headers, async body generator).
+        The generator closes the underlying connection when exhausted.
+
+    Raises:
+        HTTPException: 502 if the peer is unreachable, otherwise the peer's
+            status code when it rejects the request.
+    """
+    import httpx
+    path = f"/peer/file/{resource_id}"
+    headers = signed_headers(peer["shared_secret"], path)
+    if range_header:
+        headers["Range"] = range_header
+    client = httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=10.0))
+    try:
+        req = client.build_request("GET", peer["base_url"] + path, headers=headers)
+        resp = await client.send(req, stream=True)
+    except Exception as exc:
+        await client.aclose()
+        logger.warning("Peer file fetch failed for %s: %s", peer.get("base_url"), exc)
+        raise HTTPException(status_code=502, detail="Peer file stream failed")
+    if resp.status_code >= 400:
+        await resp.aclose()
+        await client.aclose()
+        raise HTTPException(status_code=resp.status_code, detail="Peer file unavailable")
+    out_headers = {
+        k: v for k, v in resp.headers.items()
+        if k.lower() in ("content-range", "accept-ranges", "content-type", "content-length")
+    }
+
+    async def _body():
+        try:
+            async for chunk in resp.aiter_bytes(65536):
+                yield chunk
+        finally:
+            await resp.aclose()
+            await client.aclose()
+
+    return resp.status_code, out_headers, _body()
+
+
+async def _stream_local_file(file_path: str, range_header: str | None):
+    """Serve a local file with HTTP Range support (mirrors routers/media.py).
+
+    Args:
+        file_path: Absolute path to the file in UPLOAD_DIR.
+        range_header: The raw ``Range`` header, or None for a full response.
+
+    Returns:
+        FileResponse (200) or StreamingResponse (206).
+
+    Raises:
+        HTTPException: 404/400/416 mirroring the media router.
+    """
+    if not await asyncio.to_thread(os.path.exists, file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    file_size = await asyncio.to_thread(os.path.getsize, file_path)
+    if not range_header:
+        return FileResponse(file_path, headers={"Accept-Ranges": "bytes"})
+    try:
+        val = range_header.replace("bytes=", "")
+        if val.startswith("-"):
+            start = max(0, file_size - int(val[1:]))
+            end = file_size - 1
+        else:
+            start_str, _, end_str = val.partition("-")
+            start = int(start_str) if start_str else 0
+            end = int(end_str) if end_str else file_size - 1
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Malformed Range header")
+    if start >= file_size:
+        raise HTTPException(status_code=416, detail="Range not satisfiable")
+    length = end - start + 1
+
+    async def _chunks():
+        fh = await asyncio.to_thread(open, file_path, "rb")
+        try:
+            await asyncio.to_thread(fh.seek, start)
+            remaining = length
+            while remaining > 0:
+                chunk = await asyncio.to_thread(fh.read, min(65536, remaining))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
+                yield chunk
+        finally:
+            await asyncio.to_thread(fh.close)
+
+    return StreamingResponse(
+        _chunks(),
+        status_code=206,
+        media_type="application/octet-stream",
+        headers={
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+            "Content-Length": str(length),
+            "Accept-Ranges": "bytes",
+        },
+    )
+
+
+def normalize_base_url(ip_or_url: str) -> str:
+    """Normalise an admin-entered host/IP[:port] into an http base URL."""
+    s = (ip_or_url or "").strip()
+    if not s:
+        raise HTTPException(status_code=400, detail="Peer address required")
+    if not s.startswith("http"):
+        s = "http://" + s
+    return s.rstrip("/")
+
+
+def _host_of(base_url: str) -> str:
+    """Extract the host portion of a base URL."""
+    return base_url.split("://", 1)[-1].split("/", 1)[0].split(":", 1)[0]
+
+
+def _own_ips() -> set[str]:
+    """Return this host's non-loopback IPv4 addresses."""
+    ips = set()
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            ip = info[4][0]
+            if not ip.startswith("127."):
+                ips.add(ip)
+    except OSError:
+        pass
+    return ips
+
+
+def discover_peers_blocking(timeout: float = 2.5) -> list[dict]:
+    """Browse the LAN for EduMeshHub mDNS services (blocking -- call via to_thread).
+
+    Returns:
+        List of dicts with ``name``, ``ip``, and ``port``, excluding this host.
+        Empty list when zeroconf is unavailable or nothing is found.
+    """
+    try:
+        from zeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
+    except ImportError:
+        return []
+    service_type = "_http._tcp.local."
+    found: dict[str, dict] = {}
+    own_ips = _own_ips()
+
+    def _on_change(zc, stype, name, state_change):
+        if state_change is not ServiceStateChange.Added or not name.startswith("EduMeshHub"):
+            return
+        info = zc.get_service_info(stype, name)
+        if info and info.addresses:
+            ip = socket.inet_ntoa(info.addresses[0])
+            if ip in own_ips:
+                return
+            found[name] = {"name": name, "ip": ip, "port": info.port or 8000}
+
+    zc = Zeroconf()
+    browser = ServiceBrowser(zc, service_type, handlers=[_on_change])
+    try:
+        deadline = time.time() + timeout
+        while time.time() < deadline and not found:
+            time.sleep(0.1)
+    finally:
+        browser.cancel()
+        zc.close()
+    return list(found.values())
+
+
+async def _http_get_json(url: str, headers: dict | None = None) -> dict:
+    """GET a URL and parse its JSON body."""
+    import httpx
+    async with httpx.AsyncClient(timeout=httpx.Timeout(15.0, connect=5.0)) as client:
+        resp = await client.get(url, headers=headers)
+        if resp.status_code >= 400:
+            raise HTTPException(status_code=resp.status_code, detail="Peer rejected the request")
+        return resp.json()
+
+
+async def _http_post_json(url: str, payload: dict, extra_headers: dict | None = None) -> dict:
+    """POST a JSON payload and parse the response."""
+    import httpx
+    headers = {"Content-Type": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
+    async with httpx.AsyncClient(timeout=httpx.Timeout(15.0, connect=5.0)) as client:
+        resp = await client.post(url, json=payload, headers=headers)
+        if resp.status_code >= 400:
+            raise HTTPException(status_code=resp.status_code, detail="Peer rejected the request")
+        return resp.json()
