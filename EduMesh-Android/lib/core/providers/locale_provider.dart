@@ -8,6 +8,8 @@ const List<Locale> appSupportedLocales = [
   Locale('hi'),
   Locale('kn'),
   Locale('fr'),
+  Locale('ta'),
+  Locale('te'),
 ];
 
 /// The locale language codes available for user selection.
@@ -16,6 +18,8 @@ const List<Map<String, String?>> appLanguageOptions = [
   {'code': 'hi', 'label': 'हिन्दी'},
   {'code': 'kn', 'label': 'ಕನ್ನಡ'},
   {'code': 'fr', 'label': 'Français'},
+  {'code': 'ta', 'label': 'தமிழ்'},
+  {'code': 'te', 'label': 'తెలుగు'},
 ];
 
 /// Persists the choice to [SharedPreferences] so it survives restarts.

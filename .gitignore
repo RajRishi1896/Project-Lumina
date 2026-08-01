@@ -20,6 +20,7 @@ build/
 EduMesh-Android/lib/l10n/app_localizations*.dart
 Debian Server/venv/
 **/__pycache__/
+**/.pytest_cache/
 *.pyc
 *.class
 app.*.symbols
@@ -32,6 +33,9 @@ Debian Server/uploads/
 Debian Server/thumbnails/
 Debian Server/zim_pages/
 Debian Server/profile_icons/
+Debian Server/courses/
+Debian Server/evidence_log.json
+Debian Server/server_err.log
 
 # === Logs ===
 *.log

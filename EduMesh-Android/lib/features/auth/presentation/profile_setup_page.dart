@@ -1,17 +1,20 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
+import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'package:edumesh_android/core/services/mutation_queue.dart';
 import 'package:edumesh_android/widgets/connection_gate.dart';
 import 'package:edumesh_android/pages/app_shell.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// A post-registration page prompting the student to set a display name and
 /// select their grade before entering the main app.
 ///
-/// Loads available grades from the hub via `/grades` and submits the chosen
+/// Loads available grades from the hub via `/student/grades` and submits the chosen
 /// profile to `/student/profile/update` before navigating to [AppShell].
 class ProfileSetupPage extends StatefulWidget {
   /// The username from the registration step, used as the initial display name.
@@ -24,7 +27,7 @@ class ProfileSetupPage extends StatefulWidget {
 
 class _ProfileSetupPageState extends State<ProfileSetupPage> {
   late TextEditingController _nameController;
-  String _selectedGrade = '';
+  String _selectedGrade = 'General';
   List<String> _grades = [];
   bool _loading = true;
   bool _saving = false;
@@ -37,19 +40,33 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     _loadGrades();
   }
 
+  static const String _fallbackGrade = 'General';
+
   Future<void> _loadGrades() async {
     try {
-      final res = await ApiClient.get('/grades');
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getStringList('cached_grades');
+      if (cached != null && cached.isNotEmpty) {
+        if (mounted) setState(() { _grades = cached; _selectedGrade = cached.first; _loading = false; });
+      }
+
+      final res = await ApiClient.get('/student/grades');
       if (res.data is List) {
         final grades = (res.data as List).map((g) => (g is Map ? g['name']?.toString() ?? '' : g.toString())).where((n) => n.isNotEmpty).toList();
-        if (mounted) setState(() { _grades = grades; _selectedGrade = grades.isNotEmpty ? grades[0] : ''; _loadError = grades.isEmpty ? AppLocalizations.of(context)!.errorNoServerNoCache : null; _loading = false; });
+        if (grades.isNotEmpty) {
+          await prefs.setStringList('cached_grades', grades);
+          if (mounted) setState(() { _grades = grades; _selectedGrade = grades.first; _loadError = null; _loading = false; });
+        } else {
+          if (mounted) setState(() { _grades = [_fallbackGrade]; _selectedGrade = _fallbackGrade; _loadError = null; _loading = false; });
+        }
         return;
       }
-    } catch (_) {
-      if (mounted) setState(() { _loadError = AppLocalizations.of(context)!.errorNoServerNoCache; _loading = false; });
-      return;
+    } catch (_) {}
+    if (_grades.isEmpty) {
+      if (mounted) setState(() { _grades = [_fallbackGrade]; _selectedGrade = _fallbackGrade; _loadError = null; _loading = false; });
+    } else {
+      if (mounted) setState(() { _loading = false; });
     }
-    if (mounted) setState(() { _loadError = AppLocalizations.of(context)!.errorNoServerNoCache; _loading = false; });
   }
 
   Future<void> _retryLoadGrades() async {
@@ -59,10 +76,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
   Future<void> _saveAndContinue() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty || _selectedGrade.isEmpty || _saving || _loadError != null) return;
+    if (name.isEmpty || _saving || _loadError != null) return;
     setState(() => _saving = true);
     try {
       await MutationQueue().enqueue('/student/profile/update', method: 'POST', body: {'name': name, 'grade': _selectedGrade});
+      await AuthService().saveGrade(_selectedGrade);
+      await AuthService().setDisplayName(name);
     } catch (_) {
       if (mounted) setState(() => _saving = false);
       return;
@@ -87,13 +106,17 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     return Scaffold(
       backgroundColor: cs.surface,
       body: SafeArea(
-        child: Padding(
-           padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl.w),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl.w, vertical: AppSpacing.lg.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: AppSpacing.touchTarget.h),
-              Icon(Icons.school_rounded, size: 48.sp, color: cs.primary),
+              SvgPicture.asset(
+                Theme.of(context).brightness == Brightness.dark ? 'assets/images/logo-dark.svg' : 'assets/images/logo-light.svg',
+                width: 48.sp,
+                height: 48.sp,
+              ),
               SizedBox(height: AppSpacing.lg.h),
               Text(l10n.profileSetupTitle,
                   style: tt.displaySmall?.copyWith(color: cs.primary)),
@@ -143,11 +166,11 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   ),
                 ),
               ],
-              const Spacer(),
+              SizedBox(height: AppSpacing.xl.h),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _saving || _loadError != null || _selectedGrade.isEmpty ? null : _saveAndContinue,
+                  onPressed: _saving || _loadError != null ? null : _saveAndContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: cs.primary,
                     foregroundColor: cs.onPrimary,
@@ -156,8 +179,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   ),
                   child: _saving
                       ? SizedBox(width: 20.sp, height: 20.sp, child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary))
-                      : Text(l10n.buttonContinue,
-                          style: tt.titleMedium?.copyWith()),
+                      : Text(l10n.buttonContinue),
                 ),
               ),
               SizedBox(height: AppSpacing.section.h),

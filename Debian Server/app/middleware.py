@@ -75,11 +75,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 # ── Global Rate Limiting ──────────────────────────────────────────────────────
 
 # Per-route overrides: path_prefix → (limit, window_seconds)
+# Auth routes excluded -- auth.py has its own per-IP rate limiting.
 ROUTE_RATE_LIMITS: dict[str, tuple[int, int]] = {
-    "/token": (10, 60),
-    "/register": (5, 60),
-    "/student/token": (10, 60),
-    "/teacher/change-password": (5, 60),
     "/api/upload": (20, 60),
     "/zim/upload": (5, 300),
 }
@@ -148,9 +145,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return True, 0
 
     async def dispatch(self, request, call_next):
-        # Skip rate limiting for static files, health checks, and localhost
+        # Skip rate limiting for static files, ZIM local reads, health checks, and localhost
         path = request.url.path
-        if path.startswith("/static/") or path in ("/ping", "/generate_204"):
+        if path.startswith("/static/") or path.startswith("/files/") or path.startswith("/zim/") or path in ("/ping", "/generate_204"):
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"
@@ -163,7 +160,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 {"error": "rate_limit_exceeded", "retry_after": retry_after},
                 status_code=429,
-                headers={"Retry-After": str(retry_after)},
+                headers={
+                    "Retry-After": str(retry_after),
+                    "X-Content-Type-Options": "nosniff",
+                    "X-Frame-Options": "DENY",
+                    "Cache-Control": "no-cache, private",
+                },
             )
 
         return await call_next(request)

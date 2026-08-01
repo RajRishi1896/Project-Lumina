@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:edumesh_android/features/dashboard/presentation/dashboard_page.dart';
-import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/features/dashboard/presentation/saved_resource_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/student_profile_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/browse_page.dart';
@@ -24,10 +23,16 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   DateTime? _lastBackPress;
+  final _browseKey = GlobalKey<BrowsePageState>();
 
-  final List<Widget> _pages = [
-    const DashboardPage(),
-    const BrowsePage(),
+  void _openBrowseResources() {
+    setState(() => _index = 1);
+    _browseKey.currentState?.switchTab(1);
+  }
+
+  late final List<Widget> _pages = [
+    DashboardPage(onBrowseTap: _openBrowseResources),
+    BrowsePage(key: _browseKey),
     const SavedResourcesPage(),
     const StudentProfilePage(),
   ];
@@ -62,18 +67,26 @@ class _AppShellState extends State<AppShell> {
             const MiniPlayerWidget(),
           ],
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _index,
-          onTap: (val) => setState(() => _index = val),
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: LuminaColors.academicTeal,
-          unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
-          items: [
-            BottomNavigationBarItem(icon: const Icon(Icons.dashboard_rounded), label: AppLocalizations.of(context)!.bottomNavDashboard),
-            BottomNavigationBarItem(icon: const Icon(Icons.explore_rounded), label: AppLocalizations.of(context)!.bottomNavBrowse),
-            BottomNavigationBarItem(icon: const Icon(Icons.bookmark_rounded), label: AppLocalizations.of(context)!.bottomNavSaved),
-            BottomNavigationBarItem(icon: const Icon(Icons.person_rounded), label: AppLocalizations.of(context)!.bottomNavProfile),
-          ],
+        bottomNavigationBar: Builder(
+          builder: (context) {
+            final cs = Theme.of(context).colorScheme;
+            return Theme(
+              data: Theme.of(context).copyWith(
+                splashColor: cs.primary.withValues(alpha: 0.08),
+                highlightColor: cs.primary.withValues(alpha: 0.04),
+              ),
+              child: BottomNavigationBar(
+                currentIndex: _index,
+                onTap: (val) => setState(() => _index = val),
+                items: [
+                  BottomNavigationBarItem(icon: const Icon(Icons.dashboard_rounded), label: AppLocalizations.of(context)!.bottomNavDashboard),
+                  BottomNavigationBarItem(icon: const Icon(Icons.explore_rounded), label: AppLocalizations.of(context)!.bottomNavBrowse),
+                  BottomNavigationBarItem(icon: const Icon(Icons.bookmark_rounded), label: AppLocalizations.of(context)!.bottomNavSaved),
+                  BottomNavigationBarItem(icon: const Icon(Icons.person_rounded), label: AppLocalizations.of(context)!.bottomNavProfile),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

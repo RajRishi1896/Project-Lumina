@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/app_spacing.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
+import '../../core/services/activity_tracker.dart';
 
 /// A full-screen PDF viewer page with pinch-to-zoom and page navigation.
 ///
@@ -24,10 +27,14 @@ class PdfViewerPage extends StatefulWidget {
   /// fetched through [ApiClient]. Otherwise it is treated as a local file path.
   final String pdfUrl;
 
+  /// The subject associated with this resource, passed to activity tracking.
+  final String? subject;
+
   const PdfViewerPage({
     super.key,
     required this.title,
     required this.pdfUrl,
+    this.subject,
   });
 
   @override
@@ -48,19 +55,31 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
   Future<PdfDocument> _openPdf() async {
     if (widget.pdfUrl.startsWith('http') || widget.pdfUrl.startsWith('/files/')) {
+      final cacheFile = await _getCachedPdfFile();
+      if (await cacheFile.exists()) {
+        return PdfDocument.openFile(cacheFile.path);
+      }
       await ApiClient.ensureInitialized();
       final response = await ApiClient.dio.get(
         widget.pdfUrl,
         options: Options(responseType: ResponseType.bytes),
       );
+      await cacheFile.writeAsBytes(response.data as List<int>, flush: true);
       return PdfDocument.openData(response.data);
     }
     return PdfDocument.openFile(widget.pdfUrl);
   }
 
+  Future<File> _getCachedPdfFile() async {
+    final dir = await getTemporaryDirectory();
+    final key = widget.pdfUrl.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
+    return File('${dir.path}/pdf_cache_$key');
+  }
+
   @override
   void initState() {
     super.initState();
+    ActivityTracker().startStudySession(subject: widget.subject);
     _pdfController = PdfControllerPinch(document: _openPdf());
     _pdfController.addListener(_onPageChanged);
     _restorePosition();
@@ -205,6 +224,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   @override
   void dispose() {
     _disposed = true;
+    ActivityTracker().endStudySession();
     _savePositionDebounce?.cancel();
     _pdfController.removeListener(_onPageChanged);
     _pdfController.dispose();

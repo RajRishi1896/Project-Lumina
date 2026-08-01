@@ -1,0 +1,10 @@
+[Unit]
+Description=Set RTC wake alarm for 06:00 daily
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wake-alarm.sh
+
+[Install]
+WantedBy=multi-user.target

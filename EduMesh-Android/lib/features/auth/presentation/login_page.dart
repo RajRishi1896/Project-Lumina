@@ -9,6 +9,7 @@ import '../../../shared/services/connectivity_service.dart';
 import '../../../core/network/api_client.dart';
 import '../../../widgets/connection_gate.dart';
 import 'profile_setup_page.dart';
+import 'welcome_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 final upperRE = RegExp(r'[A-Z]');
@@ -91,12 +92,12 @@ class _LoginPageState extends State<LoginPage> {
     final auth = AuthService();
 
     if (_isRegisterMode) {
-      final success = await auth.register(
+      final error = await auth.register(
         username: _usernameController.text,
         password: _passwordController.text,
       );
       if (mounted) {
-        if (success) {
+        if (error == null) {
           setState(() => _isLoading = false);
           if (!mounted) return;
           unawaited(Navigator.of(context).pushReplacement(
@@ -107,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
         } else {
           setState(() {
             _isLoading = false;
-            _errorMessage = AppLocalizations.of(context)!.errorRegistrationFailed;
+            _errorMessage = error;
           });
         }
       }
@@ -125,19 +126,6 @@ class _LoginPageState extends State<LoginPage> {
         unawaited(_showResetPasswordDialog());
       } else if (result == 'ok') {
         setState(() => _isLoading = false);
-        if (!mounted) return;
-        final hasName = await auth.hasDisplayName();
-        if (!hasName && mounted) {
-          final nameSet = await _showSetNameDialog(auth);
-          if (!nameSet && mounted) {
-            unawaited(Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => const ConnectionGate(child: AppShell()),
-              ),
-            ));
-            return;
-          }
-        }
         if (!mounted) return;
         unawaited(Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -171,81 +159,68 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _showResetPasswordDialog() async {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final oldPwdController = TextEditingController();
     final newPwdController = TextEditingController();
     final confirmPwdController = TextEditingController();
 
-    final result = await showDialog<Map<String, String>>(
+    final result = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
-        bool obscureOld = true;
         bool obscureNew = true;
         bool obscureConfirm = true;
         String? dialogError;
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              insetPadding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
               title: Text(AppLocalizations.of(context)!.dialogPasswordResetTitle),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(AppLocalizations.of(context)!.dialogPasswordResetBody),
-                  SizedBox(height: AppSpacing.lg.h),
-                  TextField(
-                    controller: oldPwdController,
-                    obscureText: obscureOld,
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.labelCurrentPassword,
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(obscureOld ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                        onPressed: () => setDialogState(() => obscureOld = !obscureOld),
-                        tooltip: obscureOld ? AppLocalizations.of(context)!.showPassword : AppLocalizations.of(context)!.hidePassword,
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(AppLocalizations.of(context)!.dialogPasswordResetBody),
+                    SizedBox(height: AppSpacing.lg.h),
+                    TextField(
+                      controller: newPwdController,
+                      obscureText: obscureNew,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.labelNewPassword,
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                          onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                          tooltip: obscureNew ? AppLocalizations.of(context)!.showPassword : AppLocalizations.of(context)!.hidePassword,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: AppSpacing.md.h),
-                  TextField(
-                    controller: newPwdController,
-                    obscureText: obscureNew,
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.labelNewPassword,
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                        onPressed: () => setDialogState(() => obscureNew = !obscureNew),
-                        tooltip: obscureNew ? AppLocalizations.of(context)!.showPassword : AppLocalizations.of(context)!.hidePassword,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: AppSpacing.xs.h),
-                    child: Text(
-                          AppLocalizations.of(context)!.hintPasswordRequirements,
-                      style: tt.labelSmall?.copyWith(color: cs.outline),
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.md.h),
-                  TextField(
-                    controller: confirmPwdController,
-                    obscureText: obscureConfirm,
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.labelConfirmPassword,
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                        onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
-                        tooltip: obscureConfirm ? AppLocalizations.of(context)!.showPassword : AppLocalizations.of(context)!.hidePassword,
-                      ),
-                    ),
-                  ),
-                  if (dialogError != null)
                     Padding(
-                      padding: EdgeInsets.only(top: AppSpacing.sm.h),
-                      child: Text(dialogError!, style: tt.bodySmall?.copyWith(color: cs.error)),
+                      padding: EdgeInsets.only(top: AppSpacing.xs.h),
+                      child: Text(
+                            AppLocalizations.of(context)!.hintPasswordRequirements,
+                        style: tt.labelSmall?.copyWith(color: cs.outline),
+                      ),
                     ),
-                ],
+                    SizedBox(height: AppSpacing.md.h),
+                    TextField(
+                      controller: confirmPwdController,
+                      obscureText: obscureConfirm,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.labelConfirmPassword,
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                          onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                          tooltip: obscureConfirm ? AppLocalizations.of(context)!.showPassword : AppLocalizations.of(context)!.hidePassword,
+                        ),
+                      ),
+                    ),
+                    if (dialogError != null)
+                      Padding(
+                        padding: EdgeInsets.only(top: AppSpacing.sm.h),
+                        child: Text(dialogError!, style: tt.bodySmall?.copyWith(color: cs.error)),
+                      ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -254,12 +229,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    final old = oldPwdController.text;
                     final pwd = newPwdController.text;
-                    if (old.isEmpty) {
-                      setDialogState(() => dialogError = AppLocalizations.of(context)!.errorCurrentPasswordRequired);
-                      return;
-                    }
                     if (pwd.length < 8) {
                       setDialogState(() => dialogError = AppLocalizations.of(context)!.errorPasswordMinLength);
                       return;
@@ -272,7 +242,7 @@ class _LoginPageState extends State<LoginPage> {
                       setDialogState(() => dialogError = AppLocalizations.of(context)!.errorPasswordComplexity);
                       return;
                     }
-                    Navigator.of(ctx).pop({'old': old, 'new': pwd});
+                    Navigator.of(ctx).pop(pwd);
                   },
                   child: Text(AppLocalizations.of(context)!.buttonSetPassword),
                 ),
@@ -283,7 +253,6 @@ class _LoginPageState extends State<LoginPage> {
       },
     );
 
-    oldPwdController.dispose();
     newPwdController.dispose();
     confirmPwdController.dispose();
 
@@ -292,16 +261,13 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
     try {
       await ApiClient.post('/student/change-password', data: {
-        'old_password': result['old'],
-        'new_password': result['new'],
+        'new_password': result,
       });
       if (!mounted) return;
-      setState(() => _isLoading = false);
+      await AuthService().logout();
       if (!mounted) return;
       unawaited(Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const ConnectionGate(child: AppShell()),
-        ),
+        MaterialPageRoute(builder: (_) => const WelcomePage()),
       ));
     } catch (_) {
       if (!mounted) return;
@@ -310,71 +276,6 @@ class _LoginPageState extends State<LoginPage> {
         _errorMessage = AppLocalizations.of(context)!.errorPasswordChangeFailed;
       });
     }
-  }
-
-  /// Shows a dialog prompting the student to set their display name.
-  /// Returns `true` if a name was provided and saved, `false` if skipped.
-  Future<bool> _showSetNameDialog(AuthService auth) async {
-    final cs = Theme.of(context).colorScheme;
-    final nameController = TextEditingController();
-    bool saving = false;
-
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(
-                AppLocalizations.of(context)!.dialogSetNameTitle,
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(AppLocalizations.of(context)!.dialogSetNameBody),
-                  SizedBox(height: AppSpacing.lg.h),
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.editProfileLabelName,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: saving ? null : () => Navigator.of(ctx).pop(false),
-                  child: Text(AppLocalizations.of(context)!.buttonSkip),
-                ),
-                ElevatedButton(
-                  onPressed: saving
-                      ? null
-                      : () async {
-                          final name = nameController.text.trim();
-                          if (name.isEmpty) return;
-                          setDialogState(() => saving = true);
-                          final ok = await auth.setDisplayName(name);
-                          if (ctx.mounted) Navigator.of(ctx).pop(ok);
-                        },
-                  child: saving
-                      ? SizedBox(
-                          width: 16.sp,
-                          height: 16.sp,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
-                        )
-                      : Text(AppLocalizations.of(context)!.buttonSave),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    nameController.dispose();
-    return result ?? false;
   }
 
   @override

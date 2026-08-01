@@ -18,6 +18,9 @@ class CourseService extends ChangeNotifier {
 
   bool _loading = false;
   String? _error;
+
+  /// Returns the current student's scholar ID, or '' if unavailable.
+  Future<String> _getStudentId() async => (await AuthService().getUniqueUserId()) ?? '';
   List<Course> _cachedCourses = [];
   List<({Course course, Map<String, dynamic>? progress})> _enrolledCourses = [];
   final Map<String, double> _downloadProgress = {};
@@ -53,12 +56,17 @@ class CourseService extends ChangeNotifier {
       if (search != null && search.isNotEmpty) qp['search'] = search;
       final resp = await ApiClient.get('/api/courses', queryParameters: qp);
       final data = resp.data;
-      if (data is! List) {
+      final List<dynamic> items;
+      if (data is List) {
+        items = data;
+      } else if (data is Map && data['items'] is List) {
+        items = data['items'] as List;
+      } else {
         _loading = false;
         notifyListeners();
         return [];
       }
-      final courses = data.map((e) => Course.fromJson(e as Map<String, dynamic>)).toList();
+      final courses = items.map((e) => Course.fromJson(e as Map<String, dynamic>)).toList();
       final db = await DBHelper().database;
       await db.transaction((txn) async {
         await txn.delete('courses');
@@ -160,7 +168,8 @@ class CourseService extends ChangeNotifier {
       final resp = await ApiClient.post('/api/courses/$courseId/unenroll');
       if (resp.statusCode == 200) {
         final db = await DBHelper().database;
-        await db.delete('course_progress', where: 'course_id = ?', whereArgs: [courseId]);
+        final studentId = await _getStudentId();
+        await db.delete('course_progress', where: 'course_id = ? AND student_id = ?', whereArgs: [courseId, studentId]);
         _enrolledCourses.removeWhere((e) => e.course.id == courseId);
         notifyListeners();
         return true;
@@ -179,29 +188,23 @@ class CourseService extends ChangeNotifier {
     if (!await _hasEnoughStorage(totalBytes)) return false;
     int succeeded = 0;
     for (final resource in resources) {
-      final url = '${ApiClient.baseUrl}/files/${resource.filename ?? resource.id}';
+      final String url;
+      if (resource.filename != null && resource.filename!.contains('/')) {
+        url = '${ApiClient.baseUrl}/files/${resource.filename}';
+      } else {
+        url = '${ApiClient.baseUrl}/files/courses/${resource.courseId}/resources/${resource.filename ?? resource.id}';
+      }
       final ext = resource.filename != null ? '.${resource.filename!.split('.').last}' : '';
       final fileName = '${resource.id}$ext';
       try {
         await DownloadQueue().enqueue(
           resource.id, url, fileName,
           title: resource.title,
-          onProgress: (received, total) {
-            _downloadProgress[resource.id] = total > 0 ? received / total : 0.0;
-            notifyListeners();
-          },
         );
         succeeded++;
       } catch (e) {
         debugPrint('CourseService: downloadCourse failed for ${resource.id} -- $e');
       }
-    }
-    if (succeeded == resources.length) {
-      final db = await DBHelper().database;
-      await db.update('course_progress', {
-        'total_resources': resources.length,
-        'completed_count': resources.length,
-      }, where: 'course_id = ?', whereArgs: [courseId]);
     }
     _downloadProgress.clear();
     notifyListeners();
@@ -216,11 +219,12 @@ class CourseService extends ChangeNotifier {
         'completed_count': completedCount,
       });
       final db = await DBHelper().database;
+      final studentId = await _getStudentId();
       await db.update('course_progress', {
         'current_position': currentPosition,
         'completed_count': completedCount,
         'last_synced': DateTime.now().toIso8601String(),
-      }, where: 'course_id = ?', whereArgs: [courseId]);
+      }, where: 'course_id = ? AND student_id = ?', whereArgs: [courseId, studentId]);
       return true;
     } catch (e) {
       debugPrint('CourseService: syncProgress failed -- $e');
@@ -283,9 +287,23 @@ class CourseService extends ChangeNotifier {
   Future<void> loadEnrolledCourses() async {
     try {
       final db = await DBHelper().database;
-      final progressRows = await db.query('course_progress');
+      final studentId = await _getStudentId();
+      final progressRows = await db.query('course_progress',
+        where: 'student_id = ?', whereArgs: [studentId]);
+
+      // If empty (after data clear), restore from server first
+      if (progressRows.isEmpty) {
+        await _restoreEnrollmentsFromServer();
+        // Re-query after restore
+        final restoredRows = await db.query('course_progress',
+          where: 'student_id = ?', whereArgs: [studentId]);
+        if (restoredRows.isNotEmpty) {
+          return loadEnrolledCourses(); // recurse with now-populated DB
+        }
+      }
+
       final result = <({Course course, Map<String, dynamic>? progress})>[];
-      for (final pRow in progressRows) {
+      for (final pRow in progressRows.isEmpty ? await db.query('course_progress', where: 'student_id = ?', whereArgs: [studentId]) : progressRows) {
         final courseId = (pRow['course_id'] ?? '').toString();
         final courseRows = await db.query('courses', where: 'id = ?', whereArgs: [courseId]);
         if (courseRows.isNotEmpty) {
@@ -306,11 +324,58 @@ class CourseService extends ChangeNotifier {
     }
   }
 
+  /// Restore enrolled courses from server (after data clear or fresh install).
+  Future<void> _restoreEnrollmentsFromServer() async {
+    try {
+      final resp = await ApiClient.get('/student/enrolled-courses');
+      if (resp.statusCode != 200 || resp.data is! Map) return;
+      final data = resp.data as Map<String, dynamic>;
+      final items = data['courses'] as List<dynamic>? ?? [];
+      if (items.isEmpty) return;
+      final db = await DBHelper().database;
+      await db.transaction((txn) async {
+        for (final item in items) {
+          final m = item as Map<String, dynamic>;
+          // Insert course into courses table
+          await txn.insert('courses', {
+            'id': m['course_id'] ?? '',
+            'title': m['title'] ?? '',
+            'description': m['description'] ?? '',
+            'subject': m['subject'] ?? '',
+            'grade': m['grade'] ?? 0,
+            'language': m['language'] ?? 'en',
+            'cover_image': m['cover_image'] ?? '',
+            'published': m['published'] ?? 0,
+            'teacher_username': m['teacher_username'] ?? '',
+            'enrollment_count': m['enrollment_count'] ?? 0,
+            'created_at': m['created_at'] ?? '',
+            'updated_at': m['updated_at'] ?? '',
+            'synced_at': DateTime.now().millisecondsSinceEpoch,
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
+          // Insert progress into course_progress table
+          await txn.insert('course_progress', {
+            'student_id': await _getStudentId(),
+            'course_id': m['course_id'] ?? '',
+            'current_position': m['current_position'] ?? 0,
+            'completed_count': m['completed_count'] ?? 0,
+            'total_resources': m['total_resources'] ?? 0,
+            'completed': m['completed'] ?? 0,
+            'last_synced': DateTime.now().toIso8601String(),
+            'enrolled_at': m['enrolled_at'] ?? '',
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
+        }
+      });
+    } catch (e) {
+      debugPrint('CourseService: _restoreEnrollmentsFromServer failed -- $e');
+    }
+  }
+
   /// Returns the count of courses marked as completed in local progress.
   Future<int> getCompletedCourseCount() async {
     try {
       final db = await DBHelper().database;
-      final result = await db.rawQuery('SELECT COUNT(*) AS cnt FROM course_progress WHERE completed = 1');
+      final studentId = await _getStudentId();
+      final result = await db.rawQuery('SELECT COUNT(*) AS cnt FROM course_progress WHERE completed = 1 AND student_id = ?', [studentId]);
       return Sqflite.firstIntValue(result) ?? 0;
     } catch (e) {
       debugPrint('CourseService: getCompletedCourseCount failed -- $e');
@@ -322,7 +387,8 @@ class CourseService extends ChangeNotifier {
   Future<int> getInProgressCount() async {
     try {
       final db = await DBHelper().database;
-      final result = await db.rawQuery('SELECT COUNT(*) AS cnt FROM course_progress WHERE completed = 0');
+      final studentId = await _getStudentId();
+      final result = await db.rawQuery('SELECT COUNT(*) AS cnt FROM course_progress WHERE completed = 0 AND student_id = ?', [studentId]);
       return Sqflite.firstIntValue(result) ?? 0;
     } catch (e) {
       debugPrint('CourseService: getInProgressCount failed -- $e');
@@ -334,9 +400,10 @@ class CourseService extends ChangeNotifier {
   Future<double> getCourseProgress(String courseId) async {
     try {
       final db = await DBHelper().database;
+      final studentId = await _getStudentId();
       final rows = await db.query('course_progress',
         columns: ['completed_count', 'total_resources'],
-        where: 'course_id = ?', whereArgs: [courseId],
+        where: 'course_id = ? AND student_id = ?', whereArgs: [courseId, studentId],
       );
       if (rows.isEmpty) return 0.0;
       final completed = (rows.first['completed_count'] as num?)?.toInt() ?? 0;

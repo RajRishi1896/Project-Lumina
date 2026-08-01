@@ -184,7 +184,6 @@ async def admin_log(
                     if len(result) >= limit:
                         break
 
-                result.reverse()
                 return result
             except FileNotFoundError:
                 return []

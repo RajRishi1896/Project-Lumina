@@ -18,6 +18,8 @@
   "languageKannada": "ಕನ್ನಡ",
   "languageFrench": "ಫ್ರೆಂಚ್",
   "languageKiswahili": "ಸ್ವಾಹಿಲಿ",
+  "languageTamil": "ತಮಿಳು",
+  "languageTelugu": "ತೆಲುಗು",
   "languageMore": "ಇನ್ನಷ್ಟು...",
   "settingsLanguagePickerTitle": "ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ",
   "ctaEnterPortal": "ಪೋರ್ಟಲ್ ಪ್ರವೇಶಿಸಿ",
@@ -84,6 +86,7 @@
   "profileSetupTitle": "ಸ್ವಾಗತ!",
   "profileSetupSubtitle": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಹೊಂದಿಸೋಣ",
   "labelDisplayName": "ಪ್ರದರ್ಶನ ಹೆಸರು",
+  "labelOther": "ಇತರೆ",
   "buttonContinue": "ಮುಂದುವರಿಸಿ",
   "sectionRecentlyViewed": "ಇತ್ತೀಚೆಗೆ ವೀಕ್ಷಿಸಲಾಗಿದೆ",
   "sectionSubjectCategories": "ವಿಷಯ ವರ್ಗಗಳು",
@@ -124,6 +127,10 @@
   "snackbarRemovedFromSaved": "ಉಳಿಸಿದವುಗಳಿಂದ ತೆಗೆದುಹಾಕಲಾಗಿದೆ",
   "snackbarAddedToSaved": "ಉಳಿಸಿದವುಗಳಿಗೆ ಸೇರಿಸಲಾಗಿದೆ",
   "snackbarNotDownloaded": "\"{title}\" ಡೌನ್‌ಲೋಡ್ ಆಗಿಲ್ಲ. ಆಫ್‌ಲೈನ್ ಪ್ರವೇಶಕ್ಕಾಗಿ ಡೌನ್‌ಲೋಡ್ ಬಟನ್‌ನಿಂದ ಸೇರಿಸಿ.",
+  "fileNotAvailable": "ಫೈಲ್ ಲಭ್ಯವಿಲ್ಲ",
+  "@fileNotAvailable": {
+    "description": "SnackBar when a resource has no file URL or the URL is empty"
+  },
   "snackbarQueueAction": "ಕ್ಯೂ",
   "dialogDownloadTitle": "ಡೌನ್‌ಲೋಡ್",
   "dialogDownloadContent": "\"{fileName}\" ಡೌನ್‌ಲೋಡ್ ಮಾಡಬೇಕೆ?\n\nಗಾತ್ರ: {sizeLabel}",
@@ -147,6 +154,10 @@
   "tabTextbooks": "ಪಠ್ಯಪುಸ್ತಕಗಳು",
   "tabVideos": "ವೀಡಿಯೊಗಳು",
   "tabPyqs": "ಪ್ರಶ್ನೆಗಳು",
+  "tabZim": "ZIM",
+  "tabCourses": "ಪಾಠ್ಯಕ್ರಮ",
+  "tabQuizzes": "ಪ್ರಶ್ನೋತ್ತರಿ",
+  "tabNotes": "ಟಿಪ್ಪಣಿಗಳು",
   "emptyStateAll": "ಇನ್ನೂ ಯಾವುದೇ ಸಂಪನ್ಮೂಲಗಳನ್ನು ಉಳಿಸಲಾಗಿಲ್ಲ.",
   "emptyStateByType": "ಯಾವುದೇ {type} ಉಳಿಸಲಾಗಿಲ್ಲ.",
   "headerMyProfile": "ನನ್ನ ಪ್ರೊಫೈಲ್",
@@ -595,6 +606,9 @@
   "@labelDisplayName": {
     "description": "Label for the display name text field on the profile setup page"
   },
+  "@labelOther": {
+    "description": "Section header for resources without an assigned topic"
+  },
   "@buttonContinue": {
     "description": "Submit button on the profile setup page to save and proceed to the main app"
   },
@@ -708,6 +722,10 @@
   },
   "@snackbarDownloadFailed": {
     "description": "SnackBar shown when a download encounters an error"
+  },
+  "buttonRetry": "ಮರುಪ್ರಯತ್ನಿಸಿ",
+  "@buttonRetry": {
+    "description": "Button label to retry a failed download or operation"
   },
   "@snackbarDownloadRemoved": {
     "description": "SnackBar confirming a download was deleted"
@@ -841,6 +859,21 @@
   },
   "@tabPyqs": {
     "description": "Tab label filtering saved PYQs"
+  },
+  "@tabZim": {
+    "description": "Tab label filtering saved ZIM/Wikipedia articles"
+  },
+  "@tabCourses": {
+    "description": "Tab label for courses in saved resources page",
+    "placeholders": {}
+  },
+  "@tabQuizzes": {
+    "description": "Tab label for quizzes in saved resources page",
+    "placeholders": {}
+  },
+  "@tabNotes": {
+    "description": "Tab label for notes in saved resources page",
+    "placeholders": {}
   },
   "@emptyStateAll": {
     "description": "Empty state when the All tab has no saved resources"
@@ -1535,5 +1568,12 @@
   },
   "@profileNoCourses": {
     "description": "Empty state message when the student has no enrolled courses"
-  }
+  },
+  "browseTabCourses": "ಕೋರ್ಸ್‌ಗಳು",
+  "browseTabResources": "ಸಂಪನ್ಮೂಲಗಳು",
+  "browseTabWiki": "ವಿಕಿ",
+  "sectionRecentlyAccessed": "ಇತ್ತೀಚೆಗೆ ಪ್ರವೇಶಿಸಿದ",
+  "browseNotConnected": "ಸರ್ವರ್‌ಗೆ ಸಂಪರ್ಕಿಸಲಾಗಿಲ್ಲ",
+  "browseNoCoursesOffline": "ಕೋರ್ಸ್‌ಗಳನ್ನು ನೋಡಲು ಹಬ್‌ಗೆ ಸಂಪರ್ಕಿಸಿ",
+  "zimNoArticlesOffline": "ಲೇಖನಗಳನ್ನು ನೋಡಲು ಹಬ್‌ಗೆ ಸಂಪರ್ಕಿಸಿ"
 }

@@ -8,7 +8,7 @@ from app.database import UPLOAD_DIR
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one
 from app.dependencies import verify_student
-from app.models import ProgressSync, EnrollResponse, QuizAttemptSubmit, QuizAttemptResponse
+from app.models import ProgressSync, EnrollResponse, QuizAttemptSubmit, QuizAttemptResponse, EnrolledCoursesResponse, EnrolledCourseItem
 from app.routers.teacher_courses import COURSES_DIR
 
 router = APIRouter()
@@ -117,7 +117,7 @@ async def get_course_detail(course_id: str, student_id: str = Depends(verify_stu
         raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
 
     resources = await db_fetch(
-        "SELECT id, course_id, resource_type, title, original_name, filename, file_size, position FROM course_resources WHERE course_id = ? ORDER BY position",
+        "SELECT id, course_id, resource_type, title, original_name, filename, file_size, position, page_count, duration_seconds FROM course_resources WHERE course_id = ? ORDER BY position",
         (course_id,)
     )
 
@@ -166,6 +166,8 @@ async def get_course_detail(course_id: str, student_id: str = Depends(verify_stu
                 "filename": r["filename"] or "",
                 "file_size": r["file_size"] or 0,
                 "position": r["position"],
+                "page_count": r["page_count"] or 0,
+                "duration_seconds": r["duration_seconds"] or 0,
             }
             for r in resources
         ],
@@ -244,6 +246,9 @@ async def unenroll_course(course_id: str, student_id: str = Depends(verify_stude
 
     await db_exec("DELETE FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
     await db_exec("UPDATE courses SET enrollment_count = MAX(0, enrollment_count - 1) WHERE id = ?", (course_id,))
+
+    await audit(action=Action.UNENROLL_COURSE, username=student_id, resource_type="course",
+                resource_id=course_id)
 
     return EnrollResponse(status="ok", course_id=course_id, message="Successfully unenrolled.")  # i18n: user-facing success message
 
@@ -396,8 +401,17 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
     if quiz_data is None:
         raise HTTPException(status_code=404, detail="Quiz not found.")  # i18n: user-facing error message
 
-    if "quiz_version" not in quiz_data:
-        quiz_data["quiz_version"] = 1
+    quiz_inner = quiz_data.get("quiz", quiz_data)
+    if "quiz_version" not in quiz_inner:
+        quiz_inner["quiz_version"] = 1
+
+    for i, q in enumerate(quiz_inner.get("questions", [])):
+        if "id" not in q or not q["id"]:
+            q["id"] = f"q-{i}"
+        if "question" not in q and "text" in q:
+            q["question"] = q.pop("text")
+        if "image" not in q and "image_data" in q:
+            q["image"] = q.pop("image_data")
 
     return quiz_data
 
@@ -503,3 +517,32 @@ async def serve_asset(course_id: str, path: str, student_id: str = Depends(verif
         raise HTTPException(status_code=404, detail="Asset not found.")  # i18n: user-facing error message
 
     return FileResponse(asset_path)
+
+
+@router.get("/student/enrolled-courses", response_model=EnrolledCoursesResponse,
+            summary="Get all enrolled courses with progress",
+            description="Returns all courses the student is enrolled in, with course metadata and progress. Used for restoring enrollment after app data clear.",
+            tags=["Courses"])
+async def get_enrolled_courses(student_id: str = Depends(verify_student)):
+    rows = await db_fetch("""
+        SELECT c.id, c.title, c.description, c.subject, c.grade, c.language, c.cover_image,
+               c.published, c.teacher_username, c.enrollment_count, c.created_at, c.updated_at,
+               cp.current_position, cp.completed_count, cp.total_resources, cp.completed, cp.enrolled_at
+        FROM course_progress cp
+        JOIN courses c ON c.id = cp.course_id
+        WHERE cp.student_id = ?
+        ORDER BY cp.enrolled_at DESC
+    """, (student_id,))
+    courses = []
+    for r in rows:
+        courses.append(EnrolledCourseItem(
+            course_id=r["id"], title=r["title"] or "", description=r["description"] or "",
+            subject=r["subject"] or "", grade=r["grade"] or 0, language=r["language"] or "en",
+            cover_image=r["cover_image"] or "", published=r["published"] or 0,
+            teacher_username=r["teacher_username"] or "", enrollment_count=r["enrollment_count"] or 0,
+            created_at=r["created_at"] or "", updated_at=r["updated_at"] or "",
+            current_position=r["current_position"] or 0, completed_count=r["completed_count"] or 0,
+            total_resources=r["total_resources"] or 0, completed=r["completed"] or 0,
+            enrolled_at=r["enrolled_at"] or "",
+        ))
+    return {"courses": courses}

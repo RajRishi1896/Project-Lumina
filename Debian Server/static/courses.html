@@ -37,6 +37,15 @@
                         <span data-i18n="courses.import">Import Course</span>
                     </button>
                     <input type="file" id="importZipInput" accept=".zip" class="hidden">
+                    <div id="zipImportProgress" style="display:none; margin-top:0.5rem; width:100%;">
+                      <div style="display:flex; justify-content:space-between; margin-bottom:0.35rem;">
+                        <span style="font-size:0.8rem; color:var(--text-secondary);" data-i18n="courses.import_progress">Uploading...</span>
+                        <span id="zipImportProgressPct" style="font-size:0.8rem; font-weight:700; color:var(--teal);">0%</span>
+                      </div>
+                      <div style="height:6px; background:var(--outline); border-radius:3px; overflow:hidden;">
+                        <div id="zipImportProgressBar" style="height:100%; width:0%; background:var(--teal); border-radius:3px; transition:width 0.3s ease;"></div>
+                      </div>
+                    </div>
                 </div>
             </div>
 
@@ -135,7 +144,7 @@
                     <div class="form-group">
                         <label for="courseGrade" data-i18n="courses.editor_grade_label">Grade</label>
                         <select id="courseGrade" class="form-select">
-                            <option value="0">General</option>
+                            <option value="" data-i18n="courses.editor_grade_label">Select grade...</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -292,8 +301,13 @@
                 </div>
             </div>
             <div class="form-group flex items-center gap-2 mt-2">
-                <input type="checkbox" id="quizShuffle" style="width:auto;">
-                <label for="quizShuffle" class="mb-0 font-bold text-sm" data-i18n="courses.quiz_shuffle_label">Shuffle questions</label>
+                <label for="quizShuffle" class="mb-0 font-bold text-sm" data-i18n="courses.quiz_shuffle_label">Shuffle</label>
+                <select id="quizShuffle" class="form-input">
+                    <option value="none" data-i18n="courses.shuffle_none">None</option>
+                    <option value="questions" data-i18n="courses.shuffle_questions_only">Questions only</option>
+                    <option value="options" data-i18n="courses.shuffle_options_only">Options only</option>
+                    <option value="both" data-i18n="courses.shuffle_both">Both</option>
+                </select>
             </div>
 
             <!-- Question List -->
@@ -514,7 +528,7 @@
                 }
                 // Populate grade dropdowns from DB
                 var gradeOpts = '<option value="ALL" data-i18n="courses.filter_all">All</option>';
-                var gopts = '<option value="0">' + __('courses.general_subject') + '</option>';
+                var gopts = '';
                 grades.forEach(function(g) {
                     var n = g.name;
                     var num = parseInt(n.replace(/\D/g, '')) || 0;
@@ -694,12 +708,55 @@
 
         /** Delete chapter */
         async function deleteChapter(topicId) {
-            var confirmed = await showConfirm(__('courses.chapter_delete_title'), __('courses.chapter_delete_body'), true, __('courses.chapter_delete_btn'));
-            if (!confirmed) return;
+            var others = courseTopics.filter(function(t) { return t.id !== topicId; });
+            var count = courseResources.filter(function(r) { return r.topic_id === topicId; }).length;
+            var result = await new Promise(function(resolve) {
+                var overlay = document.createElement('div');
+                overlay.className = 'popup';
+                overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;';
+                var xferHtml = '';
+                if (others.length > 0 && count > 0) {
+                    var opts = others.map(function(t) {
+                        return '<option value="' + esc(t.id) + '">' + esc(t.title) + '</option>';
+                    }).join('');
+                    xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.5rem;">'
+                        + '<select id="chapterXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--bg-input);color:var(--on-surface);font-size:0.875rem;">'
+                        + '<option value="">' + __('content.topic_transfer.select_topic') + '</option>' + opts + '</select>'
+                        + '<button id="chapterXferBtn" style="width:100%;padding:0.6rem;background:var(--teal);color:#fff;border:2px solid var(--teal);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('danger.transfer.transfer_and_delete') + '</button>'
+                        + '</div>';
+                }
+                overlay.innerHTML = '<div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:440px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--danger);">'
+                    + '<div style="text-align:center;margin-bottom:1rem;color:var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></div>'
+                    + '<h3 style="font-size:1.15rem;font-weight:800;margin:0 0 0.5rem;color:var(--danger);text-align:center;">' + __('courses.chapter_delete_title') + '</h3>'
+                    + '<p style="font-size:0.9rem;color:var(--text-secondary);margin:0 0 0.75rem;text-align:center;">' + __('courses.chapter_delete_body') + '</p>'
+                    + (count > 0 ? '<p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 0.75rem;text-align:center;">' + __('content.topics.resource_count', {count: count}) + '</p>' : '')
+                    + xferHtml
+                    + '<button id="chapterDelBtn" style="width:100%;padding:0.6rem;background:var(--danger);color:#fff;border:2px solid var(--danger);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('courses.chapter_delete_btn') + '</button>'
+                    + '<button id="chapterCancelBtn" style="width:100%;padding:0.6rem;background:transparent;color:var(--on-surface);border:1px solid var(--outline);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;margin-top:0.5rem;">' + __('content.modal_cancel') + '</button>'
+                    + '</div>';
+                document.body.appendChild(overlay);
+                function done(val) { overlay.remove(); resolve(val); }
+                var xferBtn = document.getElementById('chapterXferBtn');
+                var delBtn = document.getElementById('chapterDelBtn');
+                if (xferBtn) xferBtn.addEventListener('click', function() {
+                    var target = document.getElementById('chapterXferTarget').value;
+                    if (!target) { showNotification('chapterNotif', __('danger.transfer.select_target'), true); return; }
+                    done({transfer_to: target});
+                });
+                if (delBtn) delBtn.addEventListener('click', function() { done({delete: true}); });
+                document.getElementById('chapterCancelBtn').addEventListener('click', function() { done(null); });
+            });
+            if (!result) return;
             try {
-                var res = await fetch('/api/teacher/courses/' + currentCourseId + '/topics/' + topicId, { method: 'DELETE', credentials: 'include' });
+                var url = '/api/teacher/courses/' + currentCourseId + '/topics/' + topicId;
+                if (result.transfer_to) url += '?transfer_to=' + encodeURIComponent(result.transfer_to);
+                else if (result.delete) url += '?delete_resources=true';
+                var res = await fetch(url, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
-                    // Clear topic_id from resources that were in this topic
+                    var data = await res.json().catch(function() { return {}; });
+                    if (result.transfer_to) {
+                        showAlert(data.message || __('danger.transfer.done', {name: '', target: data.transferred_to || ''}), false);
+                    }
                     courseResources.forEach(function(r) { if (r.topic_id === topicId) r.topic_id = ''; });
                     await loadTopics();
                     renderCourseResources();
@@ -1078,7 +1135,7 @@
                 max_attempts: document.getElementById('quizMaxAttempts').value === 'custom'
                     ? parseInt(document.getElementById('quizMaxAttemptsCustom').value) || 0
                     : parseInt(document.getElementById('quizMaxAttempts').value) || 0,
-                shuffle: document.getElementById('quizShuffle').checked,
+                shuffle: document.getElementById('quizShuffle').value,
                 questions: quizQuestions
             };
 
@@ -1121,7 +1178,7 @@
                 max_attempts: document.getElementById('quizMaxAttempts').value === 'custom'
                     ? parseInt(document.getElementById('quizMaxAttemptsCustom').value) || 0
                     : parseInt(document.getElementById('quizMaxAttempts').value) || 0,
-                shuffle: document.getElementById('quizShuffle').checked,
+                shuffle: document.getElementById('quizShuffle').value,
                 questions: quizQuestions
             };
             var json = JSON.stringify(payload, null, 2);
@@ -1168,7 +1225,7 @@
                         if (maVals.indexOf(String(data.max_attempts)) !== -1) ma.value = data.max_attempts;
                         else { ma.value = 'custom'; document.getElementById('quizMaxAttemptsCustom').style.display = ''; document.getElementById('quizMaxAttemptsCustom').value = data.max_attempts; }
                     }
-                    if (data.shuffle != null) document.getElementById('quizShuffle').checked = data.shuffle;
+                    if (data.shuffle != null) document.getElementById('quizShuffle').value = data.shuffle;
                     renderQuizQuestions();
                     showAlert(__('courses.quiz.imported_count', {count: quizQuestions.length}), false);
                 } catch (err) {
@@ -1329,28 +1386,54 @@
             }
         }
 
-        // ── Import course from ZIP ──
         function importCourseZip() {
             var input = document.getElementById('importZipInput');
             var file = input.files[0];
             if (!file) return;
+
             var formData = new FormData();
             formData.append('file', file);
-            fetch('/api/teacher/courses/import', {
-                method: 'POST',
-                body: formData,
-                credentials: 'include'
-            }).then(function(r) {
-                if (r.ok) {
+
+            var progressDiv = document.getElementById('zipImportProgress');
+            var progressBar = document.getElementById('zipImportProgressBar');
+            var progressPct = document.getElementById('zipImportProgressPct');
+
+            if (progressDiv) { progressDiv.style.display = 'block'; progressBar.style.width = '0%'; progressPct.textContent = '0%'; }
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/teacher/courses/import', true);
+            xhr.withCredentials = true;
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable && progressBar && progressPct) {
+                    var pct = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = pct + '%';
+                    progressPct.textContent = pct + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
                     showAlert(__('courses.notif.imported'), false);
                     input.value = '';
                     loadCourses();
                 } else {
-                    return r.json().then(function(e) { showAlert(e.detail || __('courses.notif.import_failed'), true); });
+                    var errText;
+                    try { var errJson = JSON.parse(xhr.responseText); errText = errJson.detail || __('courses.notif.import_failed'); }
+                    catch(ex) { errText = __('courses.notif.import_failed'); }
+                    showAlert(errText, true);
                 }
-            }).catch(function() {
+            };
+
+            xhr.onerror = function() {
                 showAlert(__('courses.notif.connection_error'), true);
-            });
+            };
+
+            xhr.onloadend = function() {
+                if (progressDiv) progressDiv.style.display = 'none';
+            };
+
+            xhr.send(formData);
         }
 
         // ── Init ──

@@ -18,6 +18,8 @@
   "languageKannada": "Kannada",
   "languageFrench": "Français",
   "languageKiswahili": "Swahili",
+  "languageTamil": "Tamoul",
+  "languageTelugu": "Télougou",
   "languageMore": "Plus...",
   "settingsLanguagePickerTitle": "Choisir la langue",
   "ctaEnterPortal": "Entrer dans le portail",
@@ -84,6 +86,7 @@
   "profileSetupTitle": "Bienvenue !",
   "profileSetupSubtitle": "Configurons votre profil",
   "labelDisplayName": "Nom d'affichage",
+  "labelOther": "Autres",
   "buttonContinue": "Continuer",
   "sectionRecentlyViewed": "Récemment consulté",
   "sectionSubjectCategories": "Catégories de matières",
@@ -124,6 +127,10 @@
   "snackbarRemovedFromSaved": "Retiré des enregistrements",
   "snackbarAddedToSaved": "Ajouté aux enregistrements",
   "snackbarNotDownloaded": "\"{title}\" n'est pas téléchargé. Ajoutez-le depuis le bouton de téléchargement pour un accès hors ligne.",
+  "fileNotAvailable": "Fichier non disponible",
+  "@fileNotAvailable": {
+    "description": "SnackBar when a resource has no file URL or the URL is empty"
+  },
   "snackbarQueueAction": "File",
   "dialogDownloadTitle": "Téléchargement",
   "dialogDownloadContent": "Télécharger \"{fileName}\" ?\n\nTaille : {sizeLabel}",
@@ -147,6 +154,10 @@
   "tabTextbooks": "Manuels",
   "tabVideos": "Vidéos",
   "tabPyqs": "Annales",
+  "tabZim": "ZIM",
+  "tabCourses": "Cours",
+  "tabQuizzes": "Quiz",
+  "tabNotes": "Notes",
   "emptyStateAll": "Aucune ressource enregistrée pour l'instant.",
   "emptyStateByType": "Aucun {type} enregistré trouvé.",
   "headerMyProfile": "Mon profil",
@@ -595,6 +606,9 @@
   "@labelDisplayName": {
     "description": "Label for the display name text field on the profile setup page"
   },
+  "@labelOther": {
+    "description": "Section header for resources without an assigned topic"
+  },
   "@buttonContinue": {
     "description": "Submit button on the profile setup page to save and proceed to the main app"
   },
@@ -708,6 +722,10 @@
   },
   "@snackbarDownloadFailed": {
     "description": "SnackBar shown when a download encounters an error"
+  },
+  "buttonRetry": "Réessayer",
+  "@buttonRetry": {
+    "description": "Button label to retry a failed download or operation"
   },
   "@snackbarDownloadRemoved": {
     "description": "SnackBar confirming a download was deleted"
@@ -841,6 +859,21 @@
   },
   "@tabPyqs": {
     "description": "Tab label filtering saved PYQs"
+  },
+  "@tabZim": {
+    "description": "Tab label filtering saved ZIM/Wikipedia articles"
+  },
+  "@tabCourses": {
+    "description": "Tab label for courses in saved resources page",
+    "placeholders": {}
+  },
+  "@tabQuizzes": {
+    "description": "Tab label for quizzes in saved resources page",
+    "placeholders": {}
+  },
+  "@tabNotes": {
+    "description": "Tab label for notes in saved resources page",
+    "placeholders": {}
   },
   "@emptyStateAll": {
     "description": "Empty state when the All tab has no saved resources"
@@ -1535,5 +1568,12 @@
   },
   "@profileNoCourses": {
     "description": "Empty state message when the student has no enrolled courses"
-  }
+  },
+  "browseTabCourses": "Cours",
+  "browseTabResources": "Ressources",
+  "browseTabWiki": "Wiki",
+  "sectionRecentlyAccessed": "Récemment consultés",
+  "browseNotConnected": "Non connecté au serveur",
+  "browseNoCoursesOffline": "Connectez-vous au hub pour voir les cours",
+  "zimNoArticlesOffline": "Connectez-vous au hub pour parcourir les articles"
 }

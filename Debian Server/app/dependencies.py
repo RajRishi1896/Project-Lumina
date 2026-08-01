@@ -127,7 +127,11 @@ async def _extract_user(request: Request) -> dict:
     )
     if row:
         if _is_session_stale(row["last_accessed"]):
-            await db_exec("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
+            try:
+                await db_exec("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
+            except Exception:
+                import logging as _log
+                _log.warning("Failed to update last_accessed for token")
         result = {"username": row["username"], "role": row["role"]}
         _cache_put(token, result)
         request.state._user = result
@@ -248,7 +252,8 @@ async def verify_student(request: Request):
     if hasattr(request.state, "_student_id"):
         return request.state._student_id
 
-    token = request.cookies.get("lumina_session") or request.headers.get("Authorization", "").removeprefix("Bearer ")
+    auth = request.headers.get("Authorization", "")
+    token = request.cookies.get("lumina_session") or (auth.removeprefix("Bearer ") if auth.startswith("Bearer ") else "")
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")  # i18n: user-facing auth error
 

@@ -11,8 +11,9 @@ class TimeSync(BaseModel):
 class ScholarReg(BaseModel):
     """Student registration request payload."""
     username: str = Field(..., min_length=1, max_length=100, description="Unique username for the scholar.", example="student42")
-    name: Optional[str] = Field(default=None, max_length=100, description="Display name for the scholar.", example="Alice")
+    name: Optional[str] = Field(default=None, max_length=100, description="Display name for the scholar. Defaults to username if empty.", example="Alice")
     password: Optional[str] = Field(default="lumina2026", min_length=8, max_length=128, description="Account password. Defaults to a known fallback.", example="lumina2026")
+    grade: Optional[str] = Field(default=None, max_length=50, description="Grade assignment. Defaults to '0' (General) if not provided.", example="0")
 
 
 class AdminStudentCreate(BaseModel):
@@ -33,7 +34,7 @@ class StudentLoginRequest(BaseModel):
 class StudentChangePasswordRequest(BaseModel):
     """Password change request for a student account."""
     scholar_id: Optional[str] = Field(default="", max_length=100, description="Scholar identifier. Leave empty for self-service.", example="42")
-    old_password: str = Field(..., max_length=128, description="Current password for verification.", example="oldpass")
+    old_password: Optional[str] = Field(default=None, max_length=128, description="Current password for verification. Not required when resetting after a forced reset.", example="oldpass")
     new_password: str = Field(..., min_length=8, max_length=128, description="Desired new password.", example="newpass123")
 
 
@@ -151,6 +152,7 @@ class StudentAnalyticsResponse(BaseModel):
     streak_days: int = Field(..., description="Consecutive study days.", example=5)
     resources_saved: int = Field(..., description="Number of saved resources.", example=3)
     subjects: list = Field(default_factory=list, description="Per-subject study minute breakdown.", example=[{"name": "Mathematics", "minutes": 120}])
+    quiz_scores: list = Field(default_factory=list, description="Quiz best scores list.", example=[{"title": "Math Quiz", "best_score": 0.85, "attempts_count": 3}])
 
 
 class IconUploadResponse(BaseModel):
@@ -176,6 +178,7 @@ class ScholarListItem(BaseModel):
     """Minimal scholar info for teacher listing."""
     id: str = Field(..., description="Scholar ID.", example="LUMINA_01-abc")
     name: str = Field(..., description="Display name.", example="Alice")
+    username: str = Field("", description="Login username.", example="alice")
     reset_required: int = Field(..., description="Whether password reset is required.", example=0)
 
 
@@ -232,6 +235,8 @@ class CatalogResourceResponse(BaseModel):
     mtime: float = Field(..., description="Last modified timestamp.", example=1234567890.0)
     downloads: int = Field(default=0, description="Number of unique student downloads.", example=12)
     topic_name: str = Field(default="", description="Topic name if assigned.", example="Chapter 1")
+    page_count: int = Field(default=0, description="Number of pages for PDF resources (0 when unknown).", example=120)
+    duration_seconds: int = Field(default=0, description="Duration in seconds for video resources (0 when unknown).", example=900)
 
 
 class FileEntryResponse(BaseModel):
@@ -302,6 +307,7 @@ class HubStatsResponse(BaseModel):
     storage: str = Field(..., description="Storage usage string.", example="4.5 GB / 100.0 GB")
     storage_percent: float = Field(..., description="Storage usage percentage.", example=4.5)
     battery_percent: int = Field(..., description="Battery percentage.", example=85)
+    battery_charging: bool = Field(default=False, description="Whether the battery is currently charging.")
     uptime: str = Field(..., description="Uptime string.", example="2h 15m")
     disk_usage: str = Field(..., description="Disk usage string.", example="4.5 GB / 100.0 GB")
 
@@ -334,6 +340,14 @@ class ZimPageResponse(BaseModel):
     """ZIM article HTML content response."""
     id: str = Field(..., description="Article ID.", example="ABC123")
     html: str = Field(..., description="Raw HTML content of the article.", example="<html>...")
+
+
+class ZimSearchResponse(BaseModel):
+    """Paginated ZIM search or browse result with metadata."""
+    articles: list[ZimArticleResponse] = Field(default_factory=list, description="Matching articles.")
+    total: int = Field(default=0, description="Approximate total matching articles.", example=1500)
+    offset: int = Field(default=0, description="Current offset in the result set.", example=0)
+    has_more: bool = Field(default=False, description="Whether more results are available.", example=True)
 
 
 # ── LMS Course Models ─────────────────────────────────────────────────────────
@@ -411,6 +425,64 @@ class QuizAttemptResponse(BaseModel):
 class SimilarLinkCreate(BaseModel):
     """Payload to link a course as similar."""
     similar_course_id: str = Field(..., description="UUID of the course to link as similar")
+
+
+class BookmarkItem(BaseModel):
+    """A single bookmark entry for sync."""
+    resource_id: str = Field(..., description="Resource ID.", example="RES-abc123")
+    title: str = Field("", description="Resource title.")
+    subject: str = Field("", description="Resource subject.")
+    grade: str = Field("", description="Resource grade.")
+    resource_type: str = Field("", description="Resource type.")
+
+
+class BookmarkSync(BaseModel):
+    """Full bookmark sync payload — replaces all server bookmarks."""
+    bookmarks: list[BookmarkItem] = Field(default_factory=list, description="All bookmarks the student has.")
+
+
+class BookmarkResponse(BaseModel):
+    """List of saved bookmarks."""
+    bookmarks: list[BookmarkItem] = Field(default_factory=list)
+
+
+class EnrolledCourseItem(BaseModel):
+    """An enrolled course with progress for restore."""
+    course_id: str
+    title: str = ""
+    description: str = ""
+    subject: str = ""
+    grade: int = 0
+    language: str = "en"
+    cover_image: str = ""
+    published: int = 0
+    teacher_username: str = ""
+    enrollment_count: int = 0
+    created_at: str = ""
+    updated_at: str = ""
+    current_position: int = 0
+    completed_count: int = 0
+    total_resources: int = 0
+    completed: int = 0
+    enrolled_at: str = ""
+
+
+class EnrolledCoursesResponse(BaseModel):
+    """All courses the student is enrolled in."""
+    courses: list[EnrolledCourseItem] = Field(default_factory=list)
+
+
+class QuizBestScoreResponse(BaseModel):
+    """Best quiz score for a student on a specific quiz."""
+    best_score: float = Field(0.0, description="Best score as fraction 0-1.", example=0.85)
+    best_attempt_id: str = Field("", description="ID of the best attempt.")
+    attempts_count: int = Field(0, description="Total attempts made.")
+
+
+class QuizBestScoreUpdate(BaseModel):
+    """Update the best quiz score after submission."""
+    score: float = Field(..., description="Score as fraction 0-1.", example=0.85)
+    attempt_id: str = Field(..., description="ID of this attempt.")
 
 
 

@@ -9,6 +9,8 @@ import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
 import 'package:edumesh_android/shared/widgets/video_player_page.dart';
+import 'package:edumesh_android/core/services/recent_resources.dart';
+import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'quiz_player_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
@@ -41,15 +43,16 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
   Future<void> _loadProgress() async {
     try {
       final db = await DBHelper().database;
+      final studentId = (await AuthService().getUniqueUserId()) ?? '';
 
       final progressRows = await db.query('course_progress',
-        where: 'course_id = ?', whereArgs: [widget.course.id]);
+        where: 'course_id = ? AND student_id = ?', whereArgs: [widget.course.id, studentId]);
       if (progressRows.isNotEmpty) {
         _currentPosition = (progressRows.first['current_position'] as num?)?.toInt() ?? 0;
       }
 
       final quizRows = await db.query('quiz_attempts',
-        where: 'course_id = ? AND passed = 1', whereArgs: [widget.course.id]);
+        where: 'course_id = ? AND student_id = ? AND passed = 1', whereArgs: [widget.course.id, studentId]);
       final passedQuizIds = quizRows
         .map((r) => r['resource_id']?.toString() ?? '')
         .toSet();
@@ -105,10 +108,11 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     if (mounted) setState(() {});
     try {
       final db = await DBHelper().database;
+      final studentId = (await AuthService().getUniqueUserId()) ?? '';
       await db.update('course_progress', {
         'completed_count': _completed.values.where((v) => v).length,
         'current_position': newPos,
-      }, where: 'course_id = ?', whereArgs: [widget.course.id]);
+      }, where: 'course_id = ? AND student_id = ?', whereArgs: [widget.course.id, studentId]);
     } catch (e) {
       debugPrint('CoursePlayerPage: _markCompleted failed -- $e');
     }
@@ -118,7 +122,10 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     if (_localPaths.containsKey(resource.id)) return _localPaths[resource.id]!;
     await ApiClient.ensureInitialized();
     final base = ApiClient.dio.options.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
-    return '$base/files/${resource.filename ?? resource.id}';
+    if (resource.filename != null && resource.filename!.contains('/')) {
+      return '$base/files/${resource.filename}';
+    }
+    return '$base/files/courses/${resource.courseId}/resources/${resource.filename ?? resource.id}';
   }
 
   void _openResource(CourseResource resource, int index) {
@@ -144,18 +151,19 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     }
     _resolveUrl(resource).then((url) {
       if (!mounted) return;
+      unawaited(RecentResources.record(resource.id, resource.title, resource.resourceType.name));
       if (resource.resourceType == CourseType.video) {
         unawaited(Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => VideoPlayerPage(title: resource.title, videoUrl: url),
+            builder: (_) => VideoPlayerPage(title: resource.title, videoUrl: url, subject: widget.course.subject),
           ),
         ).then((_) => _markCompleted(resource.id)));
       } else {
         unawaited(Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => PdfViewerPage(title: resource.title, pdfUrl: url),
+            builder: (_) => PdfViewerPage(title: resource.title, pdfUrl: url, subject: widget.course.subject),
           ),
         ).then((_) => _markCompleted(resource.id)));
       }
@@ -234,7 +242,11 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
 
     return Scaffold(
       backgroundColor: cs.surface,
-      appBar: AppBar(title: Text(widget.course.title)),
+      appBar: AppBar(
+        title: Text(widget.course.title),
+        backgroundColor: cs.surface,
+        foregroundColor: cs.onSurface,
+      ),
       body: Column(
         children: [
           if (_showDownloadPrompt && !_isDownloaded)

@@ -13,10 +13,13 @@ import 'package:edumesh_android/shared/services/connectivity_service.dart';
 import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
 import 'package:edumesh_android/shared/widgets/resource_thumbnail.dart';
 import 'package:edumesh_android/shared/widgets/video_player_page.dart';
+import 'package:edumesh_android/features/dashboard/presentation/quiz_player_page.dart';
+import 'package:edumesh_android/features/dashboard/presentation/kiwix_view.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'package:edumesh_android/core/services/activity_tracker.dart';
 import 'package:edumesh_android/core/services/catalog_service.dart';
 import 'package:edumesh_android/core/utils/file_utils.dart';
+import 'package:edumesh_android/core/services/recent_resources.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A page that lists resources matching a given subject, grade, and type.
@@ -40,6 +43,9 @@ class ResourceDetailPage extends StatefulWidget {
   /// Whether the resource is already bookmarked when this page loads.
   final bool isInitiallySaved;
 
+  /// If set, fetch this specific resource by ID instead of filtering by subject/grade/type.
+  final String? resourceId;
+
   const ResourceDetailPage({
     super.key,
     required this.title,
@@ -47,6 +53,7 @@ class ResourceDetailPage extends StatefulWidget {
     required this.grade,
     required this.resourceType,
     this.isInitiallySaved = false,
+    this.resourceId,
   });
 
   /// Creates the state for the [ResourceDetailPage].
@@ -91,12 +98,52 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
   }
 
   Future<void> _loadResources() async {
+    // If a specific resourceId was provided, fetch it directly
+    if (widget.resourceId != null && widget.resourceId!.isNotEmpty) {
+      try {
+        final resp = await ApiClient.get('/resources/${widget.resourceId}');
+        if (!mounted) return;
+        final data = resp.data as Map<String, dynamic>?;
+        if (data != null) {
+          final resource = ResourceModel.fromJson(data);
+          setState(() { items = [resource]; _loading = false; });
+          unawaited(RecentResources.record(widget.resourceId!, resource.title, resource.type.name));
+          return;
+        }
+      } catch (_) {}
+      // Fallback to local DB
+      try {
+        final db = DBHelper();
+        final rows = await db.getDownloadedResources();
+        final match = rows.where((r) => r['resource_id'] == widget.resourceId).toList();
+        if (match.isNotEmpty && mounted) {
+          final r = match.first;
+          setState(() {
+            items = [ResourceModel(
+              id: r['resource_id'] as String? ?? '',
+              title: r['title'] as String? ?? '',
+              subject: r['subject'] as String? ?? '',
+              grade: r['grade'] as String? ?? '',
+              type: parseResourceType(r['type'] as String? ?? ''),
+              pdfUrl: r['local_path'] as String?,
+            )];
+            _loading = false;
+          });
+          return;
+        }
+      } catch (_) {}
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+
     try {
       final targetType = _resolveType(widget.resourceType);
       final queryParams = <String, String>{
-        'subject': widget.subject,
         'resource_type': targetType,
       };
+      if (widget.subject.isNotEmpty) {
+        queryParams['subject'] = widget.subject;
+      }
       if (widget.grade.isNotEmpty) {
         queryParams['grade'] = widget.grade;
       }
@@ -165,9 +212,13 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       }
     } catch (_) { } }
 
+  static bool _isServerUrl(String? url) =>
+      url != null && url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/files/'));
+
   static String _resolveType(String resourceType) => switch (resourceType) {
     'textbooks' => 'textbook',
     'pyqs' => 'pyq',
+    'khan' => 'videos',
     _ => resourceType,
   };
 
@@ -185,6 +236,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       if (bookmarked.contains(id)) {
         await db.removeBookmark(id);
         unawaited(ActivityTracker().logAction('unsave', resourceId: id, metadata: title ?? ''));
+        _syncBookmarksToServer();
         return false;
       }
       await db.upsertBookmark(
@@ -196,11 +248,27 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
         pdfUrl: pdfUrl,
       );
       unawaited(ActivityTracker().logAction('save', resourceId: id, metadata: title ?? ''));
+      _syncBookmarksToServer();
       return true;
     } catch (e) {
       debugPrint('Error toggling bookmark: $e');
       return false;
     }
+  }
+
+  static Future<void> _syncBookmarksToServer() async {
+    try {
+      final db = DBHelper();
+      final bookmarks = await db.getBookmarkedResources();
+      final items = bookmarks.map((b) => {
+        'resource_id': b['resource_id']?.toString() ?? '',
+        'title': b['title']?.toString() ?? '',
+        'subject': b['subject']?.toString() ?? '',
+        'grade': b['grade']?.toString() ?? '',
+        'resource_type': b['type']?.toString() ?? '',
+      }).toList();
+      await ApiClient.post('/student/sync-bookmarks', data: {'bookmarks': items});
+    } catch (_) {}
   }
 
   Widget _buildDownloadButton(ResourceModel item, ColorScheme cs) {
@@ -232,79 +300,91 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
         color: isDownloaded ? LuminaColors.successGreen : cs.primary,
       ),
       onPressed: () async {
-        final messenger = ScaffoldMessenger.of(context);
-        final l10n = AppLocalizations.of(context)!;
-        if (isDownloaded) {
-          await DownloadService().deleteDownload(resourceId);
-          if (mounted) {
-            setState(() => _downloadedIds.remove(resourceId));
-          }
-          messenger.showSnackBar(SnackBar(
-            content: Text(l10n.snackbarDownloadRemoved),
-            duration: const Duration(milliseconds: 600),
-          ));
-        } else {
-          final rawUrl = item.pdfUrl;
-          final url = (rawUrl != null && rawUrl.isNotEmpty) ? rawUrl : '/files/$resourceId';
-          final ext = url.contains('.') ? '.${url.split('.').last.split('?').first}' : '.pdf';
-          final fileName = '${item.title}$ext';
-
-          final isOnline = ConnectivityService().isOnline;
-          if (!isOnline) {
-            await DownloadQueue().enqueue(resourceId, url, fileName,
-              title: item.title, subject: item.subject, grade: item.grade,
-              type: item.type.name, mtime: item.mtime,
-            );
+        try {
+          final messenger = ScaffoldMessenger.of(context);
+          final l10n = AppLocalizations.of(context)!;
+          if (isDownloaded) {
+            await DownloadService().deleteDownload(resourceId);
             if (mounted) {
-              setState(() => _pendingIds.add(resourceId));
-              messenger.showSnackBar(SnackBar(
-                content: Text(l10n.snackbarAddedToQueueOffline),
-                duration: const Duration(seconds: 3),
-              ));
+              setState(() => _downloadedIds.remove(resourceId));
             }
-            return;
-          }
+            messenger.showSnackBar(SnackBar(
+              content: Text(l10n.snackbarDownloadRemoved),
+              duration: const Duration(milliseconds: 600),
+            ));
+          } else {
+            final rawUrl = item.pdfUrl;
+            final url = _isServerUrl(rawUrl) ? rawUrl! : '/files/$resourceId';
+            final ext = url.contains('.') ? '.${url.split('.').last.split('?').first}' : '.pdf';
+            final fileName = '${item.title}$ext';
 
-          String? sizeLabel;
-          try {
-            if (url.isNotEmpty) {
-              await ApiClient.ensureInitialized();
-              final headResp = await ApiClient.dio.head(url);
-              final cl = headResp.headers.value('content-length');
-              if (cl != null) {
-                sizeLabel = formatFileSize(int.tryParse(cl) ?? 0, l10n);
+            final isOnline = ConnectivityService().isOnline;
+            if (!isOnline) {
+              try {
+                await DownloadQueue().enqueue(resourceId, url, fileName,
+                  title: item.title, subject: item.subject, grade: item.grade,
+                  type: item.type.name, mtime: item.mtime,
+                );
+              } catch (_) {}
+              if (mounted) {
+                setState(() => _pendingIds.add(resourceId));
+                messenger.showSnackBar(SnackBar(
+                  content: Text(l10n.snackbarAddedToQueueOffline),
+                  duration: const Duration(seconds: 3),
+                ));
               }
+              return;
             }
-          } catch (_) {
-            sizeLabel = l10n.fileSizeUnavailable;
+
+            String? sizeLabel;
+            try {
+              if (url.isNotEmpty) {
+                await ApiClient.ensureInitialized();
+                final headResp = await ApiClient.dio.head(url);
+                final cl = headResp.headers.value('content-length');
+                if (cl != null) {
+                  sizeLabel = formatFileSize(int.tryParse(cl) ?? 0, l10n);
+                }
+              }
+            } catch (_) {
+              sizeLabel = l10n.fileSizeUnavailable;
+            }
+            if (!mounted) return;
+
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: Text(l10n.dialogDownloadTitle),
+                content: Text(l10n.dialogDownloadContent(fileName, sizeLabel ?? l10n.fileSizeUnknownFallback)),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.buttonCancel)),
+                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.dialogDownloadButton)),
+                ],
+              ),
+            );
+            if (confirmed != true) return;
+
+            unawaited(DownloadQueue().enqueue(resourceId, url, fileName,
+              title: item.title,
+              subject: item.subject,
+              grade: item.grade,
+              type: item.type.name,
+              mtime: item.mtime,
+            ).catchError((_) {}));
+            if (mounted) setState(() => _pendingIds.add(resourceId));
+            messenger.showSnackBar(SnackBar(
+              content: Text(l10n.snackbarAddedToQueue),
+              duration: const Duration(milliseconds: 600),
+            ));
           }
-          if (!mounted) return;
-
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: Text(l10n.dialogDownloadTitle),
-              content: Text(l10n.dialogDownloadContent(fileName, sizeLabel ?? l10n.fileSizeUnknownFallback)),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.buttonCancel)),
-                TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.dialogDownloadButton)),
-              ],
-            ),
-          );
-          if (confirmed != true) return;
-
-          unawaited(DownloadQueue().enqueue(resourceId, url, fileName,
-            title: item.title,
-            subject: item.subject,
-            grade: item.grade,
-            type: item.type.name,
-            mtime: item.mtime,
-          ));
-          if (mounted) setState(() => _pendingIds.add(resourceId));
-          messenger.showSnackBar(SnackBar(
-            content: Text(l10n.snackbarAddedToQueue),
-            duration: const Duration(milliseconds: 600),
-          ));
+        } catch (e, st) {
+          debugPrint('Download button crash: $e\n$st');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Download failed. Please try again.'),
+              duration: const Duration(seconds: 3),
+            ));
+          }
         }
       },
     );
@@ -318,7 +398,11 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
 
     return Scaffold(
       backgroundColor: cs.surface,
-      appBar: AppBar(title: Text(l10n.pageTitleDetail(widget.title, widget.subject))),
+      appBar: AppBar(
+        title: Text(l10n.pageTitleDetail(widget.title, widget.subject)),
+        backgroundColor: cs.surface,
+        foregroundColor: cs.onSurface,
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : items.isEmpty
@@ -365,14 +449,76 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                           children: [
                             InkWell(
                               onTap: () async {
-                                if (item.pdfUrl == null) return;
+                                if (item.type == ResourceType.quiz) {
+                                  unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
+                                  unawaited(ActivityTracker().logAction('view', resourceId: item.id.toString(), metadata: item.title));
+                                  unawaited(Navigator.of(this.context).push(MaterialPageRoute(
+                                    builder: (_) => QuizPlayerPage.fromResource(item),
+                                  )));
+                                  return;
+                                }
+                                if (item.type == ResourceType.kiwix) {
+                                  String? html;
+                                  try {
+                                    final response = await ApiClient.get('/zim/page', queryParameters: {
+                                      'article_id': item.id,
+                                    }).timeout(const Duration(seconds: 8));
+                                    html = response.data?['html']?.toString();
+                                  } catch (_) {}
+                                  if (!mounted) return;
+                                  if (html != null && html.isNotEmpty) {
+                                    unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
+                                    unawaited(ActivityTracker().logAction('view', resourceId: item.id.toString(), metadata: item.title));
+                                    unawaited(Navigator.of(this.context).push(MaterialPageRoute(
+                                      builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: ApiClient.baseUrl),
+                                    )));
+                                  }
+                                  return;
+                                }
+                                if (item.type == ResourceType.videos) {
+                                  final rawUrl = item.pdfUrl;
+                                  final url = _isServerUrl(rawUrl) ? rawUrl! : '/files/${item.id}';
+                                  if (isGhost) {
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                      content: Text(l10n.snackbarNotDownloaded(item.title)),
+                                      action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
+                                        DownloadQueue().enqueue(item.id, url, '${item.title}${url.contains('.') ? '.${url.split('.').last.split('?').first}' : '.mp4'}',
+                                          title: item.title, subject: item.subject, grade: item.grade,
+                                          type: item.type.name, mtime: item.mtime,
+                                        );
+                                        if (mounted) setState(() => _pendingIds.add(item.id));
+                                      }),
+                                    ));
+                                    return;
+                                  }
+                                  if (!mounted) return;
+                                  unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
+                                  unawaited(ActivityTracker().logAction('view', resourceId: item.id.toString(), metadata: item.title));
+                                  unawaited(Navigator.of(this.context).push(MaterialPageRoute(
+                                    builder: (_) => VideoPlayerPage(
+                                      title: item.title,
+                                      videoUrl: url,
+                                      subject: item.subject,
+                                    ),
+                                  )));
+                                  return;
+                                }
+                                if (item.pdfUrl == null || item.pdfUrl!.isEmpty) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                      content: Text(l10n.fileNotAvailable),
+                                    ));
+                                  }
+                                  return;
+                                }
                                 if (isGhost) {
                                   if (!mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                     content: Text(l10n.snackbarNotDownloaded(item.title)),
                                     action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
                                       final rawUrl = item.pdfUrl;
-                                      final url = (rawUrl != null && rawUrl.isNotEmpty) ? rawUrl : '/files/${item.id}';
+                                      final url = _isServerUrl(rawUrl) ? rawUrl! : '/files/${item.id}';
                                       DownloadQueue().enqueue(item.id, url, '${item.title}.pdf',
                                         title: item.title, subject: item.subject, grade: item.grade,
                                         type: item.type.name, mtime: item.mtime,
@@ -384,50 +530,49 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                 }
                                 String url = item.pdfUrl!;
                                 if (isDl) {
-                                  final downloads = await DBHelper().getDownloadedResources();
-                                  final match = downloads.where((d) => d['resource_id'] == item.id);
-                                  if (match.isNotEmpty) {
-                                    final storedMtime = (match.first['mtime'] as num?)?.toDouble() ?? 0;
-                                    if (item.mtime > storedMtime) {
-                                      final tempDir = await getTemporaryDirectory();
-                                      final dlPath = '${tempDir.path}/update_${item.id}_${DateTime.now().millisecondsSinceEpoch}.tmp';
-                                      try {
-                                        await ApiClient.ensureInitialized();
-                                        await ApiClient.dio.download(widget.resourceType == 'textbooks' || widget.resourceType == 'pyqs' ? item.pdfUrl! : item.pdfUrl!, dlPath);
-                                        final oldPath = match.first['local_path'] as String?;
-                                        final newPath = oldPath ?? dlPath;
-                                        if (oldPath != null) {
-                                          final oldFile = File(oldPath);
-                                          if (await oldFile.exists()) await oldFile.delete();
-                                          await File(dlPath).rename(oldPath);
+                                  try {
+                                    final downloads = await DBHelper().getDownloadedResources();
+                                    final match = downloads.where((d) => d['resource_id'] == item.id);
+                                    if (match.isNotEmpty) {
+                                      final storedMtime = (match.first['mtime'] as num?)?.toDouble() ?? 0;
+                                      if (item.mtime > storedMtime) {
+                                        final tempDir = await getTemporaryDirectory();
+                                        final dlPath = '${tempDir.path}/update_${item.id}_${DateTime.now().millisecondsSinceEpoch}.tmp';
+                                        try {
+                                          await ApiClient.ensureInitialized();
+                                          await ApiClient.dio.download(item.pdfUrl!, dlPath);
+                                          final oldPath = match.first['local_path'] as String?;
+                                          final newPath = oldPath ?? dlPath;
+                                          if (oldPath != null) {
+                                            final oldFile = File(oldPath);
+                                            if (await oldFile.exists()) await oldFile.delete();
+                                            await File(dlPath).rename(oldPath);
+                                          }
+                                          await DBHelper().insertDownload(item.id, newPath, item.title, item.subject, item.grade, item.type.name, mtime: item.mtime);
+                                          url = newPath;
+                                        } catch (_) {
+                                          final localPath = match.first['local_path'] as String?;
+                                          if (localPath != null) url = localPath;
                                         }
-                                        await DBHelper().insertDownload(item.id, newPath, item.title, item.subject, item.grade, item.type.name, mtime: item.mtime);
-                                        url = newPath;
-                                      } catch (_) {
+                                      } else {
                                         final localPath = match.first['local_path'] as String?;
                                         if (localPath != null) url = localPath;
                                       }
-                                    } else {
-                                      final localPath = match.first['local_path'] as String?;
-                                      if (localPath != null) url = localPath;
                                     }
+                                  } catch (_) {
+                                    // DB error — will open from server URL
                                   }
                                 }
-                                if (item.type == ResourceType.videos) {
-                                  unawaited(Navigator.of(this.context).push(MaterialPageRoute(
-                                    builder: (_) => VideoPlayerPage(
-                                      title: item.title,
-                                      videoUrl: url,
-                                    ),
-                                  )));
-                                } else {
-                                  unawaited(Navigator.of(this.context).push(MaterialPageRoute(
-                                    builder: (_) => PdfViewerPage(
-                                      title: item.title,
-                                      pdfUrl: url,
-                                    ),
-                                  )));
-                                }
+                                if (!mounted) return;
+                                unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
+                                unawaited(ActivityTracker().logAction('view', resourceId: item.id.toString(), metadata: item.title));
+                                unawaited(Navigator.of(this.context).push(MaterialPageRoute(
+                                  builder: (_) => PdfViewerPage(
+                                    title: item.title,
+                                    pdfUrl: url,
+                                    subject: item.subject,
+                                  ),
+                                )));
                               },
                               child: Padding(
                                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),

@@ -6,7 +6,7 @@ import subprocess
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from app.database import UPLOAD_DIR, THUMBNAILS_DIR
-from app.async_db import db_conn
+from app.async_db import db_fetch_one, db_exec
 
 router = APIRouter()
 
@@ -39,15 +39,18 @@ async def stream_file(filename: str, request: Request):
     file_size = await asyncio.to_thread(os.path.getsize, file_path)
     range_header = request.headers.get("range")
     if range_header:
-        range_val = range_header.replace("bytes=", "")
-        if range_val.startswith("-"):
-            suffix = int(range_val[1:])
-            start = max(0, file_size - suffix)
-            end = file_size - 1
-        else:
-            start_str, _, end_str = range_val.partition("-")
-            start = int(start_str) if start_str else 0
-            end = int(end_str) if end_str else file_size - 1
+        try:
+            range_val = range_header.replace("bytes=", "")
+            if range_val.startswith("-"):
+                suffix = int(range_val[1:])
+                start = max(0, file_size - suffix)
+                end = file_size - 1
+            else:
+                start_str, _, end_str = range_val.partition("-")
+                start = int(start_str) if start_str else 0
+                end = int(end_str) if end_str else file_size - 1
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Malformed Range header")  # i18n: user-facing error message
         if start >= file_size:
             raise HTTPException(status_code=416, detail="Range not satisfiable")  # i18n: user-facing error message
         content_length = end - start + 1
@@ -87,17 +90,14 @@ def _find_video_thumb_time(file_path: str, max_search: int = 30) -> float:
              "-f", "null", "-"],
             capture_output=True, text=True, timeout=30
         )
+        # ffmpeg blackdetect prints black_start BEFORE black_end per segment
         black_end = None
-        for m in re.finditer(r'black_duration:([\d.]+)\s*black_start:([\d.]+)',
-                             result.stderr):
-            duration = float(m.group(1))
-            start = float(m.group(2))
-            end = start + duration
+        for m in re.finditer(r'black_end:([\d.]+)', result.stderr):
+            end = float(m.group(1))
             if end > (black_end or 0):
                 black_end = end
         if black_end is not None:
-            t = black_end + 1.0
-            return min(t, float(max_search))
+            return min(black_end + 1.0, float(max_search))
     except Exception:
         pass
     return 2.0
@@ -120,19 +120,24 @@ async def resource_thumbnail(resource_id: str):
         HTTPException 404: If resource, file, or thumbnail is unavailable.
         HTTPException 500: If thumbnail generation fails unexpectedly.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT filename, resource_type FROM resources WHERE id = ?", (resource_id,))
-        row = c.fetchone()
+    row = await db_fetch_one(
+        "SELECT id, filename, resource_type FROM resources WHERE id = ?", (resource_id,))
+    table = "resources"
+    if not row:
+        row = await db_fetch_one(
+            "SELECT id, filename, resource_type FROM course_resources WHERE id = ?", (resource_id,))
+        table = "course_resources"
     if not row:
         raise HTTPException(status_code=404, detail="Resource not found")  # i18n: user-facing error message
-    file_path = os.path.join(UPLOAD_DIR, row[0]) if row[0] else None
-    rtype = row[1]
+    file_path = os.path.join(UPLOAD_DIR, row["filename"]) if row["filename"] else None
+    rtype = row["resource_type"]
     thumb_path = os.path.join(THUMBNAILS_DIR, f"{resource_id}.png")
     if await asyncio.to_thread(os.path.exists, thumb_path):
         return FileResponse(thumb_path, media_type="image/png")
     if not await asyncio.to_thread(os.path.exists, file_path):
         raise HTTPException(status_code=404, detail="File not found")  # i18n: user-facing error message
+    page_count = 0
+    duration_seconds = 0
     try:
         if rtype in ("textbook", "notes", "pyq", "pastPaper"):
             try:
@@ -144,22 +149,44 @@ async def resource_thumbnail(resource_id: str):
                     try:
                         pix = doc[0].get_pixmap(matrix=fitz.Matrix(0.3, 0.3))
                         pix.save(tp)
+                        return doc.page_count
                     finally:
                         doc.close()
-                await asyncio.to_thread(_gen_pdf_thumb, file_path, thumb_path)
+                page_count = await asyncio.to_thread(_gen_pdf_thumb, file_path, thumb_path)
             except ImportError:
                 raise HTTPException(status_code=404, detail="Thumbnail unavailable (PyMuPDF not installed)")  # i18n: user-facing error message
-        elif rtype == "videos":
+        elif rtype in ("videos", "khan"):
             thumb_time = await asyncio.to_thread(_find_video_thumb_time, file_path)
             ss = f"{int(thumb_time // 3600):02d}:{int((thumb_time % 3600) // 60):02d}:{int(thumb_time % 60):02d}"
             result = await asyncio.to_thread(lambda: subprocess.run(
                 ["ffmpeg", "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],
                 capture_output=True, timeout=15
             ))
-            if result.returncode != 0 or not os.path.exists(thumb_path):
+            if result.returncode != 0 or not await asyncio.to_thread(os.path.exists, thumb_path):
                 raise HTTPException(status_code=404, detail="Thumbnail generation failed")  # i18n: user-facing error message
+
+            def _probe_duration(fp):
+                try:
+                    probe = subprocess.run(
+                        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", fp],
+                        capture_output=True, text=True, timeout=15
+                    )
+                    return round(float(probe.stdout.strip()))
+                except Exception:
+                    return 0
+            duration_seconds = await asyncio.to_thread(_probe_duration, file_path)
         else:
             raise HTTPException(status_code=404, detail="No thumbnail for this type")  # i18n: user-facing error message
+        sets, params = [], []
+        if page_count:
+            sets.append("page_count = ?")
+            params.append(page_count)
+        if duration_seconds:
+            sets.append("duration_seconds = ?")
+            params.append(duration_seconds)
+        if sets:
+            params.append(resource_id)
+            await db_exec(f"UPDATE {table} SET {', '.join(sets)} WHERE id = ?", tuple(params))
     except HTTPException:
         raise
     except Exception as e:

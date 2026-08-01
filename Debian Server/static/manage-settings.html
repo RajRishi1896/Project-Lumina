@@ -141,7 +141,7 @@
                     <option value="true" data-i18n="settings.results_success">Success</option>
                     <option value="false" data-i18n="settings.results_failed">Failed</option>
                 </select>
-                <input type="text" id="adminLogUserFilter" placeholder="Filter by user..." style="padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface); color: var(--on-surface); outline: none; width: 140px; min-height: 44px;">
+                <input type="text" id="adminLogUserFilter" placeholder="Filter by user..." style="padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--bg-input); color: var(--on-surface); outline: none; width: 140px; min-height: 44px;">
             </div>
 
             <!-- Active filter chips -->
@@ -150,7 +150,7 @@
             <!-- Log table -->
             <div style="border: 1px solid var(--outline); border-radius: var(--radius-sm); overflow: hidden;">
                 <div style="max-height: 500px; overflow-y: auto;">
-                    <table style="table-layout: fixed; width: 100%;">
+                    <table class="table" style="width: 100%;">
                         <thead>
                             <tr>
                                 <th style="position: sticky; top: 0; background: var(--surface); z-index: 1; padding: 0.5rem 0.6rem; font-size: 0.78rem; width: 150px;" data-i18n="settings.timestamp">Timestamp</th>
@@ -248,13 +248,39 @@
             </div>
         </div>
 
+        <!-- Section: WiFi Band Settings (Admin Only) -->
+        <div class="card" id="wifiBandCard" style="display: none;">
+            <div class="card-title" style="font-weight: 800;" data-i18n="settings.wifi_band_title">WiFi Band</div>
+            <div id="wifiBandNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center;"></div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <strong data-i18n="settings.wifi_band_current">Current band:</strong>
+                    <span id="wifiBandCurrent" style="font-weight: 700; color: var(--teal);"></span>
+                </div>
+                <div data-i18n="settings.wifi_band_hint" style="margin-bottom: 0.75rem;">5 GHz is faster but has shorter range. 2.4 GHz is slower but reaches further. Switching restarts the hotspot -- all devices will reconnect.</div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <button id="btn-wifi5ghz" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--teal); color: var(--teal); font-weight: 700;">5 GHz — <span data-i18n="settings.wifi_band_5ghz_hint">faster speed, shorter range</span></button>
+                <button id="btn-wifi2ghz" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--teal); color: var(--teal); font-weight: 700;">2.4 GHz — <span data-i18n="settings.wifi_band_2ghz_hint">longer range, slower speed</span></button>
+            </div>
+            <div id="wifiBandNote" style="display: none; margin-top: 0.75rem; padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); font-size: 0.8rem; color: var(--text-secondary);" data-i18n="settings.wifi_band_unsupported">Your WiFi adapter only supports one band. Band switching is not available.</div>
+        </div>
+
+        <!-- Section: Server Reboot (Admin Only) -->
+        <div class="card" id="rebootCard" style="display: none;">
+            <div class="card-title" style="color: var(--danger); font-weight: 800;" data-i18n="settings.reboot_title">Reboot Server</div>
+            <div id="rebootNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center;"></div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem;" data-i18n="settings.reboot_hint">Restart the hub server. All connected devices will temporarily lose access for about 60 seconds.</div>
+            <button id="btn-reboot" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--danger); color: var(--danger); font-weight: 700;" data-i18n="settings.reboot_btn">Reboot Server</button>
+        </div>
+
         </div>
     </main>
 
     <!-- Section: Bottom Nav (Mobile) -->
     <div id="bottomNav"></div>
 
-    <script src="/static/js/lumina.js?v=9" defer></script>
+    <script src="/static/js/lumina.js?v=10" defer></script>
     <!-- Section: Inline Scripts � all page logic merged here -->
     <script>
 
@@ -275,24 +301,29 @@
 
         var ACTION_LABELS = {
             login: 'Login', logout: 'Logout', login_failed: 'Login Failed',
+            token_refresh: 'Token Refresh', force_logout: 'Force Logout',
             create_account: 'Create Account', delete_account: 'Delete Account',
             reset_password: 'Reset Password', change_password: 'Change Password',
             force_password_change: 'Force Pwd Change',
             create_course: 'Create Course', update_course: 'Update Course',
             delete_course: 'Delete Course', publish_course: 'Publish', unpublish_course: 'Unpublish',
-            enroll_course: 'Enroll', upload_resource: 'Upload Resource',
+            enroll_course: 'Enroll', unenroll_course: 'Unenroll',
+            upload_resource: 'Upload Resource', update_resource: 'Edit Resource',
             delete_resource: 'Delete Resource', deprecate_resource: 'Deprecate Resource',
             create_quiz: 'Create Quiz', update_quiz: 'Update Quiz', delete_quiz: 'Delete Quiz',
+            create_topic: 'Create Topic', update_topic: 'Edit Topic', delete_topic: 'Delete Topic',
+            create_grade: 'Create Grade', update_grade: 'Edit Grade', delete_grade: 'Delete Grade',
+            create_subject: 'Create Subject', update_subject: 'Edit Subject', delete_subject: 'Delete Subject',
             upload_zim: 'Upload ZIM', delete_zim: 'Delete ZIM',
-            update_settings: 'Update Settings', change_settings: 'Change Settings',
-            create_grade: 'Create Grade', delete_grade: 'Delete Grade',
-            create_subject: 'Create Subject', delete_subject: 'Delete Subject',
-            create_topic: 'Create Topic', delete_topic: 'Delete Topic',
-            create_teacher: 'Create Teacher', delete_teacher: 'Delete Teacher',
-            reset_teacher_password: 'Reset Teacher Pwd', toggle_default_admin: 'Toggle Default Admin'
+            upload_course_resource: 'Upload Course Resource', import_zip: 'Import ZIP',
+            link_similar: 'Link Similar', unlink_similar: 'Unlink Similar',
+            change_settings: 'Change Settings',
+            permission_denied: 'Permission Denied', rate_limited: 'Rate Limited',
+            validation_error: 'Validation Error',
+            database_backup: 'DB Backup', database_restore: 'DB Restore',
+            database_backup: 'DB Backup', database_restore: 'DB Restore',
+            upload_rejected: 'Upload Rejected'
         };
-
-        function _escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
         function _formatTimestamp(ts) {
             if (!ts) return '';
@@ -304,7 +335,7 @@
 
         function _renderSeverityBadge(severity) {
             var color = SEVERITY_COLORS[severity] || 'var(--text-muted)';
-            return '<span style="display:inline-block;padding:0.1rem 0.45rem;border-radius:9999px;font-size:0.7rem;font-weight:700;background:' + color + '20;color:' + color + ';text-transform:capitalize;white-space:nowrap;">' + _escHtml(severity || 'info') + '</span>';
+            return '<span style="display:inline-block;padding:0.1rem 0.45rem;border-radius:9999px;font-size:0.7rem;font-weight:700;background:' + color + '20;color:' + color + ';text-transform:capitalize;white-space:nowrap;">' + esc(severity || 'info') + '</span>';
         }
 
         function _renderResultBadge(event) {
@@ -318,34 +349,34 @@
             var detailId = 'logDetail_' + index;
             var rid = event.request_id || (event.ctx && event.ctx.request_id) || '';
             var details = [];
-            if (event.user) details.push('<div><strong>User:</strong> ' + _escHtml(event.user) + (event.role ? ' (' + _escHtml(event.role) + ')' : '') + '</div>');
-            if (event.target) details.push('<div><strong>Target:</strong> ' + _escHtml(event.target) + '</div>');
+            if (event.user) details.push('<div><strong>User:</strong> ' + esc(event.user) + (event.role ? ' (' + esc(event.role) + ')' : '') + '</div>');
+            if (event.target) details.push('<div><strong>Target:</strong> ' + esc(event.target) + '</div>');
             if (event.resource_type || event.resource_id || event.resource_name) {
                 var resParts = [event.resource_type, event.resource_name, event.resource_id].filter(Boolean).join(' ');
-                details.push('<div><strong>Resource:</strong> ' + _escHtml(resParts) + '</div>');
+                details.push('<div><strong>Resource:</strong> ' + esc(resParts) + '</div>');
             }
-            if (event.ip) details.push('<div><strong>IP:</strong> ' + _escHtml(event.ip) + '</div>');
-            if (event.method) details.push('<div><strong>Method:</strong> ' + _escHtml(event.method) + '</div>');
-            if (event.endpoint) details.push('<div><strong>Endpoint:</strong> ' + _escHtml(event.endpoint) + '</div>');
+            if (event.ip) details.push('<div><strong>IP:</strong> ' + esc(event.ip) + '</div>');
+            if (event.method) details.push('<div><strong>Method:</strong> ' + esc(event.method) + '</div>');
+            if (event.endpoint) details.push('<div><strong>Endpoint:</strong> ' + esc(event.endpoint) + '</div>');
             if (event.status) details.push('<div><strong>Status:</strong> ' + event.status + '</div>');
-            if (event.error) details.push('<div><strong>Error:</strong> <span style="color:var(--danger)">' + _escHtml(event.error) + '</span></div>');
-            if (rid) details.push('<div><strong>Request ID:</strong> <code style="font-size:0.75rem;background:var(--surface-container);padding:0.15rem 0.35rem;border-radius:3px;cursor:pointer;" onclick="navigator.clipboard.writeText(\'' + _escHtml(rid) + '\')" title="Click to copy">' + _escHtml(rid) + '</code></div>');
+            if (event.error) details.push('<div><strong>Error:</strong> <span style="color:var(--danger)">' + esc(event.error) + '</span></div>');
+            if (rid) details.push('<div><strong>Request ID:</strong> <code style="font-size:0.75rem;background:var(--surface-container);padding:0.15rem 0.35rem;border-radius:3px;cursor:pointer;" onclick="navigator.clipboard.writeText(\'' + esc(rid) + '\')" title="Click to copy">' + esc(rid) + '</code></div>');
             if (event.changes && typeof event.changes === 'object') {
-                details.push('<div><strong>Changes:</strong> <pre style="margin:0.25rem 0 0;padding:0.5rem;background:var(--surface-container);border-radius:4px;font-size:0.75rem;overflow-x:auto;">' + _escHtml(JSON.stringify(event.changes, null, 2)) + '</pre></div>');
+                details.push('<div><strong>Changes:</strong> <pre style="margin:0.25rem 0 0;padding:0.5rem;background:var(--surface-container);border-radius:4px;font-size:0.75rem;overflow-x:auto;">' + esc(JSON.stringify(event.changes, null, 2)) + '</pre></div>');
             }
             if (event.ctx && Object.keys(event.ctx).length > 0 && Object.keys(event.ctx).some(function(k) { return k !== 'request_id'; })) {
                 var filteredCtx = Object.assign({}, event.ctx);
                 delete filteredCtx.request_id;
                 if (Object.keys(filteredCtx).length > 0) {
-                    details.push('<div><strong>Context:</strong> <pre style="margin:0.25rem 0 0;padding:0.5rem;background:var(--surface-container);border-radius:4px;font-size:0.75rem;overflow-x:auto;">' + _escHtml(JSON.stringify(filteredCtx, null, 2)) + '</pre></div>');
+                    details.push('<div><strong>Context:</strong> <pre style="margin:0.25rem 0 0;padding:0.5rem;background:var(--surface-container);border-radius:4px;font-size:0.75rem;overflow-x:auto;">' + esc(JSON.stringify(filteredCtx, null, 2)) + '</pre></div>');
                 }
             }
             return '<tr style="cursor:pointer;" onclick="document.getElementById(\'' + detailId + '\').style.display=document.getElementById(\'' + detailId + '\').style.display===\'none\'?\'table-row\':\'none\'">' +
-                '<td style="padding:0.45rem 0.6rem;font-size:0.78rem;color:var(--text-muted);white-space:nowrap;">' + _formatTimestamp(event.ts) + '</td>' +
-                '<td style="padding:0.45rem 0.6rem;">' + _renderSeverityBadge(event.severity) + '</td>' +
-                '<td style="padding:0.45rem 0.6rem;font-size:0.82rem;font-weight:600;text-align:center;">' + _escHtml(ACTION_LABELS[event.action] || event.summary || event.action || '-') + '</td>' +
-                '<td style="padding:0.45rem 0.6rem;font-size:0.78rem;">' + _escHtml(event.user || '-') + '</td>' +
-                '<td style="padding:0.45rem 0.6rem;">' + _renderResultBadge(event) + '</td>' +
+                '<td data-label="' + __('settings.timestamp') + '" style="padding:0.45rem 0.6rem;font-size:0.78rem;color:var(--text-muted);white-space:nowrap;">' + _formatTimestamp(event.ts) + '</td>' +
+                '<td data-label="' + __('settings.severity') + '" style="padding:0.45rem 0.6rem;">' + _renderSeverityBadge(event.severity) + '</td>' +
+                '<td data-label="' + __('settings.action') + '" style="padding:0.45rem 0.6rem;font-size:0.82rem;font-weight:600;text-align:center;">' + esc(ACTION_LABELS[event.action] || event.summary || event.action || '-') + '</td>' +
+                '<td data-label="' + __('settings.user') + '" style="padding:0.45rem 0.6rem;font-size:0.78rem;">' + esc(event.user || '-') + '</td>' +
+                '<td data-label="' + __('settings.result') + '" style="padding:0.45rem 0.6rem;">' + _renderResultBadge(event) + '</td>' +
                 '</tr>' +
                 '<tr id="' + detailId + '" style="display:none;">' +
                 '<td colspan="5" style="padding:0.6rem 0.8rem;background:var(--surface-container);font-size:0.82rem;line-height:1.6;border-top:1px solid var(--outline);">' +
@@ -418,7 +449,7 @@
             chipsEl.style.display = 'flex';
             chipsEl.innerHTML = chips.map(function(c, i) {
                 return '<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.5rem;border-radius:9999px;font-size:0.75rem;background:var(--primary-container);color:var(--on-primary-container);font-weight:600;">' +
-                    _escHtml(c.label) +
+                    esc(c.label) +
                     '<button onclick="_clearLogChip(' + i + ')" style="background:none;border:none;color:inherit;cursor:pointer;padding:0;line-height:1;font-size:1rem;">&times;</button></span>';
             }).join('');
             window._logChipClearFns = chips.map(function(c) { return c.clear; });
@@ -436,7 +467,7 @@
             var tbody = document.getElementById('adminLogTable');
             if (!tbody) return;
             try {
-                var res = await fetch('/admin/log?limit=200');
+                var res = await fetch('/admin/log?limit=200&_=' + Date.now());
                 if (!res.ok) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">' + __('settings.error.load_logs') + '</td></tr>'; return; }
                 var data = await res.json();
                 _adminLogsAll = data.log || [];
@@ -451,6 +482,8 @@
             var adminLogCard = document.getElementById('adminLogCard');
             var downloadLogsCard = document.getElementById('downloadLogsCard');
             var defaultAdminCard = document.getElementById('defaultAdminCard');
+            var wifiBandCard = document.getElementById('wifiBandCard');
+            var rebootCard = document.getElementById('rebootCard');
             var usernameEl = document.getElementById('settingsUsername');
             var roleEl = document.getElementById('settingsUserRole');
             if (usernameEl) usernameEl.textContent = loggedInUser;
@@ -460,9 +493,12 @@
                 if (adminLogCard) adminLogCard.style.display = 'block';
                 if (downloadLogsCard) downloadLogsCard.style.display = 'block';
                 if (defaultAdminCard) defaultAdminCard.style.display = 'block';
+                if (wifiBandCard) wifiBandCard.style.display = 'block';
+                if (rebootCard) rebootCard.style.display = 'block';
                 loadRetentionSetting();
                 loadAdminLogs();
                 loadDefaultAdminStatus();
+                loadWifiBand();
                 if (_adminLogInterval) clearInterval(_adminLogInterval);
                 _adminLogInterval = setInterval(loadAdminLogs, 15000);
             } else {
@@ -470,6 +506,8 @@
                 if (adminLogCard) adminLogCard.style.display = 'none';
                 if (downloadLogsCard) downloadLogsCard.style.display = 'none';
                 if (defaultAdminCard) defaultAdminCard.style.display = 'none';
+                if (wifiBandCard) wifiBandCard.style.display = 'none';
+                if (rebootCard) rebootCard.style.display = 'none';
             }
         }
 
@@ -560,6 +598,70 @@
                 if (res.ok) { showNotification('defaultAdminNotif', __('settings.notif.admin_enabled'), false); loadDefaultAdminStatus(); }
                 else { var err = await res.json(); showNotification('defaultAdminNotif', err.detail || __('settings.notif.enable_failed'), true); }
             } catch (e) { showNotification('defaultAdminNotif', __('settings.connection_error'), true); }
+        }
+
+        /** Loads the current WiFi band and capabilities. */
+        async function loadWifiBand() {
+            try {
+                var res = await fetch('/system/wifi-band', {credentials: 'include'});
+                if (res.ok) {
+                    var data = await res.json();
+                    var el = document.getElementById('wifiBandCurrent');
+                    if (el) el.textContent = data.label;
+                    var btn5 = document.getElementById('btn-wifi5ghz');
+                    var btn2 = document.getElementById('btn-wifi2ghz');
+                    var supported = data.supported || ['bg'];
+                    if (btn5) btn5.disabled = supported.indexOf('a') === -1;
+                    if (btn2) btn2.disabled = supported.indexOf('bg') === -1;
+                    if (supported.length <= 1) {
+                        var note = document.getElementById('wifiBandNote');
+                        if (note) note.style.display = 'block';
+                    }
+                }
+            } catch (e) { console.error("Error loading WiFi band", e); }
+        }
+
+        /** Switches the WiFi band. */
+        async function switchWifiBand(band) {
+            var label = band === 'a' ? '5 GHz' : '2.4 GHz';
+            var confirmed = await showConfirm(__('settings.wifi_band_switch_title'), __('settings.wifi_band_switch_confirm', {band: label}), false, label);
+            if (!confirmed) return;
+            showNotification('wifiBandNotif', __('settings.wifi_band_switching'), false);
+            try {
+                var res = await fetch('/system/wifi-band', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({band: band})
+                });
+                if (res.ok) {
+                    showNotification('wifiBandNotif', __('settings.wifi_band_rebooting', {band: label}), false);
+                    setTimeout(function() { window.location.reload(); }, 65000);
+                } else {
+                    var err = await res.json();
+                    showNotification('wifiBandNotif', err.detail || __('settings.wifi_band_switch_failed'), true);
+                }
+            } catch (e) { showNotification('wifiBandNotif', __('settings.wifi_band_rebooting', {band: label}), false); }
+        }
+
+        /** Reboots the server after confirmation. */
+        async function rebootServer() {
+            var confirmed = await showConfirm(__('settings.reboot_confirm_title'), __('settings.reboot_confirm_body'), true, __('settings.reboot_btn'));
+            if (!confirmed) return;
+            showNotification('rebootNotif', __('settings.rebooting'), false);
+            try {
+                var res = await fetch('/system/reboot', {method: 'POST', credentials: 'include'});
+                if (res.ok) {
+                    showNotification('rebootNotif', __('settings.reboot_started'), false);
+                    setTimeout(function() { window.location.reload(); }, 65000);
+                } else {
+                    var err = await res.json();
+                    showNotification('rebootNotif', err.detail || __('settings.reboot_failed'), true);
+                }
+            } catch (e) {
+                showNotification('rebootNotif', __('settings.reboot_started'), false);
+                setTimeout(function() { window.location.reload(); }, 65000);
+            }
         }
 
         /** Toggles password input visibility. */
@@ -694,6 +796,9 @@
             document.getElementById('btn-adminLogsNextPage')?.addEventListener('click', adminLogsNextPage);
             document.getElementById('btn-disableDefaultAdmin')?.addEventListener('click', disableDefaultAdmin);
             document.getElementById('btn-enableDefaultAdmin')?.addEventListener('click', enableDefaultAdmin);
+            document.getElementById('btn-wifi5ghz')?.addEventListener('click', function() { switchWifiBand('a'); });
+            document.getElementById('btn-wifi2ghz')?.addEventListener('click', function() { switchWifiBand('bg'); });
+            document.getElementById('btn-reboot')?.addEventListener('click', rebootServer);
             document.addEventListener('languageChanged', function() { _renderAdminLogsPage(); });
         };
         if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['settings'] = _initSettings;

@@ -38,9 +38,49 @@ async def lifespan(application: FastAPI):
 
     await asyncio.to_thread(init_db)
 
+    from app.database import ensure_media_columns
+    await ensure_media_columns()
+
+    from app.routers.system_stats import detect_wifi_caps
+    await detect_wifi_caps()
+
     from app.zim_auto_cleaner import start_zim_auto_cleaner
 
     start_zim_auto_cleaner(interval_seconds=3600)
+
+    # Auto-reindex ZIM archives missing from zim_articles (e.g. manual SQL re-link)
+    # Runs as a background task with a startup delay so the server is ready first.
+    async def _auto_reindex_zim():
+        await asyncio.sleep(8)
+        import sqlite3 as _s3
+        from app.database import DB_PATH
+        logging.info("Auto-reindex: started")
+        try:
+            conn = _s3.connect(DB_PATH, timeout=5.0)
+            rows = conn.execute(
+                "SELECT id, zim_path, title FROM zim_archives "
+                "WHERE NOT EXISTS (SELECT 1 FROM zim_articles WHERE archive_id=zim_archives.id)"
+            ).fetchall()
+            conn.close()
+            if not rows:
+                logging.info("Auto-reindex: no archives need reindexing")
+                return
+            from app.routers.resource_zim import _reindex_zim_articles
+            logging.info(f"Auto-reindex: {len(rows)} archive(s) with no articles")
+            for aid, path, title in rows:
+                if not path or not os.path.isfile(path):
+                    logging.warning(f"Auto-reindex: skipping {aid} -- ZIM file not at {path}")
+                    continue
+                logging.info(f"Auto-reindex: indexing {aid} ({title})...")
+                try:
+                    r = await asyncio.to_thread(_reindex_zim_articles, path, aid, title or "")
+                    logging.info(f"Auto-reindex: {aid} done ({r['article_count']} articles)")
+                except Exception as e:
+                    logging.error(f"Auto-reindex: {aid} failed: {e}")
+            logging.info("Auto-reindex: complete")
+        except Exception as e:
+            logging.error(f"Auto-reindex scan failed: {e}")
+    reindex_task = asyncio.create_task(_auto_reindex_zim())
 
     # Session pruning background task
     async def prune_sessions():
@@ -53,6 +93,8 @@ async def lifespan(application: FastAPI):
                     conn.execute("DELETE FROM refresh_tokens WHERE expires_at < datetime('now') OR used = 1")
                     conn.execute("DELETE FROM persistent_keys WHERE expires_at < datetime('now')")
                     conn.commit()
+                from app.dependencies import _session_cache
+                _session_cache.clear()
             except Exception:
                 logging.exception("Session pruning failed")
     prune_task = asyncio.create_task(prune_sessions())
@@ -71,6 +113,11 @@ async def lifespan(application: FastAPI):
     yield  # application runs here
 
     # --- SHUTDOWN ---
+    reindex_task.cancel()
+    try:
+        await reindex_task
+    except asyncio.CancelledError:
+        pass
     log_prune_task.cancel()
     try:
         await log_prune_task
@@ -109,7 +156,7 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://lumina.hub:8000", "http://10.42.0.1:8000", "http://localhost:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -166,6 +213,7 @@ from app.routers.teacher_course_resources import router as teacher_course_resour
 from app.routers.teacher_quizzes import router as teacher_quizzes_router
 from app.routers.teacher_topics import router as teacher_topics_router
 from app.routers.teacher_similar import router as teacher_similar_router
+from app.routers.teacher_quiz_resources import router as teacher_quiz_resources_router
 from app.routers.student_courses import router as student_courses_router
 from zim_handler import router as zim_router
 
@@ -188,6 +236,7 @@ app.include_router(teacher_quizzes_router)
 app.include_router(teacher_topics_router)
 app.include_router(teacher_similar_router)
 app.include_router(student_courses_router)
+app.include_router(teacher_quiz_resources_router)
 app.include_router(zim_router, prefix="/zim")
 
 # Static file mounts (must be after routes)

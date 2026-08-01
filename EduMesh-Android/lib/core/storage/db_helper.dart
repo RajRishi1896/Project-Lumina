@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:path/path.dart' show join;
 import 'package:sqflite/sqflite.dart';
 
@@ -25,7 +26,7 @@ class DBHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 12, onCreate: _createDB, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 14, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   Future _createDB(Database db, int version) async {
@@ -196,8 +197,18 @@ class DBHelper {
         article_id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         archive_id TEXT,
+        path TEXT DEFAULT '',
+        namespace TEXT DEFAULT 'A',
         has_thumbnail INTEGER DEFAULT 0,
         is_downloaded INTEGER DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS quiz_cache (
+        cache_key TEXT PRIMARY KEY,
+        quiz_json TEXT NOT NULL,
+        cached_at INTEGER NOT NULL
       )
     ''');
 
@@ -326,35 +337,6 @@ class DBHelper {
     await db.delete('pending_downloads');
   }
 
-  /// Inserts or replaces a ZIM article record in the local database.
-  Future<void> upsertZimArticle(String articleId, String title, String archiveId, {bool hasThumbnail = false}) async {
-    final db = await database;
-    await db.insert('zim_articles_local', {
-      'article_id': articleId,
-      'title': title,
-      'archive_id': archiveId,
-      'has_thumbnail': hasThumbnail ? 1 : 0,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  /// Batch-inserts ZIM articles in a single transaction for efficiency.
-  Future<void> upsertZimArticlesBatch(List<Map<String, dynamic>> articles) async {
-    final db = await database;
-    await db.transaction((txn) async {
-      final batch = txn.batch();
-      for (final a in articles) {
-        batch.insert('zim_articles_local', a, conflictAlgorithm: ConflictAlgorithm.replace);
-      }
-      await batch.commit(noResult: true);
-    });
-  }
-
-  /// Returns all stored ZIM article records.
-  Future<List<Map<String, dynamic>>> getAllZimArticles() async {
-    final db = await database;
-    return await db.query('zim_articles_local');
-  }
-
   /// Marks an article as downloaded by setting `is_downloaded = 1`.
   Future<void> markZimArticleDownloaded(String articleId) async {
     final db = await database;
@@ -368,6 +350,56 @@ class DBHelper {
     final rows = await db.query('zim_articles_local',
         columns: ['article_id'], where: 'is_downloaded = 1');
     return rows.map((r) => r['article_id'] as String).toSet();
+  }
+
+  /// Searches downloaded ZIM articles by title substring for offline fallback.
+  Future<List<Map<String, dynamic>>> searchDownloadedZimArticles(String query) async {
+    final db = await database;
+    return await db.query(
+      'zim_articles_local',
+      where: 'is_downloaded = 1 AND title LIKE ?',
+      whereArgs: ['%$query%'],
+      limit: 50,
+    );
+  }
+
+  /// Returns all downloaded ZIM articles for the offline library.
+  Future<List<Map<String, dynamic>>> getDownloadedZimArticles() async {
+    final db = await database;
+    final rows = await db.query(
+      'zim_articles_local',
+      where: 'is_downloaded = 1',
+    );
+    return rows.map((r) => {
+      'resource_id': 'zim_${r['article_id']}',
+      'title': r['title'] as String? ?? '',
+      'subject': 'Wikipedia',
+      'type': 'kiwix',
+      'local_path': '',
+      'is_zim': true,
+      'article_id': r['article_id'] as String? ?? '',
+      'archive_id': r['archive_id'] as String? ?? '',
+    }).toList();
+  }
+
+  /// Caches a quiz JSON response for offline access. [cacheKey] = "courseId_quizId".
+  Future<void> cacheQuiz(String cacheKey, Map<String, dynamic> quizJson) async {
+    final db = await database;
+    await db.insert('quiz_cache', {
+      'cache_key': cacheKey,
+      'quiz_json': jsonEncode(quizJson),
+      'cached_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// Returns the cached quiz JSON for [cacheKey], or null if not cached.
+  Future<Map<String, dynamic>?> getCachedQuiz(String cacheKey) async {
+    final db = await database;
+    final rows = await db.query('quiz_cache', where: 'cache_key = ?', whereArgs: [cacheKey]);
+    if (rows.isEmpty) return null;
+    try {
+      return jsonDecode(rows.first['quiz_json'] as String) as Map<String, dynamic>;
+    } catch (_) { return null; }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -469,6 +501,13 @@ class DBHelper {
       if (v >= 11) {
         try { await db.execute('CREATE TABLE IF NOT EXISTS zim_archives_local (id TEXT PRIMARY KEY, title TEXT NOT NULL, article_count INTEGER DEFAULT 0, language TEXT DEFAULT \'en\')'); } catch (_) {}
         try { await db.execute('CREATE TABLE IF NOT EXISTS zim_articles_local (article_id TEXT PRIMARY KEY, title TEXT NOT NULL, archive_id TEXT, has_thumbnail INTEGER DEFAULT 0, is_downloaded INTEGER DEFAULT 0)'); } catch (_) {}
+      }
+      if (v >= 12) {
+        try { await db.execute('CREATE TABLE IF NOT EXISTS quiz_cache (cache_key TEXT PRIMARY KEY, quiz_json TEXT NOT NULL, cached_at INTEGER NOT NULL)'); } catch (_) {}
+      }
+      if (v >= 13) {
+        try { await db.execute('ALTER TABLE zim_articles_local ADD COLUMN path TEXT DEFAULT \'\''); } catch (_) {}
+        try { await db.execute('ALTER TABLE zim_articles_local ADD COLUMN namespace TEXT DEFAULT \'A\''); } catch (_) {}
       }
     }
   }

@@ -32,6 +32,11 @@
                 <div class="card-title" id="subjectCardTitle" data-i18n="student_detail_subject_breakdown">Subject Breakdown</div>
                 <div class="subject-list" id="subjectList"></div>
             </div>
+            <!-- Section: Quiz Scores Card -->
+            <div class="card" id="quizCard" style="display:none;">
+                <div class="card-title" data-i18n="student_detail_quiz_scores">Quiz Scores</div>
+                <div class="quiz-scores-list" id="quizScoresList"></div>
+            </div>
             <!-- Section: Loading / Error States -->
             <div id="loadingState" class="empty-state" style="display:none;" data-i18n="student_detail_loading">Loading student data…</div>
             <div id="errorState" class="empty-state" style="display:none; color: var(--danger);" data-i18n="student_detail_failed">Failed to load student data.</div>
@@ -130,6 +135,23 @@
                 }).join('');
             }
 
+            /**
+             * Renders the quiz scores card with best scores and attempt counts.
+             * @param {Array<{title: string, best_score: number, attempts_count: number}>} scores - Quiz scores data.
+             */
+            function renderQuizScores(scores) {
+                document.getElementById('quizCard').style.display = '';
+                var list = document.getElementById('quizScoresList');
+                list.innerHTML = scores.map(function(s){
+                    var pct = Math.round((s.best_score || 0) * 100);
+                    var passColor = pct >= 60 ? 'var(--teal)' : 'var(--danger)';
+                    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border);">' +
+                        '<div><div style="font-weight:600;">' + esc(s.title) + '</div>' +
+                        '<div style="font-size:0.8rem;color:var(--text-muted);">' + s.attempts_count + ' ' + __('student_detail_attempts') + '</div></div>' +
+                        '<div style="font-size:1.2rem;font-weight:700;color:' + passColor + ';">' + pct + '%</div></div>';
+                }).join('');
+            }
+
             /** Entry point: parses URL params, renders header, fetches analytics, and populates the page. */
             function init() {
                 if (!studentId) {
@@ -148,6 +170,10 @@
                 .then(function(analytics){
                     renderStats((analytics.study_minutes_this_week || 0), analytics.streak_days || 0, analytics.resources_saved || 0);
                     renderSubjects(analytics.subjects || []);
+                    var quizScores = analytics.quiz_scores || [];
+                    if (quizScores.length > 0) {
+                        renderQuizScores(quizScores);
+                    }
                     document.getElementById('loadingState').style.display = 'none';
                 }).catch(function(err){
                     document.getElementById('loadingState').style.display = 'none';

@@ -32,7 +32,7 @@ app.database.PROFILE_ICONS_DIR = _profile_dir
 import app.audit
 app.audit._DB_PATH = _db_path
 _orig_write = app.audit._write_audit_line
-def _patched_write_audit_line(event, summary):
+def _patched_write_audit_line(event):
     """Write audit events to the test temp directory instead of data/."""
     try:
         with open(_admin_log, "a") as f:

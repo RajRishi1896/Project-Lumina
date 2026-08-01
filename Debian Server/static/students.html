@@ -81,23 +81,6 @@
         var allStudents = [];
         var allGrades = [];
 
-
-
-        /**
-         * @param {string|null} iso - ISO date string or null
-         * @returns {string} Human-friendly relative time label
-         */
-        function timeAgo(iso) {
-            if (!iso) return __('students.never');
-            const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-            if (diff < 60) return __('students.just_now');
-            if (diff < 3600) return __('students.minutes_ago', {n: Math.floor(diff / 60)});
-            if (diff < 86400) return __('students.hours_ago', {n: Math.floor(diff / 3600)});
-            if (diff < 172800) return __('students.yesterday');
-            if (diff < 2592000) return __('students.days_ago', {n: Math.floor(diff / 86400)});
-            return new Date(iso).toLocaleDateString();
-        }
-
         /** Filters the global allStudents array by grade, name/ID search, then re-renders. */
         function applyFilters() {
             const grade = document.getElementById('gradeFilter').value;
@@ -108,7 +91,7 @@
             let filtered = allStudents;
             if (grade && grade !== 'at_risk') filtered = filtered.filter(function(s) { return s.grade === grade; });
             if (query) filtered = filtered.filter(function(s) {
-                return s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query);
+                return s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query) || (s.username || '').toLowerCase().includes(query);
             });
             if (grade === 'at_risk') {
                 var atRiskDays = parseInt(document.getElementById('atRiskDays').value, 10) || 3;
@@ -171,6 +154,7 @@
                     const initials = nameParts.map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
                     return {
                         id: s.id || s.scholar_id || '',
+                        username: s.username || '',
                         name: s.name || __('students_unknown'),
                         grade: s.grade || '',
                         gradeName: gradeNameMap[s.grade] || (s.grade ? __('students.class_prefix') + s.grade : __('students_ungraded')),
@@ -234,6 +218,7 @@
                     '</div>' +
                     '</div>' +
                     '<div class="student-meta">' +
+                    (s.username ? '<span class="scholar-id">@' + esc(s.username) + '</span> &middot; ' : '') +
                     esc(s.gradeName) + ' &middot; <span class="scholar-id">' + esc(s.id) + '</span> &middot; ' + __('students_last_updated') + ' ' + timeAgo(s.last_active) +
                     (atRisk ? ' <span class="at-risk-tooltip">(' + Math.floor(daysSinceActive) + 'd)</span>' : '') +
                     '</div>' +

@@ -23,6 +23,7 @@ class LuminaStepper extends StatelessWidget {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(steps.length * 2 - 1, (index) {
         if (index.isEven) {
           final stepIndex = index ~/ 2;
@@ -58,10 +59,12 @@ class LuminaStepper extends StatelessWidget {
               SizedBox(height: AppSpacing.xs.h),
               Text(
                 steps[stepIndex],
+                textAlign: TextAlign.center,
                 style: tt.labelSmall?.copyWith(
                   fontSize: 10.sp,
                   fontWeight: isActive ? AppSpacing.weightStrong : AppSpacing.weightBody,
                   color: isActive ? cs.primary : cs.onSurfaceVariant,
+                  height: 1.2,
                 ),
               ),
             ],
@@ -70,12 +73,14 @@ class LuminaStepper extends StatelessWidget {
         } else {
           final isActive = (index ~/ 2) < currentStep;
           return Flexible(
-            child: Container(
-            width: 40.w,
-            height: 2.h,
-            margin: EdgeInsets.only(bottom: AppSpacing.md.h),
-            color: isActive ? cs.primary : cs.outlineVariant,
-          ),
+            child: Padding(
+              padding: EdgeInsets.only(top: (24.w - 2.h) / 2),
+              child: Container(
+                width: 40.w,
+                height: 2.h,
+                color: isActive ? cs.primary : cs.outlineVariant,
+              ),
+            ),
           );
         }
       }),

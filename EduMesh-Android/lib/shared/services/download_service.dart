@@ -27,40 +27,56 @@ class DownloadService {
       savePath = '$baseDir/$fileName';
       partPath = '$savePath.part';
       
-      await ApiClient.dio.download(
-        url,
-        partPath, // Download to the temporary .part file
-        onReceiveProgress: onProgress,
-      );
+      int startByte = 0;
+      final partFile = File(partPath);
+      if (await partFile.exists()) {
+        startByte = await partFile.length();
+      }
       
-      // If successful, rename the .part file to the actual file name
-      final downloadedPart = File(partPath);
-      if (await downloadedPart.exists()) {
-        await downloadedPart.rename(savePath);
+      // Stream the response to disk chunk-by-chunk: buffering the whole file
+      // in RAM (ResponseType.bytes) OOM-crashes low-end devices on videos.
+      // Range header + FileMode.append keeps .part resume working.
+      final response = await ApiClient.dio.get<ResponseBody>(
+        url,
+        onReceiveProgress: onProgress,
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: startByte > 0 ? {'Range': 'bytes=$startByte-'} : null,
+        ),
+      );
+
+      // Server ignored Range header — .part file is corrupt, restart
+      if (startByte > 0 && response.statusCode == 200) {
+        await partFile.delete();
+        throw Exception('RANGE_NOT_SUPPORTED');
+      }
+
+      final sink = partFile.openWrite(mode: FileMode.append);
+      try {
+        await response.data!.stream.pipe(sink);
+      } finally {
+        await sink.close();
+      }
+
+      if (await partFile.length() == 0) {
+        await partFile.delete();
+        throw Exception('EMPTY_RESPONSE');
+      }
+
+      if (await partFile.exists()) {
+        await partFile.rename(savePath);
       }
       
       return File(savePath);
     } on DioException catch (e) {
-      // Clean up the .part file on failure
-      if (partPath != null) {
-        final partialFile = File(partPath);
-        if (await partialFile.exists()) {
-          await partialFile.delete();
-        }
-      }
-      
+      // .part file remains for resume on next attempt
       if (e.error is FileSystemException || e.message?.contains('No space left on device') == true) {
         throw Exception('STORAGE_FULL');
       }
       debugPrint('Download network error: $e');
       throw Exception('NETWORK_ERROR');
     } catch (e) {
-      if (partPath != null) {
-        final partialFile = File(partPath);
-        if (await partialFile.exists()) {
-          await partialFile.delete();
-        }
-      }
+      // .part file remains for resume on next attempt
       debugPrint('Unexpected download error: $e');
       throw Exception('UNKNOWN_ERROR');
     }
@@ -88,6 +104,7 @@ class DownloadService {
       return null;
     } catch (e) {
       debugPrint('DownloadService: downloadAndTrack failed: $e');
+      if (e is Exception && e.toString().contains('STORAGE_FULL')) rethrow;
       return null;
     }
   }
@@ -113,4 +130,19 @@ class DownloadService {
     }
   }
 
+  static Future<void> cleanStaleParts(Duration maxAge) async {
+    try {
+      final baseDir = await getApplicationDocumentsDirectory();
+      final dir = Directory('${baseDir.path}/LuminaResources');
+      if (!await dir.exists()) return;
+      await for (final entity in dir.list()) {
+        if (entity.path.endsWith('.part')) {
+          final stat = await entity.stat();
+          if (DateTime.now().difference(stat.modified) > maxAge) {
+            await entity.delete();
+          }
+        }
+      }
+    } catch (_) {}
+  }
 }

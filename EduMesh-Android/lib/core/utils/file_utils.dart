@@ -14,6 +14,7 @@ ResourceType parseResourceType(String type) {
       return ResourceType.textbook;
     case 'videos':
     case 'video':
+    case 'khan':
       return ResourceType.videos;
     case 'pyq':
       return ResourceType.pyq;
@@ -22,6 +23,10 @@ ResourceType parseResourceType(String type) {
       return ResourceType.pastPaper;
     case 'kiwix':
       return ResourceType.kiwix;
+    case 'quiz':
+      return ResourceType.quiz;
+    case 'notes':
+      return ResourceType.notes;
     default:
       return ResourceType.textbook;
   }
@@ -46,11 +51,14 @@ IconData iconForType(ResourceType type) {
       return Icons.play_circle_rounded;
     case ResourceType.pyq:
       return Icons.assignment_rounded;
-
     case ResourceType.kiwix:
       return Icons.language_rounded;
     case ResourceType.pastPaper:
       return Icons.assignment_rounded;
+    case ResourceType.quiz:
+      return Icons.quiz_rounded;
+    case ResourceType.notes:
+      return Icons.note_rounded;
   }
 }
 

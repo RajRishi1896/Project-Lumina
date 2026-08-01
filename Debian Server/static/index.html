@@ -121,7 +121,10 @@
                         _statUptimeEl.textContent = __('index.uptime_na');
                     }
                     if (d.battery_percent !== undefined) {
-                        document.getElementById('statBattery').textContent = d.battery_percent + '%';
+                        const _batt = document.getElementById('statBattery');
+                        const _battLabel = d.battery_charging ? __('battery.charging') : __('battery.on_battery');
+                        _batt.textContent = d.battery_percent + '%';
+                        _batt.title = _battLabel;
                     }
                     if (d.disk_usage) document.getElementById('infoDisk').textContent = d.disk_usage;
                     document.getElementById('infoHost').textContent = window.location.hostname;

@@ -1,11 +1,12 @@
 """Teacher topic (chapter) management for courses."""
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from app.database import gen_uid
-from app.async_db import db_exec, db_fetch, db_fetch_one
+from app.async_db import db_exec, db_exec_many, db_fetch, db_fetch_one
 from app.dependencies import verify_teacher
 from app.routers.teacher_courses import _ensure_course_owner
+from app.audit import audit, Action
 
 router = APIRouter()
 
@@ -13,7 +14,7 @@ router = APIRouter()
 @router.post("/api/teacher/courses/{course_id}/topics",
              summary="Create a topic (chapter)", tags=["Teacher Courses"],
              responses={201: {"description": "Topic created"}})
-async def create_topic(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
+async def create_topic(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher), request: Request = None):
     """Create a new topic (chapter) within a course.
 
     Assigns the next position index. Title is required.
@@ -33,6 +34,8 @@ async def create_topic(course_id: str, data: dict, teacher_user: str = Depends(v
     await db_exec(
         "INSERT INTO topics (id, course_id, title, description, position, created_at) VALUES (?, ?, ?, ?, ?, ?)",
         (topic_id, course_id, title, data.get("description", ""), next_pos, now))
+    await audit(action=Action.CREATE_TOPIC, username=teacher_user, resource_type="topic",
+                resource_id=topic_id, resource_name=title, context={"course_id": course_id})
     row = await db_fetch_one("SELECT * FROM topics WHERE id = ?", (topic_id,))
     return dict(row)
 
@@ -49,7 +52,7 @@ async def list_topics(course_id: str, teacher_user: str = Depends(verify_teacher
 
 @router.put("/api/teacher/courses/{course_id}/topics/{topic_id}",
             summary="Update a topic", tags=["Teacher Courses"])
-async def update_topic(course_id: str, topic_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
+async def update_topic(course_id: str, topic_id: str, data: dict, teacher_user: str = Depends(verify_teacher), request: Request = None):
     """Update a topic's title and description.
 
     Raises:
@@ -64,6 +67,8 @@ async def update_topic(course_id: str, topic_id: str, data: dict, teacher_user: 
         raise HTTPException(status_code=400, detail="Topic title is required.")  # i18n: user-facing error message
     await db_exec("UPDATE topics SET title = ?, description = ? WHERE id = ?",
                   (title, data.get("description", ""), topic_id))
+    await audit(action=Action.UPDATE_TOPIC, username=teacher_user, resource_type="topic",
+                resource_id=topic_id, resource_name=title, context={"course_id": course_id})
     updated = await db_fetch_one("SELECT * FROM topics WHERE id = ?", (topic_id,))
     return dict(updated)
 
@@ -72,10 +77,12 @@ async def update_topic(course_id: str, topic_id: str, data: dict, teacher_user: 
                summary="Delete a topic", tags=["Teacher Courses"])
 async def delete_topic(course_id: str, topic_id: str,
                        transfer_to: Optional[str] = Query(None, description="Transfer resources to this topic before deleting"),
-                       teacher_user: str = Depends(verify_teacher)):
-    """Delete a topic and optionally transfer its resources.
+                       delete_resources: bool = Query(False, description="Delete all resources in this topic"),
+                       teacher_user: str = Depends(verify_teacher), request: Request = None):
+    """Delete a topic and optionally transfer or delete its resources.
 
     If ``transfer_to`` is set, resources are moved to that topic.
+    If ``delete_resources`` is true, resources are hard-deleted.
     Otherwise resources are ungrouped (topic_id cleared).
 
     Raises:
@@ -91,17 +98,36 @@ async def delete_topic(course_id: str, topic_id: str,
             raise HTTPException(status_code=404, detail="Transfer target topic not found.")  # i18n: user-facing error message
         await db_exec("UPDATE course_resources SET topic_id = ? WHERE topic_id = ?", (transfer_to, topic_id))
         await db_exec("DELETE FROM topics WHERE id = ?", (topic_id,))
+        await audit(action=Action.DELETE_TOPIC, username=teacher_user, resource_type="topic",
+                    resource_id=topic_id, context={"course_id": course_id, "transferred_to": target["title"]})
         return {"status": "ok", "message": f"Topic deleted. Resources transferred to '{target['title']}'.",
                 "transferred_to": target["title"]}  # i18n: user-facing success message
+    elif delete_resources:
+        resources = await db_fetch("SELECT id, filename FROM course_resources WHERE topic_id = ?", (topic_id,))
+        import os
+        upload_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+        for r in resources:
+            fpath = os.path.join(upload_dir, r["filename"])
+            if r.get("filename") and os.path.exists(fpath):
+                try: os.remove(fpath)
+                except Exception: pass
+        count = len(resources)
+        await db_exec("DELETE FROM course_resources WHERE topic_id = ?", (topic_id,))
+        await db_exec("DELETE FROM topics WHERE id = ?", (topic_id,))
+        await audit(action=Action.DELETE_TOPIC, username=teacher_user, resource_type="topic",
+                    resource_id=topic_id, context={"course_id": course_id, "deleted_resources": count})
+        return {"status": "ok", "message": f"Topic and {count} resources deleted."}  # i18n: user-facing success message
     else:
         await db_exec("UPDATE course_resources SET topic_id = '' WHERE topic_id = ?", (topic_id,))
         await db_exec("DELETE FROM topics WHERE id = ?", (topic_id,))
+        await audit(action=Action.DELETE_TOPIC, username=teacher_user, resource_type="topic",
+                    resource_id=topic_id, context={"course_id": course_id})
         return {"status": "ok", "message": "Topic deleted. Resources moved to ungrouped."}  # i18n: user-facing success message
 
 
 @router.post("/api/teacher/courses/{course_id}/topics/reorder",
              summary="Reorder topics", tags=["Teacher Courses"])
-async def reorder_topics(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
+async def reorder_topics(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher), request: Request = None):
     """Reorder topics within a course.
 
     Expects ``topic_ids`` as a list of topic IDs in the desired order.
@@ -111,8 +137,11 @@ async def reorder_topics(course_id: str, data: dict, teacher_user: str = Depends
     topic_ids = data.get("topic_ids", [])
     if not topic_ids:
         raise HTTPException(status_code=400, detail="topic_ids list is required.")  # i18n: user-facing error message
-    for i, tid in enumerate(topic_ids):
-        await db_exec("UPDATE topics SET position = ? WHERE id = ? AND course_id = ?", (i, tid, course_id))
+    await db_exec_many(
+        "UPDATE topics SET position = ? WHERE id = ? AND course_id = ?",
+        [(i, tid, course_id) for i, tid in enumerate(topic_ids)])
+    await audit(action=Action.UPDATE_TOPIC, username=teacher_user, resource_type="topic",
+                resource_name="reorder", context={"course_id": course_id, "count": len(topic_ids)})
     return {"status": "ok", "message": f"Reordered {len(topic_ids)} topics."}  # i18n: user-facing success message
 
 
@@ -142,7 +171,7 @@ async def assign_resource_topic(course_id: str, resource_id: str, data: dict, te
 
 @router.post("/api/teacher/courses/{course_id}/topics/reorder-resources",
              summary="Reorder resources within a topic", tags=["Teacher Courses"])
-async def reorder_topic_resources(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
+async def reorder_topic_resources(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher), request: Request = None):
     """Reorder resources within a course (across all topics).
 
     Expects ``resource_ids`` as a list in the desired order. Sets each
@@ -152,6 +181,9 @@ async def reorder_topic_resources(course_id: str, data: dict, teacher_user: str 
     resource_ids = data.get("resource_ids", [])
     if not resource_ids:
         raise HTTPException(status_code=400, detail="resource_ids list is required.")  # i18n: user-facing error message
-    for i, rid in enumerate(resource_ids):
-        await db_exec("UPDATE course_resources SET position = ? WHERE id = ? AND course_id = ?", (i, rid, course_id))
+    await db_exec_many(
+        "UPDATE course_resources SET position = ? WHERE id = ? AND course_id = ?",
+        [(i, rid, course_id) for i, rid in enumerate(resource_ids)])
+    await audit(action=Action.UPDATE_TOPIC, username=teacher_user, resource_type="topic",
+                resource_name="reorder-resources", context={"course_id": course_id, "count": len(resource_ids)})
     return {"status": "ok", "message": f"Reordered {len(resource_ids)} resources."}  # i18n: user-facing success message

@@ -3,6 +3,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../../core/constants/lumina_colors.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/services/activity_tracker.dart';
+import '../../../core/network/api_client.dart';
 
 /// A full-screen WebView wrapper for displaying Kiwix / ZIM content.
 ///
@@ -18,11 +20,16 @@ class KiwixView extends StatefulWidget {
   /// An optional title shown in the app bar.
   final String? title;
 
+  /// Base URL for resolving relative asset paths in [initialHtml].
+  /// Required when [initialHtml] contains rewritten `/zim/asset` URLs.
+  final String? baseUrl;
+
   const KiwixView({
     super.key,
     this.initialUrl,
     this.initialHtml,
     this.title,
+    this.baseUrl,
   }) : assert(initialUrl != null || initialHtml != null,
             'Either initialUrl or initialHtml must be provided');
 
@@ -39,6 +46,7 @@ class _KiwixViewState extends State<KiwixView> {
   @override
   void initState() {
     super.initState();
+    ActivityTracker().startStudySession();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(LuminaColors.surface)
@@ -58,10 +66,17 @@ class _KiwixViewState extends State<KiwixView> {
       );
 
     if (widget.initialHtml != null) {
-      _controller.loadHtmlString(widget.initialHtml!);
+      final base = widget.baseUrl ?? ApiClient.baseUrl;
+      _controller.loadHtmlString(widget.initialHtml!, baseUrl: base);
     } else if (widget.initialUrl != null) {
       _controller.loadRequest(Uri.parse(widget.initialUrl!));
     }
+  }
+
+  @override
+  void dispose() {
+    ActivityTracker().endStudySession();
+    super.dispose();
   }
 
   @override
@@ -69,6 +84,10 @@ class _KiwixViewState extends State<KiwixView> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text(
           widget.title ?? l10n.kiwixDefaultTitle,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -77,6 +96,7 @@ class _KiwixViewState extends State<KiwixView> {
               ),
         ),
         backgroundColor: LuminaColors.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         elevation: 0,
         actions: [
           IconButton(

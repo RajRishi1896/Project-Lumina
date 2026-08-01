@@ -12,24 +12,44 @@ class ApiClient {
   static const String _defaultDomain = 'http://lumina.hub:8000';
   static String _baseUrl = _defaultDomain;
   static bool _initialized = false;
+  static Completer<void>? _initCompleter;
   static Completer<void>? _refreshCompleter;
+  static Duration _clockOffset = Duration.zero;
+  static DateTime? _lastSyncTime;
 
   /// Callback invoked when a token refresh fails and the user must be logged out.
   static void Function()? onForceLogout;
+
+  /// Current clock skew between local device and server.
+  static Duration get clockOffset => _clockOffset;
+
+  /// Returns [DateTime.now()] corrected for server clock skew.
+  /// Returns uncorrected time if the last sync is over 1 hour stale.
+  static DateTime correctedNow() {
+    if (_lastSyncTime != null && DateTime.now().difference(_lastSyncTime!) > const Duration(hours: 1)) {
+      return DateTime.now();
+    }
+    return DateTime.now().add(_clockOffset);
+  }
 
   static final Dio _dio = _createDio();
 
   static Dio _createDio() {
     final dio = Dio(BaseOptions(
       baseUrl: _baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 15),
-      sendTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 15),
     ));
     if (kDebugMode) dio.interceptors.add(LogInterceptor());
     dio.interceptors.add(InterceptorsWrapper(
       onError: (error, handler) async {
-        if (error.response?.statusCode == 401 || error.response?.statusCode == 403) {
+        if (error.response?.statusCode == 401) {
+          final path = error.requestOptions.path;
+          if (path.endsWith('/student/token') || path.endsWith('/token') || path.endsWith('/register') || path.endsWith('/student/refresh-token') || path.endsWith('/student/renew-session')) {
+            handler.next(error);
+            return;
+          }
           if (_refreshCompleter != null) {
             await _refreshCompleter!.future;
             final newToken = await AuthService().getSessionToken();
@@ -44,24 +64,37 @@ class ApiClient {
           }
           _refreshCompleter = Completer<void>();
           try {
-            if (await AuthService().refreshSession()) {
-              final newToken = await AuthService().getSessionToken();
-              error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-              try {
-                final retryResponse = await dio.fetch(error.requestOptions);
-                handler.resolve(retryResponse);
-                return;
-              } catch (_) { } }
-            if (await AuthService().renewSession()) {
-              final newToken = await AuthService().getSessionToken();
-              error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-              try {
-                final retryResponse = await dio.fetch(error.requestOptions);
-                handler.resolve(retryResponse);
-                return;
-              } catch (_) { } }
-            await AuthService().logout();
-            onForceLogout?.call();
+            try {
+              if (await AuthService().refreshSession()) {
+                final newToken = await AuthService().getSessionToken();
+                error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                try {
+                  final retryResponse = await dio.fetch(error.requestOptions);
+                  handler.resolve(retryResponse);
+                  return;
+                } catch (_) {
+                  handler.next(error);
+                  return;
+                }
+              }
+              if (await AuthService().renewSession()) {
+                final newToken = await AuthService().getSessionToken();
+                error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                try {
+                  final retryResponse = await dio.fetch(error.requestOptions);
+                  handler.resolve(retryResponse);
+                  return;
+                } catch (_) {
+                  handler.next(error);
+                  return;
+                }
+              }
+              await AuthService().logout();
+              onForceLogout?.call();
+            } catch (_) {
+              try { await AuthService().logout(); } catch (_) {}
+              onForceLogout?.call();
+            }
           } finally {
             _refreshCompleter!.complete();
             _refreshCompleter = null;
@@ -99,7 +132,17 @@ class ApiClient {
   static Future<void> _ensureInitialized() async {
     _configureKeepAlive();
     if (_initialized) return;
-    await _doInitialize();
+    if (_initCompleter != null) {
+      await _initCompleter!.future;
+      return;
+    }
+    _initCompleter = Completer<void>();
+    try {
+      await _doInitialize();
+    } finally {
+      _initCompleter!.complete();
+      _initCompleter = null;
+    }
   }
 
   static Future<void> _doInitialize() async {
@@ -164,5 +207,25 @@ class ApiClient {
   /// Ensures the server base URL is resolved via DNS or fallback IP.
   /// Safe to call multiple times; only performs initialization once.
   static Future<void> ensureInitialized() => _ensureInitialized();
+
+  /// Sync time with server and compute clock skew offset.
+  /// Call this on every connectivity restore.
+  static Future<void> syncTime() async {
+    try {
+      await _ensureInitialized();
+      final resp = await _dio.get(
+        '$_baseUrl/system/time',
+        options: Options(sendTimeout: const Duration(seconds: 3), receiveTimeout: const Duration(seconds: 3)),
+      );
+      final serverTimeStr = resp.data['server_time']?.toString();
+      if (serverTimeStr != null) {
+        final serverTime = DateTime.parse(serverTimeStr).toUtc();
+        final localTime = DateTime.now().toUtc();
+        _clockOffset = serverTime.difference(localTime);
+        _lastSyncTime = DateTime.now();
+        debugPrint('ApiClient: clock offset = ${_clockOffset.inMilliseconds}ms');
+      }
+    } catch (_) {}
+  }
 
 }

@@ -82,9 +82,9 @@ class LuminaLiteTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: LuminaColors.lightSurface,
-        selectedItemColor: LuminaColors.lightPrimary,
-        unselectedItemColor: LuminaColors.lightOutline,
+        backgroundColor: LuminaColors.lightSurfaceContainerHighest,
+        selectedItemColor: LuminaColors.academicTeal,
+        unselectedItemColor: LuminaColors.lightOnSurfaceVariant,
         elevation: 0,
         type: BottomNavigationBarType.fixed,
       ),
@@ -177,8 +177,8 @@ class LuminaLiteTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: LuminaColors.darkSurface,
-        selectedItemColor: LuminaColors.darkPrimary,
+        backgroundColor: LuminaColors.darkSurfaceContainerHighest,
+        selectedItemColor: LuminaColors.academicTeal,
         unselectedItemColor: LuminaColors.darkOutline,
         elevation: 0,
         type: BottomNavigationBarType.fixed,

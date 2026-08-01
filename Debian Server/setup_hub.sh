@@ -20,37 +20,18 @@ apt install -y python3 python3-pip python3-venv dnsmasq network-manager ufw libz
 
 # 2. Create Directory Structure
 echo "[INFO] Creating Hub structure..."
-mkdir -p uploads data static app zim_pages
+mkdir -p uploads data static app zim_pages thumbnails profile_icons
+chmod +x start_hotspot.sh backup_hub.sh reset_admin.sh show_hub_info.sh 2>/dev/null || true
 
 # 3. Install Python requirements
 echo "[INFO] Installing Python requirements..."
-if [ ! -d "venv" ]; then
+if [ ! -d "venv" ] || [ ! -f "venv/bin/python" ]; then
+    rm -rf venv 2>/dev/null || true
     python3 -m venv venv
-else
-    echo "venv already exists, skipping creation"
 fi
-if [ -f "venv/bin/activate" ]; then
-    source venv/bin/activate
-    pip install --upgrade pip 2>/dev/null || true
-    pip install -r requirements.txt
-else
-    echo "[WARNING] venv/bin/activate not found. Installing system-wide..."
-    pip3 install --user -r requirements.txt 2>/dev/null || pip install -r requirements.txt
-fi
-
-# 4. Generate self-signed SSL cert if missing
-echo "[INFO] Generating self-signed SSL certificate..."
-DIR="$(dirname "$0")"
-CERT="$DIR/data/server.pem"
-KEY="$DIR/data/server.key"
-if [ ! -f "$CERT" ] || [ ! -f "$KEY" ]; then
-  openssl req -x509 -newkey rsa:2048 -keyout "$KEY" -out "$CERT" -days 3650 -nodes \
-    -subj "/C=IN/O=EduMesh/CN=lumina.hub" 2>/dev/null
-  chmod 600 "$KEY" "$CERT"
-  echo "[INFO] Self-signed SSL cert generated"
-else
-  echo "[INFO] SSL cert already exists, skipping"
-fi
+source venv/bin/activate
+pip install --upgrade pip 2>/dev/null || true
+pip install -r requirements.txt
 
 # 5. Configure Firewall (Secure Lockdown)
 echo "[INFO] Configuring Firewall (UFW)..."
@@ -70,12 +51,6 @@ if command -v ufw &>/dev/null; then
     fi
 else
     echo "[WARNING] UFW not installed. Skipping firewall."
-fi
-
-# 4a. Install fail2ban for rate limiting
-echo "[INFO] Installing fail2ban for rate limiting..."
-if ! command -v fail2ban-client &>/dev/null; then
-    apt install -y fail2ban 2>/dev/null || true
 fi
 
 # 6. Configure Captive Portal DNS via NetworkManager
@@ -113,6 +88,8 @@ systemctl enable dnsmasq 2>/dev/null || true
 systemctl restart dnsmasq 2>/dev/null || true
 
 # 7. Install & Enable the Systemd Service
+echo "[INFO] Installing systemd service..."
+HUB_DIR="$(pwd)"
 bash -c "cat > /etc/systemd/system/lumina-hub.service <<EOF
 [Unit]
 Description=Lumina Hub FastAPI Service
@@ -120,8 +97,8 @@ After=network.target
 
 [Service]
 User=root
-WorkingDirectory=$(pwd)
-ExecStart=$(pwd)/venv/bin/python main.py
+WorkingDirectory=$HUB_DIR
+ExecStart=$HUB_DIR/venv/bin/python main.py --no-banner
 Restart=always
 
 [Install]
@@ -129,8 +106,52 @@ WantedBy=multi-user.target
 EOF"
 
 systemctl daemon-reload
+systemctl stop lumina-hub 2>/dev/null || true
 systemctl enable lumina-hub 2>/dev/null || true
 systemctl start lumina-hub 2>/dev/null || true
+echo "[INFO] Lumina Hub service started"
+
+# 7b. Install console QR banner via /etc/issue (shows before login prompt)
+chmod +x show_banner.sh 2>/dev/null || true
+HUB_DIR="$(pwd)"
+"$HUB_DIR/venv/bin/python" -c "
+import qrcode, subprocess, socket
+try:
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(('10.42.0.1', 80))
+    ip = s.getsockname()[0]
+    s.close()
+except:
+    ip = '10.42.0.1'
+qr = qrcode.QRCode(box_size=1, border=1)
+qr.add_data('WIFI:T:WPA;S:Lumina Hub;P:lumina2026;;')
+qr.make(fit=True)
+qr_lines = []
+for row in qr.get_matrix():
+    qr_lines.append('    ' + ''.join('\u2588\u2588' if c else '  ' for c in row))
+qr_block = '\n'.join(qr_lines)
+banner = f'''
+============================================================
+   LUMINA HUB
+============================================================
+
+   Server:    http://{ip}:8000
+   Hotspot:   Lumina Hub
+   Password:  lumina2026
+
+   Scan QR to connect to WiFi:
+
+{qr_block}
+
+   Then open in browser:
+   http://{ip}:8000
+
+============================================================
+'''
+with open('/etc/issue', 'w') as f:
+    f.write(banner)
+print('[INFO] /etc/issue updated with QR banner')
+" 2>&1 || echo "[WARNING] Could not generate QR banner"
 
 # 8. Install & Enable the Hotspot Systemd Service
 echo "[INFO] Creating hotspot systemd service..."
@@ -163,11 +184,20 @@ HandleLidSwitchDocked=ignore
 EOF"
 systemctl restart systemd-logind
 
-# 10. Nightly Reboot to clear RAM leaks (3:00 AM)
-( crontab -l 2>/dev/null | grep -v "^[0#]*[0-9].*/sbin/shutdown.*-r"; echo "0 3 * * * /sbin/shutdown -r now" ) | crontab -
+# 10. Nightly Reboot + Daily Backup -- persisted in /etc/cron.d/ (survives reboots)
+tee /etc/cron.d/lumina-hub > /dev/null << 'CRON'
+SHELL=/bin/bash
+# Nightly reboot at 3:00 AM to clear RAM leaks
+0 3 * * * root /sbin/shutdown -r now
+# Daily backup at 2:00 AM
+0 2 * * * root cd /home/project-lumina/Project-Lumina && ./backup_hub.sh >> data/backup.log 2>&1
+CRON
+chmod 644 /etc/cron.d/lumina-hub
+echo "[INFO] Cron jobs written to /etc/cron.d/lumina-hub (persists across reboots)"
 
-# 10b. Daily Backup at 2:00 AM -- DB + profile icons only
-( crontab -l 2>/dev/null | grep -v "backup_hub.sh"; echo "0 2 * * * cd $(pwd) && ./backup_hub.sh >> data/backup.log 2>&1" ) | crontab -
+# 10c. Enable NTP for accurate timekeeping
+echo "[INFO] Enabling NTP..."
+timedatectl set-ntp true 2>/dev/null || true
 
 # 11. Auto-Repair File System on Power Loss
 if grep -q "fsck.repair=yes" /etc/default/grub; then
@@ -191,9 +221,36 @@ root hard nofile 65535
 EOF"
 fi
 
+# 13. RTC Wake Alarm (Auto-boot on power loss, re-arms every 6 hours)
+echo "[INFO] Setting up RTC wake alarm for power-loss recovery..."
+bash -c "cat > /usr/local/bin/wake-alarm.sh << 'WAKE_ALARM'
+#!/bin/bash
+# Re-arm RTC alarm 6 hours from now. Harmless if system is already running.
+/usr/sbin/rtcwake -m no -s 21600
+WAKE_ALARM"
+chmod 755 /usr/local/bin/wake-alarm.sh
+
+cat > /etc/systemd/system/wake-alarm.service << 'WAKE_SVC'
+[Unit]
+Description=Re-arm RTC wake alarm every 6 hours for power-loss recovery
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wake-alarm.sh
+
+[Install]
+WantedBy=multi-user.target
+WAKE_SVC"
+systemctl daemon-reload
+systemctl enable wake-alarm.service 2>/dev/null || true
+systemctl start wake-alarm.service 2>/dev/null || true
+echo "[INFO] RTC wake alarm set. Re-arms every 6 hours. Auto-boots on power restore."
+
 echo "-----------------------------------"
 echo "[SUCCESS] HARDENED SETUP COMPLETE!"
-echo "[INFO] Hub Address: https://lumina.hub:8000 (cert auto-generated)"
+echo "[INFO] Hub Address: http://lumina.hub:8000 (or http://10.42.0.1:8000)"
 echo "[INFO] Logs: data/hub.log"
 echo "[INFO] Firewall: Active (SSH & API ports open only)"
+echo "[INFO] Run 'sudo systemctl start lumina-hotspot' to activate WiFi hotspot"
 echo "[INFO] The Hub is ready for headless deployment."

@@ -117,7 +117,7 @@ class LuminaSettingsSheet extends ConsumerWidget {
           Consumer(builder: (context, ref, child) {
             final locale = ref.watch(localeProvider);
             final l10n = AppLocalizations.of(context)!;
-            final currentLabel = _languageLabel(locale.languageCode, l10n);
+            final currentLabel = _languageLabel(locale.languageCode);
             return ListTile(
               leading: Icon(Icons.language, color: cs.primary),
               title: Text(l10n.settingsLanguageTitle),
@@ -132,7 +132,7 @@ class LuminaSettingsSheet extends ConsumerWidget {
                               leading: o['code'] == locale.languageCode
                                   ? Icon(Icons.check, color: cs.primary)
                                   : const SizedBox(width: AppSpacing.xxl),
-                              title: Text(_languageLabel(o['code']!, l10n)),
+                              title: Text(_languageLabel(o['code']!)),
                               onTap: () {
                                 ref.read(localeProvider.notifier).setLocale(o['code']!);
                                 Navigator.pop(ctx);
@@ -322,12 +322,14 @@ void _showChangePasswordDialog(BuildContext context) {
   });
 }
 
-String _languageLabel(String code, AppLocalizations l10n) {
+String _languageLabel(String code) {
   switch (code) {
-    case 'en': return l10n.languageEnglish;
-    case 'hi': return l10n.languageHindi;
-    case 'kn': return l10n.languageKannada;
-    case 'fr': return l10n.languageFrench;
+    case 'en': return 'English';
+    case 'hi': return 'हिन्दी';
+    case 'kn': return 'ಕನ್ನಡ';
+    case 'fr': return 'Français';
+    case 'ta': return 'தமிழ்';
+    case 'te': return 'తెలుగు';
     default: return code;
   }
 }

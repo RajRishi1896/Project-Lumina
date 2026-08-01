@@ -12,6 +12,10 @@ enum ResourceType {
   pastPaper,
   /// Kiwix offline content (ZIM files).
   kiwix,
+  /// Interactive quizzes.
+  quiz,
+  /// Teacher-created notes and study materials.
+  notes,
 }
 
 /// A model representing a learning resource with its metadata and download status.
@@ -45,6 +49,9 @@ class ResourceModel {
   /// Whether this resource has been downloaded to the device.
   bool isDownloaded;
 
+  /// The topic name assigned to this resource (e.g. "Chapter 1").
+  final String topicName;
+
   /// Creates a [ResourceModel] with the given metadata.
   ResourceModel({
     required this.id,
@@ -55,6 +62,7 @@ class ResourceModel {
     this.isDownloaded = false,
     this.pdfUrl,
     this.mtime = 0,
+    this.topicName = '',
   });
 
   /// Creates a [ResourceModel] from a JSON [map] returned by the API.
@@ -68,6 +76,7 @@ class ResourceModel {
       pdfUrl: json['pdfUrl'],
       mtime: (json['mtime'] as num?)?.toDouble() ?? 0,
       isDownloaded: json['isDownloaded'] == true,
+      topicName: (json['topic_name'] as String?) ?? '',
     );
   }
 
@@ -81,5 +90,6 @@ class ResourceModel {
     'pdfUrl': pdfUrl,
     'mtime': mtime,
     'isDownloaded': isDownloaded,
+    'topic_name': topicName,
   };
 }

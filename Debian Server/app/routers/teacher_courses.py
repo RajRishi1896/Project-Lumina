@@ -59,16 +59,21 @@ async def _ensure_course_owner(course_id: str, teacher_user: str):
     return row
 
 
-async def _write_chunked(dest_path: str, file: UploadFile, max_size: int) -> int:
+async def _write_chunked(dest_path: str, file: UploadFile, max_size: int,
+                         request=None, support_resume: bool = False) -> int:
     """Write an uploaded file to disk in 64KB chunks with a size limit.
 
     Buffers up to 4MB in memory before flushing to disk to reduce I/O
-    cycles on low-end hardware.
+    cycles on low-end hardware. When ``support_resume`` is True, writes to
+    a ``.part`` file first and renames on completion. Supports
+    ``Content-Range`` header for resume.
 
     Args:
         dest_path: Destination file path on disk.
         file: The FastAPI UploadFile object.
         max_size: Maximum allowed file size in bytes.
+        request: Optional FastAPI Request to read Content-Range header.
+        support_resume: Enable .part file + resume logic.
 
     Returns:
         Total bytes written.
@@ -80,13 +85,45 @@ async def _write_chunked(dest_path: str, file: UploadFile, max_size: int) -> int
     total_size = 0
     chunk_buffer = b""
     first_write = True
+    part_path = f"{dest_path}.part" if support_resume else dest_path
+    existing_bytes = 0
+
+    if support_resume and await asyncio.to_thread(os.path.exists, part_path):
+        existing_bytes = await asyncio.to_thread(os.path.getsize, part_path)
+
+    content_range = None
+    if request is not None:
+        content_range = request.headers.get("content-range")
+
+    if support_resume and content_range:
+        # Content-Range: bytes START-END/TOTAL
+        try:
+            range_spec = content_range.split(" ", 1)[1]
+            byte_range, total = range_spec.split("/")
+            start_str, end_str = byte_range.split("-")
+            start = int(start_str)
+            existing_bytes = start
+        except Exception:
+            existing_bytes = 0
+
+    total_size = existing_bytes
 
     def _flush(data):
         nonlocal first_write
-        mode = "wb" if first_write else "ab"
+        mode = "wb" if first_write and not existing_bytes else "ab"
         first_write = False
-        with open(dest_path, mode) as f:
+        with open(part_path, mode) as f:
+            if first_write and not existing_bytes:
+                pass  # already wb mode
             f.write(data)
+
+    # For resume, we need to seek to the right position on first write
+    if support_resume and existing_bytes and not content_range:
+        def _init_append():
+            # Just open in append mode — file already has existing bytes
+            with open(part_path, "ab") as f:
+                pass  # create if missing
+        await asyncio.to_thread(_init_append)
 
     while True:
         chunk = await file.read(chunk_size)
@@ -102,6 +139,10 @@ async def _write_chunked(dest_path: str, file: UploadFile, max_size: int) -> int
     if chunk_buffer:
         await asyncio.to_thread(_flush, chunk_buffer)
     await file.close()
+
+    if support_resume and part_path != dest_path:
+        await asyncio.to_thread(os.rename, part_path, dest_path)
+
     return total_size
 
 
@@ -139,12 +180,14 @@ async def create_course(data: CourseCreate, teacher_user: str = Depends(verify_t
         201 with the created course metadata.
     """
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    subj_row = await db_fetch_one("SELECT id FROM subjects WHERE name = ?", (data.subject,))
+    subject_id = subj_row["id"] if subj_row else ""
     async with db_conn() as conn:
         course_id = gen_composite_uid(conn, data.grade, data.subject, 'CRS')
         conn.execute(
-            """INSERT INTO courses (id, title, description, subject, grade, language, teacher_username, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (course_id, data.title, data.description, data.subject, data.grade, data.language, teacher_user, now, now)
+            """INSERT INTO courses (id, title, description, subject, subject_id, grade, language, teacher_username, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (course_id, data.title, data.description, data.subject, subject_id, data.grade, data.language, teacher_user, now, now)
         )
         conn.commit()
     row = await db_fetch_one("SELECT * FROM courses WHERE id = ?", (course_id,))

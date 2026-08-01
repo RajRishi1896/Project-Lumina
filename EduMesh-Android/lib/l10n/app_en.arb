@@ -64,6 +64,14 @@
   "@languageFrench": {
     "description": "Language button label for French"
   },
+  "languageTamil": "Tamil",
+  "@languageTamil": {
+    "description": "Language option label for Tamil on the welcome page language picker"
+  },
+  "languageTelugu": "Telugu",
+  "@languageTelugu": {
+    "description": "Language option label for Telugu on the welcome page language picker"
+  },
   "languageKiswahili": "Kiswahili",
   "@languageKiswahili": {
     "description": "Language button label for Swahili"
@@ -356,6 +364,10 @@
   "@labelDisplayName": {
     "description": "Label for the display name text field on the profile setup page"
   },
+  "labelOther": "Other",
+  "@labelOther": {
+    "description": "Section header for resources without an assigned topic"
+  },
   "buttonContinue": "Continue",
   "@buttonContinue": {
     "description": "Submit button on the profile setup page to save and proceed to the main app"
@@ -506,6 +518,10 @@
   "@snackbarDownloadFailed": {
     "description": "SnackBar shown when a download encounters an error"
   },
+  "buttonRetry": "Retry",
+  "@buttonRetry": {
+    "description": "Button label to retry a failed download or operation"
+  },
   "snackbarDownloadRemoved": "Download removed",
   "@snackbarDownloadRemoved": {
     "description": "SnackBar confirming a download was deleted"
@@ -527,6 +543,10 @@
         "example": "Chapter 1"
       }
     }
+  },
+  "fileNotAvailable": "File not available",
+  "@fileNotAvailable": {
+    "description": "SnackBar when a resource has no file URL or the URL is empty"
   },
   "snackbarQueueAction": "Queue",
   "@snackbarQueueAction": {
@@ -665,6 +685,25 @@
   "tabPyqs": "PYQs",
   "@tabPyqs": {
     "description": "Tab label filtering saved PYQs"
+  },
+  "tabZim": "ZIM",
+  "@tabZim": {
+    "description": "Tab label filtering saved ZIM/Wikipedia articles"
+  },
+  "tabCourses": "Courses",
+  "@tabCourses": {
+    "description": "Tab label for courses in saved resources page",
+    "placeholders": {}
+  },
+  "tabQuizzes": "Quizzes",
+  "@tabQuizzes": {
+    "description": "Tab label for quizzes in saved resources page",
+    "placeholders": {}
+  },
+  "tabNotes": "Notes",
+  "@tabNotes": {
+    "description": "Tab label for notes in saved resources page",
+    "placeholders": {}
   },
   "emptyStateAll": "No saved resources yet.",
   "@emptyStateAll": {
@@ -1533,5 +1572,34 @@
   "profileNoCourses": "No courses yet. Explore the catalog to get started.",
   "@profileNoCourses": {
     "description": "Empty state message when the student has no enrolled courses"
+  },
+
+  "browseTabCourses": "Courses",
+  "@browseTabCourses": {
+    "description": "Tab label for courses section in the Browse page"
+  },
+  "browseTabResources": "Resources",
+  "@browseTabResources": {
+    "description": "Tab label for resources section in the Browse page"
+  },
+  "browseTabWiki": "Wiki",
+  "@browseTabWiki": {
+    "description": "Tab label for ZIM/Wikipedia articles section in the Browse page"
+  },
+  "sectionRecentlyAccessed": "Recently Accessed",
+  "@sectionRecentlyAccessed": {
+    "description": "Section title on dashboard for recently opened resources"
+  },
+  "browseNotConnected": "Not connected to the server",
+  "@browseNotConnected": {
+    "description": "Empty state message shown on Wiki/Courses tabs when the hub is unreachable and no cached content is available"
+  },
+  "browseNoCoursesOffline": "Connect to the hub to see courses",
+  "@browseNoCoursesOffline": {
+    "description": "Subtitle below browseNotConnected on the Courses tab when offline with no cached courses"
+  },
+  "zimNoArticlesOffline": "Connect to the hub to browse articles",
+  "@zimNoArticlesOffline": {
+    "description": "Subtitle below browseNotConnected on the Wiki tab when offline with no cached articles"
   }
 }

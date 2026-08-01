@@ -74,6 +74,9 @@ class MutationQueue {
         }
       } catch (e) {
         debugPrint('MutationQueue: unexpected error flushing mutation $id ($endpoint): $e');
+        // Non-Dio errors are permanent (e.g. bad JSON, missing field). Remove
+        // to prevent infinite retry loop.
+        await db.delete('pending_mutations', where: 'id = ?', whereArgs: [id]);
       }
     }
   }
@@ -84,12 +87,15 @@ class MutationQueue {
         await ApiClient.post(endpoint, data: body);
         break;
       case 'PUT':
+        await ApiClient.ensureInitialized();
         await ApiClient.dio.put(endpoint, data: body);
         break;
       case 'DELETE':
+        await ApiClient.ensureInitialized();
         await ApiClient.dio.delete(endpoint, data: body);
         break;
       case 'PATCH':
+        await ApiClient.ensureInitialized();
         await ApiClient.dio.patch(endpoint, data: body);
         break;
       default:

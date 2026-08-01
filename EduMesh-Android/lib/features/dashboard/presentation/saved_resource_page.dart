@@ -2,26 +2,28 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
+import 'package:edumesh_android/core/services/course_service.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'package:edumesh_android/core/utils/file_utils.dart';
 import 'package:edumesh_android/shared/services/download_service.dart';
+import 'package:edumesh_android/shared/services/download_queue.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
 import 'package:edumesh_android/shared/widgets/video_player_page.dart';
+import 'package:edumesh_android/core/network/api_client.dart';
+import 'package:edumesh_android/core/services/recent_resources.dart';
 import 'package:edumesh_android/shared/widgets/resource_thumbnail.dart';
+import 'course_player_page.dart';
+import 'quiz_player_page.dart';
+import 'kiwix_view.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A page that displays the user's bookmarked resources, organised into
-/// "All", "Textbooks", "Videos", "PYQs", and "Notes" tabs.
-///
-/// Each tab shows a list of saved items with thumbnail, download status, and
-/// the ability to open or remove the bookmark.
+/// tabs for each resource type plus enrolled courses.
 class SavedResourcesPage extends StatelessWidget {
   const SavedResourcesPage({super.key});
 
-  /// Builds the tabbed layout with five [TabBar] tabs and corresponding
-  /// [_SavedListByType] content panes.
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -29,11 +31,12 @@ class SavedResourcesPage extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return DefaultTabController(
-      length: 4,
+      length: 8,
       child: Scaffold(
         backgroundColor: cs.surface,
         appBar: AppBar(
           backgroundColor: cs.surface,
+          foregroundColor: cs.onSurface,
           elevation: 0,
           title: Text(
             l10n.savedResourcesTitle,
@@ -41,7 +44,7 @@ class SavedResourcesPage extends StatelessWidget {
           ),
           bottom: TabBar(
             isScrollable: true,
-            labelPadding: EdgeInsets.only(right: AppSpacing.xxl.w),
+            tabAlignment: TabAlignment.start,
             labelColor: cs.primary,
             unselectedLabelColor: cs.onSurfaceVariant,
             indicatorColor: cs.primary,
@@ -51,6 +54,10 @@ class SavedResourcesPage extends StatelessWidget {
               Tab(text: l10n.tabTextbooks),
               Tab(text: l10n.tabVideos),
               Tab(text: l10n.tabPyqs),
+              Tab(text: l10n.tabCourses),
+              Tab(text: l10n.tabQuizzes),
+              Tab(text: l10n.tabNotes),
+              Tab(text: l10n.tabZim),
             ],
           ),
         ),
@@ -60,6 +67,10 @@ class SavedResourcesPage extends StatelessWidget {
             _SavedListByType(type: ResourceType.textbook),
             _SavedListByType(type: ResourceType.videos),
             _SavedListByType(type: ResourceType.pyq),
+            _SavedCoursesTab(),
+            _SavedListByType(type: ResourceType.quiz),
+            _SavedListByType(type: ResourceType.notes),
+            _SavedListByType(type: ResourceType.kiwix),
           ],
         ),
       ),
@@ -67,6 +78,7 @@ class SavedResourcesPage extends StatelessWidget {
   }
 }
 
+/// Lists bookmarked resources of a specific [type], or all types if null.
 class _SavedListByType extends StatefulWidget {
   final ResourceType? type;
   const _SavedListByType({this.type});
@@ -79,6 +91,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
   List<ResourceModel> _savedItems = [];
   Set<String> _downloadedIds = {};
   final Set<String> _downloadingIds = {};
+  final Set<String> _pendingIds = {};
   bool _loading = true;
 
   @override
@@ -89,19 +102,56 @@ class _SavedListByTypeState extends State<_SavedListByType> {
 
   Future<void> _loadData() async {
     try {
-      final rows = await DBHelper().getBookmarkedResources();
-      final all = rows.map((r) => ResourceModel(
-        id: r['resource_id'] as String? ?? '',
-        title: r['title'] as String? ?? '',
-        subject: r['subject'] as String? ?? '',
-        grade: r['grade'] as String? ?? '',
-        type: parseResourceType(r['type'] as String? ?? ''),
-        pdfUrl: r['pdf_url'] as String?,
-      )).toList();
+      final db = DBHelper();
+      final bookmarkRows = await db.getBookmarkedResources();
+      final downloadRows = await db.getDownloadedResources();
+      final zimRows = await db.getDownloadedZimArticles();
+
+      // Merge bookmarks + downloads + ZIM articles, dedup by resource_id.
+      final Map<String, ResourceModel> merged = {};
+
+      for (final r in bookmarkRows) {
+        final id = r['resource_id'] as String? ?? '';
+        if (id.isEmpty) continue;
+        merged[id] = ResourceModel(
+          id: id,
+          title: r['title'] as String? ?? '',
+          subject: r['subject'] as String? ?? '',
+          grade: r['grade'] as String? ?? '',
+          type: parseResourceType(r['type'] as String? ?? ''),
+          pdfUrl: r['pdf_url'] as String?,
+        );
+      }
+
+      for (final r in downloadRows) {
+        final id = r['resource_id'] as String? ?? '';
+        if (id.isEmpty || merged.containsKey(id)) continue;
+        merged[id] = ResourceModel(
+          id: id,
+          title: r['title'] as String? ?? '',
+          subject: r['subject'] as String? ?? '',
+          grade: r['grade'] as String? ?? '',
+          type: parseResourceType(r['type'] as String? ?? ''),
+        );
+      }
+
+      for (final r in zimRows) {
+        final id = r['resource_id'] as String? ?? '';
+        if (id.isEmpty || merged.containsKey(id)) continue;
+        merged[id] = ResourceModel(
+          id: id,
+          title: r['title'] as String? ?? '',
+          subject: r['subject'] as String? ?? '',
+          grade: '',
+          type: ResourceType.kiwix,
+        );
+      }
+
+      final all = merged.values.toList();
       final items = widget.type != null
           ? all.where((r) => r.type == widget.type!).toList()
           : all;
-      final ids = await DBHelper().getDownloadedIds();
+      final ids = await db.getDownloadedIds();
       if (mounted) {
         setState(() {
           _savedItems = items;
@@ -141,10 +191,33 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       }
     }
     if (!mounted) return;
+    unawaited(RecentResources.record(item.id, item.title, item.type.name));
     if (item.type == ResourceType.videos) {
       unawaited(Navigator.push(context, MaterialPageRoute(
         builder: (_) => VideoPlayerPage(title: item.title, videoUrl: url),
       )));
+    } else if (item.type == ResourceType.quiz) {
+      unawaited(Navigator.push(context, MaterialPageRoute(
+        builder: (_) => QuizPlayerPage.fromResource(item),
+      )));
+    } else if (item.type == ResourceType.kiwix) {
+      String articleId = item.id;
+      if (articleId.startsWith('zim_')) {
+        articleId = articleId.substring(4);
+      }
+      String? html;
+      try {
+        final response = await ApiClient.get('/zim/page', queryParameters: {
+          'article_id': articleId,
+        }).timeout(const Duration(seconds: 8));
+        html = response.data?['html']?.toString();
+      } catch (_) {}
+      if (!mounted) return;
+      if (html != null && html.isNotEmpty) {
+        unawaited(Navigator.push(context, MaterialPageRoute(
+          builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: '/zim/asset'),
+        )));
+      }
     } else {
       unawaited(Navigator.push(context, MaterialPageRoute(
         builder: (_) => PdfViewerPage(title: item.title, pdfUrl: url),
@@ -238,39 +311,18 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                           duration: const Duration(milliseconds: 600),
                         ));
                       } else {
-                        setState(() => _downloadingIds.add(resourceId));
-                        try {
-                          final url = item.pdfUrl ?? '/files/$resourceId';
-                          final fileName = '${item.title}.pdf';
-                          final path = await downloadService.downloadAndTrack(
-                            resourceId, url, fileName,
-                            title: item.title,
-                            subject: item.subject,
-                            grade: item.grade,
-                            type: item.type.name,
-                          );
-                          if (mounted) {
-                            setState(() {
-                              _downloadingIds.remove(resourceId);
-                              if (path != null) _downloadedIds.add(resourceId);
-                            });
-                          }
-                          if (path != null) {
-                            messenger.showSnackBar(SnackBar(
-                              content: Text(l10n.snackbarDownloadComplete),
-                              duration: const Duration(milliseconds: 600),
-                            ));
-                          }
-                        } catch (e) {
-                          debugPrint('Download error: $e');
-                          if (mounted) {
-                            setState(() => _downloadingIds.remove(resourceId));
-                          }
-                          messenger.showSnackBar(SnackBar(
-                            content: Text(l10n.snackbarDownloadFailed),
-                            duration: const Duration(milliseconds: 600),
-                          ));
-                        }
+                        final url = item.pdfUrl ?? '/files/$resourceId';
+                        final ext = switch (item.type) {
+                          ResourceType.videos => '.mp4',
+                          ResourceType.kiwix => '.html',
+                          _ => '.pdf',
+                        };
+                        final fileName = '${item.title}$ext';
+                        await DownloadQueue().enqueue(resourceId, url, fileName,
+                          title: item.title, subject: item.subject,
+                          grade: item.grade, type: item.type.name,
+                        );
+                        if (mounted) setState(() => _pendingIds.add(resourceId));
                       }
                     },
                   ),
@@ -288,6 +340,125 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                 ),
               ],
             ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Lists enrolled courses from [CourseService].
+class _SavedCoursesTab extends StatefulWidget {
+  const _SavedCoursesTab();
+
+  @override
+  State<_SavedCoursesTab> createState() => _SavedCoursesTabState();
+}
+
+class _SavedCoursesTabState extends State<_SavedCoursesTab> {
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final svc = CourseService();
+    await svc.loadEnrolledCourses();
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final enrolled = CourseService().enrolledCourses;
+
+    if (enrolled.isEmpty) {
+      return Center(
+        child: Text(
+          l10n.emptyStateAll,
+          style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
+      itemCount: enrolled.length,
+      itemBuilder: (context, index) {
+        final entry = enrolled[index];
+        final course = entry.course;
+        final progress = entry.progress;
+        final completedCount = (progress?['completed_count'] as num?)?.toInt() ?? 0;
+        final totalResources = (progress?['total_resources'] as num?)?.toInt() ?? 0;
+        final isCompleted = (progress?['completed'] as num?)?.toInt() == 1;
+
+        return Container(
+          margin: EdgeInsets.only(bottom: AppSpacing.md.h),
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: cs.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48.w,
+                height: 48.h,
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Icon(Icons.school, color: cs.primary, size: 24.sp),
+              ),
+              SizedBox(width: AppSpacing.md.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(course.title,
+                        style: tt.titleSmall?.copyWith(color: cs.onSurface),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                    SizedBox(height: AppSpacing.xs.h),
+                    Text(l10n.resourceSubtitle(course.subject, course.grade.toString()),
+                        style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                    if (totalResources > 0)
+                      Text(
+                        '$completedCount/$totalResources',
+                        style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(width: AppSpacing.sm.w),
+              FilledButton(
+                onPressed: () {
+                  unawaited(Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CoursePlayerPage(course: course),
+                    ),
+                  ));
+                },
+                child: Text(isCompleted
+                    ? l10n.coursePlayerCompleted
+                    : completedCount > 0
+                        ? l10n.coursePlayerStart
+                        : l10n.coursePlayerStart),
+              ),
+            ],
           ),
         );
       },

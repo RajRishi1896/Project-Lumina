@@ -93,9 +93,14 @@ class NotificationService {
   /// surfaces the permission prompt at a natural UX moment (right after the
   /// user triggered a download).
   Future<void> showDownloadComplete(String title, {String? notificationTitle, String? notificationBody}) async {
-    if (!await isEnabled) return;
-    if (!_initialized) await init();
-    await requestPermission();
+    try {
+      if (!await isEnabled) return;
+      if (!_initialized) await init();
+      await requestPermission();
+    } catch (_) {
+      // ponytail: permission/init failures are non-fatal; skip notification
+      return;
+    }
     try {
       await _plugin.show(
         _nextId++,
@@ -105,6 +110,7 @@ class NotificationService {
           android: AndroidNotificationDetails(
             'download_channel',
             _channelName,
+            autoCancel: true,
           ),
           iOS: const DarwinNotificationDetails(),
         ),
@@ -134,9 +140,13 @@ class NotificationService {
   ///
   /// Uses the same channel and permission flow as [showDownloadComplete].
   Future<void> showDownloadFailed(String title, {String? notificationTitle, String? notificationBody}) async {
-    if (!await isEnabled) return;
-    if (!_initialized) await init();
-    await requestPermission();
+    try {
+      if (!await isEnabled) return;
+      if (!_initialized) await init();
+      await requestPermission();
+    } catch (_) {
+      return;
+    }
     try {
       await _plugin.show(
         _nextId++,
@@ -146,12 +156,55 @@ class NotificationService {
           android: AndroidNotificationDetails(
             'download_channel',
             _channelName,
+            autoCancel: true,
           ),
           iOS: const DarwinNotificationDetails(),
         ),
       );
     } catch (e) {
       debugPrint('NotificationService: show failed: $e');
+    }
+  }
+
+  /// Shows or updates a progress notification for an active download.
+  Future<void> showDownloadProgress(String title, int percent, {required int id}) async {
+    try {
+      if (!await isEnabled) return;
+      if (!_initialized) await init();
+      await requestPermission();
+    } catch (_) {
+      return;
+    }
+    try {
+      await _plugin.show(
+        id,
+        'Downloading...',
+        '$title ($percent%)',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'download_channel',
+            _channelName,
+            importance: Importance.low,
+            priority: Priority.low,
+            ongoing: true,
+            showProgress: true,
+            maxProgress: 100,
+            progress: percent,
+          ),
+          iOS: const DarwinNotificationDetails(),
+        ),
+      );
+    } catch (e) {
+      debugPrint('NotificationService: progress show failed: $e');
+    }
+  }
+
+  /// Cancels a progress notification by [id].
+  Future<void> cancelProgressNotification(int id) async {
+    try {
+      await _plugin.cancel(id);
+    } catch (e) {
+      debugPrint('NotificationService: cancel failed: $e');
     }
   }
 }

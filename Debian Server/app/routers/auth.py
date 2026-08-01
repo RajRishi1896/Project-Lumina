@@ -1,6 +1,7 @@
 """Authentication routes -- register, login, token management, logout."""
 import uuid
 import time
+import sqlite3
 
 import asyncio
 from datetime import datetime, timezone
@@ -73,13 +74,7 @@ async def register_scholar(scholar: ScholarReg, request: Request):
     async with db_conn() as conn:
         c = conn.cursor()
         display_name = scholar.name or scholar.username
-        c.execute("SELECT id FROM scholars WHERE username = ?", (scholar.username,))
-        existing = c.fetchone()
-        if existing:
-            full_id = existing[0]
-        else:
-            unique_suffix = uuid.uuid4().hex
-            full_id = f"LUMINA_01-{unique_suffix}"
+        grade_val = scholar.grade or "General"
 
         if not scholar.password:
             raise HTTPException(status_code=400, detail="Password is required")  # i18n: user-facing validation message
@@ -89,11 +84,17 @@ async def register_scholar(scholar: ScholarReg, request: Request):
             raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
         hashed = await asyncio.to_thread(hash_password, pwd)
 
-        if existing:
-            c.execute("UPDATE scholars SET hashed_password = ?, name = ?, reset_required = 0 WHERE id = ?", (hashed, display_name, full_id))
-        else:
-            c.execute("INSERT INTO scholars (id, username, name, hashed_password, reset_required) VALUES (?, ?, ?, ?, 0)", (full_id, scholar.username, display_name, hashed))
+        unique_suffix = uuid.uuid4().hex
+        full_id = f"LUMINA_01-{unique_suffix}"
+
+        c.execute("SELECT id FROM scholars WHERE username = ?", (scholar.username,))
+        if c.fetchone():
+            raise HTTPException(status_code=409, detail="Username already taken")  # i18n: user-facing registration error
+        c.execute("INSERT INTO scholars (id, username, name, hashed_password, reset_required, grade) VALUES (?, ?, ?, ?, 0, ?)", (full_id, scholar.username, display_name, hashed, grade_val))
         conn.commit()
+        await audit(action=Action.CREATE_ACCOUNT, username=scholar.username, resource_type="account",
+                    resource_id=full_id, role="student", request=request,
+                    context={"is_update": False})
 
         tokens = await generate_session_token(full_id, "student")
         resp_data = {"id": full_id, "token": tokens["session_token"]}
@@ -151,7 +152,7 @@ async def student_login(data: StudentLoginRequest, request: Request):
     tokens = await generate_session_token(scholar_id, "student")
 
     srow_name = srow_name or data.username
-    srow_grade = srow_grade or ""
+    srow_grade = srow_grade or "General"
 
     await audit(action=Action.LOGIN, username=data.username, request=request, role="student")
     incr("login_success")
@@ -193,6 +194,7 @@ async def login(response: Response, request: Request, username: str = Form(...),
                     success=False, error="account not found")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")  # i18n: user-facing login error
     if row[0] == 'DISABLED':
+        _record_failed_login(request)
         incr("login_failed")
         await audit(action=Action.LOGIN_FAILED, username=username, request=request,
                     success=False, error="account disabled", severity="warning")
@@ -206,7 +208,20 @@ async def login(response: Response, request: Request, username: str = Form(...),
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")  # i18n: user-facing login error
 
     user_role = row[5]
-    tokens = await generate_session_token(username, user_role)
+    if user_role == "student":
+        tokens = await generate_session_token(username, user_role)
+    else:
+        from app.dependencies import _cache_invalidate_user
+        import uuid as _uuid
+        _cache_invalidate_user(username)
+        stoken = f"LUMINA_HUB-{_uuid.uuid4().hex}"
+        from app.async_db import db_run
+        def _create_session(conn):
+            conn.execute("DELETE FROM sessions WHERE username = ? AND rowid NOT IN (SELECT rowid FROM sessions WHERE username = ? ORDER BY rowid DESC LIMIT 5)", (username, username))
+            conn.execute("INSERT INTO sessions (token, username, role, used, expiry) VALUES (?, ?, ?, 0, datetime('now', '+1 day'))", (stoken, username, user_role))
+            conn.commit()
+        await db_run(_create_session)
+        tokens = {"session_token": stoken}
     scholar_id = row[3]
     await audit(action=Action.LOGIN, username=username, request=request, role=user_role)
     incr("login_success")

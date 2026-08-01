@@ -11,8 +11,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/mutation_queue.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../../core/services/course_service.dart';
 import 'course_player_page.dart';
@@ -37,13 +39,13 @@ class StudentProfilePage extends StatefulWidget {
 class _StudentProfilePageState extends State<StudentProfilePage> {
   final ActivityTracker _tracker = ActivityTracker();
   String _studentName = '';
+  String _username = '';
   String _studentId = '';
   String _grade = '';
   int _studyMinutesToday = 0;
   int _studyMinutesThisWeek = 0;
   int _streakDays = 0;
   int _coursesCompleted = 0;
-  bool _showAllActivity = false;
   List<({String name, int minutes, Color color})> _subjectBreakdown = [];
   List<Map<String, dynamic>> _activityHistory = [];
   static const _subjectColors = [
@@ -94,15 +96,17 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   /// previously saved icon at [_iconPath] and displays it if found.
   Future<void> _loadLocalProfile() async {
     final auth = AuthService();
-    final name = await auth.getLoggedUsername();
+    final name = await auth.getDisplayName() ?? await auth.getLoggedUsername();
+    final uname = await auth.getLoggedUsername();
     final id = await auth.getUniqueUserId();
-    final grade = await auth.getStudentGrade();
+    final grade = await auth.getGradeOrDefault();
     if (mounted) {
       _studentId = id ?? _studentId;
       _studentIdController.text = _studentId;
       setState(() {
         _studentName = name ?? _studentName;
-        _grade = grade ?? _grade;
+        _username = uname ?? _username;
+        _grade = grade;
       });
     }
     if (id != null && id.isNotEmpty) {
@@ -124,7 +128,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     await _tracker.sync();
     try {
       final analytics = await _tracker.getAnalytics();
-      final history = await _tracker.getActivityHistory();
+      final history = await _tracker.getActivityHistory(limit: 50);
       if (mounted) {
         setState(() {
           _studyMinutesToday = ((analytics['study_minutes_today'] ?? 0) as num).toInt();
@@ -158,20 +162,33 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           _studentName = p['name']?.toString() ?? _studentName;
           _grade = p['grade']?.toString() ?? _grade;
         });
+        final name = p['name']?.toString();
+        if (name != null && name.isNotEmpty) {
+          AuthService().cacheDisplayName(name);
+        }
+        if (_username.isEmpty) {
+          final whoami = await ApiClient.get('/whoami');
+          if (whoami.data is Map) {
+            final u = whoami.data['username']?.toString();
+            if (u != null && u.isNotEmpty) {
+              _username = u;
+              AuthService().cacheUsername(u);
+            }
+          }
+        }
         final scholarId = p['scholar_id']?.toString() ?? '';
         if (scholarId.isNotEmpty) {
           try {
-            final iconResponse = await ApiClient.get('/student/profile/icon/$scholarId');
-            if (iconResponse.statusCode == 200 && iconResponse.data != null) {
-              final bytes = iconResponse.data is List<int>
-                  ? Uint8List.fromList(List<int>.from(iconResponse.data))
-                  : Uint8List(0);
+            final iconResp = await ApiClient.dio.get(
+              '/student/profile/icon/$scholarId',
+              options: Options(responseType: ResponseType.bytes),
+            );
+            if (iconResp.statusCode == 200 && iconResp.data != null) {
+              final bytes = Uint8List.fromList(List<int>.from(iconResp.data));
               if (bytes.isNotEmpty) {
                 await _saveIconLocally(scholarId, bytes);
                 final iconFile = File(await _iconPath(scholarId));
-                if (mounted) {
-                  setState(() => _profileImage = iconFile);
-                }
+                if (mounted) setState(() => _profileImage = iconFile);
               }
             }
           } catch (_) { } }
@@ -228,6 +245,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     if (resourceId.isEmpty) return verb;
     final title = activity['resource_title']?.toString() ?? activity['title']?.toString() ?? '';
     if (title.isNotEmpty) return '$verb $title';
+    final meta = activity['metadata']?.toString() ?? '';
+    if (meta.isNotEmpty && !meta.startsWith('{')) return '$verb $meta';
     return l10n.activityTitleFallback(verb);
   }
 
@@ -442,6 +461,13 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 Text(_studentName,
                     style: tt.titleLarge?.copyWith(
                         color: cs.onSurface)),
+                if (_username.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: AppSpacing.xs.h),
+                    child: Text('@$_username',
+                        style: tt.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant)),
+                  ),
                 SizedBox(height: AppSpacing.xs.h),
                 Row(
                   children: [
@@ -483,23 +509,41 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController(text: _studentName);
-    String selectedGrade = _grade;
+    String selectedGrade = _grade.isNotEmpty ? _grade : 'General';
+    void Function(void Function())? modalSetStateRef;
     List<String> availableGrades = [];
     bool loadingGrades = true;
 
-    ApiClient.get('/grades').then((res) {
+    SharedPreferences.getInstance().then((prefs) {
+      final cached = prefs.getStringList('cached_grades');
+      if (cached != null && cached.isNotEmpty) {
+        availableGrades = cached;
+        loadingGrades = false;
+        modalSetStateRef?.call(() {});
+      }
+    });
+
+    ApiClient.get('/student/grades').then((res) async {
       if (res.data is List) {
         final grades = (res.data as List)
             .map((g) => (g is Map ? g['name']?.toString() ?? '' : g.toString()))
             .where((n) => n.isNotEmpty)
             .toList();
-        if (grades.isNotEmpty && !grades.contains(selectedGrade)) {
-          selectedGrade = grades[0];
+        if (grades.isNotEmpty) {
+          if (!grades.contains(selectedGrade)) {
+            selectedGrade = grades.first;
+          }
+          availableGrades = grades;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setStringList('cached_grades', grades);
+        } else {
+          if (availableGrades.isEmpty) availableGrades = ['General'];
         }
-        availableGrades = grades;
+      } else {
+        if (availableGrades.isEmpty) availableGrades = ['General'];
       }
       loadingGrades = false;
-      if (mounted) setState(() {});
+      modalSetStateRef?.call(() {});
     });
 
     showModalBottomSheet(
@@ -509,12 +553,15 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
       builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            ),
-            child: Padding(
+        return StatefulBuilder(
+          builder: (ctx, modalSetState) {
+            modalSetStateRef = modalSetState;
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                ),
+                child: Padding(
               padding: EdgeInsets.all(AppSpacing.xxl.w),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -561,7 +608,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   DropdownButtonFormField<String>(
                     initialValue: availableGrades.contains(selectedGrade) ? selectedGrade : null,
                     items: availableGrades.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
-                    onChanged: (v) => selectedGrade = v ?? selectedGrade,
+                    onChanged: (v) { if (v != null) { selectedGrade = v; if (mounted) setState(() {}); } },
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: cs.surfaceContainerHighest,
@@ -604,7 +651,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         if (newName.isNotEmpty || selectedGrade.isNotEmpty) {
                           final auth = AuthService();
                           if (newName.isNotEmpty) {
-                            await auth.saveUsername(newName);
+                            await auth.setDisplayName(newName);
                           }
                           if (selectedGrade.isNotEmpty) {
                             await auth.saveGrade(selectedGrade);
@@ -632,13 +679,15 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       ),
                       child: Text(l10n.editProfileSaveButton,
                           style: tt.titleMedium?.copyWith(
-                              fontSize: 15.sp)),
+                              color: cs.onPrimary, fontSize: 15.sp)),
                     ),
                   ),
                 ],
               ),
             ),
           ),
+          );
+        },
         );
       },
     ).then((_) {
@@ -846,9 +895,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   Widget _buildRecentActivity(ColorScheme cs) {
     final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
-    final displayCount = _showAllActivity ? _activityHistory.length : 5;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(l10n.sectionRecentActivity,
             style: tt.titleLarge?.copyWith(
@@ -861,12 +910,14 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               if (_activityHistory.isEmpty)
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: AppSpacing.section.h),
                   child: Center(
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.history_rounded, size: 40.sp, color: cs.onSurfaceVariant),
                         SizedBox(height: AppSpacing.md.h),
@@ -881,7 +932,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: displayCount,
+                itemCount: _activityHistory.length,
                 separatorBuilder: (_, __) =>
                     Divider(height: 1, indent: 56.w, color: cs.outlineVariant),
                 itemBuilder: (context, index) {
@@ -906,34 +957,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   );
                 },
               ),
-              if (_activityHistory.length > 5)
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.xs.h),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _showAllActivity = !_showAllActivity),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _showAllActivity
-                              ? Icons.expand_less_rounded
-                              : Icons.expand_more_rounded,
-                          size: 20.sp,
-                          color: cs.primary,
-                        ),
-                        SizedBox(width: AppSpacing.xs.w),
-                        Text(
-                          _showAllActivity
-                              ? l10n.toggleShowLess
-                              : l10n.toggleShowAll(_activityHistory.length),
-                          style: tt.titleSmall?.copyWith(
-                            color: cs.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
             ],
           ),
         ),

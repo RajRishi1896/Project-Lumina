@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/network/api_client.dart';
 
@@ -27,6 +28,17 @@ class AuthService {
 
   String _hashPassword(String password) => sha256.convert(utf8.encode(password)).toString();
 
+  /// Extracts a human-readable error message from a server response.
+  String _extractError(dynamic response) {
+    if (response.data is Map) {
+      final data = response.data as Map;
+      if (data['detail'] != null) return data['detail'].toString();
+      if (data['message'] != null) return data['message'].toString();
+      if (data['error'] != null) return data['error'].toString();
+    }
+    return 'Registration failed (HTTP ${response.statusCode})';
+  }
+
   /// The locally persisted unique user identifier, or `null` if no user is logged in.
   Future<String?> getUniqueUserId() async {
     return _secureStorage.read(key: _userIdKey);
@@ -45,6 +57,12 @@ class AuthService {
   /// The grade level stored for the logged-in student, or `null`.
   Future<String?> getStudentGrade() async => _secureStorage.read(key: _gradeKey);
 
+  /// The grade level, defaulting to "General" if not set.
+  Future<String> getGradeOrDefault() async {
+    final g = await _secureStorage.read(key: _gradeKey);
+    return (g != null && g.isNotEmpty) ? g : 'General';
+  }
+
   /// The refresh token used to obtain a new session token, or `null`.
   Future<String?> getRefreshToken() async {
     return _secureStorage.read(key: _refreshTokenKey);
@@ -59,9 +77,9 @@ class AuthService {
   ///
   /// Sends [username] and [password] to the `/register` endpoint. On success,
   /// stores the returned user id, session token, and a SHA-256 hashed copy of
-  /// the password in secure storage for offline fallback. Returns `true` when
-  /// registration succeeds, `false` on any network or server error.
-  Future<bool> register({
+  /// the password in secure storage for offline fallback. Returns `null` on
+  /// success, or an error message string on failure.
+  Future<String?> register({
     required String username,
     required String password,
     String? name,
@@ -73,8 +91,11 @@ class AuthService {
         'password': password,
       });
 
-      if (response.statusCode == null || response.statusCode! < 200 || response.statusCode! >= 300) return false;
-      if (response.data == null || response.data is! Map) return false;
+      if (response.statusCode == null || response.statusCode! < 200 || response.statusCode! >= 300) {
+        final detail = _extractError(response);
+        return detail;
+      }
+      if (response.data == null || response.data is! Map) return 'Unexpected server response';
       final Map data = response.data;
       final String hubGeneratedId = data['id']?.toString() ?? '';
       final String? token = data['token']?.toString();
@@ -106,9 +127,12 @@ class AuthService {
       if (refreshToken != null) await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
       if (persistentKey != null) await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
 
-      return true;
+      return null;
     } catch (e) {
-      return false;
+      if (e is DioException && e.response != null) {
+        return _extractError(e.response!);
+      }
+      return 'Registration failed. Check hub connection.';
     }
   }
 
@@ -153,13 +177,18 @@ class AuthService {
               return 'ok';
             }
           }
+        } on DioException catch (e) {
+          final isServerError = e.response?.statusCode != null;
+          if (isServerError) {
+            return null;
+          }
+          unawaited(_saveSession(localUser['userId'], username));
+          return 'local_only';
         } catch (_) {
-          // Server unreachable - only allow offline access
           unawaited(_saveSession(localUser['userId'], username));
           return 'local_only';
         }
-        unawaited(_saveSession(localUser['userId'], username));
-        return 'local_only';
+        return null;
       }
 
       // On new device, try to get student info from server
@@ -178,12 +207,12 @@ class AuthService {
           if (token != null && scholarId != null) {
             await _secureStorage.write(key: _sessionTokenKey, value: token);
             await _secureStorage.write(key: _userIdKey, value: scholarId);
+            await _secureStorage.write(key: _usernameKey, value: username);
             final refreshToken = respData['refresh_token']?.toString();
             final persistentKey = respData['persistent_key']?.toString();
             if (refreshToken != null && refreshToken.isNotEmpty) await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
             if (persistentKey != null && persistentKey.isNotEmpty) await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
             if (name != null && name.isNotEmpty) {
-              await _secureStorage.write(key: _usernameKey, value: name);
               await _secureStorage.write(key: _displayNameKey, value: name);
             }
             if (grade != null && grade.isNotEmpty) await _secureStorage.write(key: _gradeKey, value: grade);
@@ -204,20 +233,30 @@ class AuthService {
     return _secureStorage.read(key: _displayNameKey);
   }
 
+  /// Caches the username locally without hitting the server.
+  Future<void> cacheUsername(String username) async {
+    await _secureStorage.write(key: _usernameKey, value: username);
+  }
+
+  /// Caches the display name locally without hitting the server.
+  Future<void> cacheDisplayName(String name) async {
+    await _secureStorage.write(key: _displayNameKey, value: name);
+  }
+
   /// Whether the student has set a display name that differs from their username.
   Future<bool> hasDisplayName() async {
     final name = await _secureStorage.read(key: _displayNameKey);
     if (name == null || name.isEmpty) return false;
     final username = await _secureStorage.read(key: _usernameKey);
+    if (username == null || username.isEmpty) return true;
     return name != username;
   }
 
   /// Updates the student's display name on the hub and persists it locally.
   Future<bool> setDisplayName(String name) async {
+    await _secureStorage.write(key: _displayNameKey, value: name);
     try {
       await ApiClient.post('/student/profile/update', data: {'name': name});
-      await _secureStorage.write(key: _displayNameKey, value: name);
-      await _secureStorage.write(key: _usernameKey, value: name);
       return true;
     } catch (_) {
       return false;

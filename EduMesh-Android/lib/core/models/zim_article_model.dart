@@ -49,6 +49,10 @@ class ZimArticle {
   final String title;
   /// Identifier of the parent [ZimArchive].
   final String archiveId;
+  /// Path within the ZIM archive.
+  final String path;
+  /// ZIM namespace (typically `A` for articles, `I` for images).
+  final String namespace;
   /// Whether a thumbnail has been extracted for this article.
   final bool hasThumbnail;
 
@@ -56,6 +60,8 @@ class ZimArticle {
     required this.articleId,
     required this.title,
     required this.archiveId,
+    this.path = '',
+    this.namespace = 'A',
     this.hasThumbnail = false,
   });
 
@@ -64,6 +70,8 @@ class ZimArticle {
       articleId: json['article_id'] ?? '',
       title: json['title'] ?? '',
       archiveId: json['archive_id'] ?? '',
+      path: json['path'] ?? '',
+      namespace: json['namespace'] ?? 'A',
       hasThumbnail: json['has_thumbnail'] ?? false,
     );
   }

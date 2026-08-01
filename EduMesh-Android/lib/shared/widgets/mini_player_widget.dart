@@ -36,13 +36,11 @@ class MiniPlayerWidget extends StatelessWidget {
                     title: ctrl.title,
                     videoUrl: ctrl.videoUrl,
                     existingController: ctrl.videoController,
-                    existingChewie: ctrl.chewieController,
                   ),
                 ),
               ).then((_) {
                 if (ctrl.videoController != null &&
-                    ctrl.videoController!.value.isInitialized &&
-                    ctrl.chewieController != null) {
+                    ctrl.videoController!.value.isInitialized) {
                   ctrl.closeOnlyOverlay();
                 }
               });

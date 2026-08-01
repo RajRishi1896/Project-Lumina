@@ -1,10 +1,11 @@
 """Scholar management routes -- list, reset password, delete."""
 import asyncio
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from app.async_db import db_conn
 from app.dependencies import hash_password, verify_teacher
 from app.models import StatusResponse, ScholarListItem
+from app.audit import audit, Action
 
 router = APIRouter()
 
@@ -22,9 +23,9 @@ async def get_scholars(teacher_user: str = Depends(verify_teacher)):
     """
     async with db_conn() as conn:
         c = conn.cursor()
-        c.execute("SELECT id, name, reset_required FROM scholars ORDER BY name ASC")
+        c.execute("SELECT id, name, reset_required, username FROM scholars ORDER BY name ASC")
         rows = c.fetchall()
-    return [{"id": r[0], "name": r[1], "reset_required": r[2] or 0} for r in rows]
+    return [{"id": r[0], "name": r[1], "reset_required": r[2] or 0, "username": r[3] or ""} for r in rows]
 
 
 @router.post("/teacher/scholars/reset-password/{scholar_id}", response_model=StatusResponse,
@@ -32,7 +33,7 @@ async def get_scholars(teacher_user: str = Depends(verify_teacher)):
              description="Resets a scholar's password to the default and marks reset_required.",
              tags=["Teacher"],
              responses={400: {"description": "Failed to reset password"}, 401: {"description": "Unauthorized"}})
-async def teacher_reset_student_password(scholar_id: str, teacher_user: str = Depends(verify_teacher)):
+async def teacher_reset_student_password(scholar_id: str, request: Request = None, teacher_user: str = Depends(verify_teacher)):
     """Reset a scholar's password to the default value.
 
     Args:
@@ -47,6 +48,8 @@ async def teacher_reset_student_password(scholar_id: str, teacher_user: str = De
             c = conn.cursor()
             c.execute("UPDATE scholars SET hashed_password = ?, reset_required = 1 WHERE id = ?", (hashed, scholar_id))
             conn.commit()
+            await audit(action=Action.RESET_PASSWORD, username=teacher_user, resource_type="account",
+                        resource_id=scholar_id, target_user=scholar_id)
             return {"status": "success"}
         except Exception as e:
             logging.error(f"teacher_reset_student_password: {e}")
@@ -58,7 +61,7 @@ async def teacher_reset_student_password(scholar_id: str, teacher_user: str = De
                description="Deletes a scholar and all associated activity logs and downloads.",
                tags=["Teacher"],
                responses={400: {"description": "Failed to delete student"}, 401: {"description": "Unauthorized"}})
-async def teacher_delete_student(scholar_id: str, teacher_user: str = Depends(verify_teacher)):
+async def teacher_delete_student(scholar_id: str, request: Request = None, teacher_user: str = Depends(verify_teacher)):
     """Delete a scholar and related records.
 
     Args:
@@ -79,6 +82,8 @@ async def teacher_delete_student(scholar_id: str, teacher_user: str = Depends(ve
             c.execute("DELETE FROM course_progress WHERE student_id = ?", (scholar_id,))
             c.execute("UPDATE users SET scholar_id = NULL WHERE scholar_id = ?", (scholar_id,))
             conn.commit()
+            await audit(action=Action.DELETE_ACCOUNT, username=teacher_user, resource_type="account",
+                        resource_id=scholar_id, target_user=scholar_id)
             return {"status": "success"}
         except Exception as e:
             logging.error(f"teacher_delete_student: {e}")

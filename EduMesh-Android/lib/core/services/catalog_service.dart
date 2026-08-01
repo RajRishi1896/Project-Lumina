@@ -14,9 +14,21 @@ class CatalogService {
   factory CatalogService() => _instance;
   CatalogService._internal();
 
+  static DateTime? _lastCatalogSync;
+  static DateTime? _lastSimilarSync;
+  static const _syncCooldown = Duration(minutes: 5);
+
+  /// Whether enough time has passed since the last sync.
+  bool get _catalogStale =>
+      _lastCatalogSync == null || DateTime.now().difference(_lastCatalogSync!) > _syncCooldown;
+  bool get _similarStale =>
+      _lastSimilarSync == null || DateTime.now().difference(_lastSimilarSync!) > _syncCooldown;
+
   /// Fetches the full catalog from the server and replaces the local cache.
-  /// Safe to call repeatedly -- replaces the entire `catalog` table.
-  Future<void> syncCatalog() async {
+  /// Skips if synced less than 5 minutes ago to avoid redundant syncs on
+  /// every connectivity change.
+  Future<void> syncCatalog({bool force = false}) async {
+    if (!force && !_catalogStale) return;
     try {
       final resp = await ApiClient.get('/api/catalog')
           .timeout(const Duration(seconds: 15));
@@ -40,13 +52,16 @@ class CatalogService {
           });
         }
       });
+      _lastCatalogSync = DateTime.now();
     } catch (e) {
       debugPrint('CatalogService: sync failed -- $e');
     }
   }
 
   /// Fetches similar-course pairings from the server and replaces local cache.
-  Future<void> syncSimilarCourses() async {
+  /// Skips if synced less than 5 minutes ago.
+  Future<void> syncSimilarCourses({bool force = false}) async {
+    if (!force && !_similarStale) return;
     try {
       final resp = await ApiClient.get('/api/courses/similar-courses')
           .timeout(const Duration(seconds: 15));
@@ -63,6 +78,7 @@ class CatalogService {
           });
         }
       });
+      _lastSimilarSync = DateTime.now();
     } catch (e) {
       debugPrint('CatalogService: similar-courses sync failed -- $e');
     }
@@ -79,8 +95,13 @@ class CatalogService {
     final where = <String>[];
     final args = <dynamic>[];
     if (subject != null && subject.isNotEmpty) {
-      where.add('subject = ?');
-      args.add(subject);
+      if (subject == 'General') {
+        where.add('(subject = ? OR grade = ?)');
+        args.addAll(['General', 'General']);
+      } else {
+        where.add('subject = ?');
+        args.add(subject);
+      }
     }
     if (grade != null && grade.isNotEmpty) {
       where.add('grade = ?');

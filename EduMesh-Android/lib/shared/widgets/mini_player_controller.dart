@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
 
 /// A singleton controller that manages the picture-in-picture mini-player overlay.
 ///
-/// Holds references to the active [VideoPlayerController] and [ChewieController]
-/// so they can be transferred between the full-screen [VideoPlayerPage] and the
-/// floating [MiniPlayerWidget] without re-initialising the video stream.
+/// Holds a reference to the active [VideoPlayerController] so it can be
+/// transferred between the full-screen [VideoPlayerPage] and the floating
+/// [MiniPlayerWidget] without re-initialising the video stream.
 ///
 /// Extends [ChangeNotifier] so widgets can listen for visibility changes.
 class MiniPlayerController extends ChangeNotifier {
@@ -17,7 +16,6 @@ class MiniPlayerController extends ChangeNotifier {
   MiniPlayerController._internal();
 
   VideoPlayerController? _videoController;
-  ChewieController? _chewieController;
   String _title = '';
   String _videoUrl = '';
   bool _active = false;
@@ -38,36 +36,29 @@ class MiniPlayerController extends ChangeNotifier {
   /// The active [VideoPlayerController], or `null` when no video is playing.
   VideoPlayerController? get videoController => _videoController;
 
-  /// The active [ChewieController], or `null` when no video is playing.
-  ChewieController? get chewieController => _chewieController;
-
-  /// Activates the mini-player with the given [title], [videoUrl], and controllers.
+  /// Activates the mini-player with the given [title], [videoUrl], and controller.
   ///
   /// Replaces any previous session and notifies listeners immediately.
-  void start(String title, String videoUrl,
-      VideoPlayerController videoController, ChewieController chewieController) {
+  void start(String title, String videoUrl, VideoPlayerController videoController) {
     _title = title;
     _videoUrl = videoUrl;
     _videoController = videoController;
-    _chewieController = chewieController;
     _active = true;
     notifyListeners();
   }
 
-  /// Stops playback, disposes both controllers, and hides the overlay.
+  /// Stops playback, disposes the controller, and hides the overlay.
   void stop() {
-    _chewieController?.dispose();
     _videoController?.dispose();
-    _chewieController = null;
     _videoController = null;
     _active = false;
     notifyListeners();
   }
 
-  /// Hides the overlay without disposing the video controllers.
+  /// Hides the overlay without disposing the video controller.
   ///
   /// Used when the user navigates back to the full-screen page so the same
-  /// controllers can be reused.
+  /// controller can be reused.
   void closeOnlyOverlay() {
     _active = false;
     notifyListeners();

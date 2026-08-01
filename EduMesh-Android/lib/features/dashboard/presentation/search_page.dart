@@ -16,11 +16,13 @@ import '../../../core/services/activity_tracker.dart';
 import '../../../shared/services/download_queue.dart';
 import '../../../shared/services/connectivity_service.dart';
 import '../../../shared/services/zim_sync_service.dart';
+import '../../../core/services/catalog_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../shared/widgets/resource_thumbnail.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import 'resource_detail_page.dart';
 import 'kiwix_view.dart';
+import '../../../core/services/recent_resources.dart';
 
 /// A page for browsing, searching, and filtering all available resources.
 ///
@@ -35,7 +37,11 @@ class SearchPage extends StatefulWidget {
   /// Whether to open the filter sheet immediately on page load.
   final bool openFilters;
 
-  const SearchPage({super.key, this.initialGrade = '', this.openFilters = false});
+  /// When true, skip the Scaffold/AppBar wrapper and return only the body
+  /// content -- useful for embedding inside another widget.
+  final bool embedded;
+
+  const SearchPage({super.key, this.initialGrade = '', this.openFilters = false, this.embedded = false});
 
   /// Creates the state for the [SearchPage].
   @override
@@ -61,6 +67,8 @@ class _SearchPageState extends State<SearchPage> {
   Set<String> _selectedGrades = {};
   String _subjectFilter = '';
   String _sortBy = 'title_asc';
+  List<String> _serverGrades = [];
+  List<String> _serverSubjects = [];
   bool get _hasActiveFilters =>
       _selectedTypes.isNotEmpty || _selectedGrades.isNotEmpty || _subjectFilter.isNotEmpty || _sortBy != 'title_asc';
 
@@ -76,13 +84,12 @@ class _SearchPageState extends State<SearchPage> {
     if (widget.openFilters) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showFilterSheet());
     }
-    _applyFilters();
   }
 
   Future<void> _loadResources() async {
     if (mounted) setState(() { _isLoading = true; _loadError = null; });
     try {
-      final resp = await ApiClient.get('/api/catalog').timeout(const Duration(seconds: 8));
+      final resp = await ApiClient.get('/api/catalog');
       final data = resp.data;
       List<ResourceModel> resources = [];
       if (data is List) {
@@ -92,23 +99,47 @@ class _SearchPageState extends State<SearchPage> {
       }
       _allResources = resources;
 
-      _zimArticles = [];
       try {
-        final zimResp = await ApiClient.get('/zim/articles', queryParameters: {
-          'offset': '0', 'limit': '500',
-        }).timeout(const Duration(seconds: 8));
-        if (zimResp.data is List) {
-          final raw = (zimResp.data as List).cast<Map<String, dynamic>>();
-          _zimArticles = raw.map((j) => ZimArticle.fromJson(j)).toList();
+        final gradesResp = await ApiClient.get('/student/grades').timeout(const Duration(seconds: 5));
+        if (gradesResp.data is List) {
+          _serverGrades = (gradesResp.data as List)
+              .map((g) => (g is Map ? g['name']?.toString() : null) ?? '')
+              .where((g) => g.isNotEmpty)
+              .cast<String>()
+              .toList();
+        }
+      } catch (_) {}
+      try {
+        final subjectsResp = await ApiClient.get('/student/subjects').timeout(const Duration(seconds: 5));
+        if (subjectsResp.data is List) {
+          _serverSubjects = (subjectsResp.data as List)
+              .map((s) => (s is Map ? s['name']?.toString() : null) ?? '')
+              .where((s) => s.isNotEmpty)
+              .cast<String>()
+              .toList();
+        }
+      } catch (_) {}
+
+      _zimArticles = [];
+      if (_searchQuery.trim().length >= 3) {
+        try {
+          final zimResult = await ZimSyncService.instance.searchOnServer(_searchQuery.trim(), limit: 50);
+          _zimArticles = zimResult.articles;
+        } catch (_) { }
+      }
+      try { _applyFilters(); } catch (_) {}
+      unawaited(CatalogService().syncCatalog().catchError((_) {}));
+    } catch (_) {
+      try {
+        final catalog = await CatalogService().getCatalog();
+        if (catalog.isNotEmpty) {
+          _allResources = catalog;
+          _zimArticles = [];
+          _applyFilters();
+          if (mounted) setState(() { _isLoading = false; _loadError = null; });
+          return;
         }
       } catch (_) { }
-      // Sync ZIM articles into local DB for offline search
-      try {
-        await ZimSyncService.instance.syncFromHub();
-        _zimArticles = await ZimSyncService.instance.getAll();
-      } catch (_) { }
-      _applyFilters();
-    } catch (_) {
       try {
         final db = DBHelper();
         final rows = await db.getBookmarkedResources();
@@ -120,6 +151,23 @@ class _SearchPageState extends State<SearchPage> {
             grade: r['grade'] as String? ?? '',
             type: parseResourceType(r['type'] as String? ?? ''),
             pdfUrl: r['pdf_url'] as String?,
+          )).toList();
+          _zimArticles = [];
+          _applyFilters();
+          if (mounted) setState(() { _isLoading = false; _loadError = null; });
+          return;
+        }
+      } catch (_) { }
+      try {
+        final downloadedRows = await DBHelper().getDownloadedResources();
+        if (downloadedRows.isNotEmpty) {
+          _allResources = downloadedRows.map((r) => ResourceModel(
+            id: r['resource_id'] as String? ?? '',
+            title: r['title'] as String? ?? '',
+            subject: r['subject'] as String? ?? '',
+            grade: r['grade'] as String? ?? '',
+            type: parseResourceType(r['type'] as String? ?? ''),
+            isDownloaded: true,
           )).toList();
           _zimArticles = [];
           _applyFilters();
@@ -187,7 +235,7 @@ class _SearchPageState extends State<SearchPage> {
       // Try reading from local file first (offline support)
       try {
         final dir = await getApplicationDocumentsDirectory();
-        final file = File('${dir.path}/zim_$articleId.html');
+        final file = File('${dir.path}/zim_${articleId.replaceAll('/', '_')}.html');
         if (await file.exists()) {
           html = await file.readAsString();
         }
@@ -215,8 +263,9 @@ class _SearchPageState extends State<SearchPage> {
       }
       if (!mounted) return;
       if (html.isNotEmpty) {
+        unawaited(RecentResources.record(articleId, title, 'kiwix'));
         unawaited(Navigator.push(context, MaterialPageRoute(
-          builder: (_) => KiwixView(initialHtml: html, title: title),
+          builder: (_) => KiwixView(initialHtml: html, title: title, baseUrl: ApiClient.baseUrl),
         )));
       } else {
         messenger.showSnackBar(SnackBar(content: Text(l10n.zimArticleNotFound)));
@@ -269,7 +318,7 @@ class _SearchPageState extends State<SearchPage> {
 
       // Save self-contained HTML to disk and SharedPreferences.
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/zim_${article.articleId}.html');
+      final file = File('${dir.path}/zim_${article.articleId.replaceAll('/', '_')}.html');
       await file.writeAsString(html);
       try {
         final prefs = await SharedPreferences.getInstance();
@@ -281,9 +330,10 @@ class _SearchPageState extends State<SearchPage> {
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.snackbarDownloadFailed)),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l10n.snackbarDownloadFailed),
+          action: SnackBarAction(label: l10n.buttonRetry, onPressed: () => _downloadZimArticle(article)),
+        ));
       }
     }
   }
@@ -389,7 +439,13 @@ class _SearchPageState extends State<SearchPage> {
             }
             messenger.showSnackBar(SnackBar(
               content: Text(l10n.snackbarDownloadFailed),
-              duration: const Duration(milliseconds: 600),
+              action: SnackBarAction(label: l10n.buttonRetry, onPressed: () async {
+                await DownloadQueue().enqueue(resourceId, url, fileName,
+                  title: original.title, subject: original.subject,
+                  grade: original.grade, type: original.type.name,
+                );
+                if (mounted) setState(() => _pendingIds.add(resourceId));
+              }),
             ));
           }
         }
@@ -400,10 +456,24 @@ class _SearchPageState extends State<SearchPage> {
 
 
   Set<String> _getAllGrades() {
-    return _allResources
+    final catalogGrades = _allResources
         .map((r) => r.grade)
         .where((g) => g.isNotEmpty)
         .toSet();
+    catalogGrades.addAll(_serverGrades);
+    return catalogGrades;
+  }
+
+  String _resourceTypeLabel(ResourceType type) {
+    switch (type) {
+      case ResourceType.textbook: return 'Textbook';
+      case ResourceType.videos: return 'Videos';
+      case ResourceType.pyq: return 'PYQ';
+      case ResourceType.pastPaper: return 'PYQ';
+      case ResourceType.kiwix: return 'ZIM';
+      case ResourceType.quiz: return 'Quiz';
+      case ResourceType.notes: return 'Notes';
+    }
   }
 
   void _resetFilters() {
@@ -427,7 +497,6 @@ class _SearchPageState extends State<SearchPage> {
     String tempSubject = _subjectFilter;
     String tempSort = _sortBy;
 
-    final subjectController = TextEditingController(text: tempSubject);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -457,12 +526,12 @@ class _SearchPageState extends State<SearchPage> {
                   Wrap(
                     spacing: 8.w,
                     runSpacing: 4.h,
-                    children: ResourceType.values.map((type) {
-                      final label = type.toString().split('.').last;
+                    children: ResourceType.values
+                        .where((t) => t != ResourceType.pastPaper && t != ResourceType.kiwix)
+                        .map((type) {
                       final selected = tempTypes.contains(type);
                       return FilterChip(
-                        label: Text(
-                            label[0].toUpperCase() + label.substring(1)),
+                        label: Text(_resourceTypeLabel(type)),
                         selected: selected,
                         onSelected: (val) {
                           setSheetState(() {
@@ -477,70 +546,56 @@ class _SearchPageState extends State<SearchPage> {
                     }).toList(),
                   ),
                   SizedBox(height: AppSpacing.lg.h),
-                  Row(
-                    children: [
-                      Text(l10n.filterShowLabel, style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant)),
-                      SizedBox(width: AppSpacing.md.w),
-                      ChoiceChip(
-                        label: Text(l10n.filterMyGrade),
-                        selected: tempGrades.contains(widget.initialGrade),
-                        onSelected: (_) {
-                          setSheetState(() {
-                            tempGrades.clear();
-                            if (widget.initialGrade.isNotEmpty) tempGrades.add(widget.initialGrade);
-                          });
-                        },
-                      ),
-                      SizedBox(width: AppSpacing.sm.w),
-                      ChoiceChip(
-                        label: Text(l10n.filterAllGrades),
-                        selected: tempGrades.isEmpty,
-                        onSelected: (_) {
-                          setSheetState(() => tempGrades.clear());
-                        },
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: AppSpacing.lg.h),
                   Text(l10n.filterGradeHeader,
                       style: tt.titleSmall?.copyWith(
                           color: cs.onSurfaceVariant)),
                   SizedBox(height: AppSpacing.sm.h),
-                  Wrap(
-                    spacing: 8.w,
-                    runSpacing: 4.h,
-                    children: allGrades.map((grade) {
-                      final selected = tempGrades.contains(grade);
-                      return FilterChip(
-                        label: Text(grade),
-                        selected: selected,
-                        onSelected: (val) {
-                          setSheetState(() {
-                            if (val) {
-                              tempGrades.add(grade);
-                            } else {
-                              tempGrades.remove(grade);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
+                  DropdownButton<String>(
+                    isExpanded: true,
+                    value: tempGrades.isEmpty
+                        ? ''
+                        : tempGrades.contains(widget.initialGrade) && widget.initialGrade.isNotEmpty
+                            ? '__my_grade__'
+                            : tempGrades.first,
+                    items: [
+                      DropdownMenuItem(value: '', child: Text(l10n.filterAllGrades)),
+                      if (widget.initialGrade.isNotEmpty)
+                        DropdownMenuItem(value: '__my_grade__', child: Text(l10n.filterMyGrade)),
+                      ...allGrades.map((g) => DropdownMenuItem(value: g, child: Text(g))),
+                    ],
+                    onChanged: (v) {
+                      setSheetState(() {
+                        if (v == null || v == '') {
+                          tempGrades.clear();
+                        } else if (v == '__my_grade__') {
+                          tempGrades = {widget.initialGrade};
+                        } else {
+                          tempGrades = {v};
+                        }
+                      });
+                    },
                   ),
                   SizedBox(height: AppSpacing.lg.h),
                   Text(l10n.filterSubjectHeader,
                       style: tt.titleSmall?.copyWith(
                           color: cs.onSurfaceVariant)),
                   SizedBox(height: AppSpacing.sm.h),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: l10n.filterSubjectHint,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r)),
-                      contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12.w, vertical: 10.h),
-                    ),
-                    controller: subjectController,
-                    onChanged: (v) => tempSubject = v,
+                  DropdownButton<String>(
+                    isExpanded: true,
+                    value: tempSubject,
+                    items: [
+                      DropdownMenuItem(value: '', child: Text(l10n.filterSubjectHint)),
+                      ...({
+                        ..._allResources
+                              .map((r) => r.subject)
+                              .where((s) => s.isNotEmpty),
+                        ..._serverSubjects,
+                      }.toList()..sort())
+                          .map((s) => DropdownMenuItem(value: s, child: Text(s))),
+                    ],
+                    onChanged: (v) {
+                      setSheetState(() => tempSubject = v ?? '');
+                    },
                   ),
                   SizedBox(height: AppSpacing.lg.h),
                   Text(l10n.filterSortByHeader,
@@ -573,7 +628,6 @@ class _SearchPageState extends State<SearchPage> {
                               tempSubject = '';
                               tempSort = 'title_asc';
                             });
-                            subjectController.clear();
                           },
                           child: Text(l10n.filterResetButton),
                         ),
@@ -602,7 +656,7 @@ class _SearchPageState extends State<SearchPage> {
           },
         );
       },
-    ).whenComplete(() => subjectController.dispose());
+    );
   }
 
   String _sortLabel(String sortBy) {
@@ -635,6 +689,29 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
+  int _zimRequestId = 0;
+
+  /// Returns the server-ranked index of a ZIM article for sort stability.
+  int _zimArticleIndex(String articleId) {
+    for (var i = 0; i < _zimArticles.length; i++) {
+      if (_zimArticles[i].articleId == articleId) return i;
+    }
+    return _zimArticles.length;
+  }
+
+  Future<void> _fetchZimResults() async {
+    final query = _searchQuery.trim().replaceAll(RegExp(r'\s+'), ' ');
+    _zimRequestId++;
+    if (query.length < 3 || !ConnectivityService().isOnline) return;
+    final myId = _zimRequestId;
+    try {
+      final result = await ZimSyncService.instance.searchOnServer(query, limit: 30);
+      if (myId != _zimRequestId) return;
+      _zimArticles = result.articles;
+    } catch (_) {}
+    if (mounted) _applyFilters();
+  }
+
   void _applyFilters() {
     final query = _searchQuery.trim().toLowerCase();
     final l10n = AppLocalizations.of(context)!;
@@ -644,32 +721,47 @@ class _SearchPageState extends State<SearchPage> {
       if (r.type == ResourceType.kiwix) continue;
       final keywords = '${r.title} ${r.subject} ${r.grade} ${r.type.name}'.toLowerCase();
       if (query.isNotEmpty && !keywords.contains(query)) continue;
-      if (_selectedTypes.isNotEmpty && !_selectedTypes.contains(r.type)) continue;
-      if (_selectedGrades.isNotEmpty && !_selectedGrades.contains(r.grade)) continue;
+      if (_selectedTypes.isNotEmpty) {
+        final effectiveType = r.type == ResourceType.pastPaper ? ResourceType.pyq : r.type;
+        if (!_selectedTypes.contains(effectiveType)) continue;
+      }
+      if (_selectedGrades.isNotEmpty && !_selectedGrades.contains(r.grade) && r.grade.isNotEmpty) continue;
       if (_subjectFilter.isNotEmpty && !r.subject.toLowerCase().contains(_subjectFilter.toLowerCase())) continue;
       results.add({'title': r.title, 'originalObject': r, 'isZim': false});
     }
-    for (final article in _zimArticles) {
-      final title = article.title.isNotEmpty ? article.title : l10n.zimUntitledArticleFallback;
-      if (query.isNotEmpty && !title.toLowerCase().contains(query)) continue;
-      if (article.articleId.isEmpty) continue;
-      results.add({
-        'title': title,
-        'originalObject': null,
-        'isZim': true,
-        'articleId': article.articleId,
-        'zimArticle': article,
-      });
+    if (query.length >= 3 && ConnectivityService().isOnline) {
+      for (final article in _zimArticles) {
+        final title = article.title.isNotEmpty ? article.title : l10n.zimUntitledArticleFallback;
+        if (article.articleId.isEmpty) continue;
+        results.add({
+          'title': title,
+          'originalObject': null,
+          'isZim': true,
+          'articleId': article.articleId,
+          'zimArticle': article,
+        });
+      }
     }
 
     results.sort((a, b) {
-      if (a['isZim'] == true && b['isZim'] == true) {
-        return ((a['title'] as String? ?? '')).compareTo(b['title'] as String? ?? '');
+      final aZim = a['isZim'] == true;
+      final bZim = b['isZim'] == true;
+      if (aZim && bZim) {
+        // Preserve server-side relevance ranking -- do NOT re-sort alphabetically.
+        final ai = _zimArticleIndex(a['articleId'] as String? ?? '');
+        final bi = _zimArticleIndex(b['articleId'] as String? ?? '');
+        return ai.compareTo(bi);
       }
-      if (a['isZim'] == true) return 1;
-      if (b['isZim'] == true) return -1;
+      // When searching, ZIM results (server-ranked) appear first.
+      if (aZim) return -1;
+      if (bZim) return 1;
       final oa = a['originalObject'];
       final ob = b['originalObject'];
+      if (!ConnectivityService().isOnline) {
+        final aDl = _downloadedIds.contains(oa.id.toString());
+        final bDl = _downloadedIds.contains(ob.id.toString());
+        if (aDl != bDl) return aDl ? -1 : 1;
+      }
       switch (_sortBy) {
         case 'title_desc': return (ob.title ?? '').compareTo(oa.title ?? '');
         case 'type': return (oa.type?.index ?? 0).compareTo(ob.type?.index ?? 0);
@@ -678,6 +770,14 @@ class _SearchPageState extends State<SearchPage> {
       }
     });
 
+    if (results.isEmpty && _allResources.isNotEmpty && _hasActiveFilters) {
+      _selectedTypes.clear();
+      _selectedGrades.clear();
+      _subjectFilter = '';
+      _sortBy = 'title_asc';
+      _applyFilters();
+      return;
+    }
     setState(() => _filteredResults = results);
   }
 
@@ -687,6 +787,307 @@ class _SearchPageState extends State<SearchPage> {
     final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
 
+    final body = _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _loadError != null
+            ? Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.section.w),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.cloud_off_rounded,
+                          size: 48.sp, color: cs.error),
+                      SizedBox(height: AppSpacing.lg.h),
+                      Text(_loadError!,
+                          textAlign: TextAlign.center,
+                          style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+                      SizedBox(height: AppSpacing.lg.h),
+                      FilledButton.tonalIcon(
+                        onPressed: _loadResources,
+                        icon: const Icon(Icons.refresh),
+                        label: Text(l10n.errorRetryButton),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : RefreshIndicator(
+                onRefresh: _loadResources,
+                child: Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm.h)),
+          SliverToBoxAdapter(
+            child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+      ActivityTracker()
+          .logAction('search', metadata: value)
+          .catchError((_) {});
+      _searchQuery = value;
+      _searchDebounce?.cancel();
+      _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _applyFilters();
+          _fetchZimResults();
+        }
+      });
+    },
+                    style: tt.bodyLarge?.copyWith(color: cs.onSurface),
+                    decoration: InputDecoration(
+                      hintText: l10n.searchFieldHint,
+                      prefixIcon: Icon(Icons.search_rounded,
+                          color: cs.onSurfaceVariant),
+                      filled: true,
+                      fillColor: cs.surfaceContainerHighest,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16.r),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg.w,
+                          vertical: AppSpacing.md.h),
+                    ),
+                  ),
+                ),
+              SizedBox(width: AppSpacing.sm.w),
+              IconButton(
+                icon: Icon(
+                  _hasActiveFilters
+                      ? Icons.filter_alt_rounded
+                      : Icons.filter_alt_outlined,
+                  color: _hasActiveFilters
+                      ? cs.primary
+                      : cs.onSurfaceVariant,
+                ),
+                onPressed: _showFilterSheet,
+              ),
+            ],
+          ),
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md.h)),
+          if (_hasActiveFilters)
+            SliverToBoxAdapter(
+              child: Padding(
+              padding: EdgeInsets.only(bottom: AppSpacing.sm.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _sortBy != 'title_asc'
+                          ? l10n.filtersActiveSorted(_sortLabel(_sortBy))
+                          : l10n.filtersActiveLabel,
+                      style: tt.titleSmall?.copyWith(
+                          color: cs.primary),
+                    ),
+                  ),
+                  TextButton.icon(
+                    icon: Icon(Icons.clear_all, size: 16.sp),
+                    label: Text(l10n.clearFiltersButton),
+                    onPressed: _resetFilters,
+                    style: TextButton.styleFrom(
+                      foregroundColor: cs.error,
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ),
+          if (_searchQuery.trim().isEmpty && !_hasActiveFilters && _filteredResults.isNotEmpty)
+            SliverToBoxAdapter(
+              child: _buildRecommendedSection(cs),
+            ),
+          if (_searchQuery.trim().isEmpty && !_hasActiveFilters && _filteredResults.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.only(top: AppSpacing.lg.h, bottom: AppSpacing.sm.h),
+                child: Text(l10n.sectionAllResources,
+                    style: tt.titleMedium?.copyWith(
+                        color: cs.onSurface)),
+              ),
+            ),
+          _filteredResults.isEmpty
+              ? SliverFillRemaining(
+                  child: Center(
+                  child: Text(
+                  _searchQuery.trim().isEmpty && !_hasActiveFilters
+                      ? l10n.emptyNoResources
+                      : l10n.emptyNoSearchResults,
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                )))
+              : SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final item = _filteredResults[index];
+                      final isZim = item['isZim'] == true;
+                      final dynamic original = item['originalObject'];
+                      final ZimArticle? zimArticle = item['zimArticle'];
+
+                      final isOfflineUnavailable = !isZim && !ConnectivityService().isOnline && !_downloadedIds.contains(original.id.toString());
+
+                      return Opacity(
+                        opacity: isOfflineUnavailable ? 0.45 : 1.0,
+                        child: ListTile(
+                        leading: isZim
+                            ? (zimArticle != null && zimArticle.hasThumbnail
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(6.r),
+                                    child: Image.network(
+                                      '${ApiClient.baseUrl}/zim/thumbnail?article_id=${zimArticle.articleId}',
+                                      width: 48, height: 48, fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => CircleAvatar(
+                                        backgroundColor: cs.primaryContainer,
+                                        child: Icon(Icons.article, color: cs.primary),
+                                      ),
+                                    ),
+                                  )
+                                : CircleAvatar(
+                                    backgroundColor: cs.primaryContainer,
+                                    child: Icon(Icons.article, color: cs.primary),
+                                  ))
+                            : ResourceThumbnail(resource: original, size: 48),
+                        onTap: () {
+                          if (isZim) {
+                            _openZimArticle(item['articleId'] as String, item['title'] as String);
+                            return;
+                          }
+                          if (isOfflineUnavailable) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(l10n.snackbarNotDownloaded(original.title)),
+                              action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
+                                final base = ApiClient.dio.options.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+                                final url = original.pdfUrl ?? '$base/files/${original.id}';
+                                final ext = url.contains('.') ? '.${url.split('.').last.split('?').first}' : '.pdf';
+                                DownloadQueue().enqueue(original.id.toString(), url, '${original.title}$ext',
+                                  title: original.title, subject: original.subject,
+                                  grade: original.grade, type: original.type.name,
+                                );
+                              }),
+                            ));
+                            return;
+                          }
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ResourceDetailPage(
+                                title: item['title'] as String? ?? '',
+                                subject:
+                                    (original.subject ?? '').toString(),
+                                grade: (original.grade ?? '').toString(),
+                                resourceType: original.type.name,
+                                isInitiallySaved:
+                                    _savedStatuses[original.id] ?? false,
+                                resourceId: original.id.toString(),
+                              ),
+                            ),
+                          );
+                        },
+                        title: Row(
+                          children: [
+                            if (isZim)
+                              Padding(
+                                padding: EdgeInsets.only(right: AppSpacing.sm.w),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 6.w, vertical: 2.h),
+                                  decoration: BoxDecoration(
+                                    color: cs.primary,
+                                    borderRadius:
+                                        BorderRadius.circular(4.r),
+                                  ),
+                                  child: Text(
+                                    l10n.badgeKiwixWiki,
+                                    style: tt.labelSmall?.copyWith(
+                                      color: cs.onPrimary,
+                                      fontWeight: AppSpacing.weightStrong,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(item['title'],
+                                  style:
+                                      tt.bodyLarge?.copyWith(color: cs.onSurface)),
+                            ),
+                          ],
+                        ),
+                        trailing: isZim
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (zimArticle != null)
+                                    IconButton(
+                                      icon: Icon(
+                                        ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
+                                            ? Icons.check_circle
+                                            : Icons.download_outlined,
+                                        color: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
+                                            ? LuminaColors.successGreen
+                                            : cs.primary,
+                                      ),
+                                      onPressed: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
+                                          ? null
+                                          : () => _downloadZimArticle(zimArticle),
+                                    ),
+                                  Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                                ],
+                              )
+                            : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  _savedStatuses[original.id] ?? false
+                                      ? Icons.bookmark
+                                      : Icons.bookmark_border,
+                                  color: cs.primary,
+                                ),
+                                onPressed: () async {
+                                  final messenger =
+                                      ScaffoldMessenger.of(context);
+                                  final wasSaved =
+                                      _savedStatuses[original.id] ?? false;
+                                  await _toggleSaveStatus(original.id);
+                                  if (mounted) {
+                                    setState(() => _savedStatuses[original.id] =
+                                        !wasSaved);
+                                  }
+                                  messenger.hideCurrentSnackBar();
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(wasSaved
+                                          ? l10n.snackbarRemovedFromSaved
+                                          : l10n.snackbarAddedToSaved),
+                                      duration:
+                                          const Duration(milliseconds: 600),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              _buildDownloadButton(original, cs),
+                            ],
+                          ),
+                      ),
+                      );
+                    },
+                    childCount: _filteredResults.length,
+                  ),
+                ),
+        ],
+      ),
+    ),
+    );
+
+    if (widget.embedded) return body;
     return Scaffold(
       backgroundColor: cs.surface,
       appBar: AppBar(
@@ -703,289 +1104,7 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _loadError != null
-              ? Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(AppSpacing.section.w),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.cloud_off_rounded,
-                            size: 48.sp, color: cs.error),
-                        SizedBox(height: AppSpacing.lg.h),
-                        Text(_loadError!,
-                            textAlign: TextAlign.center,
-                            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
-                        SizedBox(height: AppSpacing.lg.h),
-                        FilledButton.tonalIcon(
-                          onPressed: _loadResources,
-                          icon: const Icon(Icons.refresh),
-                          label: Text(l10n.errorRetryButton),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadResources,
-                  child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm.h)),
-            SliverToBoxAdapter(
-              child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
-                    decoration: BoxDecoration(
-                        color: cs.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(16.r),
-                        border: Border.all(color: cs.outlineVariant)),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (value) {
-        ActivityTracker()
-            .logAction('search', metadata: value)
-            .catchError((_) {});
-        // ponytail: update query without setState, apply filters after debounce.
-        // Original setState on every keystroke triggered 5-10 full rebuilds/sec.
-        _searchQuery = value;
-        _searchDebounce?.cancel();
-        _searchDebounce = Timer(const Duration(milliseconds: 200), () {
-          if (mounted) {
-            _applyFilters();
-          }
-        });
-      },
-                      style: tt.bodyLarge?.copyWith(color: cs.onSurface),
-                      decoration: InputDecoration(
-                        icon: Icon(Icons.search_rounded,
-                            color: cs.onSurfaceVariant),
-                        hintText: l10n.searchFieldHint,
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: AppSpacing.sm.w),
-                IconButton(
-                  icon: Icon(
-                    _hasActiveFilters
-                        ? Icons.filter_alt_rounded
-                        : Icons.filter_alt_outlined,
-                    color: _hasActiveFilters
-                        ? cs.primary
-                        : cs.onSurfaceVariant,
-                  ),
-                  onPressed: _showFilterSheet,
-                ),
-              ],
-            ),
-            ),
-            SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md.h)),
-            if (_hasActiveFilters)
-              SliverToBoxAdapter(
-                child: Padding(
-                padding: EdgeInsets.only(bottom: AppSpacing.sm.h),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _sortBy != 'title_asc'
-                            ? l10n.filtersActiveSorted(_sortLabel(_sortBy))
-                            : l10n.filtersActiveLabel,
-                        style: tt.titleSmall?.copyWith(
-                            color: cs.primary),
-                      ),
-                    ),
-                    TextButton.icon(
-                      icon: Icon(Icons.clear_all, size: 16.sp),
-                      label: Text(l10n.clearFiltersButton),
-                      onPressed: _resetFilters,
-                      style: TextButton.styleFrom(
-                        foregroundColor: cs.error,
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ),
-            if (_searchQuery.trim().isEmpty && !_hasActiveFilters && _filteredResults.isNotEmpty)
-              SliverToBoxAdapter(
-                child: _buildRecommendedSection(cs),
-              ),
-            if (_searchQuery.trim().isEmpty && !_hasActiveFilters && _filteredResults.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.only(top: AppSpacing.lg.h, bottom: AppSpacing.sm.h),
-                  child: Text(l10n.sectionAllResources,
-                      style: tt.titleMedium?.copyWith(
-                          color: cs.onSurface)),
-                ),
-              ),
-            _filteredResults.isEmpty
-                ? SliverFillRemaining(
-                    child: Center(
-                    child: Text(
-                    _searchQuery.trim().isEmpty && !_hasActiveFilters
-                        ? l10n.emptyNoResources
-                        : l10n.emptyNoSearchResults,
-                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                  )))
-                : SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final item = _filteredResults[index];
-                        final isZim = item['isZim'] == true;
-                        final dynamic original = item['originalObject'];
-                        final ZimArticle? zimArticle = item['zimArticle'];
-
-                        final isOfflineUnavailable = !isZim && !ConnectivityService().isOnline && !_downloadedIds.contains(original.id.toString());
-
-                        return Opacity(
-                          opacity: isOfflineUnavailable ? 0.45 : 1.0,
-                          child: ListTile(
-                          leading: isZim
-                              ? (zimArticle != null && zimArticle.hasThumbnail
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(6.r),
-                                      child: Image.network(
-                                        '${ApiClient.baseUrl}/zim/thumbnail?article_id=${zimArticle.articleId}',
-                                        width: 48, height: 48, fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => CircleAvatar(
-                                          backgroundColor: cs.primaryContainer,
-                                          child: Icon(Icons.article, color: cs.primary),
-                                        ),
-                                      ),
-                                    )
-                                  : CircleAvatar(
-                                      backgroundColor: cs.primaryContainer,
-                                      child: Icon(Icons.article, color: cs.primary),
-                                    ))
-                              : ResourceThumbnail(resource: original, size: 48),
-                          onTap: () {
-                            if (isZim) {
-                              _openZimArticle(item['articleId'] as String, item['title'] as String);
-                              return;
-                            }
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ResourceDetailPage(
-                                  title: item['title'] as String? ?? '',
-                                  subject:
-                                      (original.subject ?? '').toString(),
-                                  grade: (original.grade ?? '').toString(),
-                                  resourceType: original.type.name,
-                                  isInitiallySaved:
-                                      _savedStatuses[original.id] ?? false,
-                                ),
-                              ),
-                            );
-                          },
-                          title: Row(
-                            children: [
-                              if (isZim)
-                                Padding(
-                                  padding: EdgeInsets.only(right: AppSpacing.sm.w),
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: 6.w, vertical: 2.h),
-                                    decoration: BoxDecoration(
-                                      color: cs.primary,
-                                      borderRadius:
-                                          BorderRadius.circular(4.r),
-                                    ),
-                                    child: Text(
-                                      l10n.badgeKiwixWiki,
-                                      style: tt.labelSmall?.copyWith(
-                                        color: cs.onPrimary,
-                                        fontWeight: AppSpacing.weightStrong,
-                                        letterSpacing: 1,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              Expanded(
-                                child: Text(item['title'],
-                                    style:
-                                        tt.bodyLarge?.copyWith(color: cs.onSurface)),
-                              ),
-                            ],
-                          ),
-                          trailing: isZim
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (zimArticle != null)
-                                      IconButton(
-                                        icon: Icon(
-                                          ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
-                                              ? Icons.check_circle
-                                              : Icons.download_outlined,
-                                          color: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
-                                              ? LuminaColors.successGreen
-                                              : cs.primary,
-                                        ),
-                                        onPressed: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
-                                            ? null
-                                            : () => _downloadZimArticle(zimArticle),
-                                      ),
-                                    Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-                                  ],
-                                )
-                              : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(
-                                    _savedStatuses[original.id] ?? false
-                                        ? Icons.bookmark
-                                        : Icons.bookmark_border,
-                                    color: cs.primary,
-                                  ),
-                                  onPressed: () async {
-                                    final messenger =
-                                        ScaffoldMessenger.of(context);
-                                    final wasSaved =
-                                        _savedStatuses[original.id] ?? false;
-                                    await _toggleSaveStatus(original.id);
-                                    if (mounted) {
-                                      setState(() => _savedStatuses[original.id] =
-                                          !wasSaved);
-                                    }
-                                    messenger.hideCurrentSnackBar();
-                                    messenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(wasSaved
-                                            ? l10n.snackbarRemovedFromSaved
-                                            : l10n.snackbarAddedToSaved),
-                                        duration:
-                                            const Duration(milliseconds: 600),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(width: AppSpacing.xs),
-                                _buildDownloadButton(original, cs),
-                              ],
-                            ),
-                        ),
-                        );
-                      },
-                      childCount: _filteredResults.length,
-                    ),
-                  ),
-          ],
-        ),
-      ),
-    ),
+      body: body,
     );
   }
 
@@ -1035,6 +1154,7 @@ class _SearchPageState extends State<SearchPage> {
             grade: r.grade,
             resourceType: r.type.name,
             isInitiallySaved: _savedStatuses[r.id] ?? false,
+            resourceId: r.id.toString(),
           ),
         ),
       ),

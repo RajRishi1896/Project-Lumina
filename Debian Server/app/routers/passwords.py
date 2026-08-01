@@ -42,6 +42,8 @@ async def change_password(data: dict, teacher_user: str = Depends(verify_teacher
         c.execute("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
         conn.commit()
     await invalidate_tokens_for_user(teacher_user)
+    await audit(action=Action.CHANGE_PASSWORD, username=teacher_user, resource_type="account",
+                severity="notice")
     return {"status": "success"}
 
 
@@ -75,6 +77,8 @@ async def force_change_password(data: dict, teacher_user: str = Depends(verify_t
             c.execute("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
             conn.commit()
             await invalidate_tokens_for_user(teacher_user)
+            await audit(action=Action.FORCE_PASSWORD_CHANGE, username=teacher_user, resource_type="account",
+                        severity="notice")
             return {"status": "success"}
         except HTTPException:
             raise

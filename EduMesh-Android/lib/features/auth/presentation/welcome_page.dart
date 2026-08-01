@@ -25,8 +25,9 @@ class WelcomePage extends StatefulWidget {
 }
 
 class _WelcomePageState extends State<WelcomePage> {
-  String _hubStrength = '';
-  String _storageUsed = '';
+  bool _isConnected = false;
+  int _latencyMs = 0;
+  double? _storageUsedMb;
   final ConnectivityService _connectivityService = ConnectivityService();
 
   @override
@@ -40,22 +41,11 @@ class _WelcomePageState extends State<WelcomePage> {
     final stopwatch = Stopwatch()..start();
     final isConnected = await _connectivityService.ping(timeout: const Duration(seconds: 2));
     stopwatch.stop();
-    
+
     if (mounted) {
-      final l10n = AppLocalizations.of(context)!;
       setState(() {
-        if (!isConnected) {
-          _hubStrength = l10n.hubStrengthOffline;
-        } else {
-          final ms = stopwatch.elapsedMilliseconds;
-          if (ms < 50) {
-            _hubStrength = l10n.hubStrengthExcellent;
-          } else if (ms < 150) {
-            _hubStrength = l10n.hubStrengthGood;
-          } else {
-            _hubStrength = l10n.hubStrengthFair;
-          }
-        }
+        _isConnected = isConnected;
+        _latencyMs = stopwatch.elapsedMilliseconds;
       });
     }
 
@@ -67,19 +57,14 @@ class _WelcomePageState extends State<WelcomePage> {
       final dir = await getApplicationDocumentsDirectory();
       final sizeInBytes = await getDirSize(dir);
       final totalSizeInMb = (sizeInBytes + apkSize) / (1024 * 1024);
-      
+
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
         setState(() {
-          if (totalSizeInMb < 1024) {
-            _storageUsed = l10n.storageMbUsed(totalSizeInMb.toStringAsFixed(1));
-          } else {
-            _storageUsed = l10n.storageGbUsed((totalSizeInMb / 1024).toStringAsFixed(1));
-          }
+          _storageUsedMb = totalSizeInMb;
         });
       }
-    } catch (e) {
-      if (mounted) { final l10n = AppLocalizations.of(context)!; setState(() => _storageUsed = l10n.storageUnknown); }
+    } catch (_) {
+      // Storage calc failed -- leave null
     }
   }
 
@@ -217,33 +202,43 @@ class _WelcomePageState extends State<WelcomePage> {
         SizedBox(height: AppSpacing.md.h),
         Consumer(builder: (context, ref, child) {
           final currentLocale = ref.watch(localeProvider);
-          const options = appLanguageOptions;
-          return GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            mainAxisSpacing: 12.h,
-            crossAxisSpacing: 12.w,
-            childAspectRatio: 2.5,
-            children: options.map((o) {
-              final code = o['code']!;
-              final isSelected = code == currentLocale.languageCode;
-              String label;
-              switch (code) {
-                case 'en': label = l10n.languageEnglish; break;
-                case 'hi': label = l10n.languageHindi; break;
-                case 'kn': label = l10n.languageKannada; break;
-                case 'fr': label = l10n.languageFrench; break;
-                default: label = code;
-              }
-              return _LanguageButton(
-                label: label,
-                isSelected: isSelected,
-                isEnabled: true,
-                cs: cs,
-                onTap: () => ref.read(localeProvider.notifier).setLocale(code),
-              );
-            }).toList(),
+          final allOptions = appLanguageOptions;
+          const primaryCount = 3;
+          final primaryItems = allOptions.sublist(0, primaryCount);
+          final extraItems = allOptions.sublist(primaryCount);
+
+          return Column(
+            children: [
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                mainAxisSpacing: 12.h,
+                crossAxisSpacing: 12.w,
+                childAspectRatio: 2.5,
+                children: [
+                  ...primaryItems.map((o) {
+                    final code = o['code']!;
+                    final label = o['label'] ?? code;
+                    final isSelected = code == currentLocale.languageCode;
+                    return _LanguageButton(
+                      label: label,
+                      isSelected: isSelected,
+                      isEnabled: true,
+                      cs: cs,
+                      onTap: () => ref.read(localeProvider.notifier).setLocale(code),
+                    );
+                  }),
+                  _LanguageButton(
+                    label: '···',
+                    isSelected: false,
+                    isEnabled: true,
+                    cs: cs,
+                    onTap: () => _showMoreLanguages(context, ref, extraItems, currentLocale, l10n, cs),
+                  ),
+                ],
+              ),
+            ],
           );
         }),
       ],
@@ -292,6 +287,28 @@ class _WelcomePageState extends State<WelcomePage> {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
+    String hubText;
+    if (!_isConnected && _latencyMs == 0) {
+      hubText = l10n.hubStrengthChecking;
+    } else if (!_isConnected) {
+      hubText = l10n.hubStrengthOffline;
+    } else if (_latencyMs < 50) {
+      hubText = l10n.hubStrengthExcellent;
+    } else if (_latencyMs < 150) {
+      hubText = l10n.hubStrengthGood;
+    } else {
+      hubText = l10n.hubStrengthFair;
+    }
+
+    String storageText;
+    if (_storageUsedMb == null) {
+      storageText = l10n.storageCalculating;
+    } else if (_storageUsedMb! < 1024) {
+      storageText = l10n.storageMbUsed(_storageUsedMb!.toStringAsFixed(1));
+    } else {
+      storageText = l10n.storageGbUsed((_storageUsedMb! / 1024).toStringAsFixed(1));
+    }
+
     return Container(
       padding: EdgeInsets.only(top: AppSpacing.xxl.h),
       decoration: BoxDecoration(
@@ -303,17 +320,13 @@ class _WelcomePageState extends State<WelcomePage> {
           _StatusItem(
             icon: Icons.wifi,
             label: l10n.statusHubStrength,
-            value: _hubStrength.isEmpty
-                ? l10n.hubStrengthChecking
-                : _hubStrength,
+            value: hubText,
             cs: cs,
           ),
           _StatusItem(
             icon: Icons.storage,
             label: l10n.statusLocalStorage,
-            value: _storageUsed.isEmpty
-                ? l10n.storageCalculating
-                : _storageUsed,
+            value: storageText,
             cs: cs,
           ),
         ],
@@ -376,6 +389,37 @@ class _LanguageButton extends StatelessWidget {
     ),
     );
   }
+}
+
+void _showMoreLanguages(
+  BuildContext context,
+  WidgetRef ref,
+  List<Map<String, String?>> extraItems,
+  Locale currentLocale,
+  AppLocalizations l10n,
+  ColorScheme cs,
+) {
+  showDialog(
+    context: context,
+    builder: (ctx) => SimpleDialog(
+      title: Text(l10n.settingsLanguagePickerTitle),
+      children: extraItems.map((o) {
+        final code = o['code']!;
+        final label = o['label'] ?? code;
+        final isSelected = code == currentLocale.languageCode;
+        return ListTile(
+          leading: isSelected
+              ? Icon(Icons.check, color: cs.primary)
+              : const SizedBox(width: AppSpacing.xxl),
+          title: Text(label),
+          onTap: () {
+            ref.read(localeProvider.notifier).setLocale(code);
+            Navigator.pop(ctx);
+          },
+        );
+      }).toList(),
+    ),
+  );
 }
 
 class _StatusItem extends StatelessWidget {

@@ -1,13 +1,10 @@
 """Structured audit logging for Lumina EduMesh Hub.
 
 Every admin/teacher/security event is written as a single JSON line to
-``data/admin_actions.log``.  The old plain-text format is preserved as a
-human-readable fallback on the same line.
+``data/admin_actions.log``.
 
 Design:
 - JSON-lines format (one JSON object per line) -- parseable, filterable, exportable
-- Backward-compatible: each line also contains the old ``timestamp - user: action``
-  format for ``tail -f`` readability
 - Async writes via ``asyncio.to_thread`` -- never blocks the request
 - Bounded growth via existing retention pruning
 - No secrets, passwords, tokens, or PII are ever written
@@ -72,6 +69,7 @@ class Action:
 
     # Resource management
     UPLOAD_RESOURCE = "upload_resource"
+    UPDATE_RESOURCE = "update_resource"
     DELETE_RESOURCE = "delete_resource"
     DEPRECATE_RESOURCE = "deprecate_resource"
 
@@ -87,8 +85,10 @@ class Action:
 
     # Academics
     CREATE_GRADE = "create_grade"
+    UPDATE_GRADE = "update_grade"
     DELETE_GRADE = "delete_grade"
     CREATE_SUBJECT = "create_subject"
+    UPDATE_SUBJECT = "update_subject"
     DELETE_SUBJECT = "delete_subject"
 
     # ZIM
@@ -116,6 +116,8 @@ class Action:
     DATABASE_BACKUP = "database_backup"
     DATABASE_RESTORE = "database_restore"
     UPLOAD_REJECTED = "upload_rejected"
+    SERVER_REBOOT = "server_reboot"
+    WIFI_BAND_CHANGE = "wifi_band_change"
 
 
 class Severity:
@@ -220,10 +222,7 @@ async def audit(
     if context:
         event["ctx"] = context
 
-    # Human-readable summary for the old format
-    summary = _build_summary(action, username, resource_name, resource_id, target_user, changes, context)
-
-    await asyncio.to_thread(_write_audit_line, event, summary)
+    await asyncio.to_thread(_write_audit_line, event)
 
 
 def _get_client_ip(request) -> str:
@@ -236,69 +235,6 @@ def _get_client_ip(request) -> str:
     if hasattr(request, "client") and request.client:
         return request.client.host
     return ""
-
-
-def _build_summary(action, username, resource_name, resource_id, target_user, changes, context):
-    """Build a human-readable summary for the old-format fallback."""
-    parts = []
-    if username:
-        parts.append(username)
-
-    action_map = {
-        Action.LOGIN: "logged in",
-        Action.LOGOUT: "logged out",
-        Action.LOGIN_FAILED: "failed login attempt",
-        Action.CREATE_ACCOUNT: "created account",
-        Action.DELETE_ACCOUNT: "deleted account",
-        Action.RESET_PASSWORD: "reset password",
-        Action.CHANGE_PASSWORD: "changed password",
-        Action.FORCE_PASSWORD_CHANGE: "force-changed password",
-        Action.CREATE_COURSE: "created course",
-        Action.UPDATE_COURSE: "updated course",
-        Action.DELETE_COURSE: "deleted course",
-        Action.PUBLISH_COURSE: "published course",
-        Action.UNPUBLISH_COURSE: "unpublished course",
-        Action.ENROLL_COURSE: "enrolled in course",
-        Action.UPLOAD_RESOURCE: "uploaded resource",
-        Action.DELETE_RESOURCE: "deleted resource",
-        Action.DEPRECATE_RESOURCE: "deprecated resource",
-        Action.CREATE_QUIZ: "created quiz",
-        Action.UPDATE_QUIZ: "updated quiz",
-        Action.DELETE_QUIZ: "deleted quiz",
-        Action.UPLOAD_ZIM: "uploaded ZIM archive",
-        Action.DELETE_ZIM: "deleted ZIM archive",
-        Action.UPLOAD_COURSE_RESOURCE: "uploaded course resource",
-        Action.IMPORT_ZIP: "imported ZIP archive",
-        Action.LINK_SIMILAR: "linked similar courses",
-        Action.UNLINK_SIMILAR: "removed similar link",
-        Action.CHANGE_SETTINGS: "changed settings",
-        Action.PERMISSION_DENIED: "permission denied",
-        Action.UPLOAD_REJECTED: "upload rejected",
-        Action.CREATE_GRADE: "created grade",
-        Action.DELETE_GRADE: "deleted grade",
-        Action.CREATE_SUBJECT: "created subject",
-        Action.DELETE_SUBJECT: "deleted subject",
-        Action.CREATE_TOPIC: "created topic",
-        Action.UPDATE_TOPIC: "updated topic",
-        Action.DELETE_TOPIC: "deleted topic",
-        Action.FORCE_LOGOUT: "force-logged out",
-        Action.RATE_LIMITED: "rate limited",
-        Action.VALIDATION_ERROR: "validation error",
-        Action.SERVER_START: "server started",
-    }
-    verb = action_map.get(action, action)
-
-    if target_user and target_user != username:
-        verb += f" for {target_user}"
-    if resource_name:
-        verb += f" '{resource_name}'"
-    if resource_id:
-        verb += f" ({resource_id})"
-    if changes:
-        changed = ", ".join(changes.keys())
-        verb += f" [{changed}]"
-
-    return " ".join(parts) + " " + verb if parts else verb
 
 
 def _get_retention_cached() -> str:
@@ -322,8 +258,8 @@ def _get_retention_cached() -> str:
     return _RETENTION_CACHE
 
 
-def _write_audit_line(event: dict, summary: str):
-    """Write one JSON line + human-readable fallback. Runs in worker thread."""
+def _write_audit_line(event: dict):
+    """Write one JSON line. Runs in worker thread."""
     retention = _get_retention_cached()
 
     if retention == "none":
@@ -396,49 +332,3 @@ def _prune_logs_now(retention=None):
                     f.writelines(kept_lines)
     except Exception as e:
         logging.error(f"Error pruning audit logs: {e}")
-
-
-# === Convenience wrappers for common patterns ===
-
-async def audit_auth(action: str, username: str, request=None, *, success=True, error="", role=""):
-    """Log an authentication event."""
-    await audit(
-        action=action,
-        username=username,
-        severity=Severity.INFO if success else Severity.WARNING,
-        request=request,
-        success=success,
-        error=error,
-        role=role,
-    )
-
-
-async def audit_crud(action: str, username: str, resource_type: str, resource_id: str,
-                     resource_name: str = "", *, changes=None, request=None, context=None):
-    """Log a CRUD operation."""
-    await audit(
-        action=action,
-        username=username,
-        resource_type=resource_type,
-        resource_id=resource_id,
-        resource_name=resource_name,
-        changes=changes,
-        request=request,
-        context=context,
-    )
-
-
-async def audit_security(action: str, username: str, request=None, *, error="", detail=""):
-    """Log a security event (permission denied, rate limited, etc.)."""
-    ctx = {}
-    if detail:
-        ctx["detail"] = detail
-    await audit(
-        action=action,
-        username=username,
-        severity=Severity.WARNING,
-        request=request,
-        success=False,
-        error=error,
-        context=ctx or None,
-    )

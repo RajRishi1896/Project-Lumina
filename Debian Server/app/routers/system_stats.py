@@ -5,12 +5,37 @@ import time
 import asyncio
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request
 from app.async_db import db_conn, db_fetch_one, db_fetch
 from app.dependencies import verify_teacher, verify_admin
 from app.models import TimeSync, HubStatsResponse, StatusResponse
+from app.audit import audit, Action
 
 router = APIRouter()
+
+BAND_PREF_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "band_pref.txt")
+_wifi_caps: list[str] = []
+
+
+async def detect_wifi_caps():
+    """Detect WiFi adapter capabilities at startup (before hotspot is busy)."""
+    global _wifi_caps
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "/usr/sbin/iw", "list",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=10)
+        text = stdout.decode()
+        caps = []
+        if "Band 1" in text:
+            caps.append("bg")
+        if "Band 2" in text:
+            caps.append("a")
+        _wifi_caps = caps or ["bg"]
+        logging.info(f"WiFi capabilities detected: {_wifi_caps}")
+    except Exception as e:
+        logging.warning(f"detect_wifi_caps failed, defaulting to [bg]: {e}")
+        _wifi_caps = ["bg"]
 
 @router.get("/stats", response_model=HubStatsResponse,
             summary="Get hub statistics",
@@ -39,13 +64,21 @@ async def get_stats():
         draft_courses = _count("SELECT COUNT(*) FROM courses WHERE published = 0")
     total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
     battery_percent = 100
+    battery_charging = False
     try:
         if await asyncio.to_thread(os.path.exists, "/sys/class/power_supply/BAT0/capacity"):
             def _read_battery():
-                """Read battery percentage from sysfs. Runs in worker thread."""
+                """Read battery percentage and charging status from sysfs."""
                 with open("/sys/class/power_supply/BAT0/capacity", "r") as f:
-                    return int(f.read().strip())
-            battery_percent = await asyncio.to_thread(_read_battery)
+                    pct = int(f.read().strip())
+                charging = False
+                try:
+                    with open("/sys/class/power_supply/BAT0/status", "r") as f:
+                        charging = f.read().strip() == "Charging"
+                except Exception:
+                    pass
+                return pct, charging
+            battery_percent, battery_charging = await asyncio.to_thread(_read_battery)
     except Exception:
         pass
     uptime_str = "0s"
@@ -73,7 +106,8 @@ async def get_stats():
     result = {"scholars": scholar_count, "resources": resource_count, "subjects": subject_count,
               "published_courses": published_courses, "draft_courses": draft_courses,
               "storage": f"{used_str} / {total_str}", "storage_percent": (used / total) * 100,
-              "battery_percent": battery_percent, "uptime": uptime_str, "disk_usage": f"{used_str} / {total_str}"}
+              "battery_percent": battery_percent, "battery_charging": battery_charging,
+              "uptime": uptime_str, "disk_usage": f"{used_str} / {total_str}"}
     return result
 
 
@@ -120,6 +154,12 @@ async def sync_time(data: TimeSync, admin_user: str = Depends(verify_admin)):
         return {"status": "ok"}
     except Exception:
         return {"status": "failed"}
+
+
+@router.get("/system/time", summary="Get server time", tags=["System"])
+async def get_server_time():
+    """Return the server's current UTC time for client clock skew correction."""
+    return {"server_time": datetime.now(timezone.utc).isoformat()}
 
 
 @router.get("/healthz")
@@ -361,3 +401,134 @@ async def maintenance_run_all(admin_user: str = Depends(verify_admin)):
     """Run all maintenance operations."""
     from app.maintenance import run_full_maintenance
     return await run_full_maintenance()
+
+
+@router.get("/system/wifi-band",
+            summary="Get current WiFi band and capabilities",
+            description="Returns the current WiFi hotspot band and supported bands. Admin-only.",
+            tags=["System"])
+async def get_wifi_band(admin_user: str = Depends(verify_admin)):
+    """Get the current WiFi hotspot band and adapter capabilities.
+
+    Returns:
+        Dict with band, label, and supported_bands list.
+    """
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "nmcli", "-t", "-f", "802-11-wireless.band", "connection", "show", "LuminaHub",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout, _ = await proc.communicate()
+        band_raw = stdout.decode().strip()
+        band = band_raw.split(":")[-1] if ":" in band_raw else band_raw
+
+        supported = list(_wifi_caps) if _wifi_caps else ["bg"]
+
+        return {
+            "band": band or "bg",
+            "label": "5 GHz" if band == "a" else "2.4 GHz",
+            "supported": supported
+        }
+    except Exception as e:
+        logging.error(f"get_wifi_band: {e}")
+        return {"band": "bg", "label": "2.4 GHz", "supported": ["bg"]}
+
+
+@router.post("/system/wifi-band", response_model=StatusResponse,
+             summary="Switch WiFi band",
+             description="Switches the hotspot between 5GHz and 2.4GHz. The hotspot restarts and clients reconnect. Admin-only.",
+             tags=["System"],
+             responses={400: {"description": "Invalid band or switch failed"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def set_wifi_band(request: Request, admin_user: str = Depends(verify_admin)):
+    """Switch the WiFi hotspot band.
+
+    Body:
+        {"band": "a"} for 5GHz or {"band": "bg"} for 2.4GHz.
+
+    Returns:
+        Dict with status and the new band.
+    """
+    try:
+        body = await request.json()
+        band = body.get("band", "")
+        if band not in ("a", "bg"):
+            raise HTTPException(status_code=400, detail="Invalid band. Use 'a' for 5GHz or 'bg' for 2.4GHz.")
+        channel = "149" if band == "a" else "1"
+        wifi_if_proc = await asyncio.create_subprocess_exec(
+            "nmcli", "-t", "-f", "DEVICE,TYPE", "device",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout, _ = await wifi_if_proc.communicate()
+        wifi_if = ""
+        for line in stdout.decode().strip().split("\n"):
+            parts = line.split(":")
+            if len(parts) == 2 and parts[1] == "wifi":
+                wifi_if = parts[0]
+                break
+        if not wifi_if:
+            raise HTTPException(status_code=400, detail="No WiFi interface found.")
+        cmds = [
+            ["nmcli", "connection", "modify", "LuminaHub", f"802-11-wireless.band", band],
+        ]
+        if channel:
+            cmds.append(["nmcli", "connection", "modify", "LuminaHub", "802-11-wireless.channel", channel])
+        cmds.extend([
+            ["nmcli", "device", "disconnect", wifi_if],
+            ["nmcli", "connection", "up", "LuminaHub"],
+        ])
+        for cmd in cmds:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+            await proc.communicate()
+        label = "5 GHz" if band == "a" else "2.4 GHz"
+        try:
+            os.makedirs(os.path.dirname(BAND_PREF_FILE), exist_ok=True)
+            with open(BAND_PREF_FILE, "w") as f:
+                f.write(band)
+        except Exception:
+            pass
+        await audit(Action.WIFI_BAND_CHANGE, admin_user, severity="notice",
+                     changes={"band": band, "label": label}, request=request)
+        logging.info(f"WiFi band switched to {label} by {admin_user}. Rebooting.")
+        # Reboot to apply the band change cleanly
+        asyncio.get_event_loop().call_later(
+            2.0,
+            lambda: asyncio.ensure_future(_do_reboot())
+        )
+        return {"status": "success", "band": band, "label": label, "message": f"Switched to {label}. Server rebooting."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"set_wifi_band: {e}")
+        raise HTTPException(status_code=400, detail="Failed to switch WiFi band.")
+
+
+@router.post("/system/reboot", response_model=StatusResponse,
+             summary="Reboot the server",
+             description="Initiates a system reboot after a 2-second delay. Admin-only.",
+             tags=["System"],
+             responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def reboot_server(admin_user: str = Depends(verify_admin)):
+    """Reboot the server.
+
+    Schedules a reboot with a 2-second delay so the response is sent first.
+    """
+    try:
+        await audit(Action.SERVER_REBOOT, admin_user, severity="notice", request=request)
+        logging.info(f"Server reboot initiated by {admin_user}.")
+        asyncio.get_event_loop().call_later(
+            2.0,
+            lambda: asyncio.ensure_future(
+                _do_reboot()
+            )
+        )
+        return {"status": "success", "message": "Server is rebooting. Reconnect in ~60 seconds."}
+    except Exception as e:
+        logging.error(f"reboot_server: {e}")
+        raise HTTPException(status_code=500, detail="Failed to initiate reboot.")
+
+
+async def _do_reboot():
+    """Run the actual reboot command."""
+    proc = await asyncio.create_subprocess_exec(
+        "sudo", "/sbin/shutdown", "-r", "now",
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+    await proc.communicate()

@@ -19,6 +19,7 @@ class ConnectivityService extends ChangeNotifier {
 
   bool _online = false;
   StreamSubscription<List<ConnectivityResult>>? _platformSub;
+  Timer? _heartbeat;
 
   /// Whether the server is currently reachable (both platform and HTTP).
   bool get isOnline => _online;
@@ -26,6 +27,7 @@ class ConnectivityService extends ChangeNotifier {
   /// Starts connectivity monitoring with platform listeners.
   void start() {
     _platformSub?.cancel();
+    _heartbeat?.cancel();
 
     _platformSub = Connectivity().onConnectivityChanged.listen((results) {
       final hasConnection = results.any((r) => r != ConnectivityResult.none);
@@ -37,12 +39,15 @@ class ConnectivityService extends ChangeNotifier {
     });
 
     _checkNow();
+    _heartbeat = Timer.periodic(const Duration(seconds: 30), (_) => _checkNow());
   }
 
   /// Stops all connectivity monitoring and cancels timers.
   void stop() {
     _platformSub?.cancel();
     _platformSub = null;
+    _heartbeat?.cancel();
+    _heartbeat = null;
   }
 
   void _setOffline() {
@@ -62,6 +67,7 @@ class ConnectivityService extends ChangeNotifier {
         receiveTimeout: const Duration(seconds: 4),
       ));
       _online = true;
+      unawaited(ApiClient.syncTime());
     } catch (_) {
       _online = false;
     }
@@ -70,8 +76,6 @@ class ConnectivityService extends ChangeNotifier {
       if (_online) {
         unawaited(_flushPending());
       }
-    } else if (_online) {
-      unawaited(_flushPending());
     }
   }
 
@@ -79,7 +83,7 @@ class ConnectivityService extends ChangeNotifier {
     final items = await DBHelper().getAllPendingDownloads();
     if (items.isNotEmpty) {
       for (final item in items) {
-        unawaited(DownloadQueue().enqueue(
+        await DownloadQueue().enqueue(
           item['resource_id'] as String,
           item['url'] as String,
           item['file_name'] as String,
@@ -88,13 +92,18 @@ class ConnectivityService extends ChangeNotifier {
           grade: item['grade'] as String? ?? '',
           type: item['type'] as String? ?? '',
           mtime: (item['mtime'] as num?)?.toDouble() ?? 0,
-        ));
+        );
       }
-      await DBHelper().clearAllPendingDownloads();
     }
-    await MutationQueue().flush();
-    await CatalogService().syncCatalog();
-    await CatalogService().syncSimilarCourses();
+    try {
+      await MutationQueue().flush();
+    } catch (_) {}
+    try {
+      await CatalogService().syncCatalog();
+    } catch (_) {}
+    try {
+      await CatalogService().syncSimilarCourses();
+    } catch (_) {}
   }
 
   /// Performs a single connectivity check against the server.

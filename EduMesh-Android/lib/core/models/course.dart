@@ -30,10 +30,12 @@ QuizQuestionType parseQuizQuestionType(String s) {
     case 'mcq':
       return QuizQuestionType.mcq;
     case 'true_false':
+    case 'tf':
       return QuizQuestionType.trueFalse;
     case 'fill_blanks':
       return QuizQuestionType.fillBlanks;
     case 'multi_select':
+    case 'multi':
       return QuizQuestionType.multiSelect;
     default:
       return QuizQuestionType.mcq;
@@ -69,7 +71,7 @@ class QuizQuestion {
   final String question;
 
   /// The available answer choices.
-  final List<String> options;
+  List<String> options;
 
   /// The single correct answer (for mcq / trueFalse / fillBlanks).
   final String? correctAnswer;
@@ -84,7 +86,7 @@ class QuizQuestion {
   final bool exactMatch;
 
   /// Creates a [QuizQuestion] with the given data.
-  const QuizQuestion({
+  QuizQuestion({
     required this.id,
     required this.type,
     this.image,
@@ -98,19 +100,37 @@ class QuizQuestion {
 
   /// Creates a [QuizQuestion] from a JSON [map].
   factory QuizQuestion.fromJson(Map<String, dynamic> json) {
+    final options = (json['options'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+    String? correctAnswer;
+    final rawCorrect = json['correct_answer'];
+    if (rawCorrect is int && options.isNotEmpty) {
+      correctAnswer = (rawCorrect >= 0 && rawCorrect < options.length)
+          ? options[rawCorrect]
+          : null;
+    } else if (rawCorrect is String) {
+      correctAnswer = rawCorrect;
+    }
+    List<String>? correctAnswers;
+    final rawMulti = json['correct_answers'] ?? json['correct_answer'];
+    if (rawMulti is List) {
+      correctAnswers = rawMulti.map((e) {
+        if (e is int && options.isNotEmpty) {
+          return (e >= 0 && e < options.length) ? options[e] : e.toString();
+        }
+        return e.toString();
+      }).toList();
+    }
     return QuizQuestion(
       id: json['id']?.toString() ?? '',
       type: parseQuizQuestionType(json['type']?.toString() ?? ''),
       image: json['image'] as String?,
       question: json['question'] ?? '',
-      options: (json['options'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
-      correctAnswer: json['correct_answer'] as String?,
-      correctAnswers: (json['correct_answers'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList(),
+      options: options,
+      correctAnswer: correctAnswer,
+      correctAnswers: correctAnswers,
       explanation: json['explanation'] as String?,
       exactMatch: json['exact_match'] == true,
     );
@@ -147,8 +167,8 @@ class Quiz {
   /// The maximum number of attempts allowed.
   final int maxAttempts;
 
-  /// Whether to shuffle the question order.
-  final bool shuffleQuestions;
+  /// Shuffle mode: 'none', 'questions', 'options', or 'both'.
+  final String shuffleMode;
 
   /// The list of questions in this quiz.
   final List<QuizQuestion> questions;
@@ -163,7 +183,7 @@ class Quiz {
     required this.timeLimitMinutes,
     required this.passThreshold,
     required this.maxAttempts,
-    required this.shuffleQuestions,
+    required this.shuffleMode,
     required this.questions,
     required this.quizVersion,
   });
@@ -175,9 +195,13 @@ class Quiz {
       title: data['title'] ?? '',
       description: data['description'] as String?,
       timeLimitMinutes: (data['time_limit_minutes'] as num?)?.toInt() ?? 0,
-      passThreshold: (data['pass_threshold'] as num?)?.toDouble() ?? 0.0,
-      maxAttempts: (data['max_attempts'] as num?)?.toInt() ?? 1,
-      shuffleQuestions: data['shuffle_questions'] == true,
+      passThreshold: ((() {
+        final raw = (data['pass_threshold'] as num?)?.toDouble() ?? 0.0;
+        return raw > 1.0 ? raw / 100.0 : raw;
+      })()),
+      maxAttempts: (data['max_attempts'] as num?)?.toInt() ?? 0,
+      shuffleMode: data['shuffle_mode'] as String? ??
+          (data['shuffle_questions'] == true ? 'both' : 'none'),
       questions: (data['questions'] as List<dynamic>?)
               ?.map((e) =>
                   QuizQuestion.fromJson(e as Map<String, dynamic>))
@@ -195,7 +219,7 @@ class Quiz {
       'time_limit_minutes': timeLimitMinutes,
       'pass_threshold': passThreshold,
       'max_attempts': maxAttempts,
-      'shuffle_questions': shuffleQuestions,
+      'shuffle_mode': shuffleMode,
       'questions': questions.map((q) => q.toJson()).toList(),
       'quiz_version': quizVersion,
     },
@@ -370,12 +394,12 @@ class Course {
       title: json['title'] ?? '',
       description: json['description'] as String?,
       subject: json['subject'] ?? '',
-      grade: (json['grade'] as num?)?.toInt() ?? 0,
+      grade: num.tryParse(json['grade']?.toString() ?? '')?.toInt() ?? 0,
       language: json['language'] ?? 'en',
       coverImage: json['cover_image'] as String?,
-      published: (json['published'] as num?)?.toInt() ?? 0,
+      published: num.tryParse(json['published']?.toString() ?? '')?.toInt() ?? 0,
       teacherUsername: json['teacher_username'] as String?,
-      enrollmentCount: (json['enrollment_count'] as num?)?.toInt() ?? 0,
+      enrollmentCount: num.tryParse(json['enrollment_count']?.toString() ?? '')?.toInt() ?? 0,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
       resources: (json['resources'] as List<dynamic>?)

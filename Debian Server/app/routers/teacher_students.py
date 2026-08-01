@@ -4,10 +4,11 @@ import sqlite3
 import logging
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from app.async_db import db_conn
 from app.dependencies import hash_password, verify_teacher, verify_admin
 from app.models import TeacherCreate, NameUpdate, DepartmentUpdate, StudentListResponse, StudentAnalyticsResponse, TeacherSummary, TeacherCreateResponse, StatusResponse, TeacherProfileResponse
+from app.audit import audit, Action
 
 router = APIRouter()
 
@@ -62,7 +63,8 @@ async def teacher_list_students(teacher_user: str = Depends(verify_teacher), gra
                     "last_active": last_active or "",
                 })
         except sqlite3.OperationalError as e:
-            raise HTTPException(status_code=500, detail=f"Database error: {e}")  # i18n: user-facing error message
+            logging.error(f"teacher_list_students: {e}")
+            raise HTTPException(status_code=500, detail="Failed to load students")  # i18n: user-facing error message
 
     return {"students": students}
 
@@ -100,11 +102,24 @@ async def teacher_student_analytics(scholar_id: str, teacher_user: str = Depends
         saved = row[3]
         c.execute("SELECT subject_name, minutes FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC", (scholar_id,))
         subjects = [{"name": row[0], "minutes": row[1]} for row in c.fetchall()]
+        c.execute("""
+            SELECT qb.resource_id, COALESCE(r.title, cr.title, '') as title,
+                   qb.best_score, COALESCE(qa.cnt, 0) as attempts_count
+            FROM quiz_best_scores qb
+            LEFT JOIN resources r ON r.id = qb.resource_id AND qb.course_id = ''
+            LEFT JOIN course_resources cr ON cr.id = qb.resource_id AND qb.course_id != ''
+            LEFT JOIN (SELECT resource_id, COUNT(*) as cnt FROM quiz_attempts WHERE student_id = ? GROUP BY resource_id) qa
+                   ON qa.resource_id = qb.resource_id
+            WHERE qb.scholar_id = ?
+            ORDER BY qb.updated_at DESC
+        """, (scholar_id, scholar_id))
+        quiz_scores = [{"resource_id": r[0], "title": r[1], "best_score": r[2], "attempts_count": r[3]} for r in c.fetchall()]
     return {
         "study_minutes_this_week": week_secs // 60,
         "streak_days": streak,
         "resources_saved": saved,
         "subjects": subjects,
+        "quiz_scores": quiz_scores,
     }
 
 
@@ -131,7 +146,7 @@ async def get_teachers(teacher_user: str = Depends(verify_teacher)):
              description="Creates a new teacher user and a corresponding scholar record. Admin-only.",
              tags=["Teacher"],
              responses={400: {"description": "Username already exists or creation failed"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
-async def create_teacher_profile(teacher: TeacherCreate, admin_user: str = Depends(verify_admin)):
+async def create_teacher_profile(teacher: TeacherCreate, request: Request = None, admin_user: str = Depends(verify_admin)):
     """Create a teacher profile and associated scholar record.
 
     Args:
@@ -157,6 +172,8 @@ async def create_teacher_profile(teacher: TeacherCreate, admin_user: str = Depen
             c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id) VALUES (?, ?, ?, ?, ?)",
                       (teacher.username, hashed_pwd, display_name, dept, full_id))
             conn.commit()
+            await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
+                        resource_id=teacher.username, resource_name=display_name, role="teacher", request=request)
             return {"status": "success", "username": teacher.username, "name": display_name, "department": dept, "scholar_id": full_id}
         except Exception as e:
             logging.error(f"create_teacher_profile: {e}")
@@ -168,7 +185,7 @@ async def create_teacher_profile(teacher: TeacherCreate, admin_user: str = Depen
                description="Deletes a teacher user by username. The default admin account cannot be deleted.",
                tags=["Teacher"],
                responses={400: {"description": "Cannot delete admin account"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
-async def delete_teacher_profile(username: str, admin_user: str = Depends(verify_admin)):
+async def delete_teacher_profile(username: str, request: Request = None, admin_user: str = Depends(verify_admin)):
     """Delete a teacher profile.
 
     Args:
@@ -185,6 +202,8 @@ async def delete_teacher_profile(username: str, admin_user: str = Depends(verify
         c = conn.cursor()
         c.execute("DELETE FROM users WHERE username = ?", (username,))
         conn.commit()
+        await audit(action=Action.DELETE_ACCOUNT, username=admin_user, resource_type="account",
+                    resource_id=username, role="teacher", request=request)
     return {"status": "success"}
 
 
@@ -216,7 +235,7 @@ async def get_teacher_me(teacher_user: str = Depends(verify_teacher)):
              description="Updates the display name for the currently authenticated teacher or admin.",
              tags=["Teacher"],
              responses={401: {"description": "Unauthorized"}})
-async def update_teacher_name(data: NameUpdate, teacher_user: str = Depends(verify_teacher)):
+async def update_teacher_name(data: NameUpdate, request: Request = None, teacher_user: str = Depends(verify_teacher)):
     """Update the display name of the authenticated user.
 
     Args:
@@ -233,6 +252,8 @@ async def update_teacher_name(data: NameUpdate, teacher_user: str = Depends(veri
         c = conn.cursor()
         c.execute("UPDATE users SET name = ? WHERE username = ?", (data.name.strip(), teacher_user))
         conn.commit()
+        await audit(action=Action.CHANGE_SETTINGS, username=teacher_user, resource_type="profile",
+                    resource_name="name", changes={"name": {"new": data.name.strip()}}, request=request)
     return {"status": "ok"}
 
 
@@ -241,7 +262,7 @@ async def update_teacher_name(data: NameUpdate, teacher_user: str = Depends(veri
              description="Updates the department for the currently authenticated teacher.",
              tags=["Teacher"],
              responses={401: {"description": "Unauthorized"}})
-async def update_teacher_department(data: DepartmentUpdate, teacher_user: str = Depends(verify_teacher)):
+async def update_teacher_department(data: DepartmentUpdate, request: Request = None, teacher_user: str = Depends(verify_teacher)):
     """Update the department of the authenticated teacher.
 
     Args:
@@ -258,4 +279,6 @@ async def update_teacher_department(data: DepartmentUpdate, teacher_user: str = 
         c = conn.cursor()
         c.execute("UPDATE users SET department = ? WHERE username = ?", (data.department.strip(), teacher_user))
         conn.commit()
+        await audit(action=Action.CHANGE_SETTINGS, username=teacher_user, resource_type="profile",
+                    resource_name="department", changes={"department": {"new": data.department.strip()}}, request=request)
     return {"status": "ok"}

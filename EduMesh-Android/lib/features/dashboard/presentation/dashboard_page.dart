@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,9 +13,10 @@ import '../../../shared/services/connectivity_service.dart';
 import '../../../core/storage/db_helper.dart';
 import '../../../shared/widgets/lumina_settings_sheet.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
-import '../../auth/data/auth_service.dart';
-import 'search_page.dart';
-import 'resource_page.dart';
+import 'resource_detail_page.dart';
+import 'subject_topics_page.dart';
+import 'kiwix_view.dart';
+import '../../../core/services/recent_resources.dart';
 
 /// The main dashboard page displayed after login.
 ///
@@ -22,7 +24,9 @@ import 'resource_page.dart';
 /// local storage usage section. Periodically pings the server to display
 /// connection status.
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  /// Called when the user taps the search bar -- switch to Browse tab.
+  final VoidCallback? onBrowseTap;
+  const DashboardPage({super.key, this.onBrowseTap});
 
   /// Creates the state for the [DashboardPage].
   @override
@@ -46,10 +50,10 @@ class _DashboardPageState extends State<DashboardPage> {
   int _otherFlex = 1;
   int _freeFlex = 1;
 
-  String? _myGrade;
-
   List<Map<String, dynamic>> _subjects = [];
   bool _subjectsLoading = true;
+
+  List<Map<String, String>> _recentResources = [];
 
   @override
   void initState() {
@@ -58,7 +62,7 @@ class _DashboardPageState extends State<DashboardPage> {
     _pingTimer = Timer.periodic(const Duration(seconds: 60), (_) => _checkServer());
     _calcTotalStorage();
     _loadSubjects();
-    AuthService().getStudentGrade().then((g) { if (mounted) setState(() => _myGrade = g); });
+    _loadRecentResources();
   }
 
   @override
@@ -138,16 +142,35 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _loadSubjects() async {
     try {
-      final response = await ApiClient.get('/subjects');
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getStringList('cached_subjects');
+      if (cached != null && cached.isNotEmpty) {
+        _subjects = cached.map((s) {
+          final parts = s.split('|');
+          return {'name': parts[0], if (parts.length > 1) 'symbol': parts[1]};
+        }).toList();
+        _subjectsLoading = false;
+        if (mounted) setState(() {});
+      }
+
+      final response = await ApiClient.get('/student/subjects');
       if (mounted && response.statusCode == 200 && response.data is List) {
+        final raw = (response.data as List).whereType<Map<String, dynamic>>().toList();
+        final names = raw.map((s) {
+          final name = s['name']?.toString() ?? '';
+          final symbol = s['symbol']?.toString() ?? '';
+          return '$name|$symbol';
+        }).toList();
+        await prefs.setStringList('cached_subjects', names);
         setState(() {
-          _subjects = (response.data as List).cast<Map<String, dynamic>>();
+          _subjects = raw;
           _subjectsLoading = false;
         });
         return;
       }
     } catch (_) { } try {
-      final db = DBHelper();
+      if (_subjects.isEmpty) {
+        final db = DBHelper();
         final bookmarks = await db.getBookmarkedResources();
         final downloads = await db.getDownloadedResources();
         final subjectsSet = <String>{};
@@ -160,11 +183,12 @@ class _DashboardPageState extends State<DashboardPage> {
           if (s.isNotEmpty) subjectsSet.add(s);
         }
         final local = subjectsSet.map((s) => {'name': s}).toList();
-      if (mounted) {
-        setState(() {
-          _subjects = local;
-          _subjectsLoading = false;
-        });
+        if (mounted && local.isNotEmpty) {
+          setState(() {
+            _subjects = local;
+            _subjectsLoading = false;
+          });
+        }
       }
     } catch (_) {
       if (mounted) setState(() => _subjectsLoading = false);
@@ -187,6 +211,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   _buildSearchBar(context),
                   SizedBox(height: AppSpacing.xxl.h),
                   _buildRecentlyViewedSection(context),
+                  SizedBox(height: AppSpacing.xxl.h),
                   _buildCategories(context),
                   SizedBox(height: AppSpacing.xxl.h),
                   _buildStorageSection(context),
@@ -209,7 +234,11 @@ class _DashboardPageState extends State<DashboardPage> {
       decoration: BoxDecoration(color: cs.surface, border: Border(bottom: BorderSide(color: cs.outlineVariant))),
       child: Row(
         children: [
-                  Icon(Icons.school, color: cs.primary, size: 24.sp),
+          SvgPicture.asset(
+            Theme.of(context).brightness == Brightness.dark ? 'assets/images/logo-light.svg' : 'assets/images/logo-dark.svg',
+            width: 28.sp,
+            height: 28.sp,
+          ),
           SizedBox(width: AppSpacing.md.w),
           Text(l10n.appTitle, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
           const Spacer(),
@@ -243,7 +272,7 @@ class _DashboardPageState extends State<DashboardPage> {
       button: true,
       label: l10n.semanticsSearchResources,
       child: GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPage())),
+      onTap: widget.onBrowseTap,
       child: Container(
         margin: EdgeInsets.only(top: AppSpacing.lg.h),
         padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
@@ -257,9 +286,7 @@ class _DashboardPageState extends State<DashboardPage> {
               button: true,
               label: l10n.semanticsFilterResources,
               child: GestureDetector(
-              onTap: () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => SearchPage(initialGrade: _myGrade ?? '', openFilters: true),
-              )),
+              onTap: widget.onBrowseTap,
               child: Icon(Icons.tune_rounded, color: cs.primary, size: 20.sp),
             ),
             ),
@@ -270,10 +297,104 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Stub: recently-viewed section removed -- no activity history table to query.
-  // Re-add when a "recently viewed" data source is implemented.
+  Future<void> _loadRecentResources() async {
+    try {
+      final resources = await RecentResources.load();
+      if (mounted) setState(() => _recentResources = resources);
+    } catch (_) {}
+  }
+
+  Future<void> _openRecentKiwix(Map<String, String> r) async {
+    final id = r['id'] ?? '';
+    if (id.isEmpty) return;
+    try {
+      final resp = await ApiClient.get('/zim/page', queryParameters: {'article_id': id})
+          .timeout(const Duration(seconds: 8));
+      final html = resp.data?['html']?.toString();
+      if (!mounted || html == null || html.isEmpty) return;
+      unawaited(Navigator.push(context, MaterialPageRoute(
+        builder: (_) => KiwixView(initialHtml: html, title: r['title'] ?? '', baseUrl: ApiClient.baseUrl),
+      )).then((_) => _loadRecentResources()));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.zimArticleNotFound)));
+    }
+  }
+
   Widget _buildRecentlyViewedSection(BuildContext context) {
-    return const SizedBox.shrink();
+    if (_recentResources.isEmpty) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(l10n.sectionRecentlyAccessed, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        SizedBox(height: AppSpacing.md.h),
+        SizedBox(
+          height: 80.h,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _recentResources.length,
+            separatorBuilder: (_, __) => SizedBox(width: AppSpacing.sm.w),
+            itemBuilder: (context, index) {
+              final r = _recentResources[index];
+              final type = r['type'] ?? '';
+              final icon = _iconForResourceType(type);
+              return GestureDetector(
+                onTap: () {
+                  if (type == 'kiwix') {
+                    _openRecentKiwix(r);
+                  } else {
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => ResourceDetailPage(
+                        title: r['title'] ?? '',
+                        subject: '',
+                        grade: '',
+                        resourceType: type,
+                        resourceId: r['id'],
+                      ),
+                    )).then((_) => _loadRecentResources());
+                  }
+                },
+                child: Container(
+                  width: 120.w,
+                  padding: EdgeInsets.all(AppSpacing.md.w),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
+                    border: Border.all(color: cs.outlineVariant),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon, size: 24.sp, color: cs.primary),
+                      SizedBox(height: AppSpacing.xs.h),
+                      Text(r['title'] ?? '', style: tt.labelSmall?.copyWith(color: cs.onSurface),
+                        maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  IconData _iconForResourceType(String type) {
+    switch (type) {
+      case 'textbook': return Icons.menu_book_outlined;
+      case 'videos': return Icons.play_circle_outline;
+      case 'pyq': return Icons.quiz_outlined;
+      case 'pastPaper': return Icons.description_outlined;
+      case 'kiwix': return Icons.language_outlined;
+      case 'quiz': return Icons.fact_check_outlined;
+      case 'notes': return Icons.note_alt_outlined;
+      default: return Icons.article_outlined;
+    }
   }
 
   Widget _buildCategories(BuildContext context) {
@@ -299,21 +420,53 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           )
         else
-          Wrap(
-            spacing: AppSpacing.sm.w,
-            runSpacing: AppSpacing.sm.h,
-            children: _subjects.map((sub) {
-              final name = sub['name'] as String;
-              return ActionChip(
-                label: Text(name, style: tt.titleSmall?.copyWith(color: cs.onSurface)),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => ResourcePage(subject: name, grade: _myGrade ?? ''),
-                )),
-                backgroundColor: cs.surfaceContainerHighest,
-                side: BorderSide.none,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r)),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth > 400 ? 3 : 2;
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _subjects.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: AppSpacing.sm.w,
+                  mainAxisSpacing: AppSpacing.sm.h,
+                  childAspectRatio: 1.1,
+                ),
+                itemBuilder: (context, index) {
+                  final name = _subjects[index]['name'] as String? ?? '';
+                  return GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => SubjectTopicsPage(subject: name),
+                    )),
+                    child: Container(
+                      padding: EdgeInsets.all(AppSpacing.md.w),
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 48.w,
+                            height: 48.w,
+                            decoration: BoxDecoration(
+                              color: cs.primary.withAlpha(31),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(_iconForSubject(name), color: cs.primary, size: 24.sp),
+                          ),
+                          SizedBox(height: AppSpacing.sm.h),
+                          Text(name, style: tt.labelSmall?.copyWith(color: cs.onSurface),
+                            maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               );
-            }).toList(),
+            },
           ),
       ],
     );
@@ -375,6 +528,24 @@ class _DashboardPageState extends State<DashboardPage> {
       decoration: BoxDecoration(color: cs.surfaceContainer, borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r), border: Border.all(color: cs.outlineVariant)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [Container(width: AppSpacing.sm.w, height: AppSpacing.sm.w, decoration: BoxDecoration(color: color, shape: BoxShape.circle)), SizedBox(width: AppSpacing.sm.w), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: tt.labelSmall?.copyWith(fontSize: 10.sp, color: cs.onSurfaceVariant)), SizedBox(height: AppSpacing.xs.h), Text(value, style: tt.labelSmall?.copyWith(fontWeight: AppSpacing.weightStrong, color: cs.onSurface))])]),
     );
+  }
+
+  IconData _iconForSubject(String name) {
+    final n = name.toLowerCase();
+    if (n.contains('math')) return Icons.calculate_outlined;
+    if (n.contains('com') || n.contains('tech')) return Icons.computer_outlined;
+    if (n.contains('sci') || n.contains('chem')) return Icons.science_outlined;
+    if (n.contains('phy')) return Icons.bolt_outlined;
+    if (n.contains('bio')) return Icons.biotech_outlined;
+    if (n.contains('eng') || n.contains('hin') || n.contains('kan') ||
+        n.contains('tam') || n.contains('tel') || n.contains('fra') || n.contains('fre')) {
+      return Icons.abc_outlined;
+    }
+    if (n.contains('his')) return Icons.history_edu_outlined;
+    if (n.contains('geo') || n.contains('soc')) return Icons.public_outlined;
+    if (n.contains('civ')) return Icons.account_balance_outlined;
+    if (n.contains('eco')) return Icons.trending_up_outlined;
+    return Icons.menu_book_outlined;
   }
 
   void _showSettings(BuildContext context) {

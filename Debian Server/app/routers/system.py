@@ -2,7 +2,7 @@
 import os
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse
 from app.dependencies import _extract_user
 from app.models import StatusResponse, WhoamiResponse
 
@@ -56,6 +56,24 @@ async def generate_204():
     return Response(status_code=204)
 
 
+@router.get("/connecttest.txt", include_in_schema=False)
+async def windows_connect_test():
+    """Windows 10/11 captive portal probe -- must return exact string."""
+    return PlainTextResponse("Microsoft Connect Test")
+
+
+@router.get("/ncsi.txt", include_in_schema=False)
+async def windows_ncsi():
+    """Windows NCSI captive portal probe."""
+    return PlainTextResponse("Microsoft NCSI")
+
+
+@router.get("/hotspot-detect.html", include_in_schema=False)
+async def ios_hotspot_detect():
+    """iOS/macOS captive portal probe."""
+    return HTMLResponse("<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>")
+
+
 @router.get("/welcome", summary="Serve welcome page", description="Serves the captive portal welcome landing page. This is the first page users see when connecting to the hotspot.", tags=["System"], responses={200: {"description": "Welcome page HTML"}})
 @router.get("/welcome.html", summary="Serve welcome page (.html)", description="Alternate URL for the welcome page. Both /welcome and /welcome.html serve the same content.", tags=["System"])
 async def welcome_page():
@@ -78,7 +96,11 @@ async def get_dashboard(request: Request):
     Returns:
         FileResponse serving static/index.html if authenticated, or a RedirectResponse to /welcome.
     """
-    if not request.cookies.get("lumina_session"):
+    try:
+        user = await _extract_user(request)
+        if user["role"] not in ("teacher", "admin"):
+            return RedirectResponse(url="/welcome")
+    except HTTPException:
         return RedirectResponse(url="/welcome")
     return FileResponse("static/index.html")
 
@@ -138,7 +160,7 @@ async def serve_static(path: str, request: Request):
             return fp + ".html"
         return None
 
-    if path.startswith("css/") or path.startswith("js/") or path.startswith("assets/") or path.startswith("lang/") or path in ("welcome.html", "welcome"):
+    if path.startswith("css/") or path.startswith("js/") or path.startswith("assets/") or path.startswith("lang/") or path.startswith("fonts/") or path in ("welcome.html", "welcome"):
         file_path = _resolve(path)
         if file_path:
             return FileResponse(file_path)

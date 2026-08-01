@@ -3,13 +3,14 @@ import os
 import re
 import base64
 import asyncio
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 import logging
 from app.database import PROFILE_ICONS_DIR
 from app.async_db import db_exec, db_exec_many, db_fetch, db_fetch_one, db_run
-from app.models import StudyTimeSync, SubjectTimeSync, StudentChangePasswordRequest, StatusResponse, RestoreResponse, StudentAnalyticsResponse, IconUploadResponse, StudentProfileResponse, WeeklyBreakdownResponse
+from app.models import StudyTimeSync, SubjectTimeSync, StudentChangePasswordRequest, StatusResponse, RestoreResponse, StudentAnalyticsResponse, IconUploadResponse, StudentProfileResponse, WeeklyBreakdownResponse, BookmarkSync, BookmarkResponse, BookmarkItem, QuizBestScoreResponse, QuizBestScoreUpdate
 from app.dependencies import verify_student, hash_password, verify_password, invalidate_tokens_for_user
+from app.audit import audit, Action
 
 router = APIRouter()
 
@@ -124,7 +125,7 @@ async def get_analytics(student_id: str = Depends(verify_student)):
 
 
 @router.post("/student/profile/update", response_model=StatusResponse, summary="Update student profile", description="Updates the student's display name and/or grade. Only provided fields are updated.", tags=["Profile"], responses={200: {"description": "Profile updated successfully"}, 400: {"description": "Failed to update profile"}})
-async def update_student_profile(data: dict, student_id: str = Depends(verify_student)):
+async def update_student_profile(data: dict, student_id: str = Depends(verify_student), request: Request = None):
     """Update a student's display name and grade.
 
     Args:
@@ -152,13 +153,15 @@ async def update_student_profile(data: dict, student_id: str = Depends(verify_st
         except Exception:
             ok = False
     await db_run(_update_profile)
+    await audit(action=Action.CHANGE_SETTINGS, username=student_id, resource_type="profile",
+                changes={"name": name, "grade": grade})
     if not ok:
         raise HTTPException(status_code=400, detail="Failed to update profile.")  # i18n: user-facing error message
     return {"status": "success"}
 
 
 @router.post("/student/profile/icon", response_model=IconUploadResponse, summary="Upload profile icon", description="Uploads a base64-encoded profile image for the student. Validates file magic bytes to confirm the format and enforces a 500KB size limit. Supports PNG, JPG, GIF, and WebP.", tags=["Profile"], responses={200: {"description": "Icon uploaded successfully"}, 400: {"description": "Invalid image data, format, or size exceeded"}})
-async def upload_profile_icon(data: dict, student_id: str = Depends(verify_student)):
+async def upload_profile_icon(data: dict, student_id: str = Depends(verify_student), request: Request = None):
     """Upload a base64-encoded profile icon for a student.
 
     Args:
@@ -204,6 +207,8 @@ async def upload_profile_icon(data: dict, student_id: str = Depends(verify_stude
         with open(filepath, "wb") as f:
             f.write(raw)
     await asyncio.to_thread(_write_icon)
+    await audit(action=Action.CHANGE_SETTINGS, username=student_id, resource_type="profile",
+                resource_name="icon", context={"filename": filename})
     return {"status": "ok", "filename": filename}
 
 
@@ -228,12 +233,12 @@ async def get_profile_icon(scholar_id: str):
     raise HTTPException(status_code=404, detail="No profile icon found.")  # i18n: user-facing error message
 
 
-@router.post("/student/change-password", response_model=StatusResponse, summary="Change student password", description="Changes the student's password after verifying the current password. Clears the reset-required flag on success.", tags=["Auth", "Profile"], responses={200: {"description": "Password changed successfully"}, 400: {"description": "Incorrect current password, password not set, or change failed"}})
-async def student_change_password(data: StudentChangePasswordRequest, student_id: str = Depends(verify_student)):
+@router.post("/student/change-password", response_model=StatusResponse, summary="Change student password", description="Changes the student's password. When reset_required is set, old password is not needed. Otherwise verifies the current password. Clears the reset-required flag on success.", tags=["Auth", "Profile"], responses={200: {"description": "Password changed successfully"}, 400: {"description": "Incorrect current password, password not set, or change failed"}})
+async def student_change_password(data: StudentChangePasswordRequest, student_id: str = Depends(verify_student), request: Request = None):
     """Change a student's password.
 
     Args:
-        data: Change password request with old and new passwords.
+        data: Change password request with new password. Old password is optional when reset_required is set.
         student_id: The authenticated student's ID, injected by the verify_student dependency.
 
     Returns:
@@ -243,21 +248,27 @@ async def student_change_password(data: StudentChangePasswordRequest, student_id
         HTTPException 400: If the current password is incorrect, password is not set, or the update fails.
     """
     try:
-        row = await db_fetch_one("SELECT hashed_password FROM scholars WHERE id = ?", (student_id,))
+        row = await db_fetch_one("SELECT hashed_password, reset_required FROM scholars WHERE id = ?", (student_id,))
         if not row or not row[0]:
-            raise HTTPException(status_code=400, detail="Password not set. Contact your teacher.")  # i18n: user-facing error message
-        password_ok = await asyncio.to_thread(verify_password, data.old_password, row[0])
-        if not password_ok:
-            raise HTTPException(status_code=400, detail="Incorrect current password.")  # i18n: user-facing error message
+            raise HTTPException(status_code=400, detail="Password not set. Contact your teacher.")
+        reset_required = row["reset_required"] if isinstance(row, dict) else (row[1] if len(row) > 1 else 0)
+        if not reset_required:
+            if not data.old_password:
+                raise HTTPException(status_code=400, detail="Current password is required.")
+            password_ok = await asyncio.to_thread(verify_password, data.old_password, row[0])
+            if not password_ok:
+                raise HTTPException(status_code=400, detail="Incorrect current password.")
         hashed = await asyncio.to_thread(hash_password, data.new_password)
         await db_exec("UPDATE scholars SET hashed_password = ?, reset_required = 0 WHERE id = ?", (hashed, student_id))
         await invalidate_tokens_for_user(student_id)
+        await audit(action=Action.CHANGE_PASSWORD, username=student_id, resource_type="account",
+                    severity="notice")
         return {"status": "success"}
     except HTTPException:
         raise
     except Exception as e:
         logging.error(f"student_change_password: {e}")
-        raise HTTPException(status_code=400, detail="Failed to change password")  # i18n: user-facing error message
+        raise HTTPException(status_code=400, detail="Failed to change password")
 
 
 @router.get("/student/profile", response_model=StudentProfileResponse, summary="Get student profile", description="Returns the student's display name, grade, and scholar ID.", tags=["Profile"], responses={200: {"description": "Profile retrieved successfully"}, 404: {"description": "Student not found"}})
@@ -312,3 +323,44 @@ async def weekly_breakdown(student_id: str = Depends(verify_student)):
     """, (student_id,))
 
     return {"today_minutes": today_minutes, "weekly_data": {row[0]: row[1] for row in rows}}
+
+
+@router.get("/student/bookmarks", response_model=BookmarkResponse, summary="Get saved bookmarks", description="Returns all bookmarks saved by the student.", tags=["Student"])
+async def get_bookmarks(student_id: str = Depends(verify_student)):
+    rows = await db_fetch("SELECT resource_id, title, subject, grade, resource_type FROM student_bookmarks WHERE scholar_id = ?", (student_id,))
+    return {"bookmarks": [BookmarkItem(resource_id=r[0], title=r[1] or "", subject=r[2] or "", grade=r[3] or "", resource_type=r[4] or "") for r in rows]}
+
+
+@router.post("/student/sync-bookmarks", response_model=StatusResponse, summary="Sync bookmarks", description="Replaces all server-side bookmarks with the provided list.", tags=["Sync"])
+async def sync_bookmarks(data: BookmarkSync, student_id: str = Depends(verify_student)):
+    def _replace(conn):
+        c = conn.cursor()
+        c.execute("DELETE FROM student_bookmarks WHERE scholar_id = ?", (student_id,))
+        if data.bookmarks:
+            c.executemany("INSERT INTO student_bookmarks (scholar_id, resource_id, title, subject, grade, resource_type) VALUES (?, ?, ?, ?, ?, ?)",
+                [(student_id, b.resource_id, b.title, b.subject, b.grade, b.resource_type) for b in data.bookmarks])
+        conn.commit()
+    await db_run(_replace)
+    return {"status": "ok"}
+
+
+@router.get("/student/quiz-best-score/{course_id}/{resource_id}", response_model=QuizBestScoreResponse, summary="Get best quiz score", description="Returns the student's best score and attempt count for a quiz.", tags=["Student"])
+async def get_quiz_best_score(course_id: str, resource_id: str, student_id: str = Depends(verify_student)):
+    best = await db_fetch_one("SELECT best_score, best_attempt_id FROM quiz_best_scores WHERE scholar_id = ? AND course_id = ? AND resource_id = ?", (student_id, course_id, resource_id))
+    count_row = await db_fetch_one("SELECT COUNT(*) FROM quiz_attempts WHERE student_id = ? AND course_id = ? AND resource_id = ?", (student_id, course_id, resource_id))
+    return {
+        "best_score": best["best_score"] if best else 0.0,
+        "best_attempt_id": best["best_attempt_id"] if best else "",
+        "attempts_count": count_row[0] if count_row else 0,
+    }
+
+
+@router.post("/student/quiz-best-score/{course_id}/{resource_id}", response_model=StatusResponse, summary="Update best quiz score", description="Updates the best score if the new score is higher.", tags=["Student"])
+async def update_quiz_best_score(course_id: str, resource_id: str, data: QuizBestScoreUpdate, student_id: str = Depends(verify_student)):
+    existing = await db_fetch_one("SELECT best_score FROM quiz_best_scores WHERE scholar_id = ? AND course_id = ? AND resource_id = ?", (student_id, course_id, resource_id))
+    if existing and (existing["best_score"] or 0) >= data.score:
+        return {"status": "ok"}
+    await db_exec(
+        "INSERT INTO quiz_best_scores (scholar_id, course_id, resource_id, best_score, best_attempt_id, updated_at) VALUES (?, ?, ?, ?, ?, datetime('now')) ON CONFLICT(scholar_id, course_id, resource_id) DO UPDATE SET best_score = ?, best_attempt_id = ?, updated_at = datetime('now')",
+        (student_id, course_id, resource_id, data.score, data.attempt_id, data.score, data.attempt_id))
+    return {"status": "ok"}

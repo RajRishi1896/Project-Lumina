@@ -186,8 +186,8 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th data-i18n="danger.table_grade_name" style="width: 90%;">Grade Name</th>
-                            <th data-i18n="danger.table_action" style="width: 10%;">Action</th>
+                            <th data-i18n="danger.table_grade_name" style="width: 80%;">Grade Name</th>
+                            <th data-i18n="danger.table_action" style="width: 20%;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="gradeDangerTable">
@@ -233,9 +233,9 @@
                     <thead>
                         <tr>
                             <th data-i18n="danger.table_subject_name" style="width: 40%;">Subject Name</th>
-                            <th data-i18n="danger.table_class" style="width: 40%;">Class</th>
+                            <th data-i18n="danger.table_class" style="width: 30%;">Class</th>
                             <th data-i18n="danger.table_symbol" style="width: 10%;">Symbol</th>
-                            <th style="width: 10%;">Action</th>
+                            <th style="width: 20%;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="subjectDangerTable">
@@ -281,6 +281,22 @@
             </div>
         </div>
 
+        <div id="editGradeModal" class="hidden popup modal-overlay">
+            <div class="modal" style="max-width: 400px;border:2px solid var(--teal);">
+                <h3 class="modal-title" style="margin-bottom:1.25rem;color:var(--teal);" data-i18n="danger.edit_grade_title">Edit Grade</h3>
+                <div id="editGradeNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
+                <input type="hidden" id="editGradeOriginalName" value="">
+                <div style="margin-bottom:1.25rem;">
+                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.grade_name_label">Grade Name</label>
+                    <input type="text" id="editGradeName" data-i18n="danger.grade_name_placeholder" placeholder="e.g. Grade 10" class="form-input">
+                </div>
+                <div class="modal-footer" style="padding-top: 1rem; margin-top: 0;">
+                    <button class="btn btn-outline btn-close-edit-grade" style="color: var(--on-surface);"><span data-i18n="danger.cancel">Cancel</span></button>
+                    <button class="btn btn-primary btn-confirm-edit-grade" style="padding: 0.55rem 1.15rem;"><span data-i18n="danger.save">Save</span></button>
+                </div>
+            </div>
+        </div>
+
         <div id="addSubjectModal" class="hidden popup modal-overlay">
             <div class="modal creation" style="max-width: 440px;">
                 <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="danger.add_new_subject_title">Add New Subject</h3>
@@ -291,13 +307,13 @@
                 </div>
                 <div style="margin-bottom:1rem;">
                     <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.symbol_label">Symbol</label>
-                    <div style="position:relative;" id="symbolDropdownWrap">
-                        <input type="hidden" id="modalSubjectSymbol" value="folder">
-                        <div id="symbolDropdownSelected" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);cursor:pointer;">
-                            <div style="display:flex;align-items:center;gap:0.5rem;" id="symbolSelectedPreview"></div>
+                    <div style="position:relative;" id="SymbolDropdownWrap">
+                        <input type="hidden" id="SubjectSymbol" value="folder">
+                        <div id="SymbolDropdownSelected" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);cursor:pointer;">
+                            <div style="display:flex;align-items:center;gap:0.5rem;" id="SymbolSelectedPreview"></div>
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
-                        <div id="symbolDropdownList" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--outline);border-radius:var(--radius-sm);margin-top:0.25rem;box-shadow:0 4px 12px rgba(0,0,0,0.25);z-index:50;max-height:240px;overflow-y:auto;"></div>
+                        <div id="SymbolDropdownList" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--outline);border-radius:var(--radius-sm);margin-top:0.25rem;box-shadow:0 4px 12px rgba(0,0,0,0.25);z-index:50;max-height:240px;overflow-y:auto;"></div>
                     </div>
                 </div>
                 <div style="margin-bottom:1.25rem;">
@@ -309,6 +325,39 @@
                 <div class="modal-footer" style="padding-top: 1rem; margin-top: 0;">
                     <button id="btn-closeSubjectModal" class="btn btn-outline" style="color: var(--on-surface);"><span data-i18n="danger.cancel">Cancel</span></button>
                     <button id="btn-confirmAddSubject" class="btn btn-primary" style="padding: 0.55rem 1.15rem;"><span data-i18n="danger.add_subject_action">Add Subject</span></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="editSubjectModal" class="hidden popup modal-overlay">
+            <div class="modal" style="max-width: 440px;border:2px solid var(--teal);">
+                <h3 class="modal-title" style="margin-bottom:1.25rem;color:var(--teal);" data-i18n="danger.edit_subject_title">Edit Subject</h3>
+                <div id="editSubjectNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
+                <input type="hidden" id="editSubjectId" value="">
+                <div style="margin-bottom:1rem;">
+                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.subject_name_label">Subject Name</label>
+                    <input type="text" id="editSubjectName" data-i18n="danger.subject_name_placeholder" placeholder="e.g. Biology" class="form-input">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.symbol_label">Symbol</label>
+                    <div style="position:relative;" id="editSymbolDropdownWrap">
+                        <input type="hidden" id="editSubjectSymbol" value="folder">
+                        <div id="editSymbolDropdownSelected" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.85rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.9rem;background:var(--surface);color:var(--on-surface);cursor:pointer;">
+                            <div style="display:flex;align-items:center;gap:0.5rem;" id="editSymbolSelectedPreview"></div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div id="editSymbolDropdownList" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--outline);border-radius:var(--radius-sm);margin-top:0.25rem;box-shadow:0 4px 12px rgba(0,0,0,0.25);z-index:50;max-height:240px;overflow-y:auto;"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom:1.25rem;">
+                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.subject_grade_label">Grade</label>
+                    <select id="editSubjectClass" class="form-select">
+                        <option value="" data-i18n="danger.all_classes">All Classes</option>
+                    </select>
+                </div>
+                <div class="modal-footer" style="padding-top: 1rem; margin-top: 0;">
+                    <button class="btn btn-outline btn-close-edit-subject" style="color: var(--on-surface);"><span data-i18n="danger.cancel">Cancel</span></button>
+                    <button class="btn btn-primary btn-confirm-edit-subject" style="padding: 0.55rem 1.15rem;"><span data-i18n="danger.save">Save</span></button>
                 </div>
             </div>
         </div>
@@ -406,6 +455,7 @@
                 var res = await fetch('/grades', { credentials: 'include' });
                 activeGrades = await res.json();
                 filterGrades();
+                populateDangerSubjectClassDropdown();
             } catch (e) { console.error(e); }
         }
 
@@ -434,7 +484,8 @@
                     var name = g.name || g;
                     return '<tr>' +
                         '<td data-label="' + __('danger.table_grade_name') + '"><strong>' + esc(name) + '</strong></td>' +
-                        '<td data-label="' + __('danger.table_action') + '" style="text-align: left;">' +
+                        '<td data-label="' + __('danger.table_action') + '" style="text-align: left; display:flex; gap:0.5rem;">' +
+                            '<button data-grade-name="' + esc(name) + '" class="btn btn-outline js-danger-edit-grade" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--teal); color: var(--teal);"><span>' + __('danger.edit') + '</span></button>' +
                             '<button data-grade-name="' + esc(name) + '" class="btn btn-outline js-danger-delete-grade" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete') + '</span></button>' +
                         '</td>' +
                     '</tr>';
@@ -466,6 +517,42 @@
                 }
             } catch (e) {
                 showNotification('addGradeNotif', __('danger.notif.network_error'), true);
+            }
+        }
+
+        /** Opens the edit grade modal pre-filled with the grade name. */
+        function editGrade(name) {
+            document.getElementById('editGradeOriginalName').value = name;
+            document.getElementById('editGradeName').value = name;
+            document.getElementById('editGradeNotif').style.display = 'none';
+            document.getElementById('editGradeModal').classList.remove('hidden');
+            document.getElementById('editGradeName').focus();
+        }
+
+        /** Saves the grade rename via PUT /grades/{name}. */
+        async function saveGrade() {
+            var originalName = document.getElementById('editGradeOriginalName').value;
+            var newName = document.getElementById('editGradeName').value.trim();
+            if (!newName) {
+                showNotification('editGradeNotif', __('danger.error.grade_name_required'), true);
+                return;
+            }
+            try {
+                var res = await fetch('/grades/' + encodeURIComponent(originalName), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_name: newName }),
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    document.getElementById('editGradeModal').classList.add('hidden');
+                    loadGrades();
+                } else {
+                    var err = await res.json().catch(function() { return {}; });
+                    showNotification('editGradeNotif', err.detail || __('danger.error.grade_rename_failed'), true);
+                }
+            } catch (e) {
+                showNotification('editGradeNotif', __('danger.notif.network_error'), true);
             }
         }
 
@@ -540,12 +627,13 @@
             return svgs[symbol] || svgs.folder;
         }
 
-        function initSymbolDropdown(defaultVal) {
+        function initSymbolDropdown(defaultVal, prefix) {
+            prefix = prefix || '';
             var symbols = ['calculator','atom','globe','book','laptop','microscope','compass','code','folder'];
             var labels = {calculator:__('danger.symbol.calculator'),atom:__('danger.symbol.atom'),globe:__('danger.symbol.globe'),book:__('danger.symbol.book'),laptop:__('danger.symbol.laptop'),microscope:__('danger.symbol.microscope'),compass:__('danger.symbol.compass'),code:__('danger.symbol.code'),folder:__('danger.symbol.folder')};
-            var list = document.getElementById('symbolDropdownList');
-            var hidden = document.getElementById('modalSubjectSymbol');
-            var preview = document.getElementById('symbolSelectedPreview');
+            var list = document.getElementById(prefix + 'SymbolDropdownList');
+            var hidden = document.getElementById(prefix + 'SubjectSymbol');
+            var preview = document.getElementById(prefix + 'SymbolSelectedPreview');
             if (!list || !hidden || !preview) return;
             list.innerHTML = '';
             symbols.forEach(function(s) {
@@ -564,12 +652,12 @@
             });
             hidden.value = defaultVal || 'folder';
             preview.innerHTML = getSymbolSvg(hidden.value) + '<span>' + labels[hidden.value] + '</span>';
-            var selected = document.getElementById('symbolDropdownSelected');
+            var selected = document.getElementById(prefix + 'SymbolDropdownSelected');
             if (selected) {
                 selected.onclick = function() { list.style.display = list.style.display === 'none' ? 'block' : 'none'; };
             }
             document.addEventListener('click', function(e) {
-                var wrap = document.getElementById('symbolDropdownWrap');
+                var wrap = document.getElementById(prefix + 'SymbolDropdownWrap');
                 if (wrap && !wrap.contains(e.target)) list.style.display = 'none';
             });
         }
@@ -580,13 +668,12 @@
                 var res = await fetch('/subjects', { credentials: 'include' });
                 activeDangerSubjects = await res.json();
                 filterDangerSubjects();
-                populateDangerSubjectClassDropdown();
             } catch (e) { console.error(e); }
         }
 
         function populateDangerSubjectClassDropdown() {
             var grades = activeGrades.map(function(g) { return g.name || g; });
-            ['dangerSubjectClass', 'modalSubjectClass'].forEach(function(id) {
+            ['dangerSubjectClass', 'modalSubjectClass', 'editSubjectClass'].forEach(function(id) {
                 var sel = document.getElementById(id);
                 if (!sel) return;
                 var existing = sel.querySelectorAll('option:not(:first-child)');
@@ -623,10 +710,11 @@
                 tbody.innerHTML = pageItems.map(function(s) {
                     var svg = getSymbolSvg(s.symbol || 'folder');
                     return '<tr>' +
-                        '<td data-i18n-data-label="danger.table_subject_name"><strong>' + esc(s.name) + '</strong></td>' +
-                        '<td data-i18n-data-label="danger.table_class">' + esc(s.class_name || __('danger.subject_class_all')) + '</td>' +
-                        '<td data-i18n-data-label="danger.table_symbol"><span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.6rem; border-radius: 10px; font-size: 0.75rem; font-weight: 600; background: rgba(0,112,131,0.08); color: var(--teal);">' + svg + '</span></td>' +
+                        '<td data-label="' + __('danger.table_subject_name') + '"><strong>' + esc(s.name) + '</strong></td>' +
+                        '<td data-label="' + __('danger.table_class') + '">' + esc(s.class_name || __('danger.subject_class_all')) + '</td>' +
+                        '<td data-label="' + __('danger.table_symbol') + '"><span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.6rem; border-radius: 10px; font-size: 0.75rem; font-weight: 600; background: rgba(0,112,131,0.08); color: var(--teal);">' + svg + '</span></td>' +
                         '<td data-label="' + __('danger.table_action') + '" style="text-align: left;">' +
+                            '<button data-subject-id="' + esc(s.id) + '" data-subject-name="' + esc(s.name) + '" data-subject-class="' + esc(s.class_name || '') + '" data-subject-symbol="' + esc(s.symbol || 'folder') + '" class="btn btn-outline js-danger-edit-subject" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--teal); color: var(--teal);"><span>' + __('danger.edit') + '</span></button>' +
                             '<button data-subject-id="' + esc(s.id) + '" data-subject-name="' + esc(s.name) + '" data-subject-class="' + esc(s.class_name || '') + '" class="btn btn-outline js-danger-delete-subject" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);"><span>' + __('danger.delete_subject_btn') + '</span></button>' +
                         '</td>' +
                     '</tr>';
@@ -638,7 +726,7 @@
         /** Creates a new subject via POST to /teacher/subjects with name, symbol, and class. */
         async function addDangerSubject() {
             var name = document.getElementById('modalSubjectName').value.trim();
-            var symbol = document.getElementById('modalSubjectSymbol').value;
+            var symbol = document.getElementById('SubjectSymbol').value;
             var className = document.getElementById('modalSubjectClass').value;
             if (!name) { showNotification('addSubjectNotif', __('danger.error.subject_name_required'), true); return; }
             try {
@@ -657,6 +745,43 @@
                 }
             } catch (e) {
                 showNotification('addSubjectNotif', __('danger.notif.network_error'), true);
+            }
+        }
+
+        /** Opens the edit subject modal pre-filled with subject data. */
+        function editSubject(id, name, className, symbol) {
+            document.getElementById('editSubjectId').value = id;
+            document.getElementById('editSubjectName').value = name;
+            document.getElementById('editSubjectClass').value = className || '';
+            document.getElementById('editSubjectNotif').style.display = 'none';
+            initSymbolDropdown(symbol || 'folder', 'edit');
+            document.getElementById('editSubjectModal').classList.remove('hidden');
+            document.getElementById('editSubjectName').focus();
+        }
+
+        /** Saves the subject edit via PUT /teacher/subjects/{id}. */
+        async function saveSubject() {
+            var id = document.getElementById('editSubjectId').value;
+            var name = document.getElementById('editSubjectName').value.trim();
+            var symbol = document.getElementById('editSubjectSymbol').value;
+            var className = document.getElementById('editSubjectClass').value;
+            if (!name) { showNotification('editSubjectNotif', __('danger.error.subject_name_required'), true); return; }
+            try {
+                var res = await fetch('/teacher/subjects/' + encodeURIComponent(id), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name: name, symbol: symbol, class_name: className })
+                });
+                if (res.ok) {
+                    document.getElementById('editSubjectModal').classList.add('hidden');
+                    loadDangerSubjects();
+                } else {
+                    var err = await res.json().catch(function() { return {}; });
+                    showNotification('editSubjectNotif', err.detail || __('danger.notif.subject_update_failed'), true);
+                }
+            } catch (e) {
+                showNotification('editSubjectNotif', __('danger.notif.network_error'), true);
             }
         }
 
@@ -702,7 +827,7 @@
             });
             if (!result) return;
             try {
-                var url = '/teacher/subjects/' + encodeURIComponent(name);
+                var url = '/teacher/subjects/' + encodeURIComponent(id);
                 if (result !== '__delete__') url += '?transfer_to=' + encodeURIComponent(result);
                 var res = await fetch(url, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
@@ -720,7 +845,7 @@
         function filterDangerStudents() {
             var query = (document.getElementById('studentDangerSearch').value || '').toLowerCase().trim();
             _studentFiltered = activeDangerScholars.filter(function(s) {
-                return s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query);
+                return s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query) || (s.username || '').toLowerCase().includes(query);
             });
             _studentPage = 1;
             renderStudentPage();
@@ -740,7 +865,7 @@
                 tbody.innerHTML = pageItems.map(function(s) {
                     return '<tr>' +
                         '<td data-label="' + __('danger.table_student_name') + '"><strong>' + esc(s.name) + '</strong></td>' +
-                        '<td data-label="' + __('danger.table_username') + '">' + esc(s.id) + '</td>' +
+                        '<td data-label="' + __('danger.table_username') + '">' + esc(s.username || '') + '</td>' +
                         '<td data-label="' + __('danger.table_scholar_id') + '"><code>' + esc(s.id) + '</code></td>' +
                         '<td data-label="' + __('danger.table_status') + '">' + (s.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
                         '<td data-label="' + __('danger.table_action') + '">' +
@@ -1319,9 +1444,23 @@
                     var btn = e.target.closest('.js-danger-delete-grade');
                     if (btn) {
                         deleteGrade(btn.dataset.gradeName);
+                        return;
+                    }
+                    btn = e.target.closest('.js-danger-edit-grade');
+                    if (btn) {
+                        editGrade(btn.dataset.gradeName);
                     }
                 });
             }
+
+            document.querySelectorAll('.btn-close-edit-grade').forEach(function(el) {
+                el.addEventListener('click', function() {
+                    document.getElementById('editGradeModal').classList.add('hidden');
+                });
+            });
+            document.querySelectorAll('.btn-confirm-edit-grade').forEach(function(el) {
+                el.addEventListener('click', saveGrade);
+            });
 
             var btnAddSubject = document.getElementById('btn-addDangerSubject');
             if (btnAddSubject) {
@@ -1353,9 +1492,23 @@
                     var btn = e.target.closest('.js-danger-delete-subject');
                     if (btn) {
                         deleteDangerSubject(btn.dataset.subjectId, btn.dataset.subjectName);
+                        return;
+                    }
+                    btn = e.target.closest('.js-danger-edit-subject');
+                    if (btn) {
+                        editSubject(btn.dataset.subjectId, btn.dataset.subjectName, btn.dataset.subjectClass, btn.dataset.subjectSymbol);
                     }
                 });
             }
+
+            document.querySelectorAll('.btn-close-edit-subject').forEach(function(el) {
+                el.addEventListener('click', function() {
+                    document.getElementById('editSubjectModal').classList.add('hidden');
+                });
+            });
+            document.querySelectorAll('.btn-confirm-edit-subject').forEach(function(el) {
+                el.addEventListener('click', saveSubject);
+            });
         };
         if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['danger'] = _initDanger;
 

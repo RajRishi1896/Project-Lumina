@@ -18,6 +18,8 @@
   "languageKannada": "कन्नड़",
   "languageFrench": "फ़्रेंच",
   "languageKiswahili": "स्वाहिली",
+  "languageTamil": "तमिल",
+  "languageTelugu": "तेलुगू",
   "languageMore": "और...",
   "settingsLanguagePickerTitle": "भाषा चुनें",
   "ctaEnterPortal": "पोर्टल में प्रवेश करें",
@@ -84,6 +86,7 @@
   "profileSetupTitle": "स्वागत है!",
   "profileSetupSubtitle": "आइए आपकी प्रोफ़ाइल सेट करें",
   "labelDisplayName": "प्रदर्शन नाम",
+  "labelOther": "अन्य",
   "buttonContinue": "जारी रखें",
   "sectionRecentlyViewed": "हाल ही में देखा गया",
   "sectionSubjectCategories": "विषय श्रेणियाँ",
@@ -124,6 +127,10 @@
   "snackbarRemovedFromSaved": "सहेजे गए से हटाया गया",
   "snackbarAddedToSaved": "सहेजे गए में जोड़ा गया",
   "snackbarNotDownloaded": "\"{title}\" डाउनलोड नहीं है। ऑफ़लाइन उपयोग के लिए डाउनलोड बटन से जोड़ें।",
+  "fileNotAvailable": "फ़ाइल उपलब्ध नहीं",
+  "@fileNotAvailable": {
+    "description": "SnackBar when a resource has no file URL or the URL is empty"
+  },
   "snackbarQueueAction": "कतार",
   "dialogDownloadTitle": "डाउनलोड",
   "dialogDownloadContent": "\"{fileName}\" डाउनलोड करें?\n\nआकार: {sizeLabel}",
@@ -147,6 +154,10 @@
   "tabTextbooks": "पाठ्यपुस्तकें",
   "tabVideos": "वीडियो",
   "tabPyqs": "पिछले प्रश्न",
+  "tabZim": "ZIM",
+  "tabCourses": "पाठ्यक्रम",
+  "tabQuizzes": "प्रश्नोत्तरी",
+  "tabNotes": "नोट्स",
   "emptyStateAll": "अभी तक कोई संसाधन सहेजा नहीं गया।",
   "emptyStateByType": "कोई {type} सहेजा नहीं मिला।",
   "headerMyProfile": "मेरी प्रोफ़ाइल",
@@ -590,6 +601,9 @@
   "@labelDisplayName": {
     "description": "Label for the display name text field on the profile setup page"
   },
+  "@labelOther": {
+    "description": "Section header for resources without an assigned topic"
+  },
   "@buttonContinue": {
     "description": "Submit button on the profile setup page to save and proceed to the main app"
   },
@@ -703,6 +717,10 @@
   },
   "@snackbarDownloadFailed": {
     "description": "SnackBar shown when a download encounters an error"
+  },
+  "buttonRetry": "पुनः प्रयास करें",
+  "@buttonRetry": {
+    "description": "Button label to retry a failed download or operation"
   },
   "@snackbarDownloadRemoved": {
     "description": "SnackBar confirming a download was deleted"
@@ -836,6 +854,21 @@
   },
   "@tabPyqs": {
     "description": "Tab label filtering saved PYQs"
+  },
+  "@tabZim": {
+    "description": "Tab label filtering saved ZIM/Wikipedia articles"
+  },
+  "@tabCourses": {
+    "description": "Tab label for courses in saved resources page",
+    "placeholders": {}
+  },
+  "@tabQuizzes": {
+    "description": "Tab label for quizzes in saved resources page",
+    "placeholders": {}
+  },
+  "@tabNotes": {
+    "description": "Tab label for notes in saved resources page",
+    "placeholders": {}
   },
   "@emptyStateAll": {
     "description": "Empty state when the All tab has no saved resources"
@@ -1530,5 +1563,12 @@
   },
   "@profileNoCourses": {
     "description": "Empty state message when the student has no enrolled courses"
-  }
+  },
+  "browseTabCourses": "कोर्स",
+  "browseTabResources": "संसाधन",
+  "browseTabWiki": "विकि",
+  "sectionRecentlyAccessed": "हाल में खोले गए",
+  "browseNotConnected": "सर्वर से कनेक्ट नहीं है",
+  "browseNoCoursesOffline": "कोर्स देखने के लिए हब से कनेक्ट करें",
+  "zimNoArticlesOffline": "लेख देखने के लिए हब से कनेक्ट करें"
 }

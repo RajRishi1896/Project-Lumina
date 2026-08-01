@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,6 +20,7 @@ import 'package:edumesh_android/shared/services/connectivity_service.dart';
 import 'package:edumesh_android/core/services/activity_tracker.dart';
 import 'package:edumesh_android/core/providers/locale_provider.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
+import 'package:edumesh_android/shared/services/download_service.dart';
 
 /// The global [NavigatorState] key used for out-of-widget navigation.
 ///
@@ -33,15 +36,36 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 /// [ProviderScope].
 void main() async { 
   WidgetsFlutterBinding.ensureInitialized();
-  unawaited(NotificationService().init());
+  unawaited(NotificationService().init().catchError((_) {}));
 
   final prefs = await SharedPreferences.getInstance();
   final useDarkIcon = prefs.getBool('dark_app_icon') ?? false;
-  unawaited(setAppIcon(useDarkIcon));
+  unawaited(setAppIcon(useDarkIcon).catchError((_) {}));
 
   final authService = AuthService();
-  final userId = await authService.getUniqueUserId();
-  final bool isLoggedIn = userId != null;
+  String? userId;
+  try {
+    userId = await authService.getUniqueUserId();
+  } catch (_) {
+    // ponytail: secure-storage read throws on keystore corruption (e.g. lock
+    // screen removed) -- treat as logged out instead of crashing before runApp.
+  }
+  bool isLoggedIn = userId != null;
+
+  // Validate that the stored user still exists on the server.
+  // Prevents N concurrent 401 handlers from crashing the app when a
+  // logged-in student was deleted from the server. Timeboxed so an
+  // unreachable hub can't hold cold start hostage.
+  if (isLoggedIn) {
+    try {
+      await ApiClient.get('/student/profile').timeout(const Duration(seconds: 5));
+    } catch (e) {
+      if (e is DioException &&
+          (e.response?.statusCode == 401 || e.response?.statusCode == 404)) {
+        isLoggedIn = false;
+      }
+    }
+  }
 
   ApiClient.onForceLogout = () {
     navigatorKey.currentState?.pushAndRemoveUntil(
@@ -50,14 +74,50 @@ void main() async {
     );
   };
 
-  ConnectivityService().start();
-  ActivityTracker().startAutoSync();
+  try { ConnectivityService().start(); } catch (_) {}
+  try { ActivityTracker().startAutoSync(); } catch (_) {}
+
+  try { await _initBackgroundService(); } catch (_) {}
+  unawaited(DownloadService.cleanStaleParts(const Duration(days: 7)));
 
   runApp(
     ProviderScope(
       child: LuminaApp(isLoggedIn: isLoggedIn),
     ),
   );
+}
+
+Future<void> _initBackgroundService() async {
+  final service = FlutterBackgroundService();
+  await service.configure(
+    androidConfiguration: AndroidConfiguration(
+      onStart: _onBackgroundStart,
+      autoStart: false,
+      isForegroundMode: true,
+      notificationChannelId: 'download_channel',
+      initialNotificationTitle: 'EduMesh',
+      initialNotificationContent: 'Downloads active',
+    ),
+    iosConfiguration: IosConfiguration(
+      autoStart: false,
+    ),
+  );
+}
+
+@pragma('vm:entry-point')
+Future<void> _onBackgroundStart(ServiceInstance service) async {
+  service.on('stop').listen((_) {
+    service.stopSelf();
+  });
+
+  Timer.periodic(const Duration(seconds: 30), (_) async {
+    if (service is AndroidServiceInstance) {
+      service.setForegroundNotificationInfo(
+        title: 'EduMesh Downloads',
+        content: 'Downloads in progress...',
+      );
+    }
+  });
 }
 
 /// The root MaterialApp widget for Edu-Mesh Scholar.

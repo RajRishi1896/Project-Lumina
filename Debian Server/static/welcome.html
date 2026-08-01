@@ -238,8 +238,9 @@
                 var bFill = document.getElementById('batteryFill');
                 var bText = document.getElementById('batteryText');
                 if (bText) {
-                    try { bText.innerText = __('welcome.battery.percent', { percent: data.battery_percent }); }
-                    catch(_) { bText.innerText = data.battery_percent + '%'; }
+                    var battLabel = data.battery_charging ? __('battery.charging') : __('battery.on_battery');
+                    try { bText.innerText = __('welcome.battery.percent', { percent: data.battery_percent }) + ' ' + battLabel; }
+                    catch(_) { bText.innerText = data.battery_percent + '% ' + battLabel; }
                 }
                 if (bFill) {
                     bFill.style.width = data.battery_percent + '%';
@@ -418,12 +419,14 @@
 
         /* ── Language Selection ───────────────────────────────────────── */
 
-        /** @type {Array<{code:string, name:string, native:string}>} Welcome page language options (hardcoded, not loaded from TRANSLATIONS) */
+        /** @type {Array<{code:string, name:string, native:string}>} Welcome page language options (hardcoded, translations load from lang/*.json) */
         var WELCOME_LANGS = [
             { code:'en', name:'English', native:'English' },
             { code:'hi', name:'Hindi', native:'हिन्दी' },
             { code:'kn', name:'Kannada', native:'ಕನ್ನಡ' },
             { code:'fr', name:'French', native:'Français' },
+            { code:'ta', name:'Tamil', native:'தமிழ்' },
+            { code:'te', name:'Telugu', native:'తెలుగు' },
         ];
         var welcomeLang = localStorage.getItem('lumina-lang') || 'en';
 
@@ -529,7 +532,7 @@
 
             // Register event listeners FIRST -- never let populateGuide block them
             var searchEl = document.getElementById('welcomeLangSearch');
-            if (searchEl) searchEl.addEventListener('input', function(){ renderWelcomeLangList(this.value); });
+            if (searchEl) searchEl.addEventListener('input', debounce(function(){ renderWelcomeLangList(this.value); }, 200));
             var listEl = document.getElementById('welcomeLangList');
             if (listEl) listEl.addEventListener('click', function(e) { e.stopPropagation(); });
             var toggleLangBtn = document.getElementById('btn-toggleWelcomeLang');
