@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/db_helper.dart';
+import 'share_server.dart';
 
 class DownloadService {
 
@@ -31,7 +32,16 @@ class DownloadService {
       int startByte = 0;
       final partFile = File(partPath);
       if (await partFile.exists()) {
-        startByte = await partFile.length();
+        final len = await partFile.length();
+        if (len > 0) {
+          final modified = (await partFile.stat()).modified;
+          if (DateTime.now().difference(modified) >= const Duration(seconds: 5)) {
+            startByte = len;
+          }
+        }
+        if (startByte == 0) {
+          await partFile.delete();
+        }
       }
       
       // Stream the response to disk chunk-by-chunk: buffering the whole file
@@ -103,6 +113,8 @@ class DownloadService {
       final file = await downloadFile(url, fileName, onProgress: onProgress);
       if (file != null) {
         await DBHelper().insertDownload(resourceId, file.path, title, subject, grade, type, mtime: mtime);
+        // A new shareable file exists — the ShareServer index must reflect it.
+        ShareServer().markIndexDirty();
         return file.path;
       }
       return null;

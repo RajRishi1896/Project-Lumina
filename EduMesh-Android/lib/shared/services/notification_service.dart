@@ -25,6 +25,8 @@ class NotificationService {
   String _channelDescription = 'Download completion notifications';
   String _completeNotificationTitle = 'Download Complete';
   String _failedNotificationTitle = 'Download Failed';
+  String _inProgressNotificationTitle = 'Downloading...';
+  String _inProgressNotificationBodyTemplate = '{title} ({percent}%)';
 
   /// Initializes the notification plugin and creates the download channel.
   ///
@@ -110,7 +112,6 @@ class NotificationService {
           android: AndroidNotificationDetails(
             'download_channel',
             _channelName,
-            autoCancel: true,
           ),
           iOS: const DarwinNotificationDetails(),
         ),
@@ -129,11 +130,15 @@ class NotificationService {
     String? channelDescription,
     String? downloadCompleteTitle,
     String? downloadFailedTitle,
+    String? downloadInProgressTitle,
+    String? downloadInProgressBody,
   }) {
     if (channelName != null) _channelName = channelName;
     if (channelDescription != null) _channelDescription = channelDescription;
     if (downloadCompleteTitle != null) _completeNotificationTitle = downloadCompleteTitle;
     if (downloadFailedTitle != null) _failedNotificationTitle = downloadFailedTitle;
+    if (downloadInProgressTitle != null) _inProgressNotificationTitle = downloadInProgressTitle;
+    if (downloadInProgressBody != null) _inProgressNotificationBodyTemplate = downloadInProgressBody;
   }
 
   /// Shows a local notification when a download fails after all retries.
@@ -156,7 +161,6 @@ class NotificationService {
           android: AndroidNotificationDetails(
             'download_channel',
             _channelName,
-            autoCancel: true,
           ),
           iOS: const DarwinNotificationDetails(),
         ),
@@ -167,7 +171,7 @@ class NotificationService {
   }
 
   /// Shows or updates a progress notification for an active download.
-  Future<void> showDownloadProgress(String title, int percent, {required int id}) async {
+  Future<void> showDownloadProgress(String title, int percent, {required int id, String? notificationTitle, String? notificationBody}) async {
     try {
       if (!await isEnabled) return;
       if (!_initialized) await init();
@@ -176,10 +180,13 @@ class NotificationService {
       return;
     }
     try {
+      final resolvedBody = (notificationBody ?? _inProgressNotificationBodyTemplate)
+          .replaceAll('{title}', title)
+          .replaceAll('{percent}', '$percent');
       await _plugin.show(
         id,
-        'Downloading...',
-        '$title ($percent%)',
+        notificationTitle ?? _inProgressNotificationTitle,
+        resolvedBody,
         NotificationDetails(
           android: AndroidNotificationDetails(
             'download_channel',

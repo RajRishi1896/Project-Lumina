@@ -51,10 +51,17 @@ class ApiClient {
             handler.next(error);
             return;
           }
+          if (error.requestOptions.extra['lumina_retried'] == true) {
+            try { await AuthService().logout(); } catch (_) {}
+            onForceLogout?.call();
+            handler.next(error);
+            return;
+          }
           if (_refreshCompleter != null) {
             await _refreshCompleter!.future;
             final newToken = await AuthService().getSessionToken();
             error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+            error.requestOptions.extra['lumina_retried'] = true;
             try {
               final retryResponse = await dio.fetch(error.requestOptions);
               handler.resolve(retryResponse);
@@ -69,6 +76,7 @@ class ApiClient {
               if (await AuthService().refreshSession()) {
                 final newToken = await AuthService().getSessionToken();
                 error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                error.requestOptions.extra['lumina_retried'] = true;
                 try {
                   final retryResponse = await dio.fetch(error.requestOptions);
                   handler.resolve(retryResponse);
@@ -81,6 +89,7 @@ class ApiClient {
               if (await AuthService().renewSession()) {
                 final newToken = await AuthService().getSessionToken();
                 error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                error.requestOptions.extra['lumina_retried'] = true;
                 try {
                   final retryResponse = await dio.fetch(error.requestOptions);
                   handler.resolve(retryResponse);
@@ -224,11 +233,27 @@ class ApiClient {
   /// Safe to call multiple times; only performs initialization once.
   static Future<void> ensureInitialized() => _ensureInitialized();
 
+  static Future<void> _maybeReResolve() async {
+    final uri = Uri.tryParse(_baseUrl);
+    if (uri == null) return;
+    if (InternetAddress.tryParse(uri.host) == null) return;
+    try {
+      final result = await InternetAddress.lookup('lumina.hub')
+          .timeout(const Duration(seconds: 3));
+      if (result.isNotEmpty) {
+        _baseUrl = _defaultDomain;
+        _dio.options.baseUrl = _baseUrl;
+        debugPrint('ApiClient: DNS recovered, using default domain');
+      }
+    } catch (_) {}
+  }
+
   /// Sync time with server and compute clock skew offset.
   /// Call this on every connectivity restore.
   static Future<void> syncTime() async {
     try {
       await _ensureInitialized();
+      await _maybeReResolve();
       final resp = await _dio.get(
         '$_baseUrl/system/time',
         options: Options(sendTimeout: const Duration(seconds: 3), receiveTimeout: const Duration(seconds: 3)),

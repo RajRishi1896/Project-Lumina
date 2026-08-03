@@ -101,9 +101,10 @@ class OnDeviceScorer {
       }
 
       // Grade match
+      final gradeNum = int.tryParse(grade);
       if (c.grade.toString() == grade) {
         s += 3;
-      } else if ((c.grade - int.parse(grade)).abs() <= 1) {
+      } else if (gradeNum != null && (c.grade - gradeNum).abs() <= 1) {
         s += 1;
       }
 

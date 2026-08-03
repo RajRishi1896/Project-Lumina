@@ -37,7 +37,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   Timer? _hideTimer;
   bool _disposed = false;
   bool _ownsController = true;
-  static const String _fallbackBaseUrl = 'http://10.42.0.1:8000';
 
   bool get _isLocal {
     final u = widget.videoUrl;
@@ -67,7 +66,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
   }
 
-  Future<void> _initPlayer({bool useFallback = false}) async {
+  Future<void> _initPlayer({bool retry = false}) async {
     final l10n = AppLocalizations.of(context)!;
     try {
       if (_isLocal) {
@@ -78,12 +77,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         }
         _controller = VideoPlayerController.file(file);
       } else {
-        if (useFallback) {
-          await ApiClient.ensureInitialized();
-        }
         String url = widget.videoUrl;
         if (url.startsWith('/')) {
-          url = '${useFallback ? ApiClient.baseUrl : _fallbackBaseUrl}$url';
+          await ApiClient.ensureInitialized();
+          url = '${ApiClient.baseUrl}$url';
         }
         _controller = VideoPlayerController.networkUrl(Uri.parse(url));
       }
@@ -99,11 +96,11 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         _startHideTimer();
       }
     } catch (e) {
-      if (!useFallback && mounted) {
+      if (!retry && mounted) {
         _controller?.removeListener(_onTick);
         unawaited(_controller?.dispose());
         _controller = null;
-        await _initPlayer(useFallback: true);
+        await _initPlayer(retry: true);
       } else if (mounted) {
         setState(() => _error = l10n.videoFailedToLoad(e.toString()));
       }

@@ -87,21 +87,27 @@ class ActivityTracker {
   }
 
   Future<void> _storeLocal(SharedPreferences prefs, Map<String, dynamic> event) async {
-    final raw = prefs.getString(_localEventsKey);
-    final list = raw != null
-        ? (jsonDecode(raw) as List).cast<Map<String, dynamic>>()
-        : <Map<String, dynamic>>[];
+    final list = _decodeLocalEvents(prefs.getString(_localEventsKey));
     list.add(event);
     while (list.length > _maxLocalEvents) { list.removeAt(0); }
     await prefs.setString(_localEventsKey, jsonEncode(list));
   }
 
+  List<Map<String, dynamic>> _decodeLocalEvents(String? raw) {
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
   /// Get the recorded activity history for the current session.
   Future<List<Map<String, dynamic>>> getActivityHistory({int limit = 25, int offset = 0}) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_localEventsKey);
-    if (raw == null) return [];
-    final all = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    final list = _decodeLocalEvents(prefs.getString(_localEventsKey));
+    if (list.isEmpty) return [];
+    final all = list;
     all.sort((a, b) => (b['timestamp'] as String).compareTo(a['timestamp'] as String));
     final end = offset + limit;
     if (offset >= all.length) return [];
@@ -134,13 +140,23 @@ class ActivityTracker {
     };
   }
 
+  bool _inFlight = false;
+
   /// Force an immediate sync of pending activity data to the hub.
   Future<void> sync() async {
     if (!ConnectivityService().isOnline) return;
+    if (_inFlight) return;
+    _inFlight = true;
+    try {
+      await _sync();
+    } finally {
+      _inFlight = false;
+    }
+  }
+
+  Future<void> _sync() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_localEventsKey);
-    if (raw == null) return;
-    final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    final list = _decodeLocalEvents(prefs.getString(_localEventsKey));
     if (list.isEmpty) return;
 
     // Prune events older than 7 days

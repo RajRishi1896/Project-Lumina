@@ -422,8 +422,9 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
         } catch (e, st) {
           debugPrint('Download button crash: $e\n$st');
           if (mounted) {
+            final l10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Download failed. Please try again.'),
+              content: Text(l10n.snackbarDownloadFailed),
               duration: const Duration(seconds: 3),
             ));
           }

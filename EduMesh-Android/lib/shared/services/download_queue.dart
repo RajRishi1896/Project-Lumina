@@ -137,6 +137,7 @@ class DownloadQueue extends ChangeNotifier {
       await Future.delayed(delay);
       unawaited(_processNext());
     } else {
+      try { await DBHelper().removePendingDownload(task.resourceId); } catch (_) {}
       if (task.title.isNotEmpty) {
         unawaited(NotificationService().showDownloadFailed(task.title).catchError((_) {}));
       }

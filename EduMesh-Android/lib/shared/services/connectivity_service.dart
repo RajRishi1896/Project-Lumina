@@ -18,6 +18,7 @@ class ConnectivityService extends ChangeNotifier {
   ConnectivityService._internal();
 
   bool _online = false;
+  int _checkSeq = 0;
   StreamSubscription<List<ConnectivityResult>>? _platformSub;
   Timer? _heartbeat;
 
@@ -51,6 +52,7 @@ class ConnectivityService extends ChangeNotifier {
   }
 
   void _setOffline() {
+    _checkSeq++;
     final wasOnline = _online;
     _online = false;
     if (_online != wasOnline) {
@@ -59,6 +61,7 @@ class ConnectivityService extends ChangeNotifier {
   }
 
   Future<void> _checkNow() async {
+    final mySeq = ++_checkSeq;
     final wasOnline = _online;
     try {
       await ApiClient.ensureInitialized();
@@ -66,9 +69,11 @@ class ConnectivityService extends ChangeNotifier {
         sendTimeout: const Duration(seconds: 4),
         receiveTimeout: const Duration(seconds: 4),
       ));
+      if (mySeq != _checkSeq) return;
       _online = true;
       unawaited(ApiClient.syncTime());
     } catch (_) {
+      if (mySeq != _checkSeq) return;
       _online = false;
     }
     if (_online != wasOnline) {
@@ -83,16 +88,18 @@ class ConnectivityService extends ChangeNotifier {
     final items = await DBHelper().getAllPendingDownloads();
     if (items.isNotEmpty) {
       for (final item in items) {
-        await DownloadQueue().enqueue(
-          item['resource_id'] as String,
-          item['url'] as String,
-          item['file_name'] as String,
-          title: item['title'] as String? ?? '',
-          subject: item['subject'] as String? ?? '',
-          grade: item['grade'] as String? ?? '',
-          type: item['type'] as String? ?? '',
-          mtime: (item['mtime'] as num?)?.toDouble() ?? 0,
-        );
+        try {
+          await DownloadQueue().enqueue(
+            item['resource_id'] as String,
+            item['url'] as String,
+            item['file_name'] as String,
+            title: item['title'] as String? ?? '',
+            subject: item['subject'] as String? ?? '',
+            grade: item['grade'] as String? ?? '',
+            type: item['type'] as String? ?? '',
+            mtime: (item['mtime'] as num?)?.toDouble() ?? 0,
+          );
+        } catch (_) {}
       }
     }
     try {

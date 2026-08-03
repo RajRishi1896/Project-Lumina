@@ -5,12 +5,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../core/constants/lumina_colors.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/models/resource_model.dart';
 import '../../core/storage/db_helper.dart';
 import '../../core/utils/file_utils.dart';
 import '../../shared/services/download_service.dart';
 import '../../features/dashboard/presentation/kiwix_view.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/recent_resources.dart';
+import 'pdf_viewer_page.dart';
+import 'video_player_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A page that lists all resources downloaded for offline access.
@@ -71,7 +74,6 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
       final isZim = resourceId.startsWith('zim_');
       if (isZim) {
         final articleId = resourceId.substring(4);
-        await DBHelper().markZimArticleDownloaded(articleId);
         final db = await DBHelper().database;
         await db.update('zim_articles_local', {'is_downloaded': 0},
             where: 'article_id = ?', whereArgs: [articleId]);
@@ -148,9 +150,9 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                                 } catch (_) {}
                                 if (html != null && context.mounted) {
                                   unawaited(RecentResources.record(articleId, title, 'kiwix'));
-                                  Navigator.push(context, MaterialPageRoute(
+                                  unawaited(Navigator.push(context, MaterialPageRoute(
                                     builder: (_) => KiwixView(initialHtml: html, title: title, baseUrl: ApiClient.baseUrl),
-                                  ));
+                                  )));
                                 }
                               },
                             ),
@@ -160,11 +162,43 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                             tooltip: l10n.tooltipDeleteDownload(title),
                           ),
                         ]),
-                        onTap: isZim ? null : null,
+                        onTap: () => _openItem(item, isZim),
                       ),
                     );
                   },
                 ),
     );
+  }
+
+  Future<void> _openItem(Map<String, dynamic> item, bool isZim) async {
+    if (!isZim) {
+      final path = item['local_path'] as String?;
+      if (path == null || path.isEmpty) return;
+      final title = item['title'] as String? ?? '';
+      final subject = item['subject'] as String? ?? '';
+      if (parseResourceType(item['type'] as String? ?? '') == ResourceType.videos) {
+        unawaited(Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => VideoPlayerPage(title: title, videoUrl: path, subject: subject),
+        )));
+      } else {
+        unawaited(Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => PdfViewerPage(title: title, pdfUrl: path, subject: subject),
+        )));
+      }
+      return;
+    }
+    final articleId = item['article_id'] as String? ?? '';
+    if (articleId.isEmpty) return;
+    String? html;
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/zim_${articleId.replaceAll('/', '_')}.html');
+      if (await file.exists()) html = await file.readAsString();
+    } catch (_) {}
+    if (html == null || !context.mounted) return;
+    unawaited(RecentResources.record(articleId, item['title'] as String? ?? '', 'kiwix'));
+    unawaited(Navigator.push(context, MaterialPageRoute(
+      builder: (_) => KiwixView(initialHtml: html, title: item['title'] as String? ?? '', baseUrl: ApiClient.baseUrl),
+    )));
   }
 }
