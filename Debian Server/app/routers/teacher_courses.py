@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from app.database import UPLOAD_DIR, gen_composite_uid
 from app.audit import audit, Action
-from app.async_db import db_conn, db_exec, db_fetch, db_fetch_one
+from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.dependencies import verify_teacher
 from app.models import CourseCreate
 
@@ -182,7 +182,8 @@ async def create_course(data: CourseCreate, teacher_user: str = Depends(verify_t
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     subj_row = await db_fetch_one("SELECT id FROM subjects WHERE name = ?", (data.subject,))
     subject_id = subj_row["id"] if subj_row else ""
-    async with db_conn() as conn:
+
+    def _insert_course(conn):
         course_id = gen_composite_uid(conn, data.grade, data.subject, 'CRS')
         conn.execute(
             """INSERT INTO courses (id, title, description, subject, subject_id, grade, language, teacher_username, created_at, updated_at)
@@ -190,6 +191,9 @@ async def create_course(data: CourseCreate, teacher_user: str = Depends(verify_t
             (course_id, data.title, data.description, data.subject, subject_id, data.grade, data.language, teacher_user, now, now)
         )
         conn.commit()
+        return course_id
+
+    course_id = await db_run(_insert_course)
     row = await db_fetch_one("SELECT * FROM courses WHERE id = ?", (course_id,))
     await audit(action=Action.CREATE_COURSE, username=teacher_user, resource_type="course",
                 resource_id=course_id, resource_name=data.title)

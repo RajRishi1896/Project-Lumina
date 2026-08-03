@@ -417,6 +417,7 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS flashcard_submissions (
         id TEXT PRIMARY KEY,
         student_id TEXT NOT NULL,
+        deck_id TEXT,
         title TEXT NOT NULL,
         cards_json TEXT NOT NULL,
         status TEXT DEFAULT 'pending',
@@ -432,7 +433,7 @@ def init_db():
 
 
 async def ensure_media_columns():
-    """Idempotently add ``page_count``/``duration_seconds`` to live DBs.
+    """Idempotently add columns introduced after a table's first release.
 
     Fresh databases get the columns from the CREATE TABLE statements; this
     upgrade path covers existing databases that predate them.  Uses the
@@ -446,6 +447,11 @@ async def ensure_media_columns():
         for col in ("page_count", "duration_seconds"):
             if col not in cols:
                 await db_exec(f"ALTER TABLE {table} ADD COLUMN {col} INTEGER DEFAULT 0")
+
+    rows = await db_fetch("PRAGMA table_info(flashcard_submissions)")
+    cols = {r["name"] for r in rows}
+    if "deck_id" not in cols:
+        await db_exec("ALTER TABLE flashcard_submissions ADD COLUMN deck_id TEXT")
 
 
 

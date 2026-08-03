@@ -10,7 +10,7 @@ from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.async_db import db_conn
+from app.async_db import db_fetch, db_run
 
 # Logging
 os.makedirs("data", exist_ok=True)
@@ -52,16 +52,12 @@ async def lifespan(application: FastAPI):
     # Runs as a background task with a startup delay so the server is ready first.
     async def _auto_reindex_zim():
         await asyncio.sleep(8)
-        import sqlite3 as _s3
-        from app.database import DB_PATH
         logging.info("Auto-reindex: started")
         try:
-            conn = _s3.connect(DB_PATH, timeout=5.0)
-            rows = conn.execute(
+            rows = await db_fetch(
                 "SELECT id, zim_path, title FROM zim_archives "
                 "WHERE NOT EXISTS (SELECT 1 FROM zim_articles WHERE archive_id=zim_archives.id)"
-            ).fetchall()
-            conn.close()
+            )
             if not rows:
                 logging.info("Auto-reindex: no archives need reindexing")
                 return
@@ -87,12 +83,13 @@ async def lifespan(application: FastAPI):
         while True:
             await asyncio.sleep(3600)
             try:
-                async with db_conn() as conn:
+                def _prune_sessions(conn):
                     conn.execute("DELETE FROM sessions WHERE last_accessed IS NOT NULL AND last_accessed < datetime('now', '-7 days')")
                     conn.execute("DELETE FROM sessions WHERE last_accessed IS NULL AND created_at < datetime('now', '-7 days')")
                     conn.execute("DELETE FROM refresh_tokens WHERE expires_at < datetime('now') OR used = 1")
                     conn.execute("DELETE FROM persistent_keys WHERE expires_at < datetime('now')")
                     conn.commit()
+                await db_run(_prune_sessions)
                 from app.dependencies import _session_cache
                 _session_cache.clear()
             except Exception:

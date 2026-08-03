@@ -7,7 +7,7 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from app.async_db import db_conn, db_exec, db_fetch
+from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.database import UPLOAD_DIR, gen_uid
 from app.dependencies import verify_teacher, verify_user
 from app.models import SubjectCreate, SubjectResponse, SubjectCreateResponse, StatusResponse, GradeInfo
@@ -27,11 +27,8 @@ async def student_get_subjects(user: str = Depends(verify_user)):
     Returns:
         List of dicts with id, name, symbol, and class_name.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT id, name, symbol, class_name FROM subjects ORDER BY class_name ASC, name ASC")
-        rows = c.fetchall()
-        return [{"id": r[0], "name": r[1], "symbol": r[2], "class_name": r[3] or "All Classes"} for r in rows]
+    rows = await db_fetch("SELECT id, name, symbol, class_name FROM subjects ORDER BY class_name ASC, name ASC")
+    return [{"id": r[0], "name": r[1], "symbol": r[2], "class_name": r[3] or "All Classes"} for r in rows]
 
 
 @router.get("/subjects", response_model=list[SubjectResponse],
@@ -48,11 +45,8 @@ async def get_subjects(teacher_user: str = Depends(verify_teacher)):
     Returns:
         List of dicts with id, name, symbol, and class_name.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT id, name, symbol, class_name FROM subjects WHERE name != 'General' ORDER BY class_name ASC, name ASC")
-        rows = c.fetchall()
-        return [{"id": r[0], "name": r[1], "symbol": r[2], "class_name": r[3] or "All Classes"} for r in rows]
+    rows = await db_fetch("SELECT id, name, symbol, class_name FROM subjects WHERE name != 'General' ORDER BY class_name ASC, name ASC")
+    return [{"id": r[0], "name": r[1], "symbol": r[2], "class_name": r[3] or "All Classes"} for r in rows]
 
 
 @router.post("/teacher/subjects", response_model=SubjectCreateResponse,
@@ -70,20 +64,17 @@ async def create_subject(subject: SubjectCreate, teacher_user: str = Depends(ver
     Returns:
         Dict with status, id, name, symbol, and class_name.
     """
-    async with db_conn() as conn:
-        try:
-            c = conn.cursor()
-            class_val = subject.class_name or "All Classes"
-            subj_id = gen_uid("SUBJ")
-            c.execute("INSERT INTO subjects (id, name, symbol, class_name) VALUES (?, ?, ?, ?)",
+    try:
+        class_val = subject.class_name or "All Classes"
+        subj_id = gen_uid("SUBJ")
+        await db_exec("INSERT INTO subjects (id, name, symbol, class_name) VALUES (?, ?, ?, ?)",
                       (subj_id, subject.name, subject.symbol, class_val))
-            conn.commit()
-            await audit(action=Action.CREATE_SUBJECT, username=teacher_user, resource_type="subject",
-                        resource_id=subj_id, resource_name=subject.name)
-            return {"status": "success", "id": subj_id, "name": subject.name, "symbol": subject.symbol, "class_name": class_val}
-        except Exception as e:
-            logging.error(f"create_subject: {e}")
-            raise HTTPException(status_code=400, detail="Failed to create subject")  # i18n: user-facing error message
+        await audit(action=Action.CREATE_SUBJECT, username=teacher_user, resource_type="subject",
+                    resource_id=subj_id, resource_name=subject.name)
+        return {"status": "success", "id": subj_id, "name": subject.name, "symbol": subject.symbol, "class_name": class_val}
+    except Exception as e:
+        logging.error(f"create_subject: {e}")
+        raise HTTPException(status_code=400, detail="Failed to create subject")  # i18n: user-facing error message
 
 
 @router.put("/teacher/subjects/{subject_id}",
@@ -102,16 +93,14 @@ async def update_subject(subject_id: str, data: dict, teacher_user: str = Depend
     fields = {k: v for k, v in data.items() if k in allowed and v is not None}
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update.")  # i18n: user-facing error message
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT id, name FROM subjects WHERE id = ?", (subject_id,))
-        row = c.fetchone()
+    def _update_subject(conn):
+        row = conn.execute("SELECT id, name FROM subjects WHERE id = ?", (subject_id,)).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Subject not found.")  # i18n: user-facing error message
         old_name = row[1]
         if "name" in fields:
-            c.execute("SELECT id FROM subjects WHERE name = ? AND id != ?", (fields["name"], subject_id))
-            if c.fetchone():
+            dup = conn.execute("SELECT id FROM subjects WHERE name = ? AND id != ?", (fields["name"], subject_id)).fetchone()
+            if dup:
                 raise HTTPException(status_code=400, detail="A subject with that name already exists.")  # i18n: user-facing error message
         set_parts = []
         params = []
@@ -126,12 +115,14 @@ async def update_subject(subject_id: str, data: dict, teacher_user: str = Depend
             params.append(fields["class_name"])
         if set_parts:
             params.append(subject_id)
-            c.execute(f"UPDATE subjects SET {', '.join(set_parts)} WHERE id = ?", tuple(params))
+            conn.execute(f"UPDATE subjects SET {', '.join(set_parts)} WHERE id = ?", tuple(params))
         if "name" in fields and fields["name"] != old_name:
-            c.execute("UPDATE resources SET subject = ?, subject_id = ? WHERE subject_id = ?", (fields["name"], subject_id, subject_id))
-            c.execute("UPDATE resource_topics SET subject = ? WHERE subject = ?", (fields["name"], old_name))
-            c.execute("UPDATE courses SET subject = ?, subject_id = ? WHERE subject_id = ?", (fields["name"], subject_id, subject_id))
+            conn.execute("UPDATE resources SET subject = ?, subject_id = ? WHERE subject_id = ?", (fields["name"], subject_id, subject_id))
+            conn.execute("UPDATE resource_topics SET subject = ? WHERE subject = ?", (fields["name"], old_name))
+            conn.execute("UPDATE courses SET subject = ?, subject_id = ? WHERE subject_id = ?", (fields["name"], subject_id, subject_id))
         conn.commit()
+        return old_name
+    old_name = await db_run(_update_subject)
     await audit(action=Action.UPDATE_SUBJECT, username=teacher_user, resource_type="subject",
                 resource_id=subject_id, resource_name=fields.get("name", old_name), changes=fields)
     return {"status": "ok"}
@@ -153,50 +144,49 @@ async def delete_subject(subject_id: str, transfer_to: str = Query(None), teache
     Raises:
         HTTPException: 400 if target subject missing, 404 if not found.
     """
-    async with db_conn() as conn:
-        try:
-            c = conn.cursor()
-            c.execute("SELECT name FROM subjects WHERE id = ?", (subject_id,))
-            row = c.fetchone()
+    try:
+        def _delete_subject(conn):
+            row = conn.execute("SELECT name FROM subjects WHERE id = ?", (subject_id,)).fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="Subject not found.")  # i18n: user-facing error message
             subject_name = row[0]
 
             if transfer_to:
-                c.execute("SELECT COUNT(*) FROM subjects WHERE name = ?", (transfer_to,))
-                if c.fetchone()[0] == 0:
+                if conn.execute("SELECT COUNT(*) FROM subjects WHERE name = ?", (transfer_to,)).fetchone()[0] == 0:
                     raise HTTPException(status_code=400, detail="Target subject does not exist.")  # i18n: user-facing error message
-                target_row = c.execute("SELECT id FROM subjects WHERE name = ?", (transfer_to,)).fetchone()
+                target_row = conn.execute("SELECT id FROM subjects WHERE name = ?", (transfer_to,)).fetchone()
                 target_id = target_row[0] if target_row else ""
-                c.execute("UPDATE resources SET subject = ?, subject_id = ? WHERE subject_id = ?", (transfer_to, target_id, subject_id))
-                c.execute("UPDATE resource_topics SET subject = ? WHERE subject = ?", (transfer_to, subject_name))
-                c.execute("UPDATE courses SET subject = ?, subject_id = ? WHERE subject_id = ?", (transfer_to, target_id, subject_id))
+                conn.execute("UPDATE resources SET subject = ?, subject_id = ? WHERE subject_id = ?", (transfer_to, target_id, subject_id))
+                conn.execute("UPDATE resource_topics SET subject = ? WHERE subject = ?", (transfer_to, subject_name))
+                conn.execute("UPDATE courses SET subject = ?, subject_id = ? WHERE subject_id = ?", (transfer_to, target_id, subject_id))
             else:
-                c.execute("SELECT filename FROM resources WHERE subject = ?", (subject_name,))
-                files = [r[0] for r in c.fetchall()]
+                files = [r[0] for r in conn.execute("SELECT filename FROM resources WHERE subject = ?", (subject_name,)).fetchall()]
                 for fname in files:
                     fp = os.path.join(UPLOAD_DIR, fname) if fname else None
-                    if fp and await asyncio.to_thread(os.path.exists, fp):
+                    if fp and os.path.exists(fp):
                         try:
-                            await asyncio.to_thread(os.remove, fp)
+                            os.remove(fp)
                         except Exception as e:
                             logging.warning(f"Could not remove physical file {fp}: {e}")
-                c.execute("DELETE FROM student_bookmarks WHERE resource_id IN (SELECT id FROM resources WHERE subject_id = ?)", (subject_id,))
-                c.execute("DELETE FROM resources WHERE subject_id = ?", (subject_id,))
-                c.execute("DELETE FROM resource_topics WHERE subject = ?", (subject_name,))
-                c.execute("DELETE FROM courses WHERE subject_id = ?", (subject_id,))
+                conn.execute("DELETE FROM student_bookmarks WHERE resource_id IN (SELECT id FROM resources WHERE subject_id = ?)", (subject_id,))
+                conn.execute("DELETE FROM resources WHERE subject_id = ?", (subject_id,))
+                conn.execute("DELETE FROM resource_topics WHERE subject = ?", (subject_name,))
+                conn.execute("DELETE FROM courses WHERE subject_id = ?", (subject_id,))
 
-            c.execute("DELETE FROM subjects WHERE id = ?", (subject_id,))
+            conn.execute("DELETE FROM subjects WHERE id = ?", (subject_id,))
             conn.commit()
-            await audit(action=Action.DELETE_SUBJECT, username=teacher_user, resource_type="subject",
-                        resource_id=subject_id, resource_name=subject_name,
-                        context={"transferred_to": transfer_to})
-            return {"status": "success"}
-        except HTTPException:
-            raise
-        except Exception as e:
-            logging.error(f"delete_subject: {e}", exc_info=True)
-            raise HTTPException(status_code=400, detail=f"Failed to delete subject: {e}")  # i18n: user-facing error message
+            return subject_name
+
+        subject_name = await db_run(_delete_subject)
+        await audit(action=Action.DELETE_SUBJECT, username=teacher_user, resource_type="subject",
+                    resource_id=subject_id, resource_name=subject_name,
+                    context={"transferred_to": transfer_to})
+        return {"status": "success"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"delete_subject: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Failed to delete subject: {e}")  # i18n: user-facing error message
 
 
 @router.get("/grades", response_model=list[GradeInfo],
@@ -213,10 +203,7 @@ async def get_grades(teacher_user: str = Depends(verify_teacher)):
     Returns:
         List of dicts with name for each grade.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT id, name FROM grades WHERE name != 'General' ORDER BY name ASC")
-        rows = c.fetchall()
+    rows = await db_fetch("SELECT id, name FROM grades WHERE name != 'General' ORDER BY name ASC")
     return [{"id": r[0], "name": r[1]} for r in rows]
 
 
@@ -234,10 +221,7 @@ async def student_get_grades(user: str = Depends(verify_user)):
     Returns:
         List of dicts with id and name for each grade.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT id, name FROM grades ORDER BY name ASC")
-        rows = c.fetchall()
+    rows = await db_fetch("SELECT id, name FROM grades ORDER BY name ASC")
     result = [{"id": r[0], "name": r[1]} for r in rows]
     has_general = any(r["name"] == "General" for r in result)
     if not has_general:
@@ -267,16 +251,13 @@ async def create_grade(data: dict, teacher_user: str = Depends(verify_teacher),
         raise HTTPException(status_code=400, detail="Grade name is required.")  # i18n: user-facing error message
     if len(name) > 50:
         raise HTTPException(status_code=400, detail="Grade name too long (max 50 characters).")  # i18n: user-facing error message
-    async with db_conn() as conn:
-        try:
-            c = conn.cursor()
-            c.execute("INSERT INTO grades (id, name) VALUES (?, ?)", (gen_uid("GRD"), name))
-            conn.commit()
-            await audit(action=Action.CREATE_GRADE, username=teacher_user, resource_type="grade",
-                        resource_id=name, resource_name=name)
-            return {"status": "success", "name": name}
-        except sqlite3.IntegrityError:
-            raise HTTPException(status_code=400, detail="Grade already exists.")  # i18n: user-facing error message
+    try:
+        await db_exec("INSERT INTO grades (id, name) VALUES (?, ?)", (gen_uid("GRD"), name))
+        await audit(action=Action.CREATE_GRADE, username=teacher_user, resource_type="grade",
+                    resource_id=name, resource_name=name)
+        return {"status": "success", "name": name}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="Grade already exists.")  # i18n: user-facing error message
 
 
 @router.put("/grades/{grade_name}",
@@ -294,26 +275,24 @@ async def update_grade(grade_name: str, data: dict, teacher_user: str = Depends(
     new_name = (data.get("new_name") or "").strip()
     if not new_name:
         raise HTTPException(status_code=400, detail="new_name is required.")  # i18n: user-facing error message
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT id FROM grades WHERE name = ?", (grade_name,))
-        if not c.fetchone():
+    def _rename_grade(conn):
+        if not conn.execute("SELECT id FROM grades WHERE name = ?", (grade_name,)).fetchone():
             raise HTTPException(status_code=404, detail="Grade not found.")  # i18n: user-facing error message
-        c.execute("SELECT id FROM grades WHERE name = ? AND name != ?", (new_name, grade_name))
-        if c.fetchone():
+        if conn.execute("SELECT id FROM grades WHERE name = ? AND name != ?", (new_name, grade_name)).fetchone():
             raise HTTPException(status_code=400, detail="A grade with that name already exists.")  # i18n: user-facing error message
         old_num = re.search(r'\d+', grade_name)
         new_num = re.search(r'\d+', new_name)
         if old_num and new_num:
             old_int = int(old_num.group())
             new_int = int(new_num.group())
-            c.execute("UPDATE resources SET grade = ? WHERE grade = ?", (new_int, old_int))
-            c.execute("UPDATE courses SET grade = ? WHERE grade = ?", (new_int, old_int))
+            conn.execute("UPDATE resources SET grade = ? WHERE grade = ?", (new_int, old_int))
+            conn.execute("UPDATE courses SET grade = ? WHERE grade = ?", (new_int, old_int))
         else:
-            c.execute("UPDATE resources SET grade = ? WHERE grade = ?", (new_name, grade_name))
-            c.execute("UPDATE courses SET grade = ? WHERE grade = ?", (new_name, grade_name))
-        c.execute("UPDATE grades SET name = ? WHERE name = ?", (new_name, grade_name))
+            conn.execute("UPDATE resources SET grade = ? WHERE grade = ?", (new_name, grade_name))
+            conn.execute("UPDATE courses SET grade = ? WHERE grade = ?", (new_name, grade_name))
+        conn.execute("UPDATE grades SET name = ? WHERE name = ?", (new_name, grade_name))
         conn.commit()
+    await db_run(_rename_grade)
     await audit(action=Action.UPDATE_GRADE, username=teacher_user, resource_type="grade",
                 resource_id=grade_name, resource_name=new_name,
                 changes={"name": {"old": grade_name, "new": new_name}})
@@ -338,47 +317,43 @@ async def delete_grade(name: str, transfer_to: str = None, teacher_user: str = D
     Raises:
         HTTPException 400: If target grade does not exist.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
+    def _delete_grade(conn):
         if transfer_to:
-            c.execute("SELECT COUNT(*) FROM grades WHERE name = ?", (transfer_to,))
-            if c.fetchone()[0] == 0:
+            if conn.execute("SELECT COUNT(*) FROM grades WHERE name = ?", (transfer_to,)).fetchone()[0] == 0:
                 raise HTTPException(status_code=400, detail="Target grade does not exist.")  # i18n: user-facing error message
             target_num = re.search(r'\d+', transfer_to)
             src_num = re.search(r'\d+', name)
             if target_num and src_num:
-                c.execute("UPDATE resources SET grade = ? WHERE grade = ?", (int(target_num.group()), int(src_num.group())))
-                c.execute("UPDATE courses SET grade = ? WHERE grade = ?", (target_num.group(), src_num.group()))
+                conn.execute("UPDATE resources SET grade = ? WHERE grade = ?", (int(target_num.group()), int(src_num.group())))
+                conn.execute("UPDATE courses SET grade = ? WHERE grade = ?", (target_num.group(), src_num.group()))
             else:
-                c.execute("UPDATE resources SET grade = ? WHERE grade = ?", (transfer_to, name))
-                c.execute("UPDATE courses SET grade = ? WHERE grade = ?", (transfer_to, name))
+                conn.execute("UPDATE resources SET grade = ? WHERE grade = ?", (transfer_to, name))
+                conn.execute("UPDATE courses SET grade = ? WHERE grade = ?", (transfer_to, name))
         else:
             src_num = re.search(r'\d+', name)
             if src_num:
                 grade_int = int(src_num.group())
-                c.execute("SELECT filename FROM resources WHERE grade = ?", (grade_int,))
-                files = c.fetchall()
+                files = conn.execute("SELECT filename FROM resources WHERE grade = ?", (grade_int,)).fetchall()
                 for (fname,) in files:
                     fp = os.path.join(UPLOAD_DIR, fname) if fname else None
-                    if fp and await asyncio.to_thread(os.path.exists, fp):
-                        await asyncio.to_thread(os.remove, fp)
-                c.execute("DELETE FROM student_bookmarks WHERE resource_id IN (SELECT id FROM resources WHERE grade = ?)", (grade_int,))
-                c.execute("DELETE FROM resources WHERE grade = ?", (grade_int,))
+                    if fp and os.path.exists(fp):
+                        os.remove(fp)
+                conn.execute("DELETE FROM student_bookmarks WHERE resource_id IN (SELECT id FROM resources WHERE grade = ?)", (grade_int,))
+                conn.execute("DELETE FROM resources WHERE grade = ?", (grade_int,))
             else:
-                c.execute("SELECT filename FROM resources WHERE grade = ?", (name,))
-                files = c.fetchall()
+                files = conn.execute("SELECT filename FROM resources WHERE grade = ?", (name,)).fetchall()
                 for (fname,) in files:
                     fp = os.path.join(UPLOAD_DIR, fname) if fname else None
-                    if fp and await asyncio.to_thread(os.path.exists, fp):
-                        await asyncio.to_thread(os.remove, fp)
-                c.execute("DELETE FROM student_bookmarks WHERE resource_id IN (SELECT id FROM resources WHERE grade = ?)", (name,))
-                c.execute("DELETE FROM resources WHERE grade = ?", (name,))
-            c.execute("DELETE FROM courses WHERE grade = ?", (src_num.group() if src_num else name,))
-        c.execute("SELECT COUNT(*) FROM grades WHERE name = ?", (name,))
-        if c.fetchone()[0] == 0:
-            raise HTTPException(status_code=404, detail="Grade not found.")
-        c.execute("DELETE FROM grades WHERE name = ?", (name,))
+                    if fp and os.path.exists(fp):
+                        os.remove(fp)
+                conn.execute("DELETE FROM student_bookmarks WHERE resource_id IN (SELECT id FROM resources WHERE grade = ?)", (name,))
+                conn.execute("DELETE FROM resources WHERE grade = ?", (name,))
+            conn.execute("DELETE FROM courses WHERE grade = ?", (src_num.group() if src_num else name,))
+        if conn.execute("SELECT COUNT(*) FROM grades WHERE name = ?", (name,)).fetchone()[0] == 0:
+            raise HTTPException(status_code=404, detail="Grade not found.")  # i18n: user-facing error message
+        conn.execute("DELETE FROM grades WHERE name = ?", (name,))
         conn.commit()
+    await db_run(_delete_grade)
     await audit(action=Action.DELETE_GRADE, username=teacher_user, resource_type="grade",
                 resource_id=name, resource_name=name,
                 context={"transferred_to": transfer_to})

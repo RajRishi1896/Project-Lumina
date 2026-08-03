@@ -14,7 +14,7 @@ The same refresh function is reused by the admin "Sync now" endpoint in
 import asyncio
 import logging
 
-from app.async_db import db_conn
+from app.async_db import db_run
 from app.peer_sync import PeerManager, get_peers
 
 logger = logging.getLogger("lumina.peer")
@@ -34,7 +34,8 @@ async def refresh_peer_resources(peer: dict) -> int:
             so the hourly loop can log and continue.
     """
     items = await PeerManager().request_catalog(peer)
-    async with db_conn() as conn:
+
+    def _replace_catalog(conn):
         conn.execute("DELETE FROM peer_resources WHERE peer_id = ?", (peer["id"],))
         conn.executemany(
             """INSERT OR REPLACE INTO peer_resources
@@ -57,6 +58,8 @@ async def refresh_peer_resources(peer: dict) -> int:
             (peer["id"],),
         )
         conn.commit()
+
+    await db_run(_replace_catalog)
     logger.info("Peer %s catalog refreshed: %d resources", peer.get("name"), len(items))
     return len(items)
 

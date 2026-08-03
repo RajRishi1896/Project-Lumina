@@ -4,13 +4,13 @@ Every function opens its own connection and closes it automatically.
 A dedicated ThreadPoolExecutor (20 workers) prevents the 6-worker default
 from bottlenecking under 250 concurrent students.
 
-For multi-statement transactions, use ``db_conn()`` as an async context
-manager. For single-query hot paths, prefer the per-query helpers below.
+For single-query hot paths, use the per-query helpers (``db_fetch``,
+``db_fetch_one``, ``db_exec``). For multi-statement transactions, pass a
+callback to ``db_run()`` -- it executes the whole body in the thread pool.
 """
 import sqlite3
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import asynccontextmanager
 from app.database import DB_PATH
 
 TIMEOUT = 5.0
@@ -102,7 +102,8 @@ async def db_run(func):
 
     Use this for short multi-statement transactions that do not fit the
     single-query helpers. The callback receives a connection and may return
-    a value.
+    a value. The whole callback body (including any DML) runs inside the
+    thread pool -- nothing blocks the event loop.
     """
     def _run():
         conn = _connect()
@@ -112,22 +113,3 @@ async def db_run(func):
             conn.close()
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(_DB_EXECUTOR, _run)
-
-
-@asynccontextmanager
-async def db_conn():
-    """Async context manager for multi-statement transactions.
-
-    Yields an open connection with pragmas already applied.  The *entire*
-    ``async with`` block runs inside the thread pool -- no queries leak
-    onto the event loop.
-
-    Prefer the per-query helpers (``db_fetch`` etc.) for single-query
-    hot paths -- they are leaner and avoid the context manager overhead.
-    """
-    loop = asyncio.get_running_loop()
-    conn = await loop.run_in_executor(_DB_EXECUTOR, _connect)
-    try:
-        yield conn
-    finally:
-        await loop.run_in_executor(_DB_EXECUTOR, conn.close)

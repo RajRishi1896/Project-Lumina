@@ -129,9 +129,11 @@ def _correct_answers(q: dict) -> list:
 def _is_correct(q: dict, answers: dict, index: int) -> bool:
     """Grade one question: True when the student's answer matches the key.
 
-    Mirrors the client's ``_isAnswerCorrect`` semantics (case-insensitive
-    substring for single-answer types, exact set equality for multi-select)
-    so the server grade matches what the student saw after submitting.
+    Answers are compared after normalization (trimmed, lowercased, internal
+    whitespace collapsed) and must be exact matches -- substring matching
+    would let overlapping option texts (e.g. "Photosynthesis" vs
+    "Photosynthesis in plants") both grade correct.  Multi-select uses
+    exact set equality.
     """
     entry = answers.get(str(q.get("id", ""))) or answers.get(str(index))
     if not entry:
@@ -140,14 +142,28 @@ def _is_correct(q: dict, answers: dict, index: int) -> bool:
     if not correct:
         return False
     if str(q.get("type", "")).lower() in ("multi_select", "multi"):
-        selected = [str(s) for s in (entry.get("multi_answers") or [])]
-        return len(selected) == len(correct) and all(s in correct for s in selected)
+        selected = {str(s) for s in (entry.get("multi_answers") or [])}
+        return selected == {str(c) for c in correct}
     answer = entry.get("answer")
     if answer is None:
         answer = entry.get("selected")
     if answer is None:
         return False
-    answer = str(answer).strip().lower()
-    if q.get("exact_match"):
-        return answer == str(correct[0]).strip().lower()
-    return str(correct[0]).strip().lower() in answer
+    return _normalize_answer(answer) == _normalize_answer(correct[0])
+
+
+def _normalize_answer(raw) -> str:
+    """Normalize an answer for comparison: trimmed, lowercased, whitespace-collapsed."""
+    return " ".join(str(raw).strip().lower().split())
+
+
+if __name__ == "__main__":
+    assert _normalize_answer("  Photosynthesis \n in Plants ") == "photosynthesis in plants"
+    assert _is_correct({"id": "q1", "type": "mcq", "correct_answer": "Photosynthesis",
+                        "options": ["Photosynthesis", "Photosynthesis in plants"]},
+                       {"q1": {"answer": "Photosynthesis in plants"}}, 0) is False
+    assert _is_correct({"id": "q1", "type": "mcq", "correct_answer": "1", "options": ["1", "2"]},
+                       {"q1": {"answer": "1"}}, 0) is True
+    assert _is_correct({"id": "q2", "type": "multi_select", "correct_answers": ["a", "b"]},
+                       {"q2": {"multi_answers": ["b", "a"]}}, 1) is True
+    print("quiz_grading self-check OK")

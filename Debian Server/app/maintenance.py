@@ -33,8 +33,19 @@ async def run_vacuum() -> dict:
 
 
 async def run_analyze() -> dict:
-    """ANALYZE to update query planner statistics."""
-    await db_fetch_one("ANALYZE")
+    """ANALYZE to update query planner statistics.
+
+    ANALYZE cannot run inside a transaction, so it uses a raw connection
+    in the thread pool -- same pattern as VACUUM.
+    """
+    def _analyze():
+        import sqlite3
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            conn.execute("ANALYZE")
+        finally:
+            conn.close()
+    await asyncio.to_thread(_analyze)
     return {"success": True, "message": "ANALYZE completed"}
 
 

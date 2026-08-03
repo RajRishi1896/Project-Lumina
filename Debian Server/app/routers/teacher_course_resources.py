@@ -68,15 +68,14 @@ async def upload_course_resource(
                                        request=request, support_resume=True)
     disp_title = title if title else original_name
 
-    last_pos = await db_fetch_one(
-        "SELECT COALESCE(MAX(position), -1) AS mp FROM course_resources WHERE course_id = ?", (course_id,))
-    next_pos = (last_pos["mp"] if last_pos and last_pos["mp"] is not None else -1) + 1
+    disp_title = title if title else original_name
 
     from app.async_db import db_exec
     await db_exec(
         """INSERT INTO course_resources (id, course_id, resource_type, title, original_name, filename, file_size, position, topic_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (resource_id, course_id, resource_type, disp_title, original_name, saved_name, total_size, next_pos, topic_id)
+           SELECT ?, ?, ?, ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1, ?
+           FROM course_resources WHERE course_id = ?""",
+        (resource_id, course_id, resource_type, disp_title, original_name, saved_name, total_size, topic_id, course_id)
     )
     await audit(action=Action.UPLOAD_COURSE_RESOURCE, username=teacher_user, resource_type="course_resource",
                 resource_id=resource_id, resource_name=disp_title,

@@ -36,7 +36,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
-from app.async_db import db_conn, db_exec, db_fetch, db_fetch_one
+from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.database import UPLOAD_DIR
 from app.dependencies import verify_admin
 from app.peer_refresh import refresh_peer_resources
@@ -327,10 +327,11 @@ async def api_pair(payload: dict, _: str = Depends(verify_admin)):
 )
 async def unpair_peer(peer_id: str, _: str = Depends(verify_admin)):
     """Remove a paired peer and all its cached resources."""
-    async with db_conn() as conn:
+    def _unpair(conn):
         conn.execute("DELETE FROM peers WHERE id = ?", (peer_id,))
         conn.execute("DELETE FROM peer_resources WHERE peer_id = ?", (peer_id,))
         conn.commit()
+    await db_run(_unpair)
     logger.info("Unpaired peer %s", peer_id)
     return {"status": "ok"}
 

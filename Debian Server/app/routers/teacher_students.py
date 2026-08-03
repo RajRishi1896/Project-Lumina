@@ -5,8 +5,8 @@ import logging
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from app.async_db import db_conn
-from app.dependencies import hash_password, verify_teacher, verify_admin
+from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
+from app.dependencies import hash_password, verify_teacher, verify_admin, invalidate_tokens_for_user
 from app.models import TeacherCreate, NameUpdate, DepartmentUpdate, StudentListResponse, StudentAnalyticsResponse, TeacherSummary, TeacherCreateResponse, StatusResponse, TeacherProfileResponse
 from app.audit import audit, Action
 
@@ -27,44 +27,42 @@ async def teacher_list_students(teacher_user: str = Depends(verify_teacher), gra
     Returns:
         Dict with a students list containing id, name, username, grade, study_minutes_this_week, streak_days, resources_saved, last_active.
     """
-    async with db_conn() as conn:
-        try:
-            c = conn.cursor()
-            conditions = ["(u.role IS NULL OR u.role = 'student')"]
-            params = []
-            if grade:
-                conditions.append("s.grade = ?")
-                params.append(grade)
-            where_clause = "WHERE " + " AND ".join(conditions)
-            c.execute(f"""
-                SELECT s.id, s.name, s.username, s.grade,
-                       COALESCE(w.total_seconds, 0) AS week_secs,
-                       COALESCE(w.streak_days, 0) AS streak_days,
-                       COALESCE(sv.saved, 0) AS saved,
-                       w.updated_at AS last_active
-                FROM scholars s
-                LEFT JOIN weekly_study w ON w.scholar_id = s.id
-                LEFT JOIN (SELECT scholar_id, COUNT(*) AS saved FROM scholar_downloads GROUP BY scholar_id) sv ON sv.scholar_id = s.id
-                LEFT JOIN users u ON u.scholar_id = s.id
-                {where_clause}
-                ORDER BY last_active DESC NULLS LAST, s.name ASC
-            """, params)
-            students = []
-            for row in c.fetchall():
-                sid, name, uname, sgrade, week_secs, streak_days, saved, last_active = row
-                students.append({
-                    "id": sid,
-                    "name": name or uname or "",
-                    "username": uname or "",
-                    "grade": sgrade or "",
-                    "study_minutes_this_week": week_secs // 60,
-                    "streak_days": streak_days,
-                    "resources_saved": saved,
-                    "last_active": last_active or "",
-                })
-        except sqlite3.OperationalError as e:
-            logging.error(f"teacher_list_students: {e}")
-            raise HTTPException(status_code=500, detail="Failed to load students")  # i18n: user-facing error message
+    try:
+        conditions = ["(u.role IS NULL OR u.role = 'student')"]
+        params = []
+        if grade:
+            conditions.append("s.grade = ?")
+            params.append(grade)
+        where_clause = "WHERE " + " AND ".join(conditions)
+        rows = await db_fetch(f"""
+            SELECT s.id, s.name, s.username, s.grade,
+                   COALESCE(w.total_seconds, 0) AS week_secs,
+                   COALESCE(w.streak_days, 0) AS streak_days,
+                   COALESCE(sv.saved, 0) AS saved,
+                   w.updated_at AS last_active
+            FROM scholars s
+            LEFT JOIN weekly_study w ON w.scholar_id = s.id
+            LEFT JOIN (SELECT scholar_id, COUNT(*) AS saved FROM scholar_downloads GROUP BY scholar_id) sv ON sv.scholar_id = s.id
+            LEFT JOIN users u ON u.scholar_id = s.id
+            {where_clause}
+            ORDER BY last_active DESC NULLS LAST, s.name ASC
+        """, tuple(params))
+        students = []
+        for row in rows:
+            sid, name, uname, sgrade, week_secs, streak_days, saved, last_active = row
+            students.append({
+                "id": sid,
+                "name": name or uname or "",
+                "username": uname or "",
+                "grade": sgrade or "",
+                "study_minutes_this_week": week_secs // 60,
+                "streak_days": streak_days,
+                "resources_saved": saved,
+                "last_active": last_active or "",
+            })
+    except sqlite3.OperationalError as e:
+        logging.error(f"teacher_list_students: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load students")  # i18n: user-facing error message
 
     return {"students": students}
 
@@ -83,37 +81,36 @@ async def teacher_student_analytics(scholar_id: str, teacher_user: str = Depends
     Returns:
         Dict with study_minutes_this_week, streak_days, resources_saved, and subjects list.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("""
-            SELECT s.name, COALESCE(w.total_seconds, 0), COALESCE(w.streak_days, 0),
-                   COALESCE(dl.cnt, 0)
-            FROM scholars s
-            LEFT JOIN weekly_study w ON w.scholar_id = s.id
-            LEFT JOIN (SELECT scholar_id, COUNT(*) AS cnt FROM scholar_downloads GROUP BY scholar_id) dl
-                   ON dl.scholar_id = s.id
-            WHERE s.id = ?
-        """, (scholar_id,))
-        row = c.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Student not found")  # i18n: user-facing error message
-        week_secs = row[1]
-        streak = row[2]
-        saved = row[3]
-        c.execute("SELECT subject_name, minutes FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC", (scholar_id,))
-        subjects = [{"name": row[0], "minutes": row[1]} for row in c.fetchall()]
-        c.execute("""
-            SELECT qb.resource_id, COALESCE(r.title, cr.title, '') as title,
-                   qb.best_score, COALESCE(qa.cnt, 0) as attempts_count
-            FROM quiz_best_scores qb
-            LEFT JOIN resources r ON r.id = qb.resource_id AND qb.course_id = ''
-            LEFT JOIN course_resources cr ON cr.id = qb.resource_id AND qb.course_id != ''
-            LEFT JOIN (SELECT resource_id, COUNT(*) as cnt FROM quiz_attempts WHERE student_id = ? GROUP BY resource_id) qa
-                   ON qa.resource_id = qb.resource_id
-            WHERE qb.scholar_id = ?
-            ORDER BY qb.updated_at DESC
-        """, (scholar_id, scholar_id))
-        quiz_scores = [{"resource_id": r[0], "title": r[1], "best_score": r[2], "attempts_count": r[3]} for r in c.fetchall()]
+    row = await db_fetch_one("""
+        SELECT s.name, COALESCE(w.total_seconds, 0), COALESCE(w.streak_days, 0),
+               COALESCE(dl.cnt, 0)
+        FROM scholars s
+        LEFT JOIN weekly_study w ON w.scholar_id = s.id
+        LEFT JOIN (SELECT scholar_id, COUNT(*) AS cnt FROM scholar_downloads GROUP BY scholar_id) dl
+               ON dl.scholar_id = s.id
+        WHERE s.id = ?
+    """, (scholar_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="Student not found")  # i18n: user-facing error message
+    week_secs = row[1]
+    streak = row[2]
+    saved = row[3]
+    subjects_rows = await db_fetch(
+        "SELECT subject_name, minutes FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC",
+        (scholar_id,))
+    subjects = [{"name": row[0], "minutes": row[1]} for row in subjects_rows]
+    quiz_rows = await db_fetch("""
+        SELECT qb.resource_id, COALESCE(r.title, cr.title, '') as title,
+               qb.best_score, COALESCE(qa.cnt, 0) as attempts_count
+        FROM quiz_best_scores qb
+        LEFT JOIN resources r ON r.id = qb.resource_id AND qb.course_id = ''
+        LEFT JOIN course_resources cr ON cr.id = qb.resource_id AND qb.course_id != ''
+        LEFT JOIN (SELECT resource_id, COUNT(*) as cnt FROM quiz_attempts WHERE student_id = ? GROUP BY resource_id) qa
+               ON qa.resource_id = qb.resource_id
+        WHERE qb.scholar_id = ?
+        ORDER BY qb.updated_at DESC
+    """, (scholar_id, scholar_id))
+    quiz_scores = [{"resource_id": r[0], "title": r[1], "best_score": r[2], "attempts_count": r[3]} for r in quiz_rows]
     return {
         "study_minutes_this_week": week_secs // 60,
         "streak_days": streak,
@@ -134,10 +131,8 @@ async def get_teachers(teacher_user: str = Depends(verify_teacher)):
     Returns:
         List of dicts with username, name, department, scholar_id, and reset_required.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT username, name, department, scholar_id, reset_required FROM users WHERE username != 'admin' ORDER BY name ASC")
-        rows = c.fetchall()
+    rows = await db_fetch(
+        "SELECT username, name, department, scholar_id, reset_required FROM users WHERE username != 'admin' ORDER BY name ASC")
     return [{"username": r[0], "name": r[1] or r[0], "department": r[2] or "General", "scholar_id": r[3] or "", "reset_required": r[4] or 0} for r in rows]
 
 
@@ -155,29 +150,30 @@ async def create_teacher_profile(teacher: TeacherCreate, request: Request = None
     Returns:
         Dict with status, username, name, department, and scholar_id.
     """
-    async with db_conn() as conn:
-        try:
-            c = conn.cursor()
-            c.execute("SELECT username FROM users WHERE username = ?", (teacher.username,))
-            if c.fetchone():
-                raise HTTPException(status_code=400, detail="Username already exists.")  # i18n: user-facing error message
+    try:
+        display_name = teacher.name or teacher.username
+        dept = teacher.department or "General"
+        unique_suffix = uuid.uuid4().hex
+        full_id = f"LUMINA_01-T{unique_suffix}"
+        hashed_pwd = await asyncio.to_thread(hash_password, teacher.password)
 
-            display_name = teacher.name or teacher.username
-            dept = teacher.department or "General"
-            unique_suffix = uuid.uuid4().hex
-            full_id = f"LUMINA_01-T{unique_suffix}"
-            c.execute("INSERT INTO scholars (id, name) VALUES (?, ?)", (full_id, display_name))
-
-            hashed_pwd = await asyncio.to_thread(hash_password, teacher.password)
-            c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id) VALUES (?, ?, ?, ?, ?)",
-                      (teacher.username, hashed_pwd, display_name, dept, full_id))
+        # Race-safe: users.username is the PRIMARY KEY, so a concurrent
+        # create with the same username loses the INSERT and gets a 400.
+        def _create_teacher(conn):
+            conn.execute("INSERT INTO scholars (id, name) VALUES (?, ?)", (full_id, display_name))
+            conn.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id) VALUES (?, ?, ?, ?, ?)",
+                         (teacher.username, hashed_pwd, display_name, dept, full_id))
             conn.commit()
-            await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
-                        resource_id=teacher.username, resource_name=display_name, role="teacher", request=request)
-            return {"status": "success", "username": teacher.username, "name": display_name, "department": dept, "scholar_id": full_id}
-        except Exception as e:
-            logging.error(f"create_teacher_profile: {e}")
-            raise HTTPException(status_code=400, detail="Failed to create teacher profile")  # i18n: user-facing error message
+        try:
+            await db_run(_create_teacher)
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=400, detail="Username already exists.")  # i18n: user-facing error message
+        await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
+                    resource_id=teacher.username, resource_name=display_name, role="teacher", request=request)
+        return {"status": "success", "username": teacher.username, "name": display_name, "department": dept, "scholar_id": full_id}
+    except Exception as e:
+        logging.error(f"create_teacher_profile: {e}")
+        raise HTTPException(status_code=400, detail="Failed to create teacher profile")  # i18n: user-facing error message
 
 
 @router.delete("/teacher/profiles/{username}", response_model=StatusResponse,
@@ -198,12 +194,12 @@ async def delete_teacher_profile(username: str, request: Request = None, admin_u
     """
     if username == 'admin':
         raise HTTPException(status_code=400, detail="Cannot delete admin account.")  # i18n: user-facing error message
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("DELETE FROM users WHERE username = ?", (username,))
-        conn.commit()
-        await audit(action=Action.DELETE_ACCOUNT, username=admin_user, resource_type="account",
-                    resource_id=username, role="teacher", request=request)
+    await db_exec("DELETE FROM users WHERE username = ?", (username,))
+    # Purge the deleted teacher's sessions and in-memory cache entries so
+    # their old tokens stop authenticating immediately.
+    await invalidate_tokens_for_user(username)
+    await audit(action=Action.DELETE_ACCOUNT, username=admin_user, resource_type="account",
+                resource_id=username, role="teacher", request=request)
     return {"status": "success"}
 
 
@@ -218,16 +214,15 @@ async def get_teacher_me(teacher_user: str = Depends(verify_teacher)):
     Returns:
         Dict with username, name, department, scholar_id, and reset_required.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT name, department, scholar_id, reset_required FROM users WHERE username = ?", (teacher_user,))
-        row = c.fetchone()
-        if row:
-            reset_val = row[3] or 0
-            if teacher_user == "admin":
-                reset_val = 0
-            return {"username": teacher_user, "name": row[0] or teacher_user, "department": row[1] or "General", "scholar_id": row[2], "reset_required": reset_val}
-        return {"username": teacher_user, "reset_required": 0}
+    row = await db_fetch_one(
+        "SELECT name, department, scholar_id, reset_required FROM users WHERE username = ?",
+        (teacher_user,))
+    if row:
+        reset_val = row[3] or 0
+        if teacher_user == "admin":
+            reset_val = 0
+        return {"username": teacher_user, "name": row[0] or teacher_user, "department": row[1] or "General", "scholar_id": row[2], "reset_required": reset_val}
+    return {"username": teacher_user, "reset_required": 0}
 
 
 @router.post("/teacher/profile/name", response_model=StatusResponse,
@@ -248,12 +243,9 @@ async def update_teacher_name(data: NameUpdate, request: Request = None, teacher
     """
     if teacher_user == "admin":
         raise HTTPException(status_code=400, detail="Cannot modify the default admin profile.")  # i18n: user-facing error message
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("UPDATE users SET name = ? WHERE username = ?", (data.name.strip(), teacher_user))
-        conn.commit()
-        await audit(action=Action.CHANGE_SETTINGS, username=teacher_user, resource_type="profile",
-                    resource_name="name", changes={"name": {"new": data.name.strip()}}, request=request)
+    await db_exec("UPDATE users SET name = ? WHERE username = ?", (data.name.strip(), teacher_user))
+    await audit(action=Action.CHANGE_SETTINGS, username=teacher_user, resource_type="profile",
+                resource_name="name", changes={"name": {"new": data.name.strip()}}, request=request)
     return {"status": "ok"}
 
 
@@ -275,10 +267,7 @@ async def update_teacher_department(data: DepartmentUpdate, request: Request = N
     """
     if teacher_user == "admin":
         raise HTTPException(status_code=400, detail="Cannot modify the default admin profile.")  # i18n: user-facing error message
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("UPDATE users SET department = ? WHERE username = ?", (data.department.strip(), teacher_user))
-        conn.commit()
-        await audit(action=Action.CHANGE_SETTINGS, username=teacher_user, resource_type="profile",
-                    resource_name="department", changes={"department": {"new": data.department.strip()}}, request=request)
+    await db_exec("UPDATE users SET department = ? WHERE username = ?", (data.department.strip(), teacher_user))
+    await audit(action=Action.CHANGE_SETTINGS, username=teacher_user, resource_type="profile",
+                resource_name="department", changes={"department": {"new": data.department.strip()}}, request=request)
     return {"status": "ok"}

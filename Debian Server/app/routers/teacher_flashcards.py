@@ -6,7 +6,7 @@ Student: submit decks for approval, list published decks, list own submissions.
 import json
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.async_db import db_conn, db_exec, db_fetch, db_fetch_one
+from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.dependencies import verify_teacher, verify_student
 
 router = APIRouter()
@@ -156,10 +156,11 @@ async def delete_deck(deck_id: str, teacher_user: str = Depends(verify_teacher))
         HTTPException: 404 if missing, 403 if owned by another teacher.
     """
     await _own_deck(deck_id, teacher_user)
-    async with db_conn() as conn:
+    def _delete_deck(conn):
         conn.execute("DELETE FROM flashcards WHERE deck_id = ?", (deck_id,))
         conn.execute("DELETE FROM flashcard_decks WHERE id = ?", (deck_id,))
         conn.commit()
+    await db_run(_delete_deck)
     return {"status": "ok"}
 
 
@@ -175,12 +176,13 @@ async def replace_cards(deck_id: str, data: dict, teacher_user: str = Depends(ve
     """
     await _own_deck(deck_id, teacher_user)
     cards = _validate_cards(data.get("cards"))
-    async with db_conn() as conn:
+    def _replace_cards(conn):
         conn.execute("DELETE FROM flashcards WHERE deck_id = ?", (deck_id,))
         conn.executemany(
             "INSERT INTO flashcards (id, deck_id, front, back, position) VALUES (?, ?, ?, ?, ?)",
             [(uuid.uuid4().hex, deck_id, c["front"], c["back"], i) for i, c in enumerate(cards)])
         conn.commit()
+    await db_run(_replace_cards)
     return {"status": "ok", "card_count": len(cards)}
 
 
@@ -254,7 +256,7 @@ async def approve_submission(submission_id: str, data: dict, teacher_user: str =
         if not found:
             raise HTTPException(status_code=400, detail="Topic does not exist.")  # i18n: user-facing error message
     deck_id = uuid.uuid4().hex
-    async with db_conn() as conn:
+    def _approve(conn):
         conn.execute(
             "INSERT INTO flashcard_decks (id, title, topic_id, created_by, published) VALUES (?, ?, ?, ?, 1)",
             (deck_id, sub["title"], topic_id or None, teacher_user))
@@ -265,6 +267,7 @@ async def approve_submission(submission_id: str, data: dict, teacher_user: str =
             "UPDATE flashcard_submissions SET status = 'approved', reviewed_by = ?, reviewed_at = datetime('now') WHERE id = ?",
             (teacher_user, submission_id))
         conn.commit()
+    await db_run(_approve)
     return {"deck_id": deck_id}
 
 
@@ -297,19 +300,22 @@ async def submit_deck(data: dict, student_id: str = Depends(verify_student)):
     """Submit a deck for approval.
 
     Args:
-        data: Dict with title and cards list.
+        data: Dict with title, cards list, and optional deck_id (the local
+            deck id on the student device, echoed back so the app can match
+            submissions to its own decks).
         student_id: Scholar id from the session.
 
     Returns:
-        Dict with the submission id.
+        Dict with the submission id, status, and the echoed deck_id.
     """
     title = _validate_title(data.get("title"))
     cards = _validate_cards(data.get("cards"))
+    deck_id = (data.get("deck_id") or "").strip() or None
     submission_id = uuid.uuid4().hex
     await db_exec(
-        "INSERT INTO flashcard_submissions (id, student_id, title, cards_json, status) VALUES (?, ?, ?, ?, 'pending')",
-        (submission_id, student_id, title, json.dumps(cards)))
-    return {"id": submission_id, "status": "pending"}
+        "INSERT INTO flashcard_submissions (id, student_id, deck_id, title, cards_json, status) VALUES (?, ?, ?, ?, ?, 'pending')",
+        (submission_id, student_id, deck_id, title, json.dumps(cards)))
+    return {"id": submission_id, "status": "pending", "deck_id": deck_id}
 
 
 @router.get("/api/flashcards/decks",
@@ -354,7 +360,7 @@ async def my_submissions(student_id: str = Depends(verify_student)):
         List of submissions with title, status, and reason.
     """
     rows = await db_fetch(
-        "SELECT id, title, status, reason, created_at FROM flashcard_submissions "
+        "SELECT id, deck_id, title, status, reason, created_at FROM flashcard_submissions "
         "WHERE student_id = ? ORDER BY created_at DESC",
         (student_id,))
     return [dict(r) for r in rows]

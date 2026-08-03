@@ -47,9 +47,6 @@ def _print_startup_banner():
     """Print connection info + QR code to the terminal."""
     ip = _detect_hub_ip()
     url = f"http://{ip}:8000"
-    qr_text = (
-        f"WIFI:T:WPA;S:Lumina Hub;P:lumina206;;"
-    )
 
     try:
         import qrcode

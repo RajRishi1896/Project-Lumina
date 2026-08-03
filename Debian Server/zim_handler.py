@@ -23,7 +23,6 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse, Response
 from app.models import ZimArchiveResponse, ZimArticleResponse, ZimPageResponse, ZimSearchResponse
 from app.async_db import db_fetch, db_fetch_one
-from app.database import UPLOAD_DIR, DB_PATH
 
 router = APIRouter()
 
@@ -191,18 +190,12 @@ async def _check_fts() -> bool:
 
     The table may exist but be empty if the FTS5 build was interrupted
     (e.g. ANALYZE hung before the commit). In that case, callers should
-    fall back to LIKE-based search.
+    fall back to LIKE-based search. Runs via the async helper so the
+    COUNT query stays off the event loop.
     """
-    import sqlite3 as _sqlite3
     try:
-        conn = _sqlite3.connect(DB_PATH)
-        try:
-            row = conn.execute("SELECT COUNT(*) FROM zim_articles_fts").fetchone()
-            return row is not None and row[0] > 0
-        except _sqlite3.OperationalError:
-            return False
-        finally:
-            conn.close()
+        row = await db_fetch_one("SELECT COUNT(*) AS cnt FROM zim_articles_fts")
+        return row is not None and row["cnt"] > 0
     except Exception:
         return False
 

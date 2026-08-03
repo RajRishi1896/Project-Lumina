@@ -1,11 +1,11 @@
 """Admin management -- default admin toggling and admin/teacher/student CRUD."""
+import sqlite3
 import uuid
 import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException
-from app.database import gen_composite_uid
 from app.audit import audit, Action
-from app.async_db import db_conn
+from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.models import TeacherCreate, AdminStudentCreate, StatusResponse, AdminSummary, AdminCreateResponse
 from app.dependencies import hash_password, verify_admin
 
@@ -25,14 +25,13 @@ async def disable_default_admin(admin_user: str = Depends(verify_admin)):
     Raises:
         HTTPException 400: If no other teacher profiles exist.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT count(*) FROM users WHERE username != 'admin'")
-        count = c.fetchone()[0]
+    def _disable_admin(conn):
+        count = conn.execute("SELECT count(*) FROM users WHERE username != 'admin'").fetchone()[0]
         if count == 0:
             raise HTTPException(status_code=400, detail="Cannot disable default admin: No teacher profiles exist.")  # i18n: user-facing error message
-        c.execute("UPDATE users SET hashed_password = 'DISABLED' WHERE username = 'admin'")
+        conn.execute("UPDATE users SET hashed_password = 'DISABLED' WHERE username = 'admin'")
         conn.commit()
+    await db_run(_disable_admin)
     await audit(action=Action.CHANGE_SETTINGS, username=admin_user, resource_type="account",
                 resource_id="admin", resource_name="default admin", context={"enabled": False})
     return {"status": "success"}
@@ -50,10 +49,7 @@ async def enable_default_admin(admin_user: str = Depends(verify_admin)):
         Status dict indicating success.
     """
     hashed = await asyncio.to_thread(hash_password, "lumina2026")
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("UPDATE users SET hashed_password = ? WHERE username = 'admin'", (hashed,))
-        conn.commit()
+    await db_exec("UPDATE users SET hashed_password = ? WHERE username = 'admin'", (hashed,))
     await audit(action=Action.CHANGE_SETTINGS, username=admin_user, resource_type="account",
                 resource_id="admin", resource_name="default admin", context={"enabled": True})
     return {"status": "success"}
@@ -70,10 +66,7 @@ async def default_admin_status(admin_user: str = Depends(verify_admin)):
     Returns:
         Dict with enabled boolean.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT hashed_password FROM users WHERE username = 'admin'")
-        row = c.fetchone()
+    row = await db_fetch_one("SELECT hashed_password FROM users WHERE username = 'admin'")
     if row and row[0] == 'DISABLED':
         return {"enabled": False}
     return {"enabled": True}
@@ -90,10 +83,7 @@ async def list_admins(admin_user: str = Depends(verify_admin)):
     Returns:
         List of dicts with username, name, department, and reset_required.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT username, name, department, scholar_id, reset_required FROM users WHERE role = 'admin' ORDER BY name ASC")
-        rows = c.fetchall()
+    rows = await db_fetch("SELECT username, name, department, scholar_id, reset_required FROM users WHERE role = 'admin' ORDER BY name ASC")
     return [{"username": r[0], "name": r[1] or r[0], "department": r[2] or "System", "scholar_id": r[3] or "", "reset_required": r[4] or 0} for r in rows]
 
 
@@ -115,28 +105,29 @@ async def _create_user(data: TeacherCreate, admin_user: str, role: str, default_
     Raises:
         HTTPException: 400 if username exists or creation fails.
     """
-    async with db_conn() as conn:
+    try:
+        display_name = data.name or data.username
+        dept = data.department or default_dept
+        user_id = f"LUMINA_01-T{uuid.uuid4().hex}"
+        hashed_pwd = await asyncio.to_thread(hash_password, data.password)
+        # Race-safe: users.username is the PRIMARY KEY, so a concurrent
+        # create with the same username loses the INSERT and gets a 400.
         try:
-            c = conn.cursor()
-            c.execute("SELECT username FROM users WHERE username = ?", (data.username,))
-            if c.fetchone():
-                raise HTTPException(status_code=400, detail="Username already exists.")  # i18n: user-facing error message
-            display_name = data.name or data.username
-            dept = data.department or default_dept
-            user_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-            hashed_pwd = await asyncio.to_thread(hash_password, data.password)
-            c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, ?)",
-                      (data.username, hashed_pwd, display_name, dept, user_id, role))
-            conn.commit()
-            await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
-                        resource_id=data.username, resource_name=display_name,
-                        target_user=data.username, context={"role": role})
-            return {"status": "success", "username": data.username, "name": display_name, "scholar_id": user_id}
-        except HTTPException:
-            raise
-        except Exception as e:
-            logging.error(f"create_{role}: {e}")
-            raise HTTPException(status_code=400, detail=f"Failed to create {role} account")  # i18n: user-facing error message
+            await db_exec(
+                "INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, ?)",
+                (data.username, hashed_pwd, display_name, dept, user_id, role),
+            )
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=400, detail="Username already exists.")  # i18n: user-facing error message
+        await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
+                    resource_id=data.username, resource_name=display_name,
+                    target_user=data.username, context={"role": role})
+        return {"status": "success", "username": data.username, "name": display_name, "scholar_id": user_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"create_{role}: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to create {role} account")  # i18n: user-facing error message
 
 
 @router.post("/api/admin/create", response_model=AdminCreateResponse,
@@ -183,29 +174,32 @@ async def create_student(data: AdminStudentCreate, admin_user: str = Depends(ver
     Raises:
         HTTPException 400: If the username is already taken or creation fails.
     """
-    async with db_conn() as conn:
+    try:
+        display_name = data.name or data.username
+        scholar_id = f"LUMINA_01-{uuid.uuid4().hex}"
+        pwd = data.password or "lumina2026"
+        hashed_pwd = await asyncio.to_thread(hash_password, pwd)
+        # Race-safe: scholars.username has a UNIQUE index, so a concurrent
+        # create with the same username loses the INSERT and gets a 400.
         try:
-            c = conn.cursor()
-            c.execute("SELECT id FROM scholars WHERE username = ?", (data.username,))
-            if c.fetchone():
-                raise HTTPException(status_code=400, detail="Username already exists.")  # i18n: user-facing error message
-            display_name = data.name or data.username
-            scholar_id = f"LUMINA_01-{uuid.uuid4().hex}"
-            pwd = data.password or "lumina2026"
-            hashed_pwd = await asyncio.to_thread(hash_password, pwd)
             if data.grade:
-                c.execute("INSERT INTO scholars (id, username, name, hashed_password, reset_required, grade) VALUES (?, ?, ?, ?, 0, ?)",
-                          (scholar_id, data.username, display_name, hashed_pwd, data.grade))
+                await db_exec(
+                    "INSERT INTO scholars (id, username, name, hashed_password, reset_required, grade) VALUES (?, ?, ?, ?, 0, ?)",
+                    (scholar_id, data.username, display_name, hashed_pwd, data.grade),
+                )
             else:
-                c.execute("INSERT INTO scholars (id, username, name, hashed_password, reset_required) VALUES (?, ?, ?, ?, 0)",
-                          (scholar_id, data.username, display_name, hashed_pwd))
-            conn.commit()
-            await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
-                        resource_id=data.username, resource_name=display_name,
-                        target_user=data.username, context={"role": "student"})
-            return {"status": "success", "username": data.username, "name": display_name, "scholar_id": scholar_id}
-        except HTTPException:
-            raise
-        except Exception as e:
-            logging.error(f"create_student: {e}")
-            raise HTTPException(status_code=400, detail="Failed to create student account")  # i18n: user-facing error message
+                await db_exec(
+                    "INSERT INTO scholars (id, username, name, hashed_password, reset_required) VALUES (?, ?, ?, ?, 0)",
+                    (scholar_id, data.username, display_name, hashed_pwd),
+                )
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=400, detail="Username already exists.")  # i18n: user-facing error message
+        await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
+                    resource_id=data.username, resource_name=display_name,
+                    target_user=data.username, context={"role": "student"})
+        return {"status": "success", "username": data.username, "name": display_name, "scholar_id": scholar_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"create_student: {e}")
+        raise HTTPException(status_code=400, detail="Failed to create student account")  # i18n: user-facing error message

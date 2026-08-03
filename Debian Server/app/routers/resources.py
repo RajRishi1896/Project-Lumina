@@ -8,7 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Query
 from app.database import UPLOAD_DIR, gen_composite_uid
 from app.audit import audit, Action
-from app.async_db import db_conn, db_fetch, db_fetch_one
+from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.dependencies import verify_teacher, verify_user
 from app.models import CatalogResourceResponse, FileEntryResponse, LimitsResponse, UploadResponse, DeleteResourceResponse
 from app.routers.teacher_courses import _write_chunked
@@ -228,13 +228,15 @@ async def upload_resource(title: str = Query(..., description="Display title"),
         except FileNotFoundError:
             pass
         raise HTTPException(status_code=499, detail="Client disconnected")  # i18n: user-facing error message
-    async with db_conn() as conn:
+    def _insert_resource(conn):
         resource_id = gen_composite_uid(conn, grade, subject, 'RES')
         conn.execute("""INSERT INTO resources
             (id, title, subject, subject_id, grade, language, resource_type, filename, original_name, source, license, uploaded_by, status, topic_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)""",
             (resource_id, title, subject, subject_id, grade, language, type, uuid_name, original_filename, source, license, teacher_user, topic_id))
         conn.commit()
+        return resource_id
+    resource_id = await db_run(_insert_resource)
     await audit(action=Action.UPLOAD_RESOURCE, username=teacher_user, resource_type="resource",
                 resource_id=resource_id, resource_name=title,
                 context={"subject": subject, "grade": grade, "type": type})
@@ -278,24 +280,21 @@ async def update_resource(resource_id: str, data: dict, teacher_user: str = Depe
     fields = {k: v for k, v in data.items() if k in allowed and v is not None}
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update.")  # i18n: user-facing error message
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT id FROM resources WHERE id = ?", (resource_id,))
-        if not c.fetchone():
-            raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
-        if "subject" in fields:
-            subj = await db_fetch_one("SELECT name FROM subjects WHERE name = ?", (fields["subject"],))
-            if not subj:
-                raise HTTPException(status_code=400, detail=f"Subject '{fields['subject']}' not found.")  # i18n: user-facing error message
-        set_parts = []
-        params = []
-        col_map = {"title": "title", "subject": "subject", "grade": "grade", "type": "resource_type", "language": "language", "topic_id": "topic_id"}
-        for k, v in fields.items():
-            set_parts.append(f"{col_map[k]} = ?")
-            params.append(v)
-        params.append(resource_id)
-        c.execute(f"UPDATE resources SET {', '.join(set_parts)} WHERE id = ?", tuple(params))
-        conn.commit()
+    row = await db_fetch_one("SELECT id FROM resources WHERE id = ?", (resource_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
+    if "subject" in fields:
+        subj = await db_fetch_one("SELECT name FROM subjects WHERE name = ?", (fields["subject"],))
+        if not subj:
+            raise HTTPException(status_code=400, detail=f"Subject '{fields['subject']}' not found.")  # i18n: user-facing error message
+    set_parts = []
+    params = []
+    col_map = {"title": "title", "subject": "subject", "grade": "grade", "type": "resource_type", "language": "language", "topic_id": "topic_id"}
+    for k, v in fields.items():
+        set_parts.append(f"{col_map[k]} = ?")
+        params.append(v)
+    params.append(resource_id)
+    await db_exec(f"UPDATE resources SET {', '.join(set_parts)} WHERE id = ?", tuple(params))
     await audit(action=Action.UPDATE_RESOURCE, username=teacher_user, resource_type="resource",
                 resource_id=resource_id, resource_name=fields.get("title", ""), changes=fields)
     return {"status": "ok"}
@@ -322,51 +321,55 @@ async def delete_resource(resource_id: str, teacher_user: str = Depends(verify_t
     Raises:
         HTTPException: 404 if resource not found, 400 on failure.
     """
-    async with db_conn() as conn:
-        try:
-            c = conn.cursor()
-            c.execute("SELECT id, filename, title, resource_type FROM resources WHERE id = ?", (resource_id,))
-            row = c.fetchone()
+    try:
+        def _delete(conn):
+            row = conn.execute("SELECT id, filename, title, resource_type FROM resources WHERE id = ?", (resource_id,)).fetchone()
             if not row:
-                raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
+                return "not_found"
             db_id, db_filename, db_title, db_type = row
             file_path = os.path.join(UPLOAD_DIR, db_filename) if db_filename else None
-            c.execute("SELECT COUNT(*) FROM scholar_downloads WHERE resource_id = ?", (resource_id,))
-            download_count = c.fetchone()[0]
+            download_count = conn.execute("SELECT COUNT(*) FROM scholar_downloads WHERE resource_id = ?", (resource_id,)).fetchone()[0]
             if download_count > 0:
-                c.execute("UPDATE resources SET status = 'deprecated', superseded_by = NULL WHERE id = ?", (resource_id,))
+                conn.execute("UPDATE resources SET status = 'deprecated', superseded_by = NULL WHERE id = ?", (resource_id,))
                 conn.commit()
-                await audit(action=Action.DEPRECATE_RESOURCE, username=teacher_user, resource_type="resource",
-                            resource_id=resource_id, resource_name=db_title,
-                            context={"download_count": download_count})
-                return {"status": "success", "action": "soft_deprecated", "download_count": download_count}
-            else:
-                if file_path and await asyncio.to_thread(os.path.exists, file_path):
-                    try:
-                        await asyncio.to_thread(os.remove, file_path)
-                    except Exception as e:
-                        logging.warning(f"Could not remove physical file {file_path}: {e}")
-                # Clean up ZIM archive data if this is a kiwix resource
-                if db_type == 'kiwix':
-                    c.execute("SELECT id FROM zim_archives WHERE filename = ?", (db_filename,))
-                    zim_row = c.fetchone()
-                    if zim_row:
-                        c.execute("DELETE FROM zim_articles WHERE archive_id = ?", (zim_row[0],))
-                        c.execute("DELETE FROM zim_archives WHERE id = ?", (zim_row[0],))
-                # Delete resource thumbnail
-                thumb_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "thumbnails", f"{resource_id}.png")
-                if await asyncio.to_thread(os.path.exists, thumb_path):
-                    await asyncio.to_thread(os.remove, thumb_path)
-                c.execute("DELETE FROM resources WHERE id = ?", (resource_id,))
-                c.execute("DELETE FROM scholar_downloads WHERE resource_id = ?", (resource_id,))
-                c.execute("DELETE FROM student_bookmarks WHERE resource_id = ?", (resource_id,))
-                conn.commit()
-                await audit(action=Action.DELETE_RESOURCE, username=teacher_user, resource_type="resource",
-                            resource_id=resource_id, resource_name=db_title)
-                return {"status": "success", "action": "hard_deleted"}
-        except Exception as e:
-            logging.error(f"delete_resource: {e}")
-            raise HTTPException(status_code=400, detail="Failed to delete resource")  # i18n: user-facing error message
+                return ("soft_deprecated", db_title, download_count)
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    logging.warning(f"Could not remove physical file {file_path}: {e}")
+            if db_type == 'kiwix':
+                zim_row = conn.execute("SELECT id FROM zim_archives WHERE filename = ?", (db_filename,)).fetchone()
+                if zim_row:
+                    conn.execute("DELETE FROM zim_articles WHERE archive_id = ?", (zim_row[0],))
+                    conn.execute("DELETE FROM zim_archives WHERE id = ?", (zim_row[0],))
+            thumb_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "thumbnails", f"{resource_id}.png")
+            if os.path.exists(thumb_path):
+                try:
+                    os.remove(thumb_path)
+                except Exception:
+                    pass
+            conn.execute("DELETE FROM resources WHERE id = ?", (resource_id,))
+            conn.execute("DELETE FROM scholar_downloads WHERE resource_id = ?", (resource_id,))
+            conn.execute("DELETE FROM student_bookmarks WHERE resource_id = ?", (resource_id,))
+            conn.commit()
+            return ("hard_deleted", db_title, 0)
+
+        result = await db_run(_delete)
+        if result == "not_found":
+            raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
+        action_taken, db_title, download_count = result
+        if action_taken == "soft_deprecated":
+            await audit(action=Action.DEPRECATE_RESOURCE, username=teacher_user, resource_type="resource",
+                        resource_id=resource_id, resource_name=db_title,
+                        context={"download_count": download_count})
+            return {"status": "success", "action": "soft_deprecated", "download_count": download_count}
+        await audit(action=Action.DELETE_RESOURCE, username=teacher_user, resource_type="resource",
+                    resource_id=resource_id, resource_name=db_title)
+        return {"status": "success", "action": "hard_deleted"}
+    except Exception as e:
+        logging.error(f"delete_resource: {e}")
+        raise HTTPException(status_code=400, detail="Failed to delete resource")  # i18n: user-facing error message
 
 
 @router.post("/teacher/upload-quiz", response_model=UploadResponse,
@@ -420,22 +423,22 @@ async def upload_quiz(request: Request, teacher_user: str = Depends(verify_teach
         "shuffle_mode": shuffle_mode,
         "quiz_version": 1,
     }
-    async with db_conn() as conn:
+    def _create_quiz_resource(conn):
         uid = gen_composite_uid(conn, grade, subject, "RES")
         fname = f"{uid}.json"
         fpath = os.path.join(UPLOAD_DIR, fname)
-        def _write_quiz():
-            with open(fpath, "w", encoding="utf-8") as f:
-                import json as _json
-                _json.dump(quiz_payload, f, ensure_ascii=False)
-        await asyncio.to_thread(_write_quiz)
+        with open(fpath, "w", encoding="utf-8") as f:
+            import json as _json
+            _json.dump(quiz_payload, f, ensure_ascii=False)
         topic_val = topic_id if topic_id else None
-        c = conn.cursor()
-        c.execute(
+        conn.execute(
             "INSERT INTO resources (id, title, filename, original_name, resource_type, subject, subject_id, grade, language, source, license, uploaded_by, status, topic_id) VALUES (?, ?, ?, ?, 'quiz', ?, ?, ?, ?, 'Teacher-Created', 'Internal Only', ?, 'approved', ?)",
             (uid, title, fname, title, subject, subject_id, grade, language, teacher_user, topic_val),
         )
         conn.commit()
+        return uid, fname
+
+    uid, fname = await db_run(_create_quiz_resource)
     await audit(action=Action.CREATE_QUIZ, username=teacher_user, resource_type="quiz",
                 resource_id=uid, resource_name=title, context={"question_count": len(questions)})
     return {"status": "success", "filename": fname, "original_name": title}

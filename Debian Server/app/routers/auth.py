@@ -7,7 +7,7 @@ import asyncio
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Form, status
 from fastapi.responses import JSONResponse, RedirectResponse
-from app.async_db import db_conn, db_exec, db_fetch_one
+from app.async_db import db_exec, db_fetch_one, db_run
 from app.audit import audit, Action
 from app.metrics import incr
 from app.models import ScholarReg, StudentLoginRequest, ScholarRegisterResponse, StudentLoginResponse, LoginTokenResponse, TokenResponse
@@ -71,38 +71,41 @@ async def register_scholar(scholar: ScholarReg, request: Request):
         HTTPException 400: If the password fails strength validation or registration otherwise fails.
     """
     _check_rate_limit(request)
-    async with db_conn() as conn:
-        c = conn.cursor()
-        display_name = scholar.name or scholar.username
-        grade_val = scholar.grade or "General"
+    display_name = scholar.name or scholar.username
+    grade_val = scholar.grade or "General"
 
-        if not scholar.password:
-            raise HTTPException(status_code=400, detail="Password is required")  # i18n: user-facing validation message
-        pwd = scholar.password
-        valid, msg = validate_password_strength(pwd)
-        if not valid:
-            raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
-        hashed = await asyncio.to_thread(hash_password, pwd)
+    if not scholar.password:
+        raise HTTPException(status_code=400, detail="Password is required")  # i18n: user-facing validation message
+    pwd = scholar.password
+    valid, msg = validate_password_strength(pwd)
+    if not valid:
+        raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
+    hashed = await asyncio.to_thread(hash_password, pwd)
 
-        unique_suffix = uuid.uuid4().hex
-        full_id = f"LUMINA_01-{unique_suffix}"
+    unique_suffix = uuid.uuid4().hex
+    full_id = f"LUMINA_01-{unique_suffix}"
 
-        c.execute("SELECT id FROM scholars WHERE username = ?", (scholar.username,))
-        if c.fetchone():
-            raise HTTPException(status_code=409, detail="Username already taken")  # i18n: user-facing registration error
-        c.execute("INSERT INTO scholars (id, username, name, hashed_password, reset_required, grade) VALUES (?, ?, ?, ?, 0, ?)", (full_id, scholar.username, display_name, hashed, grade_val))
-        conn.commit()
-        await audit(action=Action.CREATE_ACCOUNT, username=scholar.username, resource_type="account",
-                    resource_id=full_id, role="student", request=request,
-                    context={"is_update": False})
+    # Race-safe duplicate detection: the UNIQUE index on scholars(username)
+    # guarantees exactly one concurrent register wins; the loser gets a 409.
+    try:
+        await db_exec(
+            "INSERT INTO scholars (id, username, name, hashed_password, reset_required, grade) "
+            "VALUES (?, ?, ?, ?, 0, ?)",
+            (full_id, scholar.username, display_name, hashed, grade_val),
+        )
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=409, detail="Username already taken")  # i18n: user-facing registration error
+    await audit(action=Action.CREATE_ACCOUNT, username=scholar.username, resource_type="account",
+                resource_id=full_id, role="student", request=request,
+                context={"is_update": False})
 
-        tokens = await generate_session_token(full_id, "student")
-        resp_data = {"id": full_id, "token": tokens["session_token"]}
-        resp_data["refresh_token"] = tokens["refresh_token"]
-        resp_data["persistent_key"] = tokens["persistent_key"]
-        response = JSONResponse(resp_data)
-        response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, samesite="lax", secure=_secure_cookie(request), max_age=86400)
-        return response
+    tokens = await generate_session_token(full_id, "student")
+    resp_data = {"id": full_id, "token": tokens["session_token"]}
+    resp_data["refresh_token"] = tokens["refresh_token"]
+    resp_data["persistent_key"] = tokens["persistent_key"]
+    response = JSONResponse(resp_data)
+    response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, samesite="lax", secure=_secure_cookie(request), max_age=86400)
+    return response
 
 
 @router.post("/student/token", response_model=StudentLoginResponse, summary="Authenticate a student", description="Validates student credentials against the scholars table and returns session, refresh, and persistent tokens. Also returns the student's name, grade, and reset-required flag.", tags=["Auth"], responses={401: {"description": "Invalid credentials or account not found"}, 500: {"description": "Login failed due to server error"}})
@@ -274,25 +277,28 @@ async def refresh_session(data: dict, request: Request):
         HTTPException 401: If the refresh token is invalid, already used, or expired.
         HTTPException 500: If the refresh process fails unexpectedly.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT username, role, used, expires_at FROM refresh_tokens WHERE token = ?", (data.get('refresh_token'),))
-        row = c.fetchone()
+    def _consume_refresh_token(conn):
+        row = conn.execute(
+            "SELECT username, role, used, expires_at FROM refresh_tokens WHERE token = ?",
+            (data.get('refresh_token'),),
+        ).fetchone()
         if not row:
             raise HTTPException(status_code=401, detail="Invalid refresh token")  # i18n: user-facing error message
         if row[2]:
             raise HTTPException(status_code=401, detail="Refresh token already used")  # i18n: user-facing error message
         if row[3] and datetime.fromisoformat(row[3]).replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
             raise HTTPException(status_code=401, detail="Refresh token expired")  # i18n: user-facing error message
-        username, role = row[0], row[1]
-        c.execute("UPDATE refresh_tokens SET used = 1 WHERE token = ?", (data.get('refresh_token'),))
+        conn.execute("UPDATE refresh_tokens SET used = 1 WHERE token = ?", (data.get('refresh_token'),))
         conn.commit()
-        tokens = await generate_session_token(username, role)
-        return {
-            "token": tokens["session_token"],
-            "refresh_token": tokens["refresh_token"],
-            "persistent_key": tokens["persistent_key"]
-        }
+        return row[0], row[1]
+
+    username, role = await db_run(_consume_refresh_token)
+    tokens = await generate_session_token(username, role)
+    return {
+        "token": tokens["session_token"],
+        "refresh_token": tokens["refresh_token"],
+        "persistent_key": tokens["persistent_key"]
+    }
 
 
 @router.post("/student/renew-session", response_model=TokenResponse, summary="Renew session with persistent key", description="Exchanges a valid one-time-use persistent key for a new set of session tokens without requiring re-authentication. The old persistent key is marked as used.", tags=["Auth"], responses={401: {"description": "Invalid, used, or expired persistent key"}, 500: {"description": "Session renewal failed due to server error"}})
@@ -310,22 +316,25 @@ async def renew_session(data: dict, request: Request):
         HTTPException 401: If the persistent key is invalid, already used, or expired.
         HTTPException 500: If the renewal process fails unexpectedly.
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT username, role, used, expires_at FROM persistent_keys WHERE token = ?", (data.get('persistent_key'),))
-        row = c.fetchone()
+    def _consume_persistent_key(conn):
+        row = conn.execute(
+            "SELECT username, role, used, expires_at FROM persistent_keys WHERE token = ?",
+            (data.get('persistent_key'),),
+        ).fetchone()
         if not row:
             raise HTTPException(status_code=401, detail="Invalid persistent key")  # i18n: user-facing error message
         if row[2]:
             raise HTTPException(status_code=401, detail="Persistent key already used")  # i18n: user-facing error message
         if row[3] and datetime.fromisoformat(row[3]).replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
             raise HTTPException(status_code=401, detail="Persistent key expired")  # i18n: user-facing error message
-        username, role = row[0], row[1]
-        c.execute("UPDATE persistent_keys SET used = 1 WHERE token = ?", (data.get('persistent_key'),))
+        conn.execute("UPDATE persistent_keys SET used = 1 WHERE token = ?", (data.get('persistent_key'),))
         conn.commit()
-        tokens = await generate_session_token(username, role)
-        return {
-            "token": tokens["session_token"],
-            "refresh_token": tokens["refresh_token"],
-            "persistent_key": tokens["persistent_key"]
-        }
+        return row[0], row[1]
+
+    username, role = await db_run(_consume_persistent_key)
+    tokens = await generate_session_token(username, role)
+    return {
+        "token": tokens["session_token"],
+        "refresh_token": tokens["refresh_token"],
+        "persistent_key": tokens["persistent_key"]
+    }

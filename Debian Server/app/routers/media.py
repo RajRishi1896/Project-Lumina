@@ -123,13 +123,20 @@ async def resource_thumbnail(resource_id: str):
     row = await db_fetch_one(
         "SELECT id, filename, resource_type FROM resources WHERE id = ?", (resource_id,))
     table = "resources"
+    course_id = None
     if not row:
         row = await db_fetch_one(
-            "SELECT id, filename, resource_type FROM course_resources WHERE id = ?", (resource_id,))
+            "SELECT id, course_id, filename, resource_type FROM course_resources WHERE id = ?", (resource_id,))
         table = "course_resources"
+        course_id = row["course_id"] if row else None
     if not row:
         raise HTTPException(status_code=404, detail="Resource not found")  # i18n: user-facing error message
-    file_path = os.path.join(UPLOAD_DIR, row["filename"]) if row["filename"] else None
+    # Course-resource files live under uploads/courses/{course_id}/resources/,
+    # not directly in the uploads root -- build the correct path.
+    if table == "course_resources":
+        file_path = os.path.join(UPLOAD_DIR, "courses", str(course_id), "resources", row["filename"]) if row["filename"] else None
+    else:
+        file_path = os.path.join(UPLOAD_DIR, row["filename"]) if row["filename"] else None
     rtype = row["resource_type"]
     thumb_path = os.path.join(THUMBNAILS_DIR, f"{resource_id}.png")
     if await asyncio.to_thread(os.path.exists, thumb_path):

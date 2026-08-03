@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch_one
 from app.dependencies import verify_teacher
+from app.models import CourseQuizCreate
 from app.routers.teacher_courses import COURSES_DIR, _ensure_course_owner
 
 router = APIRouter()
@@ -34,7 +35,7 @@ def _normalize_question(q: dict, index: int) -> dict:
 @router.post("/api/teacher/courses/{course_id}/quiz",
              summary="Create a quiz resource for a course", tags=["Teacher Courses"],
              responses={201: {"description": "Quiz resource created"}, 400: {"description": "Invalid data"}})
-async def create_course_quiz(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
+async def create_course_quiz(course_id: str, data: CourseQuizCreate, teacher_user: str = Depends(verify_teacher)):
     """Create a new quiz resource within a course.
 
     Validates that questions is a non-empty list with required fields (id, type,
@@ -45,7 +46,7 @@ async def create_course_quiz(course_id: str, data: dict, teacher_user: str = Dep
         HTTPException: 400 if questions are missing or invalid.
     """
     await _ensure_course_owner(course_id, teacher_user)
-    questions = data.get("questions")
+    questions = data.questions
     if not isinstance(questions, list) or len(questions) == 0:
         raise HTTPException(status_code=400, detail="Quiz must have at least one question.")  # i18n: user-facing error message
     questions = [_normalize_question(q, i) for i, q in enumerate(questions)]
@@ -54,28 +55,26 @@ async def create_course_quiz(course_id: str, data: dict, teacher_user: str = Dep
             raise HTTPException(status_code=400, detail=f"Question at index {i} is missing one of: id, type, question.")  # i18n: user-facing error message
 
     resource_id = str(uuid.uuid4())
-    title = data.get("title", "Quiz")
+    title = data.title
     quiz_dir = os.path.join(COURSES_DIR, course_id)
     os.makedirs(quiz_dir, exist_ok=True)
     quiz_path = os.path.join(quiz_dir, f"quiz_{resource_id}.json")
 
     def _save():
-        quiz = {"questions": questions, "time_limit_minutes": data.get("time_limit_minutes", 0),
-                "pass_threshold": data.get("pass_threshold", 60), "max_attempts": data.get("max_attempts", 0),
-                "shuffle_mode": data.get("shuffle_mode", "none"), "quiz_version": 1}
+        quiz = {"questions": questions, "time_limit_minutes": data.time_limit_minutes,
+                "pass_threshold": data.pass_threshold, "max_attempts": data.max_attempts,
+                "shuffle_mode": data.shuffle_mode, "quiz_version": 1}
         with open(quiz_path, "w") as f:
             json.dump({"quiz": quiz}, f, indent=2)
         return len(json.dumps(quiz).encode())
 
     file_size = await asyncio.to_thread(_save)
-    last_pos = await db_fetch_one(
-        "SELECT COALESCE(MAX(position), -1) AS mp FROM course_resources WHERE course_id = ?", (course_id,))
-    next_pos = (last_pos["mp"] if last_pos and last_pos["mp"] is not None else -1) + 1
 
     await db_exec(
         """INSERT INTO course_resources (id, course_id, resource_type, title, original_name, filename, file_size, position, topic_id)
-           VALUES (?, ?, 'quiz', ?, ?, ?, ?, ?, ?)""",
-        (resource_id, course_id, title, title + ".json", f"quiz_{resource_id}.json", file_size, next_pos, data.get("topic_id", ""))
+           SELECT ?, ?, 'quiz', ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1, ?
+           FROM course_resources WHERE course_id = ?""",
+        (resource_id, course_id, title, title + ".json", f"quiz_{resource_id}.json", file_size, data.topic_id, course_id)
     )
     await audit(action=Action.CREATE_QUIZ, username=teacher_user, resource_type="quiz",
                 resource_id=resource_id, resource_name=title,

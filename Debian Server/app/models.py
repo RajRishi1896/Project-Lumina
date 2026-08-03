@@ -363,6 +363,18 @@ class CourseCreate(BaseModel):
     language: str = Field("en", description="ISO 639-1 code")
 
 
+class CourseQuizCreate(BaseModel):
+    """Payload for creating or editing a course quiz."""
+    model_config = ConfigDict(extra='ignore')
+    title: str = Field("Quiz", description="Quiz title", max_length=120)
+    questions: list = Field(default_factory=list, description="List of question payloads")
+    topic_id: str = Field("", max_length=64, description="Topic this quiz belongs to, if any")
+    time_limit_minutes: int = Field(0, ge=0, le=1440, description="Time limit in minutes, 0 = none")
+    pass_threshold: int = Field(60, ge=0, le=100, description="Passing percentage")
+    max_attempts: int = Field(0, ge=0, le=50, description="Max attempts, 0 = unlimited")
+    shuffle_mode: str = Field("", max_length=20, description="Question shuffle mode")
+
+
 class CourseResponse(BaseModel):
     """Course metadata returned to clients."""
     id: str = Field(..., description="Unique course identifier.", example="CRS-abc123")

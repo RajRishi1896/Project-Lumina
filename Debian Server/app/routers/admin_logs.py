@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Response, Query
 from app.audit import audit, Action
-from app.async_db import db_conn
+from app.async_db import db_exec, db_fetch_one
 from app.models import AuditLogResponse, SettingsResponse, StatusResponse
 from app.dependencies import verify_admin
 
@@ -205,10 +205,7 @@ async def get_admin_settings(admin_user: str = Depends(verify_admin)):
     Returns:
         Dict with log_retention policy value (defaults to "30d").
     """
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("SELECT value FROM settings WHERE key = 'log_retention'")
-        row = c.fetchone()
+    row = await db_fetch_one("SELECT value FROM settings WHERE key = 'log_retention'")
     return {"log_retention": row[0] if row else "30d"}
 
 
@@ -230,10 +227,7 @@ async def set_admin_settings(data: dict, admin_user: str = Depends(verify_admin)
     """
     if data.get('policy') not in ("24h", "7d", "30d", "3m", "6m", "never", "none"):
         raise HTTPException(status_code=400, detail="Invalid log retention policy.")  # i18n: user-facing error message
-    async with db_conn() as conn:
-        c = conn.cursor()
-        c.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('log_retention', ?)", (data.get('policy'),))
-        conn.commit()
+    await db_exec("INSERT OR REPLACE INTO settings (key, value) VALUES ('log_retention', ?)", (data.get('policy'),))
     await audit(action=Action.CHANGE_SETTINGS, username=admin_user, resource_type="settings",
                 resource_name="log_retention", context={"policy": data.get('policy')})
     return {"status": "success"}

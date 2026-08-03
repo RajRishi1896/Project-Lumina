@@ -6,7 +6,7 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request
-from app.async_db import db_conn, db_fetch_one, db_fetch
+from app.async_db import db_fetch_one, db_fetch
 from app.dependencies import verify_teacher, verify_admin
 from app.models import TimeSync, HubStatsResponse, StatusResponse
 from app.audit import audit, Action
@@ -49,19 +49,17 @@ async def get_stats():
         battery_percent, uptime string, and disk_usage.
     """
     import shutil
-    async with db_conn() as conn:
-        c = conn.cursor()
-        def _count(query):
-            try:
-                c.execute(query)
-                return c.fetchone()[0]
-            except Exception:
-                return 0
-        scholar_count = _count("SELECT COUNT(*) FROM scholars")
-        resource_count = _count("SELECT COUNT(*) FROM resources")
-        subject_count = _count("SELECT COUNT(*) FROM subjects")
-        published_courses = _count("SELECT COUNT(*) FROM courses WHERE published = 1")
-        draft_courses = _count("SELECT COUNT(*) FROM courses WHERE published = 0")
+    async def _count(query):
+        try:
+            row = await db_fetch_one(query)
+            return row[0] if row else 0
+        except Exception:
+            return 0
+    scholar_count = await _count("SELECT COUNT(*) FROM scholars")
+    resource_count = await _count("SELECT COUNT(*) FROM resources")
+    subject_count = await _count("SELECT COUNT(*) FROM subjects")
+    published_courses = await _count("SELECT COUNT(*) FROM courses WHERE published = 1")
+    draft_courses = await _count("SELECT COUNT(*) FROM courses WHERE published = 0")
     total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
     battery_percent = 100
     battery_charging = False
@@ -165,8 +163,7 @@ async def get_server_time():
 @router.get("/healthz")
 async def health():
     """Return SQLite connectivity, open FDs, RSS."""
-    async with db_conn() as db:
-        await asyncio.to_thread(db.execute, "SELECT 1")
+    await db_fetch_one("SELECT 1")
 
     rss_mb = 0
     try:
