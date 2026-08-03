@@ -397,6 +397,36 @@ def init_db():
         UNIQUE(peer_id, peer_resource_id)
     )''')
     c.execute('CREATE INDEX IF NOT EXISTS idx_peer_resources_peer ON peer_resources(peer_id)')
+
+    # Flashcards: teacher decks, cards, and student submissions (pending→approved workflow)
+    c.execute('''CREATE TABLE IF NOT EXISTS flashcard_decks (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        topic_id TEXT,
+        created_by TEXT NOT NULL,
+        published INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS flashcards (
+        id TEXT PRIMARY KEY,
+        deck_id TEXT NOT NULL,
+        front TEXT NOT NULL,
+        back TEXT NOT NULL,
+        position INTEGER DEFAULT 0
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS flashcard_submissions (
+        id TEXT PRIMARY KEY,
+        student_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        cards_json TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        reviewed_by TEXT,
+        reviewed_at TEXT,
+        reason TEXT
+    )''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_flashcards_deck ON flashcards(deck_id)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_flashcard_submissions_status ON flashcard_submissions(status)')
     conn.commit()
     conn.close()
 
