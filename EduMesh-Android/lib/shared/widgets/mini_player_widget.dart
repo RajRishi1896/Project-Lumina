@@ -46,17 +46,17 @@ class MiniPlayerWidget extends StatelessWidget {
               });
             },
             child: Container(
-              height: 80,
+              height: AppSpacing.miniPlayerHeight,
               margin: const EdgeInsets.only(bottom: AppSpacing.pageMargin),
-              width: 144,
+              width: AppSpacing.miniPlayerWidth,
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 boxShadow: [
                   BoxShadow(
                     color: cs.scrim.withValues(alpha: 0.12),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    blurRadius: AppSpacing.radiusMd,
+                    offset: const Offset(0, AppSpacing.hairline),
                   ),
                 ],
               ),
@@ -90,8 +90,8 @@ class MiniPlayerWidget extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    left: 4,
-                    bottom: 4,
+                    left: AppSpacing.xs,
+                    bottom: AppSpacing.xs,
                     child: Semantics(
                       button: true,
                       label: AppLocalizations.of(context)!.semanticsTogglePlay,

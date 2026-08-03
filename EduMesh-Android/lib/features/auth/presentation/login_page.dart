@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../shared/widgets/lumina_stepper.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/constants/password_strength.dart';
 import '../../../pages/app_shell.dart';
 import '../data/auth_service.dart';
 import '../../../shared/services/connectivity_service.dart';
@@ -11,10 +12,6 @@ import '../../../widgets/connection_gate.dart';
 import 'profile_setup_page.dart';
 import 'welcome_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
-
-final upperRE = RegExp(r'[A-Z]');
-final lowerRE = RegExp(r'[a-z]');
-final digitRE = RegExp(r'[0-9]');
 
 /// A page for student registration and login.
 ///
@@ -78,7 +75,7 @@ class _LoginPageState extends State<LoginPage> {
     }
     if (_isRegisterMode) {
       final pwd = _passwordController.text;
-      if (pwd.length < 8 || !pwd.contains(upperRE) || !pwd.contains(lowerRE) || !pwd.contains(digitRE)) {
+      if (pwd.length < 8 || !pwd.contains(upperCaseRegExp) || !pwd.contains(lowerCaseRegExp) || !pwd.contains(digitRegExp)) {
         setState(() => _errorMessage = AppLocalizations.of(context)!.errorPasswordStrength);
         return;
       }
@@ -238,7 +235,7 @@ class _LoginPageState extends State<LoginPage> {
                       setDialogState(() => dialogError = AppLocalizations.of(context)!.errorPasswordsDoNotMatch);
                       return;
                     }
-                    if (!pwd.contains(upperRE) || !pwd.contains(lowerRE) || !pwd.contains(digitRE)) {
+                    if (!pwd.contains(upperCaseRegExp) || !pwd.contains(lowerCaseRegExp) || !pwd.contains(digitRegExp)) {
                       setDialogState(() => dialogError = AppLocalizations.of(context)!.errorPasswordComplexity);
                       return;
                     }

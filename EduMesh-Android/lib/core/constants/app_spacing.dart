@@ -46,8 +46,20 @@ class AppSpacing {
   /// 16px -- Extra-large border radius.
   static const double radiusXl = 16;
 
+  /// 24px -- Pill-like border radius for compact overlay panels.
+  static const double radiusPill = 24;
+
   /// 9999px -- Fully rounded (pill/circle) border radius.
   static const double radiusFull = 9999;
+
+  /// 144px -- Mini player overlay width.
+  static const double miniPlayerWidth = 144;
+
+  /// 80px -- Mini player overlay height.
+  static const double miniPlayerHeight = 80;
+
+  /// 2px -- Hairline value, used for shadow offsets and thin dividers.
+  static const double hairline = 2;
 
   /// Font weight 400 -- Used for body text.
   static const FontWeight weightBody = FontWeight.w400;

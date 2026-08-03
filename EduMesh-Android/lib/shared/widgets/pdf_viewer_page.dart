@@ -154,7 +154,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                         filled: true,
                         fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.12),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -193,9 +193,9 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                     final isCurrent = p == _currentPage;
                     return Material(
                       color: isCurrent ? cs.onPrimary : cs.surfaceContainerHighest.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                         onTap: () {
                           _pdfController.animateToPage(pageNumber: p);
                           Navigator.pop(ctx);
@@ -251,7 +251,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.sm.h),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
                 ),
                 child: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
                     style: tt.bodySmall?.copyWith(color: cs.onSurface)),
@@ -278,7 +278,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: cs.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
                     ),
                     padding: EdgeInsets.fromLTRB(AppSpacing.sm.w, AppSpacing.xs.h, AppSpacing.sm.w, AppSpacing.sm.h),
                     child: Column(
@@ -298,7 +298,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
                                 decoration: BoxDecoration(
                                   color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                                 ),
                                 child: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
                                     style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
@@ -337,12 +337,12 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                   ),
                 ),
               Positioned(
-                right: 16,
-                top: 16,
+                right: AppSpacing.lg,
+                top: AppSpacing.lg,
                 child: Container(
                   decoration: BoxDecoration(
                     color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

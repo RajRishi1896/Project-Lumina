@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/constants/password_strength.dart';
 import '../../../core/network/api_client.dart';
 import '../../../shared/services/connectivity_service.dart';
 import '../../../shared/services/share_server.dart';
@@ -14,10 +15,6 @@ import '../../../features/auth/data/auth_service.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../../features/auth/presentation/welcome_page.dart';
 import '../../../shared/widgets/offline_library_page.dart';
-
-final upperRE = RegExp(r'[A-Z]');
-final lowerRE = RegExp(r'[a-z]');
-final digitRE = RegExp(r'[0-9]');
 
 /// A bottom-sheet settings panel displayed inside the app.
 ///
@@ -31,18 +28,27 @@ class LuminaSettingsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
 
-    final tt = Theme.of(context).textTheme;
-
+    final items = _settingsItems(context, ref);
     return Container(
       padding: EdgeInsets.only(top: AppSpacing.sm.h),
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusXl.r)),
       ),
-      child: ListView(
+      child: ListView.builder(
         shrinkWrap: true,
         padding: EdgeInsets.only(bottom: AppSpacing.section.h),
-        children: [
+        itemCount: items.length,
+        itemBuilder: (_, i) => items[i],
+      ),
+    );
+  }
+
+  /// The ordered list of tiles shown in this sheet.
+  List<Widget> _settingsItems(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    return [
           Center(
             child: Container(
               width: AppSpacing.sectionLg.w,
@@ -187,10 +193,8 @@ class LuminaSettingsSheet extends ConsumerWidget {
               }
             },
           ),
-          SizedBox(height: AppSpacing.sm.h),
-        ],
-      ),
-    );
+SizedBox(height: AppSpacing.sm.h),
+    ];
   }
 }
 
@@ -339,7 +343,7 @@ void _showChangePasswordDialog(BuildContext context) {
                   if (old.isEmpty) { setState(() => error = l10n.errorCurrentPasswordRequired); return; }
                   if (pwd.length < 8) { setState(() => error = l10n.errorPasswordMinLength); return; }
                   if (pwd != confirmPwdCtrl.text) { setState(() => error = l10n.errorPasswordsDoNotMatch); return; }
-                  if (!pwd.contains(upperRE) || !pwd.contains(lowerRE) || !pwd.contains(digitRE)) {
+                  if (!pwd.contains(upperCaseRegExp) || !pwd.contains(lowerCaseRegExp) || !pwd.contains(digitRegExp)) {
                     setState(() => error = l10n.errorPasswordComplexity);
                     return;
                   }

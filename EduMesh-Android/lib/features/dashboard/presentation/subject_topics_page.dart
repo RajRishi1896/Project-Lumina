@@ -394,9 +394,10 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
         );
       }
     }
-    return ListView(
+    return ListView.builder(
       padding: EdgeInsets.all(AppSpacing.xl.w),
-      children: widgets,
+      itemCount: widgets.length,
+      itemBuilder: (_, i) => widgets[i],
     );
   }
 

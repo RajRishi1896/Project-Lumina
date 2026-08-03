@@ -40,9 +40,30 @@ class ShareServer {
   static const String _broadcastAddress = '255.255.255.255';
   static const Duration _discoverTimeout = Duration(seconds: 2);
 
+  /// Minimum request-title length accepted when answering a discovery.
+  static const int _minTitleLength = 3;
+
+  /// Minimum gap between request datagrams answered from one source IP.
+  static const Duration _rateLimitInterval = Duration(milliseconds: 200);
+
+  /// Cache age after which the shareable-file index is rebuilt.
+  static const Duration _indexMaxAge = Duration(minutes: 5);
+
+  /// Maximum tracked source IPs before the rate map is pruned.
+  static const int _maxTrackedIps = 64;
+
   RawDatagramSocket? _udpSocket;
   HttpServer? _tcpServer;
   bool _started = false;
+
+  /// Last handled request time per source IP, for UDP rate limiting.
+  final Map<String, DateTime> _lastRequestAt = {};
+
+  /// Cached shareable-file index, keyed by precomputed record maps.
+  List<Map<String, dynamic>>? _shareIndex;
+  DateTime _indexBuiltAt = DateTime.fromMillisecondsSinceEpoch(0);
+  Future<List<Map<String, dynamic>>>? _indexBuild;
+  bool _indexDirty = true;
 
   /// Binds the UDP and TCP listeners, but only while the share setting is ON.
   ///
@@ -58,8 +79,15 @@ class ShareServer {
       _tcpServer = await HttpServer.bind(InternetAddress.anyIPv4, kTcpPort);
       _tcpServer!.listen((request) {
         unawaited(_handleHttpRequest(request));
+      }, onError: (Object e, StackTrace stackTrace) {
+        // A socket error kills the listener; tear down so a later toggle
+        // rebinds cleanly instead of serving from a half-dead socket.
+        debugPrint('ShareServer TCP listener error: $e');
+        unawaited(stop());
       });
       _started = true;
+      _indexDirty = true;
+      unawaited(_buildShareIndex());
       debugPrint('ShareServer: listening on UDP $kUdpPort and TCP $kTcpPort');
     } catch (e) {
       debugPrint('ShareServer start failed: $e');
@@ -78,6 +106,17 @@ class ShareServer {
     } catch (_) {}
     _udpSocket = null;
     _tcpServer = null;
+    _shareIndex = null;
+    _indexDirty = true;
+    _lastRequestAt.clear();
+  }
+
+  /// Invalidates the cached shareable-file index.
+  ///
+  /// Called when a download completes so the next discovery request sees the
+  /// new file. The index also rebuilds when empty or older than [_indexMaxAge].
+  void markIndexDirty() {
+    _indexDirty = true;
   }
 
   /// Broadcasts a discovery request for [resource]'s title, waits 2 seconds
@@ -168,24 +207,87 @@ class ShareServer {
 
   /// Handles a discovery request: unicasts a `have` reply for every downloaded
   /// record whose title matches, but only while sharing is ON.
+  ///
+  /// Requests are rate-limited per source IP and titles shorter than
+  /// [_minTitleLength] chars get no reply, to blunt UDP-flood enumeration.
   Future<void> _handleUdpRequest(Datagram datagram) async {
     try {
       if (!await _isEnabled()) return;
+      if (!_rateAllow(datagram.address.address)) return;
       final data = jsonDecode(utf8.decode(datagram.data)) as Map<String, dynamic>;
       final reqId = data['req_id']?.toString() ?? '';
       final title = (data['title']?.toString() ?? '').trim().toLowerCase();
-      if (reqId.isEmpty || title.isEmpty) return;
-      final downloads = await DBHelper().getDownloadedResources();
+      if (reqId.isEmpty || title.length < _minTitleLength) return;
+      final downloads = await _shareableRecords();
       if (downloads.isEmpty) return;
       final deviceId = await _deviceId();
       final name = await _deviceName();
       final ip = await _localIp();
       for (final record in downloads) {
-        final recordTitle = (record['title']?.toString() ?? '').trim().toLowerCase();
+        final recordTitle = record['title'] as String? ?? '';
         if (recordTitle.isEmpty) continue;
         if (!recordTitle.contains(title) && !title.contains(recordTitle)) continue;
+        final reply = jsonEncode({
+          'req_id': reqId,
+          'dev': deviceId,
+          'name': name,
+          'resource_id': record['resource_id'] ?? '',
+          'title': record['title'],
+          'size': record['size'],
+          'mtime': record['mtime'],
+          'ip': ip,
+          'port': kTcpPort,
+        });
+        _udpSocket?.send(utf8.encode(reply), datagram.address, datagram.port);
+      }
+    } catch (e) {
+      debugPrint('ShareServer request handler failed: $e');
+    }
+  }
+
+  /// True when [ip] is not requesting faster than [_rateLimitInterval] apart.
+  bool _rateAllow(String ip) {
+    final now = DateTime.now();
+    final last = _lastRequestAt[ip];
+    if (last != null && now.difference(last) < _rateLimitInterval) return false;
+    _lastRequestAt[ip] = now;
+    if (_lastRequestAt.length > _maxTrackedIps) {
+      final cutoff = now.subtract(const Duration(seconds: 10));
+      _lastRequestAt.removeWhere((_, t) => t.isBefore(cutoff));
+    }
+    return true;
+  }
+
+  /// The cached shareable-file index, rebuilt when dirty, empty, or stale.
+  Future<List<Map<String, dynamic>>> _shareableRecords() {
+    if (!_indexDirty &&
+        _shareIndex != null &&
+        DateTime.now().difference(_indexBuiltAt) <= _indexMaxAge) {
+      return Future.value(_shareIndex);
+    }
+    return _buildShareIndex();
+  }
+
+  /// Rebuilds the shareable-file index in one pass: DB scan + file stat per
+  /// downloaded record, cached until the next download completes.
+  ///
+  /// Concurrent rebuild requests share a single in-flight build.
+  Future<List<Map<String, dynamic>>> _buildShareIndex() {
+    final running = _indexBuild;
+    if (running != null) return running;
+    final build = _buildShareIndexInner();
+    _indexBuild = build;
+    return build.whenComplete(() => _indexBuild = null);
+  }
+
+  Future<List<Map<String, dynamic>>> _buildShareIndexInner() async {
+    try {
+      final downloads = await DBHelper().getDownloadedResources();
+      final records = <Map<String, dynamic>>[];
+      for (final record in downloads) {
+        final title = (record['title']?.toString() ?? '').trim().toLowerCase();
         final localPath = record['local_path']?.toString() ?? '';
-        if (localPath.isEmpty) continue;
+        if (title.isEmpty || localPath.isEmpty) continue;
         int size = 0;
         double mtime = (record['mtime'] as num?)?.toDouble() ?? 0;
         try {
@@ -198,21 +300,22 @@ class ShareServer {
         } catch (_) {
           continue;
         }
-        final reply = jsonEncode({
-          'req_id': reqId,
-          'dev': deviceId,
-          'name': name,
+        records.add({
           'resource_id': record['resource_id']?.toString() ?? '',
-          'title': record['title'] ?? '',
+          'title': title,
+          'local_path': localPath,
           'size': size,
           'mtime': mtime,
-          'ip': ip,
-          'port': kTcpPort,
         });
-        _udpSocket?.send(utf8.encode(reply), datagram.address, datagram.port);
       }
+      _shareIndex = records;
+      _indexBuiltAt = DateTime.now();
+      _indexDirty = false;
+      return records;
     } catch (e) {
-      debugPrint('ShareServer request handler failed: $e');
+      debugPrint('ShareServer index build failed: $e');
+      _indexDirty = true;
+      return _shareIndex ?? [];
     }
   }
 
@@ -251,22 +354,35 @@ class ShareServer {
       }
       final file = File(dbPath);
       final length = await file.length();
-      int start = 0;
+      var start = 0;
+      var end = length - 1;
+      var partial = false;
       final rangeHeader = request.headers.value(HttpHeaders.rangeHeader);
       if (rangeHeader != null && rangeHeader.startsWith('bytes=')) {
-        final match = RegExp(r'bytes=(\d+)-').firstMatch(rangeHeader);
-        final requested = match == null ? 0 : int.tryParse(match.group(1)!) ?? 0;
-        if (requested > 0 && requested < length) {
-          start = requested;
-          response.statusCode = HttpStatus.partialContent;
+        final parsed = _parseRange(rangeHeader, length);
+        if (parsed == null) {
+          // Not a usable byte range — serve the full file (200).
+        } else if (!parsed.satisfiable) {
+          response.statusCode = HttpStatus.requestedRangeNotSatisfiable;
           response.headers
-              .set(HttpHeaders.contentRangeHeader, 'bytes $start-${length - 1}/$length');
+              .set(HttpHeaders.contentRangeHeader, 'bytes */$length');
+          await response.close();
+          return;
+        } else {
+          start = parsed.start;
+          end = parsed.end;
+          partial = true;
         }
+      }
+      response.statusCode = partial ? HttpStatus.partialContent : HttpStatus.ok;
+      if (partial) {
+        response.headers
+            .set(HttpHeaders.contentRangeHeader, 'bytes $start-$end/$length');
       }
       response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
       response.headers.contentType = ContentType('application', 'octet-stream');
-      response.contentLength = length - start;
-      await response.addStream(file.openRead(start));
+      response.contentLength = end - start + 1;
+      await response.addStream(file.openRead(start, end + 1));
       await response.close();
     } catch (e) {
       debugPrint('ShareServer http handler failed: $e');
@@ -274,6 +390,31 @@ class ShareServer {
         await response.close();
       } catch (_) {}
     }
+  }
+
+  /// Parses a single-part `Range: bytes=start-end` header against [length].
+  ///
+  /// Returns null when the header is not a usable byte range (serve full 200).
+  /// Returns `satisfiable: false` for out-of-bounds or inverted ranges, which
+  /// must be answered with 416 and `Content-Range: bytes */length`. Valid
+  /// ranges are clamped to the file size and returned for a 206 response.
+  ({int start, int end, bool satisfiable})? _parseRange(String header, int length) {
+    final match = RegExp(r'^bytes=(\d+)-(\d*)\s*$').firstMatch(header);
+    if (match == null) return null;
+    final start = int.tryParse(match.group(1)!) ?? -1;
+    if (start < 0 || start >= length) {
+      return (start: 0, end: 0, satisfiable: false);
+    }
+    var end = length - 1;
+    final endGroup = match.group(2);
+    if (endGroup != null && endGroup.isNotEmpty) {
+      final parsedEnd = int.tryParse(endGroup) ?? -1;
+      if (parsedEnd < 0 || parsedEnd < start) {
+        return (start: 0, end: 0, satisfiable: false);
+      }
+      if (parsedEnd < end) end = parsedEnd;
+    }
+    return (start: start, end: end, satisfiable: true);
   }
 
   Future<bool> _isEnabled() async {
