@@ -1,4 +1,4 @@
-{
+﻿{
   "@@locale": "en",
   "appTitle": "Project Lumina",
   "@appTitle": {
@@ -400,7 +400,7 @@
   "@filtersActiveLabel": {
     "description": "Label shown below search bar when filters are applied with default sort"
   },
-  "filtersActiveSorted": "Filters active · Sorted: {sortBy}",
+  "filtersActiveSorted": "Filters active Â· Sorted: {sortBy}",
   "@filtersActiveSorted": {
     "description": "Label shown when filters are active with a non-default sort",
     "placeholders": {
@@ -624,7 +624,7 @@
   "@emptyRefreshButton": {
     "description": "Button to reload resources from the empty state"
   },
-  "resourceSubtitle": "{subject} • {grade}",
+  "resourceSubtitle": "{subject} â€¢ {grade}",
   "@resourceSubtitle": {
     "description": "Subtitle text on each resource list item",
     "placeholders": {
@@ -1321,7 +1321,6 @@
   "@subjectNameUnknown": {
     "description": "Fallback text for an unknown subject name in subject breakdown"
   },
-
   "browseMyCourses": "My Courses",
   "@browseMyCourses": {
     "description": "Section header for the student's enrolled courses on the browse page"
@@ -1390,7 +1389,6 @@
       }
     }
   },
-
   "coursePlayerLocked": "Complete the previous resource first",
   "@coursePlayerLocked": {
     "description": "Tooltip shown when tapping a locked course resource"
@@ -1439,7 +1437,6 @@
   "@coursePlayerStart": {
     "description": "Button label on the first unlocked resource to begin the course"
   },
-
   "quizLoadingError": "Failed to load quiz",
   "@quizLoadingError": {
     "description": "Error message when quiz content fails to load"
@@ -1556,7 +1553,6 @@
   "@quizBackToCourse": {
     "description": "Button on the results screen to return to the course player"
   },
-
   "profileCoursesCompleted": "Courses Completed",
   "@profileCoursesCompleted": {
     "description": "Stat card label for count of completed courses on the profile page"
@@ -1573,7 +1569,6 @@
   "@profileNoCourses": {
     "description": "Empty state message when the student has no enrolled courses"
   },
-
   "browseTabCourses": "Courses",
   "@browseTabCourses": {
     "description": "Tab label for courses section in the Browse page"
@@ -1616,8 +1611,7 @@
       }
     }
   },
-
-  "shareFindingDevices": "Finding nearby devices…",
+  "shareFindingDevices": "Finding nearby devicesâ€¦",
   "@shareFindingDevices": {
     "description": "Snackbar shown while the app listens for nearby students' phones that have the requested file. User just tapped Download. Keep short."
   },
@@ -1638,5 +1632,231 @@
   "shareSettingsDescription": "Let nearby students download files you have saved.",
   "@shareSettingsDescription": {
     "description": "Settings sheet toggle subtitle explaining the share setting to the student."
+  },
+  "flashcardDueToday": "Due today",
+  "@flashcardDueToday": {
+    "description": "Dashboard chip label: number of flashcard cards due for review today."
+  },
+  "flashcardMyDecks": "My decks",
+  "@flashcardMyDecks": {
+    "description": "Flashcard page title: the student's list of study decks."
+  },
+  "flashcardNewDeck": "New deck",
+  "@flashcardNewDeck": {
+    "description": "Button label: create a new flashcard deck."
+  },
+  "flashcardDeckTitle": "Deck title",
+  "@flashcardDeckTitle": {
+    "description": "Form field label: name of a flashcard deck."
+  },
+  "flashcardAddCard": "Add card",
+  "@flashcardAddCard": {
+    "description": "Button label: add a card to the deck being edited."
+  },
+  "flashcardFront": "Front",
+  "@flashcardFront": {
+    "description": "Form field label: the question side of a flashcard."
+  },
+  "flashcardBack": "Back",
+  "@flashcardBack": {
+    "description": "Form field label: the answer side of a flashcard."
+  },
+  "flashcardFlipHint": "Tap card to flip",
+  "@flashcardFlipHint": {
+    "description": "Study screen hint: tap the card to see the answer."
+  },
+  "flashcardAgain": "Again",
+  "@flashcardAgain": {
+    "description": "Self-grading button: card was not remembered."
+  },
+  "flashcardHard": "Hard",
+  "@flashcardHard": {
+    "description": "Self-grading button: card was difficult."
+  },
+  "flashcardGood": "Good",
+  "@flashcardGood": {
+    "description": "Self-grading button: card was answered correctly."
+  },
+  "flashcardEasy": "Easy",
+  "@flashcardEasy": {
+    "description": "Self-grading button: card was very easy."
+  },
+  "flashcardCardProgress": "Card {current} of {total}",
+  "@flashcardCardProgress": {
+    "description": "Study screen counter. {current} is the card index, {total} the deck size.",
+    "placeholders": {
+      "current": {
+        "type": "int",
+        "example": "5"
+      },
+      "total": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "flashcardNoCards": "No cards yet",
+  "@flashcardNoCards": {
+    "description": "Empty state: the deck has no cards yet."
+  },
+  "flashcardDeleteDeck": "Delete deck",
+  "@flashcardDeleteDeck": {
+    "description": "Button label: permanently remove a deck."
+  },
+  "flashcardDeleteCard": "Delete card",
+  "@flashcardDeleteCard": {
+    "description": "Button label: remove a card from the deck."
+  },
+  "flashcardSendToTeacher": "Send to teacher",
+  "@flashcardSendToTeacher": {
+    "description": "Button label: submit the deck to the teacher for approval."
+  },
+  "flashcardExportDeck": "Export deck",
+  "@flashcardExportDeck": {
+    "description": "Button label: save the deck to a file for sharing."
+  },
+  "flashcardDeckExported": "Deck exported",
+  "@flashcardDeckExported": {
+    "description": "Snackbar: the deck file was saved."
+  },
+  "flashcardDeckSent": "Deck sent to teacher",
+  "@flashcardDeckSent": {
+    "description": "Snackbar: the deck was submitted to the teacher."
+  },
+  "flashcardStatusPending": "Waiting for teacher",
+  "@flashcardStatusPending": {
+    "description": "Submission status badge: waiting for teacher review."
+  },
+  "flashcardStatusApproved": "Approved",
+  "@flashcardStatusApproved": {
+    "description": "Submission status badge: approved by the teacher."
+  },
+  "flashcardStatusRejected": "Not approved",
+  "@flashcardStatusRejected": {
+    "description": "Submission status badge: not approved by the teacher."
+  },
+  "flashcardRejectedReason": "Reason: {reason}",
+  "@flashcardRejectedReason": {
+    "description": "Shows why a submission was rejected. {reason} is the teacher's text.",
+    "placeholders": {
+      "reason": {
+        "type": "String",
+        "example": "Chapter 1"
+      }
+    }
+  },
+  "flashcardStudy": "Study",
+  "@flashcardStudy": {
+    "description": "Button label: start studying a deck."
+  },
+  "flashcardStudyingDeck": "Studying {title}",
+  "@flashcardStudyingDeck": {
+    "description": "Study screen title. {title} is the deck name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Chapter 1"
+      }
+    }
+  },
+  "flashcardSessionComplete": "Session complete",
+  "@flashcardSessionComplete": {
+    "description": "Message shown when all due cards in a session were reviewed."
+  },
+  "flashcardEditDeck": "Edit deck",
+  "@flashcardEditDeck": {
+    "description": "Button label: modify an existing deck."
+  },
+  "flashcardSaveDeck": "Save deck",
+  "@flashcardSaveDeck": {
+    "description": "Button label: save the deck being edited."
+  },
+  "flashcardNoDecks": "No decks yet",
+  "@flashcardNoDecks": {
+    "description": "Empty state: the student has no decks yet."
+  },
+  "studyReportTitle": "My study report",
+  "@studyReportTitle": {
+    "description": "App bar title of the in-app study report page."
+  },
+  "studyReportOpen": "Study report",
+  "@studyReportOpen": {
+    "description": "Dashboard button label that opens the study report."
+  },
+  "studyReportBySubject": "Time by subject",
+  "@studyReportBySubject": {
+    "description": "Study report section: study time grouped by subject."
+  },
+  "studyReportDownloads": "Saved files",
+  "@studyReportDownloads": {
+    "description": "Study report section: files saved on the device."
+  },
+  "studyReportScores": "Quiz scores",
+  "@studyReportScores": {
+    "description": "Study report section: best quiz scores."
+  },
+  "studyReportRecent": "Recent activity",
+  "@studyReportRecent": {
+    "description": "Study report section: recent learning activity."
+  },
+  "studyReportEmpty": "No study activity yet. Start learning to see your report.",
+  "@studyReportEmpty": {
+    "description": "Study report empty state: no activity recorded yet."
+  },
+  "studyReportMin": " min",
+  "@studyReportMin": {
+    "description": "Unit suffix for minutes in the study report (e.g. '45 min')."
+  },
+  "studyReportFiles": "files",
+  "@studyReportFiles": {
+    "description": "Unit word for files in the study report (e.g. '12 files')."
+  },
+  "badgeBestStreak": "Best streak: {days} days",
+  "@badgeBestStreak": {
+    "description": "Achievement: longest daily streak. {days} is the count.",
+    "placeholders": {
+      "days": {
+        "type": "String",
+        "example": "Chapter 1"
+      }
+    }
+  },
+  "badgeDaysThisWeek": "Days studied this week",
+  "@badgeDaysThisWeek": {
+    "description": "Achievement stat: how many days the student studied this week."
+  },
+  "badgeQuizzesDone": "Quizzes done",
+  "@badgeQuizzesDone": {
+    "description": "Achievement stat: number of quizzes completed."
+  },
+  "badgeResourcesAccessed": "Resources accessed",
+  "@badgeResourcesAccessed": {
+    "description": "Achievement stat: number of resources opened."
+  },
+  "badgeAchievements": "Achievements",
+  "@badgeAchievements": {
+    "description": "Section title: badges and streak statistics."
+  },
+  "notifDownloadsActive": "Downloads in progress",
+  "@notifDownloadsActive": {
+    "description": "Notification channel/title: downloads currently running."
+  },
+  "notifDownloading": "Downloading {title}",
+  "@notifDownloading": {
+    "description": "Progress notification body. {title} is the file name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Chapter 1"
+      }
+    }
+  },
+  "notifDownloadComplete": "Download complete",
+  "@notifDownloadComplete": {
+    "description": "Notification title: a download finished."
+  },
+  "activityVerbStudied": "studied",
+  "@activityVerbStudied": {
+    "description": "Study report activity verb: the student studied a subject or resource."
   }
 }

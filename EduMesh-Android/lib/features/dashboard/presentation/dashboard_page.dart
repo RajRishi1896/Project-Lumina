@@ -11,12 +11,14 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/network/api_client.dart';
 import '../../../shared/services/connectivity_service.dart';
 import '../../../core/storage/db_helper.dart';
+import '../../../core/services/flashcard_service.dart';
 import '../../../shared/widgets/lumina_settings_sheet.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import 'resource_detail_page.dart';
 import 'subject_topics_page.dart';
 import 'kiwix_view.dart';
 import '../../../core/services/recent_resources.dart';
+import 'flashcard_deck_list_page.dart';
 
 /// The main dashboard page displayed after login.
 ///
@@ -52,6 +54,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   List<Map<String, String>> _recentResources = [];
 
+  int _flashcardDue = 0;
+  int _bestStreak = 0;
+  int _daysThisWeek = 0;
+  int _quizzesDone = 0;
+  int _resourcesAccessed = 0;
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +68,7 @@ class _DashboardPageState extends State<DashboardPage> {
     _calcTotalStorage();
     _loadSubjects();
     _loadRecentResources();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDashboardStats());
   }
 
   @override
@@ -74,6 +83,70 @@ class _DashboardPageState extends State<DashboardPage> {
       _isConnected = ConnectivityService().isOnline;
       _isChecking = false;
     });
+  }
+
+  /// Loads the flashcard due count and achievement stats from local DB.
+  /// Runs once per dashboard load, never in build.
+  Future<void> _loadDashboardStats() async {
+    try {
+      final db = await DBHelper().database;
+      final due = await FlashcardService().dueCount();
+      final dateRows = await db.query('activity', columns: ['date'], distinct: true);
+      final dates = dateRows
+          .map((r) => DateTime.tryParse((r['date'] as String? ?? '').substring(0, 10).trim()))
+          .whereType<DateTime>()
+          .map((d) => DateTime(d.year, d.month, d.day))
+          .toSet();
+      final quizRows = await db.rawQuery('SELECT COUNT(*) AS n FROM quiz_attempts WHERE score > 0');
+      final resRows = await db.rawQuery('SELECT COUNT(DISTINCT title) AS n FROM downloads');
+      if (!mounted) return;
+      setState(() {
+        _flashcardDue = due;
+        _bestStreak = _longestStreak(dates);
+        _daysThisWeek = _daysInCurrentWeek(dates);
+        _quizzesDone = (quizRows.first['n'] as num?)?.toInt() ?? 0;
+        _resourcesAccessed = (resRows.first['n'] as num?)?.toInt() ?? 0;
+      });
+    } catch (_) {}
+  }
+
+  static int _dayNumber(DateTime d) =>
+      DateTime.utc(d.year, d.month, d.day).millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
+
+  int _longestStreak(Set<DateTime> dates) {
+    final nums = dates.map(_dayNumber).toList()..sort();
+    if (nums.isEmpty) return 0;
+    var best = 1;
+    var run = 1;
+    for (var i = 1; i < nums.length; i++) {
+      if (nums[i] == nums[i - 1] + 1) {
+        run++;
+        if (run > best) best = run;
+      } else {
+        run = 1;
+      }
+    }
+    return best;
+  }
+
+  int _daysInCurrentWeek(Set<DateTime> dates) {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final start = DateTime(monday.year, monday.month, monday.day);
+    final end = start.add(const Duration(days: 7));
+    var count = 0;
+    for (final d in dates) {
+      if (!d.isBefore(start) && d.isBefore(end)) count++;
+    }
+    return count;
+  }
+
+  Future<void> _openFlashcards() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const FlashcardDeckListPage()),
+    );
+    if (mounted) unawaited(_loadDashboardStats());
   }
 
   Future<void> _calcTotalStorage() async {
@@ -204,10 +277,13 @@ class _DashboardPageState extends State<DashboardPage> {
                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
                 children: [
                   _buildSearchBar(context),
+                  _buildFlashcardsEntry(context),
                   SizedBox(height: AppSpacing.xxl.h),
                   _buildRecentlyViewedSection(context),
                   SizedBox(height: AppSpacing.xxl.h),
                   _buildCategories(context),
+                  SizedBox(height: AppSpacing.xxl.h),
+                  _buildAchievementsSection(context),
                   SizedBox(height: AppSpacing.xxl.h),
                   _buildStorageSection(context),
                   SizedBox(height: AppSpacing.xxl.h),
@@ -289,6 +365,130 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       ),
     ),
+    );
+  }
+
+  /// Compact entry chip into the student's flashcard decks, with a due-today badge.
+  Widget _buildFlashcardsEntry(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: EdgeInsets.only(top: AppSpacing.lg.h),
+      child: Semantics(
+        button: true,
+        label: l10n.flashcardMyDecks,
+        child: GestureDetector(
+          onTap: _openFlashcards,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
+              border: Border.all(color: cs.outlineVariant),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40.w,
+                  height: 40.w,
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.style_rounded, color: cs.primary, size: 22.sp),
+                ),
+                SizedBox(width: AppSpacing.md.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.flashcardMyDecks,
+                          style: tt.titleSmall?.copyWith(color: cs.onSurface, fontWeight: AppSpacing.weightStrong)),
+                      if (_flashcardDue > 0) SizedBox(height: AppSpacing.xs.h),
+                      if (_flashcardDue > 0)
+                        Text(l10n.flashcardDueToday,
+                            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+                if (_flashcardDue > 0)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
+                    decoration: BoxDecoration(
+                      color: cs.primary,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                    ),
+                    child: Text('$_flashcardDue',
+                        style: tt.labelSmall?.copyWith(color: cs.onPrimary, fontWeight: AppSpacing.weightStrong)),
+                  ),
+                SizedBox(width: AppSpacing.sm.w),
+                Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Horizontally scrollable row of achievement stat tiles.
+  Widget _buildAchievementsSection(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    final entries = <({String main, String? sub, IconData icon, Color color})>[
+      (main: l10n.badgeBestStreak('$_bestStreak'), sub: null, icon: Icons.local_fire_department_rounded, color: LuminaColors.saffron),
+      (main: '$_daysThisWeek', sub: l10n.badgeDaysThisWeek, icon: Icons.calendar_today_rounded, color: cs.primary),
+      (main: '$_quizzesDone', sub: l10n.badgeQuizzesDone, icon: Icons.quiz_rounded, color: LuminaColors.chartPurple),
+      (main: '$_resourcesAccessed', sub: l10n.badgeResourcesAccessed, icon: Icons.menu_book_rounded, color: LuminaColors.chartEmerald),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.badgeAchievements, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+        SizedBox(height: AppSpacing.md.h),
+        SizedBox(
+          height: 96.h,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: entries.length,
+            itemBuilder: (context, index) {
+              final e = entries[index];
+              return Container(
+                width: 140.w,
+                margin: EdgeInsets.only(right: AppSpacing.sm.w),
+                padding: EdgeInsets.all(AppSpacing.md.w),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
+                  border: Border.all(color: cs.outlineVariant),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: 32.w,
+                      height: 32.w,
+                      decoration: BoxDecoration(color: e.color.withValues(alpha: 0.12), shape: BoxShape.circle),
+                      child: Icon(e.icon, size: 18.sp, color: e.color),
+                    ),
+                    if (e.sub == null)
+                      Text(e.main, maxLines: 2, overflow: TextOverflow.ellipsis,
+                          style: tt.bodySmall?.copyWith(color: cs.onSurface, fontWeight: AppSpacing.weightStrong))
+                    else ...[
+                      Text(e.main, style: tt.titleMedium?.copyWith(color: cs.onSurface, fontWeight: AppSpacing.weightDisplay)),
+                      Text(e.sub!, maxLines: 2, overflow: TextOverflow.ellipsis,
+                          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

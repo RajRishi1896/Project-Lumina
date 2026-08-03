@@ -168,6 +168,8 @@ class LuminaApp extends ConsumerWidget {
               channelDescription: l10n.downloadChannelDescription,
               downloadCompleteTitle: l10n.downloadCompleteNotificationTitle,
               downloadFailedTitle: l10n.downloadFailedNotificationTitle,
+              downloadInProgressTitle: l10n.notifDownloadsActive,
+              downloadInProgressBody: l10n.notifDownloading('{title}'),
             );
             return child!;
           },

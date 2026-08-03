@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../../core/services/course_service.dart';
 import 'course_player_page.dart';
+import 'study_report_page.dart';
 
 final _whitespaceRE = RegExp(r'\s+');
 
@@ -311,6 +312,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         _buildProfileCard(cs),
                         SizedBox(height: AppSpacing.xl.h),
                         _buildStatsRow(cs),
+                        SizedBox(height: AppSpacing.md.h),
+                        _buildStudyReportEntry(cs),
                         SizedBox(height: AppSpacing.xxl.h),
                         _buildMyCoursesSection(cs),
                         SizedBox(height: AppSpacing.xxl.h),
@@ -734,6 +737,40 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
           Text(label2, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         ])),
       ],
+    );
+  }
+
+  /// Entry tile into the parent-facing local study report.
+  Widget _buildStudyReportEntry(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    return Semantics(
+      button: true,
+      label: l10n.studyReportOpen,
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const StudyReportPage()),
+        ),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.lg.h),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.insights_rounded, color: cs.primary, size: 22.sp),
+              SizedBox(width: AppSpacing.md.w),
+              Expanded(
+                child: Text(l10n.studyReportOpen,
+                    style: tt.titleSmall?.copyWith(color: cs.onSurface)),
+              ),
+              Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

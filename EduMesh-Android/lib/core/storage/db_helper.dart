@@ -26,7 +26,7 @@ class DBHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 15, onCreate: _createDB, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 16, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   Future _createDB(Database db, int version) async {
@@ -521,6 +521,14 @@ class DBHelper {
         try { await db.execute('ALTER TABLE catalog ADD COLUMN duration_seconds INTEGER DEFAULT 0'); } catch (_) {}
         try { await db.execute('ALTER TABLE course_resources ADD COLUMN page_count INTEGER DEFAULT 0'); } catch (_) {}
         try { await db.execute('ALTER TABLE course_resources ADD COLUMN duration_seconds INTEGER DEFAULT 0'); } catch (_) {}
+      }
+      if (v >= 16) {
+        try { await db.execute('CREATE TABLE IF NOT EXISTS flashcard_decks_local (id TEXT PRIMARY KEY, title TEXT NOT NULL, source TEXT NOT NULL DEFAULT \'local\', created_at INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL DEFAULT 0)'); } catch (_) {}
+        try { await db.execute('CREATE TABLE IF NOT EXISTS flashcard_cards_local (id TEXT PRIMARY KEY, deck_id TEXT NOT NULL, front TEXT NOT NULL, back TEXT NOT NULL, position INTEGER NOT NULL DEFAULT 0)'); } catch (_) {}
+        try { await db.execute('CREATE TABLE IF NOT EXISTS flashcard_reviews_local (card_id TEXT PRIMARY KEY, ease REAL NOT NULL DEFAULT 2.5, interval_days INTEGER NOT NULL DEFAULT 0, due_at INTEGER NOT NULL DEFAULT 0, reviews_count INTEGER NOT NULL DEFAULT 0, last_reviewed_at INTEGER NOT NULL DEFAULT 0)'); } catch (_) {}
+        try { await db.execute('CREATE TABLE IF NOT EXISTS flashcard_submissions_local (id TEXT PRIMARY KEY, deck_id TEXT NOT NULL, status TEXT NOT NULL DEFAULT \'pending\', reason TEXT DEFAULT \'\', submitted_at INTEGER NOT NULL DEFAULT 0)'); } catch (_) {}
+        try { await db.execute('CREATE INDEX IF NOT EXISTS idx_flash_cards_deck ON flashcard_cards_local(deck_id)'); } catch (_) {}
+        try { await db.execute('CREATE INDEX IF NOT EXISTS idx_flash_reviews_due ON flashcard_reviews_local(due_at)'); } catch (_) {}
       }
     }
   }
