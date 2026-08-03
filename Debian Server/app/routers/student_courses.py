@@ -1,6 +1,8 @@
 """Student course interaction -- catalog, enroll, progress, quizzes, assets."""
 import os
 import json
+import sqlite3
+import asyncio
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import FileResponse
@@ -9,6 +11,7 @@ from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one
 from app.dependencies import verify_student
 from app.models import ProgressSync, EnrollResponse, QuizAttemptSubmit, QuizAttemptResponse, EnrolledCoursesResponse, EnrolledCourseItem
+from app.quiz_grading import grade_quiz, load_quiz_file
 from app.routers.teacher_courses import COURSES_DIR
 
 router = APIRouter()
@@ -112,7 +115,7 @@ async def get_course_detail(course_id: str, student_id: str = Depends(verify_stu
     Raises:
         HTTPException 404: If course not found.
     """
-    row = await db_fetch_one("SELECT id, title, description, subject, grade, language, cover_image, published, teacher_username, enrollment_count, created_at, updated_at FROM courses WHERE id = ?", (course_id,))
+    row = await db_fetch_one("SELECT id, title, description, subject, grade, language, cover_image, published, teacher_username, enrollment_count, created_at, updated_at FROM courses WHERE id = ? AND published = 1", (course_id,))
     if not row:
         raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
 
@@ -211,10 +214,15 @@ async def enroll_course(course_id: str, student_id: str = Depends(verify_student
     if existing:
         raise HTTPException(status_code=409, detail="Already enrolled in this course.")  # i18n: user-facing error message
 
-    await db_exec(
-        "INSERT INTO course_progress (student_id, course_id, current_position, completed_count, enrolled_at) VALUES (?, ?, 0, 0, datetime('now'))",
-        (student_id, course_id)
-    )
+    try:
+        await db_exec(
+            "INSERT INTO course_progress (student_id, course_id, current_position, completed_count, enrolled_at) VALUES (?, ?, 0, 0, datetime('now'))",
+            (student_id, course_id)
+        )
+    except sqlite3.IntegrityError:
+        # Concurrent enroll: the (student_id, course_id) PK was inserted between
+        # the pre-check and this write -- report as already enrolled, not 500.
+        raise HTTPException(status_code=409, detail="Already enrolled in this course.")  # i18n: user-facing error message
     from app.metrics import incr
     incr("enrollment")
     await db_exec("UPDATE courses SET enrollment_count = enrollment_count + 1 WHERE id = ?", (course_id,))
@@ -300,19 +308,19 @@ async def sync_progress(course_id: str, data: ProgressSync, student_id: str = De
     Returns:
         Updated progress dict.
     """
-    # Verify course exists
-    course = await db_fetch_one("SELECT id FROM courses WHERE id = ?", (course_id,))
+    # Verify course exists and is published -- unpublished courses are invisible to students
+    course = await db_fetch_one("SELECT id FROM courses WHERE id = ? AND published = 1", (course_id,))
     if not course:
-        raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
+        raise HTTPException(status_code=404, detail="Course not found or not published.")  # i18n: user-facing error message
+
+    # Progress only ever updates an existing enrollment -- never auto-enrolls
+    enrolled = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
+    if not enrolled:
+        raise HTTPException(status_code=404, detail="Not enrolled in this course.")  # i18n: user-facing error message
 
     await db_exec(
-        """INSERT INTO course_progress (student_id, course_id, current_position, completed_count, last_synced, enrolled_at)
-           VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
-           ON CONFLICT(student_id, course_id) DO UPDATE SET
-             current_position = excluded.current_position,
-             completed_count = excluded.completed_count,
-             last_synced = excluded.last_synced""",
-        (student_id, course_id, data.current_position, data.completed_count)
+        "UPDATE course_progress SET current_position = ?, completed_count = ?, last_synced = datetime('now') WHERE student_id = ? AND course_id = ?",
+        (data.current_position, data.completed_count, student_id, course_id)
     )
 
     row = await db_fetch_one(
@@ -396,7 +404,6 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
         with open(quiz_path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    import asyncio
     quiz_data = await asyncio.to_thread(_read_quiz)
     if quiz_data is None:
         raise HTTPException(status_code=404, detail="Quiz not found.")  # i18n: user-facing error message
@@ -435,9 +442,12 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
         HTTPException 403: If the student is not enrolled.
         HTTPException 404: If course not found or not published.
     """
-    # Idempotency check
+    # Idempotency check -- an attempt belongs to its submitting student only
     existing = await db_fetch_one("SELECT * FROM quiz_attempts WHERE id = ?", (data.attempt_id,))
     if existing:
+        if existing["student_id"] != student_id:
+            # 404 so the existence of another student's attempt is not leaked
+            raise HTTPException(status_code=404, detail="Attempt not found.")  # i18n: user-facing error message
         return dict(existing)
 
     enrolled = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
@@ -448,12 +458,19 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
     if not course:
         raise HTTPException(status_code=404, detail="Course not found or not published.")  # i18n: user-facing error message
 
+    # Re-grade server-side -- the client's score/passed are never trusted
+    quiz_path = os.path.join(COURSES_DIR, course_id, f"quiz_{resource_id}.json")
+    quiz = await asyncio.to_thread(load_quiz_file, quiz_path)
+    if quiz is None:
+        raise HTTPException(status_code=404, detail="Quiz not found.")  # i18n: user-facing error message
+    score, passed, threshold = grade_quiz(quiz, data.answers_json)
+
     await db_exec(
         """INSERT INTO quiz_attempts (id, student_id, course_id, resource_id, attempt_number, score, passed, answers_json, started_at, submitted_at, time_taken_seconds, quiz_version, threshold_at_submission)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (data.attempt_id, student_id, course_id, resource_id, data.attempt_number,
-         data.score, data.passed, data.answers_json, data.started_at,
-         data.submitted_at, data.time_taken_seconds, data.quiz_version, data.threshold_at_submission)
+         score, passed, data.answers_json, data.started_at,
+         data.submitted_at, data.time_taken_seconds, data.quiz_version, threshold)
     )
 
     row = await db_fetch_one("SELECT * FROM quiz_attempts WHERE id = ?", (data.attempt_id,))

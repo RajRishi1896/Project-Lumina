@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import verify_teacher, verify_student
 from app.async_db import db_exec, db_fetch_one
 from app.database import UPLOAD_DIR
+from app.quiz_grading import grade_quiz, load_quiz_file
 
 router = APIRouter()
 
@@ -66,7 +67,7 @@ async def create_quiz_resource(data: dict, teacher_user: str = Depends(verify_te
             summary="Update a standalone quiz resource", tags=["Teacher"])
 async def update_quiz_resource(resource_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
     """Update quiz questions and metadata for an existing standalone quiz resource."""
-    resource = await db_fetch_one("SELECT id FROM resources WHERE id = ? AND resource_type = 'quiz'", (resource_id,))
+    resource = await db_fetch_one("SELECT id, title FROM resources WHERE id = ? AND resource_type = 'quiz'", (resource_id,))
     if not resource:
         raise HTTPException(status_code=404, detail="Quiz resource not found.")
 
@@ -95,7 +96,7 @@ async def update_quiz_resource(resource_id: str, data: dict, teacher_user: str =
         return os.path.getsize(path)
 
     file_size = await asyncio.to_thread(_save)
-    if title != data.get("title"):
+    if resource["title"] != title:
         await db_exec("UPDATE resources SET title = ?, file_size = ? WHERE id = ?", (title, file_size, resource_id))
     else:
         await db_exec("UPDATE resources SET file_size = ? WHERE id = ?", (file_size, resource_id))
@@ -156,21 +157,31 @@ async def submit_quiz_attempt(resource_id: str, data: dict, student_id: str = De
     """
     existing = await db_fetch_one("SELECT * FROM quiz_attempts WHERE id = ?", (data.get("attempt_id", ""),))
     if existing:
+        if existing["student_id"] != student_id:
+            # 404 so the existence of another student's attempt is not leaked
+            raise HTTPException(status_code=404, detail="Attempt not found.")  # i18n: user-facing error message
         return dict(existing)
 
-    resource = await db_fetch_one("SELECT id, title FROM resources WHERE id = ?", (resource_id,))
-    if not resource:
-        raise HTTPException(status_code=404, detail="Resource not found.")
+    resource = await db_fetch_one("SELECT id, title, filename, resource_type, status FROM resources WHERE id = ?", (resource_id,))
+    if not resource or resource["resource_type"] != "quiz" or resource["status"] != "approved":
+        raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
+
+    # Re-grade server-side -- the client's score/passed are never trusted
+    quiz_path = os.path.join(UPLOAD_DIR, resource["filename"] or "")
+    quiz = await asyncio.to_thread(load_quiz_file, quiz_path)
+    if quiz is None:
+        raise HTTPException(status_code=404, detail="Quiz not found.")  # i18n: user-facing error message
+    score, passed, threshold = grade_quiz(quiz, data.get("answers_json", ""))
 
     await db_exec(
         """INSERT INTO quiz_attempts (id, student_id, course_id, resource_id, attempt_number, score, passed, answers_json, started_at, submitted_at, time_taken_seconds, quiz_version, threshold_at_submission)
            VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (data.get("attempt_id", ""), student_id, resource_id,
-         data.get("attempt_number", 1), data.get("score", 0.0),
-         data.get("passed", 0), data.get("answers_json", ""),
+         data.get("attempt_number", 1), score,
+         passed, data.get("answers_json", ""),
          data.get("started_at", ""), data.get("submitted_at", ""),
          data.get("time_taken_seconds", 0), data.get("quiz_version", 1),
-         data.get("threshold_at_submission", 0.0))
+         threshold)
     )
 
     row = await db_fetch_one("SELECT * FROM quiz_attempts WHERE id = ?", (data.get("attempt_id", ""),))
