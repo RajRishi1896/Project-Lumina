@@ -82,9 +82,7 @@
             document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
         };
-        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['help'] = _initHelp;
-
-        document.addEventListener('DOMContentLoaded', _initHelp);
+        (window._pageInitRegistry = window._pageInitRegistry || {}).help = _initHelp;
     </script>
 
 </body>

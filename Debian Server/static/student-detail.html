@@ -188,9 +188,7 @@
             document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
             document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
         };
-        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['student-detail'] = _initStudentDetail;
-
-        document.addEventListener('DOMContentLoaded', _initStudentDetail);
+        (window._pageInitRegistry = window._pageInitRegistry || {})['student-detail'] = _initStudentDetail;
     </script>
 </body>
 </html>

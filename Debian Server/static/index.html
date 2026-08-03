@@ -144,12 +144,7 @@
             window._uptimeInterval = setInterval(_renderUptime, 1000);
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            loadStats();
-        });
-        if (typeof _pageInitRegistry !== 'undefined') {
-            _pageInitRegistry['home'] = function() { loadStats(); };
-        }
+        (window._pageInitRegistry = window._pageInitRegistry || {}).home = function() { loadStats(); };
     </script>
 </body>
 </html>

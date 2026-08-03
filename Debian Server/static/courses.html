@@ -770,7 +770,7 @@
             try {
                 var res = await fetch('/api/teacher/courses/' + currentCourseId + '/topics', { credentials: 'include' });
                 if (res.ok) { courseTopics = await res.json(); renderTopics(); }
-            } catch (e) {}
+            } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }
 
         /** Assign resource to topic */
@@ -786,7 +786,7 @@
                     if (r) r.topic_id = topicId;
                     renderTopics();
                 }
-            } catch (e) {}
+            } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }
 
         /** Render course resource table */
@@ -877,7 +877,7 @@
                                 esc(c.title) + ' <span style="color:var(--text-secondary);font-size:0.75rem;">(' + esc(c.subject || __('courses.general_subject')) + ')</span></div>';
                         }).join('');
                         dd.classList.remove('hidden');
-                    }).catch(function() {});
+                    }).catch(function() { showAlert(__('courses.notif.connection_error'), true); });
             }, 300);
         }
 
@@ -1632,8 +1632,7 @@
                 }
             });
         };
-        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['courses'] = _initCourses;
-        document.addEventListener('DOMContentLoaded', _initCourses);
+        (window._pageInitRegistry = window._pageInitRegistry || {}).courses = _initCourses;
     </script>
 
 </body>

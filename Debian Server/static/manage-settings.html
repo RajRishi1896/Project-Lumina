@@ -695,7 +695,10 @@
                     var err = await res.json();
                     showNotification('wifiBandNotif', err.detail || __('settings.wifi_band_switch_failed'), true);
                 }
-            } catch (e) { showNotification('wifiBandNotif', __('settings.wifi_band_rebooting', {band: label}), false); }
+            } catch (e) {
+                console.error('WiFi band switch failed', e);
+                showNotification('wifiBandNotif', __('settings.wifi_band_switch_failed'), true);
+            }
         }
 
         /** Reboots the server after confirmation. */
@@ -713,8 +716,8 @@
                     showNotification('rebootNotif', err.detail || __('settings.reboot_failed'), true);
                 }
             } catch (e) {
-                showNotification('rebootNotif', __('settings.reboot_started'), false);
-                setTimeout(function() { window.location.reload(); }, 65000);
+                console.error('Server reboot failed', e);
+                showNotification('rebootNotif', __('settings.reboot_failed'), true);
             }
         }
 
@@ -971,9 +974,7 @@
             document.getElementById('btn-discoverPeers')?.addEventListener('click', discoverPeers);
             document.addEventListener('languageChanged', function() { _renderAdminLogsPage(); loadPeers(); });
         };
-        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['settings'] = _initSettings;
-
-        document.addEventListener('DOMContentLoaded', _initSettings);
+        (window._pageInitRegistry = window._pageInitRegistry || {}).settings = _initSettings;
     </script>
 
 </body>

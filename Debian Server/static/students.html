@@ -247,12 +247,10 @@
             document.getElementById('gradeFilter')?.addEventListener('change', applyFilters);
             document.getElementById('sortSelect')?.addEventListener('change', applyFilters);
             document.getElementById('searchInput')?.addEventListener('input', debouncedApplyFilters);
-            document.getElementById('atRiskDays')?.addEventListener('input', applyFilters);
+            document.getElementById('atRiskDays')?.addEventListener('input', debouncedApplyFilters);
             document.addEventListener('languageChanged', function() { applyFilters(); });
         };
-        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['students'] = _initStudents;
-
-        document.addEventListener('DOMContentLoaded', _initStudents);
+        (window._pageInitRegistry = window._pageInitRegistry || {}).students = _initStudents;
     </script>
 </body>
 </html>

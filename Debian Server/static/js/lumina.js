@@ -920,7 +920,9 @@ function initNav() {
 
 
 /* ── SPA Navigation ────────────────────────────────────────────────────────── */
-const _pageInitRegistry = {};
+// Registry lives on window so pages' inline scripts (which run during parse,
+// before this deferred file) can register their init functions on direct load.
+const _pageInitRegistry = window._pageInitRegistry = window._pageInitRegistry || {};
 const _pageCleanupFns = [];
 let _isNavigating = false;
 
@@ -938,9 +940,15 @@ function initCurrentPage() {
         '/static/student-detail': 'student-detail',
         '/static/manage-help': 'help',
         '/static/manage-danger': 'danger',
+        '/static/flashcards': 'flashcards',
     };
     const key = mapping[path];
-    if (key && _pageInitRegistry[key]) _pageInitRegistry[key]();
+    if (!key) return;
+    if (!_pageInitRegistry[key]) {
+        console.error('No page init registered for "' + key + '" (' + path + '). Page will not initialize.');
+        return;
+    }
+    _pageInitRegistry[key]();
 }
 
 async function navigateTo(url, pushHistory) {
@@ -965,9 +973,16 @@ async function navigateTo(url, pushHistory) {
         // Run registered page cleanup functions before evaluating new scripts
         _pageCleanupFns.forEach(function(fn) { try { fn(); } catch(e) {} });
         _pageCleanupFns.length = 0;
-        // Re-evaluate inline scripts from fetched page to register page inits
+        // Register the fetched page's init: run its inline scripts natively via
+        // script injection (no eval -- CSP-friendly, errors surface on their own
+        // line instead of being swallowed by an empty catch).
         doc.querySelectorAll('script').forEach(function(script) {
-            if (!script.src) { try { eval(script.textContent); } catch(e) {} }
+            if (!script.src) {
+                const el = document.createElement('script');
+                el.textContent = script.textContent;
+                document.body.appendChild(el);
+                el.remove();
+            }
         });
         loadWhoAmI();
         initCurrentPage();

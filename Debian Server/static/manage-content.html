@@ -1570,9 +1570,7 @@
                 else if (resId) openQuizBuilderForEdit(resId);
             });
         };
-        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['content'] = _initContent;
-
-        document.addEventListener('DOMContentLoaded', _initContent);
+        (window._pageInitRegistry = window._pageInitRegistry || {}).content = _initContent;
     </script>
 
 </body>

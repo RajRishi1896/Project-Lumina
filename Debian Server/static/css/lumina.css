@@ -460,6 +460,7 @@ td, th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     min-width: 0;
 }
 .search-inner svg { flex-shrink: 0; color: var(--text-muted); pointer-events: none; }
+.search-inner:focus-within { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal); }
 
 /* === Toast / Notifications === */
 .toast-container {

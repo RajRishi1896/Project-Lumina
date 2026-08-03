@@ -1510,9 +1510,7 @@
                 el.addEventListener('click', saveSubject);
             });
         };
-        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['danger'] = _initDanger;
-
-        document.addEventListener('DOMContentLoaded', _initDanger);
+        (window._pageInitRegistry = window._pageInitRegistry || {}).danger = _initDanger;
     </script>
 
     <div id="globalToastContainer" class="toast-container"></div>
