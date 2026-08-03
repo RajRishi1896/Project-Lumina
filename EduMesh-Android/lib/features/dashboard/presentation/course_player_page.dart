@@ -182,7 +182,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
         content: Row(
           children: [
             const CircularProgressIndicator(),
-            SizedBox(width: 12.w),
+            SizedBox(width: AppSpacing.md.w),
             Text(l10n.coursePlayerDownloading),
           ],
         ),
@@ -312,12 +312,12 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       isReady: _localPaths.containsKey(r.id),
       opacity: unlocked ? 1.0 : 0.6,
       backgroundColor: completed
-          ? cs.primaryContainer.withValues(alpha: 0.3)
+          ? cs.primaryContainer
           : isCurrent
-              ? cs.primaryContainer.withValues(alpha: 0.18)
+              ? cs.surfaceContainerHigh
               : unlocked
                   ? cs.surfaceContainerLow
-                  : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  : cs.surfaceContainerHighest,
       trailing: completed
           ? Icon(Icons.check_circle, color: LuminaColors.successGreen, size: 24.sp)
           : unlocked

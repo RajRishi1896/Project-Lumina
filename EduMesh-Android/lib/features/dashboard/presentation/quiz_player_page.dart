@@ -172,6 +172,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
         await DBHelper().cacheQuiz(cacheKey, quizData);
         final questions = List<QuizQuestion>.from(quiz.questions);
         _applyShuffle(quiz, questions);
+        if (!mounted) return;
         setState(() {
           _quiz = quiz;
           _questions = questions;
@@ -189,6 +190,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       final quiz = Quiz.fromJson(cached);
       final questions = List<QuizQuestion>.from(quiz.questions);
       _applyShuffle(quiz, questions);
+      if (!mounted) return;
       setState(() {
         _quiz = quiz;
         _questions = questions;
@@ -200,6 +202,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       return;
     }
 
+    if (!mounted) return;
     setState(() {
       _error = 'load_failed';
       _loading = false;
@@ -914,9 +917,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: correct
-            ? cs.primaryContainer.withValues(alpha: 0.3)
-            : cs.errorContainer.withValues(alpha: 0.3),
+        color: correct ? cs.primaryContainer : cs.errorContainer,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r),
         border: Border.all(
           color: correct ? cs.primary : cs.error,
@@ -959,7 +960,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
               width: double.infinity,
               padding: EdgeInsets.all(AppSpacing.sm.w),
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                color: cs.surfaceContainerHighest,
                 borderRadius:
                     BorderRadius.circular(AppSpacing.radiusSm.r),
               ),

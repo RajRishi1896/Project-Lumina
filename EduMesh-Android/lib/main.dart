@@ -167,7 +167,9 @@ class LuminaApp extends ConsumerWidget {
               channelName: l10n.downloadChannelName,
               channelDescription: l10n.downloadChannelDescription,
               downloadCompleteTitle: l10n.downloadCompleteNotificationTitle,
+              downloadCompleteBody: l10n.downloadCompleteNotificationBody('{title}'),
               downloadFailedTitle: l10n.downloadFailedNotificationTitle,
+              downloadFailedBody: l10n.downloadFailedNotificationBody('{title}'),
               downloadInProgressTitle: l10n.notifDownloadsActive,
               downloadInProgressBody: l10n.notifDownloading('{title}'),
             );

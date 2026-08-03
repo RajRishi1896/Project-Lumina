@@ -464,15 +464,15 @@ class _SearchPageState extends State<SearchPage> {
     return catalogGrades;
   }
 
-  String _resourceTypeLabel(ResourceType type) {
+  String _resourceTypeLabel(ResourceType type, AppLocalizations l10n) {
     switch (type) {
-      case ResourceType.textbook: return 'Textbook';
-      case ResourceType.videos: return 'Videos';
-      case ResourceType.pyq: return 'PYQ';
-      case ResourceType.pastPaper: return 'PYQ';
-      case ResourceType.kiwix: return 'ZIM';
-      case ResourceType.quiz: return 'Quiz';
-      case ResourceType.notes: return 'Notes';
+      case ResourceType.textbook: return l10n.tabTextbooks;
+      case ResourceType.videos: return l10n.tabVideos;
+      case ResourceType.pyq: return l10n.tabPyqs;
+      case ResourceType.pastPaper: return l10n.tabPyqs;
+      case ResourceType.kiwix: return l10n.badgeKiwixWiki;
+      case ResourceType.quiz: return l10n.tabQuizzes;
+      case ResourceType.notes: return l10n.tabNotes;
     }
   }
 
@@ -508,8 +508,8 @@ class _SearchPageState extends State<SearchPage> {
           builder: (ctx, setSheetState) {
             return Padding(
               padding: EdgeInsets.fromLTRB(
-                24.w, 24.h, 24.w,
-                MediaQuery.of(ctx).viewInsets.bottom + 24.h,
+                AppSpacing.xxl.w, AppSpacing.xxl.h, AppSpacing.xxl.w,
+                MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xxl.h,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -531,7 +531,7 @@ class _SearchPageState extends State<SearchPage> {
                         .map((type) {
                       final selected = tempTypes.contains(type);
                       return FilterChip(
-                        label: Text(_resourceTypeLabel(type)),
+                        label: Text(_resourceTypeLabel(type, l10n)),
                         selected: selected,
                         onSelected: (val) {
                           setSheetState(() {
@@ -713,6 +713,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _applyFilters() {
+    if (!mounted) return;
     final query = _searchQuery.trim().toLowerCase();
     final l10n = AppLocalizations.of(context)!;
 

@@ -24,12 +24,58 @@ class FlashcardService {
   Future<List<FlashcardDeck>> listDecks() async {
     final db = await DBHelper().database;
     final deckRows = await db.query('flashcard_decks_local', orderBy: 'updated_at DESC');
-    final decks = <FlashcardDeck>[];
-    for (final row in deckRows) {
-      final deckId = row['id'] as String;
-      decks.add(await _deckFromRow(db, row, deckId));
+    if (deckRows.isEmpty) return const [];
+    final deckIds = [for (final row in deckRows) row['id'] as String];
+
+    final placeholders = List.filled(deckIds.length, '?').join(',');
+    final cardRows = await db.rawQuery(
+      'SELECT c.id, c.deck_id, c.front, c.back, '
+      'r.ease, r.interval_days, r.due_at '
+      'FROM flashcard_cards_local c '
+      'LEFT JOIN flashcard_reviews_local r ON r.card_id = c.id '
+      'WHERE c.deck_id IN ($placeholders) '
+      'ORDER BY c.deck_id, c.position ASC',
+      deckIds,
+    );
+    final cardsByDeck = <String, List<FlashcardCard>>{};
+    for (final c in cardRows) {
+      final deckId = c['deck_id'] as String;
+      (cardsByDeck[deckId] ??= []).add(FlashcardCard(
+        id: c['id'] as String,
+        deckId: deckId,
+        front: (c['front'] ?? '').toString(),
+        back: (c['back'] ?? '').toString(),
+        ease: ((c['ease'] as num?)?.toDouble() ?? 2.5),
+        intervalDays: ((c['interval_days'] as num?)?.toInt() ?? 0),
+        dueAt: ((c['due_at'] as num?)?.toInt() ?? 0),
+      ));
     }
-    return decks;
+
+    final submissions = <String, Map<String, Object?>>{};
+    for (final s in await db.query('flashcard_submissions_local', orderBy: 'submitted_at DESC')) {
+      submissions.putIfAbsent(s['deck_id'] as String, () => s);
+    }
+
+    return [
+      for (final row in deckRows)
+        _assembleDeck(
+          row,
+          cardsByDeck[row['id'] as String] ?? const [],
+          submissions[row['id'] as String],
+        ),
+    ];
+  }
+
+  FlashcardDeck _assembleDeck(
+      Map<String, Object?> row, List<FlashcardCard> cards, Map<String, Object?>? submission) {
+    return FlashcardDeck(
+      id: row['id'] as String,
+      title: (row['title'] ?? '').toString(),
+      source: (row['source'] ?? 'local').toString(),
+      cards: cards,
+      submissionStatus: submission == null ? '' : (submission['status'] ?? '').toString(),
+      submissionReason: submission == null ? '' : (submission['reason'] ?? '').toString(),
+    );
   }
 
   Future<FlashcardDeck?> getDeck(String deckId) async {
@@ -174,6 +220,9 @@ class FlashcardService {
 
   /// Fetches published decks from the hub and merges them in as hub-sourced
   /// decks (source = 'hub'). Existing hub decks with the same id are refreshed.
+  ///
+  /// Cards whose (front, back) already exist locally keep their id and SM-2
+  /// review state; only new cards get fresh ids and a new review schedule.
   Future<void> syncClassDecks() async {
     if (!ConnectivityService().isOnline) return;
     try {
@@ -197,30 +246,59 @@ class FlashcardService {
               'created_at': now,
               'updated_at': now,
             });
+          } else {
+            await txn.update('flashcard_decks_local', {'title': title, 'updated_at': now},
+                where: 'id = ?', whereArgs: [deckId]);
           }
-          await txn.delete('flashcard_cards_local', where: 'deck_id = ?', whereArgs: [deckId]);
-          final cards = (item['cards'] as List?) ?? const [];
+
+          final existingRows = await txn.query('flashcard_cards_local',
+              where: 'deck_id = ?', whereArgs: [deckId]);
+          final freeCards = {for (final e in existingRows) e['id'] as String: e};
+          final staleIds = <String>[];
           var position = 0;
-          for (final c in cards) {
+          for (final c in (item['cards'] as List?) ?? const []) {
             if (c is! Map) continue;
-            final cardId = _newId();
-            await txn.insert('flashcard_cards_local', {
-              'id': cardId,
-              'deck_id': deckId,
-              'front': (c['front'] ?? '').toString(),
-              'back': (c['back'] ?? '').toString(),
-              'position': position++,
-            });
-            await txn.insert('flashcard_reviews_local', {
-              'card_id': cardId,
-              'ease': 2.5,
-              'interval_days': 0,
-              'due_at': now,
-              'reviews_count': 0,
-              'last_reviewed_at': 0,
-            });
+            final front = (c['front'] ?? '').toString();
+            final back = (c['back'] ?? '').toString();
+            String? keepId;
+            for (final entry in freeCards.entries) {
+              if (entry.value['front'] == front && entry.value['back'] == back) {
+                keepId = entry.key;
+                break;
+              }
+            }
+            if (keepId != null) {
+              freeCards.remove(keepId);
+              await txn.update('flashcard_cards_local', {'position': position},
+                  where: 'id = ?', whereArgs: [keepId]);
+              position++;
+            } else {
+              final cardId = _newId();
+              await txn.insert('flashcard_cards_local', {
+                'id': cardId,
+                'deck_id': deckId,
+                'front': front,
+                'back': back,
+                'position': position++,
+              });
+              await txn.insert('flashcard_reviews_local', {
+                'card_id': cardId,
+                'ease': 2.5,
+                'interval_days': 0,
+                'due_at': now,
+                'reviews_count': 0,
+                'last_reviewed_at': 0,
+              });
+            }
+          }
+          staleIds.addAll(freeCards.keys);
+          for (final id in staleIds) {
+            await txn.delete('flashcard_cards_local', where: 'id = ?', whereArgs: [id]);
+            await txn.delete('flashcard_reviews_local', where: 'card_id = ?', whereArgs: [id]);
           }
         }
+        await txn.delete('flashcard_reviews_local',
+            where: 'card_id NOT IN (SELECT id FROM flashcard_cards_local)');
       });
     } catch (e) {
       debugPrint('FlashcardService: sync failed -- $e');
@@ -236,6 +314,7 @@ class FlashcardService {
       method: 'POST',
       body: {
         'title': deck.title,
+        'deck_id': deckId,
         'cards': deck.cards.map((c) => {'front': c.front, 'back': c.back}).toList(),
       },
     );
@@ -281,6 +360,10 @@ class FlashcardService {
     });
   }
 
-  String _newId() =>
-      '${DateTime.now().microsecondsSinceEpoch.toRadixString(16)}${identityHashCode(DateTime.now()).toRadixString(16)}';
+  static int _idCounter = 0;
+
+  String _newId() {
+    _idCounter += 1;
+    return '${DateTime.now().microsecondsSinceEpoch.toRadixString(16)}${_idCounter.toRadixString(16)}';
+  }
 }

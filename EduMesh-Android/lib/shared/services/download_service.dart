@@ -52,6 +52,7 @@ class DownloadService {
         onReceiveProgress: onProgress,
         options: Options(
           responseType: ResponseType.stream,
+          receiveTimeout: const Duration(minutes: 5),
           headers: startByte > 0 ? {'Range': 'bytes=$startByte-'} : null,
         ),
       );

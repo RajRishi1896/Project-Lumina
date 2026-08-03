@@ -21,6 +21,7 @@ class ConnectivityService extends ChangeNotifier {
   int _checkSeq = 0;
   StreamSubscription<List<ConnectivityResult>>? _platformSub;
   Timer? _heartbeat;
+  static const String _pingPath = '/ping';
 
   /// Whether the server is currently reachable (both platform and HTTP).
   bool get isOnline => _online;
@@ -65,7 +66,7 @@ class ConnectivityService extends ChangeNotifier {
     final wasOnline = _online;
     try {
       await ApiClient.ensureInitialized();
-      await ApiClient.dio.get('/ping', options: Options(
+      await ApiClient.dio.get(_pingPath, options: Options(
         sendTimeout: const Duration(seconds: 4),
         receiveTimeout: const Duration(seconds: 4),
       ));
@@ -121,7 +122,7 @@ class ConnectivityService extends ChangeNotifier {
     final cancelToken = CancelToken();
     try {
       await ApiClient.ensureInitialized();
-      final resp = await ApiClient.get('/ping', cancelToken: cancelToken).timeout(timeout);
+      final resp = await ApiClient.get(_pingPath, cancelToken: cancelToken).timeout(timeout);
       return resp.statusCode != null && resp.statusCode! >= 200 && resp.statusCode! < 300;
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) return false;

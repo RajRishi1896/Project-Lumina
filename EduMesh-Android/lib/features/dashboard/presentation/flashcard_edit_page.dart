@@ -25,12 +25,17 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
   final TextEditingController _titleController = TextEditingController();
   List<({TextEditingController front, TextEditingController back})> _cardControllers = [];
   bool _loading = false;
+  bool _showNoCardsError = false;
 
   @override
   void initState() {
     super.initState();
     final id = widget.deckId;
-    if (id != null) {
+    if (id == null) {
+      _cardControllers = [
+        (front: TextEditingController(), back: TextEditingController()),
+      ];
+    } else {
       _loading = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => _load(id));
     }
@@ -73,6 +78,7 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
         ..._cardControllers,
         (front: TextEditingController(), back: TextEditingController()),
       ];
+      _showNoCardsError = false;
     });
   }
 
@@ -86,6 +92,10 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
   }
 
   Future<void> _saveDeck() async {
+    if (_cardControllers.isEmpty) {
+      setState(() => _showNoCardsError = true);
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final title = _titleController.text.trim();
     final cards = [
@@ -133,11 +143,11 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _buildForm(l10n),
+          : _buildForm(cs, tt, l10n),
     );
   }
 
-  Widget _buildForm(AppLocalizations l10n) {
+  Widget _buildForm(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     return Form(
       key: _formKey,
       child: Column(
@@ -168,6 +178,14 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
               ),
             ),
           ),
+          if (_showNoCardsError)
+            Padding(
+              padding: EdgeInsets.only(bottom: AppSpacing.sm.h),
+              child: Text(
+                l10n.flashcardNoCards,
+                style: tt.bodySmall?.copyWith(color: cs.error),
+              ),
+            ),
           Padding(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.lg.w,

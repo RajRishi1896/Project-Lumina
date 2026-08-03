@@ -1832,5 +1832,17 @@
   "activityVerbStudied": "ಅಭ್ಯಾಸ ಮಾಡಿದರು",
   "@activityVerbStudied": {
     "description": "Study report activity verb: the student studied a subject or resource."
+  },
+  "tooltipRewind10": "10 ಸೆಕೆಂಡ್ ಹಿಂದೆ",
+  "@tooltipRewind10": {
+    "description": "Tooltip for the rewind-10-seconds button in the video player"
+  },
+  "tooltipForward10": "10 ಸೆಕೆಂಡ್ ಮುಂದೆ",
+  "@tooltipForward10": {
+    "description": "Tooltip for the forward-10-seconds button in the video player"
+  },
+  "tooltipFullscreen": "ಪೂರ್ಣ ಪರದೆ",
+  "@tooltipFullscreen": {
+    "description": "Tooltip for the fullscreen toggle button in the video player"
   }
 }

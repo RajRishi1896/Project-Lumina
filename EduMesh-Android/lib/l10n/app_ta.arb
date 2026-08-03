@@ -614,5 +614,17 @@
   "activityVerbStudied": "படித்தார்",
   "@activityVerbStudied": {
     "description": "Study report activity verb: the student studied a subject or resource."
+  },
+  "tooltipRewind10": "10 வினாடிகள் பின்னோக்கி",
+  "@tooltipRewind10": {
+    "description": "Tooltip for the rewind-10-seconds button in the video player"
+  },
+  "tooltipForward10": "10 வினாடிகள் முன்னோக்கி",
+  "@tooltipForward10": {
+    "description": "Tooltip for the forward-10-seconds button in the video player"
+  },
+  "tooltipFullscreen": "முழு திரை",
+  "@tooltipFullscreen": {
+    "description": "Tooltip for the fullscreen toggle button in the video player"
   }
 }

@@ -186,7 +186,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: cs.surfaceContainerHighest,
         appBar: _showControls
             ? AppBar(
                 leading: IconButton(
@@ -195,8 +195,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                   tooltip: l10n.tooltipBackToResource,
                 ),
                 title: Text(widget.title),
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
+                backgroundColor: cs.surfaceContainerHighest,
+                foregroundColor: cs.onSurface,
               )
             : null,
         body: _buildBody(l10n, cs),
@@ -204,6 +204,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   }
 
   Widget _buildBody(AppLocalizations l10n, ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
     if (_error != null) {
       return Center(
         child: Padding(
@@ -214,13 +215,13 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               Icon(Icons.error_outline, size: 48, color: cs.error),
               const SizedBox(height: AppSpacing.md),
               Text(_error!,
-                  style: const TextStyle(color: Colors.white),
+                  style: tt.bodyLarge?.copyWith(color: cs.onSurface),
                   textAlign: TextAlign.center),
               const SizedBox(height: AppSpacing.lg),
               IconButton.filled(
                 onPressed: _retry,
                 icon: const Icon(Icons.refresh),
-                tooltip: 'Retry',
+                tooltip: l10n.buttonRetry,
               ),
             ],
           ),
@@ -229,9 +230,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
 
     if (!_initialized || _controller == null) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     return GestureDetector(
@@ -262,12 +261,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     final v = _controller!.value;
     final pos = v.position;
     final dur = v.duration;
+    final tt = Theme.of(context).textTheme;
 
     return AnimatedOpacity(
       opacity: _showControls ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 200),
       child: Container(
-        color: Colors.black.withValues(alpha: 0.4),
+        // Solid theme token as the video-control scrim -- never alpha-on-text.
+        color: cs.surfaceContainerHighest,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -282,18 +283,18 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                         newPos.isNegative ? Duration.zero : newPos);
                     _startHideTimer();
                   },
-                  icon: const Icon(Icons.replay_10, color: Colors.white, size: 36),
-                  tooltip: 'Rewind 10s',
+                  icon: Icon(Icons.replay_10, color: cs.onSurface, size: 36),
+                  tooltip: l10n.tooltipRewind10,
                 ),
                 const SizedBox(width: AppSpacing.xl),
                 IconButton(
                   onPressed: _togglePlay,
                   icon: Icon(
                     v.isPlaying ? Icons.pause_circle : Icons.play_circle,
-                    color: Colors.white,
+                    color: cs.onSurface,
                     size: 64,
                   ),
-                  tooltip: v.isPlaying ? 'Pause' : 'Play',
+                  tooltip: l10n.semanticsTogglePlay,
                 ),
                 const SizedBox(width: AppSpacing.xl),
                 IconButton(
@@ -302,8 +303,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                     if (newPos < dur) _controller!.seekTo(newPos);
                     _startHideTimer();
                   },
-                  icon: const Icon(Icons.forward_10, color: Colors.white, size: 36),
-                  tooltip: 'Forward 10s',
+                  icon: Icon(Icons.forward_10, color: cs.onSurface, size: 36),
+                  tooltip: l10n.tooltipForward10,
                 ),
               ],
             ),
@@ -315,7 +316,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               child: Row(
                 children: [
                   Text(_fmt(pos),
-                      style: const TextStyle(color: Colors.white, fontSize: 12)),
+                      style: tt.bodySmall?.copyWith(color: cs.onSurface)),
                   const Spacer(),
                   IconButton(
                     onPressed: _toggleFullscreen,
@@ -323,10 +324,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                       MediaQuery.of(context).orientation == Orientation.landscape
                           ? Icons.fullscreen_exit
                           : Icons.fullscreen,
-                      color: Colors.white,
+                      color: cs.onSurface,
                       size: 24,
                     ),
-                    tooltip: 'Fullscreen',
+                    tooltip: l10n.tooltipFullscreen,
                   ),
                 ],
               ),
@@ -341,6 +342,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     final v = _controller!.value;
     final dur = v.duration;
     if (dur.inMilliseconds == 0) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
 
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
@@ -348,7 +350,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
         activeTrackColor: Theme.of(context).colorScheme.primary,
-        inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
+        inactiveTrackColor: cs.outlineVariant,
         thumbColor: Theme.of(context).colorScheme.primary,
       ),
       child: Slider(

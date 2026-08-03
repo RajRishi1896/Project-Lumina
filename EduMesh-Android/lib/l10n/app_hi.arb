@@ -1832,5 +1832,17 @@
   "activityVerbStudied": "पढ़ाई की",
   "@activityVerbStudied": {
     "description": "Study report activity verb: the student studied a subject or resource."
+  },
+  "tooltipRewind10": "10 सेकंड पीछे",
+  "@tooltipRewind10": {
+    "description": "Tooltip for the rewind-10-seconds button in the video player"
+  },
+  "tooltipForward10": "10 सेकंड आगे",
+  "@tooltipForward10": {
+    "description": "Tooltip for the forward-10-seconds button in the video player"
+  },
+  "tooltipFullscreen": "पूर्ण स्क्रीन",
+  "@tooltipFullscreen": {
+    "description": "Tooltip for the fullscreen toggle button in the video player"
   }
 }

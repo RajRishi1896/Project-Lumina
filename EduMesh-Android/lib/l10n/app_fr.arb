@@ -1832,5 +1832,17 @@
   "activityVerbStudied": "a étudié",
   "@activityVerbStudied": {
     "description": "Study report activity verb: the student studied a subject or resource."
+  },
+  "tooltipRewind10": "Reculer de 10 s",
+  "@tooltipRewind10": {
+    "description": "Tooltip for the rewind-10-seconds button in the video player"
+  },
+  "tooltipForward10": "Avancer de 10 s",
+  "@tooltipForward10": {
+    "description": "Tooltip for the forward-10-seconds button in the video player"
+  },
+  "tooltipFullscreen": "Plein écran",
+  "@tooltipFullscreen": {
+    "description": "Tooltip for the fullscreen toggle button in the video player"
   }
 }

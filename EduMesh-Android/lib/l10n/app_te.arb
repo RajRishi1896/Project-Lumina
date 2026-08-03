@@ -614,5 +614,17 @@
   "activityVerbStudied": "చదివారు",
   "@activityVerbStudied": {
     "description": "Study report activity verb: the student studied a subject or resource."
+  },
+  "tooltipRewind10": "10 సెకన్లు వెనుకకు",
+  "@tooltipRewind10": {
+    "description": "Tooltip for the rewind-10-seconds button in the video player"
+  },
+  "tooltipForward10": "10 సెకన్లు ముందుకు",
+  "@tooltipForward10": {
+    "description": "Tooltip for the forward-10-seconds button in the video player"
+  },
+  "tooltipFullscreen": "పూర్తి స్క్రీన్",
+  "@tooltipFullscreen": {
+    "description": "Tooltip for the fullscreen toggle button in the video player"
   }
 }

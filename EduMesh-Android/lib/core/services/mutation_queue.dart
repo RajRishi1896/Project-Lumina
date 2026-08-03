@@ -43,22 +43,34 @@ class MutationQueue {
     });
   }
 
+  bool _flushing = false;
+
   /// Flushes all pending mutations from the database.
   ///
   /// Reads mutations ordered by [id] ASC and executes them sequentially to
   /// avoid overwhelming the server. Successful mutations are removed from the
   /// DB. Mutations that have exceeded [_maxRetries] are dropped and logged.
   Future<void> flush() async {
+    if (_flushing) return;
+    _flushing = true;
+    try {
+      await _flushOnce();
+    } finally {
+      _flushing = false;
+    }
+  }
+
+  Future<void> _flushOnce() async {
     final db = await DBHelper().database;
     final rows = await db.query('pending_mutations', orderBy: 'id ASC');
     for (final row in rows) {
       final id = row['id'] as int;
       final endpoint = row['endpoint'] as String;
       final method = row['method'] as String;
-      final body = jsonDecode(row['body'] as String) as Map<String, dynamic>;
       final priority = (row['priority'] as String?) ?? 'normal';
       final maxRetries = _maxRetries(priority);
       try {
+        final body = jsonDecode(row['body'] as String) as Map<String, dynamic>;
         await _executeMutation(endpoint, method, body);
         await db.delete('pending_mutations', where: 'id = ?', whereArgs: [id]);
       } on DioException {

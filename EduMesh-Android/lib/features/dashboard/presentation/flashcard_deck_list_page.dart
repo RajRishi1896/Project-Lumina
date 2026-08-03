@@ -241,7 +241,7 @@ class _DeckCard extends StatelessWidget {
               onSelected: onMenuSelected,
               itemBuilder: (ctx) => [
                 PopupMenuItem(value: 'edit', child: Text(l10n.flashcardEditDeck)),
-                if (deck.source == 'local')
+                if (deck.source == 'local' && deck.submissionStatus != 'pending')
                   PopupMenuItem(value: 'send', child: Text(l10n.flashcardSendToTeacher)),
                 PopupMenuItem(value: 'export', child: Text(l10n.flashcardExportDeck)),
                 PopupMenuItem(value: 'delete', child: Text(l10n.flashcardDeleteDeck)),

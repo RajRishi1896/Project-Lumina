@@ -154,10 +154,14 @@ class ActivityTracker {
     }
   }
 
+  static String _eventKey(Map<String, dynamic> event) =>
+      '${event['timestamp']}|${event['action']}|${event['resource_id']}|${event['metadata']}';
+
   Future<void> _sync() async {
     final prefs = await SharedPreferences.getInstance();
-    final list = _decodeLocalEvents(prefs.getString(_localEventsKey));
-    if (list.isEmpty) return;
+    final original = _decodeLocalEvents(prefs.getString(_localEventsKey));
+    if (original.isEmpty) return;
+    final list = [...original];
 
     // Prune events older than 7 days
     final cutoff = ApiClient.correctedNow().subtract(const Duration(days: 7));
@@ -237,7 +241,16 @@ class ActivityTracker {
         await ApiClient.post('/student/sync-subject-time', data: {'subjects': subjects});
       } catch (_) { } }
 
-    // Save pruned list and refresh cached analytics
+    /// Save pruned list, merging any events appended while this sync was in
+    /// flight so concurrent logAction calls are not silently lost.
+    final current = _decodeLocalEvents(prefs.getString(_localEventsKey));
+    final known = original.map(_eventKey).toSet();
+    for (final event in current) {
+      if (!known.contains(_eventKey(event))) {
+        list.add(event);
+      }
+    }
+    while (list.length > _maxLocalEvents) { list.removeAt(0); }
     await prefs.setString(_localEventsKey, jsonEncode(list));
     try {
       final response = await ApiClient.get('/student/analytics');

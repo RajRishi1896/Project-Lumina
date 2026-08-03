@@ -81,6 +81,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
 
   @override
   void dispose() {
+    _queueThrottle?.cancel();
     DownloadQueue().removeListener(_onQueueChanged);
     super.dispose();
   }

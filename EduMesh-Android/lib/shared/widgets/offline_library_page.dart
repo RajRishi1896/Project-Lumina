@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
@@ -15,6 +16,26 @@ import '../../core/services/recent_resources.dart';
 import 'pdf_viewer_page.dart';
 import 'video_player_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
+
+/// Attaches each row's on-disk size in a single background-isolate pass.
+///
+/// Returns a new list and leaves the input rows untouched. Runs inside
+/// [compute] so the per-file `stat()` calls never block the UI isolate.
+List<Map<String, dynamic>> _attachSizes(List<Map<String, dynamic>> rows) {
+  final withSizes = <Map<String, dynamic>>[];
+  for (final r in rows) {
+    final path = r['local_path'] as String?;
+    int size = 0;
+    if (path != null && path.isNotEmpty) {
+      final f = File(path);
+      try {
+        if (f.existsSync()) size = f.lengthSync();
+      } catch (_) {}
+    }
+    withSizes.add({...r, 'size': size});
+  }
+  return withSizes;
+}
 
 /// A page that lists all resources downloaded for offline access.
 ///
@@ -43,16 +64,9 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
     final rows = await DBHelper().getDownloadedResources();
     final zimRows = await DBHelper().getDownloadedZimArticles();
     final List<Map<String, dynamic>> allRows = [...rows, ...zimRows];
-    final List<Map<String, dynamic>> withSizes = [];
-    for (final r in allRows) {
-      final path = r['local_path'] as String?;
-      int size = 0;
-      if (path != null && path.isNotEmpty) {
-        final f = File(path);
-        if (await f.exists()) size = await f.length();
-      }
-      withSizes.add({...r, 'size': size});
-    }
+    // File-size lookups are batched into one background-isolate compute pass
+    // so the UI isolate never performs per-file I/O and build stays pure.
+    final withSizes = await compute(_attachSizes, allRows);
     if (mounted) setState(() { _items = withSizes; _loading = false; });
   }
 

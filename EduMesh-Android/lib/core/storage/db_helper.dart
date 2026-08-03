@@ -226,6 +226,50 @@ class DBHelper {
     await db.execute('''
       CREATE INDEX IF NOT EXISTS idx_qa_student ON quiz_attempts(student_id)
     ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS flashcard_decks_local (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        source TEXT NOT NULL DEFAULT 'local',
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS flashcard_cards_local (
+        id TEXT PRIMARY KEY,
+        deck_id TEXT NOT NULL,
+        front TEXT NOT NULL,
+        back TEXT NOT NULL,
+        position INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS flashcard_reviews_local (
+        card_id TEXT PRIMARY KEY,
+        ease REAL NOT NULL DEFAULT 2.5,
+        interval_days INTEGER NOT NULL DEFAULT 0,
+        due_at INTEGER NOT NULL DEFAULT 0,
+        reviews_count INTEGER NOT NULL DEFAULT 0,
+        last_reviewed_at INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS flashcard_submissions_local (
+        id TEXT PRIMARY KEY,
+        deck_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        reason TEXT DEFAULT '',
+        submitted_at INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_flash_cards_deck ON flashcard_cards_local(deck_id)
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_flash_reviews_due ON flashcard_reviews_local(due_at)
+    ''');
   }
 
   /// Inserts or replaces a bookmark for the given [resourceId] with its metadata.

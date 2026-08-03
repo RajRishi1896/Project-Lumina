@@ -215,7 +215,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       if (!mounted) return;
       if (html != null && html.isNotEmpty) {
         unawaited(Navigator.push(context, MaterialPageRoute(
-          builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: '/zim/asset'),
+          builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: ApiClient.baseUrl),
         )));
       }
     } else {

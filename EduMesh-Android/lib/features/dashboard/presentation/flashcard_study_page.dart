@@ -79,6 +79,8 @@ class _FlashcardStudyPageState extends State<FlashcardStudyPage> {
         elevation: 0,
         title: Text(
           deck != null ? l10n.flashcardStudyingDeck(deck.title) : '',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: tt.titleMedium?.copyWith(color: cs.onSurface),
         ),
       ),

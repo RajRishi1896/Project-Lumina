@@ -38,9 +38,10 @@ class CatalogService {
       final db = await DBHelper().database;
       await db.transaction((txn) async {
         await txn.delete('catalog');
+        final batch = txn.batch();
         for (final item in data) {
           if (item is! Map) continue;
-          await txn.insert('catalog', {
+          batch.insert('catalog', {
             'id': (item['id'] ?? '').toString(),
             'title': (item['title'] ?? '').toString(),
             'type': (item['type'] ?? '').toString(),
@@ -54,6 +55,7 @@ class CatalogService {
             'synced_at': DateTime.now().millisecondsSinceEpoch,
           });
         }
+        await batch.commit(noResult: true);
       });
       _lastCatalogSync = DateTime.now();
     } catch (e) {

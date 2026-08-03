@@ -27,6 +27,10 @@ class NotificationService {
   String _failedNotificationTitle = 'Download Failed';
   String _inProgressNotificationTitle = 'Downloading...';
   String _inProgressNotificationBodyTemplate = '{title} ({percent}%)';
+  // English fallbacks (same values as the ARB keys in app_en.arb). Replaced
+  // with locals via [setLocalizedStrings] once a BuildContext is available.
+  String _completeNotificationBody = '"{title}" has been downloaded and saved to offline storage.';
+  String _failedNotificationBody = '"{title}" could not be downloaded. Check the server connection and try again.';
 
   /// Initializes the notification plugin and creates the download channel.
   ///
@@ -88,6 +92,18 @@ class NotificationService {
     return granted != false;
   }
 
+  bool _permissionRequested = false;
+  bool _permissionGranted = false;
+
+  /// Requests notification permission at most once per app run so the Android
+  /// 13+ system dialog is not re-shown for every notification.
+  Future<bool> _ensurePermission() async {
+    if (_permissionRequested) return _permissionGranted;
+    _permissionRequested = true;
+    _permissionGranted = await requestPermission();
+    return _permissionGranted;
+  }
+
   /// Shows a local notification confirming a download finished.
   ///
   /// Checks [isEnabled] and initializes the plugin if needed. Calls
@@ -98,7 +114,7 @@ class NotificationService {
     try {
       if (!await isEnabled) return;
       if (!_initialized) await init();
-      await requestPermission();
+      await _ensurePermission();
     } catch (_) {
       // ponytail: permission/init failures are non-fatal; skip notification
       return;
@@ -107,7 +123,7 @@ class NotificationService {
       await _plugin.show(
         _nextId++,
         notificationTitle ?? _completeNotificationTitle,
-        notificationBody ?? '"$title" has been downloaded and saved to offline storage.',
+        (notificationBody ?? _completeNotificationBody).replaceAll('{title}', title),
         NotificationDetails(
           android: AndroidNotificationDetails(
             'download_channel',
@@ -129,14 +145,18 @@ class NotificationService {
     String? channelName,
     String? channelDescription,
     String? downloadCompleteTitle,
+    String? downloadCompleteBody,
     String? downloadFailedTitle,
+    String? downloadFailedBody,
     String? downloadInProgressTitle,
     String? downloadInProgressBody,
   }) {
     if (channelName != null) _channelName = channelName;
     if (channelDescription != null) _channelDescription = channelDescription;
     if (downloadCompleteTitle != null) _completeNotificationTitle = downloadCompleteTitle;
+    if (downloadCompleteBody != null) _completeNotificationBody = downloadCompleteBody;
     if (downloadFailedTitle != null) _failedNotificationTitle = downloadFailedTitle;
+    if (downloadFailedBody != null) _failedNotificationBody = downloadFailedBody;
     if (downloadInProgressTitle != null) _inProgressNotificationTitle = downloadInProgressTitle;
     if (downloadInProgressBody != null) _inProgressNotificationBodyTemplate = downloadInProgressBody;
   }
@@ -148,7 +168,7 @@ class NotificationService {
     try {
       if (!await isEnabled) return;
       if (!_initialized) await init();
-      await requestPermission();
+      await _ensurePermission();
     } catch (_) {
       return;
     }
@@ -156,7 +176,7 @@ class NotificationService {
       await _plugin.show(
         _nextId++,
         notificationTitle ?? _failedNotificationTitle,
-        notificationBody ?? '"$title" could not be downloaded. Check the server connection and try again.',
+        (notificationBody ?? _failedNotificationBody).replaceAll('{title}', title),
         NotificationDetails(
           android: AndroidNotificationDetails(
             'download_channel',
@@ -175,7 +195,7 @@ class NotificationService {
     try {
       if (!await isEnabled) return;
       if (!_initialized) await init();
-      await requestPermission();
+      await _ensurePermission();
     } catch (_) {
       return;
     }

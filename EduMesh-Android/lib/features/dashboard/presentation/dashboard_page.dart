@@ -92,11 +92,15 @@ class _DashboardPageState extends State<DashboardPage> {
       final db = await DBHelper().database;
       final due = await FlashcardService().dueCount();
       final dateRows = await db.query('activity', columns: ['date'], distinct: true);
-      final dates = dateRows
-          .map((r) => DateTime.tryParse((r['date'] as String? ?? '').substring(0, 10).trim()))
-          .whereType<DateTime>()
-          .map((d) => DateTime(d.year, d.month, d.day))
-          .toSet();
+      final dates = <DateTime>{};
+      for (final r in dateRows) {
+        final dateStr = (r['date'] as String? ?? '').trim();
+        if (dateStr.length < 10) continue;
+        try {
+          final d = DateTime.tryParse(dateStr.substring(0, 10));
+          if (d != null) dates.add(DateTime(d.year, d.month, d.day));
+        } catch (_) {}
+      }
       final quizRows = await db.rawQuery('SELECT COUNT(*) AS n FROM quiz_attempts WHERE score > 0');
       final resRows = await db.rawQuery('SELECT COUNT(DISTINCT title) AS n FROM downloads');
       if (!mounted) return;

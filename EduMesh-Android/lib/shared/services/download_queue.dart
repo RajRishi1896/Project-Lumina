@@ -44,6 +44,7 @@ class DownloadQueue extends ChangeNotifier {
 
   final List<_QueuedDownload> _queue = [];
   bool _processing = false;
+  static int _notifSeq = 0;
 
   /// The set of resource IDs currently in the queue.
   Set<String> get queuedIds => _queue.map((d) => d.resourceId).toSet();
@@ -56,9 +57,12 @@ class DownloadQueue extends ChangeNotifier {
 
   /// Adds a download to the queue.
   ///
-  /// When online the item is queued in-memory and processed immediately.
-  /// When offline it is persisted via [DownloadService.addPendingDownload]
-  /// for later flushing. Duplicate [resourceId] values are ignored.
+  /// The item is always persisted to the pending-download table so an in-flight
+  /// queue survives an app restart. When online it is also processed
+  /// immediately; when offline it is left for [ConnectivityService] to re-queue
+  /// on reconnect. Rows whose resource is already recorded as downloaded are
+  /// dropped instead of being re-downloaded. Duplicate [resourceId] values are
+  /// ignored.
   Future<void> enqueue(String resourceId, String url, String fileName, {
     String title = '',
     String subject = '',
@@ -67,14 +71,19 @@ class DownloadQueue extends ChangeNotifier {
     double mtime = 0,
   }) async {
     if (_queue.any((d) => d.resourceId == resourceId)) return;
+    final downloadedIds = await DBHelper().getDownloadedIds();
+    if (downloadedIds.contains(resourceId)) {
+      await DBHelper().removePendingDownload(resourceId);
+      return;
+    }
+    await DBHelper().addPendingDownload(resourceId, url, fileName,
+      title: title, subject: subject, grade: grade, type: type, mtime: mtime);
     if (ConnectivityService().isOnline) {
       _queue.add(_QueuedDownload(resourceId, url, fileName,
         title: title, subject: subject, grade: grade, type: type, mtime: mtime));
       notifyListeners();
       if (!_processing) unawaited(_processNext());
     } else {
-      await DBHelper().addPendingDownload(resourceId, url, fileName,
-        title: title, subject: subject, grade: grade, type: type, mtime: mtime);
       notifyListeners();
     }
   }
@@ -94,7 +103,7 @@ class DownloadQueue extends ChangeNotifier {
     _processing = true;
 
     final task = _queue.first;
-    final notifId = task.resourceId.hashCode;
+    final notifId = _notifSeq++;
     String? path;
     try {
       path = await DownloadService().downloadAndTrack(
