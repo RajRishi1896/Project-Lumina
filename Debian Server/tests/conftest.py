@@ -71,7 +71,9 @@ async def client(setup_db):
 
 
 @pytest.fixture
-async def admin_client(client):
-    resp = await client.post("/token", data={"username": "admin", "password": "lumina2026"})
-    assert resp.status_code == 200, f"Login failed: {resp.status_code}"
-    return client
+async def admin_client(setup_db):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        resp = await ac.post("/token", data={"username": "admin", "password": "lumina2026"})
+        assert resp.status_code == 200, f"Login failed: {resp.status_code}"
+        yield ac
