@@ -229,6 +229,7 @@ from app.routers.teacher_course_resources import router as teacher_course_resour
 from app.routers.teacher_quizzes import router as teacher_quizzes_router
 from app.routers.teacher_topics import router as teacher_topics_router
 from app.routers.teacher_similar import router as teacher_similar_router
+from app.routers.teacher_flashcards import router as teacher_flashcards_router
 from app.routers.teacher_quiz_resources import router as teacher_quiz_resources_router
 from app.routers.student_courses import router as student_courses_router
 from app.routers.federation import router as federation_router
@@ -252,6 +253,7 @@ app.include_router(teacher_course_resources_router)
 app.include_router(teacher_quizzes_router)
 app.include_router(teacher_topics_router)
 app.include_router(teacher_similar_router)
+app.include_router(teacher_flashcards_router)
 app.include_router(student_courses_router)
 app.include_router(teacher_quiz_resources_router)
 app.include_router(federation_router)

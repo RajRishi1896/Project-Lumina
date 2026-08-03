@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en" data-page="flashcards">
+<!-- Section: Head -- theme detection, metadata, page-specific styles -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="flashcards.title">Lumina Hub | Flashcards</title>
+    <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
+    <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
+    <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
+    <link rel="stylesheet" href="/static/css/lumina.css">
+</head>
+<body>
+    <a href="#app-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
+    <!-- Section: Sidebar -- empty, rendered by renderLayout() -->
+    <aside></aside>
+
+    <!-- Section: Main Content -- deck list, deck editor, submissions review -->
+    <main>
+        <div id="app-content">
+            <!-- Section 1: Deck List -->
+            <div id="deckListSection">
+                <div class="page-header flex flex-wrap gap-4 justify-between items-start">
+                    <div>
+                        <h1 data-i18n="flashcards.deck_management">Flashcard decks</h1>
+                        <p data-i18n="flashcards.submissions">Submitted by students</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="btn-newDeck" class="btn btn-primary whitespace-nowrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            <span data-i18n="flashcards.new_deck">New deck</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title mb-3" data-i18n="flashcards.decks">Decks</div>
+                    <div style="max-height:60vh;overflow-y:auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="flashcards.deck_title" style="width:35%;">Deck title</th>
+                                <th data-i18n="flashcards.topic" style="width:25%;">Topic</th>
+                                <th data-i18n="flashcards.cards" style="width:15%;">Cards</th>
+                                <th data-i18n="flashcards.cards" style="width:25%;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="deckTable">
+                            <tr><td colspan="4" class="empty-state" data-i18n="flashcards.no_decks">No decks yet.</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- Section 2: Submissions review -->
+                <div class="card" style="margin-top:1.25rem;">
+                    <div class="card-title mb-3" data-i18n="flashcards.submissions">Submitted by students</div>
+                    <div style="max-height:60vh;overflow-y:auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="flashcards.submission_author" data-i18n-data-label="flashcards.submission_author" style="width:20%;">From</th>
+                                <th data-i18n="flashcards.deck_title" style="width:25%;">Deck title</th>
+                                <th data-i18n="flashcards.cards" style="width:12%;">Cards</th>
+                                <th data-i18n="--" style="width:18%;"></th>
+                                <th data-i18n="--" style="width:25%;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="submissionTable">
+                            <tr><td colspan="5" class="empty-state" data-i18n="flashcards.no_submissions">No student submissions yet.</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Deck Editor Modal (teal creation modal per design rules) -->
+            <div id="deckEditorModal" class="hidden popup modal-overlay transition">
+                <div class="modal" style="max-width:760px;width:95%;max-height:90vh;">
+                    <div class="modal-header">
+                        <h3 class="modal-title" id="deckEditorTitle" data-i18n="flashcards.new_deck">New deck</h3>
+                        <button id="btn-closeDeckModal" class="modal-close" aria-label="Close">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="deckTitle" data-i18n="flashcards.deck_title">Deck title</label>
+                            <input type="text" id="deckTitle" maxlength="120" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="deckTopic" data-i18n="flashcards.topic">Topic</label>
+                            <select id="deckTopic" class="form-select">
+                                <option value="">--</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="m-0 text-lg font-bold" data-i18n="flashcards.cards">Cards</h4>
+                            <button id="btn-addCard" class="btn btn-outline text-sm">
+                                <span data-i18n="flashcards.add_card">Add card</span>
+                            </button>
+                        </div>
+                        <div id="cardsList"></div>
+                    </div>
+                    <div class="flex justify-end gap-2 mt-5 pt-4 border-t border-outline">
+                        <button id="btn-cancelDeck" class="btn btn-outline" data-i18n="content.modal_cancel">Cancel</button>
+                        <button id="btn-saveDeck" class="btn btn-primary" data-i18n="flashcards.save_deck">Save deck</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Approve Modal (teal -- creation action) -->
+            <div id="approveModal" class="hidden popup modal-overlay transition">
+                <div class="modal" style="max-width:440px;width:95%;">
+                    <div class="modal-header">
+                        <h3 class="modal-title" data-i18n="flashcards.approve">Approve</h3>
+                        <button id="btn-closeApprove" class="modal-close" aria-label="Close">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label for="approveTopic" data-i18n="flashcards.publish_to">Publish to topic</label>
+                        <select id="approveTopic" class="form-select">
+                            <option value="">--</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-2 mt-4">
+                        <button id="btn-cancelApprove" class="btn btn-outline" data-i18n="content.modal_cancel">Cancel</button>
+                        <button id="btn-confirmApprove" class="btn btn-primary" data-i18n="flashcards.approve">Approve</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Reject Modal (red -- destructive action) -->
+            <div id="rejectModal" class="hidden popover modal-overlay transition">
+                <div class="modal" style="max-width:440px;width:95%;border:2px solid var(--danger);">
+                    <div class="modal-header">
+                        <h3 class="modal-title" style="color:var(--danger);" data-i18n="flashcards.reject">Reject</h3>
+                        <button id="btn-closeReject" class="modal-close" aria-label="Close">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label for="rejectReason" data-i18n="flashcards.reject_reason_placeholder">Why not publish? (optional)</label>
+                        <textarea id="rejectReason" rows="3" class="form-input resize-y"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-2 mt-4">
+                        <button id="btn-cancelReject" class="btn btn-outline" data-i18n="content.modal_cancel">Cancel</button>
+                        <button id="btn-confirmReject" class="btn btn-primary" style="background:var(--danger);border-color:var(--danger);" data-i18n="flashcards.reject">Reject</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Section: Bottom Navigation (Mobile) -->
+    <div id="bottomNav"></div>
+
+    <!-- Section: Toast Container -->
+    <div id="globalToastContainer" class="toast-container"></div>
+
+    <script src="/static/js/lumina.js?v=9" defer></script>
+    <script>
+        var deckCards = [];
+        var editingDeckId = null;
+        var approvingSubmissionId = null;
+        var rejectingSubmissionId = null;
+        var decks = [];
+        var topics = [];
+
+        function loadTopics() {
+            return fetch('/teacher/resource-topics', { credentials: 'include' })
+                .then(function(r) { return r.ok ? r.json() : []; })
+                .then(function(data) { topics = data; });
+        }
+
+        function topicOptions(selectedId) {
+            var opts = '<option value="">--</option>';
+            topics.forEach(function(t) { opts += '<option value="' + esc(t.id) + '"' + (t.id === selectedId ? ' selected' : '') + '>' + esc(t.name) + '</option>'; });
+            return opts;
+        }
+
+        function topicName(id) {
+            var t = topics.find(function(x) { return x.id === id; });
+            return t ? t.name : '';
+        }
+
+        async function loadDecks() {
+            try {
+                var res = await fetch('/api/teacher/flashcards/decks', { credentials: 'include' });
+                if (!res.ok) return showAlert(__('content.notif.load_failed'), true);
+                decks = await res.json();
+                renderDecks();
+            } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
+        }
+
+        function renderDecks() {
+            var tbody = document.getElementById('deckTable');
+            if (!decks.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">' + __('flashcards.no_decks') + '</td></tr>';
+                return;
+            }
+            tbody.innerHTML = decks.map(function(d) {
+                return '<tr data-deck-id="' + esc(d.id) + '">' +
+                    '<td data-label="' + __('flashcards.deck_title') + '"><strong>' + esc(d.title) + '</strong></td>' +
+                    '<td data-label="' + __('flashcards.topic') + '">' + (d.topic_id ? esc(topicName(d.topic_id)) : '--') + '</td>' +
+                    '<td data-label="' + __('flashcards.cards') + '">' + __('flashcards.card_count', {count: d.card_count || 0}) + '</td>' +
+                    '<td data-label="' + __('flashcards.cards') + '" style="text-align:right;white-space:nowrap;">' +
+                    '<button class="btn btn-outline js-edit-deck" data-deck-id="' + esc(d.id) + '" style="padding:0.4rem 0.75rem;font-size:0.75rem;">' + __('flashcards.edit') + '</button> ' +
+                    '<button class="btn btn-outline js-delete-deck" data-deck-id="' + esc(d.id) + '" data-deck-title="' + esc(d.title) + '" style="padding:0.4rem 0.75rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);margin-left:0.5rem;">' + __('flashcards.delete_deck') + '</button>' +
+                    '</td></tr>';
+            }).join('');
+        }
+
+        async function loadSubmissions() {
+            try {
+                var res = await fetch('/api/teacher/flashcards/submissions', { credentials: 'include' });
+                if (!res.ok) return;
+                renderSubmissions(await res.json());
+            } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
+        }
+
+        function statusBadge(status) {
+            if (status === 'approved') return '<span style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(56,161,105,0.1);color:var(--success);padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:700;">' + __('flashcards.approved') + '</span>';
+            if (status === 'rejected') return '<span style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(239,68,68,0.08);color:var(--danger);padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:700;">' + __('flashcards.rejected') + '</span>';
+            return '<span style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(251,191,36,0.15);color:var(--warning);padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:700;">' + __('flashcards.pending') + '</span>';
+        }
+
+        function renderSubmissions(list) {
+            var tbody = document.getElementById('submissionTable');
+            if (!list.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">' + __('flashcards.no_submissions') + '</td></tr>';
+                return;
+            }
+            tbody.innerHTML = list.map(function(s) {
+                var act = '';
+                if (s.status === 'pending') {
+                    act = '<button class="btn btn-outline js-approve-sub" data-sub-id="' + esc(s.id) + '" style="padding:0.4rem 0.75rem;font-size:0.75rem;">' + __('flashcards.approve') + '</button> ' +
+                        '<button class="btn btn-outline js-reject-sub" data-sub-id="' + esc(s.id) + '" style="padding:0.4rem 0.75rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);margin-left:0.5rem;">' + __('flashcards.reject') + '</button>';
+                }
+                var reason = s.reason ? ' <small style="color:var(--text-muted);display:block;">' + esc(s.reason) + '</small>' : '';
+                return '<tr data-sub-id="' + esc(s.id) + '">' +
+                    '<td data-i18n-data-label="flashcards.submission_author">' + esc(s.student_name || s.student_id) + reason + '</td>' +
+                    '<td data-label="' + __('flashcards.deck_title') + '"><strong>' + esc(s.title) + '</strong>' + ' <small style="color:var(--text-muted);">' + __('flashcards.card_count', {count: s.card_count}) + '</small></td>' +
+                    '<td data-label="' + __('flashcards.cards') + '">' + s.card_count + '</td>' +
+                    '<td data-label="' + __('flashcards.cards') + '">' + statusBadge(s.status) + '</td>' +
+                    '<td data-label="' + __('flashcards.cards') + '" style="text-align:right;white-space:nowrap;">' + act + '</td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        function openDeckEditor(deck) {
+            editingDeckId = deck ? deck.id : null;
+            document.getElementById('deckEditorTitle').textContent = deck ? __('flashcards.edit') : __('flashcards.new_deck');
+            document.getElementById('deckTitle').value = deck ? deck.title : '';
+            document.getElementById('deckTopic').innerHTML = topicOptions(deck ? deck.topic_id : '');
+            deckCards = deck ? (deck.cards || []).map(function(c) { return {front: c.front, back: c.back}; }) : [];
+            renderCards();
+            document.getElementById('deckEditorModal').classList.remove('hidden');
+        }
+
+        function closeDeckEditor() {
+            document.getElementById('deckEditorModal').classList.add('hidden');
+            editingDeckId = null;
+        }
+
+        function renderCards() {
+            var list = document.getElementById('cardsList');
+            if (!deckCards.length) { list.innerHTML = ''; return; }
+            list.innerHTML = deckCards.map(function(c, i) {
+                return '<div class="js-card-row" data-i="' + i + '" style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.5rem;background:var(--surface);">' +
+                    '<span style="flex:0 0 3rem;font-size:0.75rem;font-weight:700;color:var(--text-muted);">' + (i + 1) + '</span>' +
+                    '<span style="flex:0 0 3.5rem;font-size:0.75rem;font-weight:700;">' + __('flashcards.front') + '</span>' +
+                    '<input type="text" class="card-front" value="' + esc(c.front) + '" maxlength="200" style="flex:1;padding:0.5rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;font-family:inherit;background:var(--surface);color:var(--on-surface);">' +
+                    '<span style="flex:0 0 3rem;font-size:0.75rem;font-weight:700;color:var(--text-muted);margin-left:0.5rem;">' + __('flashcards.back') + '</span>' +
+                    '<input type="text" class="card-back" value="' + esc(c.back) + '" maxlength="200" style="flex:1;padding:0.5rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;font-family:inherit;background:var(--surface);color:var(--on-surface);">' +
+                    '<button class="btn btn-outline js-remove-card" data-i="' + i + '" aria-label="' + __('flashcards.remove_card') + '" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);margin-left:0.5rem;">&times;</button>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function addCard() {
+            deckCards.push({front: '', back: ''});
+            renderCards();
+        }
+
+        async function saveDeck() {
+            var title = document.getElementById('deckTitle').value.trim();
+            if (!title) { showAlert(__('flashcards.deck_title'), true); return; }
+            var topic_id = document.getElementById('deckTopic').value;
+            var cards = [];
+            var rows = document.querySelectorAll('#cardsList .js-card-row');
+            for (var i = 0; i < rows.length; i++) {
+                cards.push({front: rows[i].querySelector('.card-front').value, back: rows[i].querySelector('.card-back').value});
+            }
+            try {
+                var headers = { 'Content-Type': 'application/json' };
+                var body;
+                if (editingDeckId) {
+                    var r = await fetch('/api/teacher/flashcards/decks/' + editingDeckId, { method: 'PUT', headers: headers, body: JSON.stringify({title: title, topic_id: topic_id}), credentials: 'include' });
+                    if (!r.ok) return showError(r);
+                    var rc = await fetch('/api/teacher/flashcards/decks/' + editingDeckId + '/cards', { method: 'PUT', headers: headers, body: JSON.stringify({cards: cards}), credentials: 'include' });
+                    if (!rc.ok) return showError(rc);
+                } else {
+                    var rr = await fetch('/api/teacher/flashcards/decks', { method: 'POST', headers: headers, body: JSON.stringify({title: title, topic_id: topic_id}), credentials: 'include' });
+                    if (!rr.ok) return showError(rr);
+                    var created = await rr.json();
+                    var rc2 = await fetch('/api/teacher/flashcards/decks/' + created.id + '/cards', { method: 'PUT', headers: headers, body: JSON.stringify({cards: cards}), credentials: 'include' });
+                    if (!rc2.ok) return showError(rc2);
+                }
+                showAlert(__('courses.notif.saved'), false);
+                closeDeckEditor();
+                loadDecks();
+            } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
+        }
+
+        async function showError(r) {
+            var err = await r.json().catch(function() { return {}; });
+            showAlert(err.detail || __('courses.notif.save_failed'), true);
+        }
+
+        async function deleteDeck(id, title) {
+            var confirmed = await showConfirm(__('flashcards.delete_deck'), __('flashcards.confirm_delete_deck'), true, __('settings.confirm.ok_btn'));
+            if (!confirmed) return;
+            try {
+                var res = await fetch('/api/teacher/flashcards/decks/' + id, { method: 'DELETE', credentials: 'include' });
+                if (res.ok) { showAlert(__('courses.notif.deleted'), false); loadDecks(); }
+                else showAlert(__('courses.notif.delete_failed'), true);
+            } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
+        }
+
+        function openApproveModal(id) {
+            approvingSubmissionId = id;
+            document.getElementById('approveTopic').innerHTML = topicOptions('');
+            document.getElementById('approveModal').classList.remove('hidden');
+        }
+
+        async function confirmApprove() {
+            if (!approvingSubmissionId) return;
+            var topic_id = document.getElementById('approveTopic').value;
+            try {
+                var res = await fetch('/api/teacher/flashcards/submissions/' + approvingSubmissionId + '/approve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({topic_id: topic_id}), credentials: 'include' });
+                if (res.ok) { showAlert(__('courses.notif.saved'), false); approvingSubmissionId = null; document.getElementById('approveModal').classList.add('hidden'); loadDecks(); loadSubmissions(); }
+                else showError(res);
+            } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
+        }
+
+        function openRejectModal(id) {
+            rejectingSubmissionId = id;
+            document.getElementById('rejectReason').value = '';
+            document.getElementById('rejectModal').classList.remove('hidden');
+        }
+
+        async function confirmReject() {
+            if (!rejectingSubmissionId) return;
+            var reason = document.getElementById('rejectReason').value.trim();
+            try {
+                var res = await fetch('/api/teacher/flashcards/submissions/' + rejectingSubmissionId + '/reject', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({reason: reason}), credentials: 'include' });
+                if (res.ok) { showAlert(__('courses.notif.saved'), false); rejectingSubmissionId = null; document.getElementById('rejectModal').classList.add('hidden'); loadSubmissions(); }
+                else showError(res);
+            } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
+        }
+
+        var _initFlashcards = function() {
+            loadTopics();
+            loadDecks();
+            loadSubmissions();
+            loadWhoAmI();
+            checkSelfResetRequired();
+
+            document.getElementById('btn-newDeck')?.addEventListener('click', function() { openDeckEditor(null); });
+            document.getElementById('btn-closeDeckModal')?.addEventListener('click', closeDeckEditor);
+            document.getElementById('btn-cancelDeck')?.addEventListener('click', closeDeckEditor);
+            document.getElementById('btn-addCard')?.addEventListener('click', addCard);
+            document.getElementById('btn-saveDeck')?.addEventListener('click', saveDeck);
+            document.getElementById('btn-cancelApprove')?.addEventListener('click', function() { document.getElementById('approveModal').classList.add('hidden'); });
+            document.getElementById('btn-closeApprove')?.addEventListener('click', function() { document.getElementById('approveModal').classList.add('hidden'); });
+            document.getElementById('btn-confirmApprove')?.addEventListener('click', confirmApprove);
+            document.getElementById('btn-cancelReject')?.addEventListener('click', function() { document.getElementById('rejectModal').classList.add('hidden'); });
+            document.getElementById('btn-closeReject')?.addEventListener('click', function() { document.getElementById('rejectModal').classList.add('hidden'); });
+            document.getElementById('btn-confirmReject')?.addEventListener('click', confirmReject);
+
+            document.getElementById('deckTable')?.addEventListener('click', function(e) {
+                var btn = e.target.closest('.js-edit-deck') || e.target.closest('.js-delete-deck');
+                if (!btn) return;
+                var id = btn.getAttribute('data-deck-id');
+                var deck = decks.find(function(d) { return d.id === id; });
+                if (btn.classList.contains('js-edit-deck')) openDeckEditor(deck);
+                else deleteDeck(id, deck ? deck.title : '');
+            });
+
+            document.getElementById('submissionTable')?.addEventListener('click', function(e) {
+                var btn = e.target.closest('.js-approve-sub') || e.target.closest('.js-reject-sub');
+                if (!btn) return;
+                var id = btn.getAttribute('data-sub-id');
+                if (btn.classList.contains('js-approve-sub')) openApproveModal(id);
+                else openRejectModal(id);
+            });
+
+            document.getElementById('cardsList')?.addEventListener('click', function(e) {
+                var btn = e.target.closest('.js-remove-card');
+                if (!btn) return;
+                var i = parseInt(btn.getAttribute('data-i'), 10);
+                if (i >= 0) { deckCards.splice(i, 1); renderCards(); }
+            });
+        };
+
+        if (typeof _pageInitRegistry !== 'undefined') _pageInitRegistry['flashcards'] = _initFlashcards;
+    </script>
+</body>
+</html>
