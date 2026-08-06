@@ -151,7 +151,8 @@ async def _write_chunked(dest_path: str, file: UploadFile, max_size: int,
 @router.get("/api/teacher/courses/suggest-similar",
             summary="Search published courses across all teachers",
             tags=["Teacher Courses"])
-async def suggest_similar_courses(q: str = Query("", description="Search query for course title")):
+async def suggest_similar_courses(q: str = Query("", description="Search query for course title"),
+                                   teacher_user: str = Depends(verify_teacher)):
     """Search published courses across all teachers by title substring.
 
     Returns up to 20 matching courses for the similar-courses picker.
@@ -234,6 +235,7 @@ async def get_course_detail(course_id: str, teacher_user: str = Depends(verify_t
     row = await db_fetch_one("SELECT * FROM courses WHERE id = ?", (course_id,))
     if not row:
         raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
+    await _ensure_course_owner(course_id, teacher_user)
     resources = await db_fetch(
         "SELECT * FROM course_resources WHERE course_id = ? ORDER BY position ASC", (course_id,))
     topics = await db_fetch(

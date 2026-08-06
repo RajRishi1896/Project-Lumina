@@ -1,4 +1,5 @@
 """Authentication dependencies and password helpers for Lumina EduMesh Hub."""
+import secrets
 import time
 import uuid
 import bcrypt as bcrypt_lib
@@ -60,6 +61,22 @@ def verify_password(password: str, hashed: str) -> bool:
         True if the password matches the hash, False otherwise.
     """
     return bcrypt_lib.checkpw(password.encode(), hashed.encode())
+
+
+def random_password(nbytes: int = 10) -> str:
+    """Generate a cryptographically random temporary password.
+
+    Uses ``secrets.token_urlsafe`` (URL-safe, contains upper/lowercase
+    letters and digits). Intended for one-time temporary credentials that
+    must be changed at first login (account is created with reset_required=1).
+
+    Args:
+        nbytes: Entropy source length. More bytes = longer password.
+
+    Returns:
+        A random URL-safe string to be displayed once to an admin.
+    """
+    return secrets.token_urlsafe(nbytes)
 
 
 def validate_password_strength(password: str) -> tuple[bool, str]:
@@ -187,6 +204,25 @@ async def verify_user(request: Request) -> str:
     """
     user = await _extract_user(request)
     return user["username"]
+
+
+async def can_manage_resource(actor_username: str, owner_username: str | None) -> bool:
+    """Return True if the actor owns the resource or has admin role.
+
+    Used by teacher-owned content routes (resources, quizzes) to enforce
+    per-teacher ownership with an admin override.
+
+    Args:
+        actor_username: The authenticated user's username.
+        owner_username: The ``uploaded_by`` value stored on the resource.
+
+    Returns:
+        True when the actor owns the resource or is an admin.
+    """
+    if owner_username and owner_username == actor_username:
+        return True
+    user = await db_fetch_one("SELECT role FROM users WHERE username = ?", (actor_username,))
+    return bool(user and user["role"] == "admin")
 
 
 async def generate_session_token(username: str, role: str) -> dict:

@@ -12,14 +12,14 @@ class ScholarReg(BaseModel):
     """Student registration request payload."""
     username: str = Field(..., min_length=1, max_length=100, description="Unique username for the scholar.", example="student42")
     name: Optional[str] = Field(default=None, max_length=100, description="Display name for the scholar. Defaults to username if empty.", example="Alice")
-    password: Optional[str] = Field(default="lumina2026", min_length=8, max_length=128, description="Account password. Defaults to a known fallback.", example="lumina2026")
+    password: Optional[str] = Field(default=None, min_length=8, max_length=128, description="Account password. Required -- the register flow rejects empty passwords.", example="MyPass123")
     grade: Optional[str] = Field(default=None, max_length=50, description="Grade assignment. Defaults to '0' (General) if not provided.", example="0")
 
 
 class AdminStudentCreate(BaseModel):
     """Admin-initiated student account creation payload."""
     username: str = Field(..., min_length=1, max_length=100, description="Unique username for the student.", example="student_new")
-    password: Optional[str] = Field(default="lumina2026", min_length=8, max_length=128, description="Account password. Defaults to a known fallback.", example="lumina2026")
+    password: Optional[str] = Field(default=None, min_length=8, max_length=128, description="Account password. Optional -- when omitted the server generates a random temporary password and returns it in the response.", example="MyPass123")
     name: Optional[str] = Field(default=None, max_length=100, description="Display name for the student.", example="Bob")
     grade: Optional[str] = Field(default=None, max_length=50, description="Grade or class assignment.", example="Grade 10")
 
@@ -83,6 +83,7 @@ class SubjectTimeSync(BaseModel):
 class StatusResponse(BaseModel):
     """Generic status response."""
     status: str = Field(..., description="Status indicator, typically 'ok' or 'pong'.", example="ok")
+    temporary_password: Optional[str] = Field(default=None, description="One-time temporary password when an account was created or reset without a known password. Present only on password-generating admin actions.", example="aB3xK9mQ2w")
 
 
 
@@ -286,6 +287,7 @@ class AdminCreateResponse(BaseModel):
     username: str = Field(..., description="Created username.", example="newuser")
     name: str = Field(..., description="Display name.", example="New User")
     scholar_id: str = Field(..., description="Assigned scholar ID.", example="LUMINA_01-abc")
+    temporary_password: Optional[str] = Field(default=None, description="Generated temporary password when the caller did not supply one. Present only for student accounts created without a password.", example="aB3xK9mQ2w")
 
 
 class AuditLogResponse(BaseModel):

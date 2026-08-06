@@ -9,7 +9,7 @@ import logging
 from app.database import PROFILE_ICONS_DIR
 from app.async_db import db_exec, db_exec_many, db_fetch, db_fetch_one, db_run
 from app.models import StudyTimeSync, SubjectTimeSync, StudentChangePasswordRequest, StatusResponse, RestoreResponse, StudentAnalyticsResponse, IconUploadResponse, StudentProfileResponse, WeeklyBreakdownResponse, BookmarkSync, BookmarkResponse, BookmarkItem, QuizBestScoreResponse, QuizBestScoreUpdate
-from app.dependencies import verify_student, hash_password, verify_password, invalidate_tokens_for_user
+from app.dependencies import verify_student, hash_password, verify_password, validate_password_strength, invalidate_tokens_for_user
 from app.audit import audit, Action
 
 router = APIRouter()
@@ -258,6 +258,9 @@ async def student_change_password(data: StudentChangePasswordRequest, student_id
             password_ok = await asyncio.to_thread(verify_password, data.old_password, row[0])
             if not password_ok:
                 raise HTTPException(status_code=400, detail="Incorrect current password.")
+        valid, msg = validate_password_strength(data.new_password)
+        if not valid:
+            raise HTTPException(status_code=400, detail=msg)
         hashed = await asyncio.to_thread(hash_password, data.new_password)
         await db_exec("UPDATE scholars SET hashed_password = ?, reset_required = 0 WHERE id = ?", (hashed, student_id))
         await invalidate_tokens_for_user(student_id)

@@ -17,6 +17,7 @@ async def list_similar_courses(course_id: str, teacher_user: str = Depends(verif
 
     Returns links where this course is either the source or target.
     """
+    await _ensure_course_owner(course_id, teacher_user)
     rows = await db_fetch(
         "SELECT * FROM similar_courses WHERE course_id = ? OR similar_course_id = ?",
         (course_id, course_id))

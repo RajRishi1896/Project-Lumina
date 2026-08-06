@@ -4,7 +4,7 @@ import uuid
 import json
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException
-from app.dependencies import verify_teacher, verify_student
+from app.dependencies import verify_teacher, verify_student, verify_user, can_manage_resource
 from app.async_db import db_exec, db_fetch_one
 from app.database import UPLOAD_DIR
 from app.quiz_grading import grade_quiz, load_quiz_file
@@ -67,9 +67,11 @@ async def create_quiz_resource(data: dict, teacher_user: str = Depends(verify_te
             summary="Update a standalone quiz resource", tags=["Teacher"])
 async def update_quiz_resource(resource_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
     """Update quiz questions and metadata for an existing standalone quiz resource."""
-    resource = await db_fetch_one("SELECT id, title FROM resources WHERE id = ? AND resource_type = 'quiz'", (resource_id,))
+    resource = await db_fetch_one("SELECT id, title, uploaded_by FROM resources WHERE id = ? AND resource_type = 'quiz'", (resource_id,))
     if not resource:
         raise HTTPException(status_code=404, detail="Quiz resource not found.")
+    if not await can_manage_resource(teacher_user, resource["uploaded_by"]):
+        raise HTTPException(status_code=403, detail="You can only edit your own quizzes.")  # i18n: user-facing error message
 
     questions = data.get("questions")
     if not isinstance(questions, list) or len(questions) == 0:
@@ -106,9 +108,12 @@ async def update_quiz_resource(resource_id: str, data: dict, teacher_user: str =
 
 @router.get("/api/quiz-resource/{resource_id}",
             summary="Get standalone quiz JSON", tags=["Quizzes"])
-async def get_quiz_resource(resource_id: str):
+async def get_quiz_resource(resource_id: str, user: str = Depends(verify_user)):
     """Get the quiz definition JSON for a standalone resource.
 
+    Gated with ``verify_user`` (not teacher-only): the Flutter student app
+    fetches standalone quizzes through this exact route
+    (``quiz_player_page.dart``), and grading happens server-side on submit.
     Uses the resource's stored filename (``.quiz`` for new quizzes,
     ``.json`` for legacy quizzes).  Legacy flat format (no ``"quiz"``
     wrapper) is automatically wrapped for consistent client parsing.

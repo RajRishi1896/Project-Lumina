@@ -9,7 +9,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.database import UPLOAD_DIR, gen_uid
-from app.dependencies import verify_teacher, verify_user
+from app.dependencies import verify_teacher, verify_user, verify_admin
 from app.models import SubjectCreate, SubjectResponse, SubjectCreateResponse, StatusResponse, GradeInfo
 from app.audit import audit, Action
 
@@ -79,12 +79,14 @@ async def create_subject(subject: SubjectCreate, teacher_user: str = Depends(ver
 
 @router.put("/teacher/subjects/{subject_id}",
             summary="Edit a subject", tags=["Subjects"])
-async def update_subject(subject_id: str, data: dict, teacher_user: str = Depends(verify_teacher),
+async def update_subject(subject_id: str, data: dict, admin_user: str = Depends(verify_admin),
                          request: Request = None):
     """Update a subject's name, symbol, or class_name.
 
-    Renames are propagated to all resources and resource_topics referencing
-    the old name. Duplicate name check is enforced.
+    Admin-only: a rename propagates to all resources, resource_topics,
+    and courses across every teacher. Renames are propagated to all
+    resources and resource_topics referencing the old name. Duplicate
+    name check is enforced.
 
     Raises:
         HTTPException: 400 on duplicate name, 404 if subject not found.
@@ -123,19 +125,22 @@ async def update_subject(subject_id: str, data: dict, teacher_user: str = Depend
         conn.commit()
         return old_name
     old_name = await db_run(_update_subject)
-    await audit(action=Action.UPDATE_SUBJECT, username=teacher_user, resource_type="subject",
+    await audit(action=Action.UPDATE_SUBJECT, username=admin_user, resource_type="subject",
                 resource_id=subject_id, resource_name=fields.get("name", old_name), changes=fields)
     return {"status": "ok"}
 
 
 @router.delete("/teacher/subjects/{subject_id}", response_model=StatusResponse,
                summary="Delete a subject",
-               description="Deletes a subject by id, optionally transferring resources to another subject.",
+               description="Deletes a subject by id, optionally transferring resources to another subject. Admin-only -- subject deletion removes resources and courses for every teacher.",
                tags=["Subjects"],
-               responses={400: {"description": "Invalid request or target subject missing"}, 401: {"description": "Unauthorized"}, 404: {"description": "Subject not found"}})
-async def delete_subject(subject_id: str, transfer_to: str = Query(None), teacher_user: str = Depends(verify_teacher),
+               responses={400: {"description": "Invalid request or target subject missing"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}, 404: {"description": "Subject not found"}})
+async def delete_subject(subject_id: str, transfer_to: str = Query(None), admin_user: str = Depends(verify_admin),
                          request: Request = None):
     """Delete a subject, optionally transferring its resources first.
+
+    Admin-only: without ``transfer_to`` this deletes physical files and
+    DB rows for resources and courses belonging to every teacher.
 
     If ``transfer_to`` is provided, all resources with the old subject are
     reassigned.  Otherwise their files are removed from disk and DB rows
@@ -178,7 +183,7 @@ async def delete_subject(subject_id: str, transfer_to: str = Query(None), teache
             return subject_name
 
         subject_name = await db_run(_delete_subject)
-        await audit(action=Action.DELETE_SUBJECT, username=teacher_user, resource_type="subject",
+        await audit(action=Action.DELETE_SUBJECT, username=admin_user, resource_type="subject",
                     resource_id=subject_id, resource_name=subject_name,
                     context={"transferred_to": transfer_to})
         return {"status": "success"}
@@ -262,12 +267,13 @@ async def create_grade(data: dict, teacher_user: str = Depends(verify_teacher),
 
 @router.put("/grades/{grade_name}",
             summary="Rename a grade", tags=["Subjects"])
-async def update_grade(grade_name: str, data: dict, teacher_user: str = Depends(verify_teacher),
+async def update_grade(grade_name: str, data: dict, admin_user: str = Depends(verify_admin),
                        request: Request = None):
     """Rename a grade level.
 
-    Extracts numeric grade from old and new names to update resource
-    references.  Enforces uniqueness.
+    Admin-only: a rename updates grade references on resources and courses
+    for every teacher. Extracts numeric grade from old and new names to
+    update resource references.  Enforces uniqueness.
 
     Raises:
         HTTPException: 400 if new name exists, 404 if grade not found.
@@ -293,7 +299,7 @@ async def update_grade(grade_name: str, data: dict, teacher_user: str = Depends(
         conn.execute("UPDATE grades SET name = ? WHERE name = ?", (new_name, grade_name))
         conn.commit()
     await db_run(_rename_grade)
-    await audit(action=Action.UPDATE_GRADE, username=teacher_user, resource_type="grade",
+    await audit(action=Action.UPDATE_GRADE, username=admin_user, resource_type="grade",
                 resource_id=grade_name, resource_name=new_name,
                 changes={"name": {"old": grade_name, "new": new_name}})
     return {"status": "ok"}
@@ -301,12 +307,15 @@ async def update_grade(grade_name: str, data: dict, teacher_user: str = Depends(
 
 @router.delete("/grades/{name}", response_model=StatusResponse,
                summary="Delete a grade",
-               description="Deletes a grade level, optionally transferring resources to another grade first.",
+               description="Deletes a grade level, optionally transferring resources to another grade first. Admin-only -- grade deletion removes assets for every teacher.",
                tags=["Subjects"],
-               responses={400: {"description": "Target grade not found"}, 401: {"description": "Unauthorized"}})
-async def delete_grade(name: str, transfer_to: str = None, teacher_user: str = Depends(verify_teacher),
+               responses={400: {"description": "Target grade not found"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+async def delete_grade(name: str, transfer_to: str = None, admin_user: str = Depends(verify_admin),
                        request: Request = None):
     """Delete a grade level.
+
+    Admin-only: without ``transfer_to`` this deletes files and DB rows for
+    resources and courses belonging to every teacher.
 
     Args:
         name: The grade name to delete.
@@ -354,7 +363,7 @@ async def delete_grade(name: str, transfer_to: str = None, teacher_user: str = D
         conn.execute("DELETE FROM grades WHERE name = ?", (name,))
         conn.commit()
     await db_run(_delete_grade)
-    await audit(action=Action.DELETE_GRADE, username=teacher_user, resource_type="grade",
+    await audit(action=Action.DELETE_GRADE, username=admin_user, resource_type="grade",
                 resource_id=name, resource_name=name,
                 context={"transferred_to": transfer_to})
     return {"status": "success"}

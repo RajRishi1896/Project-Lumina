@@ -16,6 +16,7 @@ from app.database import UPLOAD_DIR, DB_PATH, gen_composite_uid
 from app.audit import audit, Action
 from app.async_db import db_fetch, db_fetch_one
 from app.dependencies import verify_teacher
+from app.routers.resources import ALLOWED_EXTENSIONS
 from app.routers.teacher_courses import (
     COURSES_DIR, _course_to_response, _resources_dir, _assets_dir, _ensure_course_owner, _write_chunked,
 )
@@ -59,8 +60,10 @@ async def upload_course_resource(
     """
     await _ensure_course_owner(course_id, teacher_user)
     original_name = file.filename or "unnamed_file"
+    ext = os.path.splitext(original_name)[1].lower()
+    if not ext or ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"File type '{ext}' is not allowed.")  # i18n: user-facing error message
     resource_id = str(uuid.uuid4())
-    ext = os.path.splitext(original_name)[1]
     saved_name = f"{resource_id}{ext}"
     dest_path = os.path.join(_resources_dir(course_id), saved_name)
 
@@ -404,9 +407,7 @@ async def export_course(course_id: str, teacher_user: str = Depends(verify_teach
     Raises:
         HTTPException: 404 if the course does not exist.
     """
-    row = await db_fetch_one("SELECT * FROM courses WHERE id = ?", (course_id,))
-    if not row:
-        raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
+    row = await _ensure_course_owner(course_id, teacher_user)
     resources = await db_fetch(
         "SELECT * FROM course_resources WHERE course_id = ? ORDER BY position ASC", (course_id,))
     topics = await db_fetch(

@@ -2,8 +2,8 @@
 import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
-from app.async_db import db_exec, db_fetch, db_run
-from app.dependencies import hash_password, verify_teacher
+from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
+from app.dependencies import hash_password, random_password, verify_teacher, verify_admin, invalidate_tokens_for_user
 from app.models import StatusResponse, ScholarListItem
 from app.audit import audit, Action
 
@@ -27,27 +27,33 @@ async def get_scholars(teacher_user: str = Depends(verify_teacher)):
 
 @router.post("/teacher/scholars/reset-password/{scholar_id}", response_model=StatusResponse,
              summary="Reset student password",
-             description="Resets a scholar's password to the default and marks reset_required.",
+             description="Resets a scholar's password to a random temporary password, marks reset_required, and returns the temporary password in the response.",
              tags=["Teacher"],
              responses={400: {"description": "Failed to reset password"}, 401: {"description": "Unauthorized"}})
 async def teacher_reset_student_password(scholar_id: str, request: Request = None, teacher_user: str = Depends(verify_teacher)):
-    """Reset a scholar's password to the default value.
+    """Reset a scholar's password to a random temporary password.
 
     Args:
         scholar_id: The scholar's unique identifier.
 
     Returns:
-        Status dict indicating success.
+        Status dict with the new temporary password (displayed once to the caller).
     """
-    hashed = await asyncio.to_thread(hash_password, "lumina2026")
+    row = await db_fetch_one("SELECT id, username FROM scholars WHERE id = ?", (scholar_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="Scholar not found.")  # i18n: user-facing error message
+    new_pwd = random_password(10)
+    hashed = await asyncio.to_thread(hash_password, new_pwd)
     try:
         await db_exec(
             "UPDATE scholars SET hashed_password = ?, reset_required = 1 WHERE id = ?",
             (hashed, scholar_id),
         )
+        # Kill all existing sessions so the old password stops authenticating immediately.
+        await invalidate_tokens_for_user(row["id"])
         await audit(action=Action.RESET_PASSWORD, username=teacher_user, resource_type="account",
                     resource_id=scholar_id, target_user=scholar_id)
-        return {"status": "success"}
+        return {"status": "success", "temporary_password": new_pwd}
     except Exception as e:
         logging.error(f"teacher_reset_student_password: {e}")
         raise HTTPException(status_code=400, detail="Failed to reset password")  # i18n: user-facing error message
@@ -55,10 +61,10 @@ async def teacher_reset_student_password(scholar_id: str, request: Request = Non
 
 @router.delete("/teacher/scholars/{scholar_id}", response_model=StatusResponse,
                summary="Delete a scholar",
-               description="Deletes a scholar and all associated activity logs and downloads.",
+               description="Deletes a scholar and all associated activity logs and downloads. Admin-only -- hard deletion of a student account is an admin action.",
                tags=["Teacher"],
-               responses={400: {"description": "Failed to delete student"}, 401: {"description": "Unauthorized"}})
-async def teacher_delete_student(scholar_id: str, request: Request = None, teacher_user: str = Depends(verify_teacher)):
+               responses={400: {"description": "Failed to delete student"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}, 404: {"description": "Scholar not found"}})
+async def teacher_delete_student(scholar_id: str, request: Request = None, admin_user: str = Depends(verify_admin)):
     """Delete a scholar and related records.
 
     Args:
@@ -67,6 +73,12 @@ async def teacher_delete_student(scholar_id: str, request: Request = None, teach
     Returns:
         Status dict indicating success.
     """
+    row = await db_fetch_one("SELECT id, username FROM scholars WHERE id = ?", (scholar_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="Scholar not found.")  # i18n: user-facing error message
+    # Kill all existing sessions before removing the account so old tokens
+    # stop authenticating immediately.
+    await invalidate_tokens_for_user(row["id"])
     try:
         def _delete_scholar(conn):
             conn.execute("DELETE FROM scholars WHERE id = ?", (scholar_id,))
@@ -79,7 +91,7 @@ async def teacher_delete_student(scholar_id: str, request: Request = None, teach
             conn.execute("UPDATE users SET scholar_id = NULL WHERE scholar_id = ?", (scholar_id,))
             conn.commit()
         await db_run(_delete_scholar)
-        await audit(action=Action.DELETE_ACCOUNT, username=teacher_user, resource_type="account",
+        await audit(action=Action.DELETE_ACCOUNT, username=admin_user, resource_type="account",
                     resource_id=scholar_id, target_user=scholar_id)
         return {"status": "success"}
     except Exception as e:

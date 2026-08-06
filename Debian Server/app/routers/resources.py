@@ -9,11 +9,24 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from app.database import UPLOAD_DIR, gen_composite_uid
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
-from app.dependencies import verify_teacher, verify_user
+from app.dependencies import verify_teacher, verify_user, can_manage_resource
 from app.models import CatalogResourceResponse, FileEntryResponse, LimitsResponse, UploadResponse, DeleteResourceResponse
 from app.routers.teacher_courses import _write_chunked
 
 router = APIRouter()
+
+# Shared upload allowlists (also imported by teacher_course_resources.py).
+# No .svg/.html/.js -- those render as executable content when served.
+ALLOWED_EXTENSIONS = {
+    '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.ods', '.odp',
+    '.txt', '.rtf', '.csv', '.json',
+    '.mp4', '.webm', '.mkv', '.avi', '.mov', '.flv',
+    '.mp3', '.wav', '.ogg', '.m4a',
+    '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp',
+    '.epub', '.zim',
+}
+ALLOWED_RESOURCE_TYPES = {"textbook", "videos", "pyq", "notes", "pastPaper", "kiwix"}
+ALLOWED_LANGUAGES = {"en", "hi", "kn", "fr"}
 
 
 @router.get("/resources", response_model=list[CatalogResourceResponse],
@@ -185,22 +198,24 @@ async def upload_resource(title: str = Query(..., description="Display title"),
         raise HTTPException(status_code=507, detail="Hub storage is full. Please delete older files before uploading.")  # i18n: user-facing error message
     original_filename = file.filename or 'unnamed_file'
     ext = os.path.splitext(original_filename)[1].lower()
-    ALLOWED_EXTENSIONS = {
-        '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.ods', '.odp',
-        '.txt', '.rtf', '.csv', '.json',
-        '.mp4', '.webm', '.mkv', '.avi', '.mov', '.flv',
-        '.mp3', '.wav', '.ogg', '.m4a',
-        '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.bmp',
-        '.epub', '.zim',
-    }
-    if ext and ext not in ALLOWED_EXTENSIONS:
+    if not ext or ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"File type '{ext}' is not allowed. Allowed types: {', '.join(sorted(ALLOWED_EXTENSIONS))}")  # i18n: user-facing error message
     uuid_name = f"{uuid.uuid4().hex}{ext}"
-    file_path = os.path.join(UPLOAD_DIR, uuid_name)
 
     _TYPE_ALIASES = {"khan": "videos", "video": "videos", "textbooks": "textbook",
                      "past_paper": "pastPaper", "pastpaper": "pastPaper"}
     type = _TYPE_ALIASES.get(type.lower(), type)
+
+    if len(title) > 120:
+        raise HTTPException(status_code=400, detail="Title must be 120 characters or fewer.")  # i18n: user-facing validation message
+    if grade != "General" and not (grade.isdigit() and 0 <= int(grade) <= 13):
+        grade_row = await db_fetch_one("SELECT name FROM grades WHERE name = ?", (grade,))
+        if not grade_row:
+            raise HTTPException(status_code=400, detail=f"Grade '{grade}' is not valid.")  # i18n: user-facing validation message
+    if language not in ALLOWED_LANGUAGES:
+        raise HTTPException(status_code=400, detail=f"Language '{language}' is not supported.")  # i18n: user-facing validation message
+    if type not in ALLOWED_RESOURCE_TYPES:
+        raise HTTPException(status_code=400, detail=f"Resource type '{type}' is not supported.")  # i18n: user-facing validation message
 
     db_subject = await db_fetch_one("SELECT name FROM subjects WHERE name = ?", (subject,))
     if not db_subject:
@@ -247,11 +262,15 @@ async def upload_resource(title: str = Query(..., description="Display title"),
 
 @router.get("/upload-status/{upload_id}",
             summary="Check upload resume position", tags=["Resources"])
-async def upload_status(upload_id: str):
+async def upload_status(upload_id: str, teacher_user: str = Depends(verify_teacher)):
     """Return the byte count of a .part file so the client can resume.
 
     The upload_id is the UUID-based saved filename (without extension).
     Checks for ``{upload_id}.ext.part`` in the uploads directory.
+
+    Args:
+        upload_id: The UUID-based saved filename without extension.
+        teacher_user: Authenticated teacher username (auth gate).
 
     Returns:
         Dict with upload_id, bytes_written, and found flag.
@@ -280,9 +299,11 @@ async def update_resource(resource_id: str, data: dict, teacher_user: str = Depe
     fields = {k: v for k, v in data.items() if k in allowed and v is not None}
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update.")  # i18n: user-facing error message
-    row = await db_fetch_one("SELECT id FROM resources WHERE id = ?", (resource_id,))
+    row = await db_fetch_one("SELECT id, uploaded_by FROM resources WHERE id = ?", (resource_id,))
     if not row:
         raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
+    if not await can_manage_resource(teacher_user, row["uploaded_by"]):
+        raise HTTPException(status_code=403, detail="You can only edit your own resources.")  # i18n: user-facing error message
     if "subject" in fields:
         subj = await db_fetch_one("SELECT name FROM subjects WHERE name = ?", (fields["subject"],))
         if not subj:
@@ -323,10 +344,14 @@ async def delete_resource(resource_id: str, teacher_user: str = Depends(verify_t
     """
     try:
         def _delete(conn):
-            row = conn.execute("SELECT id, filename, title, resource_type FROM resources WHERE id = ?", (resource_id,)).fetchone()
+            row = conn.execute("SELECT id, filename, title, resource_type, uploaded_by FROM resources WHERE id = ?", (resource_id,)).fetchone()
             if not row:
                 return "not_found"
-            db_id, db_filename, db_title, db_type = row
+            db_id, db_filename, db_title, db_type, db_owner = row
+            if db_owner != teacher_user:
+                admin = conn.execute("SELECT role FROM users WHERE username = ?", (teacher_user,)).fetchone()
+                if not admin or admin[0] != "admin":
+                    return "forbidden"
             file_path = os.path.join(UPLOAD_DIR, db_filename) if db_filename else None
             download_count = conn.execute("SELECT COUNT(*) FROM scholar_downloads WHERE resource_id = ?", (resource_id,)).fetchone()[0]
             if download_count > 0:
@@ -358,6 +383,8 @@ async def delete_resource(resource_id: str, teacher_user: str = Depends(verify_t
         result = await db_run(_delete)
         if result == "not_found":
             raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
+        if result == "forbidden":
+            raise HTTPException(status_code=403, detail="You can only delete your own resources.")  # i18n: user-facing error message
         action_taken, db_title, download_count = result
         if action_taken == "soft_deprecated":
             await audit(action=Action.DEPRECATE_RESOURCE, username=teacher_user, resource_type="resource",
@@ -367,6 +394,8 @@ async def delete_resource(resource_id: str, teacher_user: str = Depends(verify_t
         await audit(action=Action.DELETE_RESOURCE, username=teacher_user, resource_type="resource",
                     resource_id=resource_id, resource_name=db_title)
         return {"status": "success", "action": "hard_deleted"}
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"delete_resource: {e}")
         raise HTTPException(status_code=400, detail="Failed to delete resource")  # i18n: user-facing error message

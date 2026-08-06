@@ -74,6 +74,8 @@ async def client(setup_db):
 async def admin_client(setup_db):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        resp = await ac.post("/token", data={"username": "admin", "password": "lumina2026"})
+        # Admin password is randomly generated at seed time (first init_db run).
+        from app.database import DEFAULT_ADMIN_PASSWORD
+        resp = await ac.post("/token", data={"username": "admin", "password": DEFAULT_ADMIN_PASSWORD})
         assert resp.status_code == 200, f"Login failed: {resp.status_code}"
         yield ac

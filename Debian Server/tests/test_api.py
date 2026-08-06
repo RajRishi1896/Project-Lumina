@@ -3,11 +3,13 @@ import json
 import os
 import pytest
 
+import app.database as db_mod
+
 
 @pytest.mark.asyncio
 async def test_login_success(admin_client):
     """POST /token with valid credentials returns 200 + sets session cookie."""
-    resp = await admin_client.post("/token", data={"username": "admin", "password": "lumina2026"})
+    resp = await admin_client.post("/token", data={"username": "admin", "password": db_mod.DEFAULT_ADMIN_PASSWORD})
     assert resp.status_code == 200
     body = resp.json()
     assert body["username"] == "admin"
@@ -86,7 +88,7 @@ def _clear_audit_log():
 async def test_audit_login_success_emits_event(admin_client):
     """Successful login emits an audit event with action=login."""
     _clear_audit_log()
-    await admin_client.post("/token", data={"username": "admin", "password": "lumina2026"})
+    await admin_client.post("/token", data={"username": "admin", "password": db_mod.DEFAULT_ADMIN_PASSWORD})
     events = _read_audit_log()
     login_events = [e for e in events if e.get("action") == "login"]
     assert len(login_events) >= 1, f"Expected login audit event, got: {events}"
@@ -112,7 +114,7 @@ async def test_audit_create_teacher_emits_event(admin_client):
     """Creating a teacher account emits an audit event with action=create_account."""
     _clear_audit_log()
     resp = await admin_client.post("/api/admin/create-teacher",
-                                   json={"username": "audit_test_teacher", "password": "lumina2026", "name": "Audit Test"})
+                                   json={"username": "audit_test_teacher", "password": "AuditTest123", "name": "Audit Test"})
     assert resp.status_code == 200
     events = _read_audit_log()
     create_events = [e for e in events if e.get("action") == "create_account"
