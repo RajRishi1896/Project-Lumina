@@ -649,7 +649,14 @@
             if (!confirmed) return;
             try {
                 var res = await fetch('/teacher/enable-default-admin', { method: 'POST' });
-                if (res.ok) { showNotification('defaultAdminNotif', __('settings.notif.admin_enabled'), false); loadDefaultAdminStatus(); }
+                if (res.ok) {
+                    var data = await res.json();
+                    var msg = __('settings.notif.admin_enabled');
+                    if (data.temporary_password) {
+                        msg += ' ' + __('danger.notif.temp_password', {password: data.temporary_password});
+                    }
+                    showNotification('defaultAdminNotif', msg, false); loadDefaultAdminStatus();
+                }
                 else { var err = await res.json(); showNotification('defaultAdminNotif', err.detail || __('settings.notif.enable_failed'), true); }
             } catch (e) { showNotification('defaultAdminNotif', __('settings.connection_error'), true); }
         }

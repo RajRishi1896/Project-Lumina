@@ -972,7 +972,12 @@
             try {
                 var res = await fetch('/teacher/scholars/reset-password/' + id, { method: 'POST' });
                 if (res.ok) {
-                    showNotification('studentDangerNotif', __('danger.notif.student_pwd_reset', {name: name}), false);
+                    var data = await res.json();
+                    var msg = __('danger.notif.student_pwd_reset', {name: name});
+                    if (data.temporary_password) {
+                        msg += ' ' + __('danger.notif.temp_password', {password: data.temporary_password});
+                    }
+                    showNotification('studentDangerNotif', msg, false);
                     loadDangerZone();
                 } else {
                     showNotification('studentDangerNotif', __('danger.notif.student_pwd_reset_failed'), true);
@@ -1009,7 +1014,12 @@
             try {
                 var res = await fetch('/teacher/reset-password/' + username, { method: 'POST' });
                 if (res.ok) {
-                    showNotification('teacherDangerNotif', __('danger.notif.teacher_pwd_reset', {username: username}), false);
+                    var data = await res.json();
+                    var msg = __('danger.notif.teacher_pwd_reset', {username: username});
+                    if (data.temporary_password) {
+                        msg += ' ' + __('danger.notif.temp_password', {password: data.temporary_password});
+                    }
+                    showNotification('teacherDangerNotif', msg, false);
                     loadDangerZone();
                 } else {
                     var err = await res.json();
@@ -1045,7 +1055,12 @@
             try {
                 var res = await fetch('/teacher/reset-password/' + username, { method: 'POST' });
                 if (res.ok) {
-                    showNotification('adminDangerNotif', __('danger.notif.admin_pwd_reset', {username: username}), false);
+                    var data = await res.json();
+                    var msg = __('danger.notif.admin_pwd_reset', {username: username});
+                    if (data.temporary_password) {
+                        msg += ' ' + __('danger.notif.temp_password', {password: data.temporary_password});
+                    }
+                    showNotification('adminDangerNotif', msg, false);
                     loadDangerZone();
                 } else {
                     var err = await res.json();
@@ -1188,7 +1203,7 @@
 
         /**
          * Submits a new student account to the server via POST.
-         * Defaults password to 'lumina2026' if none provided.
+         * Password is optional; the server generates one when omitted.
          */
         async function dangerCreateStudent() {
             var name = document.getElementById('modalStudentName').value.trim();
@@ -1207,11 +1222,16 @@
                 var res = await fetch('/api/admin/create-student', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: username, password: password || 'lumina2026', name: name, grade: grade || undefined })
+                    body: JSON.stringify({ username: username, password: password || undefined, name: name, grade: grade || undefined })
                 });
                 if (res.ok) {
                     closeCreateModal();
-                    showNotification('studentDangerNotif', __('danger.notif.student_created', {name: name}), false);
+                    var data = await res.json();
+                    var msg = __('danger.notif.student_created', {name: name});
+                    if (data.temporary_password) {
+                        msg += ' ' + __('danger.notif.temp_password', {password: data.temporary_password});
+                    }
+                    showNotification('studentDangerNotif', msg, false);
                     loadDangerZone();
                 } else {
                     var msg = __('danger.error.create_student_failed');
@@ -1256,7 +1276,7 @@
                 '</div>' +
                 '<div class="form-group" style="margin-bottom:0.5rem;">' +
                     '<label for="modalStudentPwd" data-i18n="danger.modal_password">Password</label>' +
-                    '<input type="password" id="modalStudentPwd" data-i18n="danger.modal_password_placeholder" placeholder="Defaults to lumina2026" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
+                    '<input type="password" id="modalStudentPwd" data-i18n="danger.modal_password_placeholder" placeholder="' + __('danger.modal_password_placeholder') + '" style="width:100%;padding:0.625rem 0.75rem;border:1px solid var(--outline);border-radius:var(--radius-sm);font-size:0.875rem;background:var(--surface);color:var(--on-surface);outline:none;">' +
                 '</div>';
             document.getElementById('createModalNotif').style.display = 'none';
             _setCreateModalConfirmHandler(dangerCreateStudent);
