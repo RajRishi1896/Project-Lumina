@@ -494,7 +494,7 @@ async def set_wifi_band(request: Request, admin_user: str = Depends(verify_admin
              description="Initiates a system reboot after a 2-second delay. Admin-only.",
              tags=["System"],
              responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
-async def reboot_server(admin_user: str = Depends(verify_admin)):
+async def reboot_server(request: Request, admin_user: str = Depends(verify_admin)):
     """Reboot the server.
 
     Schedules a reboot with a 2-second delay so the response is sent first.
