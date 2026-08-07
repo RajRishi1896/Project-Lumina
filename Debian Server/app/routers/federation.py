@@ -9,7 +9,8 @@ Peer-facing endpoints (signed with X-Peer-* headers after pairing):
     GET /peer/pairing-code       -- admin-only, shows our current code
     GET /peer/catalog            -- signed, approved resources only
     GET /peer/file/{id}          -- signed, Range-aware file serving
-    GET /peer/zim/page|asset     -- signed, local ZIM content for a peer
+    GET /peer/zim/page|asset|thumbnail
+                                 -- signed, local ZIM content for a peer
 
 Student-facing proxy:
     GET /peer/file/{peer_id}/{peer_resource_id}
@@ -22,9 +23,10 @@ Admin endpoints (session auth):
     GET    /api/peers/discover   -- mDNS browse for EduMeshHub services
     POST   /api/peers/{id}/sync  -- trigger a catalog refresh now
 
-Deferred in v1: proxying *peer ZIM content* to students (peer catalog
-excludes kiwix resources; the /peer/zim/* receive side works, the
-student-facing proxy does not exist yet).
+Peer ZIM content reaches students through the same /zim/* endpoints as
+local content: article and archive ids are namespaced peer:{peer_id}:{id}
+and zim_handler proxies pages, assets, and thumbnails back to the owning
+hub (peer catalog still excludes kiwix resources from peer_refresh).
 """
 
 import asyncio
@@ -34,7 +36,7 @@ import socket
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.database import UPLOAD_DIR
@@ -253,6 +255,22 @@ async def peer_zim_asset(archive_id: str, path: str, peer: dict = Depends(verify
     if data is None:
         raise HTTPException(status_code=404, detail="Asset not found in ZIM archive")
     return Response(content=data, media_type=_get_mime(path), headers={"Cache-Control": "public, max-age=86400"})
+
+
+@router.get(
+    "/peer/zim/thumbnail",
+    tags=["Federation"],
+    summary="Serve a local ZIM article thumbnail to a paired peer",
+    description="Signed. Mirrors /zim/thumbnail for paired peers.",
+    responses={401: {"description": "Invalid peer signature"}, 404: {"description": "Thumbnail not found"}},
+)
+async def peer_zim_thumbnail(article_id: str, peer: dict = Depends(verify_peer_sig)):
+    """Read an article's thumbnail from the on-disk cache for a paired peer."""
+    from zim_handler import ZIM_THUMBS_DIR
+    thumb_path = os.path.join(ZIM_THUMBS_DIR, f"{article_id}.png")
+    if await asyncio.to_thread(os.path.isfile, thumb_path):
+        return FileResponse(thumb_path, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+    raise HTTPException(status_code=404, detail="Thumbnail not found")
 
 
 @router.get(

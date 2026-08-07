@@ -335,6 +335,8 @@ class ZimArticleResponse(BaseModel):
     title: str = Field(..., description="Article title.", example="Photosynthesis")
     archive_id: str = Field(default="", description="ID of the archive this article belongs to.", example="abc123")
     has_thumbnail: bool = Field(default=False, description="Whether a thumbnail exists on disk.", example=False)
+    peer_id: str = Field(default="", description="Paired hub id for peer-hosted articles, empty for local.")
+    peer_name: str = Field(default="", description="Display name of the peer hub hosting the article, empty for local.")
 
 
 class ZimPageResponse(BaseModel):

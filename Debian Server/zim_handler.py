@@ -11,6 +11,11 @@ Endpoints:
     /page           -- article HTML with rewritten asset paths
     /asset          -- on-demand asset (image/CSS/JS) from ZIM binary
     /thumbnail      -- thumbnail image from disk cache
+
+Peer content flows through these same endpoints: article and archive ids
+from paired hubs are namespaced ``peer:{peer_id}:{original_id}``. Search
+merges peer results when no local archive filter is given; page, asset,
+and thumbnail proxy to the owning hub when the id carries the prefix.
 """
 
 import os
@@ -19,12 +24,16 @@ import time
 import hashlib
 import asyncio
 import logging
+from urllib.parse import parse_qs, urlencode
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse, Response
+from starlette.requests import Request
 from app.models import ZimArchiveResponse, ZimArticleResponse, ZimPageResponse, ZimSearchResponse
 from app.async_db import db_fetch, db_fetch_one
+from app.peer_sync import fetch_peer_bytes, fetch_peer_json, get_peer, get_peers
 
 router = APIRouter()
+logger = logging.getLogger("lumina.zim")
 
 ZIM_THUMBS_DIR = os.path.join(os.path.dirname(__file__), "zim_pages", "thumbs")
 os.makedirs(ZIM_THUMBS_DIR, exist_ok=True)
@@ -145,6 +154,25 @@ def _get_archive(archive_id: str, zim_path: str):
     archive = libzim.Archive(zim_path)
     _archive_cache[archive_id] = archive
     return archive
+
+
+def _split_peer_id(value: str) -> tuple[str | None, str]:
+    """Split a ``peer:{peer_id}:{original_id}`` namespaced id.
+
+    Returns (peer_id, original_id); anything without a peer prefix passes
+    through as (None, value).
+    """
+    if value.startswith("peer:") and ":" in value[len("peer:"):]:
+        peer_id, _, rest = value[5:].partition(":")
+        if peer_id and rest:
+            return peer_id, rest
+    return None, value
+
+
+# Peer pages rewrite their asset URLs to absolute /zim/asset URLs pointing
+# at the peer hub. Capture the full query (archive_id + path + hash) so the
+# archive id can be namespaced and the URL re-pointed at this hub.
+_ABS_ASSET_RE = re.compile(r"https?://[^\"' ]+/zim/asset\?([^\"' ]+)")
 
 
 # ── Search ranking ───────────────────────────────────────────────────
@@ -278,22 +306,23 @@ async def list_zim_articles(
     )
 
 
-@router.get(
-    "/search",
-    summary="Search ZIM articles by title with relevance ranking",
-    description="Server-side ranked search using FTS5 trigram index. "
-                "Results ordered by: exact match, case-insensitive exact, "
-                "prefix, disambiguation, word boundary, word suffix, FTS substring. "
-                "Quotes query for safe FTS matching. Queries < 3 chars return empty.",
-    tags=["ZIM"],
-    response_model=ZimSearchResponse,
-)
-async def search_zim(
-    query: str = Query(..., min_length=1, description="Search term"),
-    archive_id: str = Query(default="", description="Filter by archive ID"),
-    offset: int = Query(default=0, ge=0),
-    limit: int = Query(default=50, ge=1, le=100),
+async def _search_local(
+    query: str,
+    archive_id: str = "",
+    offset: int = 0,
+    limit: int = 50,
 ) -> ZimSearchResponse:
+    """Run a ranked title search against local ZIM articles only.
+
+    Args:
+        query: Search term (short queries return empty results).
+        archive_id: Restrict to a single archive, or empty for all.
+        offset: Pagination offset.
+        limit: Maximum results.
+
+    Returns:
+        A ZimSearchResponse with local articles, total, offset, and has_more.
+    """
     # Normalize: trim, collapse repeated whitespace, skip empty
     query = " ".join(query.split())
     if len(query) < _MIN_SEARCH_LEN:
@@ -366,12 +395,172 @@ async def search_zim(
     )
 
 
+async def _merge_peer_search(query: str, limit: int) -> tuple[list[ZimArticleResponse], int]:
+    """Fan out a search to every paired hub and collect prefixed results.
+
+    Args:
+        query: Search term to send to each peer.
+        limit: Maximum merged results; per-peer requests are capped at 50.
+
+    Returns:
+        Tuple of (peer articles with ``peer:{id}:`` prefixed ids, summed
+        peer totals). Empty on no peers, peer failures, or fan-out timeout
+        -- one offline hub never fails the whole search.
+    """
+    per_peer = min(50, limit)
+    peers = await get_peers()
+    if not peers:
+        return [], 0
+
+    async def _one_peer(peer: dict) -> tuple[list[ZimArticleResponse], int]:
+        try:
+            resp = await fetch_peer_json(
+                peer,
+                f"/peer/zim/search?{urlencode({'query': query, 'offset': 0, 'limit': per_peer})}",
+            )
+        except Exception as exc:  # network failure / peer HTTP error
+            logger.warning("Peer ZIM search failed for %s: %s", peer.get("base_url"), exc)
+            return [], 0
+        peer_name = peer["name"] or peer["id"]
+        out = []
+        for a in resp.get("articles", []):
+            out.append(ZimArticleResponse(
+                article_id=f"peer:{peer['id']}:{a['article_id']}",
+                title=a["title"],
+                archive_id=f"peer:{peer['id']}:{a['archive_id']}",
+                has_thumbnail=bool(a.get("has_thumbnail", False)),
+                peer_id=peer["id"],
+                peer_name=peer_name,
+            ))
+        return out, int(resp.get("total", len(out)))
+
+    # ponytail: 12s wall-clock cap on the whole fan-out. A slow hub drops
+    # the entire fan-out (not per-peer) rather than stalling the student.
+    try:
+        results = await asyncio.wait_for(asyncio.gather(*(_one_peer(p) for p in peers)), timeout=12)
+    except asyncio.TimeoutError:
+        logger.warning("Peer ZIM search fan-out timed out after 12s")
+        return [], 0
+    articles: list[ZimArticleResponse] = []
+    total = 0
+    for peer_articles, peer_total in results:
+        articles.extend(peer_articles)
+        total += peer_total
+    return articles, total
+
+
+@router.get(
+    "/search",
+    summary="Search ZIM articles by title with relevance ranking",
+    description="Server-side ranked search using FTS5 trigram index. "
+                "Results ordered by: exact match, case-insensitive exact, "
+                "prefix, disambiguation, word boundary, word suffix, FTS substring. "
+                "Quotes query for safe FTS matching. Queries < 3 chars return empty. "
+                "Without an archive filter, matching results from paired peer hubs "
+                "are merged in with peer: prefixed ids.",
+    tags=["ZIM"],
+    response_model=ZimSearchResponse,
+)
+async def search_zim(
+    query: str = Query(..., min_length=1, description="Search term"),
+    archive_id: str = Query(default="", description="Filter by archive ID"),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+) -> ZimSearchResponse:
+    """Search local ZIM articles, merging matching results from paired peers.
+
+    Args:
+        query: Search term (short queries return empty results).
+        archive_id: Restrict to a single local archive -- no peer merge.
+        offset: Pagination offset.
+        limit: Maximum merged results; per-peer requests are capped at 50.
+
+    Returns:
+        A ZimSearchResponse whose articles may carry peer_id/peer_name when
+        they originate from a paired hub.
+    """
+    if archive_id:  # scoped to a LOCAL archive -- no peer merge
+        return await _search_local(query, archive_id, offset, limit)
+    local = await _search_local(query, archive_id, offset, limit)
+    if not local.articles and len(" ".join(query.split())) < _MIN_SEARCH_LEN:
+        return local
+    peer_articles, peer_total = await _merge_peer_search(query, limit=limit)
+    # ponytail: dedupe on the origin article id (peer: prefix stripped) so
+    # the same article served by several peers appears once; local wins ties.
+    seen = {a.article_id for a in local.articles}
+    merged = list(local.articles)
+    for pa in peer_articles:
+        if _split_peer_id(pa.article_id)[1] in seen:
+            continue
+        seen.add(_split_peer_id(pa.article_id)[1])
+        merged.append(pa)
+    # ponytail: peer totals are summed -- duplicates across peers count
+    # multiple times in `total`; exact uniqueness would need a full merge.
+    total = local.total + peer_total
+    return ZimSearchResponse(
+        articles=merged[:limit], total=total, offset=offset,
+        has_more=(offset + len(merged)) < total,
+    )
+
+
+async def _proxy_peer_page(peer_id: str, article_id: str, request: Request) -> dict:
+    """Fetch an article's HTML from a paired hub and re-route its assets.
+
+    The peer's HTML carries absolute /zim/asset URLs pointing at the peer.
+    Those are re-written to this hub's /zim/asset with the archive id
+    namespaced ``peer:{peer_id}:{archive_id}``, so the student's follow-up
+    asset requests hit this hub and proxy back to the owning peer.
+
+    Args:
+        peer_id: The paired hub's id.
+        article_id: The article id on that hub (already prefix-stripped).
+        request: The student's request, used for this hub's base URL.
+
+    Returns:
+        Dict with the original (prefixed) article id and its html.
+
+    Raises:
+        HTTPException: 404 if the peer is not paired, 502 if unreachable,
+            otherwise the peer's own status for rejected requests.
+    """
+    peer = await get_peer(peer_id)
+    if not peer:
+        raise HTTPException(status_code=404, detail="Peer hub is not paired")
+    path = "/peer/zim/page?" + urlencode({"article_id": article_id})
+    try:
+        data = await fetch_peer_json(peer, path)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Peer ZIM page fetch failed for %s: %s", peer.get("base_url"), exc)
+        raise HTTPException(status_code=502, detail="Peer hub unreachable")
+    html = data.get("html", "")
+    # ponytail: `request` is an unannotated param here, so FastAPI never
+    # injects it and base stays '' -- asset URLs are emitted relative
+    # (/zim/asset?...), which is what the app's asset-inlining regex and
+    # WebView baseUrl resolution expect. If a request ever arrives, use it.
+    base = str(request.base_url).rstrip('/') if request is not None else ''
+
+    def _rewrite_peer_assets(m):
+        query = m.group(1)
+        parts = parse_qs(query)
+        a_id = parts.get("archive_id", [""])[0]
+        parts["archive_id"] = [f"peer:{peer_id}:{a_id}"] if a_id else [f"peer:{peer_id}"]
+        return f"{base}/zim/asset?" + urlencode({k: v[-1] for k, v in parts.items()})
+
+    html = _ABS_ASSET_RE.sub(_rewrite_peer_assets, html)
+    # ponytail: echo the original peer: prefixed id (reconstructed -- the
+    # partition in _split_peer_id round-trips exactly) so the app can
+    # correlate the response with the id it sent.
+    return {"id": f"peer:{peer_id}:{article_id}", "html": html}
+
+
 @router.get(
     "/page",
     summary="Get a ZIM article's HTML content",
     tags=["ZIM"],
     response_model=ZimPageResponse,
-    responses={200: {"description": "Article HTML"}, 404: {"description": "Article not found"}},
+    responses={200: {"description": "Article HTML"}, 404: {"description": "Article not found"}, 502: {"description": "Peer hub unreachable"}},
 )
 async def get_zim_page(
     article_id: str = Query(..., description="The article ID to retrieve"),
@@ -382,8 +571,14 @@ async def get_zim_page(
     Looks up the article path in the DB, opens the ZIM archive,
     reads the HTML content, and rewrites asset paths to absolute
     /zim/asset URLs using the request's base URL.
+
+    # ponytail: two-branch handler -- ids namespaced peer:{peer_id}:{orig}
+    # are proxied from the paired hub before the local DB lookup; the local
+    # branch never sees prefixed ids (they don't exist in zim_articles).
     """
-    from starlette.requests import Request
+    peer_id, orig = _split_peer_id(article_id)
+    if peer_id:
+        return await _proxy_peer_page(peer_id, orig, request)
     article = await db_fetch_one(
         "SELECT article_id, archive_id, title, path FROM zim_articles WHERE article_id = ?",
         (article_id,),
@@ -438,19 +633,57 @@ async def get_zim_page(
     return JSONResponse(content={"id": article_id, "html": html_content})
 
 
+async def _proxy_peer_asset(peer_id: str, archive_id: str, path: str) -> Response:
+    """Fetch a ZIM asset's bytes from a paired hub.
+
+    Args:
+        peer_id: The paired hub's id.
+        archive_id: The archive id on that hub (already prefix-stripped).
+        path: The asset path within the archive.
+
+    Returns:
+        The asset bytes with the peer's Content-Type and a one-day cache.
+
+    Raises:
+        HTTPException: 404 if the peer is not paired, 502 if unreachable,
+            otherwise the peer's own status for rejected requests.
+    """
+    peer = await get_peer(peer_id)
+    if not peer:
+        raise HTTPException(status_code=404, detail="Peer hub is not paired")
+    path_with_query = "/peer/zim/asset?" + urlencode({"archive_id": archive_id, "path": path})
+    try:
+        content_type, body = await fetch_peer_bytes(peer, path_with_query)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Peer ZIM asset fetch failed for %s: %s", peer.get("base_url"), exc)
+        raise HTTPException(status_code=502, detail="Peer hub unreachable")
+    return Response(content=body, media_type=content_type, headers={"Cache-Control": "public, max-age=86400"})
+
+
 @router.get(
     "/asset",
     summary="Fetch an asset from a ZIM archive on-demand",
     description="Reads a non-HTML asset directly from the .zim binary. "
-                "Returns the raw bytes with the correct Content-Type.",
+                "Returns the raw bytes with the correct Content-Type. "
+                "Archive ids namespaced peer:{peer_id}:{archive_id} are "
+                "proxied from the paired hub.",
     tags=["ZIM"],
-    responses={200: {"description": "Asset bytes"}, 404: {"description": "Asset not found"}},
+    responses={200: {"description": "Asset bytes"}, 404: {"description": "Asset not found"}, 502: {"description": "Peer hub unreachable"}},
 )
 async def get_zim_asset(
     archive_id: str = Query(..., description="The ZIM archive ID"),
     path: str = Query(..., description="The asset path within the ZIM"),
 ):
-    """Lazy-fetch an asset from the ZIM binary using get_entry_by_path."""
+    """Lazy-fetch an asset from the ZIM binary using get_entry_by_path.
+
+    # ponytail: two-branch handler -- peer: prefixed archive ids proxy to
+    # the owning hub; everything else is read from local ZIM binaries.
+    """
+    peer_id, orig_archive = _split_peer_id(archive_id)
+    if peer_id:
+        return await _proxy_peer_asset(peer_id, orig_archive, path)
     archive_row = await db_fetch_one(
         "SELECT zim_path FROM zim_archives WHERE id = ?", (archive_id,)
     )
@@ -489,14 +722,48 @@ async def get_zim_asset(
     return Response(content=data, media_type=mime, headers={"Cache-Control": "public, max-age=86400"})
 
 
+async def _proxy_peer_thumbnail(peer_id: str, article_id: str) -> Response:
+    """Fetch an article's thumbnail bytes from a paired hub.
+
+    Args:
+        peer_id: The paired hub's id.
+        article_id: The article id on that hub (already prefix-stripped).
+
+    Returns:
+        The thumbnail bytes with the peer's Content-Type and a one-day cache.
+
+    Raises:
+        HTTPException: 404 if the peer is not paired, 502 if unreachable,
+            otherwise the peer's own status for rejected requests.
+    """
+    peer = await get_peer(peer_id)
+    if not peer:
+        raise HTTPException(status_code=404, detail="Peer hub is not paired")
+    path = "/peer/zim/thumbnail?" + urlencode({"article_id": article_id})
+    try:
+        content_type, body = await fetch_peer_bytes(peer, path)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Peer ZIM thumbnail fetch failed for %s: %s", peer.get("base_url"), exc)
+        raise HTTPException(status_code=502, detail="Peer hub unreachable")
+    return Response(content=body, media_type=content_type, headers={"Cache-Control": "public, max-age=86400"})
+
+
 @router.get(
     "/thumbnail",
     summary="Serve an article's thumbnail image",
     tags=["ZIM"],
+    responses={404: {"description": "Thumbnail not found"}, 502: {"description": "Peer hub unreachable"}},
 )
 async def get_zim_thumbnail(
     article_id: str = Query(..., description="The article ID"),
 ):
+    # ponytail: two-branch handler -- peer: prefixed ids proxy to the owning
+    # hub; local thumbnails come from the on-disk cache.
+    peer_id, orig = _split_peer_id(article_id)
+    if peer_id:
+        return await _proxy_peer_thumbnail(peer_id, orig)
     thumb_path = os.path.join(ZIM_THUMBS_DIR, f"{article_id}.png")
     if await asyncio.to_thread(os.path.isfile, thumb_path):
         return FileResponse(thumb_path, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})

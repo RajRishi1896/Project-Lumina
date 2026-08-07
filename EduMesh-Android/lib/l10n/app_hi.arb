@@ -1,4 +1,4 @@
-﻿{
+{
   "@@locale": "hi",
   "@@needs-review": "true",
   "appTitle": "Project Lumina",
@@ -245,7 +245,11 @@
   "zimSearchHint": "à¤µà¤¿à¤•à¤¿à¤ªà¥€à¤¡à¤¿à¤¯à¤¾ à¤²à¥‡à¤– à¤–à¥‹à¤œà¥‡à¤‚...",
   "zimNoArticlesEmpty": "à¤¸à¤°à¥à¤µà¤° à¤ªà¤° à¤•à¥‹à¤ˆ à¤²à¥‡à¤– à¤‰à¤ªà¤²à¤¬à¥à¤§ à¤¨à¤¹à¥€à¤‚",
   "zimNoResultsEmpty": "à¤•à¥‹à¤ˆ à¤ªà¤°à¤¿à¤£à¤¾à¤® à¤¨à¤¹à¥€à¤‚ à¤®à¤¿à¤²à¤¾",
-  "zimUntitledArticleFallback": "à¤¶à¥€à¤°à¥à¤·à¤•à¤¹à¥€à¤¨",
+    "searchPeerHub": "पीयर हब",
+  "@searchPeerHub": {
+    "description": "Badge label on search results coming from paired peer hubs"
+  },
+    "zimUntitledArticleFallback": "à¤¶à¥€à¤°à¥à¤·à¤•à¤¹à¥€à¤¨",
   "zimFailedToLoadArticles": "à¤²à¥‡à¤– à¤²à¥‹à¤¡ à¤•à¤°à¤¨à¥‡ à¤®à¥‡à¤‚ à¤µà¤¿à¤«à¤²: {error}",
   "zimSearchFailed": "à¤–à¥‹à¤œ à¤µà¤¿à¤«à¤²: {error}",
   "zimFailedToLoadArticle": "à¤²à¥‡à¤– à¤²à¥‹à¤¡ à¤•à¤°à¤¨à¥‡ à¤®à¥‡à¤‚ à¤µà¤¿à¤«à¤²: {error}",

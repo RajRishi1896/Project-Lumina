@@ -1,4 +1,4 @@
-﻿{
+{
   "@@locale": "fr",
   "@@needs-review": "true",
   "appTitle": "Project Lumina",
@@ -245,7 +245,11 @@
   "zimSearchHint": "Rechercher des articles WikipÃ©dia...",
   "zimNoArticlesEmpty": "Aucun article disponible sur le serveur",
   "zimNoResultsEmpty": "Aucun rÃ©sultat trouvÃ©",
-  "zimUntitledArticleFallback": "Sans titre",
+    "searchPeerHub": "Hub partenaire",
+  "@searchPeerHub": {
+    "description": "Badge label on search results coming from paired peer hubs"
+  },
+    "zimUntitledArticleFallback": "Sans titre",
   "zimFailedToLoadArticles": "Ã‰chec du chargement des articles : {error}",
   "zimSearchFailed": "Ã‰chec de la recherche : {error}",
   "zimFailedToLoadArticle": "Ã‰chec du chargement de l'article : {error}",

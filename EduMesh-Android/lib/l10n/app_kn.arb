@@ -1,4 +1,4 @@
-﻿{
+{
   "@@locale": "kn",
   "@@needs-review": "true",
   "appTitle": "Project Lumina",
@@ -245,7 +245,11 @@
   "zimSearchHint": "à²µà²¿à²•à²¿à²ªà³€à²¡à²¿à²¯ à²²à³‡à²–à²¨à²—à²³à²¨à³à²¨à³ à²¹à³à²¡à³à²•à²¿...",
   "zimNoArticlesEmpty": "à²¸à²°à³à²µà²°à³â€Œà²¨à²²à³à²²à²¿ à²¯à²¾à²µà³à²¦à³‡ à²²à³‡à²–à²¨à²—à²³à³ à²²à²­à³à²¯à²µà²¿à²²à³à²²",
   "zimNoResultsEmpty": "à²¯à²¾à²µà³à²¦à³‡ à²«à²²à²¿à²¤à²¾à²‚à²¶à²—à²³à²¿à²²à³à²²",
-  "zimUntitledArticleFallback": "à²¶à³€à²°à³à²·à²¿à²•à³† à²‡à²²à³à²²",
+    "searchPeerHub": "ಪೀಯರ್ ಹಬ್",
+  "@searchPeerHub": {
+    "description": "Badge label on search results coming from paired peer hubs"
+  },
+    "zimUntitledArticleFallback": "à²¶à³€à²°à³à²·à²¿à²•à³† à²‡à²²à³à²²",
   "zimFailedToLoadArticles": "à²²à³‡à²–à²¨à²—à²³à²¨à³à²¨à³ à²²à³‹à²¡à³ à²®à²¾à²¡à²²à³ à²µà²¿à²«à²²: {error}",
   "zimSearchFailed": "à²¹à³à²¡à³à²•à²¾à²Ÿ à²µà²¿à²«à²²: {error}",
   "zimFailedToLoadArticle": "à²²à³‡à²–à²¨ à²²à³‹à²¡à³ à²®à²¾à²¡à²²à³ à²µà²¿à²«à²²: {error}",

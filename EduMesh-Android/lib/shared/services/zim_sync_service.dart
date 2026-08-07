@@ -22,6 +22,8 @@ class ZimSearchResult {
 ///
 /// Uses `/zim/search` for ranked search and `/zim/articles` for alphabetical
 /// browsing. Local SQLite only tracks downloaded articles for offline access.
+/// Peer-hub articles arrive merged into the same responses, marked by
+/// [ZimArticle.peerName].
 class ZimSyncService {
   static final ZimSyncService instance = ZimSyncService._();
   ZimSyncService._();
@@ -57,6 +59,7 @@ class ZimSyncService {
         title: (m['title'] ?? '').toString(),
         archiveId: (m['archive_id'] ?? '').toString(),
         hasThumbnail: m['has_thumbnail'] == true,
+        peerName: (m['peer_name'] ?? '').toString(),
       );
     }).toList();
 
@@ -99,6 +102,7 @@ class ZimSyncService {
         title: (m['title'] ?? '').toString(),
         archiveId: (m['archive_id'] ?? '').toString(),
         hasThumbnail: m['has_thumbnail'] == true,
+        peerName: (m['peer_name'] ?? '').toString(),
       );
     }).toList();
 

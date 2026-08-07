@@ -230,6 +230,7 @@ from app.routers.teacher_flashcards import router as teacher_flashcards_router
 from app.routers.teacher_quiz_resources import router as teacher_quiz_resources_router
 from app.routers.student_courses import router as student_courses_router
 from app.routers.federation import router as federation_router
+from app.routers.peer_zim_proxy import router as peer_zim_proxy_router
 from zim_handler import router as zim_router
 
 app.include_router(auth_router)
@@ -254,6 +255,7 @@ app.include_router(teacher_flashcards_router)
 app.include_router(student_courses_router)
 app.include_router(teacher_quiz_resources_router)
 app.include_router(federation_router)
+app.include_router(peer_zim_proxy_router)
 app.include_router(zim_router, prefix="/zim")
 
 # Static file mounts (must be after routes)

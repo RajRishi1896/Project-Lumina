@@ -227,7 +227,10 @@ class _SearchPageState extends State<SearchPage> {
     } catch (_) {}
   }
 
-  Future<void> _openZimArticle(String articleId, String title) async {
+  Future<void> _openZimArticle(String articleId, String title) =>
+      _openArticle(articleId, title);
+
+  Future<void> _openArticle(String articleId, String title) async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
     try {
@@ -277,18 +280,25 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  Future<void> _downloadZimArticle(ZimArticle article) async {
+  Future<void> _downloadZimArticle(ZimArticle article) => _downloadArticle(
+        articleId: article.articleId,
+        archiveId: article.archiveId,
+      );
+
+  Future<void> _downloadArticle({
+    required String articleId,
+    required String archiveId,
+  }) async {
     try {
       final res = await ApiClient.get('/zim/page', queryParameters: {
-        'article_id': article.articleId,
+        'article_id': articleId,
       }).timeout(const Duration(seconds: 10));
       var html = res.data['html'] as String? ?? '';
       if (html.isEmpty) return;
 
-      // Inline all /zim/asset references as data URIs for full offline support.
-      final assetPattern = RegExp(
-        r"""(/zim/asset\?archive_id=[^"'&]+&path=([^"'&]+))""",
-      );
+      // Inline all asset references as data URIs for full offline support.
+      final assetPattern = RegExp(r"""(/zim/asset\?archive_id=[^"'&]+&path=([^"'&]+))""");
+      const assetBasePath = '/zim/asset';
       final matches = assetPattern.allMatches(html).toList();
       // ponytail: fetch assets concurrently (5 at a time) instead of sequentially.
       // A page with 20 images goes from 20 serial calls to ~4 batches.
@@ -299,8 +309,8 @@ class _SearchPageState extends State<SearchPage> {
           final fullUrl = m.group(1)!;
           final assetPath = Uri.decodeComponent(m.group(2)!);
           try {
-            final assetResp = await ApiClient.get('/zim/asset', queryParameters: {
-              'archive_id': article.archiveId,
+            final assetResp = await ApiClient.get(assetBasePath, queryParameters: {
+              'archive_id': archiveId,
               'path': assetPath,
             }).timeout(const Duration(seconds: 5));
             if (assetResp.data is List<int>) {
@@ -318,21 +328,24 @@ class _SearchPageState extends State<SearchPage> {
 
       // Save self-contained HTML to disk and SharedPreferences.
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/zim_${article.articleId.replaceAll('/', '_')}.html');
+      final file = File('${dir.path}/zim_${articleId.replaceAll('/', '_')}.html');
       await file.writeAsString(html);
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('zim_page_${article.articleId}', html);
+        await prefs.setString('zim_page_$articleId', html);
       } catch (_) {}
 
-      await ZimSyncService.instance.markDownloaded(article.articleId);
+      await ZimSyncService.instance.markDownloaded(articleId);
       if (mounted) setState(() {});
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(l10n.snackbarDownloadFailed),
-          action: SnackBarAction(label: l10n.buttonRetry, onPressed: () => _downloadZimArticle(article)),
+          action: SnackBarAction(label: l10n.buttonRetry, onPressed: () => _downloadArticle(
+            articleId: articleId,
+            archiveId: archiveId,
+          )),
         ));
       }
     }
@@ -702,13 +715,19 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> _fetchZimResults() async {
     final query = _searchQuery.trim().replaceAll(RegExp(r'\s+'), ' ');
     _zimRequestId++;
-    if (query.length < 3 || !ConnectivityService().isOnline) return;
     final myId = _zimRequestId;
-    try {
-      final result = await ZimSyncService.instance.searchOnServer(query, limit: 30);
-      if (myId != _zimRequestId) return;
-      _zimArticles = result.articles;
-    } catch (_) {}
+    if (!ConnectivityService().isOnline) {
+      _zimArticles = [];
+      if (mounted) _applyFilters();
+      return;
+    }
+    if (query.length >= 3) {
+      try {
+        final result = await ZimSyncService.instance.searchOnServer(query, limit: 30);
+        if (myId != _zimRequestId) return;
+        _zimArticles = result.articles;
+      } catch (_) {}
+    }
     if (mounted) _applyFilters();
   }
 
@@ -917,12 +936,18 @@ class _SearchPageState extends State<SearchPage> {
           _filteredResults.isEmpty
               ? SliverFillRemaining(
                   child: Center(
-                  child: Text(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
                   _searchQuery.trim().isEmpty && !_hasActiveFilters
                       ? l10n.emptyNoResources
                       : l10n.emptyNoSearchResults,
                   style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                )))
+                      ),
+                    ],
+                  ),
+                ))
               : SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
@@ -934,8 +959,7 @@ class _SearchPageState extends State<SearchPage> {
                       final isOfflineUnavailable = !isZim && !ConnectivityService().isOnline && !_downloadedIds.contains(original.id.toString());
 
                       if (isZim) {
-                        return _buildZimResultTile(
-                            item, zimArticle, cs, tt, l10n);
+                        return _buildZimResultTile(item, zimArticle, cs, tt, l10n);
                       }
                       final subtitle = [
                         original.subject,
@@ -1055,6 +1079,7 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildZimResultTile(Map<String, dynamic> item, ZimArticle? zimArticle,
       ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    final isPeer = zimArticle?.isPeer ?? false;
     return ListTile(
       leading: zimArticle != null && zimArticle.hasThumbnail
           ? ClipRRect(
@@ -1072,8 +1097,9 @@ class _SearchPageState extends State<SearchPage> {
               backgroundColor: cs.primaryContainer,
               child: Icon(Icons.article, color: cs.primary),
             ),
-      onTap: () =>
-          _openZimArticle(item['articleId'] as String, item['title'] as String),
+      onTap: () {
+        _openZimArticle(item['articleId'] as String, item['title'] as String);
+      },
       title: Row(
         children: [
           Padding(
@@ -1085,7 +1111,7 @@ class _SearchPageState extends State<SearchPage> {
                 borderRadius: BorderRadius.circular(4.r),
               ),
               child: Text(
-                l10n.badgeKiwixWiki,
+                isPeer ? l10n.searchPeerHub : l10n.badgeKiwixWiki,
                 style: tt.labelSmall?.copyWith(
                   color: cs.onPrimary,
                   fontWeight: AppSpacing.weightStrong,

@@ -1,4 +1,4 @@
-﻿{
+{
   "@@locale": "te",
   "appTitle": "Project Lumina",
   "materialAppTitle": "Edu-Mesh à°µà°¿à°¦à±à°¯à°¾à°°à±à°¥à°¿",
@@ -245,7 +245,11 @@
   "zimSearchHint": "à°µà°¿à°•à±€à°ªà±€à°¡à°¿à°¯à°¾ à°µà±à°¯à°¾à°¸à°¾à°²à°¨à± à°¶à±‹à°§à°¿à°‚à°šà°‚à°¡à°¿...",
   "zimNoArticlesEmpty": "à°¸à°°à±à°µà°°à±â€Œà°²à±‹ à°µà±à°¯à°¾à°¸à°¾à°²à± à°…à°‚à°¦à±à°¬à°¾à°Ÿà±à°²à±‹ à°²à±‡à°µà±",
   "zimNoResultsEmpty": "à°«à°²à°¿à°¤à°¾à°²à± à°•à°¨à±à°—à±Šà°¨à°¬à°¡à°²à±‡à°¦à±",
-  "zimUntitledArticleFallback": "à°¶à±€à°°à±à°·à°¿à°• à°²à±‡à°¨à°¿à°¦à°¿",
+    "searchPeerHub": "పీర్ హబ్",
+  "@searchPeerHub": {
+    "description": "Badge label on search results coming from paired peer hubs"
+  },
+    "zimUntitledArticleFallback": "à°¶à±€à°°à±à°·à°¿à°• à°²à±‡à°¨à°¿à°¦à°¿",
   "zimFailedToLoadArticles": "à°µà±à°¯à°¾à°¸à°¾à°²à°¨à± à°²à±‹à°¡à± à°šà±‡à°¯à°¡à°‚à°²à±‹ à°µà°¿à°«à°²à°®à±ˆà°‚à°¦à°¿: {error}",
   "zimSearchFailed": "à°¶à±‹à°§à°¨ à°µà°¿à°«à°²à°®à±ˆà°‚à°¦à°¿: {error}",
   "zimFailedToLoadArticle": "à°µà±à°¯à°¾à°¸à°¾à°¨à±à°¨à°¿ à°²à±‹à°¡à± à°šà±‡à°¯à°¡à°‚à°²à±‹ à°µà°¿à°«à°²à°®à±ˆà°‚à°¦à°¿: {error}",

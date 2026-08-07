@@ -1,4 +1,4 @@
-﻿{
+{
   "@@locale": "ta",
   "appTitle": "Project Lumina",
   "materialAppTitle": "Edu-Mesh à®®à®¾à®£à®µà®°à¯",
@@ -245,7 +245,11 @@
   "zimSearchHint": "à®µà®¿à®•à¯à®•à®¿à®ªà¯€à®Ÿà®¿à®¯à®¾ à®•à®Ÿà¯à®Ÿà¯à®°à¯ˆà®•à®³à¯ˆà®¤à¯ à®¤à¯‡à®Ÿà¯à®™à¯à®•à®³à¯...",
   "zimNoArticlesEmpty": "à®šà®°à¯à®µà®°à®¿à®²à¯ à®•à®Ÿà¯à®Ÿà¯à®°à¯ˆà®•à®³à¯ à®Žà®¤à¯à®µà¯à®®à¯ à®‡à®²à¯à®²à¯ˆ",
   "zimNoResultsEmpty": "à®®à¯à®Ÿà®¿à®µà¯à®•à®³à¯ à®Žà®¤à¯à®µà¯à®®à¯ à®•à®¿à®Ÿà¯ˆà®•à¯à®•à®µà®¿à®²à¯à®²à¯ˆ",
-  "zimUntitledArticleFallback": "à®¤à®²à¯ˆà®ªà¯à®ªà®¿à®²à¯à®²à®¾à®¤à®¤à¯",
+    "searchPeerHub": "பியர் ஹப்",
+  "@searchPeerHub": {
+    "description": "Badge label on search results coming from paired peer hubs"
+  },
+    "zimUntitledArticleFallback": "à®¤à®²à¯ˆà®ªà¯à®ªà®¿à®²à¯à®²à®¾à®¤à®¤à¯",
   "zimFailedToLoadArticles": "à®•à®Ÿà¯à®Ÿà¯à®°à¯ˆà®•à®³à¯ˆ à®à®±à¯à®± à®®à¯à®Ÿà®¿à®¯à®µà®¿à®²à¯à®²à¯ˆ: {error}",
   "zimSearchFailed": "à®¤à¯‡à®Ÿà®²à¯ à®¤à¯‹à®²à¯à®µà®¿: {error}",
   "zimFailedToLoadArticle": "à®•à®Ÿà¯à®Ÿà¯à®°à¯ˆà®¯à¯ˆ à®à®±à¯à®± à®®à¯à®Ÿà®¿à®¯à®µà®¿à®²à¯à®²à¯ˆ: {error}",

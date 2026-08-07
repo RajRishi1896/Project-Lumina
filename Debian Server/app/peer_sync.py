@@ -167,10 +167,7 @@ class PeerManager:
 
     async def request_catalog(self, peer: dict) -> list[dict]:
         """Fetch a paired peer's approved resource catalog (signed)."""
-        path = "/peer/catalog"
-        return await _http_get_json(
-            peer["base_url"] + path, headers=signed_headers(peer["shared_secret"], path)
-        )
+        return await fetch_peer_json(peer, "/peer/catalog")
 
 
 def derive_shared_secret(code: str, pub_a: str, pub_b: str) -> str:
@@ -347,6 +344,62 @@ async def fetch_file(peer: dict, resource_id: str, range_header: str | None) -> 
             await client.aclose()
 
     return resp.status_code, out_headers, _body()
+
+
+async def fetch_peer_json(peer: dict, path_with_query: str) -> dict:
+    """Signed GET a peer endpoint and parse its JSON body.
+
+    Args:
+        peer: The peer row from the database.
+        path_with_query: Endpoint path and query to sign and request, e.g.
+            ``/peer/zim/search?query=x``.
+
+    Returns:
+        The parsed JSON body.
+
+    Raises:
+        HTTPException: 502 when the peer is unreachable; forwards the peer's
+            status code when it rejects the request (>=400).
+    """
+    try:
+        return await _http_get_json(
+            peer["base_url"] + path_with_query,
+            headers=signed_headers(peer["shared_secret"], path_with_query),
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Peer JSON fetch failed for %s: %s", peer.get("base_url"), exc)
+        raise HTTPException(status_code=502, detail="Peer unreachable")
+
+
+async def fetch_peer_bytes(peer: dict, path_with_query: str) -> tuple[str, bytes]:
+    """Signed GET a peer endpoint and return its raw body.
+
+    Args:
+        peer: The peer row from the database.
+        path_with_query: Endpoint path and query to sign and request, e.g.
+            ``/peer/zim/asset?archive_id=X&path=P``.
+
+    Returns:
+        Tuple of (content_type, body bytes).
+
+    Raises:
+        HTTPException: 502 when the peer is unreachable; forwards the peer's
+            status code when it rejects the request (>=400).
+    """
+    import httpx
+    headers = signed_headers(peer["shared_secret"], path_with_query)
+    async with httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=10.0)) as client:
+        try:
+            resp = await client.get(peer["base_url"] + path_with_query, headers=headers)
+        except Exception as exc:
+            logger.warning("Peer bytes fetch failed for %s: %s", peer.get("base_url"), exc)
+            raise HTTPException(status_code=502, detail="Peer unreachable")
+        if resp.status_code >= 400:
+            raise HTTPException(status_code=resp.status_code, detail="Peer rejected the request")
+        content_type = resp.headers.get("content-type") or "application/octet-stream"
+        return content_type, resp.content
 
 
 async def _stream_local_file(file_path: str, range_header: str | None):
