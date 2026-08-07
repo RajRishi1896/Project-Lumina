@@ -9,7 +9,7 @@ from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch_one
 from app.dependencies import verify_teacher
 from app.models import CourseQuizCreate
-from app.routers.teacher_courses import COURSES_DIR, _ensure_course_owner
+from app.routers.teacher_courses import COURSES_DIR, _ensure_course_exists
 
 router = APIRouter()
 
@@ -45,7 +45,7 @@ async def create_course_quiz(course_id: str, data: CourseQuizCreate, teacher_use
     Raises:
         HTTPException: 400 if questions are missing or invalid.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     questions = data.questions
     if not isinstance(questions, list) or len(questions) == 0:
         raise HTTPException(status_code=400, detail="Quiz must have at least one question.")  # i18n: user-facing error message
@@ -94,7 +94,7 @@ async def save_course_quiz(course_id: str, resource_id: str, data: dict, teacher
     Raises:
         HTTPException: 400 if quiz data invalid, 404 if resource not found.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     resource = await db_fetch_one(
         "SELECT id FROM course_resources WHERE id = ? AND course_id = ?", (resource_id, course_id))
     if not resource:

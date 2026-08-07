@@ -1,6 +1,5 @@
 """Database initialization and constants for Lumina EduMesh Hub."""
 import os
-import secrets
 import sqlite3
 import uuid
 import time
@@ -11,10 +10,6 @@ UPLOAD_DIR = "uploads"
 DB_PATH = "data/hub.db"
 PROFILE_ICONS_DIR = "profile_icons"
 THUMBNAILS_DIR = "thumbnails"
-
-# Set once on first-run seed; the temporary password is logged to the console
-# at startup. Reset via Settings > re-enable default admin or reset_admin.sh.
-DEFAULT_ADMIN_PASSWORD: str | None = None
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PROFILE_ICONS_DIR, exist_ok=True)
@@ -61,8 +56,7 @@ def init_db():
 
     Creates all tables idempotently (IF NOT EXISTS), runs composite indexes for
     hot query paths, seeds default grades/subjects, and creates a default admin
-    account (username ``admin``) on first run with a RANDOM temporary password
-    (reset_required=1 forces a change at first login).  Schema
+    account (username ``admin``, password ``lumina2026``) on first run.  Schema
     migrations are wrapped in try/except so they pass silently when columns or
     tables already exist.
     """
@@ -350,16 +344,12 @@ def init_db():
             logging.warning(f"FTS5 startup rebuild failed: {e}")
 
     try:
-        generated_pwd = secrets.token_urlsafe(12)
-        default_pwd = hash_password(generated_pwd)
+        default_pwd = hash_password("lumina2026")
         admin_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-        c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id, role, reset_required) VALUES (?, ?, ?, ?, ?, 'admin', 1)", ("admin", default_pwd, "Administrator", "System", admin_id))
-        global DEFAULT_ADMIN_PASSWORD
-        DEFAULT_ADMIN_PASSWORD = generated_pwd
+        c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, 'admin')", ("admin", default_pwd, "Administrator", "System", admin_id))
         logging.info("=" * 50)
-        logging.info("  DEFAULT ADMIN ACCOUNT CREATED (first run)")
-        logging.info(f"  Temporary password: {generated_pwd}")
-        logging.info("  It must be changed on first login.")
+        logging.info("  DEFAULT ADMIN ACCOUNT CREATED")
+        logging.info("  Change the password immediately via Dashboard > Settings")
         logging.info("=" * 50)
     except sqlite3.IntegrityError:
         pass

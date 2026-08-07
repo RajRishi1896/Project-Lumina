@@ -5,7 +5,7 @@ from app.audit import audit, Action
 from app.async_db import db_fetch, db_fetch_one, db_exec
 from app.dependencies import verify_teacher
 from app.models import SimilarLinkCreate
-from app.routers.teacher_courses import _ensure_course_owner
+from app.routers.teacher_courses import _ensure_course_exists
 
 router = APIRouter()
 
@@ -17,7 +17,7 @@ async def list_similar_courses(course_id: str, teacher_user: str = Depends(verif
 
     Returns links where this course is either the source or target.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     rows = await db_fetch(
         "SELECT * FROM similar_courses WHERE course_id = ? OR similar_course_id = ?",
         (course_id, course_id))
@@ -39,8 +39,8 @@ async def add_similar_course(course_id: str, data: SimilarLinkCreate, teacher_us
     c2 = await db_fetch_one("SELECT id FROM courses WHERE id = ?", (data.similar_course_id,))
     if not c1 or not c2:
         raise HTTPException(status_code=404, detail="One or both courses not found.")  # i18n: user-facing error message
-    await _ensure_course_owner(course_id, teacher_user)
-    await _ensure_course_owner(data.similar_course_id, teacher_user)
+    await _ensure_course_exists(course_id)
+    await _ensure_course_exists(data.similar_course_id)
     if course_id == data.similar_course_id:
         raise HTTPException(status_code=400, detail="A course cannot link to itself.")  # i18n: user-facing error message
     dup = await db_fetch_one(
@@ -71,7 +71,7 @@ async def remove_similar_course(course_id: str, similar_id: str, teacher_user: s
     Raises:
         HTTPException: 404 if the link does not exist.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     existing = await db_fetch_one(
         "SELECT 1 FROM similar_courses WHERE (course_id = ? AND similar_course_id = ?) OR (course_id = ? AND similar_course_id = ?)",
         (course_id, similar_id, similar_id, course_id))

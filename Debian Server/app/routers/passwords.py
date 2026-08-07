@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.async_db import db_exec, db_fetch_one
 from app.models import StatusResponse
-from app.dependencies import hash_password, verify_password, validate_password_strength, random_password, verify_teacher, verify_admin, invalidate_tokens_for_user
+from app.dependencies import hash_password, verify_password, validate_password_strength, verify_teacher, verify_admin, invalidate_tokens_for_user
 from app.audit import audit, Action
 
 router = APIRouter()
@@ -81,30 +81,29 @@ async def force_change_password(data: dict, teacher_user: str = Depends(verify_t
 
 @router.post("/teacher/reset-password/{username}", response_model=StatusResponse,
              summary="Admin reset teacher password",
-             description="Resets a teacher's password to a new random temporary password, marks reset_required, and returns the temporary password in the response. Admin-only.",
+             description="Resets a teacher's password to the default and marks reset_required. Admin-only.",
              tags=["Admin"],
              responses={400: {"description": "Cannot reset default admin or reset failed"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
 async def force_reset_teacher_password(username: str, admin_user: str = Depends(verify_admin)):
-    """Admin-only: reset a teacher's password to a random temporary password.
+    """Admin-only: reset a teacher's password to the default.
 
     Args:
         username: The teacher's username.
 
     Returns:
-        Status dict with the new temporary password (displayed once to the caller).
+        Status dict indicating success.
     Raises:
         HTTPException 400: If username is 'admin' or the reset fails.
     """
     if username == "admin":
         raise HTTPException(status_code=400, detail="Cannot reset the default admin password. Use the Settings page to re-enable the default admin account.")  # i18n: user-facing error message
-    new_pwd = random_password(10)
-    hashed = await asyncio.to_thread(hash_password, new_pwd)
+    hashed = await asyncio.to_thread(hash_password, "lumina2026")
     try:
         await db_exec("UPDATE users SET hashed_password = ?, reset_required = 1 WHERE username = ?", (hashed, username))
         await invalidate_tokens_for_user(username)
         await audit(action=Action.RESET_PASSWORD, username=admin_user, resource_type="account",
                     resource_id=username, target_user=username)
-        return {"status": "success", "temporary_password": new_pwd}
+        return {"status": "success"}
     except Exception as e:
         logging.error(f"force_reset_teacher_password: {e}")
         raise HTTPException(status_code=400, detail="Failed to reset password")  # i18n: user-facing error message

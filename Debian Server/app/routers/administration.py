@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.models import TeacherCreate, AdminStudentCreate, StatusResponse, AdminSummary, AdminCreateResponse
-from app.dependencies import hash_password, random_password, verify_admin
+from app.dependencies import hash_password, verify_admin
 
 router = APIRouter()
 
@@ -39,21 +39,20 @@ async def disable_default_admin(admin_user: str = Depends(verify_admin)):
 
 @router.post("/teacher/enable-default-admin", response_model=StatusResponse,
              summary="Enable default admin",
-             description="Re-enables the default admin account with a new random temporary password and marks reset_required, forcing a change at next login.",
+             description="Re-enables the default admin account by resetting its password to the default.",
              tags=["Admin"],
              responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
 async def enable_default_admin(admin_user: str = Depends(verify_admin)):
     """Re-enable the default admin account.
 
     Returns:
-        Status dict with the new temporary password (displayed once to the caller).
+        Status dict indicating success.
     """
-    new_pwd = random_password(12)
-    hashed = await asyncio.to_thread(hash_password, new_pwd)
-    await db_exec("UPDATE users SET hashed_password = ?, reset_required = 1 WHERE username = 'admin'", (hashed,))
+    hashed = await asyncio.to_thread(hash_password, "lumina2026")
+    await db_exec("UPDATE users SET hashed_password = ? WHERE username = 'admin'", (hashed,))
     await audit(action=Action.CHANGE_SETTINGS, username=admin_user, resource_type="account",
                 resource_id="admin", resource_name="default admin", context={"enabled": True})
-    return {"status": "success", "temporary_password": new_pwd}
+    return {"status": "success"}
 
 
 @router.get("/teacher/default-admin-status",
@@ -115,7 +114,7 @@ async def _create_user(data: TeacherCreate, admin_user: str, role: str, default_
         # create with the same username loses the INSERT and gets a 400.
         try:
             await db_exec(
-                "INSERT INTO users (username, hashed_password, name, department, scholar_id, role, reset_required) VALUES (?, ?, ?, ?, ?, ?, 1)",
+                "INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, ?)",
                 (data.username, hashed_pwd, display_name, dept, user_id, role),
             )
         except sqlite3.IntegrityError:
@@ -178,20 +177,19 @@ async def create_student(data: AdminStudentCreate, admin_user: str = Depends(ver
     try:
         display_name = data.name or data.username
         scholar_id = f"LUMINA_01-{uuid.uuid4().hex}"
-        generated = data.password is None or data.password == ""
-        pwd = data.password if not generated else random_password(10)
+        pwd = data.password or "lumina2026"
         hashed_pwd = await asyncio.to_thread(hash_password, pwd)
         # Race-safe: scholars.username has a UNIQUE index, so a concurrent
         # create with the same username loses the INSERT and gets a 400.
         try:
             if data.grade:
                 await db_exec(
-                    "INSERT INTO scholars (id, username, name, hashed_password, reset_required, grade) VALUES (?, ?, ?, ?, 1, ?)",
+                    "INSERT INTO scholars (id, username, name, hashed_password, reset_required, grade) VALUES (?, ?, ?, ?, 0, ?)",
                     (scholar_id, data.username, display_name, hashed_pwd, data.grade),
                 )
             else:
                 await db_exec(
-                    "INSERT INTO scholars (id, username, name, hashed_password, reset_required) VALUES (?, ?, ?, ?, 1)",
+                    "INSERT INTO scholars (id, username, name, hashed_password, reset_required) VALUES (?, ?, ?, ?, 0)",
                     (scholar_id, data.username, display_name, hashed_pwd),
                 )
         except sqlite3.IntegrityError:
@@ -199,10 +197,7 @@ async def create_student(data: AdminStudentCreate, admin_user: str = Depends(ver
         await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
                     resource_id=data.username, resource_name=display_name,
                     target_user=data.username, context={"role": "student"})
-        resp = {"status": "success", "username": data.username, "name": display_name, "scholar_id": scholar_id}
-        if generated:
-            resp["temporary_password"] = pwd
-        return resp
+        return {"status": "success", "username": data.username, "name": display_name, "scholar_id": scholar_id}
     except HTTPException:
         raise
     except Exception as e:

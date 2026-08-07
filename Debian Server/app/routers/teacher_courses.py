@@ -41,21 +41,20 @@ def _assets_dir(course_id: str) -> str:
     return d
 
 
-async def _ensure_course_owner(course_id: str, teacher_user: str):
-    """Verify the current user owns the course or is an admin.
+async def _ensure_course_exists(course_id: str):
+    """Verify the course exists.
 
-    Returns the course row if authorised.
+    Any authenticated teacher may edit any course; ownership is not
+    enforced (all courses are shared hub content).
+
+    Returns the course row if it exists.
 
     Raises:
-        HTTPException: 404 if course not found or user is not owner/admin.
+        HTTPException: 404 if course not found.
     """
     row = await db_fetch_one("SELECT * FROM courses WHERE id = ?", (course_id,))
     if not row:
         raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
-    if row["teacher_username"] != teacher_user:
-        user = await db_fetch_one("SELECT role FROM users WHERE username = ?", (teacher_user,))
-        if not user or user["role"] != "admin":
-            raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message (deliberately same text to avoid leaking info)
     return row
 
 
@@ -235,7 +234,7 @@ async def get_course_detail(course_id: str, teacher_user: str = Depends(verify_t
     row = await db_fetch_one("SELECT * FROM courses WHERE id = ?", (course_id,))
     if not row:
         raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     resources = await db_fetch(
         "SELECT * FROM course_resources WHERE course_id = ? ORDER BY position ASC", (course_id,))
     topics = await db_fetch(
@@ -256,7 +255,7 @@ async def update_course(course_id: str, data: CourseCreate, teacher_user: str = 
 
     Verifies ownership before updating. Logs the change to the audit log.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     await db_exec(
         """UPDATE courses SET title = ?, description = ?, subject = ?, grade = ?, language = ?, updated_at = ?
@@ -277,7 +276,7 @@ async def delete_course(course_id: str, teacher_user: str = Depends(verify_teach
     The course is archived, not removed from the database. Resources remain
     on disk. Logs the action to the audit log.
     """
-    row = await _ensure_course_owner(course_id, teacher_user)
+    row = await _ensure_course_exists(course_id)
     await db_exec("UPDATE courses SET published = -1, updated_at = datetime('now') WHERE id = ?", (course_id,))
     await audit(action=Action.DELETE_COURSE, username=teacher_user, resource_type="course",
                 resource_id=course_id, resource_name=row['title'])
@@ -293,7 +292,7 @@ async def toggle_publish(course_id: str, teacher_user: str = Depends(verify_teac
 
     Verifies ownership, flips the published flag, and logs the action.
     """
-    row = await _ensure_course_owner(course_id, teacher_user)
+    row = await _ensure_course_exists(course_id)
     new_val = 0 if row["published"] == 1 else 1
     await db_exec("UPDATE courses SET published = ?, updated_at = datetime('now') WHERE id = ?", (new_val, course_id))
     action = Action.PUBLISH_COURSE if new_val == 1 else Action.UNPUBLISH_COURSE

@@ -3,7 +3,7 @@ import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
-from app.dependencies import hash_password, random_password, verify_teacher, verify_admin, invalidate_tokens_for_user
+from app.dependencies import hash_password, verify_teacher, verify_admin, invalidate_tokens_for_user
 from app.models import StatusResponse, ScholarListItem
 from app.audit import audit, Action
 
@@ -27,23 +27,22 @@ async def get_scholars(teacher_user: str = Depends(verify_teacher)):
 
 @router.post("/teacher/scholars/reset-password/{scholar_id}", response_model=StatusResponse,
              summary="Reset student password",
-             description="Resets a scholar's password to a random temporary password, marks reset_required, and returns the temporary password in the response.",
+             description="Resets a scholar's password to the default and marks reset_required.",
              tags=["Teacher"],
              responses={400: {"description": "Failed to reset password"}, 401: {"description": "Unauthorized"}})
 async def teacher_reset_student_password(scholar_id: str, request: Request = None, teacher_user: str = Depends(verify_teacher)):
-    """Reset a scholar's password to a random temporary password.
+    """Reset a scholar's password to the default value.
 
     Args:
         scholar_id: The scholar's unique identifier.
 
     Returns:
-        Status dict with the new temporary password (displayed once to the caller).
+        Status dict indicating success.
     """
     row = await db_fetch_one("SELECT id, username FROM scholars WHERE id = ?", (scholar_id,))
     if not row:
         raise HTTPException(status_code=404, detail="Scholar not found.")  # i18n: user-facing error message
-    new_pwd = random_password(10)
-    hashed = await asyncio.to_thread(hash_password, new_pwd)
+    hashed = await asyncio.to_thread(hash_password, "lumina2026")
     try:
         await db_exec(
             "UPDATE scholars SET hashed_password = ?, reset_required = 1 WHERE id = ?",
@@ -53,7 +52,7 @@ async def teacher_reset_student_password(scholar_id: str, request: Request = Non
         await invalidate_tokens_for_user(row["id"])
         await audit(action=Action.RESET_PASSWORD, username=teacher_user, resource_type="account",
                     resource_id=scholar_id, target_user=scholar_id)
-        return {"status": "success", "temporary_password": new_pwd}
+        return {"status": "success"}
     except Exception as e:
         logging.error(f"teacher_reset_student_password: {e}")
         raise HTTPException(status_code=400, detail="Failed to reset password")  # i18n: user-facing error message

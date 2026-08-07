@@ -18,7 +18,7 @@ from app.async_db import db_fetch, db_fetch_one
 from app.dependencies import verify_teacher
 from app.routers.resources import ALLOWED_EXTENSIONS
 from app.routers.teacher_courses import (
-    COURSES_DIR, _course_to_response, _resources_dir, _assets_dir, _ensure_course_owner, _write_chunked,
+    COURSES_DIR, _course_to_response, _resources_dir, _assets_dir, _ensure_course_exists, _write_chunked,
 )
 
 router = APIRouter()
@@ -58,7 +58,7 @@ async def upload_course_resource(
     Returns:
         The created course_resources row.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     original_name = file.filename or "unnamed_file"
     ext = os.path.splitext(original_name)[1].lower()
     if not ext or ext not in ALLOWED_EXTENSIONS:
@@ -103,7 +103,7 @@ async def upload_course_zip(
     Returns:
         Counts of resources created, quizzes found, and assets extracted.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
 
     tmp_dir = os.path.join(COURSES_DIR, f"tmp_{uuid.uuid4().hex}")
     os.makedirs(tmp_dir, exist_ok=True)
@@ -407,7 +407,7 @@ async def export_course(course_id: str, teacher_user: str = Depends(verify_teach
     Raises:
         HTTPException: 404 if the course does not exist.
     """
-    row = await _ensure_course_owner(course_id, teacher_user)
+    row = await _ensure_course_exists(course_id)
     resources = await db_fetch(
         "SELECT * FROM course_resources WHERE course_id = ? ORDER BY position ASC", (course_id,))
     topics = await db_fetch(

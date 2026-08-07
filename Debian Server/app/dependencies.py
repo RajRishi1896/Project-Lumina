@@ -1,5 +1,4 @@
 """Authentication dependencies and password helpers for Lumina EduMesh Hub."""
-import secrets
 import time
 import uuid
 import bcrypt as bcrypt_lib
@@ -61,22 +60,6 @@ def verify_password(password: str, hashed: str) -> bool:
         True if the password matches the hash, False otherwise.
     """
     return bcrypt_lib.checkpw(password.encode(), hashed.encode())
-
-
-def random_password(nbytes: int = 10) -> str:
-    """Generate a cryptographically random temporary password.
-
-    Uses ``secrets.token_urlsafe`` (URL-safe, contains upper/lowercase
-    letters and digits). Intended for one-time temporary credentials that
-    must be changed at first login (account is created with reset_required=1).
-
-    Args:
-        nbytes: Entropy source length. More bytes = longer password.
-
-    Returns:
-        A random URL-safe string to be displayed once to an admin.
-    """
-    return secrets.token_urlsafe(nbytes)
 
 
 def validate_password_strength(password: str) -> tuple[bool, str]:

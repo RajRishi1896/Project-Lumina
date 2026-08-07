@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from app.database import gen_uid
 from app.async_db import db_exec, db_exec_many, db_fetch, db_fetch_one
 from app.dependencies import verify_teacher
-from app.routers.teacher_courses import _ensure_course_owner
+from app.routers.teacher_courses import _ensure_course_exists
 from app.audit import audit, Action
 
 router = APIRouter()
@@ -22,7 +22,7 @@ async def create_topic(course_id: str, data: dict, teacher_user: str = Depends(v
     Raises:
         HTTPException: 400 if title is empty.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     title = (data.get("title") or "").strip()
     if not title:
         raise HTTPException(status_code=400, detail="Topic title is required.")  # i18n: user-facing error message
@@ -44,7 +44,7 @@ async def create_topic(course_id: str, data: dict, teacher_user: str = Depends(v
             summary="List topics in a course", tags=["Teacher Courses"])
 async def list_topics(course_id: str, teacher_user: str = Depends(verify_teacher)):
     """List all topics for a course, ordered by position."""
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     rows = await db_fetch(
         "SELECT * FROM topics WHERE course_id = ? ORDER BY position ASC", (course_id,))
     return [dict(r) for r in rows]
@@ -58,7 +58,7 @@ async def update_topic(course_id: str, topic_id: str, data: dict, teacher_user: 
     Raises:
         HTTPException: 400 if title empty, 404 if topic not found.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     row = await db_fetch_one("SELECT id FROM topics WHERE id = ? AND course_id = ?", (topic_id, course_id))
     if not row:
         raise HTTPException(status_code=404, detail="Topic not found.")  # i18n: user-facing error message
@@ -88,7 +88,7 @@ async def delete_topic(course_id: str, topic_id: str,
     Raises:
         HTTPException: 404 if topic or transfer target not found.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     row = await db_fetch_one("SELECT id FROM topics WHERE id = ? AND course_id = ?", (topic_id, course_id))
     if not row:
         raise HTTPException(status_code=404, detail="Topic not found.")  # i18n: user-facing error message
@@ -133,7 +133,7 @@ async def reorder_topics(course_id: str, data: dict, teacher_user: str = Depends
     Expects ``topic_ids`` as a list of topic IDs in the desired order.
     Sets each topic's position to its index in the list.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     topic_ids = data.get("topic_ids", [])
     if not topic_ids:
         raise HTTPException(status_code=400, detail="topic_ids list is required.")  # i18n: user-facing error message
@@ -155,7 +155,7 @@ async def assign_resource_topic(course_id: str, resource_id: str, data: dict, te
     Raises:
         HTTPException: 404 if resource or topic not found in this course.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     res = await db_fetch_one(
         "SELECT id FROM course_resources WHERE id = ? AND course_id = ?", (resource_id, course_id))
     if not res:
@@ -177,7 +177,7 @@ async def reorder_topic_resources(course_id: str, data: dict, teacher_user: str 
     Expects ``resource_ids`` as a list in the desired order. Sets each
     resource's position to its index in the list.
     """
-    await _ensure_course_owner(course_id, teacher_user)
+    await _ensure_course_exists(course_id)
     resource_ids = data.get("resource_ids", [])
     if not resource_ids:
         raise HTTPException(status_code=400, detail="resource_ids list is required.")  # i18n: user-facing error message

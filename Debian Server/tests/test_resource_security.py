@@ -118,7 +118,7 @@ async def test_teacher_cannot_update_others_quiz(client, admin_client):
     assert row and row["title"] == "A quiz"
 
 
-async def test_course_export_requires_ownership(client):
+async def test_course_export_available_to_any_teacher(client):
     teacher_a, token_a = await _make_teacher("teacher.expA")
     _, token_b = await _make_teacher("teacher.expB")
     cid = f"CRS-{uuid.uuid4().hex[:12]}"
@@ -126,8 +126,10 @@ async def test_course_export_requires_ownership(client):
         "INSERT INTO courses (id, title, teacher_username, published) VALUES (?, 'A course', ?, 1)",
         (cid, teacher_a))
 
+    # Any authenticated teacher may export any course (shared hub content).
     resp = await client.get(f"/api/teacher/courses/{cid}/export", headers=_auth(token_b))
-    assert resp.status_code == 404, resp.text
+    assert resp.status_code == 200, resp.text
+    assert resp.headers["content-type"].startswith("application/zip")
 
     resp = await client.get(f"/api/teacher/courses/{cid}/export", headers=_auth(token_a))
     assert resp.status_code == 200

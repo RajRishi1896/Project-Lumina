@@ -51,8 +51,8 @@ async def test_suggest_similar_requires_teacher(client, admin_client):
     assert resp.status_code == 200
 
 
-async def test_course_detail_owner_only(client, admin_client):
-    """A teacher cannot read another teacher's course detail (404)."""
+async def test_course_detail_available_to_any_teacher(client, admin_client):
+    """Any authenticated teacher may read any course's detail (shared content)."""
     owner, owner_token = await _make_teacher("course_owner")
     other, other_token = await _make_teacher("course_other")
 
@@ -65,7 +65,7 @@ async def test_course_detail_owner_only(client, admin_client):
 
     resp = await client.get(f"/api/teacher/courses/{course_id}",
                             headers=_auth(other_token))
-    assert resp.status_code == 404
+    assert resp.status_code == 200, resp.text
 
     resp = await client.get(f"/api/teacher/courses/{course_id}",
                             headers=_auth(owner_token))
@@ -108,7 +108,8 @@ async def test_reset_password_invalidates_old_sessions(client, admin_client):
 
     resp = await client.post(f"/teacher/scholars/reset-password/{sid}", headers=_auth(teacher_token))
     assert resp.status_code == 200, resp.text
-    assert "temporary_password" in resp.json()
+    assert "temporary_password" not in resp.json()
+    assert resp.json()["status"] == "success"
 
     rows = await _fetch_rows("SELECT token FROM sessions WHERE username = ?", (sid,))
     assert rows == []
