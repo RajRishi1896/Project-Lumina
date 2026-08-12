@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head � theme detection, metadata -->
+<!-- Section: Head -- theme detection, metadata -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,10 +13,10 @@
 <body>
     <a href="#app-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
 
-    <!-- Section: Sidebar � empty, rendered by renderLayout() -->
+    <!-- Section: Sidebar -- empty, rendered by renderLayout() -->
     <aside></aside>
 
-    <!-- Section: Main Content � password, profile, and admin-only settings -->
+    <!-- Section: Main Content -- password, profile, and admin-only settings -->
     <main>
         <div id="app-content">
         <div class="page-header">
@@ -24,7 +24,7 @@
             <p data-i18n="security.page_description">Update your password, display name, and department.</p>
         </div>
 
-        <!-- Section: Change Password � current password, new password, toggle visibility -->
+        <!-- Section: Change Password -- current password, new password, toggle visibility -->
         <div class="card">
             <div class="card-title" data-i18n="security_change_password_title">Change Password</div>
             <div id="securityNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
@@ -33,7 +33,7 @@
                     <label for="oldPwd" data-i18n="security_current_password">Current Password</label>
                     <div class="password-container">
                         <input type="password" id="oldPwd" placeholder="Enter current password" data-i18n="security_current_password_placeholder">
-                        <button type="button" class="toggle-password" id="toggleOldPwdBtn" data-password-input="oldPwd" data-eye-icon="eyeIconOld" aria-label="Toggle password visibility">
+                        <button type="button" class="toggle-password" id="toggleOldPwdBtn" data-password-input="oldPwd" data-eye-icon="eyeIconOld" data-i18n-aria-label="security.aria.show_password" aria-label="Show password">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eyeIconOld">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
@@ -45,7 +45,7 @@
                     <label for="newPwd" data-i18n="security_new_password">New Password</label>
                     <div class="password-container">
                         <input type="password" id="newPwd" placeholder="Enter new password" data-i18n="security_new_password_placeholder">
-                        <button type="button" class="toggle-password" id="toggleNewPwdBtn" data-password-input="newPwd" data-eye-icon="eyeIconNew" aria-label="Toggle password visibility">
+                        <button type="button" class="toggle-password" id="toggleNewPwdBtn" data-password-input="newPwd" data-eye-icon="eyeIconNew" data-i18n-aria-label="security.aria.show_password" aria-label="Show password">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eyeIconNew">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
@@ -58,7 +58,7 @@
             </div>
         </div>
 
-        <!-- Section: My Profile � editable name and department -->
+        <!-- Section: My Profile -- editable name and department -->
         <div class="card">
             <div class="card-title" data-i18n="security_my_profile">My Profile</div>
             <div id="profileNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
@@ -75,7 +75,7 @@
             </div>
         </div>
 
-        <!-- Section: Account Overview � visible to all roles -->
+        <!-- Section: Account Overview -- visible to all roles -->
         <div class="card" id="accountOverviewCard">
             <div class="card-title" data-i18n="settings.account_overview">Account Overview</div>
             <div class="flex flex-col gap-2" style="font-size: 0.9rem;">
@@ -141,7 +141,8 @@
                     <option value="true" data-i18n="settings.results_success">Success</option>
                     <option value="false" data-i18n="settings.results_failed">Failed</option>
                 </select>
-                <input type="text" id="adminLogUserFilter" placeholder="Filter by user..." style="padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--bg-input); color: var(--on-surface); outline: none; width: 140px; min-height: 44px;">
+                <label for="adminLogUserFilter" class="sr-only" data-i18n="settings.user_filter_label">Filter by user</label>
+                <input type="text" id="adminLogUserFilter" placeholder="Filter by user..." data-i18n-placeholder="settings.user_filter_label" style="padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--bg-input); color: var(--on-surface); outline: none; width: 140px; min-height: 44px;">
             </div>
 
             <!-- Active filter chips -->
@@ -332,7 +333,7 @@
     <div id="bottomNav"></div>
 
     <script src="/static/js/lumina.js?v=10" defer></script>
-    <!-- Section: Inline Scripts � all page logic merged here -->
+    <!-- Section: Inline Scripts -- all page logic merged here -->
     <script>
 
         var debouncedFilterAdminLogs = null;
@@ -376,6 +377,11 @@
             upload_rejected: 'Upload Rejected'
         };
 
+        /**
+         * Format an ISO timestamp as the browser-local date/time string.
+         * @param {string} ts - ISO timestamp from the server
+         * @returns {string} Localized string, or the raw input on parse failure
+         */
         function _formatTimestamp(ts) {
             if (!ts) return '';
             try {
@@ -384,11 +390,21 @@
             } catch (e) { return ts; }
         }
 
+        /**
+         * Colored pill badge for a log severity level.
+         * @param {string} severity - Severity key (info/notice/warning/error/critical)
+         * @returns {string} HTML span
+         */
         function _renderSeverityBadge(severity) {
             var color = SEVERITY_COLORS[severity] || 'var(--text-muted)';
             return '<span style="display:inline-block;padding:0.1rem 0.45rem;border-radius:9999px;font-size:0.7rem;font-weight:700;background:' + color + '20;color:' + color + ';text-transform:capitalize;white-space:nowrap;">' + esc(severity || 'info') + '</span>';
         }
 
+        /**
+         * Success/failure pill for a log entry.
+         * @param {Object} event - Admin log event
+         * @returns {string} HTML span
+         */
         function _renderResultBadge(event) {
             if (event.success === false) {
                 return '<span style="color:var(--danger);font-size:0.78rem;font-weight:700;">Failed</span>';
@@ -396,6 +412,13 @@
             return '<span style="color:var(--success);font-size:0.78rem;">OK</span>';
         }
 
+        /**
+         * Build one expandable log row (summary + hidden detail row with
+         * user/target/request-id/context). Click toggles the detail row.
+         * @param {Object} event - Admin log event
+         * @param {number} index - Absolute row index (for unique detail ids)
+         * @returns {string} HTML string of two <tr> rows
+         */
         function _renderExpandableRow(event, index) {
             var detailId = 'logDetail_' + index;
             var rid = event.request_id || (event.ctx && event.ctx.request_id) || '';
@@ -435,6 +458,7 @@
                 '</td></tr>';
         }
 
+        /** Render the current page of filtered logs into the table and pagination controls. */
         function _renderAdminLogsPage() {
             var tbody = document.getElementById('adminLogTable');
             var pagination = document.getElementById('adminLogPagination');
@@ -459,10 +483,15 @@
             if (nextBtn) { nextBtn.disabled = _adminLogsPage >= totalPages; nextBtn.style.opacity = _adminLogsPage >= totalPages ? '0.4' : '1'; }
         }
 
+        // Pagination handlers -- move the log page window and re-render.
         function adminLogsPrevPage() { if (_adminLogsPage > 1) { _adminLogsPage--; _renderAdminLogsPage(); } }
         function adminLogsNextPage() { var totalPages = Math.ceil(_adminLogsFiltered.length / _adminLogsPerPage); if (_adminLogsPage < totalPages) { _adminLogsPage++; _renderAdminLogsPage(); } }
         function adminLogsChangePerPage(val) { _adminLogsPerPage = parseInt(val, 10) || 25; _adminLogsPage = 1; _renderAdminLogsPage(); }
 
+        /**
+         * Filter the full log list by severity, success flag, user, and search
+         * text, then reset to page 1 and re-render.
+         */
         function _applyLogFilters() {
             var search = (document.getElementById('adminLogSearch').value || '').toLowerCase().trim();
             var sev = document.getElementById('adminLogSeverityFilter').value;
@@ -484,6 +513,7 @@
             _renderAdminLogsPage();
         }
 
+        /** Render removable chips summarizing the active log filters. */
         function _renderFilterChips() {
             var chipsEl = document.getElementById('adminLogChips');
             if (!chipsEl) return;
@@ -506,6 +536,10 @@
             window._logChipClearFns = chips.map(function(c) { return c.clear; });
         }
 
+        /**
+         * Clear one filter chip by index, then re-apply filters and re-render.
+         * @param {number} i - Chip index (matches window._logChipClearFns)
+         */
         function _clearLogChip(i) {
             if (window._logChipClearFns && window._logChipClearFns[i]) {
                 window._logChipClearFns[i]();
@@ -514,6 +548,7 @@
             }
         }
 
+        /** Fetch up to 200 recent admin log events and apply the active filters. */
         async function loadAdminLogs() {
             var tbody = document.getElementById('adminLogTable');
             if (!tbody) return;
@@ -528,6 +563,10 @@
             }
         }
 
+        /**
+         * Show/hide admin-only cards based on userRole; admins also kick off
+         * the log/retention/peer loads and a 15s log auto-refresh interval.
+         */
         function updateUIForRole() {
             var logRetentionCard = document.getElementById('logRetentionCard');
             var adminLogCard = document.getElementById('adminLogCard');
@@ -577,7 +616,10 @@
             } catch (e) { console.error("Error loading log retention policy", e); }
         }
 
-        /** Saves the log retention policy choice. */
+        /**
+         * Saves the log retention policy choice.
+         * @param {string} policy - Retention value (24h/7d/30d/3m/6m/never/none)
+         */
         async function saveRetentionPolicy(policy) {
             try {
                 var res = await fetch('/api/admin/settings', {
@@ -634,6 +676,7 @@
             } catch (e) { console.error('Failed to load default admin status', e); }
         }
 
+        /** Confirm with the admin, then disable the built-in default admin account. */
         async function disableDefaultAdmin() {
             var confirmed = await showConfirm(__('settings.confirm.disable_admin_title'), __('settings.confirm.disable_admin_body'), true, __('settings.confirm.disable_admin_btn'));
             if (!confirmed) return;
@@ -644,6 +687,7 @@
             } catch (e) { showNotification('defaultAdminNotif', __('settings.connection_error'), true); }
         }
 
+        /** Confirm with the admin, then re-enable the built-in default admin account. */
         async function enableDefaultAdmin() {
             var confirmed = await showConfirm(__('settings.confirm.enable_admin_title'), __('settings.confirm.enable_admin_body'), true, __('settings.confirm.enable_admin_btn'));
             if (!confirmed) return;
@@ -675,7 +719,10 @@
             } catch (e) { console.error("Error loading WiFi band", e); }
         }
 
-        /** Switches the WiFi band. */
+        /**
+         * Switches the WiFi band.
+         * @param {string} band - 'a' for 5 GHz or 'bg' for 2.4 GHz
+         */
         async function switchWifiBand(band) {
             var label = band === 'a' ? '5 GHz' : '2.4 GHz';
             var confirmed = await showConfirm(__('settings.wifi_band_switch_title'), __('settings.wifi_band_switch_confirm', {band: label}), false, label);
@@ -747,7 +794,11 @@
             } catch (e) { console.error('Failed to load peers', e); }
         }
 
-        /** Unpairs a peer after a destructive confirmation. */
+        /**
+         * Unpairs a peer after a destructive confirmation.
+         * @param {string} id - Peer hub id
+         * @param {string} name - Peer display name (for the confirmation)
+         */
         async function removePeer(id, name) {
             var ok = await showConfirm(__('settings.peers.remove_confirm_title'), __('settings.peers.remove_confirm_body', {name: esc(name)}), true, __('settings.peers.remove'));
             if (!ok) return;
@@ -758,7 +809,10 @@
             } catch (e) { showNotification('peersNotif', __('settings.connection_error'), true); }
         }
 
-        /** Triggers an immediate catalog refresh for one peer. */
+        /**
+         * Triggers an immediate catalog refresh for one peer.
+         * @param {string} id - Peer hub id
+         */
         async function syncPeer(id) {
             try {
                 var res = await fetch('/api/peers/' + encodeURIComponent(id) + '/sync', { method: 'POST' });
@@ -790,12 +844,18 @@
             }
         }
 
-        /** Fills the address input from a discovered hub. */
+        /**
+         * Fills the address input from a discovered hub.
+         * @param {string} addr - Host:port string from the discovery list
+         */
         function useDiscovered(addr) {
             document.getElementById('peerIpInput').value = addr;
         }
 
-        /** Pairs with the hub at the entered address using the entered code. */
+        /**
+         * Pairs with the hub at the entered address using the entered code.
+         * Handles 'host:port' input, 403 = wrong pairing code.
+         */
         async function pairPeer() {
             var raw = document.getElementById('peerIpInput').value.trim();
             var code = document.getElementById('peerCodeInput').value.trim();
@@ -827,7 +887,12 @@
             } catch (e) { showNotification('addPeerNotif', __('settings.peers.error_unreachable'), true); }
         }
 
-        /** Toggles password input visibility. */
+        /**
+         * Toggles password input visibility.
+         * @param {string} inputId - DOM id of the password input
+         * @param {string} eyeIconId - DOM id of the eye icon svg
+         * @param {string} btnId - DOM id of the toggle button (aria-label updated)
+         */
         function togglePasswordVisibility(inputId, eyeIconId, btnId) {
             var pwdInput = document.getElementById(inputId);
             var eyeIcon = document.getElementById(eyeIconId);
@@ -843,6 +908,10 @@
             }
         }
 
+        /**
+         * Validate and submit the change-password form; redirects to the
+         * dashboard on success (fresh session starts on the next page load).
+         */
         async function changePassword() {
             var oldPwd = document.getElementById('oldPwd').value;
             var newPwd = document.getElementById('newPwd').value;
@@ -897,6 +966,10 @@
             } catch (e) { console.error("Error loading profile", e); }
         }
 
+        /**
+         * Save the profile name/department via two POSTs; disables the whole
+         * form when the built-in 'admin' user is editing (it is read-only).
+         */
         async function saveMyProfile() {
             var name = document.getElementById('profileName').value.trim();
             var department = document.getElementById('profileDepartment').value.trim();
@@ -925,6 +998,10 @@
             } catch (e) { showNotification('profileNotif', __('security.error.connection'), true); }
         }
 
+        /**
+         * Page init (registered in _pageInitRegistry): loads the session and
+         * profile, then wires every button, filter, and poller on the page.
+         */
         var _initSettings = function() {
             debouncedFilterAdminLogs = debounce(function() { _applyLogFilters(); _renderFilterChips(); }, 200);
 

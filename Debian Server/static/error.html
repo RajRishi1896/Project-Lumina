@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Section: Head - metadata, styles, and theme detection -->
+<!-- Section: Head -- metadata, styles, and theme detection -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-i18n="error.page_title">Access Error - Lumina Hub</title>
@@ -12,6 +12,7 @@
 <style>
   .error-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:2rem; width:100%; box-sizing:border-box; }
   .error-card { background:var(--bg-surface); border-radius:1rem; padding:3rem; max-width:480px; width:100%; text-align:center; box-shadow:var(--card-shadow); }
+  @media (max-width: 480px) { .error-wrap { padding:1rem; } .error-card { padding:1.5rem; } }
   .error-icon { width:72px; height:72px; margin:0 auto 1.5rem; background:color-mix(in srgb, var(--teal) 12%, transparent); border-radius:50%; display:flex; align-items:center; justify-content:center; }
   .error-icon svg { width:36px; height:36px; stroke:var(--teal); fill:var(--teal); fill-opacity:0.15; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   .error-card h1 { margin:0 0 .5rem; color:var(--text-primary); font-size:1.5rem; }
@@ -30,7 +31,7 @@
 </head>
 <body>
     <a href="#errorCard" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
-    <!-- Section: Error Card - icon, reason badge, title, message, and back button -->
+    <!-- Section: Error Card -- icon, reason badge, title, message, and back button -->
 <div class="error-wrap">
 <div class="error-card" id="errorCard">
   <!-- icon -->
@@ -39,13 +40,13 @@
       <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
     </svg>
   </div>
-  <!-- Section: Reason Badge - shows expired/denied/notfound -->
+  <!-- Section: Reason Badge -- shows expired/denied/notfound -->
   <div class="reason-badge {{BADGE}}" id="reasonBadge" data-i18n="error_access_denied_badge">{{BADGE_TEXT}}</div>
-  <!-- Section: Title -->
+  <!-- Section: Title -- page heading text -->
   <h1 id="errorTitle" data-i18n="error_access_denied_title">{{TITLE}}</h1>
-  <!-- Section: Message -->
+  <!-- Section: Message -- error description text -->
   <p id="errorMessage" data-i18n="error_access_denied_message">{{MESSAGE}}</p>
-  <!-- Section: Back Button - navigates to welcome page -->
+  <!-- Section: Back Button -- navigates to welcome page -->
   <div class="actions">
     <a href="/welcome" class="btn" id="backBtn">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>

@@ -51,6 +51,7 @@ async def lifespan(application: FastAPI):
     # Auto-reindex ZIM archives missing from zim_articles (e.g. manual SQL re-link)
     # Runs as a background task with a startup delay so the server is ready first.
     async def _auto_reindex_zim():
+        """Rebuild zim_articles rows for archives that have none (e.g. after a manual SQL re-link)."""
         await asyncio.sleep(8)
         logging.info("Auto-reindex: started")
         try:
@@ -80,10 +81,12 @@ async def lifespan(application: FastAPI):
 
     # Session pruning background task
     async def prune_sessions():
+        """Hourly sweep: delete stale sessions, used refresh tokens, and expired persistent keys."""
         while True:
             await asyncio.sleep(3600)
             try:
                 def _prune_sessions(conn):
+                    """Delete stale session/token rows in a single transaction."""
                     conn.execute("DELETE FROM sessions WHERE last_accessed IS NOT NULL AND last_accessed < datetime('now', '-7 days')")
                     conn.execute("DELETE FROM sessions WHERE last_accessed IS NULL AND created_at < datetime('now', '-7 days')")
                     conn.execute("DELETE FROM refresh_tokens WHERE expires_at < datetime('now') OR used = 1")
@@ -104,6 +107,7 @@ async def lifespan(application: FastAPI):
     # Daily log retention pruning
     from app.audit import _prune_logs_now
     async def prune_admin_logs():
+        """Daily admin log pruning respecting the configured retention window."""
         while True:
             await asyncio.sleep(86400)
             try:
@@ -115,6 +119,18 @@ async def lifespan(application: FastAPI):
     # Hub federation -- hourly refresh of paired peers' resource catalogs
     from app.peer_refresh import peer_refresh_loop
     peer_refresh_task = asyncio.create_task(peer_refresh_loop(interval_seconds=3600))
+
+    # Recycle bin -- hourly purge of resources deleted more than 30 days ago
+    from app.maintenance import purge_recycled_resources
+    async def purge_recycled():
+        """Hourly purge of resources sitting in the recycle bin for over 30 days."""
+        while True:
+            await asyncio.sleep(3600)
+            try:
+                await purge_recycled_resources()
+            except Exception:
+                logging.exception("Recycle bin purge failed")
+    recycle_task = asyncio.create_task(purge_recycled())
 
     yield  # application runs here
 
@@ -138,6 +154,11 @@ async def lifespan(application: FastAPI):
     prune_task.cancel()
     try:
         await prune_task
+    except asyncio.CancelledError:
+        pass
+    recycle_task.cancel()
+    try:
+        await recycle_task
     except asyncio.CancelledError:
         pass
 

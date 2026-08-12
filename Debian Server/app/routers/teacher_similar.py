@@ -11,7 +11,10 @@ router = APIRouter()
 
 
 @router.get("/api/teacher/courses/{course_id}/similar",
-            summary="List similar course links", tags=["Teacher Courses"])
+            summary="List similar course links", tags=["Teacher Courses"],
+            description="Lists all similar-course links involving this course, in either direction.",
+            response_model=list,
+            responses={200: {"description": "List of similar links"}, 404: {"description": "Course not found"}})
 async def list_similar_courses(course_id: str, teacher_user: str = Depends(verify_teacher)):
     """List all similar-course links involving this course.
 
@@ -25,7 +28,10 @@ async def list_similar_courses(course_id: str, teacher_user: str = Depends(verif
 
 
 @router.post("/api/teacher/courses/{course_id}/similar",
-             summary="Add a similar course link", tags=["Teacher Courses"])
+             summary="Add a similar course link", tags=["Teacher Courses"],
+             description="Creates a bidirectional similar-course link between this course and another.",
+             response_model=dict,
+             responses={200: {"description": "Link created"}, 400: {"description": "Self-link or duplicate"}, 404: {"description": "Course not found"}})
 async def add_similar_course(course_id: str, data: SimilarLinkCreate, teacher_user: str = Depends(verify_teacher)):
     """Create a bidirectional similar-course link.
 
@@ -62,7 +68,10 @@ async def add_similar_course(course_id: str, data: SimilarLinkCreate, teacher_us
 
 
 @router.delete("/api/teacher/courses/{course_id}/similar/{similar_id}",
-               summary="Remove a similar course link", tags=["Teacher Courses"])
+               summary="Remove a similar course link", tags=["Teacher Courses"],
+               description="Removes the bidirectional similar-course link between this course and another.",
+               response_model=dict,
+               responses={200: {"description": "Link removed"}, 404: {"description": "Link not found"}})
 async def remove_similar_course(course_id: str, similar_id: str, teacher_user: str = Depends(verify_teacher)):
     """Remove a bidirectional similar-course link.
 

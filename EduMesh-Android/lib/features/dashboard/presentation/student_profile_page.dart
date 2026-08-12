@@ -306,7 +306,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: _loadData,
-                      child: ListView(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+                          child: ListView(
                       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
                       children: [
                         _buildProfileCard(cs),
@@ -322,8 +325,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         _buildRecentActivity(cs),
                         SizedBox(height: AppSpacing.xxl.h),
                       ],
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
                 ),
               ],
             ),

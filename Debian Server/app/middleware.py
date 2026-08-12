@@ -25,6 +25,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     handlers, etc. Sets X-Request-ID response header.
     """
     async def dispatch(self, request, call_next):
+        """Attach a request ID to state and response headers for downstream logging."""
         request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
         request.state.request_id = request_id
         response = await call_next(request)
@@ -40,6 +41,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     Skips /ping and /generate_204 to reduce noise.
     """
     async def dispatch(self, request, call_next):
+        """Time the request, log it, and feed response-time/slow-endpoint metrics."""
         path = request.url.path
         if path in ("/ping", "/generate_204"):
             return await call_next(request)
@@ -145,6 +147,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return True, 0
 
     async def dispatch(self, request, call_next):
+        """Enforce the per-IP rate limit, returning 429 with Retry-After when exceeded."""
         # Skip rate limiting for static files, ZIM local reads, health checks, and localhost
         path = request.url.path
         if path.startswith("/static/") or path.startswith("/files/") or path.startswith("/zim/") or path in ("/ping", "/generate_204"):

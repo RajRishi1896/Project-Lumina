@@ -106,7 +106,10 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     return Scaffold(
       backgroundColor: cs.surface,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+            child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl.w, vertical: AppSpacing.lg.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,6 +187,8 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               ),
               SizedBox(height: AppSpacing.section.h),
             ],
+          ),
+            ),
           ),
         ),
       ),

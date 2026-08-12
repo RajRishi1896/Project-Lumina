@@ -148,7 +148,10 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
   }
 
   Widget _buildForm(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
-    return Form(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+        child: Form(
       key: _formKey,
       child: Column(
         children: [
@@ -203,6 +206,8 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }

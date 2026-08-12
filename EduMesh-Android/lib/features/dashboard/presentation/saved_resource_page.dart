@@ -90,6 +90,7 @@ class _SavedListByType extends StatefulWidget {
 class _SavedListByTypeState extends State<_SavedListByType> {
   List<ResourceModel> _savedItems = [];
   Set<String> _downloadedIds = {};
+  Set<String> _removedIds = {};
   final Set<String> _downloadingIds = {};
   final Set<String> _pendingIds = {};
   bool _loading = true;
@@ -152,10 +153,16 @@ class _SavedListByTypeState extends State<_SavedListByType> {
           ? all.where((r) => r.type == widget.type!).toList()
           : all;
       final ids = await db.getDownloadedIds();
+      final removedIds = downloadRows
+          .where((r) => (r['server_removed'] as num? ?? 0) == 1)
+          .map((r) => r['resource_id'] as String? ?? '')
+          .where((id) => id.isNotEmpty)
+          .toSet();
       if (mounted) {
         setState(() {
           _savedItems = items;
           _downloadedIds = ids;
+          _removedIds = removedIds;
           _loading = false;
         });
       }
@@ -246,7 +253,10 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       );
     }
 
-    return ListView.builder(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+        child: ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
       itemCount: _savedItems.length,
       itemBuilder: (context, index) {
@@ -255,6 +265,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
         final resourceId = item.id.toString();
         final isSavedDownloaded = _downloadedIds.contains(resourceId);
         final isSavedDownloading = _downloadingIds.contains(resourceId);
+        final isRemoved = _removedIds.contains(resourceId);
         return GestureDetector(
           onTap: () => _openItem(item),
           child: Container(
@@ -281,6 +292,20 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                       SizedBox(height: AppSpacing.xs.h),
                       Text(l10n.resourceSubtitle(item.subject, item.grade),
                           style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                      if (isRemoved) ...[
+                        SizedBox(height: AppSpacing.xs.h),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
+                          decoration: BoxDecoration(
+                            color: cs.errorContainer,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                          child: Text(
+                            l10n.removedFromServerBadge,
+                            style: tt.labelSmall?.copyWith(color: cs.onErrorContainer),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -301,7 +326,12 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                       final messenger = ScaffoldMessenger.of(context);
                       final l10n = AppLocalizations.of(context)!;
                       final downloadService = DownloadService();
-                      if (isSavedDownloaded) {
+                      if (_removedIds.contains(resourceId)) {
+                        messenger.showSnackBar(SnackBar(
+                          content: Text(l10n.removedFromServerSnackbar),
+                          duration: const Duration(seconds: 3),
+                        ));
+                      } else if (isSavedDownloaded) {
                         await downloadService.deleteDownload(resourceId);
                         if (mounted) {
                           setState(() => _downloadedIds.remove(resourceId));
@@ -343,6 +373,8 @@ class _SavedListByTypeState extends State<_SavedListByType> {
           ),
         );
       },
+        ),
+      ),
     );
   }
 }
@@ -391,7 +423,10 @@ class _SavedCoursesTabState extends State<_SavedCoursesTab> {
       );
     }
 
-    return ListView.builder(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+        child: ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
       itemCount: enrolled.length,
       itemBuilder: (context, index) {
@@ -462,6 +497,8 @@ class _SavedCoursesTabState extends State<_SavedCoursesTab> {
           ),
         );
       },
+        ),
+      ),
     );
   }
 }

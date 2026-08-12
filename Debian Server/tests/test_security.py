@@ -11,10 +11,12 @@ from app.dependencies import hash_password
 
 
 def _auth(token):
+    """Build the Authorization header for a token."""
     return {"Authorization": f"Bearer {token}"}
 
 
 async def _make_student(name):
+    """Create a student account and session; return (id, token)."""
     sid = f"LUMINA_TEST-{uuid.uuid4().hex[:12]}"
     token = f"LUMINA_HUB-{uuid.uuid4().hex}"
     await db_exec(
@@ -27,6 +29,7 @@ async def _make_student(name):
 
 
 async def _make_teacher(name):
+    """Create a teacher account and session; return (name, token)."""
     token = f"LUMINA_HUB-{uuid.uuid4().hex}"
     await db_exec(
         "INSERT INTO users (username, hashed_password, name, role) VALUES (?, ?, ?, 'teacher')",

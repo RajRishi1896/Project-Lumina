@@ -173,6 +173,10 @@ class LuminaApp extends ConsumerWidget {
               downloadInProgressTitle: l10n.notifDownloadsActive,
               downloadInProgressBody: l10n.notifDownloading('{title}'),
             );
+            NotificationService().setRemovedStrings(
+              title: l10n.removedFromServerNotificationTitle,
+              body: l10n.removedFromServerNotificationBody('{title}'),
+            );
             return child!;
           },
           home: isLoggedIn

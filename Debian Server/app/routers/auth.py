@@ -53,6 +53,7 @@ def _record_failed_login(request: Request):
 
 
 def _secure_cookie(request) -> bool:
+    """Return True when the request arrived over HTTPS (direct or proxied)."""
     return request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "") == "https"
 
 
@@ -220,6 +221,7 @@ async def login(response: Response, request: Request, username: str = Form(...),
         stoken = f"LUMINA_HUB-{_uuid.uuid4().hex}"
         from app.async_db import db_run
         def _create_session(conn):
+            """Insert a fresh teacher/admin session, pruning to the newest 5."""
             conn.execute("DELETE FROM sessions WHERE username = ? AND rowid NOT IN (SELECT rowid FROM sessions WHERE username = ? ORDER BY rowid DESC LIMIT 5)", (username, username))
             conn.execute("INSERT INTO sessions (token, username, role, used, expiry) VALUES (?, ?, ?, 0, datetime('now', '+1 day'))", (stoken, username, user_role))
             conn.commit()
@@ -278,6 +280,7 @@ async def refresh_session(data: dict, request: Request):
         HTTPException 500: If the refresh process fails unexpectedly.
     """
     def _consume_refresh_token(conn):
+        """Validate and one-time-use the refresh token; returns (username, role)."""
         row = conn.execute(
             "SELECT username, role, used, expires_at FROM refresh_tokens WHERE token = ?",
             (data.get('refresh_token'),),
@@ -317,6 +320,7 @@ async def renew_session(data: dict, request: Request):
         HTTPException 500: If the renewal process fails unexpectedly.
     """
     def _consume_persistent_key(conn):
+        """Validate and one-time-use the persistent key; returns (username, role)."""
         row = conn.execute(
             "SELECT username, role, used, expires_at FROM persistent_keys WHERE token = ?",
             (data.get('persistent_key'),),

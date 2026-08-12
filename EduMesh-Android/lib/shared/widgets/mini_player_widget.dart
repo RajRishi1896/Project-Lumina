@@ -15,13 +15,21 @@ class MiniPlayerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ctrl = MiniPlayerController();
     return ListenableBuilder(
-      listenable: MiniPlayerController(),
+      listenable: Listenable.merge(
+        [ctrl, if (ctrl.videoController != null) ctrl.videoController!],
+      ),
       builder: (context, _) {
-        final ctrl = MiniPlayerController();
         final cs = Theme.of(context).colorScheme;
         if (ctrl.isQuizActive) return const SizedBox.shrink();
         if (!ctrl.isActive) return const SizedBox.shrink();
+        final vc = ctrl.videoController;
+        final canShow =
+            vc != null && vc.value.isInitialized && !vc.value.hasError;
+        final ar = (canShow && vc.value.aspectRatio > 0 && vc.value.aspectRatio.isFinite)
+            ? vc.value.aspectRatio
+            : 16 / 9;
         return Align(
           alignment: Alignment.bottomCenter,
           child: Semantics(
@@ -38,12 +46,7 @@ class MiniPlayerWidget extends StatelessWidget {
                     existingController: ctrl.videoController,
                   ),
                 ),
-              ).then((_) {
-                if (ctrl.videoController != null &&
-                    ctrl.videoController!.value.isInitialized) {
-                  ctrl.closeOnlyOverlay();
-                }
-              });
+              );
             },
             child: Container(
               height: AppSpacing.miniPlayerHeight,
@@ -63,16 +66,16 @@ class MiniPlayerWidget extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               child: Stack(
                 children: [
-                  if (ctrl.videoController != null && ctrl.videoController!.value.isInitialized)
+                  if (canShow)
                     AspectRatio(
-                      aspectRatio: ctrl.videoController!.value.aspectRatio,
-                      child: VideoPlayer(ctrl.videoController!),
+                      aspectRatio: ar,
+                      child: VideoPlayer(vc),
                     )
                   else
                     Center(child: Icon(Icons.play_circle_fill, color: cs.onSurfaceVariant, size: 32)),
                   Positioned(
-                    right: 0,
-                    top: 0,
+                    right: AppSpacing.xs,
+                    top: AppSpacing.xs,
                     child: Semantics(
                       button: true,
                       label: AppLocalizations.of(context)!.semanticsCloseMiniPlayer,
@@ -80,12 +83,22 @@ class MiniPlayerWidget extends StatelessWidget {
                         width: AppSpacing.touchTarget,
                         height: AppSpacing.touchTarget,
                         child: GestureDetector(
-                      onTap: () => ctrl.stop(),
-                      child: Container(
-                        color: cs.scrim.withValues(alpha: 0.12),
-                        child: Icon(Icons.close, color: cs.onSurface, size: 18),
-                      ),
-                    ),
+                          onTap: () => ctrl.stop(),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: cs.surfaceContainerHighest,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: cs.scrim.withValues(alpha: 0.12),
+                                  blurRadius: AppSpacing.radiusMd,
+                                  offset: const Offset(0, AppSpacing.hairline),
+                                ),
+                              ],
+                            ),
+                            child: Icon(Icons.close, color: cs.onSurface, size: 20),
+                          ),
+                        ),
                       ),
                     ),
                   ),

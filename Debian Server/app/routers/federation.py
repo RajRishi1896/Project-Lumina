@@ -63,6 +63,8 @@ logger = logging.getLogger("lumina.federation")
     tags=["Federation"],
     summary="Identify this hub to another hub",
     description="Public. Lets a pairing hub confirm this hub is reachable and learn its name.",
+    response_model=dict,
+    responses={200: {"description": "Hub name and pairing nonce"}},
 )
 async def peer_hello():
     """Public -- no auth. Name + nonce used during the pairing handshake."""
@@ -74,7 +76,8 @@ async def peer_hello():
     tags=["Federation"],
     summary="Accept a pairing request from another hub",
     description="Public but gated by the 6-digit pairing code shown in this hub's Settings > Peer Hubs.",
-    responses={403: {"description": "Wrong or expired pairing code"}},
+    response_model=dict,
+    responses={400: {"description": "Missing code or public_key"}, 403: {"description": "Wrong or expired pairing code"}},
 )
 async def peer_pair(request: Request, payload: dict):
     """Verify the pairing code, derive the shared secret, and store the peer.
@@ -104,6 +107,7 @@ async def peer_pair(request: Request, payload: dict):
     tags=["Federation"],
     summary="Get this hub's current pairing code",
     description="Admin only. Generates a fresh 6-digit code when none is active; expires after 10 minutes.",
+    response_model=dict,
     responses={401: {"description": "Not authenticated"}, 403: {"description": "Admin role required"}},
 )
 async def pairing_code(_: str = Depends(verify_admin)):
@@ -119,6 +123,7 @@ async def pairing_code(_: str = Depends(verify_admin)):
     tags=["Federation"],
     summary="List approved resources for a paired peer",
     description="Signed. Returns only approved, non-kiwix resources -- never student data, uploaders, or pending/deprecated items.",
+    response_model=list[dict],
     responses={401: {"description": "Missing or invalid peer signature"}},
 )
 async def peer_catalog(peer: dict = Depends(verify_peer_sig)):
@@ -133,6 +138,7 @@ async def peer_catalog(peer: dict = Depends(verify_peer_sig)):
     )
 
     def _get_all_mtimes():
+        """Batch stat all catalog files in one call (avoids N+1)."""
         mtimes = {}
         for r in rows:
             try:
@@ -198,6 +204,7 @@ async def peer_zim_page(request: Request, article_id: str, peer: dict = Depends(
         raise HTTPException(status_code=404, detail="Archive not found")
 
     def _read_article():
+        """Read the article HTML from the .zim archive, following redirects."""
         try:
             archive = _get_archive(article["archive_id"], archive_row["zim_path"])
             if not archive.has_entry_by_path(article["path"]):
@@ -237,6 +244,7 @@ async def peer_zim_asset(archive_id: str, path: str, peer: dict = Depends(verify
         raise HTTPException(status_code=404, detail="Archive not found")
 
     def _read_asset():
+        """Read the raw asset bytes from the .zim archive, following redirects."""
         try:
             archive = _get_archive(archive_id, archive_row["zim_path"])
             if not archive.has_entry_by_path(path):
@@ -300,6 +308,7 @@ async def peer_proxy_file(peer_id: str, peer_resource_id: str, request: Request)
     tags=["Federation"],
     summary="List paired peers",
     description="Admin only. Includes each peer's cached resource count and last sync time.",
+    response_model=list[dict],
     responses={401: {"description": "Not authenticated"}, 403: {"description": "Admin role required"}},
 )
 async def list_peers(_: str = Depends(verify_admin)):
@@ -322,7 +331,8 @@ async def list_peers(_: str = Depends(verify_admin)):
     tags=["Federation"],
     summary="Pair with another hub",
     description="Admin only. Takes {ip, port, code}; the code is the 6-digit code shown on the other hub's Settings page.",
-    responses={403: {"description": "Invalid pairing code"}, 502: {"description": "Peer unreachable"}},
+    response_model=dict,
+    responses={400: {"description": "Missing ip or code"}, 403: {"description": "Invalid pairing code"}, 502: {"description": "Peer unreachable"}},
 )
 async def api_pair(payload: dict, _: str = Depends(verify_admin)):
     """Pair with the hub at the given address using its pairing code."""
@@ -342,10 +352,13 @@ async def api_pair(payload: dict, _: str = Depends(verify_admin)):
     tags=["Federation"],
     summary="Unpair a peer",
     description="Admin only. Removes the peer and its cached resources.",
+    response_model=dict,
+    responses={401: {"description": "Not authenticated"}, 403: {"description": "Admin role required"}},
 )
 async def unpair_peer(peer_id: str, _: str = Depends(verify_admin)):
     """Remove a paired peer and all its cached resources."""
     def _unpair(conn):
+        """Delete the peer row and its cached resources in one transaction."""
         conn.execute("DELETE FROM peers WHERE id = ?", (peer_id,))
         conn.execute("DELETE FROM peer_resources WHERE peer_id = ?", (peer_id,))
         conn.commit()
@@ -359,6 +372,8 @@ async def unpair_peer(peer_id: str, _: str = Depends(verify_admin)):
     tags=["Federation"],
     summary="Discover hubs on the LAN",
     description="Admin only. Browses mDNS for EduMeshHub services, excluding this host. Returns [{name, ip, port}].",
+    response_model=list[dict],
+    responses={401: {"description": "Not authenticated"}, 403: {"description": "Admin role required"}},
 )
 async def discover(_: str = Depends(verify_admin)):
     """Browse the LAN for EduMeshHub mDNS advertisements."""
@@ -370,6 +385,8 @@ async def discover(_: str = Depends(verify_admin)):
     tags=["Federation"],
     summary="Trigger an immediate catalog refresh for a peer",
     description="Admin only. Fetches the peer's catalog now and replaces its cached resources.",
+    response_model=dict,
+    responses={401: {"description": "Not authenticated"}, 403: {"description": "Admin role required"}, 404: {"description": "Peer not found"}},
 )
 async def sync_peer(peer_id: str, _: str = Depends(verify_admin)):
     """Refresh one peer's cached catalog immediately."""

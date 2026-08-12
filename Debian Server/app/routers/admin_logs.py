@@ -91,7 +91,7 @@ def _parse_legacy_line(line: str) -> dict:
     }
 
 
-@router.get("/admin/log",
+@router.get("/admin/log", response_model=AuditLogResponse,
             summary="View admin audit log",
             description="Returns the most recent admin action log entries. Supports filtering by action, user, severity, success, date range, and request ID. Admin-only.",
             tags=["Admin"],
@@ -126,6 +126,7 @@ async def admin_log(
     """
     try:
         def _read_log():
+            """Read the log file from newest to oldest, applying all filters."""
             try:
                 with open("data/admin_actions.log", "r") as f:
                     lines = f.readlines()

@@ -293,7 +293,10 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+            child: SingleChildScrollView(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl.w),
             child: Column(
@@ -393,6 +396,8 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ],
+            ),
+          ),
             ),
           ),
         ),

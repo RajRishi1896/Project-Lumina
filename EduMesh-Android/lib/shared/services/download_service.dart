@@ -7,6 +7,7 @@ import '../../core/network/api_client.dart';
 import '../../core/storage/db_helper.dart';
 import 'share_server.dart';
 
+/// Downloads resource files to local storage with resumable `.part` staging.
 class DownloadService {
 
   Future<String> get _localPath async {
@@ -19,6 +20,8 @@ class DownloadService {
     return path;
   }
 
+  /// Streams [url] to a file named [fileName], resuming partially downloaded
+  /// `.part` files when the server supports ranges. Returns the saved [File].
   Future<File?> downloadFile(String url, String fileName, {Function(int, int)? onProgress}) async {
     String? savePath;
     String? partPath;

@@ -35,11 +35,16 @@ class LuminaSettingsSheet extends ConsumerWidget {
         color: cs.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusXl.r)),
       ),
-      child: ListView.builder(
-        shrinkWrap: true,
-        padding: EdgeInsets.only(bottom: AppSpacing.section.h),
-        itemCount: items.length,
-        itemBuilder: (_, i) => items[i],
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+          child: ListView.builder(
+            shrinkWrap: true,
+            padding: EdgeInsets.only(bottom: AppSpacing.section.h),
+            itemCount: items.length,
+            itemBuilder: (_, i) => items[i],
+          ),
+        ),
       ),
     );
   }

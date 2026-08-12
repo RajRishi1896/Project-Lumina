@@ -834,7 +834,10 @@ class _SearchPageState extends State<SearchPage> {
               )
             : RefreshIndicator(
                 onRefresh: _loadResources,
-                child: Padding(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+                    child: Padding(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
       child: CustomScrollView(
         slivers: [
@@ -1054,6 +1057,8 @@ class _SearchPageState extends State<SearchPage> {
         ],
       ),
     ),
+                ),
+                ),
     );
 
     if (widget.embedded) return body;

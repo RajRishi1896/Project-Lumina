@@ -67,6 +67,7 @@ Thumbs.db
 migrate_working_dir/
 coverage/
 assets/UI-Inspo/
+**/UI-Inspo/
 
 # === AI Agent Artifacts ===
 AGENTS.md
@@ -77,10 +78,26 @@ IMPLEMENTATION_PLAN.md
 **/task.md
 **/Implementation Plan.md
 **/Implementation Plan*/
-Markdown files/DESIGN.md
+Markdown files/
 docs/*
 LMS Docs/
 
 # === Ocode plugins ===
 hooks/
 skills/
+.opencode/
+opencode.json
+
+# === Dev scratch (not part of the product) ===
+scripts/
+_test.py
+check_db.py
+verify.py
+Debian Server/test_browse.py
+Debian Server/test_browser.py
+Debian Server/test_e2e.ps1
+Debian Server/test_e2e.py
+Debian Server/test_e2e_extended.py
+Debian Server/test_endpoint.py
+Debian Server/trigger_reimport.py
+Debian Server/wipe_zim.py

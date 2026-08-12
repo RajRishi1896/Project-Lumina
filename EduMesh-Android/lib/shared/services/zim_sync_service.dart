@@ -5,11 +5,19 @@ import '../../core/storage/db_helper.dart';
 
 /// Paginated search/browse result from the server.
 class ZimSearchResult {
+  /// The articles returned for this page.
   final List<ZimArticle> articles;
+
+  /// Total number of matching articles on the server.
   final int total;
+
+  /// The start offset this page was fetched from.
   final int offset;
+
+  /// Whether further pages are available.
   final bool hasMore;
 
+  /// Creates a [ZimSearchResult] with the given page data.
   ZimSearchResult({
     required this.articles,
     required this.total,

@@ -36,6 +36,7 @@ async def refresh_peer_resources(peer: dict) -> int:
     items = await PeerManager().request_catalog(peer)
 
     def _replace_catalog(conn):
+        """Swap the peer's cached rows for the freshly fetched catalog."""
         conn.execute("DELETE FROM peer_resources WHERE peer_id = ?", (peer["id"],))
         conn.executemany(
             """INSERT OR REPLACE INTO peer_resources

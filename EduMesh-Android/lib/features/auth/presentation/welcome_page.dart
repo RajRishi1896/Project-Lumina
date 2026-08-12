@@ -75,7 +75,10 @@ class _WelcomePageState extends State<WelcomePage> {
     return Scaffold(
       backgroundColor: cs.surface,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+            child: SingleChildScrollView(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl.w, vertical: AppSpacing.xxl.h),
             child: Column(
@@ -92,6 +95,8 @@ class _WelcomePageState extends State<WelcomePage> {
                 SizedBox(height: AppSpacing.sectionLg.h),
                 _buildDeviceStatus(context),
               ],
+            ),
+          ),
             ),
           ),
         ),

@@ -208,7 +208,10 @@ class _StudyReportPageState extends State<StudyReportPage> {
 
   Widget _buildReport(ColorScheme cs) {
     final l10n = AppLocalizations.of(context)!;
-    return SingleChildScrollView(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+        child: SingleChildScrollView(
       padding: EdgeInsets.all(AppSpacing.lg.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,6 +249,8 @@ class _StudyReportPageState extends State<StudyReportPage> {
             SizedBox(height: AppSpacing.xxl.h),
           ],
         ],
+      ),
+        ),
       ),
     );
   }

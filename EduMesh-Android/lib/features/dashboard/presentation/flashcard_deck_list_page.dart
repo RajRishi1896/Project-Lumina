@@ -180,7 +180,10 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
         ),
       );
     }
-    return ListView.builder(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+        child: ListView.builder(
       padding: EdgeInsets.symmetric(vertical: AppSpacing.sm.h),
       itemCount: _decks.length,
       itemBuilder: (ctx, index) {
@@ -191,6 +194,8 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
           onMenuSelected: (value) => unawaited(_onMenuSelected(deck, value)),
         );
       },
+        ),
+      ),
     );
   }
 }

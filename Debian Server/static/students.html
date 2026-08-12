@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head ï¿½ theme detection, metadata, styles -->
+<!-- Section: Head -- theme detection, metadata, styles -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +15,7 @@
     <!-- Section: Sidebar -- empty, rendered by renderLayout() -->
     <aside></aside>
 
-    <!-- Section: Main Content ï¿½ page header, filter row, student card list -->
+    <!-- Section: Main Content -- page header, filter row, student card list -->
     <main>
         <div id="app-content">
         <div class="page-header">
@@ -69,14 +69,14 @@
         </div>
     </main>
 
-    <!-- Section: Bottom Nav ï¿½ mobile tab bar (hidden by default, shown via media query) -->
+    <!-- Section: Bottom Nav -- mobile tab bar (hidden by default, shown via media query) -->
     <div id="bottomNav"></div>
 
-    <!-- Section: Toast Container ï¿½ global notification area (top-right, fixed) -->
+    <!-- Section: Toast Container -- global notification area (top-right, fixed) -->
     <div id="globalToastContainer" class="toast-container"></div>
 
     <script src="/static/js/lumina.js?v=5" defer></script>
-    <!-- Section: Inline Scripts ï¿½ student list logic, filtering, rendering -->
+    <!-- Section: Inline Scripts -- student list logic, filtering, rendering -->
     <script>
         var allStudents = [];
         var allGrades = [];
@@ -227,12 +227,20 @@
             }).join('');
         }
 
+        /**
+         * Debounced wrapper for applyFilters (200ms) so the student list only
+         * re-renders after the user stops typing in the search box.
+         */
         let _debounceTimer;
         function debouncedApplyFilters() {
             clearTimeout(_debounceTimer);
             _debounceTimer = setTimeout(applyFilters, 200);
         }
 
+        /**
+         * Page init (registered in _pageInitRegistry): loads students, then
+         * wires up search/sort/grade filter controls and the student card links.
+         */
         var _initStudents = function() {
             loadStudents();
             loadWhoAmI();

@@ -17,10 +17,11 @@ from app.routers.teacher_courses import COURSES_DIR
 router = APIRouter()
 
 
-@router.get("/api/courses/similar-courses",
+@router.get("/api/courses/similar-courses", response_model=list[dict],
             summary="Get all similar course links",
             description="Returns all rows from the similar_courses table for client-side recommendation graph.",
-            tags=["Courses"])
+            tags=["Courses"],
+            responses={401: {"description": "Unauthorized"}})
 async def get_similar_courses(student_id: str = Depends(verify_student)):
     """Return the full similar-courses graph.
 
@@ -35,10 +36,11 @@ async def get_similar_courses(student_id: str = Depends(verify_student)):
     ]
 
 
-@router.get("/api/courses",
+@router.get("/api/courses", response_model=dict,
             summary="List published courses",
             description="Returns paginated course catalog with optional filters for subject, grade, language, and search.",
-            tags=["Courses"])
+            tags=["Courses"],
+            responses={401: {"description": "Unauthorized"}})
 async def list_courses(
     subject: Optional[str] = Query(None, description="Filter by subject"),
     grade: Optional[int] = Query(None, description="Filter by grade"),
@@ -100,10 +102,11 @@ async def list_courses(
     return {"items": items, "total": total, "page": page, "per_page": per_page}
 
 
-@router.get("/api/courses/{course_id}",
+@router.get("/api/courses/{course_id}", response_model=dict,
             summary="Get course detail with enrollment status",
             description="Returns full course metadata, resource list, similar courses, and whether the student is enrolled.",
-            tags=["Courses"])
+            tags=["Courses"],
+            responses={401: {"description": "Unauthorized"}, 404: {"description": "Course not found"}})
 async def get_course_detail(course_id: str, student_id: str = Depends(verify_student)):
     """Get course detail including resources, similar courses, and enrollment status.
 
@@ -261,11 +264,11 @@ async def unenroll_course(course_id: str, student_id: str = Depends(verify_stude
     return EnrollResponse(status="ok", course_id=course_id, message="Successfully unenrolled.")  # i18n: user-facing success message
 
 
-@router.get("/api/courses/{course_id}/progress",
+@router.get("/api/courses/{course_id}/progress", response_model=dict,
             summary="Get course progress",
             description="Returns the current student's progress for a course, or 404 if not enrolled.",
             tags=["Courses"],
-            responses={404: {"description": "Not enrolled"}})
+            responses={401: {"description": "Unauthorized"}, 404: {"description": "Not enrolled"}})
 async def get_progress(course_id: str, student_id: str = Depends(verify_student)):
     """Get the student's progress in a course.
 
@@ -294,10 +297,11 @@ async def get_progress(course_id: str, student_id: str = Depends(verify_student)
     }
 
 
-@router.put("/api/courses/{course_id}/progress",
+@router.put("/api/courses/{course_id}/progress", response_model=dict,
             summary="Sync course progress",
             description="Upserts the student's progress for a course. Creates a row if none exists, updates if it does.",
-            tags=["Courses"])
+            tags=["Courses"],
+            responses={401: {"description": "Unauthorized"}, 404: {"description": "Course not published or student not enrolled"}})
 async def sync_progress(course_id: str, data: ProgressSync, student_id: str = Depends(verify_student)):
     """Sync the student's course progress (UPSERT).
 
@@ -338,11 +342,11 @@ async def sync_progress(course_id: str, data: ProgressSync, student_id: str = De
     }
 
 
-@router.get("/api/courses/{course_id}/resource/{resource_id}",
+@router.get("/api/courses/{course_id}/resource/{resource_id}", response_model=dict,
             summary="Get resource download URL",
             description="Returns the download URL and metadata for a course resource. Requires enrollment.",
             tags=["Courses"],
-            responses={403: {"description": "Not enrolled"}, 404: {"description": "Resource not found"}})
+            responses={401: {"description": "Unauthorized"}, 403: {"description": "Not enrolled"}, 404: {"description": "Resource not found"}})
 async def get_resource_url(course_id: str, resource_id: str, student_id: str = Depends(verify_student)):
     """Get the download URL for a course resource.
 
@@ -374,11 +378,11 @@ async def get_resource_url(course_id: str, resource_id: str, student_id: str = D
     }
 
 
-@router.get("/api/courses/{course_id}/quiz/{resource_id}",
+@router.get("/api/courses/{course_id}/quiz/{resource_id}", response_model=dict,
             summary="Get quiz JSON",
             description="Returns the quiz JSON file for a course resource. Requires enrollment.",
             tags=["Courses"],
-            responses={403: {"description": "Not enrolled"}, 404: {"description": "Quiz not found"}})
+            responses={401: {"description": "Unauthorized"}, 403: {"description": "Not enrolled"}, 404: {"description": "Quiz not found"}})
 async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(verify_student)):
     """Get the quiz definition JSON for a course resource.
 
@@ -399,6 +403,7 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
     quiz_path = os.path.join(COURSES_DIR, course_id, f"quiz_{resource_id}.json")
 
     def _read_quiz():
+        """Read the quiz JSON from disk, or None when missing."""
         if not os.path.exists(quiz_path):
             return None
         with open(quiz_path, "r", encoding="utf-8") as f:
@@ -482,7 +487,8 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
 @router.get("/api/courses/{course_id}/quiz/{resource_id}/attempts", response_model=list[QuizAttemptResponse],
             summary="Get quiz attempt history",
             description="Returns all quiz attempts for the current student, course, and resource, ordered by attempt number descending.",
-            tags=["Courses"])
+            tags=["Courses"],
+            responses={401: {"description": "Unauthorized"}})
 async def get_quiz_attempts(course_id: str, resource_id: str, student_id: str = Depends(verify_student)):
     """Get quiz attempt history for the student.
 
@@ -508,7 +514,7 @@ async def get_quiz_attempts(course_id: str, resource_id: str, student_id: str = 
             summary="Serve course asset file",
             description="Serves static assets (images, PDFs, etc.) from the course's assets directory. Does not require enrollment -- only that the course is published.",
             tags=["Courses"],
-            responses={404: {"description": "Course or asset not found"}})
+            responses={401: {"description": "Unauthorized"}, 404: {"description": "Course or asset not found"}})
 async def serve_asset(course_id: str, path: str, student_id: str = Depends(verify_student)):
     """Serve a course asset file from the assets subdirectory.
 
@@ -539,8 +545,10 @@ async def serve_asset(course_id: str, path: str, student_id: str = Depends(verif
 @router.get("/student/enrolled-courses", response_model=EnrolledCoursesResponse,
             summary="Get all enrolled courses with progress",
             description="Returns all courses the student is enrolled in, with course metadata and progress. Used for restoring enrollment after app data clear.",
-            tags=["Courses"])
+            tags=["Courses"],
+            responses={401: {"description": "Unauthorized"}})
 async def get_enrolled_courses(student_id: str = Depends(verify_student)):
+    """Return every course the student is enrolled in with its saved progress."""
     rows = await db_fetch("""
         SELECT c.id, c.title, c.description, c.subject, c.grade, c.language, c.cover_image,
                c.published, c.teacher_username, c.enrollment_count, c.created_at, c.updated_at,

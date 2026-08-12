@@ -1,5 +1,10 @@
 #!/bin/bash
-# Two-step swap: NM starts AP (needs wpa_supplicant), then hostapd takes over
+# Purpose: Two-step hotspot swap for stubborn WiFi cards: NetworkManager starts
+#          the AP (needs wpa_supplicant), then hostapd takes over the interface
+#          for better throughput, then masks wpa_supplicant for future boots.
+# Usage:   sudo ./switch_to_hostapd.sh
+# Args:    None
+# Idempotent: Yes -- cleans up existing LuminaHub profile and masks before re-running.
 set -e
 
 echo "=== Step 1: Unmask wpa_supplicant so NM can start AP ==="

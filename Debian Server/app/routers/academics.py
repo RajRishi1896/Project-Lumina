@@ -77,8 +77,10 @@ async def create_subject(subject: SubjectCreate, teacher_user: str = Depends(ver
         raise HTTPException(status_code=400, detail="Failed to create subject")  # i18n: user-facing error message
 
 
-@router.put("/teacher/subjects/{subject_id}",
-            summary="Edit a subject", tags=["Subjects"])
+@router.put("/teacher/subjects/{subject_id}", response_model=StatusResponse,
+            summary="Edit a subject", tags=["Subjects"],
+            description="Admin-only: update a subject's name, symbol, or class_name. A rename propagates to all resources, resource topics, and courses.",
+            responses={400: {"description": "No fields given or duplicate name"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}, 404: {"description": "Subject not found"}})
 async def update_subject(subject_id: str, data: dict, admin_user: str = Depends(verify_admin),
                          request: Request = None):
     """Update a subject's name, symbol, or class_name.
@@ -96,6 +98,7 @@ async def update_subject(subject_id: str, data: dict, admin_user: str = Depends(
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update.")  # i18n: user-facing error message
     def _update_subject(conn):
+        """Apply the rename/update inside one transaction; returns the old subject name."""
         row = conn.execute("SELECT id, name FROM subjects WHERE id = ?", (subject_id,)).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Subject not found.")  # i18n: user-facing error message
@@ -151,6 +154,7 @@ async def delete_subject(subject_id: str, transfer_to: str = Query(None), admin_
     """
     try:
         def _delete_subject(conn):
+            """Transfer or hard-delete subject resources/courses, then drop the subject."""
             row = conn.execute("SELECT name FROM subjects WHERE id = ?", (subject_id,)).fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="Subject not found.")  # i18n: user-facing error message
@@ -234,7 +238,7 @@ async def student_get_grades(user: str = Depends(verify_user)):
     return result
 
 
-@router.post("/grades",
+@router.post("/grades", response_model=dict,
              summary="Create a grade",
              description="Creates a new grade level with a unique name (max 50 characters).",
              tags=["Subjects"],
@@ -265,8 +269,10 @@ async def create_grade(data: dict, teacher_user: str = Depends(verify_teacher),
         raise HTTPException(status_code=400, detail="Grade already exists.")  # i18n: user-facing error message
 
 
-@router.put("/grades/{grade_name}",
-            summary="Rename a grade", tags=["Subjects"])
+@router.put("/grades/{grade_name}", response_model=StatusResponse,
+            summary="Rename a grade", tags=["Subjects"],
+            description="Admin-only: rename a grade level, propagating the change to resources and courses.",
+            responses={400: {"description": "Missing new_name or duplicate name"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}, 404: {"description": "Grade not found"}})
 async def update_grade(grade_name: str, data: dict, admin_user: str = Depends(verify_admin),
                        request: Request = None):
     """Rename a grade level.
@@ -282,6 +288,7 @@ async def update_grade(grade_name: str, data: dict, admin_user: str = Depends(ve
     if not new_name:
         raise HTTPException(status_code=400, detail="new_name is required.")  # i18n: user-facing error message
     def _rename_grade(conn):
+        """Rename the grade row and update numeric grade references in one transaction."""
         if not conn.execute("SELECT id FROM grades WHERE name = ?", (grade_name,)).fetchone():
             raise HTTPException(status_code=404, detail="Grade not found.")  # i18n: user-facing error message
         if conn.execute("SELECT id FROM grades WHERE name = ? AND name != ?", (new_name, grade_name)).fetchone():
@@ -327,6 +334,7 @@ async def delete_grade(name: str, transfer_to: str = None, admin_user: str = Dep
         HTTPException 400: If target grade does not exist.
     """
     def _delete_grade(conn):
+        """Transfer or hard-delete grade resources/courses, then drop the grade."""
         if transfer_to:
             if conn.execute("SELECT COUNT(*) FROM grades WHERE name = ?", (transfer_to,)).fetchone()[0] == 0:
                 raise HTTPException(status_code=400, detail="Target grade does not exist.")  # i18n: user-facing error message
@@ -369,10 +377,11 @@ async def delete_grade(name: str, transfer_to: str = None, admin_user: str = Dep
     return {"status": "success"}
 
 
-@router.get("/student/resource-topics",
+@router.get("/student/resource-topics", response_model=list[dict],
             summary="List resource topics for students",
-            description="Returns resource topics, optionally filtered by subject.",
-            tags=["Subjects"])
+            description="Returns resource topics (id, subject, name, position), optionally filtered by subject.",
+            tags=["Subjects"],
+            responses={401: {"description": "Unauthorized"}})
 async def student_list_resource_topics(user: str = Depends(verify_user),
                                        subject: str = Query(None, description="Subject name (omit for all)")):
     """List resource topics accessible to students.
@@ -389,10 +398,11 @@ async def student_list_resource_topics(user: str = Depends(verify_user),
     return [dict(r) for r in rows]
 
 
-@router.get("/student/resources-by-topic",
+@router.get("/student/resources-by-topic", response_model=list[dict],
             summary="List resources by topic for students",
-            description="Returns approved resources filtered by subject and optionally topic.",
-            tags=["Subjects"])
+            description="Returns approved resources (id, title, type, subject, grade, language, pdfUrl, topic_id, topic_name) filtered by subject and optionally topic.",
+            tags=["Subjects"],
+            responses={401: {"description": "Unauthorized"}, 422: {"description": "Missing subject"}})
 async def student_resources_by_topic(user: str = Depends(verify_user),
                                      subject: str = Query(..., description="Subject name"),
                                      topic_id: str = Query("", description="Topic ID (omit for all in subject)"),
@@ -431,10 +441,11 @@ async def student_resources_by_topic(user: str = Depends(verify_user),
 
 # ─── Resource Topics (chapters within subjects) ────────────────────────────
 
-@router.get("/teacher/resource-topics",
+@router.get("/teacher/resource-topics", response_model=list[dict],
             summary="List resource topics",
-            description="Returns resource topics. Omit subject to list all.",
-            tags=["Subjects"])
+            description="Returns resource topics (id, subject, name, position). Omit subject to list all.",
+            tags=["Subjects"],
+            responses={401: {"description": "Unauthorized"}})
 async def list_resource_topics(subject: str = Query(None, description="Subject name (omit for all)"),
                                teacher_user: str = Depends(verify_teacher)):
     """List resource topics, optionally filtered by subject.
@@ -451,10 +462,11 @@ async def list_resource_topics(subject: str = Query(None, description="Subject n
     return [dict(r) for r in rows]
 
 
-@router.post("/teacher/resource-topics",
+@router.post("/teacher/resource-topics", response_model=dict,
              summary="Create a resource topic (chapter)",
+             description="Creates a new resource topic within a subject, assigning the next position automatically.",
              tags=["Subjects"],
-             responses={201: {"description": "Topic created"}, 400: {"description": "Topic already exists"}})
+             responses={201: {"description": "Topic created"}, 400: {"description": "Missing fields or topic already exists"}})
 async def create_resource_topic(data: dict, teacher_user: str = Depends(verify_teacher),
                                 request: Request = None):
     """Create a new resource topic (chapter) within a subject.
@@ -486,8 +498,10 @@ async def create_resource_topic(data: dict, teacher_user: str = Depends(verify_t
     return {"status": "ok", "id": topic_id, "subject": subject, "name": name}
 
 
-@router.put("/teacher/resource-topics/{topic_id}",
-            summary="Edit a resource topic", tags=["Subjects"])
+@router.put("/teacher/resource-topics/{topic_id}", response_model=StatusResponse,
+            summary="Edit a resource topic", tags=["Subjects"],
+            description="Updates a resource topic's name or subject, enforcing a unique (subject, name) pair.",
+            responses={400: {"description": "No fields given or duplicate name"}, 401: {"description": "Unauthorized"}, 404: {"description": "Topic not found"}})
 async def update_resource_topic(topic_id: str, data: dict, teacher_user: str = Depends(verify_teacher),
                                 request: Request = None):
     """Update a resource topic's name or subject.
@@ -528,10 +542,11 @@ async def update_resource_topic(topic_id: str, data: dict, teacher_user: str = D
     return {"status": "ok"}
 
 
-@router.delete("/teacher/resource-topics/{topic_id}",
+@router.delete("/teacher/resource-topics/{topic_id}", response_model=dict,
                summary="Delete a resource topic",
+               description="Deletes a resource topic, optionally transferring or hard-deleting its resources.",
                tags=["Subjects"],
-               responses={200: {"description": "Deleted"}, 404: {"description": "Not found"}})
+               responses={200: {"description": "Deleted"}, 401: {"description": "Unauthorized"}, 404: {"description": "Topic or transfer target not found"}})
 async def delete_resource_topic(topic_id: str,
                                 delete_resources: bool = Query(False, description="Also hard-delete all resources in this topic"),
                                 transfer_to: Optional[str] = Query(None, description="Transfer resources to this topic before deleting"),
@@ -566,6 +581,7 @@ async def delete_resource_topic(topic_id: str,
             filepaths = [os.path.join(UPLOAD_DIR, r["filename"]) for r in resources if r["filename"]]
             if filepaths:
                 def _remove_files(paths):
+                    """Delete a batch of resource files from disk, tolerating missing files."""
                     for fp in paths:
                         try:
                             if os.path.exists(fp):

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -38,8 +40,12 @@ class MiniPlayerController extends ChangeNotifier {
 
   /// Activates the mini-player with the given [title], [videoUrl], and controller.
   ///
-  /// Replaces any previous session and notifies listeners immediately.
+  /// Replaces any previous session and notifies listeners immediately. A
+  /// different previous controller is disposed so ghost streams never pile up.
   void start(String title, String videoUrl, VideoPlayerController videoController) {
+    if (_videoController != null && !identical(_videoController, videoController)) {
+      _videoController!.dispose();
+    }
     _title = title;
     _videoUrl = videoUrl;
     _videoController = videoController;
@@ -55,18 +61,19 @@ class MiniPlayerController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Hides the overlay without disposing the video controller.
-  ///
-  /// Used when the user navigates back to the full-screen page so the same
-  /// controller can be reused.
-  void closeOnlyOverlay() {
-    _active = false;
-    notifyListeners();
-  }
-
-  /// Sets the quiz-active flag. When `true` the mini-player widget hides.
+  /// Sets the quiz-active flag. When `true` the mini-player widget hides and
+  /// the video pauses so audio never leaks into exam mode; it resumes (unless
+  /// the video ended) when the flag clears.
   void setQuizActive(bool value) {
+    if (_quizActive == value) return;
     _quizActive = value;
+    final vc = _videoController;
+    if (vc == null || !vc.value.isInitialized) return;
+    if (value) {
+      vc.pause();
+    } else if (!vc.value.isCompleted) {
+      unawaited(vc.play());
+    }
     notifyListeners();
   }
 

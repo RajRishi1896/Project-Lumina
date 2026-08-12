@@ -132,6 +132,10 @@
             } catch (e) { console.error('Stats load error', e); }
         }
 
+        /**
+         * Update the uptime displays by extrapolating from the server-reported
+         * baseline (captured at load) plus elapsed local time.
+         */
         function _renderUptime() {
             if (!_uptimeBase) return;
             var secs = _uptimeServerSecs + Math.floor((Date.now() - _uptimeBase) / 1000);
@@ -139,11 +143,16 @@
             _statUptimeEl.textContent = _formatUptimeShort(secs);
         }
 
+        /**
+         * Start a 1s interval that re-renders uptime; clears any previous
+         * ticker so navigation/SPA re-init cannot stack intervals.
+         */
         function _startUptimeTick() {
             if (window._uptimeInterval) clearInterval(window._uptimeInterval);
             window._uptimeInterval = setInterval(_renderUptime, 1000);
         }
 
+        /** Page init (registered in _pageInitRegistry): loads dashboard stats. */
         (window._pageInitRegistry = window._pageInitRegistry || {}).home = function() { loadStats(); };
     </script>
 </body>

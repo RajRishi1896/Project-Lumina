@@ -31,10 +31,12 @@ def _answers_json(*pairs):
 
 
 def _auth(token):
+    """Build the Authorization header for a token."""
     return {"Authorization": f"Bearer {token}"}
 
 
 async def _make_student(name):
+    """Create a student account and session; return (id, token)."""
     sid = f"LUMINA_TEST-{uuid.uuid4().hex[:12]}"
     token = f"LUMINA_HUB-{uuid.uuid4().hex}"
     await db_exec(
@@ -47,6 +49,7 @@ async def _make_student(name):
 
 
 async def _seed_course(published=1):
+    """Insert a course row; return its id."""
     cid = str(uuid.uuid4())
     await db_exec(
         "INSERT INTO courses (id, title, subject, grade, language, published, teacher_username) VALUES (?, ?, 'math', 'General', 'en', ?, 'admin')",
@@ -55,6 +58,7 @@ async def _seed_course(published=1):
 
 
 async def _seed_course_quiz(cid, questions=TWO_Q, pass_threshold=60):
+    """Seed a course-bound quiz resource and its JSON file; return resource id."""
     rid = str(uuid.uuid4())
     await db_exec(
         "INSERT INTO course_resources (id, course_id, resource_type, title, original_name, filename, file_size, position) VALUES (?, ?, 'quiz', 'Quiz', 'quiz.json', ?, 100, 0)",
@@ -68,6 +72,7 @@ async def _seed_course_quiz(cid, questions=TWO_Q, pass_threshold=60):
 
 
 async def _seed_standalone_quiz(resource_type="quiz", status="approved"):
+    """Seed a standalone quiz resource and its JSON file; return resource id."""
     rid = str(uuid.uuid4())
     fname = f"{rid}.quiz"
     with open(os.path.join(UPLOAD_DIR, fname), "w") as f:
@@ -80,6 +85,7 @@ async def _seed_standalone_quiz(resource_type="quiz", status="approved"):
 
 
 def _attempt_payload(attempt_id, answers_json, score=0.0, passed=0):
+    """Build a Flutter-style attempt submission payload."""
     return {"attempt_id": attempt_id, "attempt_number": 1, "score": score, "passed": passed,
             "answers_json": answers_json, "started_at": "", "submitted_at": "",
             "time_taken_seconds": 10, "quiz_version": 1, "threshold_at_submission": 0.6}

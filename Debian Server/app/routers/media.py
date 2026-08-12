@@ -1,4 +1,4 @@
-"""File streaming and thumbnail generation routes."""
+"""File streaming, thumbnail generation, and video sprite sheet routes."""
 import os
 import re
 import asyncio
@@ -9,6 +9,32 @@ from app.database import UPLOAD_DIR, THUMBNAILS_DIR
 from app.async_db import db_fetch_one, db_exec
 
 router = APIRouter()
+
+# VAAPI hardware decode args, probed once. Empty list on machines without a
+# usable /dev/dri device or vaapi ffmpeg build -- CPU decode is the fallback.
+_vaapi_args: list = []
+
+
+def _probe_vaapi():
+    """Return ffmpeg args for VAAPI hardware decode, or [] if unavailable.
+
+    Probed once at import. VAAPI offloads video decode to the Intel/AMD iGPU
+    -- the largest CPU cost in thumbnail/sprite generation.
+    """
+    global _vaapi_args
+    try:
+        if not os.path.exists("/dev/dri/renderD128"):
+            return []
+        result = subprocess.run(["ffmpeg", "-hwaccels"], capture_output=True, text=True, timeout=5)
+        if result.returncode != 0 or "vaapi" not in result.stdout.lower():
+            return []
+        _vaapi_args = ["-hwaccel", "vaapi", "-vaapi_device", "/dev/dri/renderD128"]
+    except Exception:
+        pass
+    return _vaapi_args
+
+
+_vaapi_args = _probe_vaapi()
 
 
 @router.get("/api/stream/{filename:path}",
@@ -56,6 +82,7 @@ async def stream_file(filename: str, request: Request):
         content_length = end - start + 1
 
         async def _stream_chunk():
+            """Yield the requested byte range in 64KB chunks, closing the handle afterwards."""
             file_handle = await asyncio.to_thread(open, file_path, "rb")
             try:
                 await asyncio.to_thread(file_handle.seek, start)
@@ -86,7 +113,7 @@ def _find_video_thumb_time(file_path: str, max_search: int = 30) -> float:
     """Find a suitable thumbnail timestamp by skipping black intros via ffmpeg blackdetect."""
     try:
         result = subprocess.run(
-            ["ffmpeg", "-i", file_path, "-vf", "blackdetect=d=0.3:pix_th=0.1",
+            ["ffmpeg", *_vaapi_args, "-i", file_path, "-vf", "blackdetect=d=0.3:pix_th=0.1",
              "-f", "null", "-"],
             capture_output=True, text=True, timeout=30
         )
@@ -101,6 +128,63 @@ def _find_video_thumb_time(file_path: str, max_search: int = 30) -> float:
     except Exception:
         pass
     return 2.0
+
+
+async def _resolve_resource(resource_id: str):
+    """Resolve a resource row and its on-disk path from either table.
+
+    Args:
+        resource_id: The resource database id.
+
+    Returns:
+        A tuple of (row, table, file_path), or (None, None, None) if not found.
+    """
+    row = await db_fetch_one(
+        "SELECT id, filename, resource_type, duration_seconds FROM resources WHERE id = ?", (resource_id,))
+    table = "resources"
+    if not row:
+        row = await db_fetch_one(
+            "SELECT id, course_id, filename, resource_type, duration_seconds FROM course_resources WHERE id = ?", (resource_id,))
+        table = "course_resources"
+    if not row:
+        return None, None, None
+    # Course-resource files live under uploads/courses/{course_id}/resources/,
+    # not directly in the uploads root -- build the correct path.
+    if table == "course_resources":
+        file_path = os.path.join(UPLOAD_DIR, "courses", str(row["course_id"]), "resources", row["filename"]) if row["filename"] else None
+    else:
+        file_path = os.path.join(UPLOAD_DIR, row["filename"]) if row["filename"] else None
+    return row, table, file_path
+
+
+def _probe_duration(file_path: str) -> float:
+    """Probe a video's duration in seconds via ffprobe. Returns 0 on failure."""
+    try:
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", file_path],
+            capture_output=True, text=True, timeout=15
+        )
+        return round(float(probe.stdout.strip()))
+    except Exception:
+        return 0
+
+
+def _generate_video_sprite(file_path: str, sprite_path: str, interval: float, columns: int, rows: int) -> bool:
+    """Render a seek-preview sprite sheet: one 160x90 frame per interval, tiled into a grid.
+
+    Runs inside asyncio.to_thread. Never raises; returns success bool.
+    """
+    try:
+        # fps=1/{interval} samples one frame per interval; tile packs them into the grid.
+        result = subprocess.run(
+            ["ffmpeg", *_vaapi_args, "-y", "-i", file_path,
+             "-vf", f"fps=1/{interval},scale=160:90,tile={columns}x{rows}",
+             "-frames:v", "1", "-q:v", "5", sprite_path],
+            capture_output=True, timeout=120
+        )
+        return result.returncode == 0 and os.path.exists(sprite_path)
+    except Exception:
+        return False
 
 
 @router.get("/api/thumbnail/{resource_id}",
@@ -120,23 +204,9 @@ async def resource_thumbnail(resource_id: str):
         HTTPException 404: If resource, file, or thumbnail is unavailable.
         HTTPException 500: If thumbnail generation fails unexpectedly.
     """
-    row = await db_fetch_one(
-        "SELECT id, filename, resource_type FROM resources WHERE id = ?", (resource_id,))
-    table = "resources"
-    course_id = None
-    if not row:
-        row = await db_fetch_one(
-            "SELECT id, course_id, filename, resource_type FROM course_resources WHERE id = ?", (resource_id,))
-        table = "course_resources"
-        course_id = row["course_id"] if row else None
+    row, table, file_path = await _resolve_resource(resource_id)
     if not row:
         raise HTTPException(status_code=404, detail="Resource not found")  # i18n: user-facing error message
-    # Course-resource files live under uploads/courses/{course_id}/resources/,
-    # not directly in the uploads root -- build the correct path.
-    if table == "course_resources":
-        file_path = os.path.join(UPLOAD_DIR, "courses", str(course_id), "resources", row["filename"]) if row["filename"] else None
-    else:
-        file_path = os.path.join(UPLOAD_DIR, row["filename"]) if row["filename"] else None
     rtype = row["resource_type"]
     thumb_path = os.path.join(THUMBNAILS_DIR, f"{resource_id}.png")
     if await asyncio.to_thread(os.path.exists, thumb_path):
@@ -166,21 +236,12 @@ async def resource_thumbnail(resource_id: str):
             thumb_time = await asyncio.to_thread(_find_video_thumb_time, file_path)
             ss = f"{int(thumb_time // 3600):02d}:{int((thumb_time % 3600) // 60):02d}:{int(thumb_time % 60):02d}"
             result = await asyncio.to_thread(lambda: subprocess.run(
-                ["ffmpeg", "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],
+                ["ffmpeg", *_vaapi_args, "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],
                 capture_output=True, timeout=15
             ))
             if result.returncode != 0 or not await asyncio.to_thread(os.path.exists, thumb_path):
                 raise HTTPException(status_code=404, detail="Thumbnail generation failed")  # i18n: user-facing error message
 
-            def _probe_duration(fp):
-                try:
-                    probe = subprocess.run(
-                        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", fp],
-                        capture_output=True, text=True, timeout=15
-                    )
-                    return round(float(probe.stdout.strip()))
-                except Exception:
-                    return 0
             duration_seconds = await asyncio.to_thread(_probe_duration, file_path)
         else:
             raise HTTPException(status_code=404, detail="No thumbnail for this type")  # i18n: user-facing error message
@@ -199,3 +260,75 @@ async def resource_thumbnail(resource_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Thumbnail error: {e}")  # i18n: user-facing error message
     return FileResponse(thumb_path, media_type="image/png")
+
+
+@router.get("/api/video/previews/{resource_id}/sprite",
+            summary="Get video seek-preview sprite sheet",
+            description="Returns the cached JPG sprite sheet for a video resource. The metadata route generates it on first request.",
+            tags=["Resources"],
+            responses={404: {"description": "Sprite not found"}})
+async def video_preview_sprite(resource_id: str):
+    """Get the cached sprite sheet image for a video resource.
+
+    Args:
+        resource_id: The resource database id.
+
+    Returns:
+        JPEG image (FileResponse).
+    Raises:
+        HTTPException 404: If no sprite sheet exists yet.
+    """
+    sprite_path = os.path.join(THUMBNAILS_DIR, f"{resource_id}_previews.jpg")
+    if not await asyncio.to_thread(os.path.exists, sprite_path):
+        raise HTTPException(status_code=404, detail="Sprite not found")  # i18n: user-facing error message
+    return FileResponse(sprite_path, media_type="image/jpeg")
+
+
+@router.get("/api/video/previews/{resource_id}",
+            summary="Get video seek-preview metadata",
+            description="Returns sprite sheet metadata for a video resource, generating the sheet on first request. Clients use it for YouTube-style seek preview thumbnails.",
+            tags=["Resources"],
+            response_model=dict,
+            responses={404: {"description": "Video or preview unavailable"}, 500: {"description": "Preview generation error"}})
+async def video_preview_meta(resource_id: str):
+    """Get (and lazily generate) the seek-preview sprite sheet for a video.
+
+    Args:
+        resource_id: The resource database id.
+
+    Returns:
+        JSON metadata describing the sprite grid and sampling interval.
+    Raises:
+        HTTPException 404: If the resource is not a video, is too short, or generation fails.
+    """
+    row, _table, file_path = await _resolve_resource(resource_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Resource not found")  # i18n: user-facing error message
+    if row["resource_type"] not in ("videos", "khan"):
+        raise HTTPException(status_code=404, detail="Previews not supported for this resource type")  # i18n: user-facing error message
+    if not file_path or not await asyncio.to_thread(os.path.exists, file_path):
+        raise HTTPException(status_code=404, detail="File not found")  # i18n: user-facing error message
+    duration = row["duration_seconds"] or 0
+    if not duration:
+        duration = await asyncio.to_thread(_probe_duration, file_path)
+    if duration < 16:
+        raise HTTPException(status_code=404, detail="Video too short for previews")  # i18n: user-facing error message
+    frames = min(60, max(1, int(duration) // 8))
+    interval = round(duration / frames, 2)
+    columns = 6
+    rows = (frames + columns - 1) // columns
+    sprite_path = os.path.join(THUMBNAILS_DIR, f"{resource_id}_previews.jpg")
+    if not await asyncio.to_thread(os.path.exists, sprite_path):
+        ok = await asyncio.to_thread(_generate_video_sprite, file_path, sprite_path, interval, columns, rows)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Preview generation failed")  # i18n: user-facing error message
+    return {
+        "resource_id": resource_id,
+        "sprite_url": f"/api/video/previews/{resource_id}/sprite",
+        "frame_w": 160,
+        "frame_h": 90,
+        "columns": columns,
+        "rows": rows,
+        "frames": frames,
+        "interval_seconds": interval,
+    }

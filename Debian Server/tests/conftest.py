@@ -48,6 +48,7 @@ from app.api import app
 
 @pytest.fixture(scope="session")
 def event_loop():
+    """Provide a session-scoped event loop for async fixtures."""
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     yield loop
@@ -56,6 +57,7 @@ def event_loop():
 
 @pytest.fixture(autouse=True)
 async def setup_db():
+    """Initialise the test database and ensure the default admin role."""
     from app.database import init_db
     await asyncio.to_thread(init_db)
     from app.async_db import db_exec
@@ -65,6 +67,7 @@ async def setup_db():
 
 @pytest.fixture
 async def client(setup_db):
+    """Provide an unauthenticated ASGI test client."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
@@ -72,6 +75,7 @@ async def client(setup_db):
 
 @pytest.fixture
 async def admin_client(setup_db):
+    """Provide a test client authenticated as the default admin."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         resp = await ac.post("/token", data={"username": "admin", "password": "lumina2026"})

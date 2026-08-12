@@ -21,6 +21,7 @@ class FlashcardService {
   factory FlashcardService() => _instance;
   FlashcardService._internal();
 
+  /// Lists all decks stored locally, newest first, with cards and review state.
   Future<List<FlashcardDeck>> listDecks() async {
     final db = await DBHelper().database;
     final deckRows = await db.query('flashcard_decks_local', orderBy: 'updated_at DESC');
@@ -78,6 +79,7 @@ class FlashcardService {
     );
   }
 
+  /// Returns the deck with [deckId], or `null` if it does not exist.
   Future<FlashcardDeck?> getDeck(String deckId) async {
     final db = await DBHelper().database;
     final rows = await db.query('flashcard_decks_local', where: 'id = ?', whereArgs: [deckId]);

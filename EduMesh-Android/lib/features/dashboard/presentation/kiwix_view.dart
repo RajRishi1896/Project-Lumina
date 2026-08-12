@@ -85,11 +85,14 @@ class _KiwixViewState extends State<KiwixView> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
+          tooltip: l10n.tooltipBackToResource,
           icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           widget.title ?? l10n.kiwixDefaultTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 letterSpacing: 1.5,
                 fontWeight: AppSpacing.weightDisplay,
@@ -100,6 +103,7 @@ class _KiwixViewState extends State<KiwixView> {
         elevation: 0,
         actions: [
           IconButton(
+            tooltip: l10n.errorRetryButton,
             icon: const Icon(Icons.refresh, color: LuminaColors.primaryDeepBlue),
             onPressed: () => _controller.reload(),
           ),

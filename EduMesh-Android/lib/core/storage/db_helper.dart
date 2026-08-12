@@ -26,7 +26,7 @@ class DBHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 16, onCreate: _createDB, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 17, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   Future _createDB(Database db, int version) async {
@@ -70,7 +70,8 @@ class DBHelper {
         grade TEXT,
         type TEXT,
         mtime REAL DEFAULT 0,
-        downloaded_at INTEGER
+        downloaded_at INTEGER,
+        server_removed INTEGER DEFAULT 0
       )
     ''');
 
@@ -339,6 +340,14 @@ class DBHelper {
     return await db.query('downloads', orderBy: 'downloaded_at DESC');
   }
 
+  /// A set of resource IDs whose downloads were removed from the server
+  /// catalog (see `server_removed`). The local files remain usable.
+  Future<Set<String>> getRemovedDownloadIds() async {
+    final db = await database;
+    final rows = await db.query('downloads', columns: ['resource_id'], where: 'server_removed = 1');
+    return rows.map((r) => r['resource_id'] as String).toSet();
+  }
+
   /// Adds a download to the pending queue for processing when connectivity is restored.
   Future<void> addPendingDownload(String resourceId, String url, String fileName, {
     String title = '',
@@ -573,6 +582,9 @@ class DBHelper {
         try { await db.execute('CREATE TABLE IF NOT EXISTS flashcard_submissions_local (id TEXT PRIMARY KEY, deck_id TEXT NOT NULL, status TEXT NOT NULL DEFAULT \'pending\', reason TEXT DEFAULT \'\', submitted_at INTEGER NOT NULL DEFAULT 0)'); } catch (_) {}
         try { await db.execute('CREATE INDEX IF NOT EXISTS idx_flash_cards_deck ON flashcard_cards_local(deck_id)'); } catch (_) {}
         try { await db.execute('CREATE INDEX IF NOT EXISTS idx_flash_reviews_due ON flashcard_reviews_local(due_at)'); } catch (_) {}
+      }
+      if (v >= 17) {
+        try { await db.execute('ALTER TABLE downloads ADD COLUMN server_removed INTEGER DEFAULT 0'); } catch (_) {}
       }
     }
   }

@@ -29,14 +29,17 @@ _MIN_FREE_GB = 2
 
 
 def _zim_target_dir():
+    """Return the ZIM pages directory (must match zim_handler)."""
     return os.path.join(os.path.dirname(os.path.dirname(__file__)), "zim_pages")
 
 
 def _thumbs_dir():
+    """Return the ZIM article thumbnail cache directory."""
     return os.path.join(_zim_target_dir(), "thumbs")
 
 
 def _check_zim_magic(path: str) -> bool:
+    """Return True when the file starts with the ZIM magic bytes (ZIM\\x00)."""
     try:
         with open(path, "rb") as f:
             return f.read(4) == b'ZIM\x00'
@@ -44,8 +47,10 @@ def _check_zim_magic(path: str) -> bool:
         return False
 
 
-@router.post("/teacher/upload-zim",
-             summary="Upload ZIM archive", tags=["Resources"])
+@router.post("/teacher/upload-zim", response_model=dict,
+             summary="Upload ZIM archive", tags=["Resources"],
+             description="Uploads and indexes a ZIM archive. Articles are indexed for search but HTML is served lazily from the ZIM binary -- nothing is extracted to disk. Supports resumable uploads via Content-Range.",
+             responses={400: {"description": "Missing filename or processing failed"}, 401: {"description": "Unauthorized"}, 413: {"description": "Upload too large"}, 499: {"description": "Client disconnected"}, 507: {"description": "Insufficient disk space"}})
 async def upload_zim(file: UploadFile = File(...), title: str = Form(""), teacher_user: str = Depends(verify_teacher), request: Request = None):
     """Upload and index a ZIM archive.
 
@@ -87,6 +92,7 @@ async def upload_zim(file: UploadFile = File(...), title: str = Form(""), teache
     total_size = existing_bytes
 
     def _flush_chunks(chunks):
+        """Append a batch of in-memory chunks to the .part file in one open/write/close cycle."""
         with open(part_path, "ab") as f:
             for c in chunks:
                 f.write(c)
@@ -222,6 +228,8 @@ def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, ti
         conn.execute("PRAGMA journal_mode = WAL")
         conn.execute("PRAGMA synchronous = NORMAL")
         conn.execute("PRAGMA cache_size = -8000")
+        from app.routers.resources import invalidate_catalog_cache
+        invalidate_catalog_cache()
 
         # Create FTS5 trigram index for fast title search.
         # Commit FTS5 data BEFORE ANALYZE — ANALYZE on 19M trigram rows can
@@ -260,8 +268,10 @@ def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, ti
     return {"article_count": article_count, "archive_id": archive_id}
 
 
-@router.post("/teacher/import-local-zim",
-             summary="Import a ZIM file already on disk", tags=["Resources"])
+@router.post("/teacher/import-local-zim", response_model=dict,
+             summary="Import a ZIM file already on disk", tags=["Resources"],
+             description="Imports and indexes a .zim file that already exists in uploads/ -- avoids uploading very large archives over HTTP.",
+             responses={400: {"description": "Not a valid ZIM archive or processing failed"}, 401: {"description": "Unauthorized"}, 404: {"description": "File not found in uploads/"}})
 async def import_local_zim(
     filename: str,
     teacher_user: str = Depends(verify_teacher),
@@ -285,8 +295,10 @@ async def import_local_zim(
     return {"status": "success", "article_count": result["article_count"], "archive_id": result["archive_id"]}
 
 
-@router.post("/teacher/reindex-zim",
-             summary="Re-index articles for an already-registered ZIM archive", tags=["Resources"])
+@router.post("/teacher/reindex-zim", response_model=dict,
+             summary="Re-index articles for an already-registered ZIM archive", tags=["Resources"],
+             description="Rebuilds the zim_articles index and FTS5 table for an archive whose articles are missing (e.g. after a manual DB insert or a lost FTS index).",
+             responses={401: {"description": "Unauthorized"}, 404: {"description": "Archive or ZIM file not found"}})
 async def reindex_zim(
     archive_id: str = Form(...),
     teacher_user: str = Depends(verify_teacher),
@@ -408,8 +420,10 @@ def _reindex_zim_articles(zim_path: str, archive_id: str, archive_title: str):
     return {"article_count": total_indexed}
 
 
-@router.get("/teacher/server-zim-files",
-            summary="List ZIM files on disk not yet indexed", tags=["Resources"])
+@router.get("/teacher/server-zim-files", response_model=list[dict],
+            summary="List ZIM files on disk not yet indexed", tags=["Resources"],
+            description="Scans uploads/ for .zim files and reports each one's size, indexed status, and archive id.",
+            responses={401: {"description": "Unauthorized"}})
 async def list_server_zim_files(teacher_user: str = Depends(verify_teacher)):
     """Scan uploads/ for .zim files and show which ones are already indexed."""
     existing = await db_fetch("SELECT filename FROM zim_archives")
@@ -432,8 +446,10 @@ async def list_server_zim_files(teacher_user: str = Depends(verify_teacher)):
     return files
 
 
-@router.delete("/teacher/zim/{archive_id}",
-               summary="Delete a ZIM archive", tags=["Resources"])
+@router.delete("/teacher/zim/{archive_id}", response_model=dict,
+               summary="Delete a ZIM archive", tags=["Resources"],
+               description="Deletes a ZIM archive: its articles, thumbnails, kiwix resource row, the .zim file on disk, and the ZIM cache entry.",
+               responses={401: {"description": "Unauthorized"}, 404: {"description": "Archive not found"}})
 async def delete_zim_archive(archive_id: str, teacher_user: str = Depends(verify_teacher)):
     """Delete a ZIM archive and all its indexed data."""
     archive = await db_fetch("SELECT * FROM zim_archives WHERE id = ?", (archive_id,))
@@ -453,6 +469,8 @@ async def delete_zim_archive(archive_id: str, teacher_user: str = Depends(verify
     await db_exec("DELETE FROM zim_articles WHERE archive_id = ?", (archive_id,))
     await db_exec("DELETE FROM zim_archives WHERE id = ?", (archive_id,))
     await db_exec("DELETE FROM resources WHERE resource_type = 'kiwix' AND filename = ?", (archive["filename"],))
+    from app.routers.resources import invalidate_catalog_cache
+    invalidate_catalog_cache()
 
     # Delete the ZIM file from disk
     zim_path = archive.get("zim_path", "")

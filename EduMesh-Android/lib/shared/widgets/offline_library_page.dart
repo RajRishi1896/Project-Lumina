@@ -126,7 +126,10 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                     ],
                   ),
                 )
-              : ListView.builder(
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+                    child: ListView.builder(
                   padding: EdgeInsets.all(AppSpacing.lg.w),
                   itemCount: _items.length,
                   itemBuilder: (context, index) {
@@ -137,6 +140,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                     final size = item['size'] as int? ?? 0;
                     final resourceId = item['resource_id'] as String? ?? '';
                     final isZim = item['is_zim'] == true;
+                    final isRemoved = (item['server_removed'] as num? ?? 0) == 1;
                     return Card(
                       margin: EdgeInsets.only(bottom: AppSpacing.sm.h),
                       child: ListTile(
@@ -145,9 +149,28 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                           color: cs.primary,
                         ),
                         title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                        subtitle: Text(
-                          isZim ? 'Wikipedia' : '$subject • ${formatFileSize(size, l10n)}',
-                          style: tt.bodySmall,
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isZim ? 'Wikipedia' : '$subject • ${formatFileSize(size, l10n)}',
+                              style: tt.bodySmall,
+                            ),
+                            if (isRemoved) ...[
+                              SizedBox(height: AppSpacing.xs.h),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
+                                decoration: BoxDecoration(
+                                  color: cs.errorContainer,
+                                  borderRadius: BorderRadius.circular(4.r),
+                                ),
+                                child: Text(
+                                  l10n.removedFromServerBadge,
+                                  style: tt.labelSmall?.copyWith(color: cs.onErrorContainer),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                           if (isZim)
@@ -180,6 +203,8 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                       ),
                     );
                   },
+                    ),
+                  ),
                 ),
     );
   }

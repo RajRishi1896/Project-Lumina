@@ -39,7 +39,10 @@ class _ZipError(Exception):
 
 
 @router.post("/api/teacher/courses/{course_id}/upload-resource",
-             summary="Upload a resource file to a course", tags=["Teacher Courses"])
+             summary="Upload a resource file to a course", tags=["Teacher Courses"],
+             description="Uploads a single resource file to a course. Accepts multipart form data with an optional title and topic assignment.",
+             response_model=dict,
+             responses={200: {"description": "Uploaded course_resources row"}, 400: {"description": "Disallowed file type"}, 404: {"description": "Course not found"}})
 async def upload_course_resource(
     course_id: str,
     resource_type: str = Query(..., description="Resource type"),
@@ -71,8 +74,6 @@ async def upload_course_resource(
                                        request=request, support_resume=True)
     disp_title = title if title else original_name
 
-    disp_title = title if title else original_name
-
     from app.async_db import db_exec
     await db_exec(
         """INSERT INTO course_resources (id, course_id, resource_type, title, original_name, filename, file_size, position, topic_id)
@@ -88,7 +89,10 @@ async def upload_course_resource(
 
 
 @router.post("/api/teacher/courses/{course_id}/upload-zip",
-             summary="Import course content from a ZIP archive", tags=["Teacher Courses"])
+             summary="Import course content from a ZIP archive", tags=["Teacher Courses"],
+             description="Imports resources, assets, and quizzes from a ZIP archive into an existing course.",
+             response_model=dict,
+             responses={200: {"description": "Extraction counts"}, 400: {"description": "Invalid or oversized ZIP"}, 404: {"description": "Course not found"}})
 async def upload_course_zip(
     course_id: str,
     file: UploadFile = File(...),
@@ -111,6 +115,7 @@ async def upload_course_zip(
     archive_path = os.path.join(tmp_dir, safe_filename)
 
     def _flush(buf):
+        """Append a buffer of uploaded bytes to the temp archive file."""
         with open(archive_path, "ab") as f:
             f.write(buf)
 
@@ -133,6 +138,7 @@ async def upload_course_zip(
     await file.close()
 
     def _process():
+        """Extract the ZIP in a worker thread, validating paths and writing rows."""
         conn_sql = None
         try:
             with zipfile.ZipFile(archive_path, "r") as zf:
@@ -238,6 +244,8 @@ async def upload_course_zip(
 
 @router.post("/api/teacher/courses/import",
              summary="Create a course by importing a ZIP archive", tags=["Teacher Courses"],
+             description="Creates a new course from a ZIP archive containing a course.json manifest plus resources, assets, and quizzes.",
+             response_model=dict,
              responses={201: {"description": "Course created from import"}, 400: {"description": "Invalid ZIP"}})
 async def import_course_zip(
     file: UploadFile = File(...),
@@ -260,6 +268,7 @@ async def import_course_zip(
     archive_path = os.path.join(tmp_dir, safe_filename)
 
     def _flush(buf):
+        """Append a buffer of uploaded bytes to the temp archive file."""
         with open(archive_path, "ab") as f:
             f.write(buf)
 
@@ -282,6 +291,7 @@ async def import_course_zip(
     await file.close()
 
     def _process():
+        """Create the course and extract the ZIP in a worker thread."""
         conn_sql = None
         try:
             with zipfile.ZipFile(archive_path, "r") as zf:
@@ -396,7 +406,9 @@ async def import_course_zip(
 
 
 @router.get("/api/teacher/courses/{course_id}/export",
-            summary="Export course as ZIP", tags=["Teacher Courses"])
+            summary="Export course as ZIP", tags=["Teacher Courses"],
+            description="Streams the course as a ZIP archive with course.json manifest, resources, assets, and quizzes.",
+            responses={200: {"description": "ZIP file download"}, 404: {"description": "Course not found"}})
 async def export_course(course_id: str, teacher_user: str = Depends(verify_teacher)):
     """Export a course as a ZIP archive.
 
@@ -416,6 +428,7 @@ async def export_course(course_id: str, teacher_user: str = Depends(verify_teach
     assets_path = os.path.join(course_dir, "assets")
 
     def _build_zip():
+        """Build the ZIP archive bytes in a worker thread."""
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             manifest = _course_to_response(row)

@@ -31,6 +31,8 @@ class NotificationService {
   // with locals via [setLocalizedStrings] once a BuildContext is available.
   String _completeNotificationBody = '"{title}" has been downloaded and saved to offline storage.';
   String _failedNotificationBody = '"{title}" could not be downloaded. Check the server connection and try again.';
+  String _removedNotificationTitle = 'Removed from server';
+  String _removedNotificationBody = '"{title}" was removed from the server. You can keep using it offline, but it can no longer be redownloaded.';
 
   /// Initializes the notification plugin and creates the download channel.
   ///
@@ -137,6 +139,36 @@ class NotificationService {
     }
   }
 
+  /// Shows a local notification that a downloaded resource was removed from
+  /// the server catalog. The local file remains usable offline.
+  ///
+  /// Uses the same channel and permission flow as [showDownloadComplete].
+  Future<void> showRemovedFromServer(String title) async {
+    try {
+      if (!await isEnabled) return;
+      if (!_initialized) await init();
+      await _ensurePermission();
+    } catch (_) {
+      return;
+    }
+    try {
+      await _plugin.show(
+        _nextId++,
+        _removedNotificationTitle,
+        _removedNotificationBody.replaceAll('{title}', title),
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'download_channel',
+            _channelName,
+          ),
+          iOS: const DarwinNotificationDetails(),
+        ),
+      );
+    } catch (e) {
+      debugPrint('NotificationService: show failed: $e');
+    }
+  }
+
   /// Sets localized strings for notifications.
   ///
   /// Call this with [AppLocalizations] values when a [BuildContext] is
@@ -161,11 +193,19 @@ class NotificationService {
     if (downloadInProgressBody != null) _inProgressNotificationBodyTemplate = downloadInProgressBody;
   }
 
+  /// Sets localized strings for the "removed from server" notification.
+  ///
+  /// Call this with [AppLocalizations] values alongside [setLocalizedStrings]
+  /// when a [BuildContext] is available.
+  void setRemovedStrings({required String title, required String body}) {
+    _removedNotificationTitle = title;
+    _removedNotificationBody = body;
+  }
+
   /// Shows a local notification when a download fails after all retries.
   ///
   /// Uses the same channel and permission flow as [showDownloadComplete].
-  Future<void> showDownloadFailed(String title, {String? notificationTitle, String? notificationBody}) async {
-    try {
+  Future<void> showDownloadFailed(String title, {String? notificationTitle, String? notificationBody}) async {    try {
       if (!await isEnabled) return;
       if (!_initialized) await init();
       await _ensurePermission();

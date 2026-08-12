@@ -287,6 +287,10 @@
             }, 1000);
         }
 
+        /**
+         * Render the accumulated uptime seconds into the stat card, using
+         * hours+minutes when ≥1h and minutes+seconds otherwise.
+         */
         function renderUptime() {
             var h = Math.floor(_uptimeSeconds / 3600);
             var m = Math.floor((_uptimeSeconds % 3600) / 60);
@@ -559,6 +563,11 @@
 
         // Deferred stats fetch -- don't block initial render; refresh every 30s
         // Call immediately on DOMContentLoaded (if available) or after short delay
+        /**
+         * Kick off hub vitals polling: fetch immediately, then refresh every
+         * 30s via setInterval so the welcome meters stay current without
+         * blocking the initial page render.
+         */
         function startStatsPolling() {
             fetchStats();
             setInterval(fetchStats, 30000);

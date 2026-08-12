@@ -18,6 +18,7 @@ class ZimArchive {
   /// Archive file size in bytes.
   final int fileSize;
 
+  /// Creates a [ZimArchive] from its metadata.
   ZimArchive({
     required this.id,
     required this.filename,
@@ -28,6 +29,7 @@ class ZimArchive {
     required this.fileSize,
   });
 
+  /// Parses a [ZimArchive] from a server JSON [map].
   factory ZimArchive.fromJson(Map<String, dynamic> json) {
     return ZimArchive(
       id: json['id'] ?? '',
@@ -58,6 +60,7 @@ class ZimArticle {
   /// Display name of the peer hub hosting this article, empty for local articles.
   final String peerName;
 
+  /// Creates a [ZimArticle] from its metadata.
   ZimArticle({
     required this.articleId,
     required this.title,
@@ -71,6 +74,7 @@ class ZimArticle {
   /// Whether this article comes from a paired peer hub.
   bool get isPeer => peerName.isNotEmpty;
 
+  /// Parses a [ZimArticle] from a server JSON [map].
   factory ZimArticle.fromJson(Map<String, dynamic> json) {
     return ZimArticle(
       articleId: json['article_id'] ?? '',

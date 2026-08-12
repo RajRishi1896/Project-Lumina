@@ -444,7 +444,10 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                 valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
               ),
               Expanded(
-                child: SingleChildScrollView(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+                    child: SingleChildScrollView(
                   padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.lg.w,
                     vertical: AppSpacing.xl.h,
@@ -502,7 +505,9 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                       ],
                     ],
                   ),
+                  ),
                 ),
+              ),
               ),
               _buildBottomNav(cs, tt, l10n),
             ],

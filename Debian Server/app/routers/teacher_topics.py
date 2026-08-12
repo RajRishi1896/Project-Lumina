@@ -13,7 +13,9 @@ router = APIRouter()
 
 @router.post("/api/teacher/courses/{course_id}/topics",
              summary="Create a topic (chapter)", tags=["Teacher Courses"],
-             responses={201: {"description": "Topic created"}})
+             description="Creates a new topic within a course and assigns the next position index.",
+             response_model=dict,
+             responses={201: {"description": "Topic created"}, 400: {"description": "Title required"}, 404: {"description": "Course not found"}})
 async def create_topic(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher), request: Request = None):
     """Create a new topic (chapter) within a course.
 
@@ -41,7 +43,10 @@ async def create_topic(course_id: str, data: dict, teacher_user: str = Depends(v
 
 
 @router.get("/api/teacher/courses/{course_id}/topics",
-            summary="List topics in a course", tags=["Teacher Courses"])
+            summary="List topics in a course", tags=["Teacher Courses"],
+            description="Lists all topics for a course ordered by position.",
+            response_model=list,
+            responses={200: {"description": "List of topics"}, 404: {"description": "Course not found"}})
 async def list_topics(course_id: str, teacher_user: str = Depends(verify_teacher)):
     """List all topics for a course, ordered by position."""
     await _ensure_course_exists(course_id)
@@ -51,7 +56,10 @@ async def list_topics(course_id: str, teacher_user: str = Depends(verify_teacher
 
 
 @router.put("/api/teacher/courses/{course_id}/topics/{topic_id}",
-            summary="Update a topic", tags=["Teacher Courses"])
+            summary="Update a topic", tags=["Teacher Courses"],
+            description="Updates a topic's title and description.",
+            response_model=dict,
+            responses={200: {"description": "Topic updated"}, 400: {"description": "Title required"}, 404: {"description": "Topic or course not found"}})
 async def update_topic(course_id: str, topic_id: str, data: dict, teacher_user: str = Depends(verify_teacher), request: Request = None):
     """Update a topic's title and description.
 
@@ -74,7 +82,10 @@ async def update_topic(course_id: str, topic_id: str, data: dict, teacher_user: 
 
 
 @router.delete("/api/teacher/courses/{course_id}/topics/{topic_id}",
-               summary="Delete a topic", tags=["Teacher Courses"])
+               summary="Delete a topic", tags=["Teacher Courses"],
+               description="Deletes a topic, optionally transferring or hard-deleting its resources.",
+               response_model=dict,
+               responses={200: {"description": "Topic deleted"}, 404: {"description": "Topic or transfer target not found"}})
 async def delete_topic(course_id: str, topic_id: str,
                        transfer_to: Optional[str] = Query(None, description="Transfer resources to this topic before deleting"),
                        delete_resources: bool = Query(False, description="Delete all resources in this topic"),
@@ -126,7 +137,10 @@ async def delete_topic(course_id: str, topic_id: str,
 
 
 @router.post("/api/teacher/courses/{course_id}/topics/reorder",
-             summary="Reorder topics", tags=["Teacher Courses"])
+             summary="Reorder topics", tags=["Teacher Courses"],
+             description="Reorders topics within a course. Body expects a `topic_ids` list in the desired order.",
+             response_model=dict,
+             responses={200: {"description": "Topics reordered"}, 400: {"description": "topic_ids list required"}, 404: {"description": "Course not found"}})
 async def reorder_topics(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher), request: Request = None):
     """Reorder topics within a course.
 
@@ -146,7 +160,10 @@ async def reorder_topics(course_id: str, data: dict, teacher_user: str = Depends
 
 
 @router.put("/api/teacher/courses/{course_id}/resources/{resource_id}/topic",
-            summary="Assign a resource to a topic", tags=["Teacher Courses"])
+            summary="Assign a resource to a topic", tags=["Teacher Courses"],
+            description="Assigns a course resource to a topic, or unassigns it with an empty `topic_id`.",
+            response_model=dict,
+            responses={200: {"description": "Resource assigned"}, 404: {"description": "Resource or topic not found"}})
 async def assign_resource_topic(course_id: str, resource_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
     """Assign a course resource to a topic (or unassign with empty topic_id).
 
@@ -170,7 +187,10 @@ async def assign_resource_topic(course_id: str, resource_id: str, data: dict, te
 
 
 @router.post("/api/teacher/courses/{course_id}/topics/reorder-resources",
-             summary="Reorder resources within a topic", tags=["Teacher Courses"])
+             summary="Reorder resources within a topic", tags=["Teacher Courses"],
+             description="Reorders resources within a course. Body expects a `resource_ids` list in the desired order.",
+             response_model=dict,
+             responses={200: {"description": "Resources reordered"}, 400: {"description": "resource_ids list required"}, 404: {"description": "Course not found"}})
 async def reorder_topic_resources(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher), request: Request = None):
     """Reorder resources within a course (across all topics).
 

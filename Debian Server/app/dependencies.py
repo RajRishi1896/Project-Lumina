@@ -14,6 +14,7 @@ _SESSION_CACHE_MAX = 2000
 
 
 def _cache_get(token: str) -> dict | None:
+    """Return a cached session dict for ``token``, or None if absent/expired."""
     entry = _session_cache.get(token)
     if entry and (time.time() - entry[1]) < _SESSION_CACHE_TTL:
         return entry[0]
@@ -22,6 +23,7 @@ def _cache_get(token: str) -> dict | None:
 
 
 def _cache_put(token: str, user: dict):
+    """Store a session in the cache, evicting stale entries when over the cap."""
     if len(_session_cache) > _SESSION_CACHE_MAX:
         # ponytail: evict oldest quarter
         cutoff = time.time() - _SESSION_CACHE_TTL
@@ -32,6 +34,7 @@ def _cache_put(token: str, user: dict):
 
 
 def _cache_invalidate_user(username: str):
+    """Drop every cached session belonging to ``username``."""
     to_del = [k for k, v in _session_cache.items() if v[0].get("username") == username]
     for k in to_del:
         _session_cache.pop(k, None)
@@ -228,6 +231,7 @@ async def generate_session_token(username: str, role: str) -> dict:
     ptoken = f"LUMINA_PER-{uuid.uuid4().hex}"
 
     def _create_tokens(conn):
+        """Prune old sessions and insert the new session/refresh/persistent rows."""
         conn.execute("DELETE FROM sessions WHERE username = ? AND rowid NOT IN (SELECT rowid FROM sessions WHERE username = ? ORDER BY rowid DESC LIMIT 5)", (username, username))
         conn.execute("INSERT INTO sessions (token, username, role, used, expiry) VALUES (?, ?, ?, 0, datetime('now', '+1 day'))", (stoken, username, role))
         conn.execute("INSERT INTO refresh_tokens (token, username, role, expires_at) VALUES (?, ?, ?, datetime('now', '+7 days'))", (rtoken, username, role))
@@ -248,6 +252,7 @@ async def invalidate_tokens_for_user(username: str):
     """
     _cache_invalidate_user(username)
     def _delete_tokens(conn):
+        """Delete all session/refresh/persistent rows for the user in one transaction."""
         conn.execute("DELETE FROM sessions WHERE username = ?", (username,))
         conn.execute("DELETE FROM refresh_tokens WHERE username = ?", (username,))
         conn.execute("DELETE FROM persistent_keys WHERE username = ?", (username,))

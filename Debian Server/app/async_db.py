@@ -42,6 +42,7 @@ async def db_fetch(sql: str, params: tuple = ()) -> list:
     Opens its own connection -- safe for concurrent hot-path use.
     """
     def _fetch():
+        """Run the SELECT inside the executor worker thread."""
         conn = _connect()
         try:
             return conn.execute(sql, params).fetchall()
@@ -54,6 +55,7 @@ async def db_fetch(sql: str, params: tuple = ()) -> list:
 async def db_fetch_one(sql: str, params: tuple = ()):
     """Fetch one row (or None) from a SELECT in the thread pool."""
     def _fetch():
+        """Run the SELECT inside the executor worker thread."""
         conn = _connect()
         try:
             return conn.execute(sql, params).fetchone()
@@ -69,6 +71,7 @@ async def db_exec(sql: str, params: tuple = ()) -> int:
     Returns lastrowid (0 for non-INSERT statements).
     """
     def _exec():
+        """Run the write and commit inside the executor worker thread."""
         conn = _connect()
         try:
             cur = conn.execute(sql, params)
@@ -87,6 +90,7 @@ async def db_exec_many(sql: str, params_list: list[tuple]) -> None:
     over calling ``db_exec`` in a loop when you need to insert many rows.
     """
     def _exec():
+        """Run the batch write inside the executor worker thread."""
         conn = _connect()
         try:
             conn.executemany(sql, params_list)
@@ -106,6 +110,7 @@ async def db_run(func):
     thread pool -- nothing blocks the event loop.
     """
     def _run():
+        """Run the user callback inside the executor worker thread."""
         conn = _connect()
         try:
             return func(conn)

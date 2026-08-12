@@ -16,7 +16,10 @@ import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'quiz_player_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
+/// Plays a course's resources in order, unlocking each one after the previous
+/// is completed and marking progress in the local database.
 class CoursePlayerPage extends StatefulWidget {
+  /// The course to play through.
   final Course course;
 
   const CoursePlayerPage({super.key, required this.course});
@@ -254,16 +257,21 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
           if (_showDownloadPrompt && !_isDownloaded)
             _buildDownloadBanner(cs, tt, l10n),
           Expanded(
-            child: _resources.isEmpty
-              ? Center(
-                  child: Text(l10n.coursePlayerNoResources,
-                      style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
-                )
-              : ListView.builder(
-                  padding: EdgeInsets.all(AppSpacing.lg.w),
-                  itemCount: _resources.length,
-                  itemBuilder: (ctx, i) => _buildResourceItem(i, cs, tt, l10n),
-                ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+                child: _resources.isEmpty
+                  ? Center(
+                      child: Text(l10n.coursePlayerNoResources,
+                          style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
+                    )
+                  : ListView.builder(
+                      padding: EdgeInsets.all(AppSpacing.lg.w),
+                      itemCount: _resources.length,
+                      itemBuilder: (ctx, i) => _buildResourceItem(i, cs, tt, l10n),
+                    ),
+              ),
+            ),
           ),
         ],
       ),

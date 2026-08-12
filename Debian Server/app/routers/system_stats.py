@@ -40,7 +40,8 @@ async def detect_wifi_caps():
 @router.get("/stats", response_model=HubStatsResponse,
             summary="Get hub statistics",
             description="Returns scholar count, resource count, subject count, disk usage, battery percentage, and server uptime.",
-            tags=["System"])
+            tags=["System"],
+            responses={200: {"description": "Aggregate hub statistics"}})
 async def get_stats():
     """Get aggregate hub statistics.
 
@@ -50,6 +51,7 @@ async def get_stats():
     """
     import shutil
     async def _count(query):
+        """Run a COUNT query, returning 0 when the table is missing."""
         try:
             row = await db_fetch_one(query)
             return row[0] if row else 0
@@ -154,13 +156,19 @@ async def sync_time(data: TimeSync, admin_user: str = Depends(verify_admin)):
         return {"status": "failed"}
 
 
-@router.get("/system/time", summary="Get server time", tags=["System"])
+@router.get("/system/time", response_model=dict, summary="Get server time", tags=["System"],
+            description="Returns the server's current UTC time for client clock skew correction.",
+            responses={200: {"description": "ISO 8601 server time"}})
 async def get_server_time():
     """Return the server's current UTC time for client clock skew correction."""
     return {"server_time": datetime.now(timezone.utc).isoformat()}
 
 
-@router.get("/healthz")
+@router.get("/healthz", response_model=dict,
+            summary="Deep health check",
+            description="Returns SQLite connectivity, open file descriptor count, and RSS in MB. Used by the admin diagnostics page.",
+            tags=["System Stats"],
+            responses={200: {"description": "Health details"}, 500: {"description": "Database unreachable"}})
 async def health():
     """Return SQLite connectivity, open FDs, RSS."""
     await db_fetch_one("SELECT 1")
@@ -182,7 +190,7 @@ async def health():
     }
 
 
-@router.get("/api/admin/diagnostics",
+@router.get("/api/admin/diagnostics", response_model=dict,
             summary="Diagnostics dashboard data",
             description="Returns comprehensive system health, metrics, and diagnostics. Admin-only.",
             tags=["System Stats"],
@@ -225,6 +233,7 @@ async def get_diagnostics(admin_user: str = Depends(verify_admin)):
     uptime_str = "N/A"
     try:
         def _read_uptime():
+            """Read /proc/uptime and format it as a compact duration string."""
             with open("/proc/uptime", "r") as f:
                 up_secs = float(f.read().split()[0])
             h = int(up_secs // 3600)
@@ -314,7 +323,7 @@ async def get_diagnostics(admin_user: str = Depends(verify_admin)):
     }
 
 
-@router.get("/api/admin/maintenance/health",
+@router.get("/api/admin/maintenance/health", response_model=dict,
             summary="Database health check",
             description="Runs integrity check and returns DB health status. Admin-only.",
             tags=["System Stats"],
@@ -325,7 +334,7 @@ async def maintenance_health(admin_user: str = Depends(verify_admin)):
     return await run_integrity_check()
 
 
-@router.post("/api/admin/maintenance/vacuum",
+@router.post("/api/admin/maintenance/vacuum", response_model=dict,
              summary="VACUUM the database",
              description="Runs VACUUM to reclaim fragmentation. Admin-only.",
              tags=["System Stats"],
@@ -336,7 +345,7 @@ async def maintenance_vacuum(admin_user: str = Depends(verify_admin)):
     return await run_vacuum()
 
 
-@router.post("/api/admin/maintenance/analyze",
+@router.post("/api/admin/maintenance/analyze", response_model=dict,
              summary="ANALYZE the database",
              description="Runs ANALYZE to update query planner statistics. Admin-only.",
              tags=["System Stats"],
@@ -347,7 +356,7 @@ async def maintenance_analyze(admin_user: str = Depends(verify_admin)):
     return await run_analyze()
 
 
-@router.get("/api/admin/maintenance/orphans",
+@router.get("/api/admin/maintenance/orphans", response_model=dict,
             summary="Detect orphaned resources",
             description="Finds DB records with no corresponding file on disk. Admin-only.",
             tags=["System Stats"],
@@ -358,7 +367,7 @@ async def maintenance_orphans(admin_user: str = Depends(verify_admin)):
     return await detect_orphans()
 
 
-@router.get("/api/admin/maintenance/storage",
+@router.get("/api/admin/maintenance/storage", response_model=dict,
             summary="Storage statistics",
             description="Returns disk usage and per-directory sizes. Admin-only.",
             tags=["System Stats"],
@@ -369,7 +378,7 @@ async def maintenance_storage(admin_user: str = Depends(verify_admin)):
     return await get_storage_stats()
 
 
-@router.get("/api/admin/maintenance/tables",
+@router.get("/api/admin/maintenance/tables", response_model=dict,
             summary="Table row counts",
             description="Returns row counts for all key tables. Admin-only.",
             tags=["System Stats"],
@@ -380,7 +389,7 @@ async def maintenance_tables(admin_user: str = Depends(verify_admin)):
     return await get_table_stats()
 
 
-@router.post("/api/admin/maintenance/run-all",
+@router.post("/api/admin/maintenance/run-all", response_model=dict,
              summary="Run full maintenance",
              description="Runs integrity check, ANALYZE, VACUUM, orphan detection, and storage stats. Admin-only.",
              tags=["System Stats"],
@@ -391,10 +400,11 @@ async def maintenance_run_all(admin_user: str = Depends(verify_admin)):
     return await run_full_maintenance()
 
 
-@router.get("/system/wifi-band",
+@router.get("/system/wifi-band", response_model=dict,
             summary="Get current WiFi band and capabilities",
             description="Returns the current WiFi hotspot band and supported bands. Admin-only.",
-            tags=["System"])
+            tags=["System"],
+            responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
 async def get_wifi_band(admin_user: str = Depends(verify_admin)):
     """Get the current WiFi hotspot band and adapter capabilities.
 

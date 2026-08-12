@@ -102,7 +102,10 @@ class _FlashcardStudyPageState extends State<FlashcardStudyPage> {
       );
     }
     if (_finished) {
-      return Column(
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+          child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.check_circle_outline, size: 72.sp, color: cs.primary),
@@ -114,11 +117,16 @@ class _FlashcardStudyPageState extends State<FlashcardStudyPage> {
             child: Text(l10n.buttonContinue),
           ),
         ],
+          ),
+        ),
       );
     }
 
     final total = _session.length;
-    return Column(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+        child: Column(
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(AppSpacing.lg.w, AppSpacing.lg.h, AppSpacing.lg.w, 0),
@@ -186,6 +194,8 @@ class _FlashcardStudyPageState extends State<FlashcardStudyPage> {
           ),
         ),
       ],
+        ),
+      ),
     );
   }
 }
@@ -224,11 +234,12 @@ class _CardFace extends StatelessWidget {
             if (!flipped)
               Padding(
                 padding: EdgeInsets.only(bottom: AppSpacing.md.h),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.xs.w,
                   children: [
                     Icon(Icons.touch_app_outlined, size: AppSpacing.lg.sp, color: cs.onSurfaceVariant),
-                    SizedBox(width: AppSpacing.xs.w),
                     Text(
                       l10n.flashcardFlipHint,
                       style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),

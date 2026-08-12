@@ -14,6 +14,8 @@ router = APIRouter()
 
 @router.post("/api/teacher/quiz-resource",
              summary="Create a standalone quiz resource", tags=["Teacher"],
+             description="Creates a standalone quiz resource not bound to a course, saving quiz JSON to uploads and registering a resources row.",
+             response_model=dict,
              responses={201: {"description": "Quiz resource created"}, 400: {"description": "Invalid data"}})
 async def create_quiz_resource(data: dict, teacher_user: str = Depends(verify_teacher)):
     """Create a standalone quiz resource (not bound to a course).
@@ -42,6 +44,7 @@ async def create_quiz_resource(data: dict, teacher_user: str = Depends(verify_te
     }
 
     def _save():
+        """Write the quiz JSON to disk in a worker thread and return its size."""
         path = os.path.join(UPLOAD_DIR, filename)
         with open(path, "w") as f:
             json.dump({"quiz": quiz}, f, indent=2)
@@ -60,11 +63,16 @@ async def create_quiz_resource(data: dict, teacher_user: str = Depends(verify_te
     )
 
     row = await db_fetch_one("SELECT * FROM resources WHERE id = ?", (resource_id,))
+    from app.routers.resources import invalidate_catalog_cache
+    invalidate_catalog_cache()
     return dict(row)
 
 
 @router.put("/api/teacher/quiz-resource/{resource_id}",
-            summary="Update a standalone quiz resource", tags=["Teacher"])
+            summary="Update a standalone quiz resource", tags=["Teacher"],
+            description="Updates questions and metadata for an existing standalone quiz resource.",
+            response_model=dict,
+            responses={200: {"description": "Quiz updated"}, 400: {"description": "Invalid data"}, 403: {"description": "Not the owner"}, 404: {"description": "Quiz resource not found"}})
 async def update_quiz_resource(resource_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
     """Update quiz questions and metadata for an existing standalone quiz resource."""
     resource = await db_fetch_one("SELECT id, title, uploaded_by FROM resources WHERE id = ? AND resource_type = 'quiz'", (resource_id,))
@@ -92,12 +100,15 @@ async def update_quiz_resource(resource_id: str, data: dict, teacher_user: str =
     }
 
     def _save():
+        """Write the updated quiz JSON to disk in a worker thread and return its size."""
         path = os.path.join(UPLOAD_DIR, f"{resource_id}.quiz")
         with open(path, "w") as f:
             json.dump({"quiz": quiz}, f, indent=2)
         return os.path.getsize(path)
 
     file_size = await asyncio.to_thread(_save)
+    from app.routers.resources import invalidate_catalog_cache
+    invalidate_catalog_cache()
     if resource["title"] != title:
         await db_exec("UPDATE resources SET title = ?, file_size = ? WHERE id = ?", (title, file_size, resource_id))
     else:
@@ -107,7 +118,10 @@ async def update_quiz_resource(resource_id: str, data: dict, teacher_user: str =
 
 
 @router.get("/api/quiz-resource/{resource_id}",
-            summary="Get standalone quiz JSON", tags=["Quizzes"])
+            summary="Get standalone quiz JSON", tags=["Quizzes"],
+            description="Returns the quiz definition JSON for a standalone resource. Legacy flat-format quizzes are wrapped for consistent client parsing.",
+            response_model=dict,
+            responses={200: {"description": "Quiz JSON"}, 404: {"description": "Quiz resource not found"}})
 async def get_quiz_resource(resource_id: str, user: str = Depends(verify_user)):
     """Get the quiz definition JSON for a standalone resource.
 
@@ -125,6 +139,7 @@ async def get_quiz_resource(resource_id: str, user: str = Depends(verify_user)):
     quiz_path = os.path.join(UPLOAD_DIR, resource["filename"])
 
     def _read():
+        """Read the quiz JSON file in a worker thread, returning None when missing."""
         if not os.path.exists(quiz_path):
             return None
         with open(quiz_path, "r", encoding="utf-8") as f:
@@ -155,7 +170,10 @@ async def get_quiz_resource(resource_id: str, user: str = Depends(verify_user)):
 
 
 @router.post("/api/quiz-resource/{resource_id}/submit",
-             summary="Submit a standalone quiz attempt", tags=["Quizzes"])
+             summary="Submit a standalone quiz attempt", tags=["Quizzes"],
+             description="Submits a quiz attempt. The score is re-graded server-side; the client's score is never trusted.",
+             response_model=dict,
+             responses={200: {"description": "Graded attempt"}, 404: {"description": "Quiz resource not found"}})
 async def submit_quiz_attempt(resource_id: str, data: dict, student_id: str = Depends(verify_student)):
     """Submit a quiz attempt for a standalone resource.
     Stores in quiz_attempts table.
@@ -194,7 +212,10 @@ async def submit_quiz_attempt(resource_id: str, data: dict, student_id: str = De
 
 
 @router.get("/api/quiz-resource/{resource_id}/best-score",
-            summary="Get best score for a standalone quiz", tags=["Quizzes"])
+            summary="Get best score for a standalone quiz", tags=["Quizzes"],
+            description="Returns the student's best score, best attempt id, and attempt count for a standalone quiz.",
+            response_model=dict,
+            responses={200: {"description": "Best score data"}})
 async def get_quiz_resource_best_score(resource_id: str, student_id: str = Depends(verify_student)):
     """Get the student's best score and attempt count for a standalone quiz."""
     best = await db_fetch_one(
@@ -211,7 +232,10 @@ async def get_quiz_resource_best_score(resource_id: str, student_id: str = Depen
 
 
 @router.post("/api/quiz-resource/{resource_id}/best-score",
-             summary="Update best score for a standalone quiz", tags=["Quizzes"])
+             summary="Update best score for a standalone quiz", tags=["Quizzes"],
+             description="Updates the student's best score, but only if the new score is higher.",
+             response_model=dict,
+             responses={200: {"description": "Best score updated"}})
 async def update_quiz_resource_best_score(resource_id: str, data: dict, student_id: str = Depends(verify_student)):
     """Update the student's best score if the new score is higher."""
     existing = await db_fetch_one(

@@ -1,5 +1,6 @@
 """Resource management, upload, and file listing routes."""
 import os
+import time
 import uuid
 import asyncio
 import logging
@@ -9,11 +10,23 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from app.database import UPLOAD_DIR, gen_composite_uid
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
-from app.dependencies import verify_teacher, verify_user, can_manage_resource
+from app.dependencies import verify_teacher, verify_user
 from app.models import CatalogResourceResponse, FileEntryResponse, LimitsResponse, UploadResponse, DeleteResourceResponse
 from app.routers.teacher_courses import _write_chunked
 
 router = APIRouter()
+
+# Catalog response cache. Keyed by the full filter tuple; entries expire after
+# _CATALOG_CACHE_TTL seconds. invalidate_catalog_cache() is called from every
+# resource-mutating route so uploads appear instantly in a single-worker
+# deployment; the TTL bounds staleness across workers.
+_catalog_cache: dict = {}
+_CATALOG_CACHE_TTL = 30.0
+
+
+def invalidate_catalog_cache():
+    """Clear the cached catalog response. Call after any resource mutation."""
+    _catalog_cache.clear()
 
 # Shared upload allowlists (also imported by teacher_course_resources.py).
 # No .svg/.html/.js -- those render as executable content when served.
@@ -30,9 +43,13 @@ ALLOWED_LANGUAGES = {"en", "hi", "kn", "fr"}
 
 
 @router.get("/resources", response_model=list[CatalogResourceResponse],
-            summary="List all resources", tags=["Resources"])
+            summary="List all resources", tags=["Resources"],
+            description="Lists approved resources with combined filters (subject, grade, language, resource_type, title search). Merges cached peer-hub resources; deprecated/deleted items are excluded by default.",
+            responses={401: {"description": "Unauthorized"}})
 @router.get("/api/catalog", response_model=list[CatalogResourceResponse],
-            summary="List all resources (alias)", tags=["Resources"])
+            summary="List all resources (alias)", tags=["Resources"],
+            description="Alias of GET /resources for the Flutter client catalog sync.",
+            responses={401: {"description": "Unauthorized"}})
 async def list_resources(
     _: str = Depends(verify_user),
     subject: Optional[str] = Query(None, description="Filter by subject"),
@@ -46,13 +63,23 @@ async def list_resources(
     """List approved resources with optional filters.
 
     Supports combined filtering by subject, grade, language, resource_type,
-    and title substring.  Deprecated resources are excluded by default.
+    and title substring.  Deprecated and deleted (recycle bin) resources are
+    excluded by default; ``include_deprecated`` shows both.
     File modification times are batched into a single thread call.
     """
+    cache_key = (
+        subject, grade, language, resource_type, search,
+        include_deprecated, include_kiwix,
+    )
+    now = time.time()
+    hit = _catalog_cache.get(cache_key)
+    if hit and now - hit[0] < _CATALOG_CACHE_TTL:
+        return hit[1]
+
     conditions = []
     params = []
     if not include_deprecated:
-        conditions.append("r.status != 'deprecated'")
+        conditions.append("r.status NOT IN ('deprecated', 'deleted')")
     if not include_kiwix:
         conditions.append("r.resource_type != 'kiwix'")
     if subject:
@@ -90,6 +117,7 @@ async def list_resources(
     rows = await db_fetch(query, tuple(params))
 
     def _get_all_mtimes():
+        """Batch stat every listed file in one call (avoids N+1)."""
         mtimes = {}
         for r in rows:
             try:
@@ -137,11 +165,14 @@ async def list_resources(
             "duration_seconds": pr["duration_seconds"] or 0,
             "file_size": pr["file_size"] or 0,
         })
+    _catalog_cache[cache_key] = (now, result)
     return result
 
 
 @router.get("/api/files", response_model=list[FileEntryResponse],
-            summary="List uploaded files", tags=["Resources"])
+            summary="List uploaded files", tags=["Resources"],
+            description="Lists every file in uploads/ with its size, for the content manager.",
+            responses={401: {"description": "Unauthorized"}})
 async def list_files(teacher_user: str = Depends(verify_teacher)):
     """List all uploaded files in the uploads directory with sizes.
 
@@ -158,7 +189,9 @@ async def list_files(teacher_user: str = Depends(verify_teacher)):
 
 
 @router.get("/api/limits", response_model=LimitsResponse,
-            summary="Get upload limits", tags=["Resources"])
+            summary="Get upload limits", tags=["Resources"],
+            description="Returns the max ZIM upload size: free disk space minus a 2 GB safety reserve.",
+            responses={401: {"description": "Unauthorized"}})
 async def get_limits(teacher_user: str = Depends(verify_teacher)):
     """Return the maximum allowed ZIM upload size in bytes.
 
@@ -169,7 +202,9 @@ async def get_limits(teacher_user: str = Depends(verify_teacher)):
 
 
 @router.post("/teacher/upload", response_model=UploadResponse,
-             summary="Upload a resource", tags=["Resources"])
+             summary="Upload a resource", tags=["Resources"],
+             description="Uploads a resource file with metadata. Validates extension, subject, grade, language, and type; enforces duplicate detection unless force_upload is set.",
+             responses={400: {"description": "Validation or upload failure"}, 401: {"description": "Unauthorized"}, 409: {"description": "Duplicate resource (use force_upload to override)"}, 499: {"description": "Client disconnected"}, 507: {"description": "Hub storage full"}})
 async def upload_resource(title: str = Query(..., description="Display title"),
                           type: str = Query(..., description="Resource type"),
                           subject: str = Query("General", description="Subject"),
@@ -225,7 +260,7 @@ async def upload_resource(title: str = Query(..., description="Display title"),
 
     if not force_upload:
         existing = await db_fetch_one("""SELECT id FROM resources
-            WHERE title = ? AND subject = ? AND grade = ? AND language = ? AND resource_type = ? AND status != 'deprecated'""",
+            WHERE title = ? AND subject = ? AND grade = ? AND language = ? AND resource_type = ? AND status NOT IN ('deprecated', 'deleted')""",
             (title, subject, grade, language, type))
         if existing:
             raise HTTPException(status_code=409, detail=f"Duplicate resource exists (id={existing[0]}). Use force_upload=true to override.")  # i18n: user-facing error message
@@ -244,14 +279,16 @@ async def upload_resource(title: str = Query(..., description="Display title"),
             pass
         raise HTTPException(status_code=499, detail="Client disconnected")  # i18n: user-facing error message
     def _insert_resource(conn):
+        """Insert the approved resource row and return its composite id."""
         resource_id = gen_composite_uid(conn, grade, subject, 'RES')
         conn.execute("""INSERT INTO resources
             (id, title, subject, subject_id, grade, language, resource_type, filename, original_name, source, license, uploaded_by, status, topic_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)""",
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)""",
             (resource_id, title, subject, subject_id, grade, language, type, uuid_name, original_filename, source, license, teacher_user, topic_id))
         conn.commit()
         return resource_id
     resource_id = await db_run(_insert_resource)
+    invalidate_catalog_cache()
     await audit(action=Action.UPLOAD_RESOURCE, username=teacher_user, resource_type="resource",
                 resource_id=resource_id, resource_name=title,
                 context={"subject": subject, "grade": grade, "type": type})
@@ -260,8 +297,10 @@ async def upload_resource(title: str = Query(..., description="Display title"),
     return {"status": "success", "filename": uuid_name, "original_name": original_filename}
 
 
-@router.get("/upload-status/{upload_id}",
-            summary="Check upload resume position", tags=["Resources"])
+@router.get("/upload-status/{upload_id}", response_model=dict,
+            summary="Check upload resume position", tags=["Resources"],
+            description="Returns the byte count of a partial (.part) upload so the client can resume.",
+            responses={401: {"description": "Unauthorized"}})
 async def upload_status(upload_id: str, teacher_user: str = Depends(verify_teacher)):
     """Return the byte count of a .part file so the client can resume.
 
@@ -284,8 +323,10 @@ async def upload_status(upload_id: str, teacher_user: str = Depends(verify_teach
     return {"upload_id": upload_id, "bytes_written": size, "found": True}
 
 
-@router.put("/teacher/resources/{resource_id}",
-            summary="Edit a resource", tags=["Resources"])
+@router.put("/teacher/resources/{resource_id}", response_model=dict,
+            summary="Edit a resource", tags=["Resources"],
+            description="Updates resource metadata fields (title, subject, grade, type, language, topic_id). Subject must exist.",
+            responses={400: {"description": "No valid fields or subject not found"}, 401: {"description": "Unauthorized"}, 404: {"description": "Resource not found"}})
 async def update_resource(resource_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
     """Update resource metadata fields (title, subject, grade, type, language, topic_id).
 
@@ -299,11 +340,9 @@ async def update_resource(resource_id: str, data: dict, teacher_user: str = Depe
     fields = {k: v for k, v in data.items() if k in allowed and v is not None}
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update.")  # i18n: user-facing error message
-    row = await db_fetch_one("SELECT id, uploaded_by FROM resources WHERE id = ?", (resource_id,))
+    row = await db_fetch_one("SELECT id FROM resources WHERE id = ?", (resource_id,))
     if not row:
         raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
-    if not await can_manage_resource(teacher_user, row["uploaded_by"]):
-        raise HTTPException(status_code=403, detail="You can only edit your own resources.")  # i18n: user-facing error message
     if "subject" in fields:
         subj = await db_fetch_one("SELECT name FROM subjects WHERE name = ?", (fields["subject"],))
         if not subj:
@@ -316,6 +355,7 @@ async def update_resource(resource_id: str, data: dict, teacher_user: str = Depe
         params.append(v)
     params.append(resource_id)
     await db_exec(f"UPDATE resources SET {', '.join(set_parts)} WHERE id = ?", tuple(params))
+    invalidate_catalog_cache()
     await audit(action=Action.UPDATE_RESOURCE, username=teacher_user, resource_type="resource",
                 resource_id=resource_id, resource_name=fields.get("title", ""), changes=fields)
     return {"status": "ok"}
@@ -328,72 +368,40 @@ def _check_disk_space():
 
 
 @router.delete("/teacher/resources/{resource_id}", response_model=DeleteResourceResponse,
-               summary="Delete a resource", tags=["Resources"])
+               summary="Delete a resource", tags=["Resources"],
+               description="Soft-deletes a resource into the 30-day recycle bin; the file and row are purged by the hourly background task.",
+               responses={400: {"description": "Delete failed"}, 401: {"description": "Unauthorized"}, 404: {"description": "Resource not found"}})
 async def delete_resource(resource_id: str, teacher_user: str = Depends(verify_teacher)):
-    """Soft-deprecate or hard-delete a resource.
+    """Move a resource to the recycle bin (soft delete).
 
-    If the resource has active student downloads, it is soft-deprecated
-    (status set to ``deprecated``).  Otherwise the file is removed from disk
-    and the DB row deleted.  Logs the action to the audit log.
+    Sets status to ``deleted`` and records ``deleted_at``. The file, DB row,
+    and related records stay untouched until the hourly purge hard-deletes
+    them after 30 days.
 
     Returns:
-        Dict with status and action taken (``soft_deprecated`` or ``hard_deleted``).
+        Dict with status and action (``recycled``).
 
     Raises:
         HTTPException: 404 if resource not found, 400 on failure.
     """
     try:
-        def _delete(conn):
-            row = conn.execute("SELECT id, filename, title, resource_type, uploaded_by FROM resources WHERE id = ?", (resource_id,)).fetchone()
+        def _recycle(conn):
+            """Mark the resource deleted with a timestamp; returns its title or None."""
+            row = conn.execute("SELECT title FROM resources WHERE id = ?", (resource_id,)).fetchone()
             if not row:
-                return "not_found"
-            db_id, db_filename, db_title, db_type, db_owner = row
-            if db_owner != teacher_user:
-                admin = conn.execute("SELECT role FROM users WHERE username = ?", (teacher_user,)).fetchone()
-                if not admin or admin[0] != "admin":
-                    return "forbidden"
-            file_path = os.path.join(UPLOAD_DIR, db_filename) if db_filename else None
-            download_count = conn.execute("SELECT COUNT(*) FROM scholar_downloads WHERE resource_id = ?", (resource_id,)).fetchone()[0]
-            if download_count > 0:
-                conn.execute("UPDATE resources SET status = 'deprecated', superseded_by = NULL WHERE id = ?", (resource_id,))
-                conn.commit()
-                return ("soft_deprecated", db_title, download_count)
-            if file_path and os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
-                except Exception as e:
-                    logging.warning(f"Could not remove physical file {file_path}: {e}")
-            if db_type == 'kiwix':
-                zim_row = conn.execute("SELECT id FROM zim_archives WHERE filename = ?", (db_filename,)).fetchone()
-                if zim_row:
-                    conn.execute("DELETE FROM zim_articles WHERE archive_id = ?", (zim_row[0],))
-                    conn.execute("DELETE FROM zim_archives WHERE id = ?", (zim_row[0],))
-            thumb_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "thumbnails", f"{resource_id}.png")
-            if os.path.exists(thumb_path):
-                try:
-                    os.remove(thumb_path)
-                except Exception:
-                    pass
-            conn.execute("DELETE FROM resources WHERE id = ?", (resource_id,))
-            conn.execute("DELETE FROM scholar_downloads WHERE resource_id = ?", (resource_id,))
-            conn.execute("DELETE FROM student_bookmarks WHERE resource_id = ?", (resource_id,))
+                return None
+            conn.execute("UPDATE resources SET status = 'deleted', deleted_at = datetime('now') WHERE id = ?", (resource_id,))
             conn.commit()
-            return ("hard_deleted", db_title, 0)
+            return row[0]
 
-        result = await db_run(_delete)
-        if result == "not_found":
+        db_title = await db_run(_recycle)
+        if db_title is None:
             raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
-        if result == "forbidden":
-            raise HTTPException(status_code=403, detail="You can only delete your own resources.")  # i18n: user-facing error message
-        action_taken, db_title, download_count = result
-        if action_taken == "soft_deprecated":
-            await audit(action=Action.DEPRECATE_RESOURCE, username=teacher_user, resource_type="resource",
-                        resource_id=resource_id, resource_name=db_title,
-                        context={"download_count": download_count})
-            return {"status": "success", "action": "soft_deprecated", "download_count": download_count}
+        invalidate_catalog_cache()
         await audit(action=Action.DELETE_RESOURCE, username=teacher_user, resource_type="resource",
-                    resource_id=resource_id, resource_name=db_title)
-        return {"status": "success", "action": "hard_deleted"}
+                    resource_id=resource_id, resource_name=db_title,
+                    context={"soft_delete": True, "purge_days": 30})
+        return {"status": "success", "action": "recycled"}
     except HTTPException:
         raise
     except Exception as e:
@@ -404,7 +412,8 @@ async def delete_resource(resource_id: str, teacher_user: str = Depends(verify_t
 @router.post("/teacher/upload-quiz", response_model=UploadResponse,
              summary="Create a standalone quiz resource",
              description="Saves quiz questions as a JSON file and registers it as a resource.",
-             tags=["Resources"])
+             tags=["Resources"],
+             responses={400: {"description": "Invalid JSON or empty question list"}, 401: {"description": "Unauthorized"}})
 async def upload_quiz(request: Request, teacher_user: str = Depends(verify_teacher)):
     """Create a standalone quiz resource from JSON payload.
 
@@ -453,6 +462,7 @@ async def upload_quiz(request: Request, teacher_user: str = Depends(verify_teach
         "quiz_version": 1,
     }
     def _create_quiz_resource(conn):
+        """Write the quiz JSON to uploads/ and insert the resource row."""
         uid = gen_composite_uid(conn, grade, subject, "RES")
         fname = f"{uid}.json"
         fpath = os.path.join(UPLOAD_DIR, fname)

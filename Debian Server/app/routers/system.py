@@ -16,6 +16,7 @@ async def _error_response(reason: str) -> HTMLResponse:
     error_page = os.path.join(STATIC_DIR, "error.html")
     try:
         def _read_error_page():
+            """Read error.html from disk inside the thread pool."""
             with open(error_page, "r", encoding="utf-8") as f:
                 return f.read()
         content = await asyncio.to_thread(_read_error_page)
@@ -153,6 +154,7 @@ async def serve_static(path: str, request: Request):
         return RedirectResponse(url=f"/static/{clean}{qs}", status_code=301)
 
     def _resolve(p: str) -> str | None:
+        """Resolve a static path to an existing file, appending .html when needed."""
         fp = os.path.join("static", p)
         if os.path.isfile(fp):
             return fp

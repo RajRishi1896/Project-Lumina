@@ -42,7 +42,7 @@
                                 <th data-i18n="flashcards.deck_title" style="width:35%;">Deck title</th>
                                 <th data-i18n="flashcards.topic" style="width:25%;">Topic</th>
                                 <th data-i18n="flashcards.cards" style="width:15%;">Cards</th>
-                                <th data-i18n="flashcards.cards" style="width:25%;"></th>
+                                <th style="width:25%;"></th>
                             </tr>
                         </thead>
                         <tbody id="deckTable">
@@ -62,8 +62,8 @@
                                 <th data-i18n="flashcards.submission_author" data-i18n-data-label="flashcards.submission_author" style="width:20%;">From</th>
                                 <th data-i18n="flashcards.deck_title" style="width:25%;">Deck title</th>
                                 <th data-i18n="flashcards.cards" style="width:12%;">Cards</th>
-                                <th data-i18n="--" style="width:18%;"></th>
-                                <th data-i18n="--" style="width:25%;"></th>
+                                <th style="width:18%;"></th>
+                                <th style="width:25%;"></th>
                             </tr>
                         </thead>
                         <tbody id="submissionTable">
@@ -170,23 +170,31 @@
         var decks = [];
         var topics = [];
 
+        /** Load teacher resource topics into the module-level `topics` array. */
         function loadTopics() {
             return fetch('/teacher/resource-topics', { credentials: 'include' })
                 .then(function(r) { return r.ok ? r.json() : []; })
                 .then(function(data) { topics = data; });
         }
 
+        /**
+         * Build the <option> HTML for the topic dropdowns.
+         * @param {string} selectedId - Topic id to pre-select ('' = none)
+         * @returns {string} HTML string
+         */
         function topicOptions(selectedId) {
             var opts = '<option value="">--</option>';
             topics.forEach(function(t) { opts += '<option value="' + esc(t.id) + '"' + (t.id === selectedId ? ' selected' : '') + '>' + esc(t.name) + '</option>'; });
             return opts;
         }
 
+        /** Resolve a topic id to its display name ('' if unknown). */
         function topicName(id) {
             var t = topics.find(function(x) { return x.id === id; });
             return t ? t.name : '';
         }
 
+        /** Fetch the teacher's flashcard decks and render them into the table. */
         async function loadDecks() {
             try {
                 var res = await fetch('/api/teacher/flashcards/decks', { credentials: 'include' });
@@ -196,6 +204,7 @@
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }
 
+        /** Render the decks array into #deckTable, with edit/delete buttons per row. */
         function renderDecks() {
             var tbody = document.getElementById('deckTable');
             if (!decks.length) {
@@ -214,6 +223,7 @@
             }).join('');
         }
 
+        /** Fetch student flashcard submissions and render them into the table. */
         async function loadSubmissions() {
             try {
                 var res = await fetch('/api/teacher/flashcards/submissions', { credentials: 'include' });
@@ -222,12 +232,21 @@
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }
 
+        /**
+         * Colored status pill for a submission (approved/rejected/pending).
+         * @param {string} status - Submission status value
+         * @returns {string} HTML span
+         */
         function statusBadge(status) {
             if (status === 'approved') return '<span style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(56,161,105,0.1);color:var(--success);padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:700;">' + __('flashcards.approved') + '</span>';
             if (status === 'rejected') return '<span style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(239,68,68,0.08);color:var(--danger);padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:700;">' + __('flashcards.rejected') + '</span>';
             return '<span style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(251,191,36,0.15);color:var(--warning);padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:700;">' + __('flashcards.pending') + '</span>';
         }
 
+        /**
+         * Render submission rows; pending ones get approve/reject buttons.
+         * @param {Array} list - Submission objects from the server
+         */
         function renderSubmissions(list) {
             var tbody = document.getElementById('submissionTable');
             if (!list.length) {
@@ -251,6 +270,10 @@
             }).join('');
         }
 
+        /**
+         * Open the deck editor modal, prefilled from an existing deck if given.
+         * @param {Object} [deck] - Existing deck to edit; null/undefined = new deck
+         */
         function openDeckEditor(deck) {
             editingDeckId = deck ? deck.id : null;
             document.getElementById('deckEditorTitle').textContent = deck ? __('flashcards.edit') : __('flashcards.new_deck');
@@ -261,11 +284,13 @@
             document.getElementById('deckEditorModal').classList.remove('hidden');
         }
 
+        /** Hide the deck editor modal and drop the in-progress edit context. */
         function closeDeckEditor() {
             document.getElementById('deckEditorModal').classList.add('hidden');
             editingDeckId = null;
         }
 
+        /** Render the editable front/back input rows for deckCards into #cardsList. */
         function renderCards() {
             var list = document.getElementById('cardsList');
             if (!deckCards.length) { list.innerHTML = ''; return; }
@@ -281,11 +306,16 @@
             }).join('');
         }
 
+        /** Append a blank front/back card to the editor and re-render the list. */
         function addCard() {
             deckCards.push({front: '', back: ''});
             renderCards();
         }
 
+        /**
+         * Persist the editor's deck: POST/PUT the deck metadata, then PUT its
+         * cards. Reloads the deck list on success.
+         */
         async function saveDeck() {
             var title = document.getElementById('deckTitle').value.trim();
             if (!title) { showAlert(__('flashcards.deck_title'), true); return; }
@@ -316,11 +346,20 @@
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }
 
+        /**
+         * Surface an API error response as a translated alert.
+         * @param {Response} r - Failed fetch response
+         */
         async function showError(r) {
             var err = await r.json().catch(function() { return {}; });
             showAlert(err.detail || __('courses.notif.save_failed'), true);
         }
 
+        /**
+         * Confirm with the teacher, then DELETE the deck.
+         * @param {string} id - Deck id
+         * @param {string} title - Deck title (for the confirmation message)
+         */
         async function deleteDeck(id, title) {
             var confirmed = await showConfirm(__('flashcards.delete_deck'), __('flashcards.confirm_delete_deck'), true, __('settings.confirm.ok_btn'));
             if (!confirmed) return;
@@ -331,12 +370,17 @@
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }
 
+        /**
+         * Open the approve modal for a pending submission.
+         * @param {string} id - Submission id
+         */
         function openApproveModal(id) {
             approvingSubmissionId = id;
             document.getElementById('approveTopic').innerHTML = topicOptions('');
             document.getElementById('approveModal').classList.remove('hidden');
         }
 
+        /** POST the approve action for the pending submission with the chosen topic. */
         async function confirmApprove() {
             if (!approvingSubmissionId) return;
             var topic_id = document.getElementById('approveTopic').value;
@@ -347,12 +391,17 @@
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }
 
+        /**
+         * Open the reject modal for a pending submission.
+         * @param {string} id - Submission id
+         */
         function openRejectModal(id) {
             rejectingSubmissionId = id;
             document.getElementById('rejectReason').value = '';
             document.getElementById('rejectModal').classList.remove('hidden');
         }
 
+        /** POST the reject action for the pending submission with the optional reason. */
         async function confirmReject() {
             if (!rejectingSubmissionId) return;
             var reason = document.getElementById('rejectReason').value.trim();
@@ -363,6 +412,10 @@
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }
 
+        /**
+         * Page init (registered in _pageInitRegistry): loads topics, decks,
+         * submissions, and the session, then wires the modal and table buttons.
+         */
         var _initFlashcards = function() {
             loadTopics();
             loadDecks();

@@ -268,7 +268,7 @@ class DeleteResourceResponse(BaseModel):
     """Resource deletion result."""
     status: str = Field(..., description="Operation status.", example="success")
     action: str = Field(..., description="Delete action taken.", example="hard_deleted")
-    download_count: Optional[int] = Field(default=None, description="Active download count if soft-deprecated.")
+    download_count: Optional[int] = Field(default=None, description="Active download count if soft-deprecated.", example=3)
 
 
 class AdminSummary(BaseModel):
@@ -308,7 +308,7 @@ class HubStatsResponse(BaseModel):
     storage: str = Field(..., description="Storage usage string.", example="4.5 GB / 100.0 GB")
     storage_percent: float = Field(..., description="Storage usage percentage.", example=4.5)
     battery_percent: int = Field(..., description="Battery percentage.", example=85)
-    battery_charging: bool = Field(default=False, description="Whether the battery is currently charging.")
+    battery_charging: bool = Field(default=False, description="Whether the battery is currently charging.", example=True)
     uptime: str = Field(..., description="Uptime string.", example="2h 15m")
     disk_usage: str = Field(..., description="Disk usage string.", example="4.5 GB / 100.0 GB")
 
@@ -335,8 +335,8 @@ class ZimArticleResponse(BaseModel):
     title: str = Field(..., description="Article title.", example="Photosynthesis")
     archive_id: str = Field(default="", description="ID of the archive this article belongs to.", example="abc123")
     has_thumbnail: bool = Field(default=False, description="Whether a thumbnail exists on disk.", example=False)
-    peer_id: str = Field(default="", description="Paired hub id for peer-hosted articles, empty for local.")
-    peer_name: str = Field(default="", description="Display name of the peer hub hosting the article, empty for local.")
+    peer_id: str = Field(default="", description="Paired hub id for peer-hosted articles, empty for local.", example="peer-abc123")
+    peer_name: str = Field(default="", description="Display name of the peer hub hosting the article, empty for local.", example="Village Hub 2")
 
 
 class ZimPageResponse(BaseModel):
@@ -347,7 +347,7 @@ class ZimPageResponse(BaseModel):
 
 class ZimSearchResponse(BaseModel):
     """Paginated ZIM search or browse result with metadata."""
-    articles: list[ZimArticleResponse] = Field(default_factory=list, description="Matching articles.")
+    articles: list[ZimArticleResponse] = Field(default_factory=list, description="Matching articles.", example=[{"article_id": "ABC123", "title": "Photosynthesis"}])
     total: int = Field(default=0, description="Approximate total matching articles.", example=1500)
     offset: int = Field(default=0, description="Current offset in the result set.", example=0)
     has_more: bool = Field(default=False, description="Whether more results are available.", example=True)
@@ -358,23 +358,23 @@ class ZimSearchResponse(BaseModel):
 class CourseCreate(BaseModel):
     """Payload for creating a new course."""
     model_config = ConfigDict(extra='ignore')
-    title: str = Field(..., description="Course title", max_length=120)
-    description: str = Field("", description="Short summary")
-    subject: str = Field("General", description="From approved subject taxonomy")
-    grade: int = Field(0, description="Grade level 0-13", ge=0, le=13)
-    language: str = Field("en", description="ISO 639-1 code")
+    title: str = Field(..., description="Course title", max_length=120, example="Introduction to Algebra")
+    description: str = Field("", description="Short summary", example="Basic algebra concepts")
+    subject: str = Field("General", description="From approved subject taxonomy", example="Mathematics")
+    grade: int = Field(0, description="Grade level 0-13", ge=0, le=13, example=9)
+    language: str = Field("en", description="ISO 639-1 code", example="en")
 
 
 class CourseQuizCreate(BaseModel):
     """Payload for creating or editing a course quiz."""
     model_config = ConfigDict(extra='ignore')
-    title: str = Field("Quiz", description="Quiz title", max_length=120)
-    questions: list = Field(default_factory=list, description="List of question payloads")
-    topic_id: str = Field("", max_length=64, description="Topic this quiz belongs to, if any")
-    time_limit_minutes: int = Field(0, ge=0, le=1440, description="Time limit in minutes, 0 = none")
-    pass_threshold: int = Field(60, ge=0, le=100, description="Passing percentage")
-    max_attempts: int = Field(0, ge=0, le=50, description="Max attempts, 0 = unlimited")
-    shuffle_mode: str = Field("", max_length=20, description="Question shuffle mode")
+    title: str = Field("Quiz", description="Quiz title", max_length=120, example="Chapter 1 Quiz")
+    questions: list = Field(default_factory=list, description="List of question payloads", example=[{"text": "What is 2+2?", "options": ["3", "4"], "answer": 1}])
+    topic_id: str = Field("", max_length=64, description="Topic this quiz belongs to, if any", example="TPC-abc123")
+    time_limit_minutes: int = Field(0, ge=0, le=1440, description="Time limit in minutes, 0 = none", example=30)
+    pass_threshold: int = Field(60, ge=0, le=100, description="Passing percentage", example=60)
+    max_attempts: int = Field(0, ge=0, le=50, description="Max attempts, 0 = unlimited", example=3)
+    shuffle_mode: str = Field("", max_length=20, description="Question shuffle mode", example="none")
 
 
 class CourseResponse(BaseModel):
@@ -439,26 +439,26 @@ class QuizAttemptResponse(BaseModel):
 
 class SimilarLinkCreate(BaseModel):
     """Payload to link a course as similar."""
-    similar_course_id: str = Field(..., description="UUID of the course to link as similar")
+    similar_course_id: str = Field(..., description="UUID of the course to link as similar", example="CRS-abc123")
 
 
 class BookmarkItem(BaseModel):
     """A single bookmark entry for sync."""
     resource_id: str = Field(..., description="Resource ID.", example="RES-abc123")
-    title: str = Field("", description="Resource title.")
-    subject: str = Field("", description="Resource subject.")
-    grade: str = Field("", description="Resource grade.")
-    resource_type: str = Field("", description="Resource type.")
+    title: str = Field("", description="Resource title.", example="Chapter 1")
+    subject: str = Field("", description="Resource subject.", example="Mathematics")
+    grade: str = Field("", description="Resource grade.", example="Grade 10")
+    resource_type: str = Field("", description="Resource type.", example="textbook")
 
 
 class BookmarkSync(BaseModel):
     """Full bookmark sync payload — replaces all server bookmarks."""
-    bookmarks: list[BookmarkItem] = Field(default_factory=list, description="All bookmarks the student has.")
+    bookmarks: list[BookmarkItem] = Field(default_factory=list, description="All bookmarks the student has.", example=[{"resource_id": "RES-abc123", "title": "Chapter 1"}])
 
 
 class BookmarkResponse(BaseModel):
     """List of saved bookmarks."""
-    bookmarks: list[BookmarkItem] = Field(default_factory=list)
+    bookmarks: list[BookmarkItem] = Field(default_factory=list, description="All saved bookmarks.", example=[{"resource_id": "RES-abc123", "title": "Chapter 1"}])
 
 
 class EnrolledCourseItem(BaseModel):
@@ -484,20 +484,20 @@ class EnrolledCourseItem(BaseModel):
 
 class EnrolledCoursesResponse(BaseModel):
     """All courses the student is enrolled in."""
-    courses: list[EnrolledCourseItem] = Field(default_factory=list)
+    courses: list[EnrolledCourseItem] = Field(default_factory=list, description="All courses the student is enrolled in.", example=[{"course_id": "CRS-abc123", "title": "Algebra"}])
 
 
 class QuizBestScoreResponse(BaseModel):
     """Best quiz score for a student on a specific quiz."""
     best_score: float = Field(0.0, description="Best score as fraction 0-1.", example=0.85)
-    best_attempt_id: str = Field("", description="ID of the best attempt.")
-    attempts_count: int = Field(0, description="Total attempts made.")
+    best_attempt_id: str = Field("", description="ID of the best attempt.", example="abc-123")
+    attempts_count: int = Field(0, description="Total attempts made.", example=3)
 
 
 class QuizBestScoreUpdate(BaseModel):
     """Update the best quiz score after submission."""
     score: float = Field(..., description="Score as fraction 0-1.", example=0.85)
-    attempt_id: str = Field(..., description="ID of this attempt.")
+    attempt_id: str = Field(..., description="ID of this attempt.", example="abc-123")
 
 
 

@@ -103,16 +103,24 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     if (_disposed) return;
     final page = _pdfController.page;
     final total = _pdfController.pagesCount ?? _totalPages;
-    if ((page != _currentPage || total != _totalPages || !_loaded) && page > 0) {
+    final zoom = _pdfController.value.getMaxScaleOnAxis();
+    final pageChanged = page > 0 && page != _currentPage;
+    final zoomChanged = (zoom - _zoomLevel).abs() > 0.01;
+    if (pageChanged || total != _totalPages || !_loaded || zoomChanged) {
       setState(() {
-        _currentPage = page;
-        _totalPages = total;
-        _loaded = true;
+        if (page > 0) {
+          _currentPage = page;
+          _totalPages = total;
+          _loaded = true;
+        }
+        if (zoomChanged) _zoomLevel = zoom;
       });
-      _savePositionDebounce?.cancel();
-      _savePositionDebounce = Timer(const Duration(milliseconds: 400), () {
-        _savePosition(page);
-      });
+      if (pageChanged) {
+        _savePositionDebounce?.cancel();
+        _savePositionDebounce = Timer(const Duration(milliseconds: 400), () {
+          _savePosition(page);
+        });
+      }
     }
   }
 
@@ -149,8 +157,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       keyboardType: TextInputType.number,
                       style: tt.bodyLarge?.copyWith(color: cs.onSurface),
                       decoration: InputDecoration(
-                        hintText: l10n.pdfEnterPageNumberHint,
-                        hintStyle: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
+                        labelText: l10n.pdfEnterPageNumberHint,
                         filled: true,
                         fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.12),
                         border: OutlineInputBorder(
@@ -239,22 +246,27 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     return Scaffold(
       backgroundColor: cs.surfaceContainerHighest,
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis),
         backgroundColor: cs.surfaceContainerHighest,
         foregroundColor: cs.onSurface,
         actions: [
           if (_loaded && _totalPages > 0)
-            GestureDetector(
-              onTap: _showPagePicker,
-              child: Container(
-                margin: EdgeInsets.only(right: AppSpacing.md.w),
-                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.sm.h),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+            Tooltip(
+              message: l10n.pdfTapToJumpLabel,
+              child: GestureDetector(
+                onTap: _showPagePicker,
+                child: Container(
+                  margin: EdgeInsets.only(right: AppSpacing.md.w),
+                  constraints: const BoxConstraints(minHeight: AppSpacing.touchTarget),
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                  ),
+                  child: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
+                      style: tt.bodySmall?.copyWith(color: cs.onSurface)),
                 ),
-                child: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
-                    style: tt.bodySmall?.copyWith(color: cs.onSurface)),
               ),
             ),
         ],
@@ -287,21 +299,27 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                         Row(
                           children: [
                             IconButton(
+                              tooltip: l10n.quizPrevious,
                               icon: Icon(Icons.chevron_left, color: cs.onSurface),
                               onPressed: _currentPage > 1
                                   ? () => _pdfController.animateToPage(pageNumber: _currentPage - 1)
                                   : null,
                             ),
-                            GestureDetector(
-                              onTap: _showPagePicker,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
-                                decoration: BoxDecoration(
-                                  color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                            Tooltip(
+                              message: l10n.pdfTapToJumpLabel,
+                              child: GestureDetector(
+                                onTap: _showPagePicker,
+                                child: Container(
+                                  constraints: const BoxConstraints(minHeight: AppSpacing.touchTarget),
+                                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: cs.surfaceContainerHighest.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                  ),
+                                  child: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
+                                      style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
                                 ),
-                                child: Text(l10n.pdfPageOfLabel(_currentPage, _totalPages),
-                                    style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
                               ),
                             ),
                             Expanded(
@@ -317,6 +335,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                               ),
                             ),
                             IconButton(
+                              tooltip: l10n.quizNext,
                               icon: Icon(Icons.chevron_right, color: cs.onSurface),
                               onPressed: _currentPage < _totalPages
                                   ? () => _pdfController.animateToPage(pageNumber: _currentPage + 1)
@@ -327,7 +346,9 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                         GestureDetector(
                           onTap: _showPagePicker,
                           child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
+                            constraints: const BoxConstraints(minHeight: AppSpacing.touchTarget),
+                            padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w),
+                            alignment: Alignment.center,
                             child: Text(l10n.pdfTapToJumpLabel,
                                 style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
                           ),

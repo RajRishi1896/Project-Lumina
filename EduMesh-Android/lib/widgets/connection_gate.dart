@@ -9,6 +9,7 @@ import 'package:edumesh_android/l10n/app_localizations.dart';
 /// dismissed manually via the X button. The child is always rendered so
 /// offline usage is not blocked.
 class ConnectionGate extends StatefulWidget {
+  /// The widget rendered beneath the offline banner.
   final Widget child;
   const ConnectionGate({required this.child, super.key});
 

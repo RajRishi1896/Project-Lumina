@@ -277,7 +277,10 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             _buildAppBar(context),
             Expanded(
-              child: ListView(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+                  child: ListView(
                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
                 children: [
                   _buildSearchBar(context),
@@ -292,6 +295,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   _buildStorageSection(context),
                   SizedBox(height: AppSpacing.xxl.h),
                 ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -315,11 +320,27 @@ class _DashboardPageState extends State<DashboardPage> {
             height: 28.sp,
           ),
           SizedBox(width: AppSpacing.md.w),
-          Text(l10n.appTitle, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
+          Flexible(
+            child: Text(l10n.appTitle,
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
+          ),
           const Spacer(),
           _buildServerStatusBadge(),
           SizedBox(width: AppSpacing.sm.w),
-          Semantics(button: true, label: l10n.semanticsSettings, child: GestureDetector(onTap: () => _showSettings(context), child: Icon(Icons.settings, color: cs.primary, size: 24.sp))),
+          Semantics(
+            button: true,
+            label: l10n.semanticsSettings,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _showSettings(context),
+              child: SizedBox(
+                width: AppSpacing.touchTarget.w,
+                height: AppSpacing.touchTarget.w,
+                child: Icon(Icons.settings, color: cs.primary, size: 24.sp),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -453,7 +474,7 @@ class _DashboardPageState extends State<DashboardPage> {
         Text(l10n.badgeAchievements, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         SizedBox(
-          height: 96.h,
+          height: 112.h,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: entries.length,
@@ -532,7 +553,7 @@ class _DashboardPageState extends State<DashboardPage> {
         Text(l10n.sectionRecentlyAccessed, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         SizedBox(
-          height: 80.h,
+          height: 104.h,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _recentResources.length,
@@ -619,51 +640,46 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           )
         else
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth > 400 ? 3 : 2;
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _subjects.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
-                  crossAxisSpacing: AppSpacing.sm.w,
-                  mainAxisSpacing: AppSpacing.sm.h,
-                  childAspectRatio: 1.1,
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _subjects.length,
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 200,
+              crossAxisSpacing: AppSpacing.sm.w,
+              mainAxisSpacing: AppSpacing.sm.h,
+              childAspectRatio: 1.1,
+            ),
+            itemBuilder: (context, index) {
+              final name = _subjects[index]['name'] as String? ?? '';
+              return GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => SubjectTopicsPage(subject: name),
+                )),
+                child: Container(
+                  padding: EdgeInsets.all(AppSpacing.md.w),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 48.w,
+                        height: 48.w,
+                        decoration: BoxDecoration(
+                          color: cs.primary.withAlpha(31),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(_iconForSubject(name), color: cs.primary, size: 24.sp),
+                      ),
+                      SizedBox(height: AppSpacing.sm.h),
+                      Text(name, style: tt.labelSmall?.copyWith(color: cs.onSurface),
+                        maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                    ],
+                  ),
                 ),
-                itemBuilder: (context, index) {
-                  final name = _subjects[index]['name'] as String? ?? '';
-                  return GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => SubjectTopicsPage(subject: name),
-                    )),
-                    child: Container(
-                      padding: EdgeInsets.all(AppSpacing.md.w),
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 48.w,
-                            height: 48.w,
-                            decoration: BoxDecoration(
-                              color: cs.primary.withAlpha(31),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(_iconForSubject(name), color: cs.primary, size: 24.sp),
-                          ),
-                          SizedBox(height: AppSpacing.sm.h),
-                          Text(name, style: tt.labelSmall?.copyWith(color: cs.onSurface),
-                            maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
-                        ],
-                      ),
-                    ),
-                  );
-                },
               );
             },
           ),

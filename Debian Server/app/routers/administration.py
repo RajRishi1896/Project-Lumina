@@ -26,6 +26,7 @@ async def disable_default_admin(admin_user: str = Depends(verify_admin)):
         HTTPException 400: If no other teacher profiles exist.
     """
     def _disable_admin(conn):
+        """Disable the default admin only if another teacher profile exists."""
         count = conn.execute("SELECT count(*) FROM users WHERE username != 'admin'").fetchone()[0]
         if count == 0:
             raise HTTPException(status_code=400, detail="Cannot disable default admin: No teacher profiles exist.")  # i18n: user-facing error message
@@ -55,11 +56,11 @@ async def enable_default_admin(admin_user: str = Depends(verify_admin)):
     return {"status": "success"}
 
 
-@router.get("/teacher/default-admin-status",
-             summary="Check default admin status",
-             description="Returns whether the default admin account is currently enabled or disabled.",
-             tags=["Admin"],
-             responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+@router.get("/teacher/default-admin-status", response_model=dict,
+            summary="Check default admin status",
+            description="Returns whether the default admin account is currently enabled or disabled.",
+            tags=["Admin"],
+            responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
 async def default_admin_status(admin_user: str = Depends(verify_admin)):
     """Check if the default admin account is enabled.
 

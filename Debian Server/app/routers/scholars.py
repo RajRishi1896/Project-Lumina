@@ -80,6 +80,7 @@ async def teacher_delete_student(scholar_id: str, request: Request = None, admin
     await invalidate_tokens_for_user(row["id"])
     try:
         def _delete_scholar(conn):
+            """Delete the scholar and all dependent rows in one transaction."""
             conn.execute("DELETE FROM scholars WHERE id = ?", (scholar_id,))
             conn.execute("DELETE FROM activity_logs WHERE scholar_id = ?", (scholar_id,))
             conn.execute("DELETE FROM scholar_downloads WHERE scholar_id = ?", (scholar_id,))

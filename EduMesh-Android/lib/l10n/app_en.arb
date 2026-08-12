@@ -1,4 +1,4 @@
-﻿{
+{
   "@@locale": "en",
   "appTitle": "Project Lumina",
   "@appTitle": {
@@ -400,7 +400,7 @@
   "@filtersActiveLabel": {
     "description": "Label shown below search bar when filters are applied with default sort"
   },
-  "filtersActiveSorted": "Filters active Â· Sorted: {sortBy}",
+  "filtersActiveSorted": "Filters active · Sorted: {sortBy}",
   "@filtersActiveSorted": {
     "description": "Label shown when filters are active with a non-default sort",
     "placeholders": {
@@ -534,6 +534,28 @@
   "@snackbarAddedToSaved": {
     "description": "SnackBar confirming a resource was added to saved/bookmarked"
   },
+  "removedFromServerBadge": "Removed from server",
+  "@removedFromServerBadge": {
+    "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."
+  },
+  "removedFromServerSnackbar": "This file was removed from the server and can no longer be redownloaded.",
+  "@removedFromServerSnackbar": {
+    "description": "SnackBar shown when the student taps a download action on a resource that was deleted from the hub. The saved file still opens, but downloading it again is blocked."
+  },
+  "removedFromServerNotificationTitle": "Removed from server",
+  "@removedFromServerNotificationTitle": {
+    "description": "Title of the local notification shown after a catalog sync when a downloaded resource has disappeared from the hub catalog."
+  },
+  "removedFromServerNotificationBody": "\"{title}\" was removed from the server. You can keep using it offline, but it can no longer be redownloaded.",
+  "@removedFromServerNotificationBody": {
+    "description": "Body of the local notification shown when a downloaded resource was removed from the hub catalog. Tells the student the file still works offline but cannot be downloaded again.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Chapter 1"
+      }
+    }
+  },
   "snackbarNotDownloaded": "\"{title}\" is not downloaded. Add it from the download button to save for offline access.",
   "@snackbarNotDownloaded": {
     "description": "SnackBar when user taps an undownloaded resource while offline",
@@ -624,7 +646,7 @@
   "@emptyRefreshButton": {
     "description": "Button to reload resources from the empty state"
   },
-  "resourceSubtitle": "{subject} â€¢ {grade}",
+  "resourceSubtitle": "{subject} • {grade}",
   "@resourceSubtitle": {
     "description": "Subtitle text on each resource list item",
     "placeholders": {
@@ -1615,7 +1637,7 @@
       }
     }
   },
-  "shareFindingDevices": "Finding nearby devicesâ€¦",
+  "shareFindingDevices": "Finding nearby devices…",
   "@shareFindingDevices": {
     "description": "Snackbar shown while the app listens for nearby students' phones that have the requested file. User just tapped Download. Keep short."
   },
@@ -1874,5 +1896,19 @@
   "tooltipFullscreen": "Fullscreen",
   "@tooltipFullscreen": {
     "description": "Tooltip for the fullscreen toggle button in the video player"
+  },
+  "videoPlaybackSpeed": "Playback speed",
+  "@videoPlaybackSpeed": {
+    "description": "Label and tooltip for the playback speed button in the video player controls. It shows the current speed and opens the speed selection menu when tapped."
+  },
+  "videoSpeedValue": "{speed}x",
+  "@videoSpeedValue": {
+    "description": "Playback speed value shown on the speed button and speed menu items in the video player. {speed} is the numeric multiplier such as 1 or 1.5; the x suffix is not translated.",
+    "placeholders": {
+      "speed": {
+        "type": "String",
+        "example": "1.5"
+      }
+    }
   }
 }

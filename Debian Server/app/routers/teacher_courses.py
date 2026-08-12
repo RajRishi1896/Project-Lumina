@@ -108,6 +108,7 @@ async def _write_chunked(dest_path: str, file: UploadFile, max_size: int,
     total_size = existing_bytes
 
     def _flush(data):
+        """Write a buffer of bytes to disk, switching from write to append after the first write."""
         nonlocal first_write
         mode = "wb" if first_write and not existing_bytes else "ab"
         first_write = False
@@ -119,6 +120,7 @@ async def _write_chunked(dest_path: str, file: UploadFile, max_size: int,
     # For resume, we need to seek to the right position on first write
     if support_resume and existing_bytes and not content_range:
         def _init_append():
+            """Open the part file in append mode to anchor the resume position."""
             # Just open in append mode — file already has existing bytes
             with open(part_path, "ab") as f:
                 pass  # create if missing
@@ -149,7 +151,10 @@ async def _write_chunked(dest_path: str, file: UploadFile, max_size: int,
 
 @router.get("/api/teacher/courses/suggest-similar",
             summary="Search published courses across all teachers",
-            tags=["Teacher Courses"])
+            tags=["Teacher Courses"],
+            description="Searches published courses by title substring for the similar-courses picker.",
+            response_model=list,
+            responses={200: {"description": "Up to 20 matching courses"}})
 async def suggest_similar_courses(q: str = Query("", description="Search query for course title"),
                                    teacher_user: str = Depends(verify_teacher)):
     """Search published courses across all teachers by title substring.
@@ -169,6 +174,8 @@ async def suggest_similar_courses(q: str = Query("", description="Search query f
 
 @router.post("/api/teacher/courses",
              summary="Create a new course", tags=["Teacher Courses"],
+             description="Creates a new course with the given metadata. The course ID is a composite of grade and subject.",
+             response_model=dict,
              responses={201: {"description": "Created course"}})
 async def create_course(data: CourseCreate, teacher_user: str = Depends(verify_teacher)):
     """Create a new course with the given metadata.
@@ -184,6 +191,7 @@ async def create_course(data: CourseCreate, teacher_user: str = Depends(verify_t
     subject_id = subj_row["id"] if subj_row else ""
 
     def _insert_course(conn):
+        """Generate the composite course ID and insert the course row within the caller's transaction."""
         course_id = gen_composite_uid(conn, data.grade, data.subject, 'CRS')
         conn.execute(
             """INSERT INTO courses (id, title, description, subject, subject_id, grade, language, teacher_username, created_at, updated_at)
@@ -201,7 +209,10 @@ async def create_course(data: CourseCreate, teacher_user: str = Depends(verify_t
 
 
 @router.get("/api/teacher/courses",
-            summary="List own courses", tags=["Teacher Courses"])
+            summary="List own courses", tags=["Teacher Courses"],
+            description="Lists all non-archived courses, ordered by last update. Admins see all courses; teachers see their own.",
+            response_model=list,
+            responses={200: {"description": "List of courses"}})
 async def list_courses(teacher_user: str = Depends(verify_teacher)):
     """List all non-archived courses ordered by last update.
 
@@ -224,6 +235,8 @@ async def list_courses(teacher_user: str = Depends(verify_teacher)):
 
 @router.get("/api/teacher/courses/{course_id}",
             summary="Get course detail", tags=["Teacher Courses"],
+            description="Returns full course detail including resources, topics, and similar courses.",
+            response_model=dict,
             responses={200: {"description": "Course detail"}, 404: {"description": "Course not found"}})
 async def get_course_detail(course_id: str, teacher_user: str = Depends(verify_teacher)):
     """Return full course detail including resources, topics, and similar courses.
@@ -249,7 +262,10 @@ async def get_course_detail(course_id: str, teacher_user: str = Depends(verify_t
 
 
 @router.put("/api/teacher/courses/{course_id}",
-            summary="Update course metadata", tags=["Teacher Courses"])
+            summary="Update course metadata", tags=["Teacher Courses"],
+            description="Updates course metadata (title, description, subject, grade, language).",
+            response_model=dict,
+            responses={200: {"description": "Updated course"}, 404: {"description": "Course not found"}})
 async def update_course(course_id: str, data: CourseCreate, teacher_user: str = Depends(verify_teacher)):
     """Update course metadata (title, description, subject, grade, language).
 
@@ -269,7 +285,10 @@ async def update_course(course_id: str, data: CourseCreate, teacher_user: str = 
 
 
 @router.delete("/api/teacher/courses/{course_id}",
-               summary="Soft-delete a course", tags=["Teacher Courses"])
+               summary="Soft-delete a course", tags=["Teacher Courses"],
+               description="Archives a course by setting published = -1. Resources remain on disk.",
+               response_model=dict,
+               responses={200: {"description": "Course archived"}, 404: {"description": "Course not found"}})
 async def delete_course(course_id: str, teacher_user: str = Depends(verify_teacher)):
     """Soft-delete a course by setting published = -1.
 
@@ -286,7 +305,10 @@ async def delete_course(course_id: str, teacher_user: str = Depends(verify_teach
 # ─── Publishing ───────────────────────────────────────────────────────────
 
 @router.post("/api/teacher/courses/{course_id}/publish",
-             summary="Toggle course published status", tags=["Teacher Courses"])
+             summary="Toggle course published status", tags=["Teacher Courses"],
+             description="Toggles a course between published (1) and unpublished (0).",
+             response_model=dict,
+             responses={200: {"description": "Updated course"}, 404: {"description": "Course not found"}})
 async def toggle_publish(course_id: str, teacher_user: str = Depends(verify_teacher)):
     """Toggle a course between published (1) and unpublished (0).
 

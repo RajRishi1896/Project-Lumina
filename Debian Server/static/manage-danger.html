@@ -176,6 +176,7 @@
                 <div id="gradeDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
                 <div class="flex items-center gap-3 mb-4">
                     <div style="flex: 1; position: relative;">
+                        <label for="dangerGradeSearch" class="sr-only" data-i18n="danger.search_grades_label">Search grades</label>
                         <input type="text" id="dangerGradeSearch" data-i18n="danger.search_grades_placeholder" placeholder="Search grades..." class="form-input" style="padding-left: 2rem;">
                         <span style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -395,6 +396,14 @@
         var _gradePage = 1, _gradeFiltered = [];
         var _subjectPage = 1, _subjectFiltered = [];
 
+        /**
+         * Update the pagination controls for a danger-zone table: page info
+         * text, prev/next disabled state, and row visibility.
+         * @param {string} key - Table key ('student' | 'admin' | 'teacher' | 'grade' | 'subject')
+         * @param {number} page - Current page
+         * @param {number} totalPages - Total page count
+         * @param {number} total - Total row count (0 hides the pagination row)
+         */
         function _updateDangerPagination(key, page, totalPages, total) {
             var el = document.getElementById(key + 'Pagination');
             var pageInfo = document.getElementById(key + 'PageInfo');
@@ -405,6 +414,7 @@
             if (prevBtn) { prevBtn.disabled = page <= 1; prevBtn.style.opacity = page <= 1 ? '0.4' : '1'; }
             if (nextBtn) { nextBtn.disabled = page >= totalPages; nextBtn.style.opacity = page >= totalPages ? '0.4' : '1'; }
         }
+        // Pagination handlers -- move the danger-zone table page windows and re-render.
         function studentPrevPage() { if (_studentPage > 1) { _studentPage--; renderStudentPage(); } }
         function studentNextPage() { var tp = Math.ceil(_studentFiltered.length / _dangerPerPage); if (_studentPage < tp) { _studentPage++; renderStudentPage(); } }
         function studentChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _studentPage = 1; renderStudentPage(); }
@@ -459,6 +469,7 @@
             } catch (e) { console.error(e); }
         }
 
+        /** Filters the grade table by search query and re-renders. */
         function filterGrades() {
             var query = (document.getElementById('dangerGradeSearch').value || '').toLowerCase().trim();
             _gradeFiltered = activeGrades.filter(function(g) {
@@ -469,6 +480,7 @@
             renderGradePage();
         }
 
+        /** Renders the current page of filtered grades with edit/delete buttons. */
         function renderGradePage() {
             var tbody = document.getElementById('gradeDangerTable');
             if (!tbody) return;
@@ -612,6 +624,12 @@
             }
         }
 
+        /**
+         * Return the SVG markup for the given subject icon symbol, falling
+         * back to the folder icon for unknown keys.
+         * @param {string} symbol - The symbol key (e.g. 'calculator')
+         * @returns {string} SVG markup
+         */
         function getSymbolSvg(symbol) {
             var svgs = {
                 calculator: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8.01" y1="10" y2="10"/><line x1="12" x2="12.01" y1="10" y2="10"/><line x1="16" x2="16.01" y1="10" y2="10"/><line x1="8" x2="8.01" y1="14" y2="14"/><line x1="12" x2="12.01" y1="14" y2="14"/><line x1="16" x2="16.01" y1="14" y2="14"/><line x1="8" x2="8.01" y1="18" y2="18"/><line x1="12" x2="16" y1="18" y2="18"/></svg>',
@@ -627,6 +645,13 @@
             return svgs[symbol] || svgs.folder;
         }
 
+        /**
+         * Build the custom subject-symbol dropdown: one option per symbol,
+         * written into the given hidden input, with a click-away handler
+         * to close the list.
+         * @param {string} defaultVal - Symbol key selected by default ('folder')
+         * @param {string} prefix - Element id prefix; 'edit' for the edit modal, '' for add
+         */
         function initSymbolDropdown(defaultVal, prefix) {
             prefix = prefix || '';
             var symbols = ['calculator','atom','globe','book','laptop','microscope','compass','code','folder'];
@@ -671,6 +696,7 @@
             } catch (e) { console.error(e); }
         }
 
+        /** Refresh the class options in all three subject class dropdowns from activeGrades. */
         function populateDangerSubjectClassDropdown() {
             var grades = activeGrades.map(function(g) { return g.name || g; });
             ['dangerSubjectClass', 'modalSubjectClass', 'editSubjectClass'].forEach(function(id) {
@@ -687,6 +713,7 @@
             });
         }
 
+        /** Filters the subject table by search query and re-renders. */
         function filterDangerSubjects() {
             var query = (document.getElementById('dangerSubjectSearch').value || '').toLowerCase().trim();
             _subjectFiltered = activeDangerSubjects.filter(function(s) {
@@ -696,6 +723,7 @@
             renderSubjectPage();
         }
 
+        /** Renders the current page of filtered subjects with edit/delete buttons. */
         function renderSubjectPage() {
             var tbody = document.getElementById('subjectDangerTable');
             if (!tbody) return;
@@ -842,6 +870,7 @@
             }
         }
 
+        /** Filters the student table by name/scholar-id/username search and re-renders. */
         function filterDangerStudents() {
             var query = (document.getElementById('studentDangerSearch').value || '').toLowerCase().trim();
             _studentFiltered = activeDangerScholars.filter(function(s) {
@@ -851,6 +880,7 @@
             renderStudentPage();
         }
 
+        /** Renders the current page of filtered students with reset/delete buttons. */
         function renderStudentPage() {
             var tbody = document.getElementById('studentDangerTable');
             if (!tbody) return;
@@ -880,6 +910,7 @@
             _updateDangerPagination('student', _studentPage, totalPages, data.length);
         }
 
+        /** Filters the teacher table by username/name/department search and re-renders. */
         function filterDangerTeachers() {
             var query = (document.getElementById('teacherDangerSearch').value || '').toLowerCase().trim();
             _teacherFiltered = activeDangerTeachers.filter(function(t) {
@@ -891,6 +922,7 @@
             renderTeacherPage();
         }
 
+        /** Renders the current page of filtered teachers with reset/delete buttons. */
         function renderTeacherPage() {
             var tbody = document.getElementById('teacherDangerTable');
             if (!tbody) return;
@@ -919,6 +951,7 @@
             _updateDangerPagination('teacher', _teacherPage, totalPages, data.length);
         }
 
+        /** Filters the admin table by username/name/department/scholar-id search and re-renders. */
         function filterDangerAdmins() {
             var query = (document.getElementById('adminDangerSearch').value || '').toLowerCase().trim();
             _adminFiltered = activeDangerAdmins.filter(function(a) {
@@ -931,6 +964,10 @@
             renderAdminPage();
         }
 
+        /**
+         * Renders the current page of filtered admins with reset/delete
+         * buttons; the default 'admin' account gets a placeholder instead.
+         */
         function renderAdminPage() {
             var tbody = document.getElementById('adminDangerTable');
             if (!tbody) return;
@@ -1003,6 +1040,10 @@
             }
         }
 
+        /**
+         * Force-reset a teacher's password after confirmation.
+         * @param {string} username - The teacher's username
+         */
         async function resetTeacherPassword(username) {
             var confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_teacher', {username: username}), false, __('danger.confirm.ok_btn'));
             if (!confirmed) return;
@@ -1039,6 +1080,10 @@
             }
         }
 
+        /**
+         * Force-reset an admin's password after confirmation.
+         * @param {string} username - The admin's username
+         */
         async function resetAdminPassword(username) {
             var confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_admin', {username: username}), false, __('danger.confirm.ok_btn'));
             if (!confirmed) return;
@@ -1289,11 +1334,14 @@
             document.getElementById('createAccountModal').classList.remove('hidden');
         }
 
+        /** Hides the create-account modal and clears its notification area. */
         function closeCreateModal() {
             document.getElementById('createAccountModal').classList.add('hidden');
             document.getElementById('createModalNotif').style.display = 'none';
         }
 
+        // Swaps the confirm-button handler when the create modal changes
+        // between student/teacher/admin modes, removing the previous one.
         var _currentCreateHandler = null;
         function _setCreateModalConfirmHandler(handler) {
             var btn = document.getElementById('createModalConfirmBtn');
@@ -1307,6 +1355,8 @@
             }
         }
 
+        // Debounced search wrappers -- 200ms wait prevents a filter call
+        // on every keystroke (see AGENTS.md web search-input rule).
         var _debounceDangerStudents;
         function debouncedFilterDangerStudents() {
             clearTimeout(_debounceDangerStudents);
@@ -1323,6 +1373,11 @@
             _debounceDangerAdmins = setTimeout(filterDangerAdmins, 200);
         }
 
+        /**
+         * Page bootstrap: load current user and danger-zone data, then wire
+         * pagination, search inputs, and the action buttons on every table.
+         * Registered as the SPA 'danger' page init via registerPageCleanup.
+         */
         var _initDanger = function() {
             document.getElementById('btn-studentPrevPage')?.addEventListener('click', studentPrevPage);
             document.getElementById('btn-studentNextPage')?.addEventListener('click', studentNextPage);

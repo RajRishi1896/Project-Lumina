@@ -160,6 +160,7 @@ async def create_teacher_profile(teacher: TeacherCreate, request: Request = None
         # Race-safe: users.username is the PRIMARY KEY, so a concurrent
         # create with the same username loses the INSERT and gets a 400.
         def _create_teacher(conn):
+            """Insert the scholar and user rows within one transaction."""
             conn.execute("INSERT INTO scholars (id, name) VALUES (?, ?)", (full_id, display_name))
             conn.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id) VALUES (?, ?, ?, ?, ?)",
                          (teacher.username, hashed_pwd, display_name, dept, full_id))

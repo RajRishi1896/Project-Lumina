@@ -8,6 +8,7 @@ import 'package:edumesh_android/core/models/course.dart';
 import 'package:edumesh_android/core/services/course_service.dart';
 import 'package:edumesh_android/core/recommendation/on_device_scorer.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
+import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'package:edumesh_android/shared/services/connectivity_service.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
@@ -202,7 +203,10 @@ class _CoursesTabState extends State<_CoursesTab> {
       ]));
     }
 
-    return SingleChildScrollView(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+        child: SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,6 +257,8 @@ class _CoursesTabState extends State<_CoursesTab> {
           _buildAllCoursesList(cs, tt, l10n),
           SizedBox(height: AppSpacing.xxl.h),
         ],
+      ),
+        ),
       ),
     );
   }
@@ -726,93 +732,98 @@ class _WikiTabState extends State<_WikiTab> {
 
     final itemCount = _articles.length + (_hasMore ? 1 : 0);
 
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(AppSpacing.lg.w, AppSpacing.md.h, AppSpacing.lg.w, 0),
-          child: TextField(
-            controller: _searchController,
-            onChanged: _onSearchChanged,
-            decoration: InputDecoration(
-              hintText: l10n.zimSearchHint,
-              prefixIcon: Icon(Icons.search_rounded, color: cs.onSurfaceVariant),
-              suffixIcon: _searchController.text.isNotEmpty
-                ? IconButton(icon: Icon(Icons.clear, color: cs.onSurfaceVariant),
-                    onPressed: _clearSearch)
-                : null,
-              filled: true,
-              fillColor: cs.surfaceContainerHighest,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r), borderSide: BorderSide.none),
-              contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
-            ),
-          ),
-        ),
-        Expanded(
-          child: _articles.isEmpty
-            ? Center(child: Text(
-                _query.isEmpty
-                    ? (isOffline ? l10n.browseNotConnected : l10n.zimNoArticlesEmpty)
-                    : l10n.zimNoResultsEmpty,
-                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)))
-            : NotificationListener<ScrollNotification>(
-                onNotification: _onScrollNotification,
-                child: ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
-                  itemCount: itemCount,
-                  itemBuilder: (ctx, i) {
-                    if (i >= _articles.length) {
-                      return Padding(
-                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md.h),
-                        child: Center(child: CircularProgressIndicator(strokeWidth: 2.w)),
-                      );
-                    }
-                    final article = _articles[i];
-                    final isDownloaded = ZimSyncService.instance.downloadedIds.contains(article.articleId);
-                    final offlineUnavailable = isOffline && !isDownloaded;
-                    return Opacity(
-                      opacity: offlineUnavailable ? 0.45 : 1.0,
-                      child: Card(
-                        color: offlineUnavailable ? cs.surfaceContainerHighest : null,
-                        child: ListTile(
-                          leading: article.hasThumbnail
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(6.r),
-                                child: Image.network(
-                                  '${ApiClient.baseUrl}/zim/thumbnail?article_id=${article.articleId}',
-                                  width: 48, height: 48, fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => CircleAvatar(
-                                    backgroundColor: cs.primaryContainer,
-                                    child: Icon(Icons.article, color: cs.primary)),
-                                ))
-                            : CircleAvatar(backgroundColor: cs.primaryContainer,
-                                child: Icon(Icons.article, color: cs.primary)),
-                          title: Row(children: [
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                              decoration: BoxDecoration(color: cs.primary, borderRadius: BorderRadius.circular(4.r)),
-                              child: Text(l10n.badgeKiwixWiki, style: tt.labelSmall?.copyWith(
-                                color: cs.onPrimary, fontWeight: AppSpacing.weightStrong, letterSpacing: 1)),
-                            ),
-                            SizedBox(width: AppSpacing.sm.w),
-                            Expanded(child: Text(article.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                              style: tt.bodyLarge?.copyWith(color: cs.onSurface))),
-                          ]),
-                          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                            IconButton(
-                              icon: Icon(isDownloaded ? Icons.check_circle : Icons.download_outlined,
-                                color: isDownloaded ? Colors.green : cs.primary),
-                              onPressed: isDownloaded ? null : () => _downloadArticle(article)),
-                            Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-                          ]),
-                          onTap: () => _openArticle(article),
-                        ),
-                      ),
-                    );
-                  },
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(AppSpacing.lg.w, AppSpacing.md.h, AppSpacing.lg.w, 0),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _onSearchChanged,
+                decoration: InputDecoration(
+                  hintText: l10n.zimSearchHint,
+                  prefixIcon: Icon(Icons.search_rounded, color: cs.onSurfaceVariant),
+                  suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(icon: Icon(Icons.clear, color: cs.onSurfaceVariant),
+                        onPressed: _clearSearch)
+                    : null,
+                  filled: true,
+                  fillColor: cs.surfaceContainerHighest,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r), borderSide: BorderSide.none),
+                  contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
                 ),
               ),
+            ),
+            Expanded(
+              child: _articles.isEmpty
+                ? Center(child: Text(
+                    _query.isEmpty
+                        ? (isOffline ? l10n.browseNotConnected : l10n.zimNoArticlesEmpty)
+                        : l10n.zimNoResultsEmpty,
+                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)))
+                : NotificationListener<ScrollNotification>(
+                    onNotification: _onScrollNotification,
+                    child: ListView.builder(
+                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
+                      itemCount: itemCount,
+                      itemBuilder: (ctx, i) {
+                        if (i >= _articles.length) {
+                          return Padding(
+                            padding: EdgeInsets.symmetric(vertical: AppSpacing.md.h),
+                            child: Center(child: CircularProgressIndicator(strokeWidth: 2.w)),
+                          );
+                        }
+                        final article = _articles[i];
+                        final isDownloaded = ZimSyncService.instance.downloadedIds.contains(article.articleId);
+                        final offlineUnavailable = isOffline && !isDownloaded;
+                        return Opacity(
+                          opacity: offlineUnavailable ? 0.45 : 1.0,
+                          child: Card(
+                            color: offlineUnavailable ? cs.surfaceContainerHighest : null,
+                            child: ListTile(
+                              leading: article.hasThumbnail
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(6.r),
+                                    child: Image.network(
+                                      '${ApiClient.baseUrl}/zim/thumbnail?article_id=${article.articleId}',
+                                      width: 48, height: 48, fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => CircleAvatar(
+                                        backgroundColor: cs.primaryContainer,
+                                        child: Icon(Icons.article, color: cs.primary)),
+                                    ))
+                                : CircleAvatar(backgroundColor: cs.primaryContainer,
+                                    child: Icon(Icons.article, color: cs.primary)),
+                              title: Row(children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                                  decoration: BoxDecoration(color: cs.primary, borderRadius: BorderRadius.circular(4.r)),
+                                  child: Text(l10n.badgeKiwixWiki, style: tt.labelSmall?.copyWith(
+                                    color: cs.onPrimary, fontWeight: AppSpacing.weightStrong, letterSpacing: 1)),
+                                ),
+                                SizedBox(width: AppSpacing.sm.w),
+                                Expanded(child: Text(article.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                                  style: tt.bodyLarge?.copyWith(color: cs.onSurface))),
+                              ]),
+                              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                                IconButton(
+                                  icon: Icon(isDownloaded ? Icons.check_circle : Icons.download_outlined,
+                                    color: isDownloaded ? LuminaColors.successGreen : cs.primary),
+                                  onPressed: isDownloaded ? null : () => _downloadArticle(article)),
+                                Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                              ]),
+                              onTap: () => _openArticle(article),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

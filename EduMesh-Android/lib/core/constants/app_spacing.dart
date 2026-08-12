@@ -34,6 +34,9 @@ class AppSpacing {
   /// 64px -- Standard page horizontal margin.
   static const double pageMargin = 64;
 
+  /// 840px -- Maximum readable content width on tablets and large screens.
+  static const double maxContentWidth = 840;
+
   /// 4px -- Small border radius.
   static const double radiusSm = 4;
 

@@ -11,10 +11,12 @@ from app.dependencies import hash_password
 
 
 def _auth(token):
+    """Build the Authorization header for a token."""
     return {"Authorization": f"Bearer {token}"}
 
 
 async def _make_student(name):
+    """Create a student account and session; return (id, token)."""
     sid = f"LUMINA_TEST-{uuid.uuid4().hex[:12]}"
     token = f"LUMINA_HUB-{uuid.uuid4().hex}"
     await db_exec(
@@ -27,6 +29,7 @@ async def _make_student(name):
 
 
 async def _make_teacher(name):
+    """Create a teacher account and session; return (name, token)."""
     token = f"LUMINA_HUB-{uuid.uuid4().hex}"
     await db_exec(
         "INSERT INTO users (username, hashed_password, name, role) VALUES (?, ?, ?, 'teacher')",
@@ -41,6 +44,7 @@ CARDS = [{"front": "2+2?", "back": "4"}]
 
 
 async def test_create_deck_and_replace_cards(client, admin_client):
+    """Teacher creates a deck and replaces its cards."""
     resp = await admin_client.post("/api/teacher/flashcards/decks",
                                    json={"title": "Maths basics", "topic_id": ""})
     assert resp.status_code == 200, resp.text
@@ -58,6 +62,7 @@ async def test_create_deck_and_replace_cards(client, admin_client):
 
 
 async def test_submit_and_approve_flow(client, admin_client):
+    """Student submits a deck; teacher approves it into a published deck."""
     _, student_token = await _make_student("s1")
     resp = await client.post("/api/flashcards/submit",
                              json={"title": "My deck", "cards": CARDS},
@@ -89,6 +94,7 @@ async def test_submit_and_approve_flow(client, admin_client):
 
 
 async def test_reject_stores_reason(client, admin_client):
+    """Rejection keeps the teacher's reason on the submission."""
     _, student = await _student(client, "r")
     resp = await client.post("/api/flashcards/submit",
                              json={"title": "Bad deck", "cards": CARDS},
@@ -106,6 +112,7 @@ async def test_reject_stores_reason(client, admin_client):
 
 
 async def test_deck_ownership(client, admin_client):
+    """A teacher cannot edit or delete another teacher's deck."""
     resp = await admin_client.post("/api/teacher/flashcards/decks",
                                    json={"title": "A's deck", "topic_id": ""})
     deck_id = resp.json()["id"]
@@ -120,6 +127,7 @@ async def test_deck_ownership(client, admin_client):
 
 
 async def test_validation(client, admin_client):
+    """Deck titles and card payloads are validated on creation."""
     resp = await admin_client.post("/api/teacher/flashcards/decks",
                                    json={"title": "  ", "topic_id": ""})
     assert resp.status_code == 400
@@ -140,6 +148,7 @@ async def test_validation(client, admin_client):
 
 
 async def test_student_submit_validation(client, admin_client):
+    """Student submissions are validated the same way."""
     _, student = await _student(client, "v")
     resp = await client.post("/api/flashcards/submit",
                              json={"title": "", "cards": CARDS}, headers=_auth(student))
@@ -151,4 +160,5 @@ async def test_student_submit_validation(client, admin_client):
 
 
 async def _student(client, name):
+    """Create a student and return their session token."""
     return await _make_student(name)

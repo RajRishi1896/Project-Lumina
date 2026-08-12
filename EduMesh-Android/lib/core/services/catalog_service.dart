@@ -3,6 +3,7 @@ import '../models/resource_model.dart';
 import '../network/api_client.dart';
 import '../storage/db_helper.dart';
 import '../utils/file_utils.dart';
+import '../../shared/services/notification_service.dart';
 
 /// Singleton service that maintains a local cache of the server's resource
 /// catalog so the user can browse and queue downloads even when offline.
@@ -57,9 +58,47 @@ class CatalogService {
         }
         await batch.commit(noResult: true);
       });
+      await _detectServerRemovals(data);
       _lastCatalogSync = DateTime.now();
     } catch (e) {
       debugPrint('CatalogService: sync failed -- $e');
+    }
+  }
+
+  /// Marks downloaded resources that no longer exist in the fresh catalog as
+  /// `server_removed` and notifies the student (capped to avoid spam on mass
+  /// deletions). Never throws -- failures are logged and skipped.
+  ///
+  /// Peer resources (`peer:{peer_id}:{resource_id}` ids) disappear from the
+  /// catalog when a hub unpairs; they are treated the same way.
+  Future<void> _detectServerRemovals(List<dynamic> catalogData) async {
+    try {
+      final db = await DBHelper().database;
+      final freshIds = catalogData
+          .whereType<Map>()
+          .map((item) => (item['id'] ?? '').toString())
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      final rows = await db.query('downloads',
+          columns: ['resource_id', 'title'], where: 'server_removed = 0');
+      final removedRows = rows
+          .where((r) => !freshIds.contains(r['resource_id'] as String? ?? ''))
+          .toList();
+      if (removedRows.isEmpty) return;
+      final removedIds = removedRows.map((r) => r['resource_id'] as String).toList();
+      await db.update(
+        'downloads',
+        {'server_removed': 1},
+        where: 'resource_id IN (${List.filled(removedIds.length, '?').join(',')})',
+        whereArgs: removedIds,
+      );
+      // ponytail: cap per sync; mass deletions would otherwise spam 100+ alerts.
+      const maxNotifications = 5;
+      for (final row in removedRows.take(maxNotifications)) {
+        await NotificationService().showRemovedFromServer(row['title'] as String? ?? '');
+      }
+    } catch (e) {
+      debugPrint('CatalogService: removal detection failed -- $e');
     }
   }
 

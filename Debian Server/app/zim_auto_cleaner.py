@@ -77,6 +77,7 @@ def start_zim_auto_cleaner(interval_seconds: int = 3600):
     _cleaner_started = True
 
     def _run():
+        """Cleaner loop body -- prune, then sleep until the next pass."""
         while True:
             _clean_old_pages()
             time.sleep(interval_seconds)

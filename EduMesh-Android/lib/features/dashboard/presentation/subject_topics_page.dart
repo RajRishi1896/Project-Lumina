@@ -20,6 +20,7 @@ import 'kiwix_view.dart';
 
 /// Shows topics for a subject, or resources directly if no topics exist.
 class SubjectTopicsPage extends StatefulWidget {
+  /// The subject whose topics or resources are shown.
   final String subject;
   const SubjectTopicsPage({super.key, required this.subject});
 
@@ -200,6 +201,7 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
   }
 
   Widget _buildDownloadButton(ResourceModel item, ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     final resourceId = item.id.toString();
     final isDownloaded = _downloadedIds.contains(resourceId);
     final isPending = _pendingIds.contains(resourceId);
@@ -220,6 +222,7 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
       );
     }
     return IconButton(
+      tooltip: l10n.dialogDownloadTitle,
       icon: Icon(
         isDownloaded ? Icons.check_circle : Icons.download_outlined,
         color: isDownloaded ? LuminaColors.successGreen : cs.primary,
@@ -331,6 +334,7 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
+                        tooltip: AppLocalizations.of(context)!.bottomNavSaved,
                         icon: Icon(
                           _bookmarkedIds.contains(item.id.toString()) ? Icons.bookmark : Icons.bookmark_border,
                           color: _bookmarkedIds.contains(item.id.toString()) ? cs.primary : cs.onSurfaceVariant,
@@ -394,10 +398,15 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
         );
       }
     }
-    return ListView.builder(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+        child: ListView.builder(
       padding: EdgeInsets.all(AppSpacing.xl.w),
       itemCount: widgets.length,
       itemBuilder: (_, i) => widgets[i],
+        ),
+      ),
     );
   }
 

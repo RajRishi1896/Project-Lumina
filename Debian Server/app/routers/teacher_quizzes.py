@@ -34,6 +34,8 @@ def _normalize_question(q: dict, index: int) -> dict:
 
 @router.post("/api/teacher/courses/{course_id}/quiz",
              summary="Create a quiz resource for a course", tags=["Teacher Courses"],
+             description="Creates a quiz resource within a course, saving quiz JSON to disk and registering a course_resources row.",
+             response_model=dict,
              responses={201: {"description": "Quiz resource created"}, 400: {"description": "Invalid data"}})
 async def create_course_quiz(course_id: str, data: CourseQuizCreate, teacher_user: str = Depends(verify_teacher)):
     """Create a new quiz resource within a course.
@@ -61,6 +63,7 @@ async def create_course_quiz(course_id: str, data: CourseQuizCreate, teacher_use
     quiz_path = os.path.join(quiz_dir, f"quiz_{resource_id}.json")
 
     def _save():
+        """Write the quiz JSON to disk in a worker thread and return its size."""
         quiz = {"questions": questions, "time_limit_minutes": data.time_limit_minutes,
                 "pass_threshold": data.pass_threshold, "max_attempts": data.max_attempts,
                 "shuffle_mode": data.shuffle_mode, "quiz_version": 1}
@@ -84,7 +87,10 @@ async def create_course_quiz(course_id: str, data: CourseQuizCreate, teacher_use
 
 
 @router.put("/api/teacher/courses/{course_id}/quiz/{resource_id}",
-            summary="Save quiz JSON for a course resource", tags=["Teacher Courses"])
+            summary="Save quiz JSON for a course resource", tags=["Teacher Courses"],
+            description="Updates an existing quiz's JSON content and bumps its version number.",
+            response_model=dict,
+            responses={200: {"description": "Quiz saved with new version"}, 400: {"description": "Invalid quiz data"}, 404: {"description": "Resource not found"}})
 async def save_course_quiz(course_id: str, resource_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
     """Update an existing quiz's JSON content and bump its version number.
 
@@ -116,6 +122,7 @@ async def save_course_quiz(course_id: str, resource_id: str, data: dict, teacher
     quiz_path = os.path.join(quiz_dir, f"quiz_{resource_id}.json")
 
     def _save():
+        """Load the existing quiz version and write the incremented quiz JSON in a worker thread."""
         quiz_version = 1
         if os.path.isfile(quiz_path):
             try:

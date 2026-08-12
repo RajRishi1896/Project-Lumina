@@ -28,13 +28,6 @@ function debounce(fn, delay) {
 }
 
 /**
- * Focus trap utility for modal dialogs.
- * Traps focus within the given element and restores focus to the trigger element on close.
- * @param {HTMLElement} modal - The modal element to trap focus within
- * @param {HTMLElement} trigger - The element that opened the modal (focus returns here on close)
- * @returns {Object} Object with `activate` and `deactivate` methods
- */
-/**
  * Convert an ISO date string to a human-friendly relative time label.
  * @param {string|null} iso - ISO date string or null
  * @returns {string} Relative time string (e.g. "5 minutes ago")
@@ -419,15 +412,6 @@ function renderUserInfo(username, role) {
 }
 
 /**
- * Shows a modal confirm dialog with configurable danger/teal styling.
- * Returns a Promise that resolves to true (confirmed) or false (cancelled).
- * @param {string} title - Modal title text
- * @param {string} message - Modal body text
- * @param {boolean} isDanger - If true, danger (red) styling; if false, teal
- * @param {string} [confirmText] - Optional text for the confirm button
- * @returns {Promise<boolean>}
- */
-/**
  * Focus trap utility for accessible modals.
  * Traps focus within the given element, handles Escape key, and restores focus on exit.
  * @param {HTMLElement} modal - The modal element to trap focus within
@@ -695,13 +679,6 @@ function toggleMobileMenu() {
 /* ── Active nav highlighting ─────────────────────────────────────────────── */
 
 /**
- * Manually highlights a sidebar nav item and its matching bottom-nav item.
- * Removes 'active' from all nav items first.
- * @param {string} navId - The DOM id of the nav item to highlight (e.g. 'nav-home').
- * @returns {void}
- */
-
-/**
  * Renders the sidebar (<aside>) and bottom nav (#bottomNav) into their container
  * elements. Called once on DOMContentLoaded. Eliminates identical sidebar/nav
  * HTML that was duplicated across all 8 dashboard pages.
@@ -926,9 +903,20 @@ const _pageInitRegistry = window._pageInitRegistry = window._pageInitRegistry ||
 const _pageCleanupFns = [];
 let _isNavigating = false;
 
-/** Register a cleanup function called before SPA navigation. */
+/**
+ * Register a cleanup function called before SPA navigation.
+ * Runs when navigateTo() replaces the current page; timers and listeners
+ * registered by a page's init should be torn down here to avoid leaks.
+ * @param {Function} fn - Cleanup function invoked before navigating away
+ */
 window.registerPageCleanup = function(fn) { _pageCleanupFns.push(fn); };
 
+/**
+ * Runs the current page's registered init function from _pageInitRegistry.
+ * Called on DOMContentLoaded and after every SPA navigation. Pages register
+ * in their inline script (they parse before this deferred file loads);
+ * a missing registration logs an error instead of failing silently.
+ */
 function initCurrentPage() {
     const path = location.pathname.replace(/\/+$/, '');
     const mapping = {
@@ -951,6 +939,14 @@ function initCurrentPage() {
     _pageInitRegistry[key]();
 }
 
+/**
+ * SPA navigation: fetch the target page, swap #app-content, inject its inline
+ * scripts, run registered cleanups, then re-init nav and translations without
+ * a full page reload. Falls back to a plain location change on any failure.
+ * @param {string} url - Absolute path to fetch (e.g. '/static/courses')
+ * @param {boolean} [pushHistory=true] - Whether to push a history state entry
+ * @returns {Promise<void>}
+ */
 async function navigateTo(url, pushHistory) {
     if (pushHistory === undefined) pushHistory = true;
     if (url === location.pathname) return;

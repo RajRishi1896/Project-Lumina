@@ -59,6 +59,7 @@ def _validate_cards(cards) -> list[dict]:
              summary="Create a flashcard deck",
              description="Creates a published deck owned by the calling teacher. topic_id is optional but must exist in resource_topics when given.",
              tags=["Flashcards"],
+             response_model=dict,
              responses={201: {"description": "Deck created"}, 400: {"description": "Invalid title or topic"}})
 async def create_deck(data: dict, teacher_user: str = Depends(verify_teacher)):
     """Create a new flashcard deck.
@@ -85,7 +86,9 @@ async def create_deck(data: dict, teacher_user: str = Depends(verify_teacher)):
 @router.get("/api/teacher/flashcards/decks",
             summary="List the teacher's flashcard decks",
             description="Returns all decks created by the calling teacher, each with its cards and card count, newest first.",
-            tags=["Flashcards"])
+            tags=["Flashcards"],
+            response_model=list,
+            responses={200: {"description": "List of decks with cards"}})
 async def list_decks(teacher_user: str = Depends(verify_teacher)):
     """List decks owned by the calling teacher.
 
@@ -126,7 +129,9 @@ async def _own_deck(deck_id: str, teacher_user: str):
 @router.put("/api/teacher/flashcards/decks/{deck_id}",
             summary="Rename a flashcard deck",
             description="Updates the title and optional topic of a deck owned by the calling teacher.",
-            tags=["Flashcards"])
+            tags=["Flashcards"],
+            response_model=dict,
+            responses={200: {"description": "Deck renamed"}, 400: {"description": "Invalid title or topic"}, 403: {"description": "Deck owned by another teacher"}, 404: {"description": "Deck not found"}})
 async def update_deck(deck_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
     """Rename a deck and optionally reassign its topic.
 
@@ -148,7 +153,9 @@ async def update_deck(deck_id: str, data: dict, teacher_user: str = Depends(veri
 @router.delete("/api/teacher/flashcards/decks/{deck_id}",
                summary="Delete a flashcard deck",
                description="Deletes a deck and all its cards. Only the owning teacher can delete it.",
-               tags=["Flashcards"])
+               tags=["Flashcards"],
+               response_model=dict,
+               responses={200: {"description": "Deck deleted"}, 403: {"description": "Deck owned by another teacher"}, 404: {"description": "Deck not found"}})
 async def delete_deck(deck_id: str, teacher_user: str = Depends(verify_teacher)):
     """Delete a deck and its cards in one transaction.
 
@@ -157,6 +164,7 @@ async def delete_deck(deck_id: str, teacher_user: str = Depends(verify_teacher))
     """
     await _own_deck(deck_id, teacher_user)
     def _delete_deck(conn):
+        """Delete the deck row and all its cards within one transaction."""
         conn.execute("DELETE FROM flashcards WHERE deck_id = ?", (deck_id,))
         conn.execute("DELETE FROM flashcard_decks WHERE id = ?", (deck_id,))
         conn.commit()
@@ -167,7 +175,9 @@ async def delete_deck(deck_id: str, teacher_user: str = Depends(verify_teacher))
 @router.put("/api/teacher/flashcards/decks/{deck_id}/cards",
             summary="Replace all cards in a deck",
             description="Replaces the full card list of a deck owned by the calling teacher. Cards are validated (1..100, non-empty front/back, max 200 characters each).",
-            tags=["Flashcards"])
+            tags=["Flashcards"],
+            response_model=dict,
+            responses={200: {"description": "Cards replaced"}, 400: {"description": "Invalid cards"}, 403: {"description": "Deck owned by another teacher"}, 404: {"description": "Deck not found"}})
 async def replace_cards(deck_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
     """Replace all cards of a deck.
 
@@ -177,6 +187,7 @@ async def replace_cards(deck_id: str, data: dict, teacher_user: str = Depends(ve
     await _own_deck(deck_id, teacher_user)
     cards = _validate_cards(data.get("cards"))
     def _replace_cards(conn):
+        """Delete existing cards and insert the new list in one transaction."""
         conn.execute("DELETE FROM flashcards WHERE deck_id = ?", (deck_id,))
         conn.executemany(
             "INSERT INTO flashcards (id, deck_id, front, back, position) VALUES (?, ?, ?, ?, ?)",
@@ -189,7 +200,9 @@ async def replace_cards(deck_id: str, data: dict, teacher_user: str = Depends(ve
 @router.get("/api/teacher/flashcards/submissions",
             summary="List student flashcard submissions",
             description="Returns student submissions joined with student names, optionally filtered by status (pending/approved/rejected).",
-            tags=["Flashcards"])
+            tags=["Flashcards"],
+            response_model=dict,
+            responses={200: {"description": "List of submissions"}})
 async def list_submissions(status: str = Query(None, description="Filter by status: pending, approved, rejected"),
                            teacher_user: str = Depends(verify_teacher)):
     """List student submissions for teacher review.
@@ -236,7 +249,8 @@ async def _get_submission(submission_id: str):
              summary="Approve a student submission into a published deck",
              description="Creates a published deck owned by the approving teacher with the submission's cards, and marks the submission approved. Returns the new deck id.",
              tags=["Flashcards"],
-             responses={200: {"description": "Approved, deck created"}, 409: {"description": "Submission already reviewed"}})
+             response_model=dict,
+             responses={200: {"description": "Approved, deck created"}, 400: {"description": "Invalid submission or topic"}, 404: {"description": "Submission not found"}, 409: {"description": "Submission already reviewed"}})
 async def approve_submission(submission_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
     """Approve a pending submission.
 
@@ -257,6 +271,7 @@ async def approve_submission(submission_id: str, data: dict, teacher_user: str =
             raise HTTPException(status_code=400, detail="Topic does not exist.")  # i18n: user-facing error message
     deck_id = uuid.uuid4().hex
     def _approve(conn):
+        """Create the published deck, insert its cards, and mark the submission approved in one transaction."""
         conn.execute(
             "INSERT INTO flashcard_decks (id, title, topic_id, created_by, published) VALUES (?, ?, ?, ?, 1)",
             (deck_id, sub["title"], topic_id or None, teacher_user))
@@ -274,7 +289,9 @@ async def approve_submission(submission_id: str, data: dict, teacher_user: str =
 @router.post("/api/teacher/flashcards/submissions/{submission_id}/reject",
              summary="Reject a student submission",
              description="Marks a pending submission as rejected with an optional reason. Returns 409 if the submission was already reviewed.",
-             tags=["Flashcards"])
+             tags=["Flashcards"],
+             response_model=dict,
+             responses={200: {"description": "Submission rejected"}, 404: {"description": "Submission not found"}, 409: {"description": "Submission already reviewed"}})
 async def reject_submission(submission_id: str, data: dict, teacher_user: str = Depends(verify_teacher)):
     """Reject a pending submission.
 
@@ -295,6 +312,7 @@ async def reject_submission(submission_id: str, data: dict, teacher_user: str = 
              summary="Submit a flashcard deck for teacher approval",
              description="Creates a pending submission from a student's card list. Decks are not published until a teacher approves them.",
              tags=["Flashcards"],
+             response_model=dict,
              responses={201: {"description": "Submission created"}, 400: {"description": "Invalid title or cards"}})
 async def submit_deck(data: dict, student_id: str = Depends(verify_student)):
     """Submit a deck for approval.
@@ -321,7 +339,9 @@ async def submit_deck(data: dict, student_id: str = Depends(verify_student)):
 @router.get("/api/flashcards/decks",
             summary="List published flashcard decks",
             description="Returns published decks with their full cards, optionally filtered by topic_id. Used by the app to sync deck content.",
-            tags=["Flashcards"])
+            tags=["Flashcards"],
+            response_model=list,
+            responses={200: {"description": "List of published decks with cards"}})
 async def published_decks(topic_id: str = Query(None, description="Filter by resource topic id"),
                           student_id: str = Depends(verify_student)):
     """List published decks with full cards.
@@ -352,7 +372,9 @@ async def published_decks(topic_id: str = Query(None, description="Filter by res
 @router.get("/api/flashcards/my-submissions",
             summary="List a student's own submissions",
             description="Returns the calling student's submissions with status and review reason, newest first.",
-            tags=["Flashcards"])
+            tags=["Flashcards"],
+            response_model=list,
+            responses={200: {"description": "List of the student's submissions"}})
 async def my_submissions(student_id: str = Depends(verify_student)):
     """List the student's own submissions.
 

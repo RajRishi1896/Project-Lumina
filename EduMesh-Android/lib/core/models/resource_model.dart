@@ -18,12 +18,10 @@ enum ResourceType {
   notes,
 }
 
-/// A model representing a learning resource with its metadata and download status.
-///
-/// The fallback subject [kFallbackSubject] can be overridden with a localized
-/// string where a [BuildContext] is available.
+/// The fallback subject used when a resource has no subject assigned.
 const String kFallbackSubject = 'General';
 
+/// A model representing a learning resource with its metadata and download status.
 class ResourceModel {
   /// The unique identifier for this resource.
   final String id;

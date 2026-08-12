@@ -33,6 +33,7 @@ _RETENTION_DELTAS = {
 
 
 def _get_db_path():
+    """Return the hub DB path, imported lazily to avoid a circular import."""
     global _DB_PATH
     if _DB_PATH is None:
         from app.database import DB_PATH

@@ -435,6 +435,13 @@
         var courseTopics = [];
         var editingTopicId = null;
 
+        /**
+         * Show/hide and enable/disable a pagination row for the given table.
+         * @param {string} key - Table key ('course' etc.) used to build element ids
+         * @param {number} page - Current page number
+         * @param {number} totalPages - Total page count
+         * @param {number} total - Total row count (0 hides the pagination row)
+         */
         function _updateCoursePagination(key, page, totalPages, total) {
             var el = document.getElementById(key + 'Pagination');
             var pageInfo = document.getElementById(key + 'PageInfo');
@@ -445,6 +452,7 @@
             if (prevBtn) { prevBtn.disabled = page <= 1; prevBtn.style.opacity = page <= 1 ? '0.4' : '1'; }
             if (nextBtn) { nextBtn.disabled = page >= totalPages; nextBtn.style.opacity = page >= totalPages ? '0.4' : '1'; }
         }
+        // Pagination handlers -- move the course page window and re-render.
         function coursePrevPage() { if (_coursePage > 1) { _coursePage--; renderCourses(); } }
         function courseNextPage() { var tp = Math.ceil(_courseFiltered.length / _coursePerPage); if (_coursePage < tp) { _coursePage++; renderCourses(); } }
         function courseChangePerPage(val) { _coursePerPage = parseInt(val, 10) || 20; _coursePage = 1; renderCourses(); }
@@ -676,6 +684,7 @@
             titleInput.focus();
         }
 
+        /** Hide the chapter create/edit form and clear the editing topic id. */
         function hideChapterForm() {
             document.getElementById('chapterForm').classList.add('hidden');
             editingTopicId = null;
@@ -825,7 +834,9 @@
             }
         }
 
-        // Drag-and-drop helpers
+        // Drag-and-drop reorder helpers for the course resource table.
+        // The dragged row index is stashed in dragSrcIndex on dragstart,
+        // consumed on drop, and cleared on dragend.
         var dragSrcIndex = null;
         function handleDragStart(e) {
             dragSrcIndex = parseInt(e.target.closest('tr').dataset.resourceIndex);
@@ -905,6 +916,7 @@
 
         // ── Quiz Builder ──
 
+        /** Open the quiz builder modal with a blank question list. */
         function openQuizBuilder() {
             document.getElementById('quizBuilderModal').classList.remove('hidden');
             document.getElementById('quizTitle').value = '';
@@ -920,10 +932,16 @@
             closeQuestionEditor();
         }
 
+        /** Hide the quiz builder modal. */
         function closeQuizBuilder() {
             document.getElementById('quizBuilderModal').classList.add('hidden');
         }
 
+        /**
+         * Render the quiz question list into the builder modal. Each row shows
+         * the type badge, text preview, and edit/delete buttons; empty list
+         * shows the localised empty-state message.
+         */
         function renderQuizQuestions() {
             var container = document.getElementById('quizQuestionList');
             if (!quizQuestions.length) {
@@ -943,6 +961,12 @@
             }).join('');
         }
 
+        /**
+         * Open the question editor, pre-filling the fields of the question
+         * at index (or a blank MCQ when index is -1) and restoring its
+         * options and image.
+         * @param {number} index - quizQuestions index to edit, or -1 for a new question
+         */
         function openQuestionEditor(index) {
             editingQuestionIndex = index;
             document.getElementById('questionEditor').classList.remove('hidden');
@@ -983,11 +1007,16 @@
             }
         }
 
+        /** Hide the question editor and forget the question being edited. */
         function closeQuestionEditor() {
             document.getElementById('questionEditor').classList.add('hidden');
             editingQuestionIndex = -1;
         }
 
+        /**
+         * React to a change of the question-type dropdown: swap the options
+         * editor for the fill-blanks input and pre-fill True/False options.
+         */
         function onQuestionTypeChange() {
             var type = document.getElementById('qType').value;
             document.getElementById('qOptionsContainer').classList.toggle('hidden', type === 'fill_blanks');
@@ -1001,6 +1030,13 @@
             }
         }
 
+        /**
+         * Render the editable option rows with their correct-answer marker.
+         * Radio/checkbox type depends on single-vs-multi correct answers.
+         * @param {string[]} opts - Option texts to pre-fill (empty strings for blanks)
+         * @param {string|number|string[]} correct - Correct option index, value, or array for multi
+         * @param {string} type - Question type: 'mcq' | 'tf' | 'multi' | 'fill_blanks'
+         */
         function renderOptions(opts, correct, type) {
             var container = document.getElementById('qOptionsList');
             var isMulti = type === 'multi';
@@ -1027,6 +1063,10 @@
             }).join('');
         }
 
+        /**
+         * Read the question editor fields, validate them, and insert or
+         * replace the question in quizQuestions at editingQuestionIndex.
+         */
         function saveQuestion() {
             var type = document.getElementById('qType').value;
             var text = document.getElementById('qText').value.trim();
@@ -1072,17 +1112,23 @@
             renderQuizQuestions();
         }
 
+        /** Remove the question at the given index from quizQuestions and re-render. */
         function deleteQuestion(index) {
             if (editingQuestionIndex === index) closeQuestionEditor();
             quizQuestions.splice(index, 1);
             renderQuizQuestions();
         }
 
+        /** Show the live character count of the question text input. */
         function updateQTextCount() {
             var el = document.getElementById('qTextCount');
             if (el) el.textContent = document.getElementById('qText').value.length;
         }
 
+        /**
+         * Render a read-only preview of the quiz (title, meta, questions with
+         * disabled inputs) into the quiz preview modal and show it.
+         */
         function previewQuiz() {
             var title = document.getElementById('quizTitle').value.trim() || __('courses.quiz_untitled');
             document.getElementById('previewQuizTitle').textContent = title;
@@ -1112,10 +1158,17 @@
             document.getElementById('quizPreviewModal').classList.remove('hidden');
         }
 
+        /** Hide the quiz preview modal. */
         function closePreview() {
             document.getElementById('quizPreviewModal').classList.add('hidden');
         }
 
+        /**
+         * Validate and POST the quiz to the course. Saves the course as a
+         * draft first when no course exists yet, then appends the returned
+         * quiz resource to courseResources.
+         * @returns {Promise<void>}
+         */
         async function saveQuiz() {
             var title = document.getElementById('quizTitle').value.trim();
             if (!title) { showAlert(__('courses.notif.quiz_title_required'), true); return; }
@@ -1166,6 +1219,10 @@
             });
         }
 
+        /**
+         * Download the current quiz as a JSON file via the native save-file
+         * picker when available, otherwise a plain blob download.
+         */
         function exportCourseQuiz() {
             if (quizQuestions.length === 0) { showAlert(__('courses.quiz.export_empty'), true); return; }
             var title = document.getElementById('quizTitle').value.trim() || 'quiz';
@@ -1198,8 +1255,14 @@
             }
         }
 
+        /** Open the hidden file input that feeds handleCourseQuizImport. */
         function importCourseQuiz() { document.getElementById('quizImportFile').click(); }
 
+        /**
+         * Parse the chosen quiz JSON and load it into the builder: replaces
+         * quizQuestions, pre-fills title/settings (using the custom option
+         * for values outside the preset lists), and re-renders.
+         */
         function handleCourseQuizImport(e) {
             var file = e.target.files[0];
             if (!file) return;
@@ -1237,6 +1300,11 @@
         }
 
         // ── Resource file picker ──
+        /**
+         * Open a native file picker and append the chosen file to
+         * courseResources with its type guessed from the extension.
+         * The file object rides along as _file for the upload in importCourseZip.
+         */
         function addResourceFile() {
             var input = document.createElement('input');
             input.type = 'file';
@@ -1257,6 +1325,7 @@
         }
 
         // ── Cover image ──
+        /** Show a data-URL preview of the chosen cover image and the remove button. */
         function onCoverChange() {
             var file = document.getElementById('coverInput').files[0];
             if (!file) return;
@@ -1269,6 +1338,7 @@
             reader.readAsDataURL(file);
         }
 
+        /** Clear the chosen cover image and restore the empty-state preview. */
         function removeCover() {
             document.getElementById('coverInput').value = '';
             document.getElementById('coverPreview').innerHTML = '<span style="font-size:0.75rem;color:var(--text-muted);">' + __('courses.cover_empty') + '</span>';
@@ -1276,6 +1346,11 @@
         }
 
         // ── Save Draft / Publish ──
+        /**
+         * Validate the title and POST/PUT the course with its resources and
+         * optional base64 cover image, then return to the course list.
+         * @param {string} [status] - 'draft' or 'published'; defaults to 'draft'
+         */
         function saveCourse(status) {
             var title = document.getElementById('courseTitle').value.trim();
             if (!title) { showAlert(__('courses.notif.title_required'), true); return; }
@@ -1316,6 +1391,13 @@
             });
         }
 
+        /**
+         * Like saveCourse but promise-based for callers that must wait for
+         * the course id (quiz save). Resolves always -- errors only surface
+         * via showAlert, and currentCourseId is set only on success.
+         * @param {string} status - 'draft' or 'published'
+         * @returns {Promise<void>}
+         */
         function saveCourseAsync(status) {
             return new Promise(function(resolve) {
                 var title = document.getElementById('courseTitle').value.trim();
@@ -1386,6 +1468,10 @@
             }
         }
 
+        /**
+         * Upload a course ZIP to /api/teacher/courses/import with an XHR so
+         * the progress bar can track upload bytes, then reload the list.
+         */
         function importCourseZip() {
             var input = document.getElementById('importZipInput');
             var file = input.files[0];
@@ -1437,6 +1523,11 @@
         }
 
         // ── Init ──
+        /**
+         * Page bootstrap: load translations and initial data, then wire every
+         * button/input listener for the course editor. Registered as the
+         * SPA 'courses' page init via registerPageCleanup.
+         */
         var _initCourses = function() {
             loadTranslations(currentLang);
 

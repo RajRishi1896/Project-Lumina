@@ -55,6 +55,7 @@ _COUNT_CACHE_TTL = 60
 
 
 def _cache_put(key, value):
+    """Store an asset in the bounded asset cache, evicting the oldest entry."""
     if len(_asset_cache) >= _ASSET_CACHE_MAX:
         # ponytail: evict oldest entry, not LRU. Good enough for static assets.
         _asset_cache.pop(next(iter(_asset_cache)))
@@ -91,6 +92,7 @@ _MIME_MAP = {
 
 
 def _get_mime(path: str) -> str:
+    """Return the MIME type for a file extension, defaulting to octet-stream."""
     ext = os.path.splitext(path)[1].lower()
     return _MIME_MAP.get(ext, 'application/octet-stream')
 
@@ -104,11 +106,13 @@ def _rewrite_html_asset_paths(html: str, archive_id: str, base_url: str = '') ->
     baseUrl resolution issues with loadHtmlString.
     """
     def _make_zim_url(asset_path: str) -> str:
+        """Build a /zim/asset URL with an md5 integrity hash for an asset path."""
         asset_path = asset_path.lstrip('/')
         encoded = hashlib.md5(asset_path.encode()).hexdigest()[:8]
         return f'{base_url}/zim/asset?archive_id={archive_id}&path={asset_path}&h={encoded}'
 
     def _replace_attr(match):
+        """Rewrite one src/href/poster/data-src attribute to a /zim/asset URL."""
         attr = match.group(1)
         quote = match.group(2)
         url = match.group(3)
@@ -120,9 +124,11 @@ def _rewrite_html_asset_paths(html: str, archive_id: str, base_url: str = '') ->
                   _replace_attr, html)
 
     def _replace_srcset(match):
+        """Rewrite each candidate URL inside a srcset attribute."""
         attr = match.group(1)
         value = match.group(2)
         def _rewrite_url(m):
+            """Rewrite one srcset candidate URL, preserving its size descriptor."""
             url = m.group(1).strip()
             desc = m.group(2) or ''
             if url.startswith(('http://', 'https://', 'data:', '#', 'javascript:', 'mailto:')):
@@ -134,6 +140,7 @@ def _rewrite_html_asset_paths(html: str, archive_id: str, base_url: str = '') ->
     html = re.sub(r'(srcset=)(["\'])([^"\']+)(["\'])', _replace_srcset, html)
 
     def _replace_css_url(match):
+        """Rewrite one CSS url(...) reference to a /zim/asset URL."""
         prefix = match.group(1)
         url = match.group(2)
         suffix = match.group(3)
@@ -238,6 +245,7 @@ async def _check_fts() -> bool:
     response_model=list[ZimArchiveResponse],
 )
 async def list_zim_archives() -> list[ZimArchiveResponse]:
+    """List all uploaded ZIM archives, newest first."""
     rows = await db_fetch(
         "SELECT id, filename, title, article_count, language, uploaded_at, file_size "
         "FROM zim_archives ORDER BY uploaded_at DESC"
@@ -265,6 +273,16 @@ async def list_zim_articles(
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=500),
 ) -> ZimSearchResponse:
+    """Browse articles in stable alphabetical order with pagination.
+
+    Args:
+        archive_id: Restrict to a single archive; empty means all archives.
+        offset: Pagination offset.
+        limit: Maximum number of articles (1-500).
+
+    Returns:
+        A ZimSearchResponse with articles and the total count.
+    """
     where = "WHERE za.namespace = 'A'"
     params: list = []
     if archive_id:
@@ -413,6 +431,7 @@ async def _merge_peer_search(query: str, limit: int) -> tuple[list[ZimArticleRes
         return [], 0
 
     async def _one_peer(peer: dict) -> tuple[list[ZimArticleResponse], int]:
+        """Query one peer hub and map its results to peer-prefixed ids; never raises."""
         try:
             resp = await fetch_peer_json(
                 peer,
@@ -542,6 +561,7 @@ async def _proxy_peer_page(peer_id: str, article_id: str, request: Request) -> d
     base = str(request.base_url).rstrip('/') if request is not None else ''
 
     def _rewrite_peer_assets(m):
+        """Namespace a peer's absolute /zim/asset URL with this hub's peer id."""
         query = m.group(1)
         parts = parse_qs(query)
         a_id = parts.get("archive_id", [""])[0]
@@ -604,6 +624,7 @@ async def get_zim_page(
         raise HTTPException(status_code=500, detail="ZIM file missing from disk")
 
     def _read_article():
+        """Read the article HTML from the ZIM binary in a worker thread, following redirects."""
         try:
             archive = _get_archive(archive_id, zim_path)
             if not archive.has_entry_by_path(article_path):
@@ -695,6 +716,7 @@ async def get_zim_asset(
         raise HTTPException(status_code=500, detail="ZIM file missing from disk")
 
     def _read_asset():
+        """Read the asset bytes from the ZIM binary in a worker thread, using the cache."""
         try:
             index_key = f"{archive_id}:{path}"
             cached = _asset_cache.get(index_key)
@@ -759,6 +781,11 @@ async def _proxy_peer_thumbnail(peer_id: str, article_id: str) -> Response:
 async def get_zim_thumbnail(
     article_id: str = Query(..., description="The article ID"),
 ):
+    """Serve an article's cached thumbnail image, proxying peer-prefixed ids.
+
+    Raises:
+        HTTPException: 404 if the thumbnail is not on disk.
+    """
     # ponytail: two-branch handler -- peer: prefixed ids proxy to the owning
     # hub; local thumbnails come from the on-disk cache.
     peer_id, orig = _split_peer_id(article_id)

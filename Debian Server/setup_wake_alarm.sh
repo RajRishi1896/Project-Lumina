@@ -1,7 +1,7 @@
 #!/bin/bash
 # Purpose: Install RTC wake alarm service that boots the laptop at 06:00 daily.
 # Usage: sudo bash setup_wake_alarm.sh
-# Idempotent: Yes — overwrites existing service file.
+# Idempotent: Yes -- overwrites existing service file.
 
 set -e
 

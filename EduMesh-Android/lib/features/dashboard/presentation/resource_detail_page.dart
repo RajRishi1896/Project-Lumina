@@ -66,6 +66,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
   List<ResourceModel> items = [];
   bool _loading = true;
   Set<String> _downloadedIds = {};
+  Set<String> _removedIds = {};
   Set<String> _pendingIds = {};
   Set<String> _bookmarkedIds = {};
 
@@ -205,11 +206,13 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       final dlIds = await DBHelper().getDownloadedIds();
       final pdIds = await DBHelper().getPendingIds();
       final bmIds = await DBHelper().getBookmarkedIds();
+      final rmIds = await DBHelper().getRemovedDownloadIds();
       if (mounted) {
         setState(() {
           _downloadedIds = dlIds;
           _pendingIds = pdIds;
           _bookmarkedIds = bmIds;
+          _removedIds = rmIds;
         });
       }
     } catch (_) { } }
@@ -274,6 +277,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
   }
 
   Widget _buildDownloadButton(ResourceModel item, ColorScheme cs) {
+    final l10n = AppLocalizations.of(context)!;
     final resourceId = item.id.toString();
     final isDownloaded = _downloadedIds.contains(resourceId);
     final isPending = _pendingIds.contains(resourceId);
@@ -297,6 +301,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
     }
 
     return IconButton(
+      tooltip: l10n.dialogDownloadTitle,
       icon: Icon(
         isDownloaded ? Icons.check_circle : Icons.download_outlined,
         color: isDownloaded ? LuminaColors.successGreen : cs.primary,
@@ -474,7 +479,10 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                     ),
                   ),
                 )
-              : ListView.builder(
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+                    child: ListView.builder(
                   padding: EdgeInsets.all(AppSpacing.xl.w),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
@@ -579,7 +587,8 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                     final match = downloads.where((d) => d['resource_id'] == item.id);
                                     if (match.isNotEmpty) {
                                       final storedMtime = (match.first['mtime'] as num?)?.toDouble() ?? 0;
-                                      if (item.mtime > storedMtime) {
+                                      final serverRemoved = (match.first['server_removed'] as num? ?? 0) == 1;
+                                      if (item.mtime > storedMtime && !serverRemoved) {
                                         final tempDir = await getTemporaryDirectory();
                                         final dlPath = '${tempDir.path}/update_${item.id}_${DateTime.now().millisecondsSinceEpoch}.tmp';
                                         try {
@@ -625,15 +634,35 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                     ResourceThumbnail(resource: item, size: 48),
                                     SizedBox(width: AppSpacing.md.w),
                                     Expanded(
-                                      child: Text(
-                                        l10n.resourceSubtitle(item.subject, item.grade),
-                                        style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            l10n.resourceSubtitle(item.subject, item.grade),
+                                            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                                          ),
+                                          if (_removedIds.contains(item.id)) ...[
+                                            SizedBox(height: AppSpacing.xs.h),
+                                            Container(
+                                              padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
+                                              decoration: BoxDecoration(
+                                                color: cs.errorContainer,
+                                                borderRadius: BorderRadius.circular(4.r),
+                                              ),
+                                              child: Text(
+                                                l10n.removedFromServerBadge,
+                                                style: tt.labelSmall?.copyWith(color: cs.onErrorContainer),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ),
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
+                                          tooltip: l10n.bottomNavSaved,
                                           icon: Icon(
                                             _bookmarkedIds.contains(item.id) ? Icons.bookmark : Icons.bookmark_border,
                                             color: _bookmarkedIds.contains(item.id) ? cs.primary : cs.onSurfaceVariant,
@@ -669,6 +698,8 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                       ),
                     );
                   },
+                    ),
+                  ),
                 ),
     );
   }

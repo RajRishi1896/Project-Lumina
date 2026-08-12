@@ -83,6 +83,7 @@ async def sync_subject_time(data: SubjectTimeSync, student_id: str = Depends(ver
     if len(data.subjects) > 30:
         raise HTTPException(status_code=400, detail="Too many subjects (max 30)")  # i18n: user-facing error message
     def _replace_subject_minutes(conn):
+        """Swap the student's subject-minute rows for the synced list in one transaction."""
         c = conn.cursor()
         c.execute("DELETE FROM subject_minutes WHERE scholar_id = ?", (student_id,))
         c.executemany("INSERT INTO subject_minutes (scholar_id, subject_name, minutes) VALUES (?, ?, ?)",
@@ -142,6 +143,7 @@ async def update_student_profile(data: dict, student_id: str = Depends(verify_st
     grade = data.get("grade")
     ok = True
     def _update_profile(conn):
+        """Apply the name/grade updates, recording success into ``ok``."""
         nonlocal ok
         try:
             c = conn.cursor()
@@ -204,6 +206,7 @@ async def upload_profile_icon(data: dict, student_id: str = Depends(verify_stude
     filename = f"{safe_id}_icon.{ext}"
     filepath = os.path.join(PROFILE_ICONS_DIR, filename)
     def _write_icon():
+        """Persist the decoded icon bytes to the profile_icons directory."""
         with open(filepath, "wb") as f:
             f.write(raw)
     await asyncio.to_thread(_write_icon)
@@ -328,15 +331,18 @@ async def weekly_breakdown(student_id: str = Depends(verify_student)):
     return {"today_minutes": today_minutes, "weekly_data": {row[0]: row[1] for row in rows}}
 
 
-@router.get("/student/bookmarks", response_model=BookmarkResponse, summary="Get saved bookmarks", description="Returns all bookmarks saved by the student.", tags=["Student"])
+@router.get("/student/bookmarks", response_model=BookmarkResponse, summary="Get saved bookmarks", description="Returns all bookmarks saved by the student.", tags=["Student"], responses={401: {"description": "Unauthorized"}})
 async def get_bookmarks(student_id: str = Depends(verify_student)):
+    """Return the student's saved bookmarks with their cached metadata."""
     rows = await db_fetch("SELECT resource_id, title, subject, grade, resource_type FROM student_bookmarks WHERE scholar_id = ?", (student_id,))
     return {"bookmarks": [BookmarkItem(resource_id=r[0], title=r[1] or "", subject=r[2] or "", grade=r[3] or "", resource_type=r[4] or "") for r in rows]}
 
 
-@router.post("/student/sync-bookmarks", response_model=StatusResponse, summary="Sync bookmarks", description="Replaces all server-side bookmarks with the provided list.", tags=["Sync"])
+@router.post("/student/sync-bookmarks", response_model=StatusResponse, summary="Sync bookmarks", description="Replaces all server-side bookmarks with the provided list.", tags=["Sync"], responses={401: {"description": "Unauthorized"}})
 async def sync_bookmarks(data: BookmarkSync, student_id: str = Depends(verify_student)):
+    """Replace the student's server-side bookmarks with the synced list."""
     def _replace(conn):
+        """Delete old bookmarks and insert the synced ones in one transaction."""
         c = conn.cursor()
         c.execute("DELETE FROM student_bookmarks WHERE scholar_id = ?", (student_id,))
         if data.bookmarks:
@@ -347,8 +353,9 @@ async def sync_bookmarks(data: BookmarkSync, student_id: str = Depends(verify_st
     return {"status": "ok"}
 
 
-@router.get("/student/quiz-best-score/{course_id}/{resource_id}", response_model=QuizBestScoreResponse, summary="Get best quiz score", description="Returns the student's best score and attempt count for a quiz.", tags=["Student"])
+@router.get("/student/quiz-best-score/{course_id}/{resource_id}", response_model=QuizBestScoreResponse, summary="Get best quiz score", description="Returns the student's best score, best attempt id, and total attempt count for a quiz.", tags=["Student"], responses={401: {"description": "Unauthorized"}})
 async def get_quiz_best_score(course_id: str, resource_id: str, student_id: str = Depends(verify_student)):
+    """Return the student's best recorded score for a quiz and how many attempts were made."""
     best = await db_fetch_one("SELECT best_score, best_attempt_id FROM quiz_best_scores WHERE scholar_id = ? AND course_id = ? AND resource_id = ?", (student_id, course_id, resource_id))
     count_row = await db_fetch_one("SELECT COUNT(*) FROM quiz_attempts WHERE student_id = ? AND course_id = ? AND resource_id = ?", (student_id, course_id, resource_id))
     return {
@@ -358,8 +365,9 @@ async def get_quiz_best_score(course_id: str, resource_id: str, student_id: str 
     }
 
 
-@router.post("/student/quiz-best-score/{course_id}/{resource_id}", response_model=StatusResponse, summary="Update best quiz score", description="Updates the best score if the new score is higher.", tags=["Student"])
+@router.post("/student/quiz-best-score/{course_id}/{resource_id}", response_model=StatusResponse, summary="Update best quiz score", description="Upserts the student's best score, keeping the existing value when the new score is not higher.", tags=["Student"], responses={401: {"description": "Unauthorized"}})
 async def update_quiz_best_score(course_id: str, resource_id: str, data: QuizBestScoreUpdate, student_id: str = Depends(verify_student)):
+    """Record a new best score for a quiz if it beats the stored one."""
     existing = await db_fetch_one("SELECT best_score FROM quiz_best_scores WHERE scholar_id = ? AND course_id = ? AND resource_id = ?", (student_id, course_id, resource_id))
     if existing and (existing["best_score"] or 0) >= data.score:
         return {"status": "ok"}

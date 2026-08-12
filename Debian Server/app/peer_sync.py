@@ -336,6 +336,7 @@ async def fetch_file(peer: dict, resource_id: str, range_header: str | None) -> 
     }
 
     async def _body():
+        """Stream the peer's response body in 64KB chunks, closing both handles."""
         try:
             async for chunk in resp.aiter_bytes(65536):
                 yield chunk
@@ -436,6 +437,7 @@ async def _stream_local_file(file_path: str, range_header: str | None):
     length = end - start + 1
 
     async def _chunks():
+        """Yield the requested byte range in 64KB chunks, closing the handle afterwards."""
         fh = await asyncio.to_thread(open, file_path, "rb")
         try:
             await asyncio.to_thread(fh.seek, start)
@@ -505,6 +507,7 @@ def discover_peers_blocking(timeout: float = 2.5) -> list[dict]:
     own_ips = _own_ips()
 
     def _on_change(zc, stype, name, state_change):
+        """Record newly-announced EduMeshHub services that are not this host."""
         if state_change is not ServiceStateChange.Added or not name.startswith("EduMeshHub"):
             return
         info = zc.get_service_info(stype, name)
