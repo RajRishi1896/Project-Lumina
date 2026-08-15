@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/network/api_client.dart';
@@ -9,7 +8,7 @@ import '../../../core/network/api_client.dart';
 ///
 /// Wraps [FlutterSecureStorage] to persist user id, username, session token,
 /// grade, and a local user database. Performs hub-verified login with offline
-/// fallback using a SHA-256 hashed local user list.
+/// fallback using the stored session token.
 class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
@@ -25,8 +24,6 @@ class AuthService {
   static const String _persistentKeyKey = 'lumina_persistent_key';
   static const String _gradeKey = 'lumina_grade';
   static const String _displayNameKey = 'lumina_display_name';
-
-  String _hashPassword(String password) => sha256.convert(utf8.encode(password)).toString();
 
   /// Extracts a human-readable error message from a server response.
   String _extractError(dynamic response) {
@@ -63,9 +60,9 @@ class AuthService {
   /// Registers a new student account with the hub and persists credentials locally.
   ///
   /// Sends [username] and [password] to the `/register` endpoint. On success,
-  /// stores the returned user id, session token, and a SHA-256 hashed copy of
-  /// the password in secure storage for offline fallback. Returns `null` on
-  /// success, or an error message string on failure.
+  /// stores the returned user id, session token, and username in secure
+  /// storage for offline recognition. Returns `null` on success, or an error
+  /// message string on failure.
   Future<String?> register({
     required String username,
     required String password,
@@ -93,7 +90,6 @@ class AuthService {
       final existing = users.indexWhere((u) => u['username'] == username);
       final newUser = {
         'username': username,
-        'password': _hashPassword(password),
         'userId': hubGeneratedId,
       };
       
@@ -125,60 +121,18 @@ class AuthService {
 
   /// Authenticates the student against the hub with offline fallback support.
   ///
-  /// First attempts a local credential match against the persisted user list.
-  /// On a new device, contacts the `/student/token` endpoint for hub-verified
-  /// login. Returns `'ok'` on full success, `'local_only'` when the server is
-  /// unreachable but credentials match locally, `'reset_required'` when the
-  /// server indicates a password reset is needed, or `null` on failure.
+  /// First attempts hub-verified login via `/student/token`. When the hub is
+  /// unreachable and the username is known to this device, falls back to the
+  /// stored session token (offline login). Returns `'ok'` on full success,
+  /// `'local_only'` when the server is unreachable but the stored token is
+  /// available, `'reset_required'` when the server indicates a password reset
+  /// is needed, or `null` on failure.
   Future<String?> login({
     required String username,
     required String password,
   }) async {
     try {
-      final rawInput = _hashPassword(password);
-
-      // 1. Try Local First
-      List<Map<String, dynamic>> users = await _getUsers();
-      final localUser = users.firstWhere(
-        (u) => u['username'] == username && u['password'] == rawInput,
-        orElse: () => <String, dynamic>{},
-      );
-
-      if (localUser.isNotEmpty) {
-        try {
-          final loginResp = await ApiClient.post('/student/token', data: {'username': username, 'password': password});
-          if (loginResp.data is Map) {
-            final data = loginResp.data as Map;
-            final token = data['token']?.toString() ?? '';
-            if (token.isNotEmpty) {
-              final grade = data['grade']?.toString() ?? '';
-              if (grade.isNotEmpty) await _secureStorage.write(key: _gradeKey, value: grade);
-              final name = data['name']?.toString();
-              if (name != null && name.isNotEmpty) await _secureStorage.write(key: _displayNameKey, value: name);
-              final refreshToken = data['refresh_token']?.toString();
-              final persistentKey = data['persistent_key']?.toString();
-              if (refreshToken != null && refreshToken.isNotEmpty) await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
-              if (persistentKey != null && persistentKey.isNotEmpty) await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
-              ApiClient.setAuth(token);
-              unawaited(_saveSession(localUser['userId'], username));
-              return 'ok';
-            }
-          }
-        } on DioException catch (e) {
-          final isServerError = e.response?.statusCode != null;
-          if (isServerError) {
-            return null;
-          }
-          unawaited(_saveSession(localUser['userId'], username));
-          return 'local_only';
-        } catch (_) {
-          unawaited(_saveSession(localUser['userId'], username));
-          return 'local_only';
-        }
-        return null;
-      }
-
-      // On new device, try to get student info from server
+      // 1. Try hub-verified login first
       try {
         final loginResp = await ApiClient.post('/student/token', data: {
           'username': username,
@@ -204,15 +158,52 @@ class AuthService {
             }
             if (grade != null && grade.isNotEmpty) await _secureStorage.write(key: _gradeKey, value: grade);
             ApiClient.setAuth(token);
+            await _rememberUser(username, scholarId);
             return resetReq ? 'reset_required' : 'ok';
           }
         }
-      } catch (_) { }
+      } on DioException catch (e) {
+        // Server unreachable (no status code) -- try offline login below.
+        if (e.response?.statusCode != null) return null;
+      } catch (_) {
+        // Non-Dio failure (e.g. timeout) -- try offline login below.
+      }
+
+      // 2. Offline fallback: known username on this device + stored token
+      final users = await _getUsers();
+      final known = users.any((u) => u['username'] == username);
+      final storedToken = await _secureStorage.read(key: _sessionTokenKey);
+      if (known && storedToken != null && storedToken.isNotEmpty) {
+        final userId = users.firstWhere(
+          (u) => u['username'] == username,
+          orElse: () => <String, dynamic>{},
+        )['userId']?.toString();
+        if (userId != null && userId.isNotEmpty) {
+          ApiClient.setAuth(storedToken);
+          await _saveSession(userId, username);
+          return 'local_only';
+        }
+      }
 
       return null;
     } catch (e) {
       return null;
     }
+  }
+
+  /// Records a successfully verified username/userId pair in the local user
+  /// list so offline login can recognise this device.
+  Future<void> _rememberUser(String username, String userId) async {
+    try {
+      final users = await _getUsers();
+      final existing = users.indexWhere((u) => u['username'] == username);
+      if (existing >= 0) {
+        users[existing] = {'username': username, 'userId': userId};
+      } else {
+        users.add({'username': username, 'userId': userId});
+      }
+      await _secureStorage.write(key: _usersListKey, value: jsonEncode(users));
+    } catch (_) {}
   }
 
   /// The stored display name for the logged-in student, or `null` if not set.
