@@ -265,7 +265,10 @@ class _CoursesTabState extends State<_CoursesTab> {
 
   Widget _buildSectionHeader(ColorScheme cs, TextTheme tt, String title, {Widget? trailing}) {
     return Row(children: [
-      Text(title, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+      Flexible(
+        child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+      ),
       const Spacer(),
       if (trailing != null) trailing,
     ]);
@@ -394,7 +397,7 @@ class _CoursesTabState extends State<_CoursesTab> {
 
   Widget _buildEnrolledList(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     return SizedBox(
-      height: 200.h,
+      height: 224.h * MediaQuery.textScalerOf(context).scale(1),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _enrolledCourses.length,
@@ -412,16 +415,17 @@ class _CoursesTabState extends State<_CoursesTab> {
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
               child: Padding(padding: EdgeInsets.all(AppSpacing.lg.w), child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Container(height: 72.h, decoration: BoxDecoration(color: cs.surfaceContainerHighest,
+                  Container(height: 48.h, decoration: BoxDecoration(color: cs.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r)),
-                    child: Center(child: Icon(Icons.school, size: 28.sp, color: cs.primary))),
+                    child: Center(child: Icon(Icons.school, size: 24.sp, color: cs.primary))),
                   SizedBox(height: AppSpacing.sm.h),
-                  Text(course.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                  Text(course.title, maxLines: 1, overflow: TextOverflow.ellipsis,
                     style: tt.titleSmall?.copyWith(color: cs.onSurface)),
                   SizedBox(height: AppSpacing.xs.h),
                   LinearProgressIndicator(value: pct, backgroundColor: cs.surfaceContainerHighest),
                   SizedBox(height: AppSpacing.xs.h),
                   Text(l10n.browseProgressFormat(completedCount, totalResources),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
                     style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                   const Spacer(),
                   SizedBox(width: double.infinity, child: FilledButton(
@@ -438,7 +442,7 @@ class _CoursesTabState extends State<_CoursesTab> {
   }
 
   Widget _buildHorizontalList(List<Course> courses, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
-    return SizedBox(height: 280.h, child: ListView.separated(
+    return SizedBox(height: 280.h * MediaQuery.textScalerOf(context).scale(1), child: ListView.separated(
       scrollDirection: Axis.horizontal, itemCount: courses.length,
       separatorBuilder: (_, __) => SizedBox(width: AppSpacing.md.w),
       itemBuilder: (ctx, i) => SizedBox(width: 200.w, child: _buildCourseCard(courses[i], cs, tt, l10n)),
@@ -452,18 +456,19 @@ class _CoursesTabState extends State<_CoursesTab> {
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
       child: Padding(padding: EdgeInsets.all(AppSpacing.lg.w), child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(height: 80.h, decoration: BoxDecoration(color: cs.surfaceContainerHighest,
+          Container(height: 64.h, decoration: BoxDecoration(color: cs.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r)),
-            child: Center(child: Icon(Icons.school, size: 32.sp, color: cs.primary))),
+            child: Center(child: Icon(Icons.school, size: 28.sp, color: cs.primary))),
           SizedBox(height: AppSpacing.sm.h),
-          Text(course.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+          Text(course.title, maxLines: 1, overflow: TextOverflow.ellipsis,
             style: tt.titleSmall?.copyWith(color: cs.onSurface)),
           SizedBox(height: AppSpacing.xs.h),
-          Row(children: [
-            Chip(label: Text(course.subject, style: tt.labelSmall),
+          Wrap(spacing: AppSpacing.xs.w, runSpacing: AppSpacing.xs.h, children: [
+            Chip(label: Text(course.subject, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: tt.labelSmall),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, visualDensity: VisualDensity.compact, padding: EdgeInsets.zero),
-            SizedBox(width: AppSpacing.xs.w),
-            Chip(label: Text(l10n.browseClassLabel(course.grade), style: tt.labelSmall),
+            Chip(label: Text(l10n.browseClassLabel(course.grade), maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: tt.labelSmall),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, visualDensity: VisualDensity.compact, padding: EdgeInsets.zero),
           ]),
           const Spacer(),

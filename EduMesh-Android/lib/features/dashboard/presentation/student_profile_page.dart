@@ -349,15 +349,24 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         children: [
           Icon(Icons.person_rounded, color: cs.primary, size: 24.sp),
           SizedBox(width: AppSpacing.md.w),
-          Text(l10n.headerMyProfile,
-              style: tt.titleLarge?.copyWith(
-                  color: cs.primary)),
+          Flexible(
+            child: Text(l10n.headerMyProfile,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tt.titleLarge?.copyWith(
+                    color: cs.primary)),
+          ),
           const Spacer(),
           Icon(Icons.bar_chart_rounded, color: cs.primary, size: 20.sp),
           SizedBox(width: AppSpacing.xs.w),
-          Text(l10n.headerAnalytics,
-              style: tt.titleSmall?.copyWith(
-                  color: cs.onSurfaceVariant)),
+          Flexible(
+            child: Text(l10n.headerAnalytics,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: tt.titleSmall?.copyWith(
+                    color: cs.onSurfaceVariant)),
+          ),
         ],
       ),
     );

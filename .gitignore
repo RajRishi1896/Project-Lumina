@@ -87,6 +87,7 @@ hooks/
 skills/
 .opencode/
 opencode.json
+.openchamber/
 
 # === Dev scratch (not part of the product) ===
 scripts/

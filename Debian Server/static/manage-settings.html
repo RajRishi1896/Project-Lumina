@@ -150,7 +150,7 @@
 
             <!-- Log table -->
             <div style="border: 1px solid var(--outline); border-radius: var(--radius-sm); overflow: hidden;">
-                <div style="max-height: 500px; overflow-y: auto;">
+                <div class="table-wrapper" style="max-height: 500px; overflow-y: auto;">
                     <table class="table" style="width: 100%;">
                         <thead>
                             <tr>
@@ -275,7 +275,7 @@
             </div>
             <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 1rem;" data-i18n="settings.peers.description">Connect this hub to other Lumina hubs to share approved resources. Only approved resources are shared -- student data never leaves the hub.</p>
             <div id="peersNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; border: 1px solid transparent;"></div>
-            <div style="border: 1px solid var(--outline); border-radius: var(--radius-sm); overflow: hidden;">
+            <div class="table-wrapper" style="border: 1px solid var(--outline); border-radius: var(--radius-sm);">
                 <table class="table" style="width: 100%;">
                     <thead>
                         <tr>
@@ -783,7 +783,7 @@
                 tbody.innerHTML = peers.map(function(p) {
                     return '<tr>' +
                         '<td data-label="' + __('settings.peers.name') + '" style="padding:0.5rem 0.6rem;font-size:0.82rem;font-weight:700;">' + esc(p.name || p.base_url) + '</td>' +
-                        '<td data-label="' + __('settings.peers.address') + '" style="padding:0.5rem 0.6rem;font-size:0.78rem;color:var(--text-muted);word-break:break-all;">' + esc(p.base_url) + '</td>' +
+                        '<td data-label="' + __('settings.peers.address') + '" title="' + esc(p.base_url) + '" style="padding:0.5rem 0.6rem;font-size:0.78rem;color:var(--text-muted);word-break:break-all;white-space:normal;">' + esc(p.base_url) + '</td>' +
                         '<td data-label="' + __('settings.peers.resources') + '" style="padding:0.5rem 0.6rem;font-size:0.82rem;">' + (p.resource_count || 0) + '</td>' +
                         '<td data-label="' + __('settings.peers.last_sync') + '" style="padding:0.5rem 0.6rem;font-size:0.78rem;color:var(--text-muted);white-space:nowrap;">' + (p.last_sync ? _formatTimestamp(p.last_sync) : __('students.never')) + '</td>' +
                         '<td style="padding:0.5rem 0.6rem;text-align:right;white-space:nowrap;">' +

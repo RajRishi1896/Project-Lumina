@@ -255,6 +255,7 @@
   "sidebar.help": "Guide enseignant",
   "sidebar.home": "Accueil",
   "sidebar.logout": "Déconnexion",
+  "sidebar.menu_toggle": "Menu",
   "sidebar.settings": "Paramètres",
   "sidebar.students": "Étudiants",
   "courses.add_quiz": "Ajouter un quiz",

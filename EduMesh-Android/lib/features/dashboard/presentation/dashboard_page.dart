@@ -161,7 +161,6 @@ class _DashboardPageState extends State<DashboardPage> {
       final cachedSize = prefs.getInt('cached_app_size_bytes');
       if (cachedSize != null && cachedSize > 0) {
         _applyStorageValues(cachedSize);
-        // Re-compute in background and cache for next time
         unawaited(_computeAndCacheStorage());
         return;
       }
@@ -326,7 +325,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
           ),
           const Spacer(),
-          _buildServerStatusBadge(),
+          Flexible(child: _buildServerStatusBadge()),
           SizedBox(width: AppSpacing.sm.w),
           Semantics(
             button: true,
@@ -356,7 +355,8 @@ class _DashboardPageState extends State<DashboardPage> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
       decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(AppSpacing.radiusFull), border: Border.all(color: textColor)),
-      child: Text(_isChecking ? l10n.serverStatusChecking : (_isConnected ? l10n.serverStatusConnected : l10n.serverStatusDisconnected), style: tt.bodySmall?.copyWith(color: textColor)),
+      child: Text(_isChecking ? l10n.serverStatusChecking : (_isConnected ? l10n.serverStatusConnected : l10n.serverStatusDisconnected),
+        maxLines: 1, overflow: TextOverflow.ellipsis, style: tt.bodySmall?.copyWith(color: textColor)),
     );
   }
 
@@ -474,7 +474,7 @@ class _DashboardPageState extends State<DashboardPage> {
         Text(l10n.badgeAchievements, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         SizedBox(
-          height: 112.h,
+          height: 128.h * MediaQuery.textScalerOf(context).scale(1),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: entries.length,
@@ -553,7 +553,7 @@ class _DashboardPageState extends State<DashboardPage> {
         Text(l10n.sectionRecentlyAccessed, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         SizedBox(
-          height: 104.h,
+          height: 124.h * MediaQuery.textScalerOf(context).scale(1),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _recentResources.length,
@@ -648,7 +648,7 @@ class _DashboardPageState extends State<DashboardPage> {
               maxCrossAxisExtent: 200,
               crossAxisSpacing: AppSpacing.sm.w,
               mainAxisSpacing: AppSpacing.sm.h,
-              childAspectRatio: 1.1,
+              childAspectRatio: 1.05,
             ),
             itemBuilder: (context, index) {
               final name = _subjects[index]['name'] as String? ?? '';

@@ -255,6 +255,7 @@
   "sidebar.help": "Teacher Guide",
   "sidebar.home": "Home",
   "sidebar.logout": "Log out",
+  "sidebar.menu_toggle": "Menu",
   "sidebar.settings": "Settings",
   "sidebar.students": "Students",
   "courses.add_quiz": "Add Quiz",

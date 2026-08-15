@@ -147,6 +147,8 @@ class _WelcomePageState extends State<WelcomePage> {
                     SizedBox(width: AppSpacing.sm.w),
                     Text(
                       l10n.illustrationBadgeNoInternet,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: tt.labelSmall?.copyWith(
                         color: cs.onSurfaceVariant,
                       ),
@@ -322,18 +324,18 @@ class _WelcomePageState extends State<WelcomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _StatusItem(
+          Flexible(child: _StatusItem(
             icon: Icons.wifi,
             label: l10n.statusHubStrength,
             value: hubText,
             cs: cs,
-          ),
-          _StatusItem(
+          )),
+          Flexible(child: _StatusItem(
             icon: Icons.storage,
             label: l10n.statusLocalStorage,
             value: storageText,
             cs: cs,
-          ),
+          )),
         ],
       ),
     );
@@ -380,6 +382,8 @@ class _LanguageButton extends StatelessWidget {
           children: [
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: tt.titleSmall?.copyWith(
                 color: isSelected 
                     ? cs.primary 
@@ -447,23 +451,29 @@ class _StatusItem extends StatelessWidget {
       children: [
         Icon(icon, color: cs.secondary, size: 24.sp),
         SizedBox(width: AppSpacing.sm.w),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: tt.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant,
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tt.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
-            ),
-            Text(
-              value.toUpperCase(),
-              style: tt.labelSmall?.copyWith(
-                fontWeight: AppSpacing.weightDisplay,
-                color: cs.onSurfaceVariant,
+              Text(
+                value.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tt.labelSmall?.copyWith(
+                  fontWeight: AppSpacing.weightDisplay,
+                  color: cs.onSurfaceVariant,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

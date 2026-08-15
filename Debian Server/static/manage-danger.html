@@ -23,7 +23,7 @@
             <div class="card">
                 <div class="card-title" data-i18n="danger.manage_students" style="color: var(--danger); font-weight: 800;">Manage Student Accounts</div>
                 <div id="studentDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-                <div class="flex items-center gap-3 mb-4">
+                <div class="flex flex-wrap items-center gap-3 mb-4">
                     <div style="flex: 1; position: relative;">
                         <label for="studentDangerSearch" class="sr-only" data-i18n="danger.search_students_label">Search students</label>
                         <input type="text" id="studentDangerSearch" data-i18n="danger.search_students_placeholder" placeholder="Search by student name or scholar ID..." class="form-input" style="padding-left: 2.5rem;">
@@ -73,7 +73,7 @@
                 <div class="card-title" data-i18n="danger.manage_admins" style="color: var(--danger); font-weight: 800;">Manage Admin Accounts</div>
                 <div id="adminDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
                 <p data-i18n="danger.manage_admins_desc" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;">Manage admin accounts for the hub.</p>
-                <div class="flex items-center gap-3 mb-4">
+                <div class="flex flex-wrap items-center gap-3 mb-4">
                     <div style="flex: 1; position: relative;">
                         <label for="adminDangerSearch" class="sr-only" data-i18n="danger.search_admins_label">Search admins</label>
                         <input type="text" id="adminDangerSearch" data-i18n="danger.search_admins_placeholder" placeholder="Search by username, name or department..." class="form-input" style="padding-left: 2.5rem;">
@@ -124,7 +124,7 @@
             <div class="card">
                 <div class="card-title" data-i18n="danger.manage_teachers" style="color: var(--danger); font-weight: 800;">Manage Teacher Accounts</div>
                 <div id="teacherDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-                <div class="flex items-center gap-3 mb-4">
+                <div class="flex flex-wrap items-center gap-3 mb-4">
                     <div style="flex: 1; position: relative;">
                         <label for="teacherDangerSearch" class="sr-only" data-i18n="danger.search_teachers_label">Search teachers</label>
                         <input type="text" id="teacherDangerSearch" data-i18n="danger.search_teachers_placeholder" placeholder="Search by username, full name or department..." class="form-input" style="padding-left: 2.5rem;">
@@ -174,7 +174,7 @@
             <div class="card">
                 <div class="card-title" data-i18n="danger.manage_grades" style="color: var(--danger); font-weight: 800;">Manage Grades</div>
                 <div id="gradeDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-                <div class="flex items-center gap-3 mb-4">
+                <div class="flex flex-wrap items-center gap-3 mb-4">
                     <div style="flex: 1; position: relative;">
                         <label for="dangerGradeSearch" class="sr-only" data-i18n="danger.search_grades_label">Search grades</label>
                         <input type="text" id="dangerGradeSearch" data-i18n="danger.search_grades_placeholder" placeholder="Search grades..." class="form-input" style="padding-left: 2rem;">
@@ -220,7 +220,7 @@
             <div class="card">
                 <div class="card-title" data-i18n="danger.manage_subjects" style="color: var(--danger); font-weight: 800;">Manage Subjects</div>
                 <div id="subjectDangerNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
-                <div class="flex items-center gap-3 mb-4">
+                <div class="flex flex-wrap items-center gap-3 mb-4">
                     <div style="flex: 1; position: relative;">
                         <label for="dangerSubjectSearch" class="sr-only" data-i18n="danger.search_subjects_label">Search subjects</label>
                         <input type="text" id="dangerSubjectSearch" data-i18n="danger.search_subjects_placeholder" placeholder="Search subjects..." class="form-input" style="padding-left: 2rem;">
@@ -983,7 +983,7 @@
                     return '<tr>' +
                         '<td data-label="' + __('danger.table_full_name') + '"><strong>' + esc(a.name) + '</strong></td>' +
                         '<td data-label="' + __('danger.table_username') + '">' + esc(a.username) + '</td>' +
-                        '<td data-label="' + __('danger.table_scholar_id') + '" style="font-family: monospace; font-size: 0.8rem;">' + esc(a.scholar_id || '') + '</td>' +
+                        '<td data-label="' + __('danger.table_scholar_id') + '" style="font-family: monospace; font-size: 0.8rem;"><code>' + esc(a.scholar_id || '') + '</code></td>' +
                         '<td data-label="' + __('danger.table_department') + '">' + esc(a.department) + '</td>' +
                         '<td data-label="' + __('danger.table_status') + '">' + (a.reset_required ? '<span style="color: var(--warning); font-weight: 700;">' + __('danger.status_reset_pending') + '</span>' : '<span style="color: var(--success);">' + __('danger.status_active') + '</span>') + '</td>' +
                         '<td data-label="' + __('danger.table_action') + '" style="text-align: left;">' +

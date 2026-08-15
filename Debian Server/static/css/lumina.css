@@ -269,6 +269,7 @@ body {
 }
 .table tbody tr:hover { background: var(--outline); }
 .table td:before { display: none; }
+.table-wrapper { overflow-x: auto; }
 
 /* === Bare Table Styles (global table without .table class) === */
 td, th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -429,7 +430,7 @@ td, th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .search-refresh-row #btn-loadStudents { flex: 0 0 auto; padding: 0 0.625rem; height: 44px; min-height: 0; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem; }
 .filter-row .refresh-label { display: inline; }
 .filter-label { display: block; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem; }
-.at-risk-days-row { display: none; align-items: center; gap: 0.375rem; white-space: nowrap; font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; }
+.at-risk-days-row { display: none; align-items: center; gap: 0.375rem; flex-wrap: wrap; white-space: nowrap; font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; }
 .at-risk-days-row.visible { display: flex; }
 .filter-row .search-inner { display: flex; align-items: center; gap: 0.625rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); background: var(--bg-input); padding: 0 0.75rem; }
 [data-theme="dark"] .filter-row .search-inner { background: var(--bg-input); }
@@ -547,6 +548,7 @@ td, th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .student-name { font-weight: 700; font-size: 1rem; color: var(--teal); text-decoration: none; }
 .student-meta { font-size: 0.85rem; color: var(--text-muted); }
 .scholar-id { font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.75rem; color: var(--text-muted); background: var(--outline); padding: 0.1rem 0.4rem; border-radius: 4px; }
+.scholar-id, td code { white-space: normal; overflow-wrap: anywhere; }
 .student-card.at-risk { border-left: 3px solid var(--danger); }
 .at-risk-icon { display: inline-flex; align-items: center; color: var(--danger); margin-right: 0.35rem; }
 .at-risk-tooltip { font-size: 0.75rem; color: var(--danger); font-weight: 400; }
@@ -650,6 +652,9 @@ td, th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .right-0 { right: 0; }
 .left-0 { left: 0; }
 .z-50 { z-index: 50; }
+.bg-surface { background: var(--bg-surface); }
+.top-full { top: 100%; }
+.max-h-50 { max-height: 12.5rem; }
 
 /* === Border Utilities === */
 .border { border-width: 1px; border-style: solid; }
@@ -780,7 +785,6 @@ aside nav {
 .theme-toggle svg { width: 18px; height: 18px; flex-shrink: 0; }
 
 /* === Language Picker === */
-#langPickerWrap { position: fixed; top: 0.75rem; right: 3.5rem; z-index: 500; }
 #langPickerBtn { display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.75rem; border-radius: 8px; font-family: inherit; font-size: 0.8125rem; font-weight: 700; background: transparent; border: 1px solid var(--outline); color: var(--on-surface); cursor: pointer; transition: all 0.2s; }
 #langPickerBtn:hover { background: var(--outline); }
 #langPickerBtn svg { width: 16px; height: 16px; flex-shrink: 0; }
@@ -884,6 +888,25 @@ html[data-i18n-ready] aside [data-i18n] { visibility: visible; }
 .bottom-nav-item.danger.active::after { background: var(--danger); }
 .bottom-nav-item.danger .danger-icon,
 .bottom-nav-item.danger svg { color: inherit; }
+
+/* === Mobile Menu Toggle Button (JS-injected by renderLayout, visible ≤768px) === */
+.mobile-menu-btn {
+    display: none;
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 1200;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--outline);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+.mobile-menu-btn svg { width: 22px; height: 22px; }
 
 /* === Student Detail Page === */
 .student-detail-container { width: 100%; max-width: 900px; }
@@ -995,6 +1018,9 @@ body > nav, #welcome-content nav {
     color: var(--text-secondary);
     margin-bottom: 1rem;
 }
+.welcome-container .text-xs,
+.welcome-container .card-label { font-size: 0.875rem; }
+.welcome-guide .card-label { font-size: 0.875rem; }
 .status-row {
     display: flex;
     align-items: center;
@@ -1003,7 +1029,7 @@ body > nav, #welcome-content nav {
 }
 .status-row h2 { font-size: 1.125rem; font-weight: 700; color: var(--primary); }
 .meter { margin-top: 0.75rem; }
-.meter-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.375rem; }
+.meter-header { display: flex; justify-content: space-between; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.375rem; }
 .meter-bar { height: 6px; background: var(--outline); border-radius: 3px; overflow: hidden; }
 .meter-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
 
@@ -1020,7 +1046,7 @@ body > nav, #welcome-content nav {
 .pwd-toggle { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.25rem; display: flex; }
 
 /* === Welcome Lang Option === */
-.welcome-lang-option { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.8125rem; color: var(--on-surface); transition: background 0.15s; }
+.welcome-lang-option { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.875rem; color: var(--on-surface); transition: background 0.15s; }
 .welcome-lang-option:hover { background: rgba(0,112,131,0.08); }
 .welcome-lang-option.active { background: var(--teal); color: #fff; }
 .welcome-lang-option .lang-code-label { font-size: 0.7rem; color: var(--text-muted); }
@@ -1039,12 +1065,18 @@ body > nav, #welcome-content nav {
 .guide-content p { color: var(--text-secondary); font-size: 0.875rem; line-height: 1.7; margin: 0; }
 .guide-content ol, .guide-content ul { padding-left: 0; margin: 0.5rem 0; list-style-position: inside; }
 
+/* === Tablet Responsive (769-1024px) === */
+@media (max-width: 1024px) {
+    main { padding: 1.5rem; }
+}
+
 /* === Mobile Responsive (consolidated) === */
 @media (max-width: 768px) {
     body { flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     *, *::before, *::after { transition: none !important; animation: none !important; }
     .mobile-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 999; }
     .mobile-overlay.active { display: block; }
+    .mobile-menu-btn { display: flex; }
     main { margin-left: 0; padding: 1.5rem 1rem 5rem; width: 100%; max-width: 100%; overflow-x: hidden; }
     aside { width: 280px; transform: translateX(-100%); position: fixed; top: 0; left: 0; z-index: 1000; height: 100vh; padding: 1.5rem 1rem; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
     aside.open { transform: translateX(0); }
@@ -1086,6 +1118,7 @@ body > nav, #welcome-content nav {
     .search-wrap-inline { min-width: 0; }
     .grid-cols-2 { grid-template-columns: 1fr; }
     .grid-cols-3 { grid-template-columns: 1fr; }
+    .welcome-container .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
     .security-form { grid-template-columns: 1fr; }
     .help-section { padding: 1rem; }
     .help-section ul, .help-section ol { padding-left: 1.25rem; }
@@ -1107,6 +1140,10 @@ body > nav, #welcome-content nav {
     .hero h1 { font-size: 1.75rem; }
 }
 
+@media (max-width: 768px) and (min-width: 481px) {
+    .stat-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
 @media (max-width: 480px) {
     main { padding: 1rem 0.75rem; }
     .stat-grid { grid-template-columns: 1fr; gap: 0.5rem; }
@@ -1115,4 +1152,10 @@ body > nav, #welcome-content nav {
     .subject-name { min-width: 60px; font-size: 0.75rem; }
     .hero { padding: 2rem 5% 2.5rem; }
     .hero h1 { font-size: 1.5rem; }
+    body { overflow-x: hidden; }
+    body > nav, #welcome-content nav { flex-wrap: wrap; }
+    .nav-actions { flex-wrap: wrap; }
+    .dl-label { display: none; }
+    .toast-container { left: 1rem; right: 1rem; width: auto; }
+    #bottomNav { flex-wrap: wrap; }
 }

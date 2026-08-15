@@ -408,19 +408,24 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildConnectionBadge() {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.xs.h),
-      decoration: BoxDecoration(
-        color: _isConnected ? cs.tertiaryContainer.withValues(alpha: 0.1) : cs.errorContainer.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg.r),
-        border: Border.all(
-          color: _isConnected ? cs.tertiary : cs.error,
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: 200.w),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.xs.h),
+        decoration: BoxDecoration(
+          color: _isConnected ? cs.tertiaryContainer.withValues(alpha: 0.1) : cs.errorContainer.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg.r),
+          border: Border.all(
+            color: _isConnected ? cs.tertiary : cs.error,
+          ),
         ),
-      ),
-      child: Text(
-        _isConnected ? AppLocalizations.of(context)!.badgeHubConnected : AppLocalizations.of(context)!.badgeWaitingForHub,
-        style: tt.bodySmall?.copyWith(
-          color: _isConnected ? cs.onTertiaryContainer : cs.onErrorContainer,
+        child: Text(
+          _isConnected ? AppLocalizations.of(context)!.badgeHubConnected : AppLocalizations.of(context)!.badgeWaitingForHub,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: tt.bodySmall?.copyWith(
+            color: _isConnected ? cs.onTertiaryContainer : cs.onErrorContainer,
+          ),
         ),
       ),
     );

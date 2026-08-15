@@ -1173,7 +1173,7 @@ class _SearchPageState extends State<SearchPage> {
         ),
         SizedBox(height: AppSpacing.sm.h),
         SizedBox(
-          height: 120.h,
+          height: 136.h * MediaQuery.textScalerOf(context).scale(1),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: recommended.length,
@@ -1221,6 +1221,7 @@ class _SearchPageState extends State<SearchPage> {
                 SizedBox(width: AppSpacing.xs.w),
                 Expanded(
                   child: Text(r.type.name.toUpperCase(),
+                      maxLines: 1,
                       style: tt.labelSmall?.copyWith(
                           fontWeight: AppSpacing.weightStrong,
                           color: cs.primary),
@@ -1230,7 +1231,7 @@ class _SearchPageState extends State<SearchPage> {
             ),
             SizedBox(height: AppSpacing.sm.h),
             Text(r.title,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: tt.titleSmall?.copyWith(
                     color: cs.onSurface)),
@@ -1240,9 +1241,13 @@ class _SearchPageState extends State<SearchPage> {
                 Icon(Icons.school_outlined, size: 12.sp,
                     color: cs.onSurfaceVariant),
                 SizedBox(width: AppSpacing.xs.w),
-                Text(r.grade,
-                    style: tt.labelSmall?.copyWith(
-                        color: cs.onSurfaceVariant)),
+                Flexible(
+                  child: Text(r.grade,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tt.labelSmall?.copyWith(
+                          color: cs.onSurfaceVariant)),
+                ),
               ],
             ),
           ],

@@ -76,6 +76,7 @@ class _AppShellState extends State<AppShell> {
                 highlightColor: cs.primary.withValues(alpha: 0.04),
               ),
               child: BottomNavigationBar(
+                type: BottomNavigationBarType.fixed,
                 currentIndex: _index,
                 onTap: (val) => setState(() => _index = val),
                 items: [

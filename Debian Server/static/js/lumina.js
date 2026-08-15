@@ -674,6 +674,8 @@ function toggleMobileMenu() {
     if (sidebar) sidebar.classList.toggle('open');
     if (overlay) overlay.classList.toggle('active');
     document.body.classList.toggle('sidebar-open', sidebar && sidebar.classList.contains('open'));
+    const btn = document.getElementById('btn-toggleMobileMenu');
+    if (btn) btn.setAttribute('aria-expanded', sidebar ? String(sidebar.classList.contains('open')) : 'false');
 }
 
 /* ── Active nav highlighting ─────────────────────────────────────────────── */
@@ -688,6 +690,25 @@ function renderLayout() {
     var aside = document.querySelector('aside');
     var bottomNav = document.getElementById('bottomNav');
     if (!aside) return;
+    // Inject the mobile hamburger toggle + overlay (shown ≤768px via CSS; the
+    // click listeners attach at DOMContentLoaded in this file and per-page scripts)
+    if (!document.getElementById('btn-toggleMobileMenu')) {
+        var menuBtn = document.createElement('button');
+        menuBtn.id = 'btn-toggleMobileMenu';
+        menuBtn.className = 'mobile-menu-btn';
+        menuBtn.type = 'button';
+        menuBtn.setAttribute('aria-label', 'Menu');
+        menuBtn.setAttribute('data-i18n-aria-label', 'sidebar.menu_toggle');
+        menuBtn.setAttribute('aria-expanded', 'false');
+        menuBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+        document.body.appendChild(menuBtn);
+    }
+    if (!document.querySelector('.mobile-overlay')) {
+        var overlay = document.createElement('div');
+        overlay.className = 'mobile-overlay';
+        overlay.id = 'overlay-toggleMobileMenu';
+        document.body.appendChild(overlay);
+    }
     // Add ARIA attributes to sidebar
     aside.setAttribute('role', 'navigation');
     aside.setAttribute('aria-label', 'Main navigation');
@@ -795,7 +816,7 @@ function renderModals() {
     confirmModal.setAttribute('aria-labelledby', 'confirmModalTitle');
     confirmModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 30000; transition: all 0.3s ease;';
     confirmModal.innerHTML =
-        '<div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.25rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">' +
+        '<div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.25rem; max-width: 440px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">' +
         '<div id="confirmModalIcon" style="margin: 0 auto 1.25rem; text-align: center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--danger)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></div>' +
         '<h3 id="confirmModalTitle" style="font-size: 1.25rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Confirm Action</h3>' +
         '<p id="confirmModalText" style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.75rem;">Are you sure you want to proceed?</p>' +
@@ -811,7 +832,7 @@ function renderModals() {
     resetModal.setAttribute('aria-labelledby', 'forceResetModalTitle');
     resetModal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.8); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20000;';
     resetModal.innerHTML =
-        '<div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.5rem; max-width: 440px; width: 90%; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">' +
+        '<div style="background: var(--surface); color: var(--on-surface); border-radius: var(--radius); padding: 2.5rem; max-width: 440px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: var(--card-shadow-hover); border: 1px solid var(--outline); text-align: center;">' +
         '<div style="margin: 0 auto 1.5rem; text-align: center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' +
         '<h3 id="forceResetModalTitle" data-i18n="settings.modal.reset_title" style="font-size: 1.35rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Password Reset Required</h3>' +
         '<p data-i18n="settings.modal.reset_body" style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.5rem;">An administrator has forced a password reset on your account. You must change your password before you can proceed.</p>' +
