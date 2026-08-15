@@ -1,26 +1,29 @@
 """Hub-to-hub federation: peer pairing, signed requests, and LAN discovery.
 
 A peer is another Lumina hub on the same LAN. After pairing, both hubs
-derive a shared secret from the 6-digit pairing code and sign every
-``/peer/*`` request with it. Only approved resources are ever exchanged
--- student data never leaves its own hub.
+authenticate every ``/peer/*`` request with their own Ed25519 private key;
+the receiver verifies against the peer's public key stored at pairing time.
+Only approved resources are ever exchanged -- student data never leaves its
+own hub.
 
 Pairing flow:
 1. Hub A calls ``GET /peer/hello`` on hub B to confirm it is reachable.
-2. Hub A posts B's 6-digit pairing code (shown on B's Settings page)
-   plus A's own public key to ``POST /peer/pair`` on B.
-3. Both sides derive ``shared_secret = hmac_sha256(key=code,
-   msg=public keys sorted lexicographically)`` -- identical on both sides
-   regardless of perspective.
+2. Hub A posts B's 6-digit pairing code (shown on B's Settings page) to B,
+   but only as a key-confirmation proof: ``key_proof = hmac_sha256(
+   key=code, msg=public key)``. The code itself never travels the wire.
+3. B verifies the proof against its own code, stores A's public key, and
+   replies with the same proof over B's own public key.
 4. Every later request carries ``X-Peer-Sig`` / ``X-Peer-Ts`` /
-   ``X-Peer-Nonce`` headers. The receiver verifies timestamp (within 300s),
-   signature, and a one-time nonce to prevent replay.
+   ``X-Peer-Nonce`` headers. The signature is Ed25519 over
+   ``f"{ts}:{path_with_query}"`` made with the sender's private key. The
+   receiver verifies timestamp (within 300s), signature against the sender's
+   stored public key, and a one-time nonce to prevent replay.
 
-The Ed25519 keypair is stored in ``data/peer_key.pem`` (created on first
-use). It is not strictly required by the current HMAC scheme -- the
-pairing code is the real credential -- but the design mandates persistent
-keys, and they give a future upgrade path to full public-key auth without
-changing the pairing UX.
+The 6-digit code has only 10^6 entropy, so it must never be used to sign
+requests directly -- anyone who sees one signed request could brute-force it
+offline and forge ``X-Peer-Sig``. Using per-hub Ed25519 keys means the code
+is a bootstrap credential only; capturing it does not let an attacker
+impersonate a hub after pairing.
 """
 
 import asyncio
@@ -97,6 +100,15 @@ class PeerManager:
         self._load_keypair()
         return self._public_key_pem
 
+    def sign(self, data: bytes) -> bytes:
+        """Sign [data] with this hub's Ed25519 private key.
+
+        Returns:
+            The raw 64-byte Ed25519 signature.
+        """
+        self._load_keypair()
+        return self._private_key.sign(data)
+
     def generate_pairing_code(self) -> str:
         """Generate and store a fresh 6-digit pairing code (10-minute expiry)."""
         global _pairing_code, _pairing_code_expiry
@@ -115,8 +127,8 @@ class PeerManager:
     async def pair(self, ip_or_url: str, code: str) -> dict:
         """Pair with the hub at ``ip_or_url`` using its 6-digit pairing code.
 
-        Calls the peer's public endpoints, derives the shared secret from
-        both public keys, and stores the peer row.
+        Calls the peer's public endpoints, proves knowledge of the code via
+        a key-confirmation MAC over our public key, and stores the peer row.
 
         Args:
             ip_or_url: Host or URL of the peer hub (e.g. ``192.168.1.20``).
@@ -141,7 +153,7 @@ class PeerManager:
         try:
             resp = await _http_post_json(
                 f"{base}/peer/pair",
-                {"code": code, "public_key": my_pub},
+                {"key_proof": pairing_proof(code, my_pub), "public_key": my_pub},
                 extra_headers={"X-Peer-Name": socket.gethostname()},
             )
         except HTTPException as exc:
@@ -154,13 +166,15 @@ class PeerManager:
         if not resp.get("ok"):
             raise HTTPException(status_code=403, detail="Invalid or expired pairing code")
         peer_pub = str(resp.get("public_key") or "")
-        secret = derive_shared_secret(code, peer_pub, my_pub)
+        peer_proof = str(resp.get("key_proof") or "")
+        if not peer_pub or not hmac.compare_digest(peer_proof, pairing_proof(code, peer_pub)):
+            raise HTTPException(status_code=403, detail="Peer key confirmation failed")
         peer_id = f"peer-{uuid.uuid4().hex[:8]}"
         name = str(hello.get("name") or "") or f"peer-{_host_of(base)}"
         await db_exec(
-            """INSERT INTO peers (id, name, base_url, public_key, shared_secret, ip_address, paired_at)
-               VALUES (?, ?, ?, ?, ?, ?, datetime('now'))""",
-            (peer_id, name, base, peer_pub, secret, _host_of(base)),
+            """INSERT INTO peers (id, name, base_url, public_key, ip_address, paired_at)
+               VALUES (?, ?, ?, ?, ?, datetime('now'))""",
+            (peer_id, name, base, peer_pub, _host_of(base)),
         )
         logger.info("Paired with %s (%s)", name, base)
         return {"id": peer_id, "name": name, "base_url": base}
@@ -170,36 +184,48 @@ class PeerManager:
         return await fetch_peer_json(peer, "/peer/catalog")
 
 
-def derive_shared_secret(code: str, pub_a: str, pub_b: str) -> str:
-    """Derive the shared secret both hubs agree on.
+def pairing_proof(code: str, pub_key_pem: str) -> str:
+    """Prove knowledge of the pairing code over a public key.
 
-    HMAC-SHA256 keyed with the pairing code over the two public keys
-    sorted lexicographically, so either side computes the same value.
+    Key-confirmation MAC: an attacker who captures the code or a public
+    key alone cannot forge the proof for a substituted key, so the
+    public keys exchanged at pairing time are bound to the code.
 
     Args:
         code: The 6-digit pairing code.
-        pub_a: A public key PEM string.
-        pub_b: The other public key PEM string.
+        pub_key_pem: One hub's Ed25519 public key in PEM form.
 
     Returns:
-        Hex digest of the derived secret.
+        Hex digest of the code-keyed MAC over the public key.
     """
-    ordered = b"".join(sorted((pub_a.encode(), pub_b.encode())))
-    return hmac.new(code.encode(), ordered, hashlib.sha256).hexdigest()
+    return hmac.new(code.encode(), pub_key_pem.encode(), hashlib.sha256).hexdigest()
 
 
-def signed_headers(secret: str, path_with_query: str) -> dict[str, str]:
+def sign_headers(path_with_query: str) -> dict[str, str]:
     """Build X-Peer-* headers for a signed request.
 
-    Signature is ``hex(hmac_sha256(f"{unix_ts}:{path_with_query}",
-    shared_secret))`` -- the same canonical form the receiver verifies.
+    Signature is Ed25519 over ``f"{unix_ts}:{path_with_query}"`` made with
+    this hub's private key -- the same canonical form the receiver verifies
+    against this hub's stored public key.
     """
     ts = str(int(time.time()))
     nonce = secrets.token_hex(16)
-    sig = hmac.new(
-        secret.encode(), f"{ts}:{path_with_query}".encode(), hashlib.sha256
-    ).hexdigest()
+    sig = PeerManager().sign(f"{ts}:{path_with_query}".encode()).hex()
     return {"X-Peer-Ts": ts, "X-Peer-Nonce": nonce, "X-Peer-Sig": sig}
+
+
+def _verify_ed25519(peer_pub_pem: str, data: bytes, sig_hex: str) -> bool:
+    """Return whether [sig_hex] is a valid Ed25519 signature over [data]."""
+    try:
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        pub = serialization.load_pem_public_key(peer_pub_pem.encode())
+        if not isinstance(pub, Ed25519PublicKey):
+            return False
+        pub.verify(bytes.fromhex(sig_hex), data)
+        return True
+    except Exception:
+        return False
 
 
 def _nonce_ok(nonce: str) -> bool:
@@ -219,7 +245,7 @@ async def verify_peer_sig(request: Request) -> dict:
     """FastAPI dependency -- require a valid signed request from a paired peer.
 
     Checks the X-Peer-Ts / X-Peer-Sig / X-Peer-Nonce headers against every
-    paired peer's shared secret. Returns the matching peer row.
+    paired peer's stored Ed25519 public key. Returns the matching peer row.
 
     Raises:
         HTTPException: 401 for missing, expired, replayed, or unsigned headers.
@@ -240,49 +266,50 @@ async def verify_peer_sig(request: Request) -> dict:
     canonical = request.url.path
     if request.url.query:
         canonical += f"?{request.url.query}"
+    data = f"{ts_h}:{canonical}".encode()
     for peer in await get_peers():
-        secret = peer.get("shared_secret") or ""
-        if not secret:
+        pub = peer.get("public_key") or ""
+        if not pub:
             continue
-        expected = hmac.new(
-            secret.encode(), f"{ts_h}:{canonical}".encode(), hashlib.sha256
-        ).hexdigest()
-        if hmac.compare_digest(expected, sig):
+        if _verify_ed25519(pub, data, sig):
             return peer
     raise HTTPException(status_code=401, detail="Invalid peer signature")
 
 
-async def handle_pair_request(code: str, public_key: str, name: str | None, client_ip: str) -> dict:
+async def handle_pair_request(key_proof: str, public_key: str, name: str | None, client_ip: str) -> dict:
     """Process an incoming pairing request from another hub.
 
-    Verifies the 6-digit code, derives the shared secret, and stores the
-    pairing peer (named from the X-Peer-Name header or the source IP).
+    Verifies the key-confirmation proof (keyed by our active pairing code)
+    over the remote hub's public key, stores the pairing peer (named from
+    the X-Peer-Name header or the source IP), and returns our public key
+    with our own key-confirmation proof so the peer can verify it.
 
     Args:
-        code: The pairing code sent by the remote hub.
+        key_proof: HMAC of the pairing code over the remote public key.
         public_key: The remote hub's Ed25519 public key (PEM).
         name: Optional hub name from the X-Peer-Name header.
         client_ip: Source IP of the pairing request.
 
     Returns:
-        Dict with ``ok``, ``public_key`` (ours), and ``id``.
+        Dict with ``ok``, ``public_key`` (ours), ``key_proof``, and ``id``.
 
     Raises:
         HTTPException: 403 if the code is wrong or expired.
     """
-    if not _pairing_code or not hmac.compare_digest(_pairing_code, code) or time.time() > _pairing_code_expiry:
+    if not _pairing_code or not key_proof or time.time() > _pairing_code_expiry:
+        raise HTTPException(status_code=403, detail="Invalid or expired pairing code")
+    if not public_key or not hmac.compare_digest(key_proof, pairing_proof(_pairing_code, public_key)):
         raise HTTPException(status_code=403, detail="Invalid or expired pairing code")
     my_pub = PeerManager().public_key_pem
-    secret = derive_shared_secret(code, public_key, my_pub)
     peer_id = f"peer-{uuid.uuid4().hex[:8]}"
     host = client_ip or "unknown"
     await db_exec(
-        """INSERT INTO peers (id, name, base_url, public_key, shared_secret, ip_address, paired_at)
-           VALUES (?, ?, ?, ?, ?, ?, datetime('now'))""",
-        (peer_id, name or f"peer-{host}", f"http://{host}:8000", public_key, secret, host),
+        """INSERT INTO peers (id, name, base_url, public_key, ip_address, paired_at)
+           VALUES (?, ?, ?, ?, ?, datetime('now'))""",
+        (peer_id, name or f"peer-{host}", f"http://{host}:8000", public_key, host),
     )
     logger.info("Incoming pairing from %s (%s)", name or host, host)
-    return {"ok": True, "public_key": my_pub, "id": peer_id}
+    return {"ok": True, "public_key": my_pub, "key_proof": pairing_proof(_pairing_code, my_pub), "id": peer_id}
 
 
 async def get_peers() -> list[dict]:
@@ -315,7 +342,7 @@ async def fetch_file(peer: dict, resource_id: str, range_header: str | None) -> 
     """
     import httpx
     path = f"/peer/file/{resource_id}"
-    headers = signed_headers(peer["shared_secret"], path)
+    headers = sign_headers(path)
     if range_header:
         headers["Range"] = range_header
     client = httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=10.0))
@@ -365,7 +392,7 @@ async def fetch_peer_json(peer: dict, path_with_query: str) -> dict:
     try:
         return await _http_get_json(
             peer["base_url"] + path_with_query,
-            headers=signed_headers(peer["shared_secret"], path_with_query),
+            headers=sign_headers(path_with_query),
         )
     except HTTPException:
         raise
@@ -390,7 +417,7 @@ async def fetch_peer_bytes(peer: dict, path_with_query: str) -> tuple[str, bytes
             status code when it rejects the request (>=400).
     """
     import httpx
-    headers = signed_headers(peer["shared_secret"], path_with_query)
+    headers = sign_headers(path_with_query)
     async with httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=10.0)) as client:
         try:
             resp = await client.get(peer["base_url"] + path_with_query, headers=headers)

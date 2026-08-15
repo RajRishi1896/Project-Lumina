@@ -380,7 +380,6 @@ def init_db():
         name TEXT,
         base_url TEXT,
         public_key TEXT,
-        shared_secret TEXT,
         ip_address TEXT,
         paired_at DATETIME,
         last_seen DATETIME,

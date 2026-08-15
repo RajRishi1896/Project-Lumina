@@ -75,31 +75,31 @@ async def peer_hello():
     "/peer/pair",
     tags=["Federation"],
     summary="Accept a pairing request from another hub",
-    description="Public but gated by the 6-digit pairing code shown in this hub's Settings > Peer Hubs.",
+    description="Public but gated by the 6-digit pairing code shown in this hub's Settings > Peer Hubs. The code itself is never sent -- the peer proves knowledge of it via a key-confirmation MAC over its public key.",
     response_model=dict,
-    responses={400: {"description": "Missing code or public_key"}, 403: {"description": "Wrong or expired pairing code"}},
+    responses={400: {"description": "Missing key_proof or public_key"}, 403: {"description": "Wrong or expired pairing code"}},
 )
 async def peer_pair(request: Request, payload: dict):
-    """Verify the pairing code, derive the shared secret, and store the peer.
+    """Verify the pairing proof, store the peer, and return our key proof.
 
     Args:
         request: Incoming request -- name comes from the X-Peer-Name header,
             IP from the client address.
-        payload: JSON body with ``code`` and ``public_key``.
+        payload: JSON body with ``key_proof`` and ``public_key``.
 
     Returns:
-        Dict with ``ok``, ``public_key`` (ours), and ``id``.
+        Dict with ``ok``, ``public_key`` (ours), ``key_proof``, and ``id``.
 
     Raises:
-        HTTPException: 400 for missing fields, 403 for a wrong code.
+        HTTPException: 400 for missing fields, 403 for a wrong proof.
     """
-    code = str(payload.get("code") or "")
+    key_proof = str(payload.get("key_proof") or "")
     public_key = str(payload.get("public_key") or "")
-    if not code or not public_key:
-        raise HTTPException(status_code=400, detail="code and public_key are required")
+    if not key_proof or not public_key:
+        raise HTTPException(status_code=400, detail="key_proof and public_key are required")
     name = request.headers.get("x-peer-name") or None
     client_ip = request.client.host if request.client else "unknown"
-    return await handle_pair_request(code, public_key, name, client_ip)
+    return await handle_pair_request(key_proof, public_key, name, client_ip)
 
 
 @router.get(
@@ -297,7 +297,7 @@ async def peer_proxy_file(peer_id: str, peer_resource_id: str, request: Request)
     if not row:
         raise HTTPException(status_code=404, detail="Peer resource not found")
     peer = await get_peer(peer_id)
-    if not peer or not peer.get("shared_secret"):
+    if not peer or not peer.get("public_key"):
         raise HTTPException(status_code=410, detail="Peer hub is no longer paired")
     status, headers, body = await fetch_file(peer, peer_resource_id, request.headers.get("range"))
     return StreamingResponse(body, status_code=status, media_type="application/octet-stream", headers=headers)
