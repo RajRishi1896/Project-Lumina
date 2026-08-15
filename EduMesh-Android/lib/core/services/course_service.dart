@@ -200,6 +200,26 @@ class CourseService extends ChangeNotifier {
     await _saveQuizAttemptLocally(attempt);
   }
 
+  /// Submits a standalone quiz attempt via [MutationQueue] for offline support.
+  Future<void> submitStandaloneQuiz(String resourceId, Map<String, dynamic> attempt) async {
+    await MutationQueue().enqueue(
+      '/api/quiz-resource/$resourceId/submit',
+      method: 'POST',
+      body: attempt,
+      priority: 'high',
+    );
+  }
+
+  /// Updates the best score for a standalone quiz via [MutationQueue] for offline support.
+  Future<void> updateStandaloneBestScore(String resourceId, double score, String attemptId) async {
+    await MutationQueue().enqueue(
+      '/api/quiz-resource/$resourceId/best-score',
+      method: 'POST',
+      body: {'score': score, 'attempt_id': attemptId},
+      priority: 'normal',
+    );
+  }
+
   /// Returns all locally cached courses ordered by most recently synced.
   Future<List<Course>> getCachedCatalog() async {
     try {
@@ -238,7 +258,6 @@ class CourseService extends ChangeNotifier {
       // If empty (after data clear), restore from server first
       if (progressRows.isEmpty) {
         await _restoreEnrollmentsFromServer();
-        // Re-query after restore
         final restoredRows = await db.query('course_progress',
           where: 'student_id = ?', whereArgs: [studentId]);
         if (restoredRows.isNotEmpty) {
@@ -280,7 +299,6 @@ class CourseService extends ChangeNotifier {
       await db.transaction((txn) async {
         for (final item in items) {
           final m = item as Map<String, dynamic>;
-          // Insert course into courses table
           await txn.insert('courses', {
             'id': m['course_id'] ?? '',
             'title': m['title'] ?? '',
@@ -296,7 +314,6 @@ class CourseService extends ChangeNotifier {
             'updated_at': m['updated_at'] ?? '',
             'synced_at': DateTime.now().millisecondsSinceEpoch,
           }, conflictAlgorithm: ConflictAlgorithm.replace);
-          // Insert progress into course_progress table
           await txn.insert('course_progress', {
             'student_id': await _getStudentId(),
             'course_id': m['course_id'] ?? '',

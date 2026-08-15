@@ -296,30 +296,32 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     };
 
     if (_isStandalone) {
-      try {
-        await ApiClient.post(
-          '/api/quiz-resource/${widget.resourceModel!.id}/submit',
-          data: attempt,
-        );
-      } catch (_) {}
+      CourseService().submitStandaloneQuiz(widget.resourceModel!.id, attempt);
     } else {
       CourseService().submitQuiz(widget.course.id, widget.resource.id, attempt);
     }
 
-    // Update best score on server
     if (_score > _bestScore) {
-      try {
-        final url = _isStandalone
-            ? '/api/quiz-resource/${widget.resourceModel!.id}/best-score'
-            : '/student/quiz-best-score/${widget.course.id}/${widget.resource.id}';
-        await ApiClient.post(url, data: {'score': _score, 'attempt_id': attemptId});
+      if (_isStandalone) {
+        CourseService().updateStandaloneBestScore(widget.resourceModel!.id, _score, attemptId);
         if (mounted) {
           setState(() {
             _bestScore = _score;
             _totalAttempts++;
           });
         }
-      } catch (_) {}
+      } else {
+        try {
+          final url = '/student/quiz-best-score/${widget.course.id}/${widget.resource.id}';
+          await ApiClient.post(url, data: {'score': _score, 'attempt_id': attemptId});
+          if (mounted) {
+            setState(() {
+              _bestScore = _score;
+              _totalAttempts++;
+            });
+          }
+        } catch (_) {}
+      }
     } else {
       if (mounted) {
         setState(() => _totalAttempts++);
@@ -805,12 +807,15 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
             )
           else
             const SizedBox.shrink(),
-          const Spacer(),
-          Text(
-            l10n.quizQuestionOf(_currentIndex + 1, _questions.length),
-            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          Expanded(
+            child: Text(
+              l10n.quizQuestionOf(_currentIndex + 1, _questions.length),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            ),
           ),
-          const Spacer(),
           FilledButton(
             onPressed: () => _goToQuestion(_currentIndex + 1),
             style: FilledButton.styleFrom(
