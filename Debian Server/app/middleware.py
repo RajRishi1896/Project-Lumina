@@ -117,7 +117,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Also trim oversized dict
         if len(self._hits) > self._max_ips:
             excess = len(self._hits) - self._max_ips
-            # Remove oldest IPs by last-hit time
             sorted_ips = sorted(self._hits.keys(), key=lambda ip: self._hits[ip][-1] if self._hits[ip] else 0)
             for ip in sorted_ips[:excess]:
                 del self._hits[ip]
@@ -135,7 +134,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         cutoff = now - window
         hits = self._hits[ip]
-        # Prune old entries
         self._hits[ip] = hits = [t for t in hits if t > cutoff]
 
         if len(hits) >= limit:

@@ -101,7 +101,6 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
   }
 
   Future<void> _loadResources() async {
-    // If a specific resourceId was provided, fetch it directly
     if (widget.resourceId != null && widget.resourceId!.isNotEmpty) {
       try {
         final resp = await ApiClient.get('/resources/${widget.resourceId}');

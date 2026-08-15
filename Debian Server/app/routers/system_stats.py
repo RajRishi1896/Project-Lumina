@@ -215,7 +215,6 @@ async def get_diagnostics(admin_user: str = Depends(verify_admin)):
     except Exception:
         db_ok = False
 
-    # Storage
     storage = await get_storage_stats()
     table_stats = await get_table_stats()
 
@@ -263,7 +262,6 @@ async def get_diagnostics(admin_user: str = Depends(verify_admin)):
     except Exception:
         pass
 
-    # Backup status (check if backup script exists)
     backup_exists = await asyncio.to_thread(os.path.exists, "backup_hub.sh")
     last_backup = None
     backup_dir = "backups"

@@ -73,7 +73,6 @@ class LuminaSettingsSheet extends ConsumerWidget {
                     color: cs.onSurface)),
           ),
 
-          // Theme toggle
           Consumer(builder: (context, ref, child) {
             final themeMode = ref.watch(themeModeProvider);
             final isDark = themeMode == ThemeMode.dark;

@@ -577,7 +577,6 @@ async def delete_resource_topic(topic_id: str,
     if delete_resources:
         resources = await db_fetch("SELECT id, filename FROM resources WHERE topic_id = ?", (topic_id,))
         if resources:
-            # Collect file paths for batch removal
             filepaths = [os.path.join(UPLOAD_DIR, r["filename"]) for r in resources if r["filename"]]
             if filepaths:
                 def _remove_files(paths):

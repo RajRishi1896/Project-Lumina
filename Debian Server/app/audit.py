@@ -185,7 +185,6 @@ async def audit(
     if request:
         request_id = getattr(getattr(request, "state", None), "request_id", "")
 
-    # Build the event
     event = {
         "id": event_id,
         "ts": timestamp,

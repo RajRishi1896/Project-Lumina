@@ -131,7 +131,6 @@ async def admin_log(
                 with open("data/admin_actions.log", "r") as f:
                     lines = f.readlines()
                 result = []
-                # Read from end for most recent
                 for line in reversed(lines):
                     line = line.strip()
                     if not line:

@@ -163,7 +163,6 @@ class ActivityTracker {
     if (original.isEmpty) return;
     final list = [...original];
 
-    // Prune events older than 7 days
     final cutoff = ApiClient.correctedNow().subtract(const Duration(days: 7));
     final before = list.length;
     list.removeWhere((e) {
@@ -206,7 +205,6 @@ class ActivityTracker {
       }
     }
 
-    // Sync to server
     try {
       await ApiClient.post('/student/sync-study-time', data: {
         'total_seconds': totalSeconds,

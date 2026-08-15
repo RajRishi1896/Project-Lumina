@@ -334,7 +334,6 @@ def _reindex_zim_articles(zim_path: str, archive_id: str, archive_title: str):
         conn.execute("PRAGMA synchronous = OFF")
         conn.execute("PRAGMA cache_size = -64000")
 
-        # Clear old articles for this archive
         conn.execute("DELETE FROM zim_articles WHERE archive_id = ?", (archive_id,))
 
         batch = []
@@ -410,7 +409,6 @@ def _reindex_zim_articles(zim_path: str, archive_id: str, archive_title: str):
         except Exception:
             pass
 
-        # Update article count in zim_archives
         conn.execute("UPDATE zim_archives SET article_count = ? WHERE id = ?", (total_indexed, archive_id))
         conn.commit()
     finally:

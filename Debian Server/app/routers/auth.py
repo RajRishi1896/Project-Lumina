@@ -30,7 +30,6 @@ def _check_rate_limit(request: Request):
     now = time.time()
     window_start = now - _LOGIN_WINDOW
     attempts = _login_attempts.get(ip, [])
-    # prune old entries
     attempts = [t for t in attempts if t > window_start]
     if len(attempts) >= _MAX_LOGIN_ATTEMPTS:
         raise HTTPException(status_code=429, detail="Too many login attempts. Try again later.")  # i18n: user-facing error message
