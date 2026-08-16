@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <!-- Section: Head -- metadata, theme detection, shared styles -->
@@ -7,8 +7,8 @@
     <title data-i18n="welcome.page_title">Lumina Hub | Welcome</title>
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
-    <script src="/static/js/lumina.js?v=9"></script>
-    <link rel="stylesheet" href="/static/css/lumina.css">
+    <script src="/static/js/lumina.js?v=10"></script>
+    <link rel="stylesheet" href="/static/css/lumina.css?v=14">
 </head>
 <body>
     <a href="#welcome-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
@@ -237,14 +237,18 @@
 
                 var bFill = document.getElementById('batteryFill');
                 var bText = document.getElementById('batteryText');
-                if (bText) {
+                if (bText && data.battery_percent != null) {
                     var battLabel = data.battery_charging ? __('battery.charging') : __('battery.on_battery');
                     try { bText.innerText = __('welcome.battery.percent', { percent: data.battery_percent }) + ' ' + battLabel; }
                     catch(_) { bText.innerText = data.battery_percent + '% ' + battLabel; }
                 }
-                if (bFill) {
+                if (bFill && data.battery_percent != null) {
                     bFill.style.width = data.battery_percent + '%';
                     bFill.style.background = getMeterColor(data.battery_percent, true);
+                }
+                if (bText && data.battery_percent == null) {
+                    var _battMeter = bText.closest('.meter');
+                    if (_battMeter) _battMeter.style.display = 'none';
                 }
                 // Quick stats
                 var el;

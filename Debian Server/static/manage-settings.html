@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
-<link rel="stylesheet" href="/static/css/lumina.css">
+<link rel="stylesheet" href="/static/css/lumina.css?v=14">
 </head>
 <body>
     <a href="#app-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
@@ -1012,9 +1012,7 @@
                 });
             });
 
-            document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
-            document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
-            document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
+                        document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
             document.getElementById('toggleOldPwdBtn')?.addEventListener('click', function() { togglePasswordVisibility('oldPwd', 'eyeIconOld', 'toggleOldPwdBtn'); });
             document.getElementById('toggleNewPwdBtn')?.addEventListener('click', function() { togglePasswordVisibility('newPwd', 'eyeIconNew', 'toggleNewPwdBtn'); });
             document.getElementById('btn-changePassword')?.addEventListener('click', changePassword);

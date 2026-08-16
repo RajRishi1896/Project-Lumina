@@ -183,6 +183,26 @@ function applyLanguage() {
         if (langObj) label.textContent = langObj.native;
     }
     document.dispatchEvent(new CustomEvent('languageChanged', {detail: {lang: currentLang}}));
+    equalizeBottomNav();
+}
+
+/**
+ * Give every bottom-nav item the same width as the widest label.
+ * Runs after render and after each language switch so translated
+ * labels never clip or overlap. No-op when the bar is hidden.
+ */
+function equalizeBottomNav() {
+    const nav = document.getElementById('bottomNav');
+    if (!nav || getComputedStyle(nav).display === 'none') return;
+    const items = nav.querySelectorAll('.bottom-nav-item');
+    if (!items.length) return;
+    let maxW = 0;
+    items.forEach(function(el) {
+        const span = el.querySelector('span');
+        maxW = Math.max(maxW, span ? span.scrollWidth : el.scrollWidth);
+    });
+    const pad = parseFloat(getComputedStyle(items[0]).paddingLeft) + parseFloat(getComputedStyle(items[0]).paddingRight);
+    items.forEach(function(el) { el.style.width = (maxW + pad) + 'px'; });
 }
 
 /**
@@ -665,19 +685,6 @@ async function submitForcePasswordReset() {
     }
 }
 
-/* ── Mobile Menu ─────────────────────────────────────────────────────────── */
-
-/** Toggle the mobile sidebar open/closed by toggling .open and .active classes. */
-function toggleMobileMenu() {
-    const sidebar = document.querySelector('aside');
-    const overlay = document.querySelector('.mobile-overlay');
-    if (sidebar) sidebar.classList.toggle('open');
-    if (overlay) overlay.classList.toggle('active');
-    document.body.classList.toggle('sidebar-open', sidebar && sidebar.classList.contains('open'));
-    const btn = document.getElementById('btn-toggleMobileMenu');
-    if (btn) btn.setAttribute('aria-expanded', sidebar ? String(sidebar.classList.contains('open')) : 'false');
-}
-
 /* ── Active nav highlighting ─────────────────────────────────────────────── */
 
 /**
@@ -690,25 +697,6 @@ function renderLayout() {
     var aside = document.querySelector('aside');
     var bottomNav = document.getElementById('bottomNav');
     if (!aside) return;
-    // Inject the mobile hamburger toggle + overlay (shown ≤768px via CSS; the
-    // click listeners attach at DOMContentLoaded in this file and per-page scripts)
-    if (!document.getElementById('btn-toggleMobileMenu')) {
-        var menuBtn = document.createElement('button');
-        menuBtn.id = 'btn-toggleMobileMenu';
-        menuBtn.className = 'mobile-menu-btn';
-        menuBtn.type = 'button';
-        menuBtn.setAttribute('aria-label', 'Menu');
-        menuBtn.setAttribute('data-i18n-aria-label', 'sidebar.menu_toggle');
-        menuBtn.setAttribute('aria-expanded', 'false');
-        menuBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
-        document.body.appendChild(menuBtn);
-    }
-    if (!document.querySelector('.mobile-overlay')) {
-        var overlay = document.createElement('div');
-        overlay.className = 'mobile-overlay';
-        overlay.id = 'overlay-toggleMobileMenu';
-        document.body.appendChild(overlay);
-    }
     // Add ARIA attributes to sidebar
     aside.setAttribute('role', 'navigation');
     aside.setAttribute('aria-label', 'Main navigation');
@@ -799,6 +787,7 @@ function renderLayout() {
     // bottom nav gets a logout item at the end
     btmNav += '<a href="/logout" class="bottom-nav-item" id="bottom-nav-logout" onclick="sessionStorage.clear()">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
     bottomNav.innerHTML = btmNav;
+    equalizeBottomNav();
 }
 
 /**
@@ -1041,9 +1030,8 @@ document.addEventListener('DOMContentLoaded', function() {
         initCurrentPage();
     });
 
-    // Global mobile menu toggle (works for both JS-created and static buttons)
-    document.getElementById('btn-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
-    document.getElementById('overlay-toggleMobileMenu')?.addEventListener('click', toggleMobileMenu);
+    // Global listeners
+    window.addEventListener('resize', equalizeBottomNav);
 });
 
 /* Intercept sidebar and bottom-nav nav clicks for SPA */
