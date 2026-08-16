@@ -1,6 +1,5 @@
 import '../recommendation/on_device_scorer.dart';
 
-/// The type of a course resource.
 enum CourseType {
   /// Textbooks and reference books.
   textbook,
@@ -12,7 +11,6 @@ enum CourseType {
   pastPaper,
 }
 
-/// The type of a quiz question.
 enum QuizQuestionType {
   /// Multiple choice (single correct answer).
   mcq,
@@ -58,10 +56,8 @@ String quizQuestionTypeToShortString(QuizQuestionType type) {
 
 /// A single quiz question with its options and correct answer(s).
 class QuizQuestion {
-  /// The unique identifier for this question.
   final String id;
 
-  /// The type of question.
   final QuizQuestionType type;
 
   /// An optional image URL associated with the question.
@@ -85,7 +81,6 @@ class QuizQuestion {
   /// Whether the answer must match exactly (fillBlanks).
   final bool exactMatch;
 
-  /// Creates a [QuizQuestion] with the given data.
   QuizQuestion({
     required this.id,
     required this.type,
@@ -98,7 +93,6 @@ class QuizQuestion {
     this.exactMatch = false,
   });
 
-  /// Creates a [QuizQuestion] from a JSON [map].
   factory QuizQuestion.fromJson(Map<String, dynamic> json) {
     final options = (json['options'] as List<dynamic>?)
             ?.map((e) => e.toString())
@@ -136,7 +130,6 @@ class QuizQuestion {
     );
   }
 
-  /// Serializes this [QuizQuestion] to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
     'id': id,
     'type': quizQuestionTypeToShortString(type),
@@ -152,7 +145,6 @@ class QuizQuestion {
 
 /// A quiz containing a set of questions and metadata.
 class Quiz {
-  /// The display title of the quiz.
   final String title;
 
   /// An optional description or instructions.
@@ -170,13 +162,11 @@ class Quiz {
   /// Shuffle mode: 'none', 'questions', 'options', or 'both'.
   final String shuffleMode;
 
-  /// The list of questions in this quiz.
   final List<QuizQuestion> questions;
 
   /// The version number of the quiz content.
   final int quizVersion;
 
-  /// Creates a [Quiz] with the given data.
   const Quiz({
     required this.title,
     this.description,
@@ -201,7 +191,7 @@ class Quiz {
       })()),
       maxAttempts: (data['max_attempts'] as num?)?.toInt() ?? 0,
       shuffleMode: data['shuffle_mode'] as String? ??
-          (data['shuffle_questions'] == true ? 'both' : 'none'),
+          ((data['shuffle_questions'] == true || data['shuffle'] == true) ? 'both' : 'none'),
       questions: (data['questions'] as List<dynamic>?)
               ?.map((e) =>
                   QuizQuestion.fromJson(e as Map<String, dynamic>))
@@ -228,16 +218,13 @@ class Quiz {
 
 /// A resource belonging to a course.
 class CourseResource {
-  /// The unique identifier for this resource.
   final String id;
 
   /// The ID of the course this resource belongs to.
   final String courseId;
 
-  /// The type of resource.
   final CourseType resourceType;
 
-  /// The display title.
   final String title;
 
   /// The original upload filename.
@@ -255,10 +242,8 @@ class CourseResource {
   /// The duration in seconds for video resources (0 when unknown).
   final int durationSeconds;
 
-  /// The display order position within the course.
   final int position;
 
-  /// Creates a [CourseResource] with the given data.
   const CourseResource({
     required this.id,
     required this.courseId,
@@ -280,10 +265,8 @@ class CourseResource {
     return dot == -1 ? '' : filename!.substring(dot + 1).toLowerCase();
   }
 
-  /// Whether this resource is a quiz.
   bool get isQuiz => resourceType == CourseType.quiz;
 
-  /// Creates a [CourseResource] from a JSON [map].
   factory CourseResource.fromJson(Map<String, dynamic> json) {
     return CourseResource(
       id: json['id']?.toString() ?? '',
@@ -299,7 +282,6 @@ class CourseResource {
     );
   }
 
-  /// Serializes this [CourseResource] to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
     'id': id,
     'course_id': courseId,
@@ -339,19 +321,15 @@ class Course {
 
   // -- Fields --
 
-  /// The unique identifier for this course.
   final String id;
 
-  /// The display title of the course.
   final String title;
 
   /// An optional description of the course.
   final String? description;
 
-  /// The subject this course belongs to.
   final String subject;
 
-  /// The grade or class level.
   final int grade;
 
   /// The ISO 639-1 language code.
@@ -381,7 +359,6 @@ class Course {
   /// IDs of similar courses for recommendations.
   final List<String>? similarCourseIds;
 
-  /// Creates a [Course] with the given data.
   const Course({
     required this.id,
     required this.title,
@@ -399,7 +376,6 @@ class Course {
     this.similarCourseIds,
   });
 
-  /// Creates a [Course] from a JSON [map].
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
       id: json['id']?.toString() ?? '',
@@ -423,7 +399,6 @@ class Course {
     );
   }
 
-  /// Serializes this [Course] to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
     'id': id,
     'title': title,
@@ -445,7 +420,6 @@ class Course {
 
 /// A student's attempt at a quiz, including answers and scoring.
 class QuizAttempt {
-  /// The unique identifier for this attempt.
   final String id;
 
   /// The student's user ID.
@@ -463,7 +437,6 @@ class QuizAttempt {
   /// The score achieved (0.0–1.0).
   final double score;
 
-  /// Whether the attempt met the pass threshold.
   final bool passed;
 
   /// JSON-encoded answers payload.
@@ -475,7 +448,6 @@ class QuizAttempt {
   /// ISO 8601 timestamp when the attempt was submitted.
   final String? submittedAt;
 
-  /// Time taken in seconds.
   final int timeTakenSeconds;
 
   /// The quiz version at the time of this attempt.
@@ -487,7 +459,6 @@ class QuizAttempt {
   /// Sync status for offline queue (0 = pending, 1 = synced, 2 = conflict).
   final int syncStatus;
 
-  /// Creates a [QuizAttempt] with the given data.
   const QuizAttempt({
     required this.id,
     required this.studentId,
@@ -505,7 +476,6 @@ class QuizAttempt {
     this.syncStatus = 0,
   });
 
-  /// Creates a [QuizAttempt] from a JSON [map].
   factory QuizAttempt.fromJson(Map<String, dynamic> json) {
     return QuizAttempt(
       id: json['id']?.toString() ?? '',
@@ -526,7 +496,6 @@ class QuizAttempt {
     );
   }
 
-  /// Serializes this [QuizAttempt] to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
     'id': id,
     'student_id': studentId,
@@ -553,13 +522,11 @@ class SimilarLink {
   /// The recommended similar course ID.
   final String similarCourseId;
 
-  /// Creates a [SimilarLink] with the given data.
   const SimilarLink({
     required this.courseId,
     required this.similarCourseId,
   });
 
-  /// Creates a [SimilarLink] from a JSON [map].
   factory SimilarLink.fromJson(Map<String, dynamic> json) {
     return SimilarLink(
       courseId: json['course_id']?.toString() ?? '',
@@ -567,7 +534,6 @@ class SimilarLink {
     );
   }
 
-  /// Serializes this [SimilarLink] to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
     'course_id': courseId,
     'similar_course_id': similarCourseId,
