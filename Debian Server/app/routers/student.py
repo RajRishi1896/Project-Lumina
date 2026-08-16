@@ -254,7 +254,7 @@ async def student_change_password(data: StudentChangePasswordRequest, student_id
         row = await db_fetch_one("SELECT hashed_password, reset_required FROM scholars WHERE id = ?", (student_id,))
         if not row or not row[0]:
             raise HTTPException(status_code=400, detail="Password not set. Contact your teacher.")
-        reset_required = row["reset_required"] if isinstance(row, dict) else (row[1] if len(row) > 1 else 0)
+        reset_required = row["reset_required"]
         if not reset_required:
             if not data.old_password:
                 raise HTTPException(status_code=400, detail="Current password is required.")

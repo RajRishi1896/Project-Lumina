@@ -543,7 +543,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     ApiClient.get('/student/grades').then((res) async {
       if (res.data is List) {
         final grades = (res.data as List)
-            .map((g) => (g is Map ? g['name']?.toString() ?? '' : g.toString()))
+            .map((g) => (g as Map)['name']?.toString() ?? '')
             .where((n) => n.isNotEmpty)
             .toList();
         if (grades.isNotEmpty) {

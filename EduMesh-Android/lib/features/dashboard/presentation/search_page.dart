@@ -92,9 +92,9 @@ class _SearchPageState extends State<SearchPage> {
       final data = resp.data;
       List<ResourceModel> resources = [];
       if (data is List) {
-        resources = data.map((j) => ResourceModel.fromJson(j is Map ? Map<String, dynamic>.from(j) : {})).toList();
+        resources = data.map((j) => ResourceModel.fromJson(j as Map<String, dynamic>)).toList();
       } else if (data is Map && data['items'] is List) {
-        resources = (data['items'] as List).map((j) => ResourceModel.fromJson(j is Map ? Map<String, dynamic>.from(j) : {})).toList();
+        resources = (data['items'] as List).map((j) => ResourceModel.fromJson(j as Map<String, dynamic>)).toList();
       }
       _allResources = resources;
 
@@ -102,7 +102,7 @@ class _SearchPageState extends State<SearchPage> {
         final gradesResp = await ApiClient.get('/student/grades').timeout(const Duration(seconds: 5));
         if (gradesResp.data is List) {
           _serverGrades = (gradesResp.data as List)
-              .map((g) => (g is Map ? g['name']?.toString() : null) ?? '')
+              .map((g) => (g as Map)['name']?.toString() ?? '')
               .where((g) => g.isNotEmpty)
               .cast<String>()
               .toList();
@@ -112,7 +112,7 @@ class _SearchPageState extends State<SearchPage> {
         final subjectsResp = await ApiClient.get('/student/subjects').timeout(const Duration(seconds: 5));
         if (subjectsResp.data is List) {
           _serverSubjects = (subjectsResp.data as List)
-              .map((s) => (s is Map ? s['name']?.toString() : null) ?? '')
+              .map((s) => (s as Map)['name']?.toString() ?? '')
               .where((s) => s.isNotEmpty)
               .cast<String>()
               .toList();

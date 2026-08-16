@@ -52,7 +52,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
       final res = await ApiClient.get('/student/grades');
       if (res.data is List) {
-        final grades = (res.data as List).map((g) => (g is Map ? g['name']?.toString() ?? '' : g.toString())).where((n) => n.isNotEmpty).toList();
+        final grades = (res.data as List).map((g) => (g as Map)['name']?.toString() ?? '').where((n) => n.isNotEmpty).toList();
         if (grades.isNotEmpty) {
           await prefs.setStringList('cached_grades', grades);
           if (mounted) setState(() { _grades = grades; _selectedGrade = grades.first; _loadError = null; _loading = false; });
