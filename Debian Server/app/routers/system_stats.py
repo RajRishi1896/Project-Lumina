@@ -63,24 +63,58 @@ async def get_stats():
     published_courses = await _count("SELECT COUNT(*) FROM courses WHERE published = 1")
     draft_courses = await _count("SELECT COUNT(*) FROM courses WHERE published = 0")
     total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
-    battery_percent = 100
+    battery_percent = None
     battery_charging = False
     try:
-        if await asyncio.to_thread(os.path.exists, "/sys/class/power_supply/BAT0/capacity"):
-            def _read_battery():
-                """Read battery percentage and charging status from sysfs."""
-                with open("/sys/class/power_supply/BAT0/capacity", "r") as f:
-                    pct = int(f.read().strip())
-                charging = False
-                try:
-                    with open("/sys/class/power_supply/BAT0/status", "r") as f:
-                        charging = f.read().strip() == "Charging"
-                except Exception:
-                    pass
-                return pct, charging
-            battery_percent, battery_charging = await asyncio.to_thread(_read_battery)
+        def _read_battery():
+            """Read battery state from any sysfs power_supply battery device.
+
+            Laptops name batteries BAT0, BAT1, BATX, CMB0, etc. and may have
+            several (e.g. ThinkPad Power Bridge). Returns (None, False) when
+            the machine has no battery at all (desktop, or battery removed).
+            """
+            import glob
+            batts = []
+            for d in glob.glob("/sys/class/power_supply/*"):
+                tpath = os.path.join(d, "type")
+                if os.path.exists(tpath):
+                    with open(tpath) as f:
+                        if f.read().strip() == "Battery":
+                            batts.append(d)
+            if not batts:
+                return None, False
+
+            def _read(d, name):
+                p = os.path.join(d, name)
+                if not os.path.exists(p):
+                    return None
+                with open(p) as f:
+                    return f.read().strip()
+
+            caps, nows, fulls, statuses = [], [], [], []
+            for d in batts:
+                cap = _read(d, "capacity")
+                if cap is not None:
+                    caps.append(int(cap))
+                en, ef = _read(d, "energy_now"), _read(d, "energy_full")
+                if en is not None and ef is not None and float(ef) > 0:
+                    nows.append(float(en))
+                    fulls.append(float(ef))
+                st = _read(d, "status")
+                if st:
+                    statuses.append(st)
+            if nows:
+                pct = int(round(sum(nows) / sum(fulls) * 100))
+            elif caps:
+                pct = int(round(sum(caps) / len(caps)))
+            else:
+                return None, False
+            charging = any(s in ("Charging", "Full") for s in statuses)
+            return max(0, min(100, pct)), charging
+        battery_percent, battery_charging = await asyncio.to_thread(_read_battery)
     except Exception:
-        pass
+        battery_percent = None
+        battery_charging = False
     uptime_str = "0s"
     try:
         def _read_uptime():

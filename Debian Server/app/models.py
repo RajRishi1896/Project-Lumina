@@ -307,7 +307,7 @@ class HubStatsResponse(BaseModel):
     draft_courses: int = Field(default=0, description="Draft courses.", example=3)
     storage: str = Field(..., description="Storage usage string.", example="4.5 GB / 100.0 GB")
     storage_percent: float = Field(..., description="Storage usage percentage.", example=4.5)
-    battery_percent: int = Field(..., description="Battery percentage.", example=85)
+    battery_percent: Optional[int] = Field(default=None, description="Battery percentage, or null when the hub has no battery.", example=85)
     battery_charging: bool = Field(default=False, description="Whether the battery is currently charging.", example=True)
     uptime: str = Field(..., description="Uptime string.", example="2h 15m")
     disk_usage: str = Field(..., description="Disk usage string.", example="4.5 GB / 100.0 GB")
