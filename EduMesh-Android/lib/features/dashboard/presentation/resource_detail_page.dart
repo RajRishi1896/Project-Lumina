@@ -32,16 +32,13 @@ class ResourceDetailPage extends StatefulWidget {
   /// The display title for the resource type (e.g. "Textbooks", "PYQs").
   final String title;
 
-  /// The subject to filter resources by.
   final String subject;
 
-  /// The grade level to filter resources by.
   final String grade;
 
   /// The resource type identifier (e.g. "textbook", "pyq", "notes", "videos").
   final String resourceType;
 
-  /// Whether the resource is already bookmarked when this page loads.
   final bool isInitiallySaved;
 
   /// If set, fetch this specific resource by ID instead of filtering by subject/grade/type.
@@ -275,6 +272,23 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
     } catch (_) {}
   }
 
+  /// Copies a view-time cached PDF (from [PdfViewerPage]'s temp cache) into
+  /// the downloads folder and records it as a download. Used when a ghost
+  /// resource was previously viewed online: the cache becomes a real offline
+  /// download with no server connection. Returns false when no cache exists.
+  Future<bool> _promoteCachedPdf(ResourceModel item, String resourceId) async {
+    final rawUrl = item.pdfUrl;
+    if (rawUrl == null || rawUrl.isEmpty) return false;
+    final key = rawUrl.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
+    final cacheFile = File('${(await getTemporaryDirectory()).path}/pdf_cache_$key');
+    if (!await cacheFile.exists()) return false;
+    final ext = rawUrl.contains('.') ? '.${rawUrl.split('.').last.split('?').first}' : '.pdf';
+    final dest = File('${(await getApplicationDocumentsDirectory()).path}/$resourceId$ext');
+    await cacheFile.copy(dest.path);
+    await DBHelper().insertDownload(resourceId, dest.path, item.title, item.subject, item.grade, item.type.name, mtime: item.mtime);
+    return true;
+  }
+
   Widget _buildDownloadButton(ResourceModel item, ColorScheme cs) {
     final l10n = AppLocalizations.of(context)!;
     final resourceId = item.id.toString();
@@ -367,6 +381,20 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
 
             final isOnline = ConnectivityService().isOnline;
             if (!isOnline) {
+              final promoted = await _promoteCachedPdf(item, resourceId);
+              if (promoted) {
+                if (mounted) {
+                  setState(() {
+                    _pendingIds.remove(resourceId);
+                    _downloadedIds.add(resourceId);
+                  });
+                  messenger.showSnackBar(SnackBar(
+                    content: Text(l10n.snackbarDownloadComplete),
+                    duration: const Duration(milliseconds: 600),
+                  ));
+                }
+                return;
+              }
               try {
                 await DownloadQueue().enqueue(resourceId, url, fileName,
                   title: item.title, subject: item.subject, grade: item.grade,
@@ -500,6 +528,21 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                           children: [
                             InkWell(
                               onTap: () async {
+                                if (isGhost) {
+                                  if (!mounted) return;
+                                  final ghostUrl = _isServerUrl(item.pdfUrl) ? item.pdfUrl! : '/files/${item.id}';
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: Text(l10n.snackbarNotDownloaded(item.title)),
+                                    action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
+                                      DownloadQueue().enqueue(item.id, ghostUrl, '${item.title}${ghostUrl.contains('.') ? '.${ghostUrl.split('.').last.split('?').first}' : '.pdf'}',
+                                        title: item.title, subject: item.subject, grade: item.grade,
+                                        type: item.type.name, mtime: item.mtime,
+                                      );
+                                      if (mounted) setState(() => _pendingIds.add(item.id));
+                                    }),
+                                  ));
+                                  return;
+                                }
                                 if (item.type == ResourceType.quiz) {
                                   unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
                                   unawaited(ActivityTracker().logAction('view', resourceId: item.id.toString(), metadata: item.title));
@@ -529,20 +572,6 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                 if (item.type == ResourceType.videos) {
                                   final rawUrl = item.pdfUrl;
                                   final url = _isServerUrl(rawUrl) ? rawUrl! : '/files/${item.id}';
-                                  if (isGhost) {
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                      content: Text(l10n.snackbarNotDownloaded(item.title)),
-                                      action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
-                                        DownloadQueue().enqueue(item.id, url, '${item.title}${url.contains('.') ? '.${url.split('.').last.split('?').first}' : '.mp4'}',
-                                          title: item.title, subject: item.subject, grade: item.grade,
-                                          type: item.type.name, mtime: item.mtime,
-                                        );
-                                        if (mounted) setState(() => _pendingIds.add(item.id));
-                                      }),
-                                    ));
-                                    return;
-                                  }
                                   if (!mounted) return;
                                   unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
                                   unawaited(ActivityTracker().logAction('view', resourceId: item.id.toString(), metadata: item.title));
@@ -561,22 +590,6 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                       content: Text(l10n.fileNotAvailable),
                                     ));
                                   }
-                                  return;
-                                }
-                                if (isGhost) {
-                                  if (!mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                    content: Text(l10n.snackbarNotDownloaded(item.title)),
-                                    action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
-                                      final rawUrl = item.pdfUrl;
-                                      final url = _isServerUrl(rawUrl) ? rawUrl! : '/files/${item.id}';
-                                      DownloadQueue().enqueue(item.id, url, '${item.title}.pdf',
-                                        title: item.title, subject: item.subject, grade: item.grade,
-                                        type: item.type.name, mtime: item.mtime,
-                                      );
-                                      if (mounted) setState(() => _pendingIds.add(item.id));
-                                    }),
-                                  ));
                                   return;
                                 }
                                 String url = item.pdfUrl!;
