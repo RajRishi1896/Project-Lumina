@@ -396,24 +396,6 @@
         var _gradePage = 1, _gradeFiltered = [];
         var _subjectPage = 1, _subjectFiltered = [];
 
-        /**
-         * Update the pagination controls for a danger-zone table: page info
-         * text, prev/next disabled state, and row visibility.
-         * @param {string} key - Table key ('student' | 'admin' | 'teacher' | 'grade' | 'subject')
-         * @param {number} page - Current page
-         * @param {number} totalPages - Total page count
-         * @param {number} total - Total row count (0 hides the pagination row)
-         */
-        function _updateDangerPagination(key, page, totalPages, total) {
-            var el = document.getElementById(key + 'Pagination');
-            var pageInfo = document.getElementById(key + 'PageInfo');
-            var prevBtn = document.getElementById('btn-' + key + 'PrevPage');
-            var nextBtn = document.getElementById('btn-' + key + 'NextPage');
-            if (el) el.style.display = total > 0 ? 'flex' : 'none';
-            if (pageInfo) pageInfo.textContent = __('settings.page_of', {current: page, total: totalPages});
-            if (prevBtn) { prevBtn.disabled = page <= 1; prevBtn.style.opacity = page <= 1 ? '0.4' : '1'; }
-            if (nextBtn) { nextBtn.disabled = page >= totalPages; nextBtn.style.opacity = page >= totalPages ? '0.4' : '1'; }
-        }
         // Pagination handlers -- move the danger-zone table page windows and re-render.
         function studentPrevPage() { if (_studentPage > 1) { _studentPage--; renderStudentPage(); } }
         function studentNextPage() { var tp = Math.ceil(_studentFiltered.length / _dangerPerPage); if (_studentPage < tp) { _studentPage++; renderStudentPage(); } }
@@ -503,7 +485,7 @@
                     '</tr>';
                 }).join('');
             }
-            _updateDangerPagination('grade', _gradePage, totalPages, data.length);
+            updatePagination('grade', _gradePage, totalPages, data.length);
         }
 
         /** Creates a new grade via POST to /grades after validating the name. */
@@ -574,40 +556,25 @@
          */
         async function deleteGrade(name) {
             var others = activeGrades.filter(function(g) { return (g.name || g) !== name; });
-            var result = await new Promise(function(resolve) {
-                var overlay = document.createElement('div');
-                overlay.className = 'popup';
-                overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;';
-                var xferHtml = '';
-                if (others.length > 0) {
-                    var opts = others.map(function(g) { var n = g.name || g; return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
-                    xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.5rem;">'
-                        + '<select id="gradeXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--surface);color:var(--on-surface);font-size:0.875rem;">'
-                        + '<option value="">' + __('danger.transfer.select_grade') + '</option>' + opts + '</select>'
-                        + '<button id="gradeXferBtn" style="width:100%;padding:0.6rem;background:var(--teal);color:#fff;border:2px solid var(--teal);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('danger.transfer.transfer_and_delete') + '</button>'
-                        + '</div>';
+            var xferHtml = '';
+            if (others.length > 0) {
+                var opts = others.map(function(g) { var n = g.name || g; return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+                xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin:0.5rem 0 0.75rem;">'
+                    + '<select id="gradeXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--surface);color:var(--on-surface);font-size:0.875rem;">'
+                    + '<option value="">' + __('danger.transfer.select_grade') + '</option>' + opts + '</select></div>';
+            }
+            var confirmed = await showConfirm(__('danger.confirm.delete_grade_title'), __('danger.confirm.delete_grade', {name: name}), true, __('danger.confirm.delete_btn'), xferHtml,
+                others.length > 0 ? { label: __('danger.transfer.transfer_and_delete'), value: 'transfer' } : null);
+            if (!confirmed) return;
+            var result = '__delete__';
+            if (confirmed === 'transfer') {
+                var targetEl = document.querySelector('#confirmModalText #gradeXferTarget');
+                if (!targetEl || !targetEl.value) {
+                    showNotification('gradeDangerNotif', __('danger.transfer.select_target'), true);
+                    return;
                 }
-                overlay.innerHTML = '<div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:440px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--danger);">'
-                    + '<div style="text-align:center;margin-bottom:1rem;color:var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></div>'
-                    + '<h3 style="font-size:1.15rem;font-weight:800;margin:0 0 0.5rem;color:var(--danger);text-align:center;">' + __('danger.confirm.delete_grade_title') + '</h3>'
-                    + '<p style="font-size:0.9rem;color:var(--text-secondary);margin:0 0 1rem;text-align:center;">' + __('danger.confirm.delete_grade', {name: name}) + '</p>'
-                    + xferHtml
-                    + '<button id="gradeDelBtn" style="width:100%;padding:0.6rem;background:var(--danger);color:#fff;border:2px solid var(--danger);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('danger.confirm.delete_btn') + '</button>'
-                    + '<button id="gradeCancelBtn" style="width:100%;padding:0.6rem;background:transparent;color:var(--on-surface);border:1px solid var(--outline);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;margin-top:0.5rem;">' + __('content.modal_cancel') + '</button>'
-                    + '</div>';
-                document.body.appendChild(overlay);
-                function done(val) { overlay.remove(); resolve(val); }
-                var xferBtn = document.getElementById('gradeXferBtn');
-                var delBtn = document.getElementById('gradeDelBtn');
-                if (xferBtn) xferBtn.addEventListener('click', function() {
-                    var target = document.getElementById('gradeXferTarget').value;
-                    if (!target) { showNotification('gradeDangerNotif', __('danger.transfer.select_target'), true); return; }
-                    done(target);
-                });
-                if (delBtn) delBtn.addEventListener('click', function() { done('__delete__'); });
-                document.getElementById('gradeCancelBtn').addEventListener('click', function() { done(null); });
-            });
-            if (!result) return;
+                result = targetEl.value;
+            }
             try {
                 var url = '/grades/' + encodeURIComponent(name);
                 if (result !== '__delete__') url += '?transfer_to=' + encodeURIComponent(result);
@@ -622,27 +589,6 @@
             } catch (e) {
                 showNotification('gradeDangerNotif', __('danger.notif.network_error'), true);
             }
-        }
-
-        /**
-         * Return the SVG markup for the given subject icon symbol, falling
-         * back to the folder icon for unknown keys.
-         * @param {string} symbol - The symbol key (e.g. 'calculator')
-         * @returns {string} SVG markup
-         */
-        function getSymbolSvg(symbol) {
-            var svgs = {
-                calculator: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8.01" y1="10" y2="10"/><line x1="12" x2="12.01" y1="10" y2="10"/><line x1="16" x2="16.01" y1="10" y2="10"/><line x1="8" x2="8.01" y1="14" y2="14"/><line x1="12" x2="12.01" y1="14" y2="14"/><line x1="16" x2="16.01" y1="14" y2="14"/><line x1="8" x2="8.01" y1="18" y2="18"/><line x1="12" x2="16" y1="18" y2="18"/></svg>',
-                atom: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(30 12 12)"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(90 12 12)"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(150 12 12)"/></svg>',
-                globe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
-                book: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v18H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 5h10"/><path d="M6 9h10"/></svg>',
-                laptop: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2" ry="2"/><line x1="2" x2="22" y1="20" y2="20"/></svg>',
-                microscope: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg>',
-                compass: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
-                code: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
-                folder: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>'
-            };
-            return svgs[symbol] || svgs.folder;
         }
 
         /**
@@ -748,7 +694,7 @@
                     '</tr>';
                 }).join('');
             }
-            _updateDangerPagination('subject', _subjectPage, totalPages, data.length);
+            updatePagination('subject', _subjectPage, totalPages, data.length);
         }
 
         /** Creates a new subject via POST to /teacher/subjects with name, symbol, and class. */
@@ -820,40 +766,25 @@
          */
         async function deleteDangerSubject(id, name) {
             var others = activeDangerSubjects.filter(function(s) { return s.id !== id; });
-            var result = await new Promise(function(resolve) {
-                var overlay = document.createElement('div');
-                overlay.className = 'popup';
-                overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;';
-                var xferHtml = '';
-                if (others.length > 0) {
-                    var opts = others.map(function(s) { return '<option value="' + esc(s.name) + '">' + esc(s.name) + '</option>'; }).join('');
-                    xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.5rem;">'
-                        + '<select id="subjectXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--surface);color:var(--on-surface);font-size:0.875rem;">'
-                        + '<option value="">' + __('danger.transfer.select_subject') + '</option>' + opts + '</select>'
-                        + '<button id="subjectXferBtn" style="width:100%;padding:0.6rem;background:var(--teal);color:#fff;border:2px solid var(--teal);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('danger.transfer.transfer_and_delete') + '</button>'
-                        + '</div>';
+            var xferHtml = '';
+            if (others.length > 0) {
+                var opts = others.map(function(s) { return '<option value="' + esc(s.name) + '">' + esc(s.name) + '</option>'; }).join('');
+                xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin:0.5rem 0 0.75rem;">'
+                    + '<select id="subjectXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--surface);color:var(--on-surface);font-size:0.875rem;">'
+                    + '<option value="">' + __('danger.transfer.select_subject') + '</option>' + opts + '</select></div>';
+            }
+            var confirmed = await showConfirm(__('danger.confirm.delete_subject_title'), __('danger.confirm.delete_subject', {name: name}), true, __('danger.confirm.delete_subject_btn'), xferHtml,
+                others.length > 0 ? { label: __('danger.transfer.transfer_and_delete'), value: 'transfer' } : null);
+            if (!confirmed) return;
+            var result = '__delete__';
+            if (confirmed === 'transfer') {
+                var targetEl = document.querySelector('#confirmModalText #subjectXferTarget');
+                if (!targetEl || !targetEl.value) {
+                    showNotification('subjectDangerNotif', __('danger.transfer.select_target'), true);
+                    return;
                 }
-                overlay.innerHTML = '<div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:440px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--danger);">'
-                    + '<div style="text-align:center;margin-bottom:1rem;color:var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></div>'
-                    + '<h3 style="font-size:1.15rem;font-weight:800;margin:0 0 0.5rem;color:var(--danger);text-align:center;">' + __('danger.confirm.delete_subject_title') + '</h3>'
-                    + '<p style="font-size:0.9rem;color:var(--text-secondary);margin:0 0 1rem;text-align:center;">' + __('danger.confirm.delete_subject', {name: name}) + '</p>'
-                    + xferHtml
-                    + '<button id="subjectDelBtn" style="width:100%;padding:0.6rem;background:var(--danger);color:#fff;border:2px solid var(--danger);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('danger.confirm.delete_subject_btn') + '</button>'
-                    + '<button id="subjectCancelBtn" style="width:100%;padding:0.6rem;background:transparent;color:var(--on-surface);border:1px solid var(--outline);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;margin-top:0.5rem;">' + __('content.modal_cancel') + '</button>'
-                    + '</div>';
-                document.body.appendChild(overlay);
-                function done(val) { overlay.remove(); resolve(val); }
-                var xferBtn = document.getElementById('subjectXferBtn');
-                var delBtn = document.getElementById('subjectDelBtn');
-                if (xferBtn) xferBtn.addEventListener('click', function() {
-                    var target = document.getElementById('subjectXferTarget').value;
-                    if (!target) { showNotification('subjectDangerNotif', __('danger.transfer.select_target'), true); return; }
-                    done(target);
-                });
-                if (delBtn) delBtn.addEventListener('click', function() { done('__delete__'); });
-                document.getElementById('subjectCancelBtn').addEventListener('click', function() { done(null); });
-            });
-            if (!result) return;
+                result = targetEl.value;
+            }
             try {
                 var url = '/teacher/subjects/' + encodeURIComponent(id);
                 if (result !== '__delete__') url += '?transfer_to=' + encodeURIComponent(result);
@@ -907,7 +838,7 @@
                     '</tr>';
                 }).join('');
             }
-            _updateDangerPagination('student', _studentPage, totalPages, data.length);
+            updatePagination('student', _studentPage, totalPages, data.length);
         }
 
         /** Filters the teacher table by username/name/department search and re-renders. */
@@ -948,7 +879,7 @@
                     '</tr>';
                 }).join('');
             }
-            _updateDangerPagination('teacher', _teacherPage, totalPages, data.length);
+            updatePagination('teacher', _teacherPage, totalPages, data.length);
         }
 
         /** Filters the admin table by username/name/department/scholar-id search and re-renders. */
@@ -995,7 +926,7 @@
                     '</tr>';
                 }).join('');
             }
-            _updateDangerPagination('admin', _adminPage, totalPages, data.length);
+            updatePagination('admin', _adminPage, totalPages, data.length);
         }
 
         /**
@@ -1357,21 +1288,9 @@
 
         // Debounced search wrappers -- 200ms wait prevents a filter call
         // on every keystroke (see AGENTS.md web search-input rule).
-        var _debounceDangerStudents;
-        function debouncedFilterDangerStudents() {
-            clearTimeout(_debounceDangerStudents);
-            _debounceDangerStudents = setTimeout(filterDangerStudents, 200);
-        }
-        var _debounceDangerTeachers;
-        function debouncedFilterDangerTeachers() {
-            clearTimeout(_debounceDangerTeachers);
-            _debounceDangerTeachers = setTimeout(filterDangerTeachers, 200);
-        }
-        var _debounceDangerAdmins;
-        function debouncedFilterDangerAdmins() {
-            clearTimeout(_debounceDangerAdmins);
-            _debounceDangerAdmins = setTimeout(filterDangerAdmins, 200);
-        }
+        var debouncedFilterDangerStudents = debounce(filterDangerStudents, 200);
+        var debouncedFilterDangerTeachers = debounce(filterDangerTeachers, 200);
+        var debouncedFilterDangerAdmins = debounce(filterDangerAdmins, 200);
 
         /**
          * Page bootstrap: load current user and danger-zone data, then wire
@@ -1398,11 +1317,9 @@
             checkSelfResetRequired();
             loadDangerZone();
 
-                        document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
             document.getElementById('btn-openCreateStudentModal')?.addEventListener('click', openCreateStudentModal);
             document.getElementById('btn-openCreateAdminModal')?.addEventListener('click', openCreateAdminModal);
             document.getElementById('btn-openCreateTeacherModal')?.addEventListener('click', openCreateTeacherModal);
-            document.getElementById('btn-submitForcePasswordReset')?.addEventListener('click', submitForcePasswordReset);
             document.getElementById('btn-closeCreateModal')?.addEventListener('click', closeCreateModal);
             document.getElementById('btn-addGrade')?.addEventListener('click', function() {
                 document.getElementById('modalGradeName').value = '';
@@ -1417,11 +1334,7 @@
 
             var gradeSearch = document.getElementById('dangerGradeSearch');
             if (gradeSearch) {
-                var gradeDebounce = null;
-                gradeSearch.addEventListener('input', function() {
-                    clearTimeout(gradeDebounce);
-                    gradeDebounce = setTimeout(filterGrades, 200);
-                });
+                gradeSearch.addEventListener('input', debounce(filterGrades, 200));
             }
 
             var studentSearch = document.getElementById('studentDangerSearch');
@@ -1439,11 +1352,7 @@
 
             var subjectSearch = document.getElementById('dangerSubjectSearch');
             if (subjectSearch) {
-                var subjectDebounce = null;
-                subjectSearch.addEventListener('input', function() {
-                    clearTimeout(subjectDebounce);
-                    subjectDebounce = setTimeout(filterDangerSubjects, 200);
-                });
+                subjectSearch.addEventListener('input', debounce(filterDangerSubjects, 200));
             }
 
             var studentTable = document.getElementById('studentDangerTable');

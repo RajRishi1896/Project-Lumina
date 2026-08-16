@@ -373,7 +373,6 @@
             permission_denied: 'Permission Denied', rate_limited: 'Rate Limited',
             validation_error: 'Validation Error',
             database_backup: 'DB Backup', database_restore: 'DB Restore',
-            database_backup: 'DB Backup', database_restore: 'DB Restore',
             upload_rejected: 'Upload Rejected'
         };
 
@@ -1012,12 +1011,10 @@
                 });
             });
 
-                        document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
             document.getElementById('toggleOldPwdBtn')?.addEventListener('click', function() { togglePasswordVisibility('oldPwd', 'eyeIconOld', 'toggleOldPwdBtn'); });
             document.getElementById('toggleNewPwdBtn')?.addEventListener('click', function() { togglePasswordVisibility('newPwd', 'eyeIconNew', 'toggleNewPwdBtn'); });
             document.getElementById('btn-changePassword')?.addEventListener('click', changePassword);
             document.getElementById('btn-saveMyProfile')?.addEventListener('click', saveMyProfile);
-            document.getElementById('btn-submitForcePasswordReset')?.addEventListener('click', submitForcePasswordReset);
             document.getElementById('btn-loadAdminLogs')?.addEventListener('click', loadAdminLogs);
             document.getElementById('btn-downloadLogs')?.addEventListener('click', function() {
                 var dur = document.getElementById('downloadDurationSelect')?.value || 'all';

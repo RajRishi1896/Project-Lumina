@@ -56,13 +56,6 @@
 </div>
 </div>
 <script>
-// Restore saved theme (no toggle button -- error page is minimal)
-(function applyTheme() {
-    const stored = localStorage.getItem('lumina-theme');
-    const theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', theme);
-})();
-
 /*
  * Parse the ?reason= query param and render the matching error card content.
  * Supports: session_expired, access_denied, not_found.
@@ -72,45 +65,41 @@
  */
 document.addEventListener('DOMContentLoaded', function() {
   const reason = new URLSearchParams(window.location.search).get('reason') || 'not_found';
-  (function(){
-    const titleEl = document.getElementById('errorTitle');
-    const msgEl = document.getElementById('errorMessage');
-    const badgeEl = document.getElementById('reasonBadge');
-    const btnEl = document.getElementById('backBtn');
+  const titleEl = document.getElementById('errorTitle');
+  const msgEl = document.getElementById('errorMessage');
+  const badgeEl = document.getElementById('reasonBadge');
+  const btnEl = document.getElementById('backBtn');
+  const HOME = '/welcome';
 
-    const messages = {
-      session_expired: {
-        titleKey: 'error_session_expired_title',
-        msgKey: 'error_session_expired_message',
-        badgeKey: 'error_session_expired_badge',
-        badgeClass: 'expired',
-        home: '/welcome'
-      },
-      access_denied: {
-        titleKey: 'error_access_denied_title',
-        msgKey: 'error_access_denied_message',
-        badgeKey: 'error_access_denied_badge',
-        badgeClass: 'denied',
-        home: '/welcome'
-      },
-      not_found: {
-        titleKey: 'error_not_found_title',
-        msgKey: 'error_not_found_message',
-        badgeKey: 'error_not_found_badge',
-        badgeClass: 'notfound',
-        home: '/welcome'
-      }
-    };
+  const messages = {
+    session_expired: {
+      titleKey: 'error_session_expired_title',
+      msgKey: 'error_session_expired_message',
+      badgeKey: 'error_session_expired_badge',
+      badgeClass: 'expired'
+    },
+    access_denied: {
+      titleKey: 'error_access_denied_title',
+      msgKey: 'error_access_denied_message',
+      badgeKey: 'error_access_denied_badge',
+      badgeClass: 'denied'
+    },
+    not_found: {
+      titleKey: 'error_not_found_title',
+      msgKey: 'error_not_found_message',
+      badgeKey: 'error_not_found_badge',
+      badgeClass: 'notfound'
+    }
+  };
 
-    loadTranslations(currentLang).then(function() {
-      const info = messages[reason] || messages.access_denied;
-      titleEl.textContent = __(info.titleKey);
-      msgEl.textContent = __(info.msgKey);
-      badgeEl.textContent = __(info.badgeKey);
-      badgeEl.className = 'reason-badge ' + info.badgeClass;
-      btnEl.href = info.home;
-    });
-  })();
+  loadTranslations(currentLang).then(function() {
+    const info = messages[reason] || messages.access_denied;
+    titleEl.textContent = __(info.titleKey);
+    msgEl.textContent = __(info.msgKey);
+    badgeEl.textContent = __(info.badgeKey);
+    badgeEl.className = 'reason-badge ' + info.badgeClass;
+    btnEl.href = HOME;
+  });
 });
 </script>
 </body>

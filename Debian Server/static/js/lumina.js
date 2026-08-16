@@ -43,6 +43,48 @@ function timeAgo(iso) {
     return new Date(iso).toLocaleDateString(currentLang);
 }
 
+/**
+ * Return the SVG markup for the given subject icon symbol, falling
+ * back to the folder icon for unknown keys.
+ * @param {string} symbol - The symbol key (e.g. 'calculator')
+ * @returns {string} SVG markup
+ */
+function getSymbolSvg(symbol) {
+    var svgs = {
+        calculator: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8.01" y1="10" y2="10"/><line x1="12" x2="12.01" y1="10" y2="10"/><line x1="16" x2="16.01" y1="10" y2="10"/><line x1="8" x2="8.01" y1="14" y2="14"/><line x1="12" x2="12.01" y1="14" y2="14"/><line x1="16" x2="16.01" y1="14" y2="14"/><line x1="8" x2="8.01" y1="18" y2="18"/><line x1="12" x2="16" y1="18" y2="18"/></svg>',
+        atom: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(30 12 12)"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(90 12 12)"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(150 12 12)"/></svg>',
+        globe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+        book: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v18H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 5h10"/><path d="M6 9h10"/></svg>',
+        laptop: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2" ry="2"/><line x1="2" x2="22" y1="20" y2="20"/></svg>',
+        microscope: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg>',
+        compass: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+        code: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+        folder: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>'
+    };
+    return svgs[symbol] || svgs.folder;
+}
+
+/**
+ * Update a table's pagination controls: page info text, prev/next disabled
+ * state, and row visibility. Element ids follow {key}Pagination,
+ * {key}PageInfo, btn-{key}PrevPage, btn-{key}NextPage.
+ * @param {string} key - Table key used to build element ids
+ * @param {number} page - Current page
+ * @param {number} totalPages - Total page count
+ * @param {number} total - Total row count (0 hides the pagination row)
+ * @returns {void}
+ */
+function updatePagination(key, page, totalPages, total) {
+    var el = document.getElementById(key + 'Pagination');
+    var pageInfo = document.getElementById(key + 'PageInfo');
+    var prevBtn = document.getElementById('btn-' + key + 'PrevPage');
+    var nextBtn = document.getElementById('btn-' + key + 'NextPage');
+    if (el) el.style.display = total > 0 ? 'flex' : 'none';
+    if (pageInfo) pageInfo.textContent = __('settings.page_of', {current: page, total: totalPages});
+    if (prevBtn) { prevBtn.disabled = page <= 1; prevBtn.style.opacity = page <= 1 ? '0.4' : '1'; }
+    if (nextBtn) { nextBtn.disabled = page >= totalPages; nextBtn.style.opacity = page >= totalPages ? '0.4' : '1'; }
+}
+
 
 /* ── i18n / Language ──────────────────────────────────────────────────────── */
 
@@ -355,24 +397,12 @@ function getPreferredTheme() {
 
 /**
  * Apply a theme to the document and persist to localStorage.
- * Updates the data-theme attribute on <html>, the theme toggle icon,
- * and the theme toggle label text.
  * @param {string} theme - 'light' or 'dark'
  * @returns {void}
  */
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('lumina-theme', theme);
-    const icon = document.getElementById('themeIcon');
-    const label = document.getElementById('themeLabel');
-    if (icon) {
-        if (theme === 'dark') {
-            icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
-        } else {
-            icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
-        }
-    }
-    if (label) label.textContent = theme === 'dark' ? __('sidebar.light_mode') : __('sidebar.dark_mode');
 }
 
 /** Toggle between light and dark themes based on current preference. */
@@ -497,9 +527,14 @@ function createFocusTrap(modal, triggerEl) {
  * @param {string} message - Modal body text
  * @param {boolean} [isDanger=true] - If true, uses danger (red) styling; if false, teal
  * @param {string} [confirmText] - Optional text for the confirm button
- * @returns {Promise<boolean>}
+ * @param {string} [body] - Optional HTML injected into the modal body (e.g. a
+ *     transfer select); replaces the message text when provided
+ * @param {{label: string, value: string}} [secondary] - Optional second confirm
+ *     button (teal). Clicking it resolves to `secondary.value`; the main
+ *     confirm button resolves to true. Use for "transfer then delete" actions.
+ * @returns {Promise<boolean|string>}
  */
-function showConfirm(title, message, isDanger, confirmText) {
+function showConfirm(title, message, isDanger, confirmText, body, secondary) {
     if (isDanger === undefined) isDanger = true;
     return new Promise(function(resolve) {
         var modal = document.getElementById('globalConfirmModal');
@@ -507,10 +542,15 @@ function showConfirm(title, message, isDanger, confirmText) {
         var textEl = document.getElementById('confirmModalText');
         var confirmBtn = document.getElementById('confirmConfirmBtn');
         var cancelBtn = document.getElementById('confirmCancelBtn');
+        var secondaryBtn = document.getElementById('confirmSecondaryBtn');
         var iconEl = document.getElementById('confirmModalIcon');
-        if (!modal || !titleEl || !textEl || !confirmBtn || !cancelBtn) { resolve(false); return; }
+        if (!modal || !titleEl || !textEl || !confirmBtn || !cancelBtn || !secondaryBtn) { resolve(false); return; }
         titleEl.innerText = title;
-        textEl.innerText = message;
+        if (body) {
+            textEl.innerHTML = body;
+        } else {
+            textEl.innerText = message;
+        }
         if (isDanger) {
             confirmBtn.style.background = 'var(--danger)';
             confirmBtn.style.borderColor = 'var(--danger)';
@@ -527,6 +567,12 @@ function showConfirm(title, message, isDanger, confirmText) {
             modal.firstElementChild.style.border = '2px solid var(--teal)';
         }
         if (confirmText) confirmBtn.innerText = confirmText;
+        if (secondary) {
+            secondaryBtn.style.display = '';
+            secondaryBtn.innerText = secondary.label;
+        } else {
+            secondaryBtn.style.display = 'none';
+        }
 
         // Capture the element that triggered the modal for focus restoration
         var triggerEl = document.activeElement;
@@ -538,14 +584,17 @@ function showConfirm(title, message, isDanger, confirmText) {
 
         var _confirmHandler = function() { cleanup(true); };
         var _cancelHandler = function() { cleanup(false); };
+        var _secondaryHandler = function() { cleanup(secondary ? secondary.value : false); };
         confirmBtn.addEventListener('click', _confirmHandler);
         cancelBtn.addEventListener('click', _cancelHandler);
+        secondaryBtn.addEventListener('click', _secondaryHandler);
 
         function cleanup(value) {
             focusTrap.deactivate();
             modal.classList.add('hidden');
             confirmBtn.removeEventListener('click', _confirmHandler);
             cancelBtn.removeEventListener('click', _cancelHandler);
+            secondaryBtn.removeEventListener('click', _secondaryHandler);
             resolve(value);
         }
     });
@@ -556,8 +605,6 @@ function showConfirm(title, message, isDanger, confirmText) {
 let loggedInUser = 'admin';
 /** @type {string} Role of the logged-in user ('admin' or 'teacher'). Defaults to 'admin'. */
 let userRole = 'admin';
-/** @type {boolean} Whether the default 'admin' login is still enabled. */
-let adminDefaultEnabled = true;
 
 /**
  * ── Auth / Session Flow ──────────────────────────────────────────────────────
@@ -685,6 +732,49 @@ async function submitForcePasswordReset() {
 
 /* ── Active nav highlighting ─────────────────────────────────────────────── */
 
+/** Path → sidebar/bottom-nav key. Shared by renderLayout, initNav, and highlightNav. */
+const NAV_MAP = {
+    '/static/index': 'home',
+    '/static/courses': 'courses',
+    '/static/manage-content': 'content',
+    '/static/manage-settings': 'settings',
+    '/static/students': 'students',
+    '/static/student-detail': 'students',
+    '/static/manage-help': 'help',
+    '/static/manage-danger': 'danger',
+    '/static/flashcards': 'flashcards',
+};
+
+/** Path → page-init registry key for initCurrentPage() lookups. */
+const PAGE_INIT_MAP = {
+    '/static/index': 'home',
+    '/static/courses': 'courses',
+    '/static/manage-content': 'content',
+    '/static/manage-settings': 'settings',
+    '/static/students': 'students',
+    '/static/student-detail': 'student-detail',
+    '/static/manage-help': 'help',
+    '/static/manage-danger': 'danger',
+    '/static/flashcards': 'flashcards',
+};
+
+/**
+ * Highlight the current page's sidebar and bottom-nav items.
+ * No-op when the path has no nav mapping (e.g. flashcards).
+ * @returns {void}
+ */
+function highlightNav() {
+    var key = NAV_MAP[location.pathname.replace(/\/+$/, '')] || '';
+    var suffix = (key === 'settings' && location.pathname === '/static/manage-settings') ? 'account' : key;
+    if (!suffix) return;
+    document.querySelectorAll('.nav-item').forEach(function(el) { el.classList.remove('active'); });
+    document.querySelectorAll('.bottom-nav-item').forEach(function(el) { el.classList.remove('active'); });
+    var navEl = document.getElementById('nav-' + suffix);
+    if (navEl) navEl.classList.add('active');
+    var bottomEl = document.getElementById('bottom-nav-' + suffix);
+    if (bottomEl) bottomEl.classList.add('active');
+}
+
 /**
  * Renders the sidebar (<aside>) and bottom nav (#bottomNav) into their container
  * elements. Called once on DOMContentLoaded. Eliminates identical sidebar/nav
@@ -707,31 +797,19 @@ function renderLayout() {
     bottomNav.setAttribute('role', 'navigation');
     bottomNav.setAttribute('aria-label', 'Bottom navigation');
 
-    var path = location.pathname.replace(/\/+$/, '');
-    var mapping = { '/static/index':'home','/static/courses':'courses','/static/manage-content':'content','/static/manage-settings':'settings','/static/students':'students','/static/student-detail':'students','/static/manage-help':'help','/static/manage-danger':'danger' };
-    var key = mapping[path] || '';
+    var key = NAV_MAP[location.pathname.replace(/\/+$/, '')] || '';
 
-    // If sidebar already has nav items, just toggle active classes (no flash)
+    // If sidebar already has nav items, just re-highlight (no flash)
     var existingNav = aside.querySelector('nav');
     if (existingNav && existingNav.children.length > 0) {
-        var idMap = { settings: 'account' };
-        var allItems = aside.querySelectorAll('.nav-item');
-        for (var i = 0; i < allItems.length; i++) {
-            var itemId = allItems[i].id.replace('nav-', '');
-            allItems[i].classList.toggle('active', itemId === (idMap[key] || key));
-        }
-        var allBtm = bottomNav.querySelectorAll('.bottom-nav-item');
-        for (var j = 0; j < allBtm.length; j++) {
-            var btmId = allBtm[j].id.replace('bottom-nav-', '');
-            allBtm[j].classList.toggle('active', btmId === (idMap[key] || key));
-        }
+        highlightNav();
         return;
     }
 
     // First render: build full sidebar
     var cacheKey = (userRole || '') + ':' + key;
     renderLayout._last = cacheKey;
-    var useAccount = key === 'settings' && path === '/static/manage-settings';
+    var useAccount = key === 'settings' && location.pathname === '/static/manage-settings';
 
     function idFor(k) { return k === 'settings' ? 'account' : k; }
 
@@ -804,6 +882,7 @@ function renderModals() {
         '<h3 id="confirmModalTitle" style="font-size: 1.25rem; font-weight: 800; color: var(--on-surface); margin-top: 0; margin-bottom: 0.5rem;">Confirm Action</h3>' +
         '<p id="confirmModalText" style="color: var(--on-surface); opacity: 0.7; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.75rem;">Are you sure you want to proceed?</p>' +
         '<div style="display: flex; gap: 0.75rem; justify-content: flex-end; border-top: 1px solid var(--outline); padding-top: 1.25rem;">' +
+        '<button id="confirmSecondaryBtn" class="btn" style="display:none; background: var(--teal); color: #fff; padding: 0.625rem 1.25rem;"></button>' +
         '<button id="confirmCancelBtn" class="btn btn-outline" data-i18n="settings.confirm.cancel_btn" style="border-color: var(--outline); color: var(--on-surface); background: transparent; padding: 0.625rem 1.25rem;">Cancel</button>' +
         '<button id="confirmConfirmBtn" class="btn" data-i18n="settings.confirm.ok_btn" style="background: var(--danger); color: #fff; padding: 0.625rem 1.25rem;">Confirm</button></div></div>';
 
@@ -833,6 +912,9 @@ function renderModals() {
 
     document.body.appendChild(confirmModal);
     document.body.appendChild(resetModal);
+
+    // Single wiring point for the force-reset modal (was duplicated on every page)
+    document.getElementById('btn-submitForcePasswordReset')?.addEventListener('click', submitForcePasswordReset);
 
     // Delegated eye-toggle for password fields
     document.addEventListener('click', function(e) {
@@ -869,32 +951,12 @@ function renderModals() {
 /**
  * Auto-detects the current page from location.pathname and highlights the correct
  * sidebar nav item and bottom-nav item. Runs once on DOMContentLoaded.
- * Path-to-key mapping covers all static dashboard pages.
+ * Path-to-key mapping lives in NAV_MAP (see highlightNav).
  */
 function initNav() {
     if (document.getElementById('welcome-content')) return;
     renderLayout();
-    const path = location.pathname.replace(/\/+$/, '');
-    const mapping = {
-        '/static/index': 'home',
-        '/static/courses': 'courses',
-        '/static/manage-content': 'content',
-        '/static/manage-settings': 'settings',
-        '/static/students': 'students',
-        '/static/student-detail': 'students',
-        '/static/manage-help': 'help',
-        '/static/manage-danger': 'danger',
-    };
-    const key = mapping[path] || '';
-    if (key) {
-        const suffix = (key === 'settings' && path === '/static/manage-settings') ? 'account' : key;
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
-        const navEl = document.getElementById('nav-' + suffix);
-        if (navEl) navEl.classList.add('active');
-        const bottomEl = document.getElementById('bottom-nav-' + suffix);
-        if (bottomEl) bottomEl.classList.add('active');
-    }
+    highlightNav();
 }
 
 
@@ -922,18 +984,7 @@ window.registerPageCleanup = function(fn) { _pageCleanupFns.push(fn); };
  */
 function initCurrentPage() {
     const path = location.pathname.replace(/\/+$/, '');
-    const mapping = {
-        '/static/index': 'home',
-        '/static/courses': 'courses',
-        '/static/manage-content': 'content',
-        '/static/manage-settings': 'settings',
-        '/static/students': 'students',
-        '/static/student-detail': 'student-detail',
-        '/static/manage-help': 'help',
-        '/static/manage-danger': 'danger',
-        '/static/flashcards': 'flashcards',
-    };
-    const key = mapping[path];
+    const key = PAGE_INIT_MAP[path];
     if (!key) return;
     if (!_pageInitRegistry[key]) {
         console.error('No page init registered for "' + key + '" (' + path + '). Page will not initialize.');

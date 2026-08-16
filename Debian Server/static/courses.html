@@ -439,23 +439,6 @@
         var courseTopics = [];
         var editingTopicId = null;
 
-        /**
-         * Show/hide and enable/disable a pagination row for the given table.
-         * @param {string} key - Table key ('course' etc.) used to build element ids
-         * @param {number} page - Current page number
-         * @param {number} totalPages - Total page count
-         * @param {number} total - Total row count (0 hides the pagination row)
-         */
-        function _updateCoursePagination(key, page, totalPages, total) {
-            var el = document.getElementById(key + 'Pagination');
-            var pageInfo = document.getElementById(key + 'PageInfo');
-            var prevBtn = document.getElementById('btn-' + key + 'PrevPage');
-            var nextBtn = document.getElementById('btn-' + key + 'NextPage');
-            if (el) el.style.display = total > 0 ? 'flex' : 'none';
-            if (pageInfo) pageInfo.textContent = __('settings.page_of', {current: page, total: totalPages});
-            if (prevBtn) { prevBtn.disabled = page <= 1; prevBtn.style.opacity = page <= 1 ? '0.4' : '1'; }
-            if (nextBtn) { nextBtn.disabled = page >= totalPages; nextBtn.style.opacity = page >= totalPages ? '0.4' : '1'; }
-        }
         // Pagination handlers -- move the course page window and re-render.
         function coursePrevPage() { if (_coursePage > 1) { _coursePage--; renderCourses(); } }
         function courseNextPage() { var tp = Math.ceil(_courseFiltered.length / _coursePerPage); if (_coursePage < tp) { _coursePage++; renderCourses(); } }
@@ -517,7 +500,7 @@
                         '</td></tr>';
                 }).join('');
             }
-            _updateCoursePagination('course', _coursePage, totalPages, data.length);
+            updatePagination('course', _coursePage, totalPages, data.length);
         }
 
         /** Load subjects and populate dropdowns */
@@ -722,51 +705,36 @@
         async function deleteChapter(topicId) {
             var others = courseTopics.filter(function(t) { return t.id !== topicId; });
             var count = courseResources.filter(function(r) { return r.topic_id === topicId; }).length;
-            var result = await new Promise(function(resolve) {
-                var overlay = document.createElement('div');
-                overlay.className = 'popup';
-                overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;z-index:20000;';
-                var xferHtml = '';
-                if (others.length > 0 && count > 0) {
-                    var opts = others.map(function(t) {
-                        return '<option value="' + esc(t.id) + '">' + esc(t.title) + '</option>';
-                    }).join('');
-                    xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.5rem;">'
-                        + '<select id="chapterXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--bg-input);color:var(--on-surface);font-size:0.875rem;">'
-                        + '<option value="">' + __('content.topic_transfer.select_topic') + '</option>' + opts + '</select>'
-                        + '<button id="chapterXferBtn" style="width:100%;padding:0.6rem;background:var(--teal);color:#fff;border:2px solid var(--teal);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('danger.transfer.transfer_and_delete') + '</button>'
-                        + '</div>';
+            var xferHtml = '';
+            if (others.length > 0 && count > 0) {
+                var opts = others.map(function(t) {
+                    return '<option value="' + esc(t.id) + '">' + esc(t.title) + '</option>';
+                }).join('');
+                xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin:0.5rem 0 0.75rem;">'
+                    + '<select id="chapterXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--bg-input);color:var(--on-surface);font-size:0.875rem;">'
+                    + '<option value="">' + __('content.topic_transfer.select_topic') + '</option>' + opts + '</select></div>';
+            }
+            var message = __('courses.chapter_delete_body') + (count > 0 ? '\n' + __('content.topics.resource_count', {count: count}) : '');
+            var confirmed = await showConfirm(__('courses.chapter_delete_title'), message, true, __('courses.chapter_delete_btn'), xferHtml,
+                others.length > 0 && count > 0 ? { label: __('danger.transfer.transfer_and_delete'), value: 'transfer' } : null);
+            if (!confirmed) return;
+            var transferTo = '';
+            if (confirmed === 'transfer') {
+                var targetEl = document.querySelector('#confirmModalText #chapterXferTarget');
+                if (!targetEl || !targetEl.value) {
+                    showNotification('chapterNotif', __('danger.transfer.select_target'), true);
+                    return;
                 }
-                overlay.innerHTML = '<div style="background:var(--surface);color:var(--on-surface);border-radius:var(--radius);padding:2rem;max-width:440px;width:90%;box-shadow:var(--card-shadow-hover);border:2px solid var(--danger);">'
-                    + '<div style="text-align:center;margin-bottom:1rem;color:var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></div>'
-                    + '<h3 style="font-size:1.15rem;font-weight:800;margin:0 0 0.5rem;color:var(--danger);text-align:center;">' + __('courses.chapter_delete_title') + '</h3>'
-                    + '<p style="font-size:0.9rem;color:var(--text-secondary);margin:0 0 0.75rem;text-align:center;">' + __('courses.chapter_delete_body') + '</p>'
-                    + (count > 0 ? '<p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 0.75rem;text-align:center;">' + __('content.topics.resource_count', {count: count}) + '</p>' : '')
-                    + xferHtml
-                    + '<button id="chapterDelBtn" style="width:100%;padding:0.6rem;background:var(--danger);color:#fff;border:2px solid var(--danger);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-size:0.875rem;">' + __('courses.chapter_delete_btn') + '</button>'
-                    + '<button id="chapterCancelBtn" style="width:100%;padding:0.6rem;background:transparent;color:var(--on-surface);border:1px solid var(--outline);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;margin-top:0.5rem;">' + __('content.modal_cancel') + '</button>'
-                    + '</div>';
-                document.body.appendChild(overlay);
-                function done(val) { overlay.remove(); resolve(val); }
-                var xferBtn = document.getElementById('chapterXferBtn');
-                var delBtn = document.getElementById('chapterDelBtn');
-                if (xferBtn) xferBtn.addEventListener('click', function() {
-                    var target = document.getElementById('chapterXferTarget').value;
-                    if (!target) { showNotification('chapterNotif', __('danger.transfer.select_target'), true); return; }
-                    done({transfer_to: target});
-                });
-                if (delBtn) delBtn.addEventListener('click', function() { done({delete: true}); });
-                document.getElementById('chapterCancelBtn').addEventListener('click', function() { done(null); });
-            });
-            if (!result) return;
+                transferTo = targetEl.value;
+            }
             try {
                 var url = '/api/teacher/courses/' + currentCourseId + '/topics/' + topicId;
-                if (result.transfer_to) url += '?transfer_to=' + encodeURIComponent(result.transfer_to);
-                else if (result.delete) url += '?delete_resources=true';
+                if (transferTo) url += '?transfer_to=' + encodeURIComponent(transferTo);
+                else url += '?delete_resources=true';
                 var res = await fetch(url, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
                     var data = await res.json().catch(function() { return {}; });
-                    if (result.transfer_to) {
+                    if (transferTo) {
                         showAlert(data.message || __('danger.transfer.done', {name: '', target: data.transferred_to || ''}), false);
                     }
                     courseResources.forEach(function(r) { if (r.topic_id === topicId) r.topic_id = ''; });
@@ -1542,7 +1510,6 @@
             checkSelfResetRequired();
 
             // Event listeners
-            document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
             document.getElementById('btn-createCourse')?.addEventListener('click', function() { openEditor(null); });
             document.getElementById('btn-importCourse')?.addEventListener('click', function() {
                 document.getElementById('importZipInput').click();

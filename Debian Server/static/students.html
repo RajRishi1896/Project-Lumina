@@ -231,11 +231,7 @@
          * Debounced wrapper for applyFilters (200ms) so the student list only
          * re-renders after the user stops typing in the search box.
          */
-        let _debounceTimer;
-        function debouncedApplyFilters() {
-            clearTimeout(_debounceTimer);
-            _debounceTimer = setTimeout(applyFilters, 200);
-        }
+        var debouncedApplyFilters = debounce(applyFilters, 200);
 
         /**
          * Page init (registered in _pageInitRegistry): loads students, then
@@ -244,7 +240,6 @@
         var _initStudents = function() {
             loadStudents();
             loadWhoAmI();
-                        document.getElementById('btn-toggleTheme')?.addEventListener('click', toggleTheme);
             document.getElementById('btn-loadStudents')?.addEventListener('click', loadStudents);
             document.getElementById('studentContainer')?.addEventListener('click', function(e) {
                 const card = e.target.closest('.student-card');
