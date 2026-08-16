@@ -79,7 +79,6 @@ async def lifespan(application: FastAPI):
             logging.error(f"Auto-reindex scan failed: {e}")
     reindex_task = asyncio.create_task(_auto_reindex_zim())
 
-    # Session pruning background task
     async def prune_sessions():
         """Hourly sweep: delete stale sessions, used refresh tokens, and expired persistent keys."""
         while True:
@@ -120,7 +119,6 @@ async def lifespan(application: FastAPI):
     from app.peer_refresh import peer_refresh_loop
     peer_refresh_task = asyncio.create_task(peer_refresh_loop(interval_seconds=3600))
 
-    # Recycle bin -- hourly purge of resources deleted more than 30 days ago
     from app.maintenance import purge_recycled_resources
     async def purge_recycled():
         """Hourly purge of resources sitting in the recycle bin for over 30 days."""
@@ -235,6 +233,7 @@ from app.routers.scholars import router as scholars_router
 from app.routers.teacher_students import router as teacher_students_router
 from app.routers.academics import router as academics_router
 from app.routers.resources import router as resources_router
+from app.routers.resource_catalog import router as resource_catalog_router
 from app.routers.resource_zim import router as resource_zim_router
 from app.routers.media import router as media_router
 from app.routers.administration import router as administration_router
@@ -260,6 +259,7 @@ app.include_router(scholars_router)
 app.include_router(teacher_students_router)
 app.include_router(academics_router)
 app.include_router(resources_router)
+app.include_router(resource_catalog_router)
 app.include_router(resource_zim_router)
 app.include_router(media_router)
 app.include_router(administration_router)
