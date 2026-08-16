@@ -80,6 +80,7 @@ IMPLEMENTATION_PLAN.md
 **/Implementation Plan*/
 Markdown files/
 docs/*
+docs/api-sync-verification.md
 LMS Docs/
 
 # === Ocode plugins ===
