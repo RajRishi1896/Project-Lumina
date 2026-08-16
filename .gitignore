@@ -103,3 +103,9 @@ Debian Server/test_e2e_extended.py
 Debian Server/test_endpoint.py
 Debian Server/trigger_reimport.py
 Debian Server/wipe_zim.py
+
+# === Server ops scripts (not needed to build/run the server) ===
+Debian Server/backup_hub.sh
+Debian Server/restore_hub.sh
+Debian Server/show_banner.sh
+Debian Server/setup_wake_alarm.sh
