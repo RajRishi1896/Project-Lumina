@@ -114,7 +114,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                  if not ts_list or ts_list[-1] < cutoff]
         for ip in stale:
             del self._hits[ip]
-        # Also trim oversized dict
         if len(self._hits) > self._max_ips:
             excess = len(self._hits) - self._max_ips
             sorted_ips = sorted(self._hits.keys(), key=lambda ip: self._hits[ip][-1] if self._hits[ip] else 0)

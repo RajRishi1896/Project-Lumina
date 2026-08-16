@@ -43,7 +43,6 @@ def _clean_old_pages():
     files = [f for f in os.listdir(ZIM_PAGES_DIR) if f.endswith('.html')]
     if len(files) <= max_pages:
         return
-    # Sort files by modification time (oldest first)
     files.sort(key=lambda f: os.path.getmtime(os.path.join(ZIM_PAGES_DIR, f)))
     excess = len(files) - max_pages
     for i in range(excess):

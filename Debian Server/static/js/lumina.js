@@ -1,4 +1,4 @@
-﻿/* ── Shared Lumina Dashboard JS ────────────────────────────────────────── */
+/* ── Shared Lumina Dashboard JS ────────────────────────────────────────── */
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -243,7 +243,6 @@ function initLangPicker() {
     style.textContent = '.lang-option:hover{background:var(--outline)!important}.lang-option.active-lang,.lang-option.active-lang:hover{background:var(--teal)!important;color:#fff!important}';
     document.head.appendChild(style);
 
-    // Dark mode toggle button
     const themeBtn = document.createElement('button');
     themeBtn.id = 'themeToggleBtn';
     themeBtn.style.cssText = 'height:36px;width:36px;border-radius:18px;border:1px solid var(--outline);background:var(--bg-surface);color:var(--text-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.08);transition:all 0.2s;';
@@ -534,7 +533,6 @@ function showConfirm(title, message, isDanger, confirmText) {
 
         modal.classList.remove('hidden');
 
-        // Set up focus trap
         var focusTrap = createFocusTrap(modal, triggerEl);
         focusTrap.activate();
 
@@ -697,7 +695,6 @@ function renderLayout() {
     var aside = document.querySelector('aside');
     var bottomNav = document.getElementById('bottomNav');
     if (!aside) return;
-    // Add ARIA attributes to sidebar
     aside.setAttribute('role', 'navigation');
     aside.setAttribute('aria-label', 'Main navigation');
     // Create bottomNav if missing (static pages don't have it)
@@ -707,11 +704,9 @@ function renderLayout() {
         bottomNav.className = 'bottom-nav';
         document.body.appendChild(bottomNav);
     }
-    // Add ARIA attributes to bottom nav
     bottomNav.setAttribute('role', 'navigation');
     bottomNav.setAttribute('aria-label', 'Bottom navigation');
 
-    // Determine active key
     var path = location.pathname.replace(/\/+$/, '');
     var mapping = { '/static/index':'home','/static/courses':'courses','/static/manage-content':'content','/static/manage-settings':'settings','/static/students':'students','/static/student-detail':'students','/static/manage-help':'help','/static/manage-danger':'danger' };
     var key = mapping[path] || '';
@@ -784,7 +779,6 @@ function renderLayout() {
         '<div class="nav-spacer"></div>' +
         '<a href="/logout" class="nav-logout" onclick="sessionStorage.clear()">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
 
-    // bottom nav gets a logout item at the end
     btmNav += '<a href="/logout" class="bottom-nav-item" id="bottom-nav-logout" onclick="sessionStorage.clear()">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
     bottomNav.innerHTML = btmNav;
     equalizeBottomNav();
@@ -858,7 +852,6 @@ function renderModals() {
         }
     });
 
-    // Update modal text when language changes
     document.addEventListener('languageChanged', function() {
         var titleEl = document.getElementById('confirmModalTitle');
         var textEl = document.getElementById('confirmModalText');

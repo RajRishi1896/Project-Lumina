@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <!-- Section: Head -- metadata, theme detection, shared styles -->
@@ -197,14 +197,12 @@
             // emerald-500: hsl(160, 84%, 39%), amber-500: hsl(38, 92%, 50%), red-500: hsl(0, 84%, 60%)
             let hue, sat, light;
             if (!invert) {
-                // Storage: low% = green → high% = red
                 if (percent < 30)          { hue = 160; sat = 80; light = 38; }
                 else if (percent < 55)     { hue = 160 - ((percent-30)*80/25);  sat = 80; light = 38 + ((percent-30)*5/25); }
                 else if (percent < 80)     { hue = 80  - ((percent-55)*42/25);  sat = 82; light = 43 + ((percent-55)*6/25); }
                 else if (percent < 92)     { hue = 38  - ((percent-80)*23/12);  sat = 84; light = 49 + ((percent-80)*5/12); }
                 else                       { hue = 15  - ((percent-92)*15/8);   sat = 82; light = 54 + ((percent-92)*3/8);  }
             } else {
-                // Battery: low% = red → high% = green (inverted)
                 if (percent < 8)           { hue = 0;   sat = 82; light = 57; }
                 else if (percent < 20)     { hue = (percent-8)*15/12;          sat = 84; light = 57 - ((percent-8)*5/12); }
                 else if (percent < 45)     { hue = 15  + ((percent-20)*23/25); sat = 82; light = 52 - ((percent-20)*9/25); }
@@ -255,7 +253,6 @@
                 el = document.getElementById('statStudents'); if (el) el.textContent = data.scholars != null ? data.scholars : '-';
                 el = document.getElementById('statResources'); if (el) el.textContent = data.resources != null ? data.resources : '-';
                 el = document.getElementById('statSubjects'); if (el) el.textContent = data.subjects != null ? data.subjects : '-';
-                // Parse server uptime into seconds, then tick locally
                 if (data.uptime && data.uptime !== '0s' && data.uptime !== 'N/A') {
                     startUptimeTicker(data.uptime);
                 } else {
@@ -364,7 +361,6 @@
             }
         });
 
-        // Clear login error when the user starts typing again
         document.getElementById('username').addEventListener('input', () => {
             document.getElementById('loginError').classList.add('hidden');
         });
@@ -516,7 +512,6 @@
             document.getElementById('welcomeLangDropdown').style.display = 'none';
         }
 
-        // Close language dropdown on click outside the picker
         document.addEventListener('click', function(e) {
             const wrap = document.querySelector('.lang-nav-wrap');
             if (wrap && !wrap.contains(e.target)) closeWelcomeLang();
@@ -530,7 +525,6 @@
             populateGuide();
         };
 
-        // Initialize saved language on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', function() {
             var saved = localStorage.getItem('lumina-lang');
             if (saved) { welcomeLang = saved; currentLang = saved; document.documentElement.setAttribute('lang', saved); }

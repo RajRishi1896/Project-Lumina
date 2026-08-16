@@ -108,7 +108,6 @@ async def get_storage_stats() -> dict:
             if os.path.exists(f):
                 log_size += os.path.getsize(f)
 
-        # Disk usage from OS
         try:
             st = os.statvfs(".")
             disk_total = st.f_blocks * st.f_frsize

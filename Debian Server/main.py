@@ -60,7 +60,6 @@ def _print_startup_banner():
     except ImportError:
         qr_block = "(pip install qrcode for QR code)"
 
-    # Clear screen and print
     os.system("cls" if os.name == "nt" else "clear")
     print()
     print("=" * 60)

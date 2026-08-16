@@ -121,7 +121,6 @@ async def _write_chunked(dest_path: str, file: UploadFile, max_size: int,
     if support_resume and existing_bytes and not content_range:
         def _init_append():
             """Open the part file in append mode to anchor the resume position."""
-            # Just open in append mode — file already has existing bytes
             with open(part_path, "ab") as f:
                 pass  # create if missing
         await asyncio.to_thread(_init_append)

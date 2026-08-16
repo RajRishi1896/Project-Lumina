@@ -176,11 +176,9 @@ async def audit(
     event_id = uuid.uuid4().hex[:12]
     timestamp = datetime.now(timezone.utc).isoformat()
 
-    # Extract IP from request if provided
     if request and not ip:
         ip = _get_client_ip(request)
 
-    # Extract request ID from middleware
     request_id = ""
     if request:
         request_id = getattr(getattr(request, "state", None), "request_id", "")
@@ -265,7 +263,6 @@ def _write_audit_line(event: dict):
     if retention == "none":
         return
 
-    # JSON line for machine parsing
     json_line = json.dumps(event, ensure_ascii=False)
     log_line = f"{json_line}\n"
 

@@ -35,7 +35,6 @@ if [ "$CONFIRM" != "RESTORE" ]; then
     exit 1
 fi
 
-# Stop the server
 echo "[INFO] Stopping Lumina Hub service..."
 systemctl stop lumina-hub.service 2>/dev/null || true
 
@@ -62,7 +61,6 @@ fi
 # 4. Fix permissions
 chmod -R 755 profile_icons/ 2>/dev/null || true
 
-# Restart the server
 echo "[INFO] Starting Lumina Hub service..."
 systemctl start lumina-hub.service 2>/dev/null || echo "  -> Start manually: sudo systemctl start lumina-hub"
 

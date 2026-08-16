@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <!-- Section: Head -- theme detection, metadata, page-specific styles -->
 <head>
@@ -538,7 +538,6 @@
                     filter.innerHTML = '<option value="ALL">' + __('courses.filter_all') + '</option>' +
                         subjects.map(function(s) { return '<option value="' + esc(s.name) + '">' + esc(s.name) + '</option>'; }).join('');
                 }
-                // Populate grade dropdowns from DB
                 var gradeOpts = '<option value="ALL" data-i18n="courses.filter_all">All</option>';
                 var gopts = '';
                 grades.forEach(function(g) {
@@ -1206,7 +1205,6 @@
                     showAlert(__('courses.notif.quiz_saved'), false);
                     closeQuizBuilder();
                     return r.json().then(function(data) {
-                        // Add to resources
                         var existing = courseResources.findIndex(function(res) { return res.id === data.id; });
                         if (existing >= 0) {
                             courseResources[existing] = data;
@@ -1368,7 +1366,6 @@
                 similar_course_ids: linkedCourseIds,
                 resources: courseResources.map(function(r) { return { title: r.title, type: r.type, file_name: r.file_name, file_size: r.file_size }; })
             };
-            // Cover image as base64
             var coverImg = document.getElementById('coverPreview').querySelector('img');
             if (coverImg && coverImg.src.startsWith('data:')) payload.cover_image = coverImg.src;
 
@@ -1719,7 +1716,6 @@
                 }
             });
 
-            // Close modals on Escape
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     if (!document.getElementById('quizBuilderModal').classList.contains('hidden')) closeQuizBuilder();

@@ -53,7 +53,6 @@ if [ -f "$BACKUP_DIR/hub.db" ]; then
         exit 1
     fi
 
-    # Count rows in critical tables
     for TABLE in users sessions resources subjects grades courses enrollments quiz_attempts; do
         COUNT=$(sqlite3 "$TMP_DB" "SELECT COUNT(*) FROM $TABLE;" 2>/dev/null || echo "?")
         echo "  -> $TABLE: $COUNT rows"

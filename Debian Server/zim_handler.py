@@ -341,7 +341,6 @@ async def _search_local(
     Returns:
         A ZimSearchResponse with local articles, total, offset, and has_more.
     """
-    # Normalize: trim, collapse repeated whitespace, skip empty
     query = " ".join(query.split())
     if len(query) < _MIN_SEARCH_LEN:
         return ZimSearchResponse(articles=[], total=0, offset=offset, has_more=False)
