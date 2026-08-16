@@ -26,7 +26,6 @@ is a bootstrap credential only; capturing it does not let an attacker
 impersonate a hub after pairing.
 """
 
-import asyncio
 import hashlib
 import hmac
 import logging
@@ -37,7 +36,6 @@ import time
 import uuid
 
 from fastapi import HTTPException, Request
-from fastapi.responses import FileResponse, StreamingResponse
 
 from app.async_db import db_exec, db_fetch, db_fetch_one
 from app.database import UPLOAD_DIR
@@ -428,66 +426,6 @@ async def fetch_peer_bytes(peer: dict, path_with_query: str) -> tuple[str, bytes
             raise HTTPException(status_code=resp.status_code, detail="Peer rejected the request")
         content_type = resp.headers.get("content-type") or "application/octet-stream"
         return content_type, resp.content
-
-
-async def _stream_local_file(file_path: str, range_header: str | None):
-    """Serve a local file with HTTP Range support (mirrors routers/media.py).
-
-    Args:
-        file_path: Absolute path to the file in UPLOAD_DIR.
-        range_header: The raw ``Range`` header, or None for a full response.
-
-    Returns:
-        FileResponse (200) or StreamingResponse (206).
-
-    Raises:
-        HTTPException: 404/400/416 mirroring the media router.
-    """
-    if not await asyncio.to_thread(os.path.exists, file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    file_size = await asyncio.to_thread(os.path.getsize, file_path)
-    if not range_header:
-        return FileResponse(file_path, headers={"Accept-Ranges": "bytes"})
-    try:
-        val = range_header.replace("bytes=", "")
-        if val.startswith("-"):
-            start = max(0, file_size - int(val[1:]))
-            end = file_size - 1
-        else:
-            start_str, _, end_str = val.partition("-")
-            start = int(start_str) if start_str else 0
-            end = int(end_str) if end_str else file_size - 1
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Malformed Range header")
-    if start >= file_size:
-        raise HTTPException(status_code=416, detail="Range not satisfiable")
-    length = end - start + 1
-
-    async def _chunks():
-        """Yield the requested byte range in 64KB chunks, closing the handle afterwards."""
-        fh = await asyncio.to_thread(open, file_path, "rb")
-        try:
-            await asyncio.to_thread(fh.seek, start)
-            remaining = length
-            while remaining > 0:
-                chunk = await asyncio.to_thread(fh.read, min(65536, remaining))
-                if not chunk:
-                    break
-                remaining -= len(chunk)
-                yield chunk
-        finally:
-            await asyncio.to_thread(fh.close)
-
-    return StreamingResponse(
-        _chunks(),
-        status_code=206,
-        media_type="application/octet-stream",
-        headers={
-            "Content-Range": f"bytes {start}-{end}/{file_size}",
-            "Content-Length": str(length),
-            "Accept-Ranges": "bytes",
-        },
-    )
 
 
 def normalize_base_url(ip_or_url: str) -> str:

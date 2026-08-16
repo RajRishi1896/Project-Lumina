@@ -44,7 +44,6 @@ from app.dependencies import verify_admin
 from app.peer_refresh import refresh_peer_resources
 from app.peer_sync import (
     PeerManager,
-    _stream_local_file,
     discover_peers_blocking,
     fetch_file,
     get_peer,
@@ -52,6 +51,7 @@ from app.peer_sync import (
     handle_pair_request,
     verify_peer_sig,
 )
+from app.routers.media import stream_file
 
 router = APIRouter()
 peer_manager = PeerManager()
@@ -177,9 +177,7 @@ async def peer_file(resource_id: str, request: Request, peer: dict = Depends(ver
     )
     if not row or not row["filename"]:
         raise HTTPException(status_code=404, detail="Resource not found")
-    return await _stream_local_file(
-        os.path.join(UPLOAD_DIR, row["filename"]), request.headers.get("range")
-    )
+    return await stream_file(row["filename"], request)
 
 
 @router.get(

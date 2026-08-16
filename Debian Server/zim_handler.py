@@ -24,6 +24,7 @@ import time
 import hashlib
 import asyncio
 import logging
+import mimetypes
 from urllib.parse import parse_qs, urlencode
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse, Response
@@ -75,26 +76,20 @@ def invalidate_zim_cache(archive_id: str) -> None:
         logging.info(f"Invalidated {len(keys_to_delete)} asset cache entries for archive {archive_id}")
 
 
-_MIME_MAP = {
-    '.html': 'text/html', '.htm': 'text/html',
-    '.css': 'text/css', '.js': 'application/javascript',
-    '.json': 'application/json', '.xml': 'application/xml',
-    '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-    '.gif': 'image/gif', '.svg': 'image/svg+xml', '.webp': 'image/webp',
-    '.ico': 'image/x-icon', '.bmp': 'image/bmp',
-    '.mp4': 'video/mp4', '.webm': 'video/webm', '.ogg': 'video/ogg',
-    '.mp3': 'audio/mpeg', '.wav': 'audio/wav',
-    '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf',
-    '.eot': 'application/vnd.ms-fontobject',
-    '.otf': 'font/otf', '.pdf': 'application/pdf',
-    '.txt': 'text/plain', '.csv': 'text/csv',
+_MIME_OVERRIDES = {
+    '.js': 'application/javascript',
+    '.xml': 'application/xml',
+    '.ogg': 'video/ogg',
+    '.wav': 'audio/wav',
+    '.ico': 'image/x-icon',
+    '.csv': 'text/csv',
 }
 
 
 def _get_mime(path: str) -> str:
     """Return the MIME type for a file extension, defaulting to octet-stream."""
     ext = os.path.splitext(path)[1].lower()
-    return _MIME_MAP.get(ext, 'application/octet-stream')
+    return _MIME_OVERRIDES.get(ext) or mimetypes.guess_type('x' + ext)[0] or 'application/octet-stream'
 
 
 def _rewrite_html_asset_paths(html: str, archive_id: str, base_url: str = '') -> str:

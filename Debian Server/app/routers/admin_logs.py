@@ -1,6 +1,5 @@
 """Admin audit log and settings routes."""
 import os
-import re
 import json
 import asyncio
 from datetime import datetime, timezone
@@ -12,83 +11,6 @@ from app.models import AuditLogResponse, SettingsResponse, StatusResponse
 from app.dependencies import verify_admin
 
 router = APIRouter()
-
-# Pattern for old-format plain text log lines:
-# 2026-07-15T19:12:26.922028 - admin: created teacher account 'test_teacher'
-_LEGACY_RE = re.compile(r'^(\S+)\s+-\s+(\S+):\s+(.*)')
-
-# Map old human-readable action text to structured action constants
-_LEGACY_ACTION_MAP = {
-    'logged in': 'login',
-    'logged out': 'logout',
-    'failed login attempt': 'login_failed',
-    'created admin account': 'create_account',
-    'created teacher account': 'create_account',
-    'created student account': 'create_account',
-    'deleted account': 'delete_account',
-    'reset password': 'reset_password',
-    'changed password': 'change_password',
-    'force-changed password': 'force_password_change',
-    'created course': 'create_course',
-    'updated course': 'update_course',
-    'deleted course': 'delete_course',
-    'published course': 'publish_course',
-    'unpublished course': 'unpublish_course',
-    'enrolled in course': 'enroll_course',
-    'uploaded resource': 'upload_resource',
-    'deleted resource': 'delete_resource',
-    'deprecated resource': 'deprecate_resource',
-    'created quiz': 'create_quiz',
-    'updated quiz': 'update_quiz',
-    'deleted quiz': 'delete_quiz',
-    'created standalone quiz': 'create_quiz',
-    'uploaded zim archive': 'upload_zim',
-    'deleted zim archive': 'delete_zim',
-    'changed settings': 'change_settings',
-    'changed log retention': 'change_settings',
-    'created grade': 'create_grade',
-    'deleted grade': 'delete_grade',
-    'created subject': 'create_subject',
-    'deleted subject': 'delete_subject',
-    'created topic': 'create_topic',
-    'deleted topic': 'delete_topic',
-    'created teacher': 'create_teacher',
-    'deleted teacher': 'delete_teacher',
-    'reset teacher password': 'reset_teacher_password',
-    'toggled default admin': 'toggle_default_admin',
-    'disabled the default admin': 'toggle_default_admin',
-    'enabled the default admin': 'toggle_default_admin',
-}
-
-
-def _parse_legacy_line(line: str) -> dict:
-    """Parse an old-format plain text log line into a structured event dict."""
-    m = _LEGACY_RE.match(line)
-    if not m:
-        return {"ts": "", "action": "unknown", "severity": "info", "user": "", "raw": line}
-    ts_raw, user, summary = m.group(1), m.group(2), m.group(3)
-
-    # Normalize timestamp to ISO format with Z
-    ts = ts_raw
-    if not ts.endswith('Z'):
-        ts = ts + 'Z'
-
-    # Try to map the summary to a structured action
-    action = 'unknown'
-    summary_lower = summary.lower().rstrip('.')
-    for pattern, act in _LEGACY_ACTION_MAP.items():
-        if summary_lower.startswith(pattern):
-            action = act
-            break
-
-    return {
-        "ts": ts,
-        "action": action,
-        "severity": "info",
-        "user": user,
-        "summary": summary,
-        "success": True,
-    }
 
 
 @router.get("/admin/log", response_model=AuditLogResponse,
@@ -138,7 +60,7 @@ async def admin_log(
                     try:
                         event = json.loads(line)
                     except Exception:
-                        event = _parse_legacy_line(line)
+                        continue
 
                     # Apply filters
                     if action and event.get("action", "") != action:
