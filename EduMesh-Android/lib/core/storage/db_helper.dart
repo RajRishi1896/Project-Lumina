@@ -422,7 +422,8 @@ class DBHelper {
     );
   }
 
-  /// Returns all downloaded ZIM articles for the offline library.
+  /// Returns locally stored ZIM articles so the offline library renders
+  /// without needing the hub.
   Future<List<Map<String, dynamic>>> getDownloadedZimArticles() async {
     final db = await database;
     final rows = await db.query(
@@ -449,6 +450,9 @@ class DBHelper {
       'quiz_json': jsonEncode(quizJson),
       'cached_at': DateTime.now().millisecondsSinceEpoch,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+    // Cap the view-time quiz cache: keep the 30 most recently viewed quizzes.
+    await db.rawDelete('DELETE FROM quiz_cache WHERE cache_key NOT IN '
+        '(SELECT cache_key FROM quiz_cache ORDER BY cached_at DESC LIMIT 30)');
   }
 
   /// Returns the cached quiz JSON for [cacheKey], or null if not cached.

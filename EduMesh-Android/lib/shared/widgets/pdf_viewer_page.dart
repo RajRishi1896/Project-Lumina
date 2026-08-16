@@ -18,7 +18,6 @@ import '../../core/services/activity_tracker.dart';
 /// subsequent opens. Zoom and page-jump controls are displayed as an
 /// overlay that toggles on tap.
 class PdfViewerPage extends StatefulWidget {
-  /// The display title shown in the app bar.
   final String title;
 
   /// The PDF source path or URL.
@@ -65,6 +64,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         options: Options(responseType: ResponseType.bytes),
       );
       await cacheFile.writeAsBytes(response.data as List<int>, flush: true);
+      unawaited(_prunePdfCache());
       return PdfDocument.openData(response.data);
     }
     return PdfDocument.openFile(widget.pdfUrl);
@@ -74,6 +74,26 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     final dir = await getTemporaryDirectory();
     final key = widget.pdfUrl.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
     return File('${dir.path}/pdf_cache_$key');
+  }
+
+  /// Caps the view-time PDF cache at [_maxPdfCacheFiles] by deleting the
+  /// oldest entries. Browsing many PDFs must not grow the app unboundedly.
+  static const int _maxPdfCacheFiles = 12;
+
+  Future<void> _prunePdfCache() async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final files = <File>[];
+      await for (final entry in dir.list()) {
+        if (entry is File && entry.path.contains('pdf_cache_')) files.add(entry);
+      }
+      files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+      if (files.length > _maxPdfCacheFiles) {
+        for (final stale in files.skip(_maxPdfCacheFiles)) {
+          try { await stale.delete(); } catch (_) {}
+        }
+      }
+    } catch (_) {}
   }
 
   @override
