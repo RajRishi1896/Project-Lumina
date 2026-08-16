@@ -13,6 +13,7 @@
   "welcomeSubtitle": "Pas d'Internet nécessaire. Accédez localement à des milliers de livres et cours.",
   "illustrationBadgeNoInternet": "Aucune connexion Internet requise !",
   "languageSectionHeader": "Choisir la langue",
+  "moreLanguages": "Plus",
   "languageEnglish": "Anglais",
   "languageHindi": "Hindi",
   "languageKannada": "Kannada",
@@ -71,6 +72,7 @@
   "errorFillAllFields": "Veuillez remplir tous les champs",
   "errorPasswordStrength": "Le mot de passe doit faire 8+ caractères avec majuscule, minuscule et chiffre",
   "errorRegistrationFailed": "Échec de l'inscription. Vérifiez la connexion au Hub.",
+  "errorUsernameTaken": "Ce nom est déjà pris. Choisissez-en un autre.",
   "snackbarOfflineLogin": "Connecté hors ligne -- synchronisation serveur indisponible",
   "errorLoginFailed": "Échec de connexion. Nom ou mot de passe invalide.",
   "errorCurrentPasswordRequired": "Le mot de passe actuel est requis.",
@@ -390,6 +392,9 @@
   "@languageSectionHeader": {
     "description": "Section header for the language selection grid"
   },
+  "@moreLanguages": {
+    "description": "Label of the welcome page language button that opens the full language list"
+  },
   "@languageEnglish": {
     "description": "Language button label for English"
   },
@@ -581,6 +586,9 @@
   },
   "@errorRegistrationFailed": {
     "description": "Error shown when the registration API call fails"
+  },
+  "@errorUsernameTaken": {
+    "description": "Error shown when registering with a username that already exists on the hub"
   },
   "@snackbarOfflineLogin": {
     "description": "SnackBar message shown when login succeeds but only local authentication was available"

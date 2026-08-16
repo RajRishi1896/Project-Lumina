@@ -105,7 +105,7 @@ class _LoginPageState extends State<LoginPage> {
         } else {
           setState(() {
             _isLoading = false;
-            _errorMessage = error;
+            _errorMessage = _mapRegisterError(error);
           });
         }
       }
@@ -150,6 +150,19 @@ class _LoginPageState extends State<LoginPage> {
           _errorMessage = AppLocalizations.of(context)!.errorLoginFailed;
         });
       }
+    }
+  }
+
+  /// Maps [AuthService] register error sentinels to localized messages.
+  String _mapRegisterError(String? error) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (error) {
+      case 'username_taken':
+        return l10n.errorUsernameTaken;
+      case 'registration_failed':
+        return l10n.errorRegistrationFailed;
+      default:
+        return error ?? l10n.errorRegistrationFailed;
     }
   }
 

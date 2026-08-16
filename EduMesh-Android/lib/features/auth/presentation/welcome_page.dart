@@ -212,7 +212,6 @@ class _WelcomePageState extends State<WelcomePage> {
           final allOptions = appLanguageOptions;
           const primaryCount = 3;
           final primaryItems = allOptions.sublist(0, primaryCount);
-          final extraItems = allOptions.sublist(primaryCount);
 
           return Column(
             children: [
@@ -237,11 +236,11 @@ class _WelcomePageState extends State<WelcomePage> {
                     );
                   }),
                   _LanguageButton(
-                    label: '···',
+                    label: l10n.moreLanguages,
                     isSelected: false,
                     isEnabled: true,
                     cs: cs,
-                    onTap: () => _showMoreLanguages(context, ref, extraItems, currentLocale, l10n, cs),
+                    onTap: () => _showMoreLanguages(context, ref, allOptions, currentLocale, l10n, cs),
                   ),
                 ],
               ),
@@ -403,7 +402,7 @@ class _LanguageButton extends StatelessWidget {
 void _showMoreLanguages(
   BuildContext context,
   WidgetRef ref,
-  List<Map<String, String?>> extraItems,
+  List<Map<String, String?>> allLanguages,
   Locale currentLocale,
   AppLocalizations l10n,
   ColorScheme cs,
@@ -412,7 +411,7 @@ void _showMoreLanguages(
     context: context,
     builder: (ctx) => SimpleDialog(
       title: Text(l10n.settingsLanguagePickerTitle),
-      children: extraItems.map((o) {
+      children: allLanguages.map((o) {
         final code = o['code']!;
         final label = o['label'] ?? code;
         final isSelected = code == currentLocale.languageCode;

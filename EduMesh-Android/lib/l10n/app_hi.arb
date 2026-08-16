@@ -13,6 +13,7 @@
   "welcomeSubtitle": "इंटरनेट की ज़रूरत नहीं। हज़ारों किताबें और पाठ्यक्रम स्थानीय रूप से उपलब्ध।",
   "illustrationBadgeNoInternet": "इंटरनेट कनेक्शन की आवश्यकता नहीं!",
   "languageSectionHeader": "भाषा चुनें",
+  "moreLanguages": "और",
   "languageEnglish": "अंग्रेज़ी",
   "languageHindi": "हिन्दी",
   "languageKannada": "कन्नड़",
@@ -71,6 +72,7 @@
   "errorFillAllFields": "कृपया सभी फ़ील्ड भरें",
   "errorPasswordStrength": "पासवर्ड 8+ अक्षर, अपरकेस, लोअरकेस और अंक के साथ होना चाहिए",
   "errorRegistrationFailed": "पंजीकरण विफल। हब कनेक्शन जांचें।",
+  "errorUsernameTaken": "यह नाम पहले से लिया गया है। दूसरा नाम चुनें।",
   "snackbarOfflineLogin": "ऑफ़लाइन लॉगिन -- सर्वर सिंक उपलब्ध नहीं",
   "errorLoginFailed": "लॉगिन विफल। नाम या पासवर्ड गलत।",
   "errorCurrentPasswordRequired": "वर्तमान पासवर्ड आवश्यक है।",
@@ -390,6 +392,9 @@
   "@languageSectionHeader": {
     "description": "Section header for the language selection grid"
   },
+  "@moreLanguages": {
+    "description": "Label of the welcome page language button that opens the full language list"
+  },
   "@languageEnglish": {
     "description": "Language button label for English"
   },
@@ -581,6 +586,9 @@
   },
   "@errorRegistrationFailed": {
     "description": "Error shown when the registration API call fails"
+  },
+  "@errorUsernameTaken": {
+    "description": "Error shown when registering with a username that already exists on the hub"
   },
   "@snackbarOfflineLogin": {
     "description": "SnackBar message shown when login succeeds but only local authentication was available"

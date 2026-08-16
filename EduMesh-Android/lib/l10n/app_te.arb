@@ -12,6 +12,10 @@
   "welcomeSubtitle": "ఇంటర్నెట్ అవసరం లేదు. వేలాది పుస్తకాలు మరియు కోర్సులను స్థానికంగా యాక్సెస్ చేయండి.",
   "illustrationBadgeNoInternet": "ఇంటర్నెట్ కనెక్షన్ అవసరం లేదు!",
   "languageSectionHeader": "భాషను ఎంచుకోండి",
+  "moreLanguages": "మరిన్ని",
+  "@moreLanguages": {
+    "description": "Label of the welcome page language button that opens the full language list"
+  },
   "languageEnglish": "ఆంగ్లం",
   "languageHindi": "హిందీ",
   "languageKannada": "కన్నడ",
@@ -70,6 +74,10 @@
   "errorFillAllFields": "అన్ని ఫీల్డ్‌లను పూరించండి",
   "errorPasswordStrength": "పాస్‌వర్డ్ 8+ అక్షరాలు, పెద్ద అక్షరం, చిన్న అక్షరం మరియు సంఖ్య ఉండాలి",
   "errorRegistrationFailed": "నమోదు విఫలమైంది. హబ్ కనెక్షన్ చెక్ చేయండి.",
+  "errorUsernameTaken": "ఈ పేరు ఇప్పటికే తీసుకోబడింది. వేరే పేరు ఎంచుకోండి.",
+  "@errorUsernameTaken": {
+    "description": "Error shown when registering with a username that already exists on the hub"
+  },
   "snackbarOfflineLogin": "ఆఫ్‌లైన్‌లో లాగిన్ అయింది -- మార్పులను సేవ్ చేయడానికి హబ్‌ను కనెక్ట్ చేయలేకపోయింది",
   "errorLoginFailed": "లాగిన్ విఫలమైంది. పేరు లేదా పాస్‌వర్డ్ తప్పు.",
   "errorCurrentPasswordRequired": "ప్రస్తుత పాస్‌వర్డ్ అవసరం.",

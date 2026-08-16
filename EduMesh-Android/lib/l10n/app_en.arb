@@ -48,6 +48,10 @@
   "@languageSectionHeader": {
     "description": "Section header for the language selection grid"
   },
+  "moreLanguages": "More",
+  "@moreLanguages": {
+    "description": "Label of the welcome page language button that opens the full language list"
+  },
   "languageEnglish": "English",
   "@languageEnglish": {
     "description": "Language button label for English"
@@ -303,6 +307,10 @@
   "errorRegistrationFailed": "Registration failed. Check Hub connection.",
   "@errorRegistrationFailed": {
     "description": "Error shown when the registration API call fails"
+  },
+  "errorUsernameTaken": "That name is already taken. Choose another.",
+  "@errorUsernameTaken": {
+    "description": "Error shown when registering with a username that already exists on the hub"
   },
   "snackbarOfflineLogin": "Logged in offline -- cannot connect to hub to save changes",
   "@snackbarOfflineLogin": {

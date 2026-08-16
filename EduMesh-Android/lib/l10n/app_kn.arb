@@ -13,6 +13,7 @@
   "welcomeSubtitle": "ಇಂಟರ್ನೆಟ್ ಅಗತ್ಯವಿಲ್ಲ. ಸಾವಿರಾರು ಪುಸ್ತಕಗಳು ಮತ್ತು ಕೋರ್ಸ್‌ಗಳನ್ನು ಸ್ಥಳೀಯವಾಗಿ ಪ್ರವೇಶಿಸಿ.",
   "illustrationBadgeNoInternet": "ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕದ ಅಗತ್ಯವಿಲ್ಲ!",
   "languageSectionHeader": "ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ",
+  "moreLanguages": "ಹೆಚ್ಚು",
   "languageEnglish": "ಇಂಗ್ಲಿಷ್",
   "languageHindi": "ಹಿಂದಿ",
   "languageKannada": "ಕನ್ನಡ",
@@ -71,6 +72,7 @@
   "errorFillAllFields": "ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಕ್ಷೇತ್ರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ",
   "errorPasswordStrength": "ಪಾಸ್‌ವರ್ಡ್ 8+ ಅಕ್ಷರಗಳು, ದೊಡ್ಡಕ್ಷರ, ಸಣ್ಣಕ್ಷರ ಮತ್ತು ಅಂಕೆಯನ್ನು ಹೊಂದಿರಬೇಕು",
   "errorRegistrationFailed": "ನೋಂದಣಿ ವಿಫಲವಾಗಿದೆ. ಹಬ್ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ.",
+  "errorUsernameTaken": "ಈ ಹೆಸರು ಈಗಾಗಲೇ ಬಳಕೆಯಲ್ಲಿದೆ. ಬೇರೆ ಹೆಸರು ಆಯ್ಕೆಮಾಡಿ.",
   "snackbarOfflineLogin": "ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ಲಾಗಿನ್ ಮಾಡಲಾಗಿದೆ -- ಸರ್ವರ್ ಸಿಂಕ್ ಲಭ್ಯವಿಲ್ಲ",
   "errorLoginFailed": "ಲಾಗಿನ್ ವಿಫಲವಾಗಿದೆ. ಹೆಸರು ಅಥವಾ ಪಾಸ್‌ವರ್ಡ್ ತಪ್ಪಾಗಿದೆ.",
   "errorCurrentPasswordRequired": "ಪ್ರಸ್ತುತ ಪಾಸ್‌ವರ್ಡ್ ಅಗತ್ಯವಿದೆ.",
@@ -390,6 +392,9 @@
   "@languageSectionHeader": {
     "description": "Section header for the language selection grid"
   },
+  "@moreLanguages": {
+    "description": "Label of the welcome page language button that opens the full language list"
+  },
   "@languageEnglish": {
     "description": "Language button label for English"
   },
@@ -581,6 +586,9 @@
   },
   "@errorRegistrationFailed": {
     "description": "Error shown when the registration API call fails"
+  },
+  "@errorUsernameTaken": {
+    "description": "Error shown when registering with a username that already exists on the hub"
   },
   "@snackbarOfflineLogin": {
     "description": "SnackBar message shown when login succeeds but only local authentication was available"

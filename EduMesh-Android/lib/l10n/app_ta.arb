@@ -12,6 +12,10 @@
   "welcomeSubtitle": "இணையம் தேவையில்லை. ஆயிரக்கணக்கான புத்தகங்கள் மற்றும் பாடநெறிகளை உள்ளூரில் அணுகவும்.",
   "illustrationBadgeNoInternet": "இணைய இணைப்பு தேவையில்லை!",
   "languageSectionHeader": "மொழியைத் தேர்ந்தெடுக்கவும்",
+  "moreLanguages": "மேலும்",
+  "@moreLanguages": {
+    "description": "Label of the welcome page language button that opens the full language list"
+  },
   "languageEnglish": "ஆங்கிலம்",
   "languageHindi": "இந்தி",
   "languageKannada": "கன்னடம்",
@@ -70,6 +74,10 @@
   "errorFillAllFields": "அனைத்து புலங்களையும் நிரப்பவும்",
   "errorPasswordStrength": "கடவுச்சொல் 8+ எழுத்துகள், பெரிய எழுத்து, சிறிய எழுத்து மற்றும் எண் இருக்க வேண்டும்",
   "errorRegistrationFailed": "பதிவு தோல்வி. ஹப் இணைப்பைச் சரிபார்க்கவும்.",
+  "errorUsernameTaken": "இந்த பெயர் ஏற்கனவே பயன்பாட்டில் உள்ளது. வேறு பெயரை தேர்ந்தெடுக்கவும்.",
+  "@errorUsernameTaken": {
+    "description": "Error shown when registering with a username that already exists on the hub"
+  },
   "snackbarOfflineLogin": "ஆஃப்லைனில் உள்நுழைந்தது -- மாற்றங்களைச் சேமிக்க ஹப்பை அணுக முடியவில்லை",
   "errorLoginFailed": "உள்நுழைவு தோல்வி. பெயர் அல்லது கடவுச்சொல் தவறு.",
   "errorCurrentPasswordRequired": "தற்போதைய கடவுச்சொல் தேவை.",

@@ -25,17 +25,6 @@ class AuthService {
   static const String _gradeKey = 'lumina_grade';
   static const String _displayNameKey = 'lumina_display_name';
 
-  /// Extracts a human-readable error message from a server response.
-  String _extractError(dynamic response) {
-    if (response.data is Map) {
-      final data = response.data as Map;
-      if (data['detail'] != null) return data['detail'].toString();
-      if (data['message'] != null) return data['message'].toString();
-      if (data['error'] != null) return data['error'].toString();
-    }
-    return 'Registration failed (HTTP ${response.statusCode})';
-  }
-
   /// The locally persisted unique user identifier, or `null` if no user is logged in.
   Future<String?> getUniqueUserId() async {
     return _secureStorage.read(key: _userIdKey);
@@ -76,10 +65,10 @@ class AuthService {
       });
 
       if (response.statusCode == null || response.statusCode! < 200 || response.statusCode! >= 300) {
-        final detail = _extractError(response);
-        return detail;
+        if (response.statusCode == 409) return 'username_taken';
+        return 'registration_failed';
       }
-      if (response.data == null || response.data is! Map) return 'Unexpected server response';
+      if (response.data == null || response.data is! Map) return 'registration_failed';
       final Map data = response.data;
       final String hubGeneratedId = data['id']?.toString() ?? '';
       final String? token = data['token']?.toString();
@@ -113,9 +102,10 @@ class AuthService {
       return null;
     } catch (e) {
       if (e is DioException && e.response != null) {
-        return _extractError(e.response!);
+        if (e.response!.statusCode == 409) return 'username_taken';
+        return 'registration_failed';
       }
-      return 'Registration failed. Check hub connection.';
+      return 'registration_failed';
     }
   }
 
