@@ -213,13 +213,6 @@ class ApiClient {
     return _dio.post<T>(path, data: data, queryParameters: queryParameters);
   }
 
-  /// Sends a DELETE request to the given [path] with optional [data] and [queryParameters].
-  /// Resolves the server base URL first via [_ensureInitialized].
-  static Future<Response<T>> delete<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
-    await _ensureInitialized();
-    return _dio.delete<T>(path, data: data, queryParameters: queryParameters);
-  }
-  
   /// The underlying [Dio] instance used for all HTTP requests.
   /// Does NOT resolve the server base URL -- call [ensureInitialized] first if needed.
   static Dio get dio {
@@ -228,6 +221,9 @@ class ApiClient {
 
   /// The resolved server base URL (e.g. `http://lumina.hub:8000`).
   static String get baseUrl => _baseUrl;
+
+  /// The server base URL with any trailing `/api` stripped, for file URLs.
+  static String get fileBaseUrl => _baseUrl.replaceAll(RegExp(r'/api/?$'), '');
 
   /// Ensures the server base URL is resolved via DNS or fallback IP.
   /// Safe to call multiple times; only performs initialization once.

@@ -166,7 +166,6 @@ class _SearchPageState extends State<SearchPage> {
             subject: r['subject'] as String? ?? '',
             grade: r['grade'] as String? ?? '',
             type: parseResourceType(r['type'] as String? ?? ''),
-            isDownloaded: true,
           )).toList();
           _zimArticles = [];
           _applyFilters();
@@ -404,7 +403,7 @@ class _SearchPageState extends State<SearchPage> {
             duration: const Duration(milliseconds: 600),
           ));
         } else {
-          final base = ApiClient.dio.options.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+          final base = ApiClient.fileBaseUrl;
           final url = original.pdfUrl ?? '$base/files/$resourceId';
           final ext = url.contains('.') ? '.${url.split('.').last.split('?').first}' : '.pdf';
           final fileName = '${original.title}$ext';
@@ -1021,7 +1020,7 @@ class _SearchPageState extends State<SearchPage> {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text(l10n.snackbarNotDownloaded(original.title)),
                               action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
-                                final base = ApiClient.dio.options.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+                                final base = ApiClient.fileBaseUrl;
                                 final url = original.pdfUrl ?? '$base/files/${original.id}';
                                 final ext = url.contains('.') ? '.${url.split('.').last.split('?').first}' : '.pdf';
                                 DownloadQueue().enqueue(original.id.toString(), url, '${original.title}$ext',

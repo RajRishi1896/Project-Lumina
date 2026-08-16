@@ -17,12 +17,6 @@ class LuminaColors {
   /// A green colour for success indicators.
   static const Color successGreen = Color(0xFF38A169);
 
-  /// A neutral outline colour for borders and dividers.
-  static const Color outline = Color(0xFFE2E8F0);
-
-  /// The default text colour on surface backgrounds.
-  static const Color onSurface = Color(0xFF1D1B20);
-
   /// The text and icon colour on primary-coloured containers.
   static const Color onPrimary = Color(0xFFFFFFFF);
 
@@ -40,9 +34,6 @@ class LuminaColors {
 
   /// An amber colour for chart differentiation.
   static const Color chartAmber = Color(0xFFD97706);
-
-  /// A blue colour for chart differentiation.
-  static const Color chartBlue = Color(0xFF2563EB);
 
   /// The saturated blue text colour for the VIDEO type badge.
   static const Color badgeVideo = Color(0xFF1D4ED8);

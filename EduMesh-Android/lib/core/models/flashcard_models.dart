@@ -26,17 +26,6 @@ class FlashcardDeck {
   final String submissionReason;
 
   int get dueCount => cards.where((c) => c.isDue).length;
-
-  FlashcardDeck copyWith({List<FlashcardCard>? cards, String? title}) {
-    return FlashcardDeck(
-      id: id,
-      title: title ?? this.title,
-      source: source,
-      cards: cards ?? this.cards,
-      submissionStatus: submissionStatus,
-      submissionReason: submissionReason,
-    );
-  }
 }
 
 /// A single front/back card with its review schedule state.
@@ -70,15 +59,4 @@ class FlashcardCard {
   final int dueAt;
 
   bool get isDue => dueAt <= DateTime.now().millisecondsSinceEpoch;
-
-  /// A blank card used as a default value.
-  static const FlashcardCard empty = FlashcardCard(
-    id: '',
-    deckId: '',
-    front: '',
-    back: '',
-    ease: 2.5,
-    intervalDays: 0,
-    dueAt: 0,
-  );
 }

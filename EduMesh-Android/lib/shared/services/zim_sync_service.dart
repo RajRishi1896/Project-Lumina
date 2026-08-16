@@ -42,36 +42,12 @@ class ZimSyncService {
   Future<ZimSearchResult> searchOnServer(String query, {
     int offset = 0,
     int limit = 50,
-  }) async {
-    final resp = await ApiClient.get('/zim/search', queryParameters: {
+  }) {
+    return _fetchArticles('/zim/search', {
       'query': query,
       'offset': offset.toString(),
       'limit': limit.toString(),
-    }).timeout(const Duration(seconds: 30));
-
-    final data = resp.data;
-    if (data is! Map) {
-      throw Exception('Search: unexpected response ${resp.statusCode}: ${resp.data.runtimeType}');
-    }
-
-    final articlesList = data['articles'] as List? ?? [];
-    final articles = articlesList.map((j) {
-      final m = Map<String, dynamic>.from(j as Map);
-      return ZimArticle(
-        articleId: (m['article_id'] ?? '').toString(),
-        title: (m['title'] ?? '').toString(),
-        archiveId: (m['archive_id'] ?? '').toString(),
-        hasThumbnail: m['has_thumbnail'] == true,
-        peerName: (m['peer_name'] ?? '').toString(),
-      );
-    }).toList();
-
-    return ZimSearchResult(
-      articles: articles,
-      total: data['total'] as int? ?? 0,
-      offset: data['offset'] as int? ?? offset,
-      hasMore: data['has_more'] as bool? ?? false,
-    );
+    });
   }
 
   /// Browse ZIM articles on the server in alphabetical order.
@@ -82,19 +58,23 @@ class ZimSyncService {
     int offset = 0,
     int limit = 50,
     String archiveId = '',
-  }) async {
-    final params = <String, dynamic>{
+  }) {
+    final params = <String, String>{
       'offset': offset.toString(),
       'limit': limit.toString(),
     };
     if (archiveId.isNotEmpty) params['archive_id'] = archiveId;
+    return _fetchArticles('/zim/articles', params);
+  }
 
-    final resp = await ApiClient.get('/zim/articles', queryParameters: params)
+  /// Fetches a paginated ZIM article list from [path] with [params].
+  Future<ZimSearchResult> _fetchArticles(String path, Map<String, String> params) async {
+    final resp = await ApiClient.get(path, queryParameters: params)
         .timeout(const Duration(seconds: 30));
 
     final data = resp.data;
     if (data is! Map) {
-      throw Exception('Browse: unexpected response ${resp.statusCode}: ${resp.data.runtimeType}');
+      throw Exception('Unexpected response ${resp.statusCode}: ${resp.data.runtimeType}');
     }
 
     final articlesList = data['articles'] as List? ?? [];
@@ -112,30 +92,9 @@ class ZimSyncService {
     return ZimSearchResult(
       articles: articles,
       total: data['total'] as int? ?? 0,
-      offset: data['offset'] as int? ?? offset,
+      offset: data['offset'] as int? ?? int.tryParse(params['offset'] ?? '') ?? 0,
       hasMore: data['has_more'] as bool? ?? false,
     );
-  }
-
-  /// Search locally downloaded articles for offline fallback.
-  ///
-  /// Only searches articles that have been previously downloaded and
-  /// stored in `zim_articles_local`. Returns at most 50 results.
-  Future<List<ZimArticle>> searchLocal(String query) async {
-    if (query.length < 2) return [];
-    try {
-      final db = DBHelper();
-      final rows = await db.searchDownloadedZimArticles(query);
-      return rows.map((r) => ZimArticle(
-        articleId: r['article_id'] as String? ?? '',
-        title: r['title'] as String? ?? '',
-        archiveId: r['archive_id'] as String? ?? '',
-        hasThumbnail: (r['has_thumbnail'] as int? ?? 0) == 1,
-      )).toList();
-    } catch (e) {
-      debugPrint('ZimSyncService: local search failed: $e');
-      return [];
-    }
   }
 
   /// Load downloaded article IDs from local DB. Call on startup.

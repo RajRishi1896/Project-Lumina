@@ -126,7 +126,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
   Future<String> _resolveUrl(CourseResource resource) async {
     if (_localPaths.containsKey(resource.id)) return _localPaths[resource.id]!;
     await ApiClient.ensureInitialized();
-    final base = ApiClient.dio.options.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+    final base = ApiClient.fileBaseUrl;
     if (resource.filename != null && resource.filename!.contains('/')) {
       return '$base/files/${resource.filename}';
     }

@@ -1,5 +1,3 @@
-import '../recommendation/on_device_scorer.dart';
-
 enum CourseType {
   /// Textbooks and reference books.
   textbook,
@@ -130,18 +128,7 @@ class QuizQuestion {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'type': quizQuestionTypeToShortString(type),
-    if (image != null) 'image': image,
-    'question': question,
-    'options': options,
-    if (correctAnswer != null) 'correct_answer': correctAnswer,
-    if (correctAnswers != null) 'correct_answers': correctAnswers,
-    if (explanation != null) 'explanation': explanation,
-    'exact_match': exactMatch,
-  };
-}
+  }
 
 /// A quiz containing a set of questions and metadata.
 class Quiz {
@@ -200,20 +187,6 @@ class Quiz {
       quizVersion: (data['quiz_version'] as num?)?.toInt() ?? 1,
     );
   }
-
-  /// Serializes this [Quiz] to a JSON-compatible map, wrapped in `{'quiz': ...}`.
-  Map<String, dynamic> toJson() => {
-    'quiz': {
-      'title': title,
-      if (description != null) 'description': description,
-      'time_limit_minutes': timeLimitMinutes,
-      'pass_threshold': passThreshold,
-      'max_attempts': maxAttempts,
-      'shuffle_mode': shuffleMode,
-      'questions': questions.map((q) => q.toJson()).toList(),
-      'quiz_version': quizVersion,
-    },
-  };
 }
 
 /// A resource belonging to a course.
@@ -257,14 +230,6 @@ class CourseResource {
     required this.position,
   });
 
-  /// The file extension extracted from [filename], lowercased.
-  /// Returns an empty string if [filename] is null or has no extension.
-  String get extension {
-    if (filename == null) return '';
-    final dot = filename!.lastIndexOf('.');
-    return dot == -1 ? '' : filename!.substring(dot + 1).toLowerCase();
-  }
-
   bool get isQuiz => resourceType == CourseType.quiz;
 
   factory CourseResource.fromJson(Map<String, dynamic> json) {
@@ -281,19 +246,6 @@ class CourseResource {
       position: (json['position'] as num?)?.toInt() ?? 0,
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'course_id': courseId,
-    'resource_type': resourceType.name,
-    'title': title,
-    if (originalName != null) 'original_name': originalName,
-    if (filename != null) 'filename': filename,
-    'file_size': fileSize,
-    'page_count': pageCount,
-    'duration_seconds': durationSeconds,
-    'position': position,
-  };
 
   /// Internal helper: maps a string to [CourseType].
   static CourseType _parseCourseType(String s) {
@@ -315,10 +267,6 @@ class CourseResource {
 
 /// A course containing metadata and optionally its resources.
 class Course {
-  /// Returns the cluster name for this course's subject.
-  /// Delegates to [OnDeviceScorer.clusterOf] as single source of truth.
-  String get cluster => OnDeviceScorer.clusterOf(subject);
-
   // -- Fields --
 
   final String id;
@@ -398,144 +346,4 @@ class Course {
           .toList(),
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    if (description != null) 'description': description,
-    'subject': subject,
-    'grade': grade,
-    'language': language,
-    if (coverImage != null) 'cover_image': coverImage,
-    'published': published,
-    if (teacherUsername != null) 'teacher_username': teacherUsername,
-    'enrollment_count': enrollmentCount,
-    if (createdAt != null) 'created_at': createdAt,
-    if (updatedAt != null) 'updated_at': updatedAt,
-    if (resources != null)
-      'resources': resources!.map((r) => r.toJson()).toList(),
-    if (similarCourseIds != null) 'similar_course_ids': similarCourseIds,
-  };
-}
-
-/// A student's attempt at a quiz, including answers and scoring.
-class QuizAttempt {
-  final String id;
-
-  /// The student's user ID.
-  final String studentId;
-
-  /// The course this attempt belongs to.
-  final String courseId;
-
-  /// The resource (quiz) ID.
-  final String resourceId;
-
-  /// The attempt number (1-based).
-  final int attemptNumber;
-
-  /// The score achieved (0.0–1.0).
-  final double score;
-
-  final bool passed;
-
-  /// JSON-encoded answers payload.
-  final String? answersJson;
-
-  /// ISO 8601 timestamp when the attempt started.
-  final String? startedAt;
-
-  /// ISO 8601 timestamp when the attempt was submitted.
-  final String? submittedAt;
-
-  final int timeTakenSeconds;
-
-  /// The quiz version at the time of this attempt.
-  final int quizVersion;
-
-  /// The pass threshold in effect when submitted.
-  final double thresholdAtSubmission;
-
-  /// Sync status for offline queue (0 = pending, 1 = synced, 2 = conflict).
-  final int syncStatus;
-
-  const QuizAttempt({
-    required this.id,
-    required this.studentId,
-    required this.courseId,
-    required this.resourceId,
-    required this.attemptNumber,
-    required this.score,
-    required this.passed,
-    this.answersJson,
-    this.startedAt,
-    this.submittedAt,
-    required this.timeTakenSeconds,
-    required this.quizVersion,
-    required this.thresholdAtSubmission,
-    this.syncStatus = 0,
-  });
-
-  factory QuizAttempt.fromJson(Map<String, dynamic> json) {
-    return QuizAttempt(
-      id: json['id']?.toString() ?? '',
-      studentId: json['student_id']?.toString() ?? '',
-      courseId: json['course_id']?.toString() ?? '',
-      resourceId: json['resource_id']?.toString() ?? '',
-      attemptNumber: (json['attempt_number'] as num?)?.toInt() ?? 0,
-      score: (json['score'] as num?)?.toDouble() ?? 0.0,
-      passed: json['passed'] == true,
-      answersJson: json['answers_json'] as String?,
-      startedAt: json['started_at'] as String?,
-      submittedAt: json['submitted_at'] as String?,
-      timeTakenSeconds: (json['time_taken_seconds'] as num?)?.toInt() ?? 0,
-      quizVersion: (json['quiz_version'] as num?)?.toInt() ?? 1,
-      thresholdAtSubmission:
-          (json['threshold_at_submission'] as num?)?.toDouble() ?? 0.0,
-      syncStatus: (json['sync_status'] as num?)?.toInt() ?? 0,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'student_id': studentId,
-    'course_id': courseId,
-    'resource_id': resourceId,
-    'attempt_number': attemptNumber,
-    'score': score,
-    'passed': passed,
-    if (answersJson != null) 'answers_json': answersJson,
-    if (startedAt != null) 'started_at': startedAt,
-    if (submittedAt != null) 'submitted_at': submittedAt,
-    'time_taken_seconds': timeTakenSeconds,
-    'quiz_version': quizVersion,
-    'threshold_at_submission': thresholdAtSubmission,
-    'sync_status': syncStatus,
-  };
-}
-
-/// A link between a course and a similar course.
-class SimilarLink {
-  /// The source course ID.
-  final String courseId;
-
-  /// The recommended similar course ID.
-  final String similarCourseId;
-
-  const SimilarLink({
-    required this.courseId,
-    required this.similarCourseId,
-  });
-
-  factory SimilarLink.fromJson(Map<String, dynamic> json) {
-    return SimilarLink(
-      courseId: json['course_id']?.toString() ?? '',
-      similarCourseId: json['similar_course_id']?.toString() ?? '',
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'course_id': courseId,
-    'similar_course_id': similarCourseId,
-  };
 }

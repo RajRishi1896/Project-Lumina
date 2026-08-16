@@ -411,17 +411,6 @@ class DBHelper {
     return rows.map((r) => r['article_id'] as String).toSet();
   }
 
-  /// Searches downloaded ZIM articles by title substring for offline fallback.
-  Future<List<Map<String, dynamic>>> searchDownloadedZimArticles(String query) async {
-    final db = await database;
-    return await db.query(
-      'zim_articles_local',
-      where: 'is_downloaded = 1 AND title LIKE ?',
-      whereArgs: ['%$query%'],
-      limit: 50,
-    );
-  }
-
   /// Returns locally stored ZIM articles so the offline library renders
   /// without needing the hub.
   Future<List<Map<String, dynamic>>> getDownloadedZimArticles() async {

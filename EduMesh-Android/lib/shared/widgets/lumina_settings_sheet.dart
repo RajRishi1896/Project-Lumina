@@ -382,13 +382,8 @@ void _showChangePasswordDialog(BuildContext context) {
 }
 
 String _languageLabel(String code) {
-  switch (code) {
-    case 'en': return 'English';
-    case 'hi': return 'हिन्दी';
-    case 'kn': return 'ಕನ್ನಡ';
-    case 'fr': return 'Français';
-    case 'ta': return 'தமிழ்';
-    case 'te': return 'తెలుగు';
-    default: return code;
+  for (final option in appLanguageOptions) {
+    if (option['code'] == code) return option['label'] ?? code;
   }
+  return code;
 }

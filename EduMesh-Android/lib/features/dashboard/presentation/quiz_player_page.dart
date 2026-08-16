@@ -585,58 +585,11 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   List<Widget> _buildOptions(QuizQuestion q, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     switch (q.type) {
       case QuizQuestionType.mcq:
-        return q.options.asMap().entries.map((entry) {
-          final idx = entry.key;
-          final opt = entry.value;
-          return Column(
-            children: [
-              InkWell(
-                onTap: () => setState(() => _answers[_currentIndex] = opt),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minHeight: AppSpacing.touchTarget,
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm.w,
-                      vertical: AppSpacing.xs.h,
-                    ),
-                    child: Row(
-                      children: [
-                        Radio<int>(
-                          value: idx,
-                          groupValue: _answers[_currentIndex] != null
-                              ? q.options.indexOf(_answers[_currentIndex]!)
-                              : null,
-                          onChanged: (_) =>
-                              setState(() => _answers[_currentIndex] = opt),
-                          activeColor: cs.primary,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        SizedBox(width: AppSpacing.sm.w),
-                        Expanded(
-                          child: Text(
-                            opt,
-                            style: tt.bodyMedium?.copyWith(
-                              fontSize: 14.sp,
-                              color: cs.onSurface,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              if (entry.key < q.options.length - 1)
-                Divider(height: 1, color: cs.outlineVariant),
-            ],
-          );
-        }).toList();
-
       case QuizQuestionType.trueFalse:
-        return [l10n.quizTrue, l10n.quizFalse].asMap().entries.map((entry) {
+        final options = q.type == QuizQuestionType.trueFalse
+            ? [l10n.quizTrue, l10n.quizFalse]
+            : q.options;
+        return options.asMap().entries.map((entry) {
           final idx = entry.key;
           final opt = entry.value;
           return Column(
@@ -658,7 +611,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                         Radio<int>(
                           value: idx,
                           groupValue: _answers[_currentIndex] != null
-                              ? [l10n.quizTrue, l10n.quizFalse].indexOf(_answers[_currentIndex]!)
+                              ? options.indexOf(_answers[_currentIndex]!)
                               : null,
                           onChanged: (_) =>
                               setState(() => _answers[_currentIndex] = opt),
@@ -680,7 +633,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                   ),
                 ),
               ),
-              if (entry.key == 0)
+              if (entry.key < options.length - 1)
                 Divider(height: 1, color: cs.outlineVariant),
             ],
           );

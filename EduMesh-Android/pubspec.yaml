@@ -27,7 +27,6 @@ dependencies:
   flutter_riverpod: ^3.3.1
   flutter_svg: ^2.3.0
 
-  crypto: ^3.0.7
   flutter_secure_storage: ^10.2.0
   app_settings: ^7.0.0
   wakelock_plus: ^1.6.1

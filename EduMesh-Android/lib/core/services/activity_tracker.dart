@@ -103,15 +103,14 @@ class ActivityTracker {
   }
 
   /// Get the recorded activity history for the current session.
-  Future<List<Map<String, dynamic>>> getActivityHistory({int limit = 25, int offset = 0}) async {
+  Future<List<Map<String, dynamic>>> getActivityHistory({int limit = 25}) async {
     final prefs = await SharedPreferences.getInstance();
     final list = _decodeLocalEvents(prefs.getString(_localEventsKey));
     if (list.isEmpty) return [];
     final all = list;
     all.sort((a, b) => (b['timestamp'] as String).compareTo(a['timestamp'] as String));
-    final end = offset + limit;
-    if (offset >= all.length) return [];
-    return all.sublist(offset, end > all.length ? all.length : end);
+    final end = limit > all.length ? all.length : limit;
+    return all.sublist(0, end);
   }
 
   /// Get analytics data including study time and streak info.

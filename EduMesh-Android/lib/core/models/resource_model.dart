@@ -39,8 +39,6 @@ class ResourceModel {
   /// The last-modified timestamp of the source file.
   final double mtime;
 
-  bool isDownloaded;
-
   /// The topic name assigned to this resource (e.g. "Chapter 1").
   final String topicName;
 
@@ -59,7 +57,6 @@ class ResourceModel {
     required this.subject,
     required this.grade,
     required this.type,
-    this.isDownloaded = false,
     this.pdfUrl,
     this.mtime = 0,
     this.topicName = '',
@@ -77,7 +74,6 @@ class ResourceModel {
       type: parseResourceType(json['type']?.toString() ?? ''),
       pdfUrl: json['pdfUrl'],
       mtime: (json['mtime'] as num?)?.toDouble() ?? 0,
-      isDownloaded: json['isDownloaded'] == true,
       topicName: (json['topic_name'] as String?) ?? '',
       fileSize: (json['file_size'] as num?)?.toInt() ?? 0,
       pageCount: (json['page_count'] as num?)?.toInt() ?? 0,
@@ -93,7 +89,6 @@ class ResourceModel {
     'type': type.name,
     'pdfUrl': pdfUrl,
     'mtime': mtime,
-    'isDownloaded': isDownloaded,
     'topic_name': topicName,
     'file_size': fileSize,
     'page_count': pageCount,

@@ -110,61 +110,24 @@ class NotificationService {
   /// [requestPermission] immediately before showing -- on Android 13+ this
   /// surfaces the permission prompt at a natural UX moment (right after the
   /// user triggered a download).
-  Future<void> showDownloadComplete(String title, {String? notificationTitle, String? notificationBody}) async {
-    try {
-      if (!await isEnabled) return;
-      if (!_initialized) await init();
-      await _ensurePermission();
-    } catch (_) {
-      // ponytail: permission/init failures are non-fatal; skip notification
-      return;
-    }
-    try {
-      await _plugin.show(
-        _nextId++,
-        notificationTitle ?? _completeNotificationTitle,
-        (notificationBody ?? _completeNotificationBody).replaceAll('{title}', title),
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            'download_channel',
-            _channelName,
-          ),
-          iOS: const DarwinNotificationDetails(),
-        ),
-      );
-    } catch (e) {
-      debugPrint('NotificationService: show failed: $e');
-    }
+  Future<void> showDownloadComplete(String title, {String? notificationTitle, String? notificationBody}) {
+    return _show(
+      id: _nextId++,
+      title: notificationTitle ?? _completeNotificationTitle,
+      body: (notificationBody ?? _completeNotificationBody).replaceAll('{title}', title),
+    );
   }
 
   /// Shows a local notification that a downloaded resource was removed from
   /// the server catalog. The local file remains usable offline.
   ///
   /// Uses the same channel and permission flow as [showDownloadComplete].
-  Future<void> showRemovedFromServer(String title) async {
-    try {
-      if (!await isEnabled) return;
-      if (!_initialized) await init();
-      await _ensurePermission();
-    } catch (_) {
-      return;
-    }
-    try {
-      await _plugin.show(
-        _nextId++,
-        _removedNotificationTitle,
-        _removedNotificationBody.replaceAll('{title}', title),
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            'download_channel',
-            _channelName,
-          ),
-          iOS: const DarwinNotificationDetails(),
-        ),
-      );
-    } catch (e) {
-      debugPrint('NotificationService: show failed: $e');
-    }
+  Future<void> showRemovedFromServer(String title) {
+    return _show(
+      id: _nextId++,
+      title: _removedNotificationTitle,
+      body: _removedNotificationBody.replaceAll('{title}', title),
+    );
   }
 
   /// Sets localized strings for notifications.
@@ -203,7 +166,39 @@ class NotificationService {
   /// Shows a local notification when a download fails after all retries.
   ///
   /// Uses the same channel and permission flow as [showDownloadComplete].
-  Future<void> showDownloadFailed(String title, {String? notificationTitle, String? notificationBody}) async {    try {
+  Future<void> showDownloadFailed(String title, {String? notificationTitle, String? notificationBody}) {
+    return _show(
+      id: _nextId++,
+      title: notificationTitle ?? _failedNotificationTitle,
+      body: (notificationBody ?? _failedNotificationBody).replaceAll('{title}', title),
+    );
+  }
+
+  /// Shows or updates a progress notification for an active download.
+  Future<void> showDownloadProgress(String title, int percent, {required int id, String? notificationTitle, String? notificationBody}) {
+    final resolvedBody = (notificationBody ?? _inProgressNotificationBodyTemplate)
+        .replaceAll('{title}', title)
+        .replaceAll('{percent}', '$percent');
+    return _show(
+      id: id,
+      title: notificationTitle ?? _inProgressNotificationTitle,
+      body: resolvedBody,
+      androidDetails: AndroidNotificationDetails(
+        'download_channel',
+        _channelName,
+        importance: Importance.low,
+        priority: Priority.low,
+        ongoing: true,
+        showProgress: true,
+        maxProgress: 100,
+        progress: percent,
+      ),
+    );
+  }
+
+  /// Requests permission, initializes the plugin, and shows a notification.
+  Future<void> _show({required int id, required String title, required String body, AndroidNotificationDetails? androidDetails}) async {
+    try {
       if (!await isEnabled) return;
       if (!_initialized) await init();
       await _ensurePermission();
@@ -212,55 +207,20 @@ class NotificationService {
     }
     try {
       await _plugin.show(
-        _nextId++,
-        notificationTitle ?? _failedNotificationTitle,
-        (notificationBody ?? _failedNotificationBody).replaceAll('{title}', title),
+        id,
+        title,
+        body,
         NotificationDetails(
-          android: AndroidNotificationDetails(
-            'download_channel',
-            _channelName,
-          ),
+          android: androidDetails ??
+              AndroidNotificationDetails(
+                'download_channel',
+                _channelName,
+              ),
           iOS: const DarwinNotificationDetails(),
         ),
       );
     } catch (e) {
       debugPrint('NotificationService: show failed: $e');
-    }
-  }
-
-  /// Shows or updates a progress notification for an active download.
-  Future<void> showDownloadProgress(String title, int percent, {required int id, String? notificationTitle, String? notificationBody}) async {
-    try {
-      if (!await isEnabled) return;
-      if (!_initialized) await init();
-      await _ensurePermission();
-    } catch (_) {
-      return;
-    }
-    try {
-      final resolvedBody = (notificationBody ?? _inProgressNotificationBodyTemplate)
-          .replaceAll('{title}', title)
-          .replaceAll('{percent}', '$percent');
-      await _plugin.show(
-        id,
-        notificationTitle ?? _inProgressNotificationTitle,
-        resolvedBody,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            'download_channel',
-            _channelName,
-            importance: Importance.low,
-            priority: Priority.low,
-            ongoing: true,
-            showProgress: true,
-            maxProgress: 100,
-            progress: percent,
-          ),
-          iOS: const DarwinNotificationDetails(),
-        ),
-      );
-    } catch (e) {
-      debugPrint('NotificationService: progress show failed: $e');
     }
   }
 

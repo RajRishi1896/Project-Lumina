@@ -114,9 +114,6 @@ class ConnectivityService extends ChangeNotifier {
     } catch (_) {}
   }
 
-  /// Performs a single connectivity check against the server.
-  Future<void> check() => _checkNow();
-
   /// Pings the server's `/ping` endpoint and returns whether it responded with 2xx.
   Future<bool> ping({Duration timeout = const Duration(seconds: 10)}) async {
     final cancelToken = CancelToken();

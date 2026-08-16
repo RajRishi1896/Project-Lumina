@@ -37,20 +37,12 @@ class CourseService extends ChangeNotifier {
   List<({Course course, Map<String, dynamic>? progress})> get enrolledCourses => _enrolledCourses;
 
   /// Fetches the course catalog from the hub, caches it locally, and returns it.
-  Future<List<Course>> fetchCatalog({String? subject, int? grade, String? language, String? search, int page = 1, int perPage = 20}) async {
+  Future<List<Course>> fetchCatalog() async {
     _loading = true;
     _error = null;
     notifyListeners();
     try {
-      final qp = <String, dynamic>{
-        'page': page,
-        'per_page': perPage,
-      };
-      if (subject != null && subject.isNotEmpty) qp['subject'] = subject;
-      if (grade != null) qp['grade'] = grade;
-      if (language != null && language.isNotEmpty) qp['language'] = language;
-      if (search != null && search.isNotEmpty) qp['search'] = search;
-      final resp = await ApiClient.get('/api/courses', queryParameters: qp);
+      final resp = await ApiClient.get('/api/courses');
       final data = resp.data;
       final List<dynamic> items;
       if (data is List) {
@@ -224,22 +216,7 @@ class CourseService extends ChangeNotifier {
     try {
       final db = await DBHelper().database;
       final rows = await db.query('courses', orderBy: 'synced_at DESC');
-      return rows.map((r) {
-        return Course(
-          id: (r['id'] ?? '').toString(),
-          title: (r['title'] ?? '').toString(),
-          description: (r['description'] ?? '').toString(),
-          subject: (r['subject'] ?? '').toString(),
-          grade: (r['grade'] as num?)?.toInt() ?? 0,
-          language: (r['language'] ?? 'en').toString(),
-          coverImage: (r['cover_image'] ?? '').toString(),
-          published: (r['published'] as num?)?.toInt() ?? 0,
-          teacherUsername: (r['teacher_username'] ?? '').toString(),
-          enrollmentCount: (r['enrollment_count'] as num?)?.toInt() ?? 0,
-          createdAt: (r['created_at'] ?? '').toString(),
-          updatedAt: (r['updated_at'] ?? '').toString(),
-        );
-      }).toList();
+      return rows.map(_rowToCourse).toList();
     } catch (e) {
       debugPrint('CourseService: getCachedCatalog failed -- $e');
       return [];
