@@ -16,7 +16,6 @@ class HubDiscoveryService extends ChangeNotifier {
   static const String _instanceName = 'EduMeshHub';
   static const int _port = 8000;
 
-  /// Whether mDNS discovery is supported on this platform.
   bool get isAvailable => !kIsWeb;
 
   /// Looks up the hub via mDNS and returns its base URL.

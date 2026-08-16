@@ -20,7 +20,6 @@ import 'kiwix_view.dart';
 
 /// Shows topics for a subject, or resources directly if no topics exist.
 class SubjectTopicsPage extends StatefulWidget {
-  /// The subject whose topics or resources are shown.
   final String subject;
   const SubjectTopicsPage({super.key, required this.subject});
 

@@ -23,19 +23,14 @@ const String kFallbackSubject = 'General';
 
 /// A model representing a learning resource with its metadata and download status.
 class ResourceModel {
-  /// The unique identifier for this resource.
   final String id;
 
-  /// The display title of the resource.
   final String title;
 
-  /// The subject category this resource belongs to.
   final String subject;
 
-  /// The grade or class level for this resource.
   final String grade;
 
-  /// The type category of this resource.
   final ResourceType type;
 
   /// An optional URL to a PDF version of this resource.
@@ -44,7 +39,6 @@ class ResourceModel {
   /// The last-modified timestamp of the source file.
   final double mtime;
 
-  /// Whether this resource has been downloaded to the device.
   bool isDownloaded;
 
   /// The topic name assigned to this resource (e.g. "Chapter 1").
@@ -59,7 +53,6 @@ class ResourceModel {
   /// The duration in seconds for video resources (0 when unknown).
   final int durationSeconds;
 
-  /// Creates a [ResourceModel] with the given metadata.
   ResourceModel({
     required this.id,
     required this.title,
@@ -75,7 +68,6 @@ class ResourceModel {
     this.durationSeconds = 0,
   });
 
-  /// Creates a [ResourceModel] from a JSON [map] returned by the API.
   factory ResourceModel.fromJson(Map<String, dynamic> json) {
     return ResourceModel(
       id: json['id']?.toString() ?? '',
@@ -93,7 +85,6 @@ class ResourceModel {
     );
   }
 
-  /// Serializes this [ResourceModel] to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
     'id': id,
     'title': title,

@@ -19,7 +19,8 @@ class CatalogService {
   static DateTime? _lastSimilarSync;
   static const _syncCooldown = Duration(minutes: 5);
 
-  /// Whether enough time has passed since the last sync.
+  /// True once 5 minutes have passed since the last sync, so dashboard loads
+  /// and connectivity changes don't re-hit the hub on every event.
   bool get _catalogStale =>
       _lastCatalogSync == null || DateTime.now().difference(_lastCatalogSync!) > _syncCooldown;
   bool get _similarStale =>
@@ -128,7 +129,6 @@ class CatalogService {
     }
   }
 
-  /// Returns all cached resources as [ResourceModel] instances.
   /// Optionally filtered by [subject], [grade], and/or [type].
   Future<List<ResourceModel>> getCatalog({
     String? subject,

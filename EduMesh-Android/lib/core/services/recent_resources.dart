@@ -11,7 +11,6 @@ class RecentResources {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getStringList(_key) ?? [];
-      // Each entry: "id|||title|||type"
       final entry = '$id|||$title|||$type';
       raw.removeWhere((e) => e.startsWith('$id|||'));
       raw.insert(0, entry);

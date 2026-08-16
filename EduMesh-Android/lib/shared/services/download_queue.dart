@@ -46,13 +46,11 @@ class DownloadQueue extends ChangeNotifier {
   bool _processing = false;
   static int _notifSeq = 0;
 
-  /// The set of resource IDs currently in the queue.
   Set<String> get queuedIds => _queue.map((d) => d.resourceId).toSet();
 
   /// The resource ID currently being downloaded, or `null` if idle.
   String? get active => _processing && _queue.isNotEmpty ? _queue.first.resourceId : null;
 
-  /// Whether a download for [id] is already in the queue.
   bool contains(String id) => _queue.any((d) => d.resourceId == id);
 
   /// Adds a download to the queue.

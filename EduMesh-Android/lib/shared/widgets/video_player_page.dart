@@ -18,7 +18,6 @@ const _speedOptions = <double>[0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 /// A full-screen video player with playback speed, fullscreen, and
 /// seek-preview controls.
 class VideoPlayerPage extends StatefulWidget {
-  /// The display title shown in the app bar.
   final String title;
 
   /// The video source URL, or a local file path.

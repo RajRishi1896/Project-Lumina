@@ -9,7 +9,6 @@ class ZimArchive {
   final String filename;
   /// Human-readable archive title from ZIM metadata.
   final String title;
-  /// Number of articles extracted from this archive.
   final int articleCount;
   /// ISO 639-1 language code (e.g. `en`, `hi`).
   final String language;
@@ -18,7 +17,6 @@ class ZimArchive {
   /// Archive file size in bytes.
   final int fileSize;
 
-  /// Creates a [ZimArchive] from its metadata.
   ZimArchive({
     required this.id,
     required this.filename,
@@ -45,7 +43,6 @@ class ZimArchive {
 
 /// A single article within a ZIM archive.
 class ZimArticle {
-  /// Unique article identifier within the archive.
   final String articleId;
   /// Human-readable article title.
   final String title;
@@ -55,12 +52,11 @@ class ZimArticle {
   final String path;
   /// ZIM namespace (typically `A` for articles, `I` for images).
   final String namespace;
-  /// Whether a thumbnail has been extracted for this article.
+  /// Whether `zim_pages/thumbs/{article}.png` exists on the server.
   final bool hasThumbnail;
   /// Display name of the peer hub hosting this article, empty for local articles.
   final String peerName;
 
-  /// Creates a [ZimArticle] from its metadata.
   ZimArticle({
     required this.articleId,
     required this.title,
@@ -71,7 +67,6 @@ class ZimArticle {
     this.peerName = '',
   });
 
-  /// Whether this article comes from a paired peer hub.
   bool get isPeer => peerName.isNotEmpty;
 
   /// Parses a [ZimArticle] from a server JSON [map].

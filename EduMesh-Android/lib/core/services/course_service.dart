@@ -25,7 +25,6 @@ class CourseService extends ChangeNotifier {
   List<Course> _cachedCourses = [];
   List<({Course course, Map<String, dynamic>? progress})> _enrolledCourses = [];
 
-  /// Whether a network request is currently in progress.
   bool get isLoading => _loading;
 
   /// The most recent error message, or `null` if no error.

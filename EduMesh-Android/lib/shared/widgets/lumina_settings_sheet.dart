@@ -49,7 +49,6 @@ class LuminaSettingsSheet extends ConsumerWidget {
     );
   }
 
-  /// The ordered list of tiles shown in this sheet.
   List<Widget> _settingsItems(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;

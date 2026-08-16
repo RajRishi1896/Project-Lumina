@@ -34,7 +34,6 @@ class SearchPage extends StatefulWidget {
   /// recommendations.
   final String initialGrade;
 
-  /// Whether to open the filter sheet immediately on page load.
   final bool openFilters;
 
   /// When true, skip the Scaffold/AppBar wrapper and return only the body

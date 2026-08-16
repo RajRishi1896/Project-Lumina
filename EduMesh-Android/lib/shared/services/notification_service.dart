@@ -65,7 +65,6 @@ class NotificationService {
     }
   }
 
-  /// Whether notifications are enabled in user preferences.
   Future<bool> get isEnabled async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_prefKey) ?? true;
@@ -81,7 +80,6 @@ class NotificationService {
     }
   }
 
-  /// Whether the user has granted notification permission.
   ///
   /// On Android 13+ this triggers the system permission dialog if not yet decided.
   /// On Android <13 the permission is auto-granted from the manifest and the

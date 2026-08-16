@@ -12,26 +12,21 @@ class FlashcardDeck {
     this.submissionReason = '',
   });
 
-  /// Unique deck identifier.
   final String id;
 
-  /// Display title shown in the deck list.
   final String title;
 
   /// Origin of the deck: `local` or `hub`.
   final String source;
 
-  /// Cards in display order.
   final List<FlashcardCard> cards;
 
   /// Pending / approved / rejected -- empty for purely local decks.
   final String submissionStatus;
   final String submissionReason;
 
-  /// Number of cards due for review right now.
   int get dueCount => cards.where((c) => c.isDue).length;
 
-  /// Returns a copy of this deck with the given fields replaced.
   FlashcardDeck copyWith({List<FlashcardCard>? cards, String? title}) {
     return FlashcardDeck(
       id: id,
@@ -56,16 +51,13 @@ class FlashcardCard {
     required this.dueAt,
   });
 
-  /// Unique card identifier.
   final String id;
 
   /// Identifier of the parent [FlashcardDeck].
   final String deckId;
 
-  /// Front (question) text.
   final String front;
 
-  /// Back (answer) text.
   final String back;
 
   /// SM-2 ease factor used for review scheduling.
@@ -77,7 +69,6 @@ class FlashcardCard {
   /// Epoch milliseconds at which the card is next due.
   final int dueAt;
 
-  /// Whether the card is due for review now.
   bool get isDue => dueAt <= DateTime.now().millisecondsSinceEpoch;
 
   /// A blank card used as a default value.

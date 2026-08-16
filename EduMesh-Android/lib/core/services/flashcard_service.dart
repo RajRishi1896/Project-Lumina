@@ -124,7 +124,6 @@ class FlashcardService {
     );
   }
 
-  /// Creates a deck with [cards] (front/back strings) and returns its id.
   Future<String> createDeck(String title, List<({String front, String back})> cards) async {
     final db = await DBHelper().database;
     final now = DateTime.now().millisecondsSinceEpoch;

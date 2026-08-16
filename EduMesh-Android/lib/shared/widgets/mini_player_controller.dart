@@ -23,13 +23,11 @@ class MiniPlayerController extends ChangeNotifier {
   bool _active = false;
   bool _quizActive = false;
 
-  /// Whether the mini-player overlay is currently visible.
   bool get isActive => _active;
 
   /// Whether a quiz is currently active (mini-player should hide).
   bool get isQuizActive => _quizActive;
 
-  /// The video title displayed in the mini-player.
   String get title => _title;
 
   /// The video source URL associated with the active session.

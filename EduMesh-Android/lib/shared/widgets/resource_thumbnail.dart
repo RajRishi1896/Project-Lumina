@@ -93,7 +93,6 @@ class ResourceCard extends StatelessWidget {
   /// The resource id, used for the thumbnail URL and the Ready check.
   final String resourceId;
 
-  /// The display title of the resource.
   final String title;
 
   /// The resource type, which drives the badge and metadata fields shown.
@@ -108,7 +107,6 @@ class ResourceCard extends StatelessWidget {
   /// The duration in seconds for videos (0 hides the duration segment).
   final int durationSeconds;
 
-  /// Whether the file exists in the local downloads table.
   final bool isReady;
 
   /// An optional subtitle shown under the title (e.g. course progress state).
@@ -126,7 +124,6 @@ class ResourceCard extends StatelessWidget {
   /// Called when the card is tapped; `null` disables the tap.
   final VoidCallback? onTap;
 
-  /// Creates a [ResourceCard] with the given data.
   const ResourceCard({
     super.key,
     required this.resourceId,
