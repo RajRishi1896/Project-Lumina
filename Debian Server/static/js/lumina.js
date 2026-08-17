@@ -225,26 +225,6 @@ function applyLanguage() {
         if (langObj) label.textContent = langObj.native;
     }
     document.dispatchEvent(new CustomEvent('languageChanged', {detail: {lang: currentLang}}));
-    equalizeBottomNav();
-}
-
-/**
- * Give every bottom-nav item the same width as the widest label.
- * Runs after render and after each language switch so translated
- * labels never clip or overlap. No-op when the bar is hidden.
- */
-function equalizeBottomNav() {
-    const nav = document.getElementById('bottomNav');
-    if (!nav || getComputedStyle(nav).display === 'none') return;
-    const items = nav.querySelectorAll('.bottom-nav-item');
-    if (!items.length) return;
-    let maxW = 0;
-    items.forEach(function(el) {
-        const span = el.querySelector('span');
-        maxW = Math.max(maxW, span ? span.scrollWidth : el.scrollWidth);
-    });
-    const pad = parseFloat(getComputedStyle(items[0]).paddingLeft) + parseFloat(getComputedStyle(items[0]).paddingRight);
-    items.forEach(function(el) { el.style.width = (maxW + pad) + 'px'; });
 }
 
 /**
@@ -287,6 +267,7 @@ function initLangPicker() {
 
     const themeBtn = document.createElement('button');
     themeBtn.id = 'themeToggleBtn';
+    themeBtn.setAttribute('data-i18n-aria-label', 'nav.theme');
     themeBtn.style.cssText = 'height:36px;width:36px;border-radius:18px;border:1px solid var(--outline);background:var(--bg-surface);color:var(--text-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.08);transition:all 0.2s;';
     function updateThemeIcon() {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -305,7 +286,7 @@ function initLangPicker() {
     btn.setAttribute('aria-haspopup', 'listbox');
     btn.setAttribute('aria-expanded', 'false');
     btn.setAttribute('aria-controls', 'langDropdown');
-    btn.setAttribute('aria-label', 'Language selection');
+    btn.setAttribute('data-i18n-aria-label', 'nav.language');
     btn.style.cssText = 'height:36px;border-radius:18px;border:1px solid var(--outline);background:var(--bg-surface);color:var(--text-primary);cursor:pointer;display:flex;align-items:center;gap:0.4rem;padding:0 0.75rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);font-family:inherit;font-size:0.8rem;font-weight:700;transition:all 0.2s;';
     const initialLang = LANGUAGES.find(function(l){ return l.code === currentLang; }) || LANGUAGES[0];
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span id="langPickerLabel">' + esc(initialLang.native) + '</span>';
@@ -324,9 +305,9 @@ function initLangPicker() {
     const dd = document.createElement('div');
     dd.id = 'langDropdown';
     dd.setAttribute('role', 'listbox');
-    dd.setAttribute('aria-label', 'Available languages');
+    dd.setAttribute('data-i18n-aria-label', 'nav.available_languages');
     dd.style.cssText = 'display:none;position:fixed;top:3.75rem;right:1rem;width:220px;background:var(--bg-surface);border:1px solid var(--outline);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.2);z-index:1000;overflow:hidden;';
-    dd.innerHTML = '<div style="padding:0.5rem;border-bottom:1px solid var(--outline);"><input id="langSearch" type="text" placeholder="' + __('sidebar.lang_search_placeholder') + '" style="width:100%;padding:0.4rem 0.6rem;font-size:0.8rem;font-family:inherit;border:1px solid var(--outline);border-radius:6px;background:var(--bg-surface);color:var(--text-primary);outline:none;box-sizing:border-box;"></div><div id="langList" style="overflow-y:auto;max-height:220px;"></div>';
+    dd.innerHTML = '<div style="padding:0.5rem;border-bottom:1px solid var(--outline);"><input id="langSearch" type="text" data-i18n-placeholder="sidebar.lang_search_placeholder" placeholder="' + __('sidebar.lang_search_placeholder') + '" style="width:100%;padding:0.4rem 0.6rem;font-size:0.8rem;font-family:inherit;border:1px solid var(--outline);border-radius:6px;background:var(--bg-surface);color:var(--text-primary);outline:none;box-sizing:border-box;"></div><div id="langList" style="overflow-y:auto;max-height:220px;"></div>';
     document.body.appendChild(dd);
     document.getElementById('langList').addEventListener('click', function _langClick(e) {
         const opt = e.target.closest('.lang-option');
@@ -457,7 +438,7 @@ function showNotification(notifId, msg, isError) {
 function renderUserInfo(username, role) {
     var el = document.getElementById('userInfo');
     if (!el || !role) return;
-    el.innerHTML = '<div style="font-weight: 800; font-size: 1.2rem; color: #fff; letter-spacing: -0.015em;">' + esc(role.toUpperCase()) + '</div>';
+    el.innerHTML = '<div style="font-weight: 800; font-size: 1.2rem; color: #fff; letter-spacing: -0.015em;">' + esc(__('role_badge_' + role)) + '</div>';
 }
 
 /**
@@ -786,7 +767,7 @@ function renderLayout() {
     var bottomNav = document.getElementById('bottomNav');
     if (!aside) return;
     aside.setAttribute('role', 'navigation');
-    aside.setAttribute('aria-label', 'Main navigation');
+    aside.setAttribute('data-i18n-aria-label', 'nav.main_navigation');
     // Create bottomNav if missing (static pages don't have it)
     if (!bottomNav) {
         bottomNav = document.createElement('div');
@@ -795,7 +776,7 @@ function renderLayout() {
         document.body.appendChild(bottomNav);
     }
     bottomNav.setAttribute('role', 'navigation');
-    bottomNav.setAttribute('aria-label', 'Bottom navigation');
+    bottomNav.setAttribute('data-i18n-aria-label', 'nav.bottom_navigation');
 
     var key = NAV_MAP[location.pathname.replace(/\/+$/, '')] || '';
 
@@ -847,9 +828,9 @@ function renderLayout() {
     }
 
     aside.innerHTML =
-        '<a href="/static/index" class="sidebar-brand-horizontal">' +
-            '<img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina">' +
-            '<img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="Lumina">' +
+        '<a href="/static/index" class="sidebar-brand-horizontal" aria-label="Lumina Hub">' +
+            '<img class="logo-light" src="/static/assets/Horizontal Transparent Lightmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="">' +
+            '<img class="logo-dark" src="/static/assets/Horizontal Transparent Darkmode Icon.svg" style="width:100%;height:auto;max-height:90px;" alt="">' +
         '</a>' +
         '<div id="userInfo" class="sidebar-subtitle" style="margin-top:0.5rem;font-size:0.85rem;color:var(--on-primary);"></div>' +
         '<div class="sidebar-divider"></div>' +
@@ -859,7 +840,6 @@ function renderLayout() {
 
     btmNav += '<a href="/logout" class="bottom-nav-item" id="bottom-nav-logout" onclick="sessionStorage.clear()">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
     bottomNav.innerHTML = btmNav;
-    equalizeBottomNav();
 }
 
 /**
@@ -1073,9 +1053,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         initCurrentPage();
     });
-
-    // Global listeners
-    window.addEventListener('resize', equalizeBottomNav);
 });
 
 /* Intercept sidebar and bottom-nav nav clicks for SPA */

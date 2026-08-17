@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <!-- Section: Head -- theme detection, metadata, page-specific styles -->
 <head>
@@ -63,7 +63,7 @@
                             <option value="ALL" data-i18n="courses.filter_all">All</option>
                         </select>
                         <div class="search-wrap-inline" style="flex:1 1 200px;">
-                            <input type="text" id="courseSearch" placeholder="Search by title..." data-i18n="courses.search_placeholder">
+                            <input type="text" id="courseSearch" placeholder="Search by title..." data-i18n="courses.search_placeholder" aria-label="Search by title..." data-i18n-aria-label="courses.search_placeholder">
                             <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center; pointer-events: none;">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </span>
@@ -74,13 +74,13 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th data-i18n="courses.th_title" style="width: 25%;">Title</th>
-                            <th data-i18n="courses.th_subject" style="width: 18%;">Subject</th>
+                            <th data-i18n="courses.th_title" style="width: 20%;">Title</th>
+                            <th data-i18n="courses.th_subject" style="width: 14%;">Subject</th>
                             <th data-i18n="courses.th_grade" style="width: 8%;">Grade</th>
                             <th data-i18n="courses.th_language" style="width: 11%;">Language</th>
-                            <th data-i18n="courses.th_status" style="width: 10%;">Status</th>
-                            <th data-i18n="courses.th_resources" style="width: 10%;">Resources</th>
-                            <th data-i18n="courses.th_actions" style="width: 24%;">Actions</th>
+                            <th data-i18n="courses.th_status" style="width: 12%;">Status</th>
+                            <th data-i18n="courses.th_resources" style="width: 12%;">Resources</th>
+                            <th data-i18n="courses.th_actions" style="width: 23%;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="courseTable">
@@ -284,7 +284,7 @@
                         <option value="120">120</option>
                         <option value="custom" data-i18n="courses.quiz_custom">Custom</option>
                     </select>
-                    <input type="number" id="quizTimeLimitCustom" min="1" max="999" placeholder="Minutes" data-i18n="courses.quiz_minutes_placeholder" class="form-input mt-1" style="display:none;">
+                    <input type="number" id="quizTimeLimitCustom" min="1" max="999" placeholder="Minutes" data-i18n="courses.quiz_minutes_placeholder" data-i18n-aria-label="courses.quiz_minutes_placeholder" aria-label="Minutes" class="form-input mt-1" style="display:none;">
                 </div>
                 <div class="form-group">
                     <label for="quizThreshold" data-i18n="courses.quiz_threshold_label">Pass Threshold (%)</label>
@@ -301,7 +301,7 @@
                         <option value="10">10</option>
                         <option value="custom" data-i18n="courses.quiz_custom">Custom</option>
                     </select>
-                    <input type="number" id="quizMaxAttemptsCustom" min="1" max="999" placeholder="Attempts" data-i18n="courses.quiz_attempts_placeholder" class="form-input mt-1" style="display:none;">
+                    <input type="number" id="quizMaxAttemptsCustom" min="1" max="999" placeholder="Attempts" data-i18n="courses.quiz_attempts_placeholder" data-i18n-aria-label="courses.quiz_attempts_placeholder" aria-label="Attempts" class="form-input mt-1" style="display:none;">
                 </div>
             </div>
             <div class="form-group flex items-center gap-2 mt-2">
@@ -419,7 +419,7 @@
     <!-- Section: Toast Container -->
     <div id="globalToastContainer" class="toast-container"></div>
 
-    <script src="/static/js/lumina.js?v=10" defer></script>
+    <script src="/static/js/lumina.js?v=10"></script>
     <!-- Section: Inline Scripts -- course CRUD, editor, quiz builder -->
     <script>
         var courses = [];
@@ -1028,7 +1028,7 @@
                         : '<input type="radio" class="q-correct-opt" name="qCorrectOpt" data-optindex="' + i + '" ' + (checked ? 'checked' : '') + '>') +
                     (type === 'tf'
                         ? '<span style="font-size:0.9rem;font-weight:700;">' + esc(opt) + '</span>'
-                        : '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="' + esc(opt) + '" placeholder="' + __('courses.quiz_option_placeholder').replace('{n}', i + 1) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">') +
+                        : '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="' + esc(opt) + '" placeholder="' + __('courses.quiz_option_placeholder').replace('{n}', i + 1) + '" aria-label="' + __('courses.quiz_option_placeholder').replace('{n}', i + 1) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">') +
                     (type !== 'tf' ? '<button class="btn btn-outline js-remove-option" data-optindex="' + i + '" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">&times;</button>' : '') +
                     '</div>';
             }).join('');
@@ -1554,7 +1554,7 @@
                     (type === 'multi'
                         ? '<input type="checkbox" class="q-correct-opt" data-optindex="' + i + '">'
                         : '<input type="radio" class="q-correct-opt" name="qCorrectOpt" data-optindex="' + i + '">') +
-                    '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="" placeholder="' + __('courses.quiz_option_placeholder').replace('{n}', i + 1) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">' +
+                    '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="" placeholder="' + __('courses.quiz_option_placeholder').replace('{n}', i + 1) + '" aria-label="' + __('courses.quiz_option_placeholder').replace('{n}', i + 1) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">' +
                     '<button class="btn btn-outline js-remove-option" data-optindex="' + i + '" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">&times;</button>';
                 container.appendChild(div);
             });

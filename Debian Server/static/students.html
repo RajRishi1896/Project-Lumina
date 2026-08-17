@@ -53,7 +53,7 @@
                     <label for="searchInput" class="filter-label" data-i18n="students_search_label">Search</label>
                     <div class="search-inner">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="text" id="searchInput" class="form-input" placeholder="Search by name or ID…" data-i18n="students.search">
+                        <input type="text" id="searchInput" class="form-input" placeholder="Search by name or ID…" data-i18n="students.search" aria-label="Search by name or ID…" data-i18n-aria-label="students_search_label">
                     </div>
                 </div>
                 <button id="btn-loadStudents" class="btn btn-outline btn-sm">
@@ -75,7 +75,7 @@
     <!-- Section: Toast Container -- global notification area (top-right, fixed) -->
     <div id="globalToastContainer" class="toast-container"></div>
 
-    <script src="/static/js/lumina.js?v=10" defer></script>
+    <script src="/static/js/lumina.js?v=10"></script>
     <!-- Section: Inline Scripts -- student list logic, filtering, rendering -->
     <script>
         var allStudents = [];

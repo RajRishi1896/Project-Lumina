@@ -49,12 +49,12 @@
                 <table class="table" >
                     <thead>
                         <tr>
-                            <th data-i18n="content.library_th_title" style="width: 30%;">Title</th>
-                            <th data-i18n="content.library_th_subject" style="width: 14%;">Subject</th>
-                            <th data-i18n="content.library_th_topic" style="width: 14%;">Topic</th>
-                            <th data-i18n="content.library_th_type" style="width: 10%;">Type</th>
-                            <th data-i18n="content.library_th_downloads" style="width: 10%;">Downloads</th>
-                            <th data-i18n="content.library_th_action" style="width: 22%;">Action</th>
+<th data-i18n="content.library_th_title" style="width: 27%;">Title</th>
+<th data-i18n="content.library_th_subject" style="width: 12%;">Subject</th>
+<th data-i18n="content.library_th_topic" style="width: 12%;">Topic</th>
+<th data-i18n="content.library_th_type" style="width: 13%;">Type</th>
+<th data-i18n="content.library_th_downloads" style="width: 12%;">Downloads</th>
+<th data-i18n="content.library_th_action" style="width: 24%;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="resourceTable">
@@ -91,7 +91,7 @@
                     <div class="flex flex-wrap items-center gap-3">
                         <label for="topicFilterSubject" class="text-sm" style="white-space: nowrap;" data-i18n="content.library_filter_subject_label">Filter Subject:</label>
                         <select id="topicFilterSubject" class="form-select" style="flex:0 1 160px;">
-                            <option value="ALL">All Subjects</option>
+                            <option value="ALL" data-i18n="content.library_filter_all_subjects">All Subjects</option>
                         </select>
                         <div class="search-wrap-inline" style="flex:1 1 200px;">
                             <label for="topicSearch" class="sr-only" data-i18n="content.topics_search_label">Search topics</label>
@@ -158,7 +158,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div style="grid-column:1/-1;">
-                        <label class="form-label" data-i18n="content.upload_label_title">Title</label>
+                        <label class="form-label" data-i18n="content.upload_label_title" for="title">Title</label>
                         <input type="text" id="title" placeholder="e.g. Physics 101" data-i18n="content.upload_placeholder_title" class="form-input">
                     </div>
                     <div>
@@ -169,7 +169,7 @@
                             <option value="pyq" data-i18n="content.upload_option_pyq">Previous Year Paper (PYQ)</option>
                             <option value="kiwix" data-i18n="content.upload_option_zim">ZIM Archive</option>
                             <option value="notes" data-i18n="content.upload_option_notes">Notes</option>
-                            <option value="quiz">Quiz</option>
+                            <option value="quiz" data-i18n="content.upload_option_quiz">Quiz</option>
                         </select>
                     </div>
                     <div>
@@ -195,13 +195,13 @@
                         <input type="file" id="file" class="form-input">
                     </div>
                     <div id="quizCreateWrap" style="grid-column:1/-1;display:none;">
-                        <label class="form-label">Quiz</label>
-                        <button id="btn-openQuizBuilder" type="button" class="btn btn-primary w-full">Open Quiz Builder</button>
+                        <label class="form-label" data-i18n="content.upload_option_quiz">Quiz</label>
+                        <button id="btn-openQuizBuilder" type="button" class="btn btn-primary w-full" data-i18n="content.quiz.open_builder">Open Quiz Builder</button>
                         <div id="quizSummaryLine" style="display:none;margin-top:0.5rem;font-size:0.8rem;color:var(--text-secondary);"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button id="btn-closeUploadModal" class="btn btn-outline">Cancel</button>
+                    <button id="btn-closeUploadModal" class="btn btn-outline" data-i18n="content.modal_cancel">Cancel</button>
                     <button id="btn-upload" class="btn btn-primary"><span data-i18n="content.upload_button">Upload</span></button>
                 </div>
             </div>
@@ -211,7 +211,7 @@
         <div id="quizBuilderModal" class="hidden popup modal-overlay" style="z-index:20001;">
             <div class="modal" style="max-width:800px;width:95%;">
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="modal-title" style="font-size:1.25rem;">Quiz Builder</h3>
+                    <h3 class="modal-title" style="font-size:1.25rem;" data-i18n="courses.quiz_builder">Quiz Builder</h3>
                     <div class="flex items-center gap-2">
                         <button id="btn-importQuiz" class="btn btn-outline btn-sm" data-i18n="content.quiz.import_button">Import Quiz</button>
                         <button id="btn-exportQuiz" class="btn btn-outline btn-sm" data-i18n="content.quiz.export_button">Export Quiz</button>
@@ -225,11 +225,11 @@
                 <!-- Quiz Settings -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="form-label">Quiz Title</label>
+                        <label class="form-label" data-i18n="courses.quiz_title_label" for="quizTitle">Quiz Title</label>
                         <input type="text" id="quizTitle" placeholder="e.g. Chapter 1 Quiz" maxlength="120" class="form-input">
                     </div>
                     <div>
-                        <label class="form-label">Time Limit (minutes)</label>
+                        <label class="form-label" data-i18n="content.quiz.time_limit_label" for="quizTimeLimit">Time Limit (minutes)</label>
                         <select id="quizTimeLimit" class="form-select">
                             <option value="0" data-i18n="content.quiz.unlimited">Unlimited</option>
                             <option value="5">5</option>
@@ -241,29 +241,29 @@
                         </select>
                     </div>
                     <div>
-                        <label class="form-label">Pass Threshold (%)</label>
+                        <label class="form-label" data-i18n="courses.quiz_threshold_label" for="quizThreshold">Pass Threshold (%)</label>
                         <input type="number" id="quizThreshold" value="60" min="0" max="100" class="form-input">
                     </div>
                     <div>
-                        <label class="form-label">Max Attempts</label>
+                        <label class="form-label" data-i18n="courses.quiz_attempts_label" for="quizMaxAttempts">Max Attempts</label>
                         <select id="quizMaxAttempts" class="form-select">
-                            <option value="0">Unlimited</option>
+                            <option value="0" data-i18n="courses.quiz_unlimited">Unlimited</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
                             <option value="3" selected>3</option>
                             <option value="5">5</option>
                             <option value="10">10</option>
-                            <option value="custom">Custom</option>
+                            <option value="custom" data-i18n="courses.quiz_custom">Custom</option>
                         </select>
-                        <input type="number" id="quizMaxAttemptsCustom" min="1" max="50" class="form-input" style="display:none;margin-top:0.4rem;" placeholder="Enter max attempts">
+                        <input type="number" id="quizMaxAttemptsCustom" min="1" max="50" class="form-input" style="display:none;margin-top:0.4rem;" placeholder="Enter max attempts" data-i18n-placeholder="content.quiz.max_attempts_placeholder" data-i18n-aria-label="content.quiz.max_attempts_placeholder" aria-label="Enter max attempts">
                     </div>
                     <div>
-                        <label class="form-label">Shuffle</label>
+                        <label class="form-label" data-i18n="courses.quiz_shuffle_label" for="quizShuffleMode">Shuffle</label>
                         <select id="quizShuffleMode" class="form-select">
-                            <option value="none">None</option>
-                            <option value="questions">Only Questions</option>
-                            <option value="options">Only Options</option>
-                            <option value="both">Both</option>
+                            <option value="none" data-i18n="courses.shuffle_none">None</option>
+                            <option value="questions" data-i18n="courses.shuffle_questions_only">Only Questions</option>
+                            <option value="options" data-i18n="courses.shuffle_options_only">Only Options</option>
+                            <option value="both" data-i18n="courses.shuffle_both">Both</option>
                         </select>
                     </div>
                 </div>
@@ -271,11 +271,11 @@
                 <!-- Question List -->
                 <div class="mt-6">
                     <div class="flex items-center justify-between mb-3">
-                        <h4 class="text-lg font-bold">Questions</h4>
-                        <button id="btn-addQuestion" class="btn btn-outline btn-sm">+ Add Question</button>
+                        <h4 class="text-lg font-bold" data-i18n="courses.quiz_questions_title">Questions</h4>
+                        <button id="btn-addQuestion" class="btn btn-outline btn-sm" data-i18n="content.quiz.add_question">+ Add Question</button>
                     </div>
                     <div id="quizQuestionList">
-                        <p class="text-sm text-muted text-center p-4">No questions added yet.</p>
+                        <p class="text-sm text-muted text-center p-4" data-i18n="content.quiz.questions_empty">No questions added yet.</p>
                     </div>
                 </div>
 
@@ -288,43 +288,43 @@
                         </button>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Question Type</label>
+                        <label class="form-label" data-i18n="courses.quiz_q_type_label" for="qType">Question Type</label>
                         <select id="qType" class="form-select">
-                            <option value="mcq">MCQ (Single)</option>
-                            <option value="tf">True / False</option>
-                            <option value="fill_blanks">Fill in the Blanks</option>
-                            <option value="multi">Multi-Select</option>
+                            <option value="mcq" data-i18n="courses.quiz_q_type_mcq">MCQ (Single)</option>
+                            <option value="tf" data-i18n="courses.quiz_q_type_tf">True / False</option>
+                            <option value="fill_blanks" data-i18n="courses.quiz_q_type_fill">Fill in the Blanks</option>
+                            <option value="multi" data-i18n="courses.quiz_q_type_multi">Multi-Select</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Question Text</label>
-                        <textarea id="qText" rows="3" maxlength="500" placeholder="Enter the question..." class="form-input" style="resize:vertical;"></textarea>
+                        <label class="form-label" data-i18n="content.quiz.q_text_label" for="qText">Question Text</label>
+                        <textarea id="qText" rows="3" maxlength="500" placeholder="Enter the question..." data-i18n-placeholder="content.quiz.q_text_placeholder" class="form-input" style="resize:vertical;"></textarea>
                         <div class="text-xs text-muted mt-1" style="text-align:right;"><span id="qTextCount">0</span>/500</div>
                     </div>
                     <div id="qOptionsContainer">
-                        <label class="form-label">Options</label>
+                        <label class="form-label" data-i18n="courses.quiz_q_options_label">Options</label>
                         <div id="qOptionsList"></div>
-                        <button id="btn-addOption" class="btn btn-outline btn-sm" style="margin-top:0.5rem;">+ Add Option</button>
+                        <button id="btn-addOption" class="btn btn-outline btn-sm" style="margin-top:0.5rem;" data-i18n="courses.quiz_add_option">+ Add Option</button>
                     </div>
                     <div id="qFillContainer" style="display:none;">
                         <div class="mb-3">
-                            <label class="form-label">Correct Answer</label>
-                            <input type="text" id="qFillAnswer" placeholder="Enter the correct answer..." class="form-input">
+                            <label class="form-label" data-i18n="content.quiz.correct_answer_label" for="qFillAnswer">Correct Answer</label>
+                            <input type="text" id="qFillAnswer" placeholder="Enter the correct answer..." data-i18n-placeholder="content.quiz.fill_answer_placeholder" data-i18n-aria-label="content.quiz.fill_answer_placeholder" aria-label="Enter the correct answer..." class="form-input">
                         </div>
                     </div>
                     <div class="mt-3">
-                        <label class="form-label">Explanation (optional)</label>
-                        <textarea id="qExplanation" rows="2" maxlength="500" placeholder="Explain why this answer is correct..." class="form-input" style="resize:vertical;"></textarea>
+                        <label class="form-label" data-i18n="courses.quiz_q_explanation_label" for="qExplanation">Explanation (optional)</label>
+                        <textarea id="qExplanation" rows="2" maxlength="500" placeholder="Explain why this answer is correct..." data-i18n-placeholder="courses.quiz_q_explanation_placeholder" class="form-input" style="resize:vertical;"></textarea>
                     </div>
                     <div class="flex justify-end gap-2 mt-3">
                         <button id="btn-cancelQuestion" class="btn btn-outline btn-sm" data-i18n="content.modal_cancel">Cancel</button>
-                        <button id="btn-saveQuestion" class="btn btn-primary btn-sm">Save Question</button>
+                        <button id="btn-saveQuestion" class="btn btn-primary btn-sm" data-i18n="content.quiz.save_question">Save Question</button>
                     </div>
                 </div>
 
                 <!-- Quiz Actions -->
                 <div class="modal-footer mt-6">
-                    <button id="btn-saveQuizResource" class="btn btn-primary">Save Quiz</button>
+                    <button id="btn-saveQuizResource" class="btn btn-primary" data-i18n="content.quiz.save_quiz">Save Quiz</button>
                 </div>
             </div>
         </div>
@@ -334,9 +334,9 @@
             <div class="modal creation">
                 <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="content.topics_edit_title">Edit Topic</h3>
                 <div id="editTopicNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
-                <input type="hidden" id="editTopicId">
-                <div class="mb-5">
-                    <label class="form-label" data-i18n="content.topics_th_name">Topic Name</label>
+<input type="hidden" id="editTopicId">
+<div class="mb-5">
+<label class="form-label" data-i18n="content.topics_th_name" for="editTopicName">Topic Name</label>
                     <input type="text" id="editTopicName" placeholder="e.g. Chapter 1" data-i18n="content.topics_placeholder" class="form-input">
                 </div>
                 <div class="modal-footer">
@@ -354,16 +354,16 @@
                 <div class="mb-4">
                     <label class="form-label" data-i18n="content.upload_label_subject">Subject</label>
                     <select id="modalTopicSubject" class="form-select">
-                        <option value="">Select subject...</option>
+                        <option value="" data-i18n="content.topics.select_subject">Select subject...</option>
                     </select>
                 </div>
                 <div class="mb-5">
-                    <label class="form-label" data-i18n="content.topics_th_name">Topic Name</label>
+                    <label class="form-label" data-i18n="content.topics_th_name" for="modalTopicName">Topic Name</label>
                     <input type="text" id="modalTopicName" placeholder="e.g. Chapter 1" data-i18n="content.topics_placeholder" class="form-input">
                 </div>
                 <div class="modal-footer">
                     <button id="btn-closeTopicModal" class="btn btn-outline" data-i18n="content.modal_cancel">Cancel</button>
-                    <button id="btn-confirmAddTopic" class="btn btn-primary">Add Topic</button>
+                    <button id="btn-confirmAddTopic" class="btn btn-primary" data-i18n="content.topics.add_button">Add Topic</button>
                 </div>
             </div>
         </div>
@@ -376,18 +376,18 @@
                 <input type="hidden" id="editResId">
                 <div class="grid grid-cols-2 gap-4">
                     <div style="grid-column:1/-1;">
-                        <label class="form-label">Title</label>
+                        <label class="form-label" data-i18n="content.upload_label_title" for="editResTitle">Title</label>
                         <input type="text" id="editResTitle" class="form-input">
                     </div>
                     <div>
-                        <label class="form-label">Type</label>
+                        <label class="form-label" data-i18n="content.upload_label_type" for="editResType">Type</label>
                         <select id="editResType" class="form-select">
-                            <option value="textbook">Textbook</option>
-                            <option value="khan">Video</option>
-                            <option value="pyq">Previous Year Paper (PYQ)</option>
-                            <option value="kiwix">ZIM Archive</option>
-                            <option value="notes">Notes</option>
-                            <option value="quiz">Quiz</option>
+                            <option value="textbook" data-i18n="content.upload_option_textbook">Textbook</option>
+                            <option value="khan" data-i18n="content.upload_option_video">Video</option>
+                            <option value="pyq" data-i18n="content.upload_option_pyq">Previous Year Paper (PYQ)</option>
+                            <option value="kiwix" data-i18n="content.upload_option_zim">ZIM Archive</option>
+                            <option value="notes" data-i18n="content.upload_option_notes">Notes</option>
+                            <option value="quiz" data-i18n="content.upload_option_quiz">Quiz</option>
                         </select>
                     </div>
                     <div>
@@ -397,17 +397,17 @@
                         </select>
                     </div>
                     <div>
-                        <label class="form-label">Subject</label>
+                        <label class="form-label" data-i18n="content.upload_label_subject" for="editResSubject">Subject</label>
                         <select id="editResSubject" class="form-select"></select>
                     </div>
                     <div style="grid-column: 1/-1;">
-                        <label class="form-label">Chapter / Topic</label>
+                        <label class="form-label" data-i18n="content.upload_label_topic" for="editResTopic">Chapter / Topic</label>
                         <select id="editResTopic" class="form-select">
-                            <option value="">General (No Topic)</option>
+                            <option value="" data-i18n="content.upload_option_general_topic">General (No Topic)</option>
                         </select>
                     </div>
                     <div id="editResQuizBtnWrap" style="grid-column:1/-1;display:none;">
-                        <button id="btn-editResQuiz" type="button" class="btn btn-primary w-full">Edit Quiz</button>
+                        <button id="btn-editResQuiz" type="button" class="btn btn-primary w-full" data-i18n="content.quiz.edit_button">Edit Quiz</button>
                         <input type="hidden" id="editResQuizId">
                     </div>
                 </div>
@@ -426,7 +426,7 @@
     <!-- Section: Toast Container -- global notification area (top-right, fixed) -->
     <div id="globalToastContainer" class="toast-container"></div>
 
-    <script src="/static/js/lumina.js?v=10" defer></script>
+    <script src="/static/js/lumina.js?v=10"></script>
     <!-- Section: Inline Scripts -- resource CRUD, upload handler, topics -->
     <script>
         var typeLabels = { khan: 'VIDEO', video: 'VIDEO', videos: 'VIDEO', kiwix: 'ZIM', textbook: 'TEXTBOOK', pyq: 'PYQ', pastPaper: 'PYQ', notes: 'NOTES', quiz: 'QUIZ' };
@@ -901,7 +901,7 @@
             var subject = document.getElementById('editResSubject').value;
             var topicSelect = document.getElementById('editResTopic');
             if (!subject) {
-                topicSelect.innerHTML = '<option value="">General (No Topic)</option>';
+                topicSelect.innerHTML = '<option value="">' + __('content.upload_option_general_topic') + '</option>';
                 return;
             }
             try {
@@ -1177,7 +1177,7 @@
                         : '<input type="radio" class="q-correct-opt" name="qCorrectOpt" data-optindex="' + i + '"' + (checked ? ' checked' : '') + '>') +
                     (type === 'tf'
                         ? '<span style="font-size:0.9rem;font-weight:700;">' + esc(o) + '</span>'
-                        : '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="' + esc(o) + '" placeholder="' + __('courses.quiz_option_placeholder', {n: i + 1}) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">') +
+                        : '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="' + esc(o) + '" placeholder="' + __('courses.quiz_option_placeholder', {n: i + 1}) + '" aria-label="' + __('courses.quiz_option_placeholder', {n: i + 1}) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">') +
                     (type !== 'tf' ? '<button class="btn btn-outline js-remove-option" data-optindex="' + i + '" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">&times;</button>' : '') +
                     '</div>';
             }).join('');
@@ -1405,7 +1405,7 @@
                     (type === 'multi'
                         ? '<input type="checkbox" class="q-correct-opt" data-optindex="' + i + '">'
                         : '<input type="radio" class="q-correct-opt" name="qCorrectOpt" data-optindex="' + i + '">') +
-                    '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="" placeholder="' + __('courses.quiz_option_placeholder', {n: i + 1}) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">' +
+                    '<input type="text" class="q-opt-text" data-optindex="' + i + '" value="" placeholder="' + __('courses.quiz_option_placeholder', {n: i + 1}) + '" aria-label="' + __('courses.quiz_option_placeholder', {n: i + 1}) + '" style="flex:1;padding:0.4rem;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;background:var(--surface);color:var(--on-surface);">' +
                     '<button class="btn btn-outline js-remove-option" data-optindex="' + i + '" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">&times;</button>';
                 container.appendChild(div);
             });

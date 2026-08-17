@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <!-- Section: Head -- theme detection, metadata -->
 <head>
@@ -272,8 +272,8 @@
                 <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="danger.add_new_grade_title">Add New Grade</h3>
                 <div id="addGradeNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
                 <div style="margin-bottom:1.25rem;">
-                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.grade_name_label">Grade Name</label>
-                    <input type="text" id="modalGradeName" data-i18n="danger.grade_name_placeholder" placeholder="e.g. Grade 10" class="form-input">
+<label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.grade_name_label" for="modalGradeName">Grade Name</label>
+<input type="text" id="modalGradeName" data-i18n="danger.grade_name_placeholder" placeholder="e.g. Grade 10" class="form-input">
                 </div>
                 <div class="modal-footer" style="padding-top: 1rem; margin-top: 0;">
                     <button id="btn-closeGradeModal" class="btn btn-outline" style="color: var(--on-surface);"><span data-i18n="danger.cancel">Cancel</span></button>
@@ -288,8 +288,8 @@
                 <div id="editGradeNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
                 <input type="hidden" id="editGradeOriginalName" value="">
                 <div style="margin-bottom:1.25rem;">
-                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.grade_name_label">Grade Name</label>
-                    <input type="text" id="editGradeName" data-i18n="danger.grade_name_placeholder" placeholder="e.g. Grade 10" class="form-input">
+<label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.grade_name_label" for="editGradeName">Grade Name</label>
+<input type="text" id="editGradeName" data-i18n="danger.grade_name_placeholder" placeholder="e.g. Grade 10" class="form-input">
                 </div>
                 <div class="modal-footer" style="padding-top: 1rem; margin-top: 0;">
                     <button class="btn btn-outline btn-close-edit-grade" style="color: var(--on-surface);"><span data-i18n="danger.cancel">Cancel</span></button>
@@ -303,8 +303,8 @@
                 <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="danger.add_new_subject_title">Add New Subject</h3>
                 <div id="addSubjectNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
                 <div style="margin-bottom:1rem;">
-                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.subject_name_label">Subject Name</label>
-                    <input type="text" id="modalSubjectName" data-i18n="danger.subject_name_placeholder" placeholder="e.g. Biology" class="form-input">
+<label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.subject_name_label" for="modalSubjectName">Subject Name</label>
+<input type="text" id="modalSubjectName" data-i18n="danger.subject_name_placeholder" placeholder="e.g. Biology" class="form-input">
                 </div>
                 <div style="margin-bottom:1rem;">
                     <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.symbol_label">Symbol</label>
@@ -336,8 +336,8 @@
                 <div id="editSubjectNotif" style="display:none;padding:0.75rem 1rem;margin-bottom:1rem;border-radius:6px;font-weight:700;font-size:0.85rem;text-align:center;"></div>
                 <input type="hidden" id="editSubjectId" value="">
                 <div style="margin-bottom:1rem;">
-                    <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.subject_name_label">Subject Name</label>
-                    <input type="text" id="editSubjectName" data-i18n="danger.subject_name_placeholder" placeholder="e.g. Biology" class="form-input">
+<label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.subject_name_label" for="editSubjectName">Subject Name</label>
+<input type="text" id="editSubjectName" data-i18n="danger.subject_name_placeholder" placeholder="e.g. Biology" class="form-input">
                 </div>
                 <div style="margin-bottom:1rem;">
                     <label class="form-label" style="color: var(--text-secondary); margin-bottom: 0.35rem;" data-i18n="danger.symbol_label">Symbol</label>
@@ -381,7 +381,7 @@
 
     <div id="bottomNav"></div>
 
-    <script src="/static/js/lumina.js?v=10" defer></script>
+    <script src="/static/js/lumina.js?v=10"></script>
     <script>
         var activeDangerScholars = [];
         var activeDangerTeachers = [];
