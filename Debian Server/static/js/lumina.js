@@ -840,6 +840,12 @@ function renderLayout() {
 
     btmNav += '<a href="/logout" class="bottom-nav-item" id="bottom-nav-logout" onclick="sessionStorage.clear()">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
     bottomNav.innerHTML = btmNav;
+
+    var savedScroll = parseInt(sessionStorage.getItem('bottomNavScroll') || '0', 10);
+    setTimeout(function () { bottomNav.scrollLeft = savedScroll; }, 0);
+    bottomNav.addEventListener('scroll', function () {
+        sessionStorage.setItem('bottomNavScroll', String(bottomNav.scrollLeft));
+    }, { passive: true });
 }
 
 /**
