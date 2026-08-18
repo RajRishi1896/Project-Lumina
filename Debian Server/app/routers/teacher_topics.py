@@ -1,6 +1,8 @@
 """Teacher topic (chapter) management for courses."""
 from datetime import datetime, timezone
 from typing import Optional
+import asyncio
+import os
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from app.database import gen_uid
 from app.async_db import db_exec, db_exec_many, db_fetch, db_fetch_one
@@ -115,13 +117,18 @@ async def delete_topic(course_id: str, topic_id: str,
                 "transferred_to": target["title"]}  # i18n: user-facing success message
     elif delete_resources:
         resources = await db_fetch("SELECT id, filename FROM course_resources WHERE topic_id = ?", (topic_id,))
-        import os
         upload_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
-        for r in resources:
-            fpath = os.path.join(upload_dir, r["filename"])
-            if r.get("filename") and os.path.exists(fpath):
-                try: os.remove(fpath)
-                except Exception: pass
+
+        def _remove_files():
+            for r in resources:
+                fpath = os.path.join(upload_dir, r["filename"])
+                if r.get("filename") and os.path.exists(fpath):
+                    try:
+                        os.remove(fpath)
+                    except OSError:
+                        pass
+
+        await asyncio.to_thread(_remove_files)
         count = len(resources)
         await db_exec("DELETE FROM course_resources WHERE topic_id = ?", (topic_id,))
         await db_exec("DELETE FROM topics WHERE id = ?", (topic_id,))

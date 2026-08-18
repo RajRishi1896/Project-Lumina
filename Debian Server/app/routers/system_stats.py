@@ -207,16 +207,20 @@ async def health():
     """Return SQLite connectivity, open FDs, RSS."""
     await db_fetch_one("SELECT 1")
 
-    rss_mb = 0
-    try:
-        import resource as _resource
-        rss_mb = _resource.getrusage(_resource.RUSAGE_SELF).ru_maxrss // 1024
-    except (ImportError, AttributeError):
-        pass
-    try:
-        open_fds = len(os.listdir(f"/proc/{os.getpid()}/fd"))
-    except (FileNotFoundError, PermissionError):
-        open_fds = -1
+    def _collect():
+        rss_mb = 0
+        try:
+            import resource as _resource
+            rss_mb = _resource.getrusage(_resource.RUSAGE_SELF).ru_maxrss // 1024
+        except (ImportError, AttributeError):
+            pass
+        try:
+            open_fds = len(os.listdir(f"/proc/{os.getpid()}/fd"))
+        except (FileNotFoundError, PermissionError):
+            open_fds = -1
+        return rss_mb, open_fds
+
+    rss_mb, open_fds = await asyncio.to_thread(_collect)
     return {
         "status": "ok",
         "open_fds": open_fds,
@@ -509,12 +513,16 @@ async def set_wifi_band(request: Request, admin_user: str = Depends(verify_admin
                 *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
             await proc.communicate()
         label = "5 GHz" if band == "a" else "2.4 GHz"
-        try:
-            os.makedirs(os.path.dirname(BAND_PREF_FILE), exist_ok=True)
-            with open(BAND_PREF_FILE, "w") as f:
-                f.write(band)
-        except Exception:
-            pass
+
+        def _write_band_pref():
+            try:
+                os.makedirs(os.path.dirname(BAND_PREF_FILE), exist_ok=True)
+                with open(BAND_PREF_FILE, "w") as f:
+                    f.write(band)
+            except Exception:
+                pass
+
+        await asyncio.to_thread(_write_band_pref)
         await audit(Action.WIFI_BAND_CHANGE, admin_user, severity="notice",
                      changes={"band": band, "label": label}, request=request)
         logging.info(f"WiFi band switched to {label} by {admin_user}. Rebooting.")

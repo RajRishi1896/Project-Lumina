@@ -131,8 +131,8 @@ def _process_zim_archive(archive_path: str, filename: str, teacher_user: str, tm
     try:
         return _process_with_libzim(archive_path, filename, teacher_user, title, original_name)
     except Exception as e:
-        logging.error(f"ZIM processing failed for '{filename}': {e}")
-        raise HTTPException(status_code=400, detail=f"Failed to process ZIM archive: {e}")
+        logging.error(f"ZIM processing failed for '{filename}': {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Failed to process ZIM archive.")  # i18n: user-facing error message
 
 
 def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, title: str = "", original_name: str = ""):
@@ -424,20 +424,27 @@ def _reindex_zim_articles(zim_path: str, archive_id: str, archive_title: str):
             responses={401: {"description": "Unauthorized"}})
 async def list_server_zim_files(teacher_user: str = Depends(verify_teacher)):
     """Scan uploads/ for .zim files and show which ones are already indexed."""
-    existing = await db_fetch("SELECT filename FROM zim_archives")
+    existing = await db_fetch("SELECT id, filename FROM zim_archives")
     indexed = {r["filename"] for r in existing}
 
+    def _scan_dir():
+        out = []
+        for f in os.listdir(UPLOAD_DIR):
+            if not f.lower().endswith(".zim"):
+                continue
+            try:
+                out.append((f, os.path.getsize(os.path.join(UPLOAD_DIR, f))))
+            except OSError:
+                out.append((f, 0))
+        return out
+
     files = []
-    for f in await asyncio.to_thread(os.listdir, UPLOAD_DIR):
-        if not f.lower().endswith(".zim"):
-            continue
-        full = os.path.join(UPLOAD_DIR, f)
-        size = await asyncio.to_thread(os.path.getsize, full)
+    for f, size in await asyncio.to_thread(_scan_dir):
         files.append({
             "filename": f,
             "size_bytes": size,
             "indexed": f in indexed,
-            "archive_id": next((r.get("id") for r in existing if r["filename"] == f), None),
+            "archive_id": next((r["id"] for r in existing if r["filename"] == f), None),
         })
 
     files.sort(key=lambda x: (-x["indexed"], x["filename"].lower()))
@@ -458,11 +465,16 @@ async def delete_zim_archive(archive_id: str, teacher_user: str = Depends(verify
     # Delete thumbnails
     articles = await db_fetch("SELECT article_id FROM zim_articles WHERE archive_id = ?", (archive_id,))
     thumbs_dir = _thumbs_dir()
-    for a in articles:
-        aid = a["article_id"]
-        thumb_fp = os.path.join(thumbs_dir, f"{aid}.png")
-        if await asyncio.to_thread(os.path.exists, thumb_fp):
-            await asyncio.to_thread(os.remove, thumb_fp)
+
+    def _remove_thumbs():
+        for a in articles:
+            aid = a["article_id"]
+            try:
+                os.remove(os.path.join(thumbs_dir, f"{aid}.png"))
+            except FileNotFoundError:
+                pass
+
+    await asyncio.to_thread(_remove_thumbs)
 
     await db_exec("DELETE FROM zim_articles WHERE archive_id = ?", (archive_id,))
     await db_exec("DELETE FROM zim_archives WHERE id = ?", (archive_id,))
