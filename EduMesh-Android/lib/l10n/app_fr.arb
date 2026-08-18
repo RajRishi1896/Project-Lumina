@@ -250,6 +250,22 @@
   "downloadChannelDescription": "Notifications de fin de téléchargement",
   "downloadCompleteNotificationTitle": "Téléchargement terminé",
   "downloadCompleteNotificationBody": "\"{title}\" a été téléchargé et sauvegardé dans le stockage hors ligne.",
+  "downloadActiveNotificationTitle": "EduMesh",
+  "@downloadActiveNotificationTitle": {
+    "description": "Title of the Android foreground-service notification shown while downloads may run. Brand name, identical in all languages."
+  },
+  "downloadActiveNotificationContent": "Téléchargements actifs",
+  "@downloadActiveNotificationContent": {
+    "description": "Content of the Android foreground-service notification shown while downloads may run. Max 20 characters."
+  },
+  "downloadInProgressNotificationTitle": "Téléchargements EduMesh",
+  "@downloadInProgressNotificationTitle": {
+    "description": "Title of the Android foreground-service notification while a download is in progress. Brand name prefix, identical in all languages."
+  },
+  "downloadInProgressNotificationContent": "Téléchargements en cours...",
+  "@downloadInProgressNotificationContent": {
+    "description": "Content of the Android foreground-service notification while a download is in progress. Max 25 characters."
+  },
   "downloadFailedNotificationTitle": "Échec du téléchargement",
   "downloadFailedNotificationBody": "\"{title}\" n'a pas pu être téléchargé. Vérifiez la connexion et réessayez.",
   "stepperStepWelcome": "Bienvenue",

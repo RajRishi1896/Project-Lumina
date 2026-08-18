@@ -1067,6 +1067,22 @@
       }
     }
   },
+  "downloadActiveNotificationTitle": "EduMesh",
+  "@downloadActiveNotificationTitle": {
+    "description": "Title of the Android foreground-service notification shown while downloads may run. Brand name, identical in all languages."
+  },
+  "downloadActiveNotificationContent": "Downloads active",
+  "@downloadActiveNotificationContent": {
+    "description": "Content of the Android foreground-service notification shown while downloads may run. Max 20 characters."
+  },
+  "downloadInProgressNotificationTitle": "EduMesh Downloads",
+  "@downloadInProgressNotificationTitle": {
+    "description": "Title of the Android foreground-service notification while a download is in progress. Brand name prefix, identical in all languages."
+  },
+  "downloadInProgressNotificationContent": "Downloads in progress...",
+  "@downloadInProgressNotificationContent": {
+    "description": "Content of the Android foreground-service notification while a download is in progress. Max 25 characters."
+  },
   "downloadFailedNotificationTitle": "Download Failed",
   "@downloadFailedNotificationTitle": {
     "description": "Title of the local notification shown when a download fails"

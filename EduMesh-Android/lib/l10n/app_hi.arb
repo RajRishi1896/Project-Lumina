@@ -250,6 +250,22 @@
   "downloadChannelDescription": "डाउनलोड पूर्णता सूचनाएं",
   "downloadCompleteNotificationTitle": "डाउनलोड पूरा",
   "downloadCompleteNotificationBody": "\"{title}\" डाउनलोड होकर ऑफ़लाइन स्टोरेज में सहेजा गया।",
+  "downloadActiveNotificationTitle": "EduMesh",
+  "@downloadActiveNotificationTitle": {
+    "description": "Title of the Android foreground-service notification shown while downloads may run. Brand name, identical in all languages."
+  },
+  "downloadActiveNotificationContent": "डाउनलोड चालू हैं",
+  "@downloadActiveNotificationContent": {
+    "description": "Content of the Android foreground-service notification shown while downloads may run. Max 20 characters."
+  },
+  "downloadInProgressNotificationTitle": "EduMesh डाउनलोड",
+  "@downloadInProgressNotificationTitle": {
+    "description": "Title of the Android foreground-service notification while a download is in progress. Brand name prefix, identical in all languages."
+  },
+  "downloadInProgressNotificationContent": "डाउनलोड जारी हैं...",
+  "@downloadInProgressNotificationContent": {
+    "description": "Content of the Android foreground-service notification while a download is in progress. Max 25 characters."
+  },
   "downloadFailedNotificationTitle": "डाउनलोड विफल",
   "downloadFailedNotificationBody": "\"{title}\" डाउनलोड नहीं हो सका। कनेक्शन जाँचें और पुनः प्रयास करें।",
   "stepperStepWelcome": "स्वागत",

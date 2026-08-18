@@ -250,6 +250,22 @@
   "downloadChannelDescription": "ಡೌನ್‌ಲೋಡ್ ಪೂರ್ಣಗೊಂಡ ಅಧಿಸೂಚನೆಗಳು",
   "downloadCompleteNotificationTitle": "ಡೌನ್‌ಲೋಡ್ ಪೂರ್ಣಗೊಂಡಿದೆ",
   "downloadCompleteNotificationBody": "\"{title}\" ಡೌನ್‌ಲೋಡ್ ಆಗಿ ಆಫ್‌ಲೈನ್ ಸಂಗ್ರಹಕ್ಕೆ ಉಳಿಸಲಾಗಿದೆ.",
+  "downloadActiveNotificationTitle": "EduMesh",
+  "@downloadActiveNotificationTitle": {
+    "description": "Title of the Android foreground-service notification shown while downloads may run. Brand name, identical in all languages."
+  },
+  "downloadActiveNotificationContent": "ಡೌನ್‌ಲೋಡ್ ಚಾಲ್ತಿಯಲ್ಲಿದೆ",
+  "@downloadActiveNotificationContent": {
+    "description": "Content of the Android foreground-service notification shown while downloads may run. Max 20 characters."
+  },
+  "downloadInProgressNotificationTitle": "EduMesh ಡೌನ್‌ಲೋಡ್",
+  "@downloadInProgressNotificationTitle": {
+    "description": "Title of the Android foreground-service notification while a download is in progress. Brand name prefix, identical in all languages."
+  },
+  "downloadInProgressNotificationContent": "ಡೌನ್‌ಲೋಡ್ ಪ್ರಗತಿಯಲ್ಲಿದೆ...",
+  "@downloadInProgressNotificationContent": {
+    "description": "Content of the Android foreground-service notification while a download is in progress. Max 25 characters."
+  },
   "downloadFailedNotificationTitle": "ಡೌನ್‌ಲೋಡ್ ವಿಫಲವಾಗಿದೆ",
   "downloadFailedNotificationBody": "\"{title}\" ಡೌನ್‌ಲೋಡ್ ಆಗಲು ವಿಫಲವಾಗಿದೆ. ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮರುಪ್ರಯತ್ನಿಸಿ.",
   "stepperStepWelcome": "ಸ್ವಾಗತ",

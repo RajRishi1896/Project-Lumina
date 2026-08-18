@@ -256,6 +256,22 @@
   "downloadChannelDescription": "டவுன்லோட் முடிவு அறிவிப்புகள்",
   "downloadCompleteNotificationTitle": "டவுன்லோட் முடிந்தது",
   "downloadCompleteNotificationBody": "\"{title}\" டவுன்லோட் செய்யப்பட்டு ஆஃப்லைன் சேமிப்பகத்தில் சேமிக்கப்பட்டது.",
+  "downloadActiveNotificationTitle": "EduMesh",
+  "@downloadActiveNotificationTitle": {
+    "description": "Title of the Android foreground-service notification shown while downloads may run. Brand name, identical in all languages."
+  },
+  "downloadActiveNotificationContent": "பதிவிறக்கங்கள் செயலில் உள்ளன",
+  "@downloadActiveNotificationContent": {
+    "description": "Content of the Android foreground-service notification shown while downloads may run. Max 20 characters."
+  },
+  "downloadInProgressNotificationTitle": "EduMesh பதிவிறக்கங்கள்",
+  "@downloadInProgressNotificationTitle": {
+    "description": "Title of the Android foreground-service notification while a download is in progress. Brand name prefix, identical in all languages."
+  },
+  "downloadInProgressNotificationContent": "பதிவிறக்கங்கள் நடைபெறுகின்றன...",
+  "@downloadInProgressNotificationContent": {
+    "description": "Content of the Android foreground-service notification while a download is in progress. Max 25 characters."
+  },
   "downloadFailedNotificationTitle": "டவுன்லோட் தோல்வி",
   "downloadFailedNotificationBody": "\"{title}\" டவுன்லோட் செய்ய முடியவில்லை. இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
   "stepperStepWelcome": "வரவேற்கிறோம்",

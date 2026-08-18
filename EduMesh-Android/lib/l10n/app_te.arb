@@ -256,6 +256,22 @@
   "downloadChannelDescription": "డౌన్‌లోడ్ పూర్తి నోటిఫికేషన్‌లు",
   "downloadCompleteNotificationTitle": "డౌన్‌లోడ్ పూర్తయింది",
   "downloadCompleteNotificationBody": "\"{title}\" డౌన్‌లోడ్ చేయబడి ఆఫ్‌లైన్ స్టోరేజ్‌లో సేవ్ చేయబడింది.",
+  "downloadActiveNotificationTitle": "EduMesh",
+  "@downloadActiveNotificationTitle": {
+    "description": "Title of the Android foreground-service notification shown while downloads may run. Brand name, identical in all languages."
+  },
+  "downloadActiveNotificationContent": "డౌన్‌లోడ్‌లు చురుకుగా ఉన్నాయి",
+  "@downloadActiveNotificationContent": {
+    "description": "Content of the Android foreground-service notification shown while downloads may run. Max 20 characters."
+  },
+  "downloadInProgressNotificationTitle": "EduMesh డౌన్‌లోడ్‌లు",
+  "@downloadInProgressNotificationTitle": {
+    "description": "Title of the Android foreground-service notification while a download is in progress. Brand name prefix, identical in all languages."
+  },
+  "downloadInProgressNotificationContent": "డౌన్‌లోడ్‌లు జరుగుతున్నాయి...",
+  "@downloadInProgressNotificationContent": {
+    "description": "Content of the Android foreground-service notification while a download is in progress. Max 25 characters."
+  },
   "downloadFailedNotificationTitle": "డౌన్‌లోడ్ విఫలమైంది",
   "downloadFailedNotificationBody": "\"{title}\" డౌన్‌లోడ్ చేయలేకపోయింది. కనెక్షన్ చెక్ చేసి మళ్ళీ ప్రయత్నించండి.",
   "stepperStepWelcome": "స్వాగతం",

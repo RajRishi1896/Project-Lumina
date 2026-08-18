@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:ui' show DartPluginRegistrant;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -41,11 +43,20 @@ void main() async {
     enableFlutterDriverExtension();
   }
   WidgetsFlutterBinding.ensureInitialized();
-  unawaited(NotificationService().init().catchError((_) {}));
+  _trace('T0 start ${DateTime.now().microsecondsSinceEpoch}');
 
-  final prefs = await SharedPreferences.getInstance();
-  final useDarkIcon = prefs.getBool('dark_app_icon') ?? false;
-  unawaited(setAppIcon(useDarkIcon).catchError((_) {}));
+  // All platform-thread-heavy plugin init is deferred to after the first
+  // frame so it can't stall the secure-storage read on the critical path
+  // (first plugin call queues behind flutter_local_notifications setup).
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    try {
+      await NotificationService().init();
+    } catch (_) {}
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await setAppIcon(prefs.getBool('dark_app_icon') ?? false);
+    } catch (_) {}
+  });
 
   final authService = AuthService();
   String? userId;
@@ -55,6 +66,7 @@ void main() async {
     // ponytail: secure-storage read throws on keystore corruption (e.g. lock
     // screen removed) -- treat as logged out instead of crashing before runApp.
   }
+  _trace('T2 userId=$userId ${DateTime.now().microsecondsSinceEpoch}');
   bool isLoggedIn = userId != null;
 
   // Validate that the stored user still exists on the server.
@@ -64,12 +76,16 @@ void main() async {
   if (isLoggedIn) {
     try {
       await ApiClient.get('/student/profile').timeout(const Duration(seconds: 5));
+      _trace('T3 profile-ok ${DateTime.now().microsecondsSinceEpoch}');
     } catch (e) {
+      _trace('T3 profile-err ${DateTime.now().microsecondsSinceEpoch}');
       if (e is DioException &&
           (e.response?.statusCode == 401 || e.response?.statusCode == 404)) {
         isLoggedIn = false;
       }
     }
+  } else {
+    _trace('T3 no-profile ${DateTime.now().microsecondsSinceEpoch}');
   }
 
   ApiClient.onForceLogout = () {
@@ -83,6 +99,7 @@ void main() async {
   try { ActivityTracker().startAutoSync(); } catch (_) {}
 
   try { await _initBackgroundService(); } catch (_) {}
+  _trace('T4 bgservice ${DateTime.now().microsecondsSinceEpoch}');
   unawaited(DownloadService.cleanStaleParts(const Duration(days: 7)));
 
   runApp(
@@ -101,6 +118,7 @@ void main() async {
 }
 
 Future<void> _initBackgroundService() async {
+  final l10n = await _backgroundL10n();
   final service = FlutterBackgroundService();
   await service.configure(
     androidConfiguration: AndroidConfiguration(
@@ -110,8 +128,8 @@ Future<void> _initBackgroundService() async {
       isForegroundMode: true,
       foregroundServiceTypes: [AndroidForegroundType.dataSync],
       notificationChannelId: 'download_channel',
-      initialNotificationTitle: 'EduMesh',
-      initialNotificationContent: 'Downloads active',
+      initialNotificationTitle: l10n.downloadActiveNotificationTitle,
+      initialNotificationContent: l10n.downloadActiveNotificationContent,
     ),
     iosConfiguration: IosConfiguration(
       autoStart: false,
@@ -119,17 +137,43 @@ Future<void> _initBackgroundService() async {
   );
 }
 
+/// Cold-start trace marks, kept for performance measurement runs.
+///
+/// Gated by [kDebugMode] so release builds don't spam logcat.
+void _trace(String message) {
+  if (kDebugMode) debugPrint(message);
+}
+
+/// Localizations for the background-service notification strings, resolved
+/// from the persisted app locale without a [BuildContext].
+Future<AppLocalizations> _backgroundL10n() async {
+  String code = 'en';
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('app_locale');
+    if (saved != null && appSupportedLocales.any((l) => l.languageCode == saved)) {
+      code = saved;
+    }
+  } catch (_) {}
+  return lookupAppLocalizations(Locale(code));
+}
+
 @pragma('vm:entry-point')
 Future<void> _onBackgroundStart(ServiceInstance service) async {
+  // This isolate is spawned by flutter_background_service without plugin
+  // registration; plugins (SharedPreferences) fail without this call.
+  DartPluginRegistrant.ensureInitialized();
   service.on('stop').listen((_) {
     service.stopSelf();
   });
 
+  final l10n = await _backgroundL10n();
+
   Timer.periodic(const Duration(seconds: 30), (_) async {
     if (service is AndroidServiceInstance) {
       service.setForegroundNotificationInfo(
-        title: 'EduMesh Downloads',
-        content: 'Downloads in progress...',
+        title: l10n.downloadInProgressNotificationTitle,
+        content: l10n.downloadInProgressNotificationContent,
       );
     }
   });
