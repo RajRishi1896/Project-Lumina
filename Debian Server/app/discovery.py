@@ -30,16 +30,21 @@ class HubDiscovery:
 
     @staticmethod
     def _own_ipv4() -> str:
-        """Return the first non-loopback IPv4 address of this host.
+        """Return a non-loopback IPv4 address of this host.
 
-        Prefers the hotspot interface because it is the address students
-        actually reach; any non-loopback address is acceptable for mDNS.
+        Uses the UDP-connect trick against candidate destinations (preferring
+        the hotspot subnet) instead of ``getaddrinfo(hostname)``, which on
+        Debian resolves the hostname to 127.0.1.1. DNS-free and offline-safe.
         """
-        hostname = socket.gethostname()
-        for info in socket.getaddrinfo(hostname, None, socket.AF_INET):
-            ip = info[4][0]
-            if not ip.startswith("127."):
-                return ip
+        for dest in ("10.42.0.1", "8.8.8.8", "1.1.1.1", "192.168.50.1"):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                    s.connect((dest, 80))
+                    ip = s.getsockname()[0]
+                if not ip.startswith("127."):
+                    return ip
+            except OSError:
+                continue
         return "127.0.0.1"
 
     async def start(self) -> None:
