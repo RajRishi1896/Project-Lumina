@@ -35,6 +35,31 @@ _log_listener.start()
 _startup_time = __import__("time").time()
 
 
+def _restore_hotspot() -> None:
+    """Re-enable the LuminaHub hotspot AP on startup (Linux only).
+
+    ``restore_ssh.sh`` tears the AP down and disables its autoconnect so
+    the laptop can join a normal WiFi network; starting the hub service
+    brings the hotspot back so students can reconnect. Runs as root via
+    the systemd unit, so ``nmcli`` works without sudo. Never raises.
+    """
+    if sys.platform != "linux":
+        return
+    import subprocess
+
+    commands = (
+        ["nmcli", "connection", "modify", "LuminaHub", "autoconnect", "yes"],
+        ["nmcli", "connection", "up", "LuminaHub"],
+    )
+    for cmd in commands:
+        try:
+            subprocess.run(cmd, capture_output=True, timeout=10)
+        except Exception:
+            logging.getLogger("lumina.api").warning(
+                "hotspot re-enable failed: %s", " ".join(cmd)
+            )
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     """Startup/shutdown lifecycle for background services.
@@ -43,6 +68,8 @@ async def lifespan(application: FastAPI):
     On shutdown: cancel background tasks.
     """
     # --- STARTUP ---
+    await asyncio.to_thread(_restore_hotspot)
+
     from app.database import init_db
 
     await asyncio.to_thread(init_db)

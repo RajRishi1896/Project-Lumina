@@ -18,9 +18,15 @@ sudo sed -i 's/managed=false/managed=true/g' /etc/NetworkManager/NetworkManager.
 killall wpa_supplicant 2>/dev/null || true
 
 # 3. Restart NetworkManager to apply changes
-sudo systemctl restart NetworkManager
+sudo systemctl restart NetworkManager || true
 echo "Waiting for NetworkManager to restart..."
-sleep 5
+# Wait until NM is actually back (boot can be slow) -- bounded, no hard sleep
+for i in $(seq 1 30); do
+    if nmcli -t -f RUNNING general status 2>/dev/null | grep -q running; then
+        break
+    fi
+    sleep 1
+done
 
 # 4. Detect Wi-Fi interface and phy device dynamically
 WIFI_IF=$(nmcli -t -f DEVICE,TYPE device | awk -F: '$2=="wifi" {print $1; exit}')
@@ -54,7 +60,7 @@ fi
 
 # 6. Create a bulletproof Hotspot Connection Profile
 echo "[INFO] Creating Hotspot Profile..."
-sudo nmcli connection delete LuminaHub 2>/dev/null
+sudo nmcli connection delete LuminaHub 2>/dev/null || true
 sudo nmcli connection add type wifi ifname "$WIFI_IF" con-name LuminaHub autoconnect yes ssid "Lumina Hub"
 sudo nmcli connection modify LuminaHub wifi-sec.key-mgmt wpa-psk wifi-sec.psk "lumina2026"
 
@@ -76,11 +82,40 @@ else
     echo "[INFO] Using 2.4GHz channel 1 (default, longest range)"
 fi
 
-echo "[INFO] Starting Hotspot (SSH will drop now!)..."
+# 7b. Disable autoconnect on every other wifi profile so no client connection
+# can fight the AP for the radio on reboot (e.g. a saved home wifi).
+for p in $(nmcli -t -f NAME,TYPE connection show | awk -F: '$2=="802-11-wireless" && $1!="LuminaHub" {print $1}'); do
+    sudo nmcli connection modify "$p" autoconnect no 2>/dev/null || true
+done
+
+echo "[INFO] Starting Hotspot (seizing Wi-Fi radio)..."
 nmcli device disconnect "$WIFI_IF" 2>/dev/null || true
-sleep 1
-nmcli connection up LuminaHub
+sudo nmcli radio wifi off
 sleep 2
+sudo nmcli radio wifi on
+# Firmware re-init after the radio cycle takes ~10s -- up too early and the
+# supplicant times out (~60s). Settle first, then confirm the device is free.
+sleep 12
+for i in $(seq 1 15); do
+    STATE=$(nmcli -t -f DEVICE,STATE device status 2>/dev/null | awk -F: -v d="$WIFI_IF" '$1==d {print $2}')
+    [ "$STATE" = "disconnected" ] && break
+    sleep 1
+done
+# Transient supplicant timeouts occur right after a radio cycle -- retry a
+# few times, each attempt bounded so a hung activation can't stall boot.
+for i in 1 2 3; do
+    if timeout 20 nmcli connection up LuminaHub 2>/dev/null; then
+        break
+    fi
+    sleep 2
+done
+# Wait for the AP to actually reach activated state
+for i in $(seq 1 15); do
+    STATE=$(nmcli -t -f DEVICE,STATE device status 2>/dev/null | awk -F: -v d="$WIFI_IF" '$1==d {print $2}')
+    [ "$STATE" = "connected" ] && break
+    sleep 1
+done
+sleep 1
 
 # 8. Force max channel width (NetworkManager defaults to 20 MHz in AP mode)
 # For 80 MHz on channel 149, center freq = 5775. For 2.4GHz, just skip.
