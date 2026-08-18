@@ -340,6 +340,18 @@ class DBHelper {
     return await db.query('downloads', orderBy: 'downloaded_at DESC');
   }
 
+  /// A single downloaded resource by ID, or `null` if not downloaded.
+  Future<Map<String, dynamic>?> getDownloadedResource(String resourceId) async {
+    final db = await database;
+    final rows = await db.query(
+      'downloads',
+      where: 'resource_id = ?',
+      whereArgs: [resourceId],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first;
+  }
+
   /// A set of resource IDs whose downloads were removed from the server
   /// catalog (see `server_removed`). The local files remain usable.
   Future<Set<String>> getRemovedDownloadIds() async {

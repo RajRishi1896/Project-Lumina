@@ -113,10 +113,8 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       // Fallback to local DB
       try {
         final db = DBHelper();
-        final rows = await db.getDownloadedResources();
-        final match = rows.where((r) => r['resource_id'] == widget.resourceId).toList();
-        if (match.isNotEmpty && mounted) {
-          final r = match.first;
+        final r = await db.getDownloadedResource(widget.resourceId!);
+        if (r != null && mounted) {
           setState(() {
             items = [ResourceModel(
               id: r['resource_id'] as String? ?? '',
