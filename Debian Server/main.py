@@ -92,4 +92,4 @@ if __name__ == "__main__":
 
     logging.info("Starting EduMesh Hub...")
     workers = int(os.environ.get("UVICORN_WORKERS", "1"))
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False, workers=workers, timeout_keep_alive=60)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False, workers=workers, timeout_keep_alive=60, access_log=False)

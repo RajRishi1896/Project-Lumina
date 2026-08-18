@@ -12,16 +12,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.async_db import db_fetch, db_run
 
-# Logging
+# Logging -- records are queued and written by a background thread so the
+# event loop never blocks on disk I/O (per-request logger calls used to
+# flush synchronously, degrading latency under concurrency).
+import queue
+import threading
+from logging.handlers import QueueHandler, QueueListener, RotatingFileHandler
+
 os.makedirs("data", exist_ok=True)
 log_handler = RotatingFileHandler('data/hub.log', maxBytes=5*1024*1024, backupCount=3)
 console_handler = logging.StreamHandler(sys.stdout)
-logging.basicConfig(
-    handlers=[log_handler, console_handler],
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-)
+_log_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+log_handler.setFormatter(_log_formatter)
+console_handler.setFormatter(_log_formatter)
+logging.getLogger().setLevel(logging.INFO)
+_log_queue = queue.Queue(-1)
+logging.getLogger().addHandler(QueueHandler(_log_queue))
 logging.getLogger("lumina.middleware").setLevel(logging.INFO)
+_log_listener = QueueListener(_log_queue, log_handler, console_handler, respect_handler_level=True)
+_log_listener.start()
 
 _startup_time = __import__("time").time()
 
