@@ -1,6 +1,7 @@
 """File streaming, thumbnail generation, and video sprite sheet routes."""
 import os
 import re
+import logging
 import asyncio
 import subprocess
 from fastapi import APIRouter, HTTPException, Request
@@ -258,7 +259,8 @@ async def resource_thumbnail(resource_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Thumbnail error: {e}")  # i18n: user-facing error message
+        logging.error(f"thumbnail {resource_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Thumbnail generation failed.")  # i18n: user-facing error message
     return FileResponse(thumb_path, media_type="image/png")
 
 

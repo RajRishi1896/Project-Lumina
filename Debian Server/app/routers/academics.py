@@ -195,7 +195,7 @@ async def delete_subject(subject_id: str, transfer_to: str = Query(None), admin_
         raise
     except Exception as e:
         logging.error(f"delete_subject: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=f"Failed to delete subject: {e}")  # i18n: user-facing error message
+        raise HTTPException(status_code=400, detail="Failed to delete subject.")  # i18n: user-facing error message
 
 
 @router.get("/grades", response_model=list[GradeInfo],

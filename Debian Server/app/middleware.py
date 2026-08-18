@@ -80,7 +80,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 # Auth routes excluded -- auth.py has its own per-IP rate limiting.
 ROUTE_RATE_LIMITS: dict[str, tuple[int, int]] = {
     "/api/upload": (20, 60),
-    "/zim/upload": (5, 300),
+    "/teacher/upload-zim": (5, 300),
+    "/peer/pair": (10, 300),
 }
 
 
@@ -147,7 +148,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Enforce the per-IP rate limit, returning 429 with Retry-After when exceeded."""
         # Skip rate limiting for static files, ZIM local reads, health checks, and localhost
         path = request.url.path
-        if path.startswith("/static/") or path.startswith("/files/") or path.startswith("/zim/") or path in ("/ping", "/generate_204"):
+        if path.startswith("/static/") or path.startswith("/files/") or path in ("/ping", "/generate_204"):
+            return await call_next(request)
+        # ZIM read paths are exempt (offline browsing); ZIM uploads are NOT --
+        # they fall through to the /teacher/upload-zim (5, 300) override.
+        if path.startswith("/zim/") and request.method == "GET":
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"

@@ -463,23 +463,23 @@ class BookmarkResponse(BaseModel):
 
 class EnrolledCourseItem(BaseModel):
     """An enrolled course with progress for restore."""
-    course_id: str
-    title: str = ""
-    description: str = ""
-    subject: str = ""
-    grade: int = 0
-    language: str = "en"
-    cover_image: str = ""
-    published: int = 0
-    teacher_username: str = ""
-    enrollment_count: int = 0
-    created_at: str = ""
-    updated_at: str = ""
-    current_position: int = 0
-    completed_count: int = 0
-    total_resources: int = 0
-    completed: int = 0
-    enrolled_at: str = ""
+    course_id: str = Field(..., description="Unique course identifier.", example="CRS-abc123")
+    title: str = Field("", description="Course title.", example="Algebra Basics")
+    description: str = Field("", description="Short course description.", example="Linear equations and graphs.")
+    subject: str = Field("", description="Subject the course belongs to.", example="math")
+    grade: int = Field(0, description="Target grade level.", example=9)
+    language: str = Field("en", description="ISO 639-1 course language code.", example="en")
+    cover_image: str = Field("", description="Cover image URL or path.", example="/files/covers/a1b2.png")
+    published: int = Field(0, description="1 if the course is published.", example=1)
+    teacher_username: str = Field("", description="Username of the course teacher.", example="teacher1")
+    enrollment_count: int = Field(0, description="Number of enrolled students.", example=12)
+    created_at: str = Field("", description="Creation timestamp (UTC ISO 8601).", example="2026-08-01T10:00:00Z")
+    updated_at: str = Field("", description="Last update timestamp (UTC ISO 8601).", example="2026-08-10T10:00:00Z")
+    current_position: int = Field(0, description="Student's current resource index.", example=3)
+    completed_count: int = Field(0, description="Resources completed by the student.", example=2)
+    total_resources: int = Field(0, description="Total resources in the course.", example=10)
+    completed: int = Field(0, description="1 if the student completed the course.", example=0)
+    enrolled_at: str = Field("", description="Enrollment timestamp (UTC ISO 8601).", example="2026-08-02T10:00:00Z")
 
 
 class EnrolledCoursesResponse(BaseModel):
