@@ -7,7 +7,6 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_driver/driver_extension.dart';
 
 // Ensure these imports match your project structure exactly
 import 'package:edumesh_android/core/theme/lumina_lite_theme.dart';
@@ -39,9 +38,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 /// and [ActivityTracker], and finally runs the [LuminaApp] widget inside a
 /// [ProviderScope].
 void main() async { 
-  if (const bool.fromEnvironment('ENABLE_FLUTTER_DRIVER')) {
-    enableFlutterDriverExtension();
-  }
   WidgetsFlutterBinding.ensureInitialized();
   _trace('T0 start ${DateTime.now().microsecondsSinceEpoch}');
 
