@@ -374,34 +374,6 @@ def init_db():
     c.execute('CREATE INDEX IF NOT EXISTS idx_topics_course_id ON topics(course_id)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_course_resources_topic ON course_resources(topic_id)')
 
-    # Hub-to-hub federation: paired peers and their cached resource catalogs
-    c.execute('''CREATE TABLE IF NOT EXISTS peers (
-        id TEXT PRIMARY KEY,
-        name TEXT,
-        base_url TEXT,
-        public_key TEXT,
-        ip_address TEXT,
-        paired_at DATETIME,
-        last_seen DATETIME,
-        last_catalog_sync DATETIME
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS peer_resources (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        peer_id TEXT,
-        peer_resource_id TEXT,
-        title TEXT,
-        subject TEXT,
-        grade INTEGER,
-        language TEXT,
-        resource_type TEXT,
-        file_size INTEGER DEFAULT 0,
-        page_count INTEGER DEFAULT 0,
-        duration_seconds INTEGER DEFAULT 0,
-        mtime REAL DEFAULT 0,
-        UNIQUE(peer_id, peer_resource_id)
-    )''')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_peer_resources_peer ON peer_resources(peer_id)')
-
     # Flashcards: teacher decks, cards, and student submissions (pending→approved workflow)
     c.execute('''CREATE TABLE IF NOT EXISTS flashcard_decks (
         id TEXT PRIMARY KEY,

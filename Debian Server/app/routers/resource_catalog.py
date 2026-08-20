@@ -48,7 +48,7 @@ def _catalog_item_dict(r: tuple, mtime: float) -> dict:
 
 @router.get("/resources", response_model=list[CatalogResourceResponse],
             summary="List all resources", tags=["Resources"],
-            description="Lists approved resources with combined filters (subject, grade, language, resource_type, title search). Merges cached peer-hub resources; deprecated/deleted items are excluded by default.",
+            description="Lists approved resources with combined filters (subject, grade, language, resource_type, title search). Deprecated/deleted items are excluded by default.",
             responses={401: {"description": "Unauthorized"}})
 @router.get("/api/catalog", response_model=list[CatalogResourceResponse],
             summary="List all resources (alias)", tags=["Resources"],
@@ -135,30 +135,6 @@ async def list_resources(
     result = []
     for r in rows:
         result.append(_catalog_item_dict(r, mtimes.get(r[0], 0.0)))
-
-    # Merge cached resources from paired peer hubs. Same dict shape as local
-    # items; ids are prefixed "peer:{peer_id}:{peer_resource_id}" so they stay
-    # unique and the client can route downloads through /peer/file/... . No
-    # dedupe against local titles -- v1 shows both (id prefix keeps them apart).
-    peer_rows = await db_fetch("""
-        SELECT pr.peer_id, pr.peer_resource_id, pr.title, pr.subject, pr.grade,
-               pr.resource_type, pr.file_size, pr.page_count, pr.duration_seconds,
-               pr.mtime, p.name AS peer_name
-        FROM peer_resources pr JOIN peers p ON p.id = pr.peer_id""")
-    for pr in peer_rows:
-        result.append({
-            "id": f"peer:{pr['peer_id']}:{pr['peer_resource_id']}",
-            "title": pr["title"],
-            "pdfUrl": f"/peer/file/{pr['peer_id']}/{pr['peer_resource_id']}",
-            "type": pr["resource_type"], "subject": pr["subject"] or "General",
-            "grade": str(pr["grade"]) if pr["grade"] is not None else "",
-            "mtime": float(pr["mtime"] or 0.0),
-            "downloads": 0,
-            "topic_name": "",
-            "page_count": pr["page_count"] or 0,
-            "duration_seconds": pr["duration_seconds"] or 0,
-            "file_size": pr["file_size"] or 0,
-        })
     _catalog_cache[cache_key] = (now, result)
     return result
 

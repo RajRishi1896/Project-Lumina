@@ -1082,7 +1082,6 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildZimResultTile(Map<String, dynamic> item, ZimArticle? zimArticle,
       ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
-    final isPeer = zimArticle?.isPeer ?? false;
     return ListTile(
       leading: zimArticle != null && zimArticle.hasThumbnail
           ? ClipRRect(
@@ -1114,7 +1113,7 @@ class _SearchPageState extends State<SearchPage> {
                 borderRadius: BorderRadius.circular(4.r),
               ),
               child: Text(
-                isPeer ? l10n.searchPeerHub : l10n.badgeKiwixWiki,
+                l10n.badgeKiwixWiki,
                 style: tt.labelSmall?.copyWith(
                   color: cs.onPrimary,
                   fontWeight: AppSpacing.weightStrong,

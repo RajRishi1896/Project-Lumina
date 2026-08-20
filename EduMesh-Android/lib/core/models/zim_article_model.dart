@@ -14,8 +14,6 @@ class ZimArticle {
   final String namespace;
   /// Whether `zim_pages/thumbs/{article}.png` exists on the server.
   final bool hasThumbnail;
-  /// Display name of the peer hub hosting this article, empty for local articles.
-  final String peerName;
 
   ZimArticle({
     required this.articleId,
@@ -24,10 +22,7 @@ class ZimArticle {
     this.path = '',
     this.namespace = 'A',
     this.hasThumbnail = false,
-    this.peerName = '',
   });
-
-  bool get isPeer => peerName.isNotEmpty;
 
   /// Parses a [ZimArticle] from a server JSON [map].
   factory ZimArticle.fromJson(Map<String, dynamic> json) {
@@ -38,7 +33,6 @@ class ZimArticle {
       path: json['path'] ?? '',
       namespace: json['namespace'] ?? 'A',
       hasThumbnail: json['has_thumbnail'] ?? false,
-      peerName: json['peer_name'] ?? '',
     );
   }
 }

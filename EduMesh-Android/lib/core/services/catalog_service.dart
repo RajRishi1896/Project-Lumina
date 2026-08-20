@@ -66,12 +66,9 @@ class CatalogService {
     }
   }
 
-  /// Marks downloaded resources that no longer exist in the fresh catalog as
-  /// `server_removed` and notifies the student (capped to avoid spam on mass
-  /// deletions). Never throws -- failures are logged and skipped.
-  ///
-  /// Peer resources (`peer:{peer_id}:{resource_id}` ids) disappear from the
-  /// catalog when a hub unpairs; they are treated the same way.
+  /// Resources that no longer exist in the fresh catalog are marked
+  /// `server_removed` and the student is notified (capped to avoid spam on
+  /// mass deletions). Never throws -- failures are logged and skipped.
   Future<void> _detectServerRemovals(List<dynamic> catalogData) async {
     try {
       final db = await DBHelper().database;

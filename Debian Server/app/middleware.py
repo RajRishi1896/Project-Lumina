@@ -81,7 +81,6 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 ROUTE_RATE_LIMITS: dict[str, tuple[int, int]] = {
     "/api/upload": (20, 60),
     "/teacher/upload-zim": (5, 300),
-    "/peer/pair": (10, 300),
 }
 
 
