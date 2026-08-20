@@ -10,7 +10,7 @@ import '../../../shared/services/connectivity_service.dart';
 import '../../../core/network/api_client.dart';
 import '../../../widgets/connection_gate.dart';
 import 'profile_setup_page.dart';
-import 'welcome_page.dart';
+import 'profile_picker_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A page for student registration and login.
@@ -276,9 +276,7 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       await AuthService().logout();
       if (!mounted) return;
-      unawaited(Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const WelcomePage()),
-      ));
+      unawaited(routeAfterLogout(Navigator.of(context)));
     } catch (_) {
       if (!mounted) return;
       setState(() {

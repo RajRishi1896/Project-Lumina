@@ -76,18 +76,16 @@ class AuthService {
       final String? persistentKey = data['persistent_key']?.toString();
 
       List<Map<String, dynamic>> users = await _getUsers();
-      final existing = users.indexWhere((u) => u['username'] == username);
       final newUser = {
         'username': username,
         'userId': hubGeneratedId,
+        if (name != null && name.isNotEmpty) 'displayName': name,
+        if (token != null && token.isNotEmpty) 'token': token,
+        if (refreshToken != null && refreshToken.isNotEmpty) 'refreshToken': refreshToken,
+        if (persistentKey != null && persistentKey.isNotEmpty) 'persistentKey': persistentKey,
       };
-      
-      if (existing >= 0) {
-        users[existing] = newUser;
-      } else {
-        users.add(newUser);
-      }
-      await _secureStorage.write(key: _usersListKey, value: jsonEncode(users));
+      _upsertProfile(users, newUser);
+      await _saveUsers(users);
       
       await _secureStorage.write(key: _userIdKey, value: hubGeneratedId);
       await _secureStorage.write(key: _usernameKey, value: username);
@@ -148,7 +146,7 @@ class AuthService {
             }
             if (grade != null && grade.isNotEmpty) await _secureStorage.write(key: _gradeKey, value: grade);
             ApiClient.setAuth(token);
-            await _rememberUser(username, scholarId);
+            await _rememberUser(username, scholarId, token: token, refreshToken: refreshToken, persistentKey: persistentKey, displayName: name, grade: grade);
             return resetReq ? 'reset_required' : 'ok';
           }
         }
@@ -182,18 +180,166 @@ class AuthService {
   }
 
   /// Records a successfully verified username/userId pair in the local user
-  /// list so offline login can recognise this device.
-  Future<void> _rememberUser(String username, String userId) async {
+  /// list so offline login can recognise this device. Merges into an existing
+  /// entry so previously stored tokens and metadata are preserved.
+  Future<void> _rememberUser(
+    String username,
+    String userId, {
+    String? token,
+    String? refreshToken,
+    String? persistentKey,
+    String? displayName,
+    String? grade,
+  }) async {
     try {
       final users = await _getUsers();
-      final existing = users.indexWhere((u) => u['username'] == username);
-      if (existing >= 0) {
-        users[existing] = {'username': username, 'userId': userId};
-      } else {
-        users.add({'username': username, 'userId': userId});
-      }
-      await _secureStorage.write(key: _usersListKey, value: jsonEncode(users));
+      _upsertProfile(users, {
+        'username': username,
+        'userId': userId,
+        if (token != null && token.isNotEmpty) 'token': token,
+        if (refreshToken != null && refreshToken.isNotEmpty) 'refreshToken': refreshToken,
+        if (persistentKey != null && persistentKey.isNotEmpty) 'persistentKey': persistentKey,
+        if (displayName != null && displayName.isNotEmpty) 'displayName': displayName,
+        if (grade != null && grade.isNotEmpty) 'grade': grade,
+      });
+      await _saveUsers(users);
     } catch (_) {}
+  }
+
+  /// Inserts [entry] into [users], merging into an existing entry with the
+  /// same `userId` (falling back to `username` when the id is missing).
+  void _upsertProfile(List<Map<String, dynamic>> users, Map<String, dynamic> entry) {
+    final userId = entry['userId']?.toString() ?? '';
+    final username = entry['username']?.toString() ?? '';
+    final index = users.indexWhere((u) {
+      final id = u['userId']?.toString() ?? '';
+      return (userId.isNotEmpty && id == userId) ||
+          (userId.isEmpty && u['username'] == username);
+    });
+    if (index >= 0) {
+      users[index] = {...users[index], ...entry};
+    } else {
+      users.add({...entry});
+    }
+  }
+
+  /// Persists the known-profiles list to secure storage.
+  Future<void> _saveUsers(List<Map<String, dynamic>> users) async {
+    await _secureStorage.write(key: _usersListKey, value: jsonEncode(users));
+  }
+
+  /// The locally known student profiles (identity fields only, never tokens).
+  ///
+  /// Each entry contains `username`, `userId`, and optionally `displayName`.
+  /// Used by the profile picker so children can switch without a password.
+  Future<List<Map<String, dynamic>>> getKnownProfiles() async {
+    final users = await _getUsers();
+    final result = <Map<String, dynamic>>[];
+    for (final u in users) {
+      final userId = u['userId']?.toString() ?? '';
+      final username = u['username']?.toString() ?? '';
+      if (userId.isEmpty && username.isEmpty) continue;
+      final displayName = u['displayName']?.toString() ?? '';
+      result.add({
+        'username': username,
+        'userId': userId,
+        if (displayName.isNotEmpty) 'displayName': displayName,
+      });
+    }
+    return result;
+  }
+
+  /// Switches the active profile to the student identified by [userId].
+  ///
+  /// Works fully offline: restores that profile's identity and credentials
+  /// from secure storage and re-arms the API auth header. Returns `false`
+  /// when [userId] is not a known profile on this device.
+  Future<bool> switchToProfile(String userId) async {
+    final users = await _getUsers();
+    Map<String, dynamic>? profile;
+    for (final u in users) {
+      if (u['userId']?.toString() == userId) {
+        profile = u;
+        break;
+      }
+    }
+    if (profile == null || profile['username'] == null) return false;
+
+    await _secureStorage.write(key: _userIdKey, value: userId);
+    await _secureStorage.write(key: _usernameKey, value: profile['username'].toString());
+    final token = profile['token']?.toString() ?? '';
+    final refreshToken = profile['refreshToken']?.toString() ?? '';
+    final persistentKey = profile['persistentKey']?.toString() ?? '';
+    final grade = profile['grade']?.toString() ?? '';
+    final displayName = profile['displayName']?.toString() ?? '';
+
+    if (token.isNotEmpty) {
+      await _secureStorage.write(key: _sessionTokenKey, value: token);
+      ApiClient.setAuth(token);
+    } else {
+      await _secureStorage.delete(key: _sessionTokenKey);
+      ApiClient.clearAuth();
+    }
+    if (refreshToken.isNotEmpty) {
+      await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
+    } else {
+      await _secureStorage.delete(key: _refreshTokenKey);
+    }
+    if (persistentKey.isNotEmpty) {
+      await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
+    } else {
+      await _secureStorage.delete(key: _persistentKeyKey);
+    }
+    if (grade.isNotEmpty) {
+      await _secureStorage.write(key: _gradeKey, value: grade);
+    } else {
+      await _secureStorage.delete(key: _gradeKey);
+    }
+    if (displayName.isNotEmpty) {
+      await _secureStorage.write(key: _displayNameKey, value: displayName);
+    } else {
+      await _secureStorage.delete(key: _displayNameKey);
+    }
+    return true;
+  }
+
+  /// Removes the active profile (tokens and its list entry) from the device,
+  /// keeping all other known profiles switchable. Called by [logout].
+  Future<void> _removeActiveProfile() async {
+    try {
+      final activeId = await _secureStorage.read(key: _userIdKey);
+      final activeUsername = await _secureStorage.read(key: _usernameKey);
+      final users = await _getUsers();
+      users.removeWhere((u) {
+        final id = u['userId']?.toString() ?? '';
+        return (activeId != null && activeId.isNotEmpty && id == activeId) ||
+            (activeId == null && u['username'] == activeUsername);
+      });
+      await _saveUsers(users);
+    } catch (_) {}
+    for (final key in [
+      _userIdKey,
+      _usernameKey,
+      _sessionTokenKey,
+      _refreshTokenKey,
+      _persistentKeyKey,
+      _gradeKey,
+      _displayNameKey,
+    ]) {
+      try {
+        await _secureStorage.delete(key: key);
+      } catch (_) {}
+    }
+    ApiClient.clearAuth();
+  }
+
+  /// Logs the student out of the hub and removes only the active profile
+  /// from this device. Other known profiles stay switchable.
+  Future<void> logout() async {
+    try {
+      await ApiClient.post('/logout');
+    } catch (_) {}
+    await _removeActiveProfile();
   }
 
   /// The stored display name for the logged-in student, or `null` if not set.
@@ -209,11 +355,13 @@ class AuthService {
   /// Caches the display name locally without hitting the server.
   Future<void> cacheDisplayName(String name) async {
     await _secureStorage.write(key: _displayNameKey, value: name);
+    await _updateActiveProfileMetadata(displayName: name);
   }
 
   /// Updates the student's display name on the hub and persists it locally.
   Future<bool> setDisplayName(String name) async {
     await _secureStorage.write(key: _displayNameKey, value: name);
+    await _updateActiveProfileMetadata(displayName: name);
     try {
       await ApiClient.post('/student/profile/update', data: {'name': name});
       return true;
@@ -238,13 +386,6 @@ class AuthService {
       await _secureStorage.deleteAll();
       return []; 
     }
-  }
-
-  /// Logs the student out of the hub and wipes all locally stored credentials.
-  Future<void> logout() async {
-    try {
-      await ApiClient.post('/logout');
-    } catch (_) { } await _secureStorage.deleteAll();
   }
 
   /// Refreshes the session token using the stored refresh token.
@@ -274,6 +415,7 @@ class AuthService {
             await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
           }
           ApiClient.setAuth(token);
+          await _updateActiveProfileTokens(token, newRefreshToken, persistentKey);
           return true;
         }
       }
@@ -309,6 +451,7 @@ class AuthService {
             await _secureStorage.write(key: _persistentKeyKey, value: newPersistentKey);
           }
           ApiClient.setAuth(token);
+          await _updateActiveProfileTokens(token, newRefreshToken, newPersistentKey);
           return true;
         }
       }
@@ -324,5 +467,37 @@ class AuthService {
   /// survives app restarts and is available offline.
   Future<void> saveGrade(String grade) async {
     await _secureStorage.write(key: _gradeKey, value: grade);
+    await _updateActiveProfileMetadata(grade: grade);
+  }
+
+  /// Mirrors refreshed token credentials into the active profile's list entry
+  /// so a later [switchToProfile] restores the latest tokens.
+  Future<void> _updateActiveProfileTokens(String? token, String? refreshToken, String? persistentKey) async {
+    try {
+      final activeId = await _secureStorage.read(key: _userIdKey);
+      if (activeId == null || activeId.isEmpty) return;
+      final users = await _getUsers();
+      final index = users.indexWhere((u) => u['userId']?.toString() == activeId);
+      if (index < 0) return;
+      if (token != null && token.isNotEmpty) users[index]['token'] = token;
+      if (refreshToken != null && refreshToken.isNotEmpty) users[index]['refreshToken'] = refreshToken;
+      if (persistentKey != null && persistentKey.isNotEmpty) users[index]['persistentKey'] = persistentKey;
+      await _saveUsers(users);
+    } catch (_) {}
+  }
+
+  /// Mirrors locally edited metadata (display name / grade) into the active
+  /// profile's list entry so the profile picker shows fresh values.
+  Future<void> _updateActiveProfileMetadata({String? displayName, String? grade}) async {
+    try {
+      final activeId = await _secureStorage.read(key: _userIdKey);
+      if (activeId == null || activeId.isEmpty) return;
+      final users = await _getUsers();
+      final index = users.indexWhere((u) => u['userId']?.toString() == activeId);
+      if (index < 0) return;
+      if (displayName != null && displayName.isNotEmpty) users[index]['displayName'] = displayName;
+      if (grade != null && grade.isNotEmpty) users[index]['grade'] = grade;
+      await _saveUsers(users);
+    } catch (_) {}
   }
 }

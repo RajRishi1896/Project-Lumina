@@ -13,6 +13,7 @@ import 'package:edumesh_android/core/theme/lumina_lite_theme.dart';
 import 'package:edumesh_android/core/theme/theme_provider.dart';
 import 'package:edumesh_android/shared/services/app_icon_service.dart' show setAppIcon;
 import 'package:edumesh_android/features/auth/presentation/welcome_page.dart';
+import 'package:edumesh_android/features/auth/presentation/profile_picker_page.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'package:edumesh_android/widgets/connection_gate.dart';
 import 'package:edumesh_android/pages/app_shell.dart';
@@ -85,10 +86,7 @@ void main() async {
   }
 
   ApiClient.onForceLogout = () {
-    navigatorKey.currentState?.pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const WelcomePage()),
-      (route) => false,
-    );
+    unawaited(routeAfterLogout(navigatorKey.currentState!));
   };
 
   try { ConnectivityService().start(); } catch (_) {}

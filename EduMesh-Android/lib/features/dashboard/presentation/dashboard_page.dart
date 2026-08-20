@@ -13,6 +13,8 @@ import '../../../shared/services/connectivity_service.dart';
 import '../../../core/storage/db_helper.dart';
 import '../../../core/services/flashcard_service.dart';
 import '../../../shared/widgets/lumina_settings_sheet.dart';
+import '../../auth/data/auth_service.dart';
+import '../../auth/presentation/profile_picker_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import 'resource_detail_page.dart';
 import 'subject_topics_page.dart';
@@ -60,6 +62,8 @@ class _DashboardPageState extends State<DashboardPage> {
   int _quizzesDone = 0;
   int _resourcesAccessed = 0;
 
+  String _studentName = '';
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +72,7 @@ class _DashboardPageState extends State<DashboardPage> {
     _calcTotalStorage();
     _loadSubjects();
     _loadRecentResources();
+    unawaited(_loadStudentName());
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadDashboardStats());
   }
 
@@ -83,6 +88,17 @@ class _DashboardPageState extends State<DashboardPage> {
       _isConnected = ConnectivityService().isOnline;
       _isChecking = false;
     });
+  }
+
+  /// Loads the active student's name for the profile avatar chip.
+  Future<void> _loadStudentName() async {
+    final auth = AuthService();
+    var name = await auth.getDisplayName();
+    if (name == null || name.trim().isEmpty) {
+      name = await auth.getLoggedUsername();
+    }
+    if (!mounted) return;
+    setState(() => _studentName = name ?? '');
   }
 
   /// Loads the flashcard due count and achievement stats from local DB.
@@ -326,6 +342,30 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const Spacer(),
           Flexible(child: _buildServerStatusBadge()),
+          SizedBox(width: AppSpacing.sm.w),
+          Semantics(
+            button: true,
+            label: l10n.semanticsProfileSwitcher,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _openProfilePicker(context),
+              child: SizedBox(
+                width: AppSpacing.touchTarget.w,
+                height: AppSpacing.touchTarget.w,
+                child: CircleAvatar(
+                  radius: 16.r,
+                  backgroundColor: cs.primaryContainer,
+                  child: Text(
+                    _initials(l10n),
+                    style: tt.titleSmall?.copyWith(
+                      color: cs.onPrimaryContainer,
+                      fontWeight: AppSpacing.weightStrong,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
           SizedBox(width: AppSpacing.sm.w),
           Semantics(
             button: true,
@@ -765,6 +805,20 @@ class _DashboardPageState extends State<DashboardPage> {
 
   void _showSettings(BuildContext context) {
     showModalBottomSheet(context: context, isScrollControlled: true, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg))), builder: (_) => const LuminaSettingsSheet());
+  }
+
+  String _initials(AppLocalizations l10n) {
+    final name = _studentName.trim();
+    if (name.isEmpty) return l10n.initialsFallback;
+    final parts = name.split(RegExp(r'\s+'));
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    return parts[0][0].toUpperCase();
+  }
+
+  void _openProfilePicker(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfilePickerPage()),
+    );
   }
 
 }

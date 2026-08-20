@@ -19,6 +19,7 @@ import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../../core/services/course_service.dart';
 import 'course_player_page.dart';
 import 'study_report_page.dart';
+import '../../auth/presentation/profile_picker_page.dart';
 
 final _whitespaceRE = RegExp(r'\s+');
 
@@ -313,6 +314,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
                       children: [
                         _buildProfileCard(cs),
+                        SizedBox(height: AppSpacing.sm.h),
+                        _buildSwitchProfileTile(cs),
                         SizedBox(height: AppSpacing.xl.h),
                         _buildStatsRow(cs),
                         SizedBox(height: AppSpacing.md.h),
@@ -518,6 +521,28 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             onPressed: () => _showEditProfileSheet(cs),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSwitchProfileTile(ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    return Card(
+      margin: EdgeInsets.zero,
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.xs.h),
+        leading: Icon(Icons.switch_account_rounded, color: cs.primary),
+        title: Text(l10n.switchProfileTitle,
+            style: tt.bodyMedium?.copyWith(color: cs.onSurface, fontWeight: AppSpacing.weightStrong)),
+        subtitle: Text(l10n.switchProfileSubtitle,
+            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+        trailing: Icon(Icons.chevron_right_rounded, color: cs.outline),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ProfilePickerPage()),
+          );
+        },
       ),
     );
   }

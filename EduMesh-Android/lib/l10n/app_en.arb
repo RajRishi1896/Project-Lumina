@@ -408,7 +408,7 @@
   "@filtersActiveLabel": {
     "description": "Label shown below search bar when filters are applied with default sort"
   },
-  "filtersActiveSorted": "Filters active · Sorted: {sortBy}",
+  "filtersActiveSorted": "Filters active Â· Sorted: {sortBy}",
   "@filtersActiveSorted": {
     "description": "Label shown when filters are active with a non-default sort",
     "placeholders": {
@@ -654,7 +654,7 @@
   "@emptyRefreshButton": {
     "description": "Button to reload resources from the empty state"
   },
-  "resourceSubtitle": "{subject} • {grade}",
+  "resourceSubtitle": "{subject} â€¢ {grade}",
   "@resourceSubtitle": {
     "description": "Subtitle text on each resource list item",
     "placeholders": {
@@ -1187,10 +1187,6 @@
   "@zimNoResultsEmpty": {
     "description": "Empty state message when a search returns no matching articles"
   },
-  "searchPeerHub": "Peer hub",
-  "@searchPeerHub": {
-    "description": "Badge label on search results coming from paired peer hubs"
-  },
   "zimUntitledArticleFallback": "Untitled",
   "@zimUntitledArticleFallback": {
     "description": "Fallback display title when an article has no title in the API response"
@@ -1661,7 +1657,7 @@
       }
     }
   },
-  "shareFindingDevices": "Finding nearby devices…",
+  "shareFindingDevices": "Finding nearby devicesâ€¦",
   "@shareFindingDevices": {
     "description": "Snackbar shown while the app listens for nearby students' phones that have the requested file. User just tapped Download. Keep short."
   },
@@ -1934,5 +1930,23 @@
         "example": "1.5"
       }
     }
-  }
+  },
+  "switchProfileTitle": "Switch Profile",
+  "@switchProfileTitle": { "description": "ListTile title that opens the profile picker to switch to another student on this shared device" },
+  "switchProfileSubtitle": "Use another student's profile on this phone",
+  "@switchProfileSubtitle": { "description": "ListTile subtitle explaining that other students can use this phone with their own profiles" },
+  "profilePickerTitle": "Choose a Profile",
+  "@profilePickerTitle": { "description": "AppBar title of the profile picker page" },
+  "profilePickerCurrent": "Current",
+  "@profilePickerCurrent": { "description": "Badge on the currently active profile in the picker" },
+  "profilePickerAddProfile": "Add Profile",
+  "@profilePickerAddProfile": { "description": "Action that starts the register/login flow for a new student" },
+  "profilePickerAddProfileSubtitle": "Register or sign in a new student",
+  "@profilePickerAddProfileSubtitle": { "description": "Subtitle under the add-profile action in the picker" },
+  "profilePickerEmpty": "No saved profiles yet. Add one to start.",
+  "@profilePickerEmpty": { "description": "Empty state shown when no profiles are saved on this device" },
+  "profileSwitchFailed": "Could not switch profile",
+  "@profileSwitchFailed": { "description": "Snackbar shown when switching to a profile fails" },
+  "semanticsProfileSwitcher": "Switch student profile",
+  "@semanticsProfileSwitcher": { "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker" }
 }

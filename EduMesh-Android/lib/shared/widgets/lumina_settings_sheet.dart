@@ -13,7 +13,7 @@ import '../../../shared/services/connectivity_service.dart';
 import '../../../shared/services/share_server.dart';
 import '../../../features/auth/data/auth_service.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
-import '../../../features/auth/presentation/welcome_page.dart';
+import '../../../features/auth/presentation/profile_picker_page.dart';
 import '../../../shared/widgets/offline_library_page.dart';
 
 /// A bottom-sheet settings panel displayed inside the app.
@@ -186,15 +186,12 @@ class LuminaSettingsSheet extends ConsumerWidget {
           ListTile(
             leading: Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
             title: Text(AppLocalizations.of(context)!.logOutButtonLabel, style: tt.titleSmall?.copyWith(color: Theme.of(context).colorScheme.error)),
-            onTap: () async {
-              await AuthService().logout();
-              if (context.mounted) {
-                unawaited(Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const WelcomePage()),
-                  (route) => false,
-                ));
-              }
-            },
+onTap: () async {
+               await AuthService().logout();
+               if (context.mounted) {
+                 unawaited(routeAfterLogout(Navigator.of(context)));
+               }
+             },
           ),
 SizedBox(height: AppSpacing.sm.h),
     ];
