@@ -7,7 +7,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/models/course.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
 import 'package:edumesh_android/core/services/course_service.dart';
+import 'package:edumesh_android/core/services/mutation_queue.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
+import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'package:edumesh_android/shared/widgets/mini_player_controller.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
@@ -88,9 +90,14 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   bool _passed = false;
   double _score = 0.0;
   bool _showResults = false;
+  bool _pendingResults = false;
   bool _loading = true;
   String? _error;
   final Map<int, bool> _correctAnswers = {};
+  // Selection identity is the tapped option INDEX, not its text: two options
+  // with identical text must stay independently selectable.
+  final Map<int, int> _selectedOption = {};
+  final Map<int, Set<int>> _multiSelected = {};
   late final String _startedAt;
   int _totalTimeSeconds = 0;
   late final AppLifecycleListener _lifecycleListener;
@@ -108,7 +115,6 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     MiniPlayerController().setQuizActive(true);
     _lifecycleListener = AppLifecycleListener(
       onPause: _onAppBackgrounded,
-      onInactive: _onAppBackgrounded,
       onDetach: _onAppBackgrounded,
     );
     _loadQuiz();
@@ -279,12 +285,14 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     final attemptId =
         '${widget.course.id}_${widget.resource.id}_${DateTime.now().millisecondsSinceEpoch}';
 
+    final studentId = (await AuthService().getUniqueUserId()) ?? '';
+
     final attempt = <String, dynamic>{
       'attempt_id': attemptId,
-      'student_id': '',
+      'student_id': studentId,
       'course_id': widget.course.id,
       'resource_id': widget.resource.id,
-      'attempt_number': 1,
+      'attempt_number': _totalAttempts + 1,
       'score': _score,
       'passed': _passed,
       'answers_json': jsonEncode({'answers': answersJson}),
@@ -295,47 +303,125 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       'threshold_at_submission': _quiz?.passThreshold ?? 0.0,
     };
 
+    final dynamic serverResponse;
     if (_isStandalone) {
-      CourseService().submitStandaloneQuiz(widget.resourceModel!.id, attempt);
+      serverResponse = await CourseService()
+          .submitStandaloneQuiz(widget.resourceModel!.id, attempt);
     } else {
-      CourseService().submitQuiz(widget.course.id, widget.resource.id, attempt);
+      serverResponse = await CourseService()
+          .submitQuiz(widget.course.id, widget.resource.id, attempt);
+    }
+    final hasServerGrading = _applyServerResults(serverResponse);
+    // Offline submission of a stripped quiz: no server verdict and no local
+    // answer key, so any locally computed score would be a lie.
+    if (!hasServerGrading && _quizLacksAnswerKey()) {
+      _pendingResults = true;
     }
 
-    if (_score > _bestScore) {
-      if (_isStandalone) {
-        CourseService().updateStandaloneBestScore(widget.resourceModel!.id, _score, attemptId);
-        if (mounted) {
-          setState(() {
-            _bestScore = _score;
-            _totalAttempts++;
-          });
-        }
-      } else {
-        try {
-          final url = '/student/quiz-best-score/${widget.course.id}/${widget.resource.id}';
-          await ApiClient.post(url, data: {'score': _score, 'attempt_id': attemptId});
+    if (!_pendingResults) {
+      if (_score > _bestScore) {
+        if (_isStandalone) {
+          CourseService().updateStandaloneBestScore(widget.resourceModel!.id, _score, attemptId);
           if (mounted) {
             setState(() {
               _bestScore = _score;
               _totalAttempts++;
             });
           }
-        } catch (_) {}
+        } else {
+          unawaited(MutationQueue().enqueue(
+            '/student/quiz-best-score/${widget.course.id}/${widget.resource.id}',
+            method: 'post',
+            body: {'score': _score, 'attempt_id': attemptId},
+          ));
+          if (mounted) {
+            setState(() {
+              _bestScore = _score;
+              _totalAttempts++;
+            });
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() => _totalAttempts++);
+        }
       }
-    } else {
-      if (mounted) {
-        setState(() => _totalAttempts++);
-      }
-    }
 
-    if (_passed && widget.onComplete != null) {
-      widget.onComplete!();
-    } else if (!_passed && widget.onFail != null) {
-      widget.onFail!();
+      if (_passed && widget.onComplete != null) {
+        widget.onComplete!();
+      } else if (!_passed && widget.onFail != null) {
+        widget.onFail!();
+      }
     }
 
     if (mounted) setState(() {});
   }
+
+  /// Applies the server's grading to the on-screen results.
+  ///
+  /// The served quiz carries no answer key (the server strips it), so when
+  /// the submission was graded online the response is authoritative: the
+  /// per-question [results] entries supply the verdicts, correct answers,
+  /// and explanations, which are merged into the question list so the
+  /// review screen renders exactly what the server graded.
+  ///
+  /// Returns whether [response] carried any server grading at all.
+  bool _applyServerResults(dynamic response) {
+    if (response is! Map) return false;
+    final results = response['results'];
+    if (results is List && results.isNotEmpty) {
+      final byId = <String, Map<String, dynamic>>{};
+      for (final entry in results) {
+        if (entry is Map) {
+          final qid = entry['question_id']?.toString() ?? '';
+          if (qid.isNotEmpty) byId[qid] = Map<String, dynamic>.from(entry);
+        }
+      }
+      final rebuilt = List<QuizQuestion>.from(_questions);
+      for (int i = 0; i < rebuilt.length; i++) {
+        final q = rebuilt[i];
+        final entry = byId[q.id];
+        if (entry == null) continue;
+        _correctAnswers[i] = entry['correct'] == true;
+        final rawAnswers = entry['correct_answers'];
+        List<String>? correctAnswers = q.correctAnswers;
+        String? correctAnswer = q.correctAnswer;
+        if (rawAnswers is List && rawAnswers.isNotEmpty) {
+          correctAnswers = rawAnswers.map((e) => e.toString()).toList();
+          if (correctAnswers.length == 1 &&
+              q.type != QuizQuestionType.multiSelect) {
+            correctAnswer = correctAnswers.first;
+          }
+        }
+        final rawExplanation = entry['explanation'];
+        rebuilt[i] = QuizQuestion(
+          id: q.id,
+          type: q.type,
+          image: q.image,
+          question: q.question,
+          options: q.options,
+          correctAnswer: correctAnswer,
+          correctAnswers: correctAnswers,
+          explanation: rawExplanation is String && rawExplanation.isNotEmpty
+              ? rawExplanation
+              : q.explanation,
+          exactMatch: q.exactMatch,
+        );
+      }
+      _questions = rebuilt;
+    }
+    final serverScore = response['score'];
+    if (serverScore is num) {
+      _score = serverScore.toDouble();
+      _passed = response['passed'] == true || response['passed'] == 1;
+    }
+    return true;
+  }
+
+  /// Whether no question in the loaded quiz carries an answer key.
+  bool _quizLacksAnswerKey() => _questions.every((q) =>
+      (q.correctAnswer == null || q.correctAnswer!.isEmpty) &&
+      (q.correctAnswers == null || q.correctAnswers!.isEmpty));
 
   bool _isAnswerCorrect(int index, QuizQuestion q) {
     switch (q.type) {
@@ -582,20 +668,80 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     );
   }
 
+  /// Localized display options for [q].
+  ///
+  /// True/False questions always show the localized [AppLocalizations.quizTrue]
+  /// / [AppLocalizations.quizFalse] labels instead of the server's raw English
+  /// options; every other question type shows the server-provided options.
+  List<String> _displayOptions(QuizQuestion q, AppLocalizations l10n) {
+    return q.type == QuizQuestionType.trueFalse
+        ? [l10n.quizTrue, l10n.quizFalse]
+        : q.options;
+  }
+
+  /// Canonical, locale-independent answer value for the True/False option at
+  /// [idx].
+  ///
+  /// The server stores the English 'True'/'False' in
+  /// [QuizQuestion.correctAnswer], so the selected answer must be recorded in
+  /// that same canonical form for grading to work in every locale. Only the
+  /// displayed label is localized.
+  String _tfCanonical(int idx) => idx == 0 ? 'True' : 'False';
+
+  /// The canonical value stored in [_answers] for the option at [idx] of [q].
+  String _canonicalOption(QuizQuestion q, int idx, AppLocalizations l10n) {
+    return q.type == QuizQuestionType.trueFalse
+        ? _tfCanonical(idx)
+        : _displayOptions(q, l10n)[idx];
+  }
+
+  /// Index of the currently selected display option for [q], or null when
+  /// nothing is selected.
+  ///
+  /// The tapped index is tracked explicitly because options with duplicate
+  /// text must not collapse the selection onto the first text match.
+  int? _selectedDisplayIndex(QuizQuestion q, AppLocalizations l10n) {
+    final tracked = _selectedOption[_currentIndex];
+    if (tracked != null && tracked < _displayOptions(q, l10n).length) {
+      return tracked;
+    }
+    final answer = _answers[_currentIndex];
+    if (answer == null) return null;
+    for (int i = 0; i < _displayOptions(q, l10n).length; i++) {
+      if (_canonicalOption(q, i, l10n) == answer) return i;
+    }
+    return null;
+  }
+
+  /// Toggles [idx] for the current question and re-derives [_multiAnswers]
+  /// from the selected indexes so duplicate option texts stay independently
+  /// selectable while the submitted answer remains option text.
+  void _toggleMulti(QuizQuestion q, int idx) {
+    final set = _multiSelected.putIfAbsent(_currentIndex, () => <int>{});
+    if (!set.add(idx)) {
+      set.remove(idx);
+    }
+    final ordered = set.toList()..sort();
+    _multiAnswers[_currentIndex] =
+        ordered.map((i) => q.options[i]).toList();
+  }
+
   List<Widget> _buildOptions(QuizQuestion q, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     switch (q.type) {
       case QuizQuestionType.mcq:
       case QuizQuestionType.trueFalse:
-        final options = q.type == QuizQuestionType.trueFalse
-            ? [l10n.quizTrue, l10n.quizFalse]
-            : q.options;
+        final options = _displayOptions(q, l10n);
+        final selectedIdx = _selectedDisplayIndex(q, l10n);
         return options.asMap().entries.map((entry) {
           final idx = entry.key;
           final opt = entry.value;
           return Column(
             children: [
               InkWell(
-                onTap: () => setState(() => _answers[_currentIndex] = opt),
+                onTap: () => setState(() {
+                  _answers[_currentIndex] = _canonicalOption(q, idx, l10n);
+                  _selectedOption[_currentIndex] = idx;
+                }),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(
@@ -610,11 +756,12 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                       children: [
                         Radio<int>(
                           value: idx,
-                          groupValue: _answers[_currentIndex] != null
-                              ? options.indexOf(_answers[_currentIndex]!)
-                              : null,
-                          onChanged: (_) =>
-                              setState(() => _answers[_currentIndex] = opt),
+                          groupValue: selectedIdx,
+                          onChanged: (_) => setState(() {
+                            _answers[_currentIndex] =
+                                _canonicalOption(q, idx, l10n);
+                            _selectedOption[_currentIndex] = idx;
+                          }),
                           activeColor: cs.primary,
                           visualDensity: VisualDensity.compact,
                         ),
@@ -664,22 +811,15 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
 
       case QuizQuestionType.multiSelect:
         return q.options.asMap().entries.map((entry) {
+          final idx = entry.key;
           final opt = entry.value;
           final selected =
-              (_multiAnswers[_currentIndex] ?? []).contains(opt);
+              (_multiSelected[_currentIndex] ?? const <int>{}).contains(idx);
           return Column(
             children: [
               InkWell(
                 onTap: () {
-                  setState(() {
-                    _multiAnswers
-                        .putIfAbsent(_currentIndex, () => []);
-                    if (selected) {
-                      _multiAnswers[_currentIndex]!.remove(opt);
-                    } else {
-                      _multiAnswers[_currentIndex]!.add(opt);
-                    }
-                  });
+                  setState(() => _toggleMulti(q, idx));
                 },
                 borderRadius:
                     BorderRadius.circular(AppSpacing.radiusMd.r),
@@ -697,16 +837,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                         Checkbox(
                           value: selected,
                           onChanged: (_) {
-                            setState(() {
-                              _multiAnswers.putIfAbsent(
-                                  _currentIndex, () => []);
-                              if (!selected) {
-                                _multiAnswers[_currentIndex]!.add(opt);
-                              } else {
-                                _multiAnswers[_currentIndex]!
-                                    .remove(opt);
-                              }
-                            });
+                            setState(() => _toggleMulti(q, idx));
                           },
                           activeColor: cs.primary,
                           visualDensity: VisualDensity.compact,
@@ -784,6 +915,12 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   Widget _buildResultsScreen(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final correctCount = _correctAnswers.values.where((v) => v).length;
     final pct = (_score * 100).round();
+    final headerBg = _pendingResults
+        ? cs.surfaceContainerHighest
+        : (_passed ? cs.primaryContainer : cs.errorContainer);
+    final headerFg = _pendingResults
+        ? cs.onSurface
+        : (_passed ? cs.onPrimaryContainer : cs.onErrorContainer);
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -795,47 +932,50 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.all(AppSpacing.lg.w),
-                color: _passed ? cs.primaryContainer : cs.errorContainer,
+                color: headerBg,
                 child: Column(
                   children: [
                     Text(
-                      _passed ? l10n.quizPassed : l10n.quizFailed,
+                      _pendingResults
+                          ? l10n.quizResultsPendingTitle
+                          : (_passed ? l10n.quizPassed : l10n.quizFailed),
                       style: tt.headlineSmall?.copyWith(
                         fontWeight: AppSpacing.weightDisplay,
-                        color: _passed
-                            ? cs.onPrimaryContainer
-                            : cs.onErrorContainer,
+                        color: headerFg,
                       ),
                     ),
-                    SizedBox(height: AppSpacing.sm.h),
-                    Text(
-                      l10n.quizScoreFraction(correctCount, _questions.length),
-                      style: tt.bodyLarge?.copyWith(
-                        fontWeight: AppSpacing.weightStrong,
-                        color: _passed
-                            ? cs.onPrimaryContainer
-                            : cs.onErrorContainer,
-                      ),
-                    ),
-                    Text(
-                      '$pct%',
-                      style: tt.headlineMedium?.copyWith(
-                        fontWeight: AppSpacing.weightDisplay,
-                        color: _passed
-                            ? cs.onPrimaryContainer
-                            : cs.onErrorContainer,
-                      ),
-                    ),
-                    if (_totalAttempts > 1) ...[
-                      SizedBox(height: AppSpacing.xs.h),
+                    if (_pendingResults) ...[
+                      SizedBox(height: AppSpacing.sm.h),
                       Text(
-                        'Attempt $_totalAttempts · Best: ${(_bestScore * 100).round()}%',
-                        style: tt.bodySmall?.copyWith(
-                          color: _passed
-                              ? cs.onPrimaryContainer
-                              : cs.onErrorContainer,
+                        l10n.quizResultsPendingBody,
+                        textAlign: TextAlign.center,
+                        style: tt.bodyMedium?.copyWith(color: headerFg),
+                      ),
+                    ] else ...[
+                      SizedBox(height: AppSpacing.sm.h),
+                      Text(
+                        l10n.quizScoreFraction(correctCount, _questions.length),
+                        style: tt.bodyLarge?.copyWith(
+                          fontWeight: AppSpacing.weightStrong,
+                          color: headerFg,
                         ),
                       ),
+                      Text(
+                        '$pct%',
+                        style: tt.headlineMedium?.copyWith(
+                          fontWeight: AppSpacing.weightDisplay,
+                          color: headerFg,
+                        ),
+                      ),
+                      if (_totalAttempts > 1) ...[
+                        SizedBox(height: AppSpacing.xs.h),
+                        Text(
+                          'Attempt $_totalAttempts · Best: ${(_bestScore * 100).round()}%',
+                          style: tt.bodySmall?.copyWith(
+                            color: headerFg,
+                          ),
+                        ),
+                      ],
                     ],
                   ],
                 ),
@@ -874,16 +1014,24 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
 
   Widget _buildResultItem(int index, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final q = _questions[index];
-    final correct = _correctAnswers[index] ?? false;
+    // Null while results are pending an online flush: no verdict to show.
+    final bool? correct =
+        _pendingResults ? null : (_correctAnswers[index] ?? false);
     final userAnswer = _answers[index];
     final userMulti = _multiAnswers[index];
 
     return Container(
       decoration: BoxDecoration(
-        color: correct ? cs.primaryContainer : cs.errorContainer,
+        color: correct == true
+            ? cs.primaryContainer
+            : correct == false
+                ? cs.errorContainer
+                : cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r),
         border: Border.all(
-          color: correct ? cs.primary : cs.error,
+          color: correct == null
+              ? cs.outlineVariant
+              : (correct ? cs.primary : cs.error),
           width: 1,
         ),
       ),
@@ -894,8 +1042,14 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
           Row(
             children: [
               Icon(
-                correct ? Icons.check_circle : Icons.cancel,
-                color: correct ? cs.primary : cs.error,
+                correct == true
+                    ? Icons.check_circle
+                    : correct == false
+                        ? Icons.cancel
+                        : Icons.circle_outlined,
+                color: correct == null
+                    ? cs.onSurfaceVariant
+                    : (correct ? cs.primary : cs.error),
                 size: 20.sp,
               ),
               SizedBox(width: AppSpacing.sm.w),
@@ -911,12 +1065,17 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
             ],
           ),
           SizedBox(height: AppSpacing.sm.h),
-          if (q.type == QuizQuestionType.fillBlanks)
+          if (_pendingResults)
+            Text(
+              userAnswer ?? userMulti?.join(', ') ?? '-',
+              style: tt.bodyMedium?.copyWith(color: cs.onSurface),
+            )
+          else if (q.type == QuizQuestionType.fillBlanks)
             _buildFillBlanksResult(q, userAnswer, cs, tt)
           else if (q.type == QuizQuestionType.multiSelect)
-            _buildMultiResult(q, userMulti, cs, tt)
+            _buildMultiResult(q, userMulti, cs, tt, index)
           else
-            _buildSingleResult(q, userAnswer, cs, tt),
+            _buildSingleResult(q, userAnswer, cs, tt, l10n, index),
           if (q.explanation != null && q.explanation!.isNotEmpty) ...[
             SizedBox(height: AppSpacing.sm.h),
             Container(
@@ -941,12 +1100,20 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   }
 
   Widget _buildSingleResult(
-      QuizQuestion q, String? userAnswer, ColorScheme cs, TextTheme tt) {
-    final correctOpt = q.correctAnswer ?? '';
+      QuizQuestion q, String? userAnswer, ColorScheme cs, TextTheme tt, AppLocalizations l10n, int questionIndex) {
+    final options = _displayOptions(q, l10n);
+    final correctOpt = (q.correctAnswer ?? '').trim().toLowerCase();
+    final selectedIdx = _selectedOption[questionIndex];
     return Column(
-      children: q.options.map((opt) {
-        final isCorrectOption = opt == correctOpt;
-        final isUserChoice = opt == userAnswer;
+      children: options.asMap().entries.map((entry) {
+        final canonical = _canonicalOption(q, entry.key, l10n);
+        // Case-insensitive, like the grading in [_isAnswerCorrect].
+        final isCorrectOption = canonical.trim().toLowerCase() == correctOpt;
+        // Duplicate option texts are indistinguishable to the server (it
+        // grades by text), so only the actually-tapped index is marked.
+        final isUserChoice = selectedIdx != null
+            ? entry.key == selectedIdx
+            : canonical == userAnswer;
         Color bgColor;
         if (isCorrectOption) {
           bgColor = cs.primaryContainer;
@@ -980,7 +1147,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
               SizedBox(width: AppSpacing.sm.w),
               Expanded(
                 child: Text(
-                  opt,
+                  entry.value,
                   style: tt.bodyMedium?.copyWith(
                     fontSize: 14.sp,
                     color: cs.onSurface,
@@ -995,13 +1162,14 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   }
 
   Widget _buildMultiResult(
-      QuizQuestion q, List<String>? userSelections, ColorScheme cs, TextTheme tt) {
+      QuizQuestion q, List<String>? userSelections, ColorScheme cs, TextTheme tt, int questionIndex) {
     final correctSet = Set<String>.from(q.correctAnswers ?? []);
-    final userSet = Set<String>.from(userSelections ?? []);
+    final selectedIdxs = _multiSelected[questionIndex] ?? const <int>{};
     return Column(
-      children: q.options.map((opt) {
+      children: q.options.asMap().entries.map((entry) {
+        final opt = entry.value;
         final isCorrectOption = correctSet.contains(opt);
-        final isUserChoice = userSet.contains(opt);
+        final isUserChoice = selectedIdxs.contains(entry.key);
         Color bgColor;
         if (isCorrectOption) {
           bgColor = cs.primaryContainer;

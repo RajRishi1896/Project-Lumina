@@ -36,6 +36,16 @@ class CatalogService {
           .timeout(const Duration(seconds: 15));
       final data = resp.data;
       if (data is! List) return;
+      if (data.isEmpty) {
+        // ponytail: an empty 200 is more likely a server glitch than a real
+        // wipe; only honour it when the local cache is already empty.
+        final db = await DBHelper().database;
+        final existing = await db.query('catalog', columns: ['id'], limit: 1);
+        if (existing.isNotEmpty) {
+          debugPrint('CatalogService: server returned empty catalog; keeping local cache');
+          return;
+        }
+      }
 
       final db = await DBHelper().database;
       await db.transaction((txn) async {

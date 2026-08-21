@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/services/activity_tracker.dart';
 import '../../../core/storage/db_helper.dart';
+import '../../auth/data/auth_service.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// A parent-facing study report compiled locally from the app's SQLite data.
@@ -63,10 +64,12 @@ class _StudyReportPageState extends State<StudyReportPage> {
         ..clear()
         ..addAll(downloaded);
 
+      final studentId = (await AuthService().getUniqueUserId()) ?? '';
       final scoreRows = await db.rawQuery(
         'SELECT course_id, resource_id, MAX(score) AS best '
-        'FROM quiz_attempts WHERE score > 0 '
+        'FROM quiz_attempts WHERE score > 0 AND student_id = ? '
         'GROUP BY course_id, resource_id ORDER BY best DESC',
+        [studentId],
       );
       final titles = await _quizTitleByKey(db);
       _scores

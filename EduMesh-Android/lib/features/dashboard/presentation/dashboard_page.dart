@@ -118,7 +118,11 @@ class _DashboardPageState extends State<DashboardPage> {
           if (d != null) dates.add(DateTime(d.year, d.month, d.day));
         } catch (_) {}
       }
-      final quizRows = await db.rawQuery('SELECT COUNT(*) AS n FROM quiz_attempts WHERE score > 0');
+      final studentId = (await AuthService().getUniqueUserId()) ?? '';
+      final quizRows = await db.rawQuery(
+        'SELECT COUNT(*) AS n FROM quiz_attempts WHERE score > 0 AND student_id = ?',
+        [studentId],
+      );
       final resRows = await db.rawQuery('SELECT COUNT(DISTINCT title) AS n FROM downloads');
       if (!mounted) return;
       setState(() {
@@ -178,7 +182,7 @@ class _DashboardPageState extends State<DashboardPage> {
       final cachedApp = prefs.getInt('cached_app_size_bytes');
       final cachedTotal = prefs.getInt('cached_storage_total_bytes');
       final cachedAvail = prefs.getInt('cached_storage_available_bytes');
-      if (cachedApp != null && cachedApp > 0 && cachedTotal != null && cachedTotal > 0 && cachedAvail != null && cachedAvail > 0) {
+      if (cachedApp != null && cachedApp > 0 && cachedTotal != null && cachedTotal > 0 && cachedAvail != null && cachedAvail >= 0) {
         _applyStorageValues(cachedApp, cachedTotal, cachedAvail);
         unawaited(_computeAndCacheStorage());
         return;
@@ -197,11 +201,18 @@ class _DashboardPageState extends State<DashboardPage> {
       apkSize = info?['apkSize'] as int? ?? 0;
       totalBytes = info?['totalBytes'] as int? ?? 0;
       availableBytes = info?['availableBytes'] as int? ?? 0;
-      if (apkSize <= 0 || totalBytes <= 0 || availableBytes <= 0) {
+      // ponytail: 0 free bytes is a real state (full disk), not a failure.
+      if (apkSize <= 0 || totalBytes <= 0 || availableBytes < 0) {
         throw StateError('incomplete storage info');
       }
-    } catch (_) {
-      _showStorageNA();
+    } catch (e) {
+      // A transient re-measure failure must not clobber last-known-good
+      // values already on screen; N/A only when nothing was painted yet.
+      if (_totalStorageUsedStr.isEmpty) {
+        _showStorageNA();
+      } else {
+        debugPrint('Storage re-measure failed, keeping shown values: $e');
+      }
       return;
     }
     try {
@@ -220,8 +231,13 @@ class _DashboardPageState extends State<DashboardPage> {
         await prefs.setInt('cached_storage_available_bytes', availableBytes);
       } catch (_) {}
       _applyStorageValues(appUsedBytes, totalBytes, availableBytes);
-    } catch (_) {
-      _showStorageNA();
+    } catch (e) {
+      // Same clobber guard: keep painted values on a background failure.
+      if (_totalStorageUsedStr.isEmpty) {
+        _showStorageNA();
+      } else {
+        debugPrint('Storage re-measure failed, keeping shown values: $e');
+      }
     }
   }
 
@@ -245,7 +261,8 @@ class _DashboardPageState extends State<DashboardPage> {
           _appUsedStr = appMb < 1024 ? '${appMb.toStringAsFixed(1)}${l10n.unitMegabytes}' : '${(appMb / 1024).toStringAsFixed(1)}${l10n.unitGigabytes}';
           final otherGb = otherUsedBytes / (1024 * 1024 * 1024);
           _otherUsedStr = otherGb < 1.0 ? '${(otherUsedBytes / (1024 * 1024)).toStringAsFixed(1)}${l10n.unitMegabytes}' : '${otherGb.toStringAsFixed(1)}${l10n.unitGigabytes}';
-          _freeRemainingStr = '${(availableBytes / (1024 * 1024 * 1024)).toStringAsFixed(1)}${l10n.unitGigabytes}';
+          final freeMb = availableBytes / (1024 * 1024);
+          _freeRemainingStr = freeMb < 1024 ? '${freeMb.toStringAsFixed(1)}${l10n.unitMegabytes}' : '${(freeMb / 1024).toStringAsFixed(1)}${l10n.unitGigabytes}';
           _totalCapacityStr = l10n.storageTotalCapacity((totalBytes / (1024 * 1024 * 1024)).toStringAsFixed(0));
           _appFlex = (appUsedBytes / totalBytes * 1000).toInt().clamp(1, 1000);
           _otherFlex = (otherUsedBytes / totalBytes * 1000).toInt().clamp(1, 1000);
@@ -363,13 +380,13 @@ class _DashboardPageState extends State<DashboardPage> {
             height: 28.sp,
           ),
           SizedBox(width: AppSpacing.md.w),
-          Flexible(
+          Expanded(
             child: Text(l10n.appTitle,
-                maxLines: 1, overflow: TextOverflow.ellipsis,
+                maxLines: 2, overflow: TextOverflow.ellipsis,
                 style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
           ),
-          const Spacer(),
-          Flexible(child: _buildServerStatusBadge()),
+          SizedBox(width: AppSpacing.sm.w),
+          _buildServerStatusBadge(),
           SizedBox(width: AppSpacing.sm.w),
           Semantics(
             button: true,

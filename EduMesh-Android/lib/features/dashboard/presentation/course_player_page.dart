@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/models/course.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
 import 'package:edumesh_android/core/services/course_service.dart';
+import 'package:edumesh_android/core/services/mutation_queue.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
@@ -36,13 +37,55 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
   bool _isDownloading = false;
   bool _showDownloadPrompt = true;
   Map<String, String> _localPaths = {};
+  bool _loadingResources = true;
+  bool _loadFailedResources = false;
 
   @override
   void initState() {
     super.initState();
-    _resources = widget.course.resources ?? [];
-    _resources.sort((a, b) => a.position.compareTo(b.position));
-    _loadProgress();
+    _loadResources();
+  }
+
+  /// Loads the course's resources: server detail first, local cache as
+  /// offline fallback, then refreshes progress against the loaded list.
+  Future<void> _loadResources() async {
+    // Show whatever the navigation path already carried while fetching.
+    final initial = widget.course.resources;
+    if (initial != null && initial.isNotEmpty) {
+      if (mounted) {
+        setState(() => _resources = [...initial]..sort((a, b) => a.position.compareTo(b.position)));
+      }
+    }
+    try {
+      final detail = await CourseService().fetchCourseDetail(widget.course.id);
+      List<CourseResource> loaded;
+      if (detail != null && detail['resources'] is List) {
+        loaded = (detail['resources'] as List)
+            .whereType<Map>()
+            .map((e) => CourseResource.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      } else {
+        final db = await DBHelper().database;
+        final rows = await db.query('course_resources',
+            where: 'course_id = ?', whereArgs: [widget.course.id]);
+        loaded = rows.map(CourseResource.fromJson).toList();
+      }
+      loaded.sort((a, b) => a.position.compareTo(b.position));
+      if (!mounted) return;
+      setState(() {
+        _resources = loaded;
+        _loadingResources = false;
+        _loadFailedResources = loaded.isEmpty;
+      });
+      await _loadProgress();
+    } catch (e) {
+      debugPrint('CoursePlayerPage: _loadResources failed; $e');
+      if (!mounted) return;
+      setState(() {
+        _loadingResources = false;
+        _loadFailedResources = true;
+      });
+    }
   }
 
   Future<void> _loadProgress() async {
@@ -109,6 +152,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       }
     }
     if (newPos >= _resources.length) newPos = _resources.length;
+    final allDone = _resources.isNotEmpty && _completed.values.where((v) => v).length == _resources.length;
     _currentPosition = newPos;
     if (mounted) setState(() {});
     try {
@@ -117,7 +161,18 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       await db.update('course_progress', {
         'completed_count': _completed.values.where((v) => v).length,
         'current_position': newPos,
+        if (allDone) 'completed': 1,
       }, where: 'course_id = ? AND student_id = ?', whereArgs: [widget.course.id, studentId]);
+      // Sync progress upstream (offline-safe: queued when unreachable).
+      await MutationQueue().enqueue(
+        '/api/courses/${widget.course.id}/progress',
+        method: 'put',
+        body: {
+          'current_position': newPos,
+          'completed_count': _completed.values.where((v) => v).length,
+          if (allDone) 'completed': true,
+        },
+      );
     } catch (e) {
       debugPrint('CoursePlayerPage: _markCompleted failed; $e');
     }
@@ -260,11 +315,35 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
-                child: _resources.isEmpty
-                  ? Center(
-                      child: Text(l10n.coursePlayerNoResources,
-                          style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
-                    )
+                child: _loadingResources && _resources.isEmpty
+                  ? Center(child: CircularProgressIndicator(color: cs.primary))
+                  : _loadFailedResources && _resources.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.cloud_off_rounded, color: cs.error, size: 48.sp),
+                              SizedBox(height: AppSpacing.md.h),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
+                                child: Text(l10n.errorNoServerNoCache,
+                                    textAlign: TextAlign.center,
+                                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+                              ),
+                              SizedBox(height: AppSpacing.lg.h),
+                              FilledButton.tonal(
+                                onPressed: () {
+                                  setState(() {
+                                    _loadingResources = true;
+                                    _loadFailedResources = false;
+                                  });
+                                  _loadResources();
+                                },
+                                child: Text(l10n.errorRetryButton),
+                              ),
+                            ],
+                          ),
+                        )
                   : ListView.builder(
                       padding: EdgeInsets.all(AppSpacing.lg.w),
                       itemCount: _resources.length,

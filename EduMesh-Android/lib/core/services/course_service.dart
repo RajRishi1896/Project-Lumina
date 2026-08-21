@@ -42,20 +42,52 @@ class CourseService extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final resp = await ApiClient.get('/api/courses');
-      final data = resp.data;
-      final List<dynamic> items;
-      if (data is List) {
-        items = data;
-      } else if (data is Map && data['items'] is List) {
-        items = data['items'] as List;
-      } else {
+      // Server paginates ({items, total}, default per_page=20): walk all
+      // pages so courses beyond page 1 are visible/enrollable.
+      final courses = <Course>[];
+      var total = -1;
+      var page = 1;
+      var sawValidPage = false;
+      while (page <= 20) {
+        final resp = await ApiClient.get('/api/courses?page=$page&per_page=50');
+        final data = resp.data;
+        List<dynamic>? items;
+        if (data is List) {
+          items = data;
+        } else if (data is Map && data['items'] is List) {
+          items = data['items'] as List;
+          total = (data['total'] as num?)?.toInt() ?? -1;
+        } else {
+          break;
+        }
+        sawValidPage = true;
+        if (items.isEmpty) break;
+        courses.addAll(items.map((e) => Course.fromJson(e as Map<String, dynamic>)));
+        if ((total >= 0 && courses.length >= total) || items.length < 50) break;
+        page++;
+      }
+      if (!sawValidPage) {
         _loading = false;
         notifyListeners();
         return [];
       }
-      final courses = items.map((e) => Course.fromJson(e as Map<String, dynamic>)).toList();
       final db = await DBHelper().database;
+      if (courses.isEmpty) {
+        // ponytail: an empty 200 is more likely a server glitch than a real
+        // wipe; only honour it when the local table is already empty.
+        // Mirrors CatalogService.syncCatalog's guard: replacing all courses
+        // here would let deleteOrphanedCourseData() purge progress/quiz
+        // history unrecoverably.
+        final existing = await db.query('courses', columns: ['id'], limit: 1);
+        if (existing.isNotEmpty) {
+          debugPrint('CourseService: server returned empty course catalog; keeping local cache');
+          final cached = await getCachedCatalog();
+          _loading = false;
+          _error = null;
+          notifyListeners();
+          return cached;
+        }
+      }
       await db.transaction((txn) async {
         await txn.delete('courses');
         for (final c in courses) {
@@ -76,6 +108,8 @@ class CourseService extends ChangeNotifier {
           }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
       });
+      // Purge progress/quiz/resource rows for courses that vanished server-side.
+      await DBHelper().deleteOrphanedCourseData();
       _cachedCourses = courses;
       _loading = false;
       _error = null;
@@ -180,20 +214,35 @@ class CourseService extends ChangeNotifier {
     return succeeded == resources.length;
   }
 
-  /// Submits a quiz attempt via [MutationQueue] for offline support, then persists locally.
-  Future<void> submitQuiz(String courseId, String resourceId, Map<String, dynamic> attempt) async {
-    await MutationQueue().enqueue(
+  /// Submits a quiz attempt via [MutationQueue] for offline support, then
+  /// persists locally.
+  ///
+  /// Returns the server response when the attempt was graded online (the
+  /// server-graded row plus per-question `results`), or null when the
+  /// submission was queued for a later flush.
+  Future<dynamic> submitQuiz(String courseId, String resourceId, Map<String, dynamic> attempt) async {
+    final response = await MutationQueue().enqueue(
       '/api/courses/$courseId/quiz/$resourceId/submit',
       method: 'POST',
       body: attempt,
       priority: 'high',
     );
-    await _saveQuizAttemptLocally(attempt);
+    if (response is Map) {
+      final graded = Map<String, dynamic>.from(attempt);
+      graded['score'] = response['score'] ?? attempt['score'];
+      graded['passed'] = response['passed'] ?? attempt['passed'];
+      await _saveQuizAttemptLocally(graded);
+    } else {
+      await _saveQuizAttemptLocally(attempt);
+    }
+    return response;
   }
 
   /// Submits a standalone quiz attempt via [MutationQueue] for offline support.
-  Future<void> submitStandaloneQuiz(String resourceId, Map<String, dynamic> attempt) async {
-    await MutationQueue().enqueue(
+  ///
+  /// Returns the server response when graded online, or null when queued.
+  Future<dynamic> submitStandaloneQuiz(String resourceId, Map<String, dynamic> attempt) async {
+    return MutationQueue().enqueue(
       '/api/quiz-resource/$resourceId/submit',
       method: 'POST',
       body: attempt,
@@ -207,7 +256,6 @@ class CourseService extends ChangeNotifier {
       '/api/quiz-resource/$resourceId/best-score',
       method: 'POST',
       body: {'score': score, 'attempt_id': attemptId},
-      priority: 'normal',
     );
   }
 
