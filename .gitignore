@@ -105,3 +105,6 @@ Debian Server/trigger_reimport.py
 Debian Server/wipe_zim.py
 # OpenChamber config backups (written next to opencode.json on MCP edits)
 *.openchamber.backup
+
+# ZCode QA session artifacts
+.zcode_*
