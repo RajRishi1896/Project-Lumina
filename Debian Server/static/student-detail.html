@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head -- theme detection, metadata, detail page styles -->
+<!-- Section: Head: theme detection, metadata, detail page styles -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,10 +12,10 @@
 </head>
 <body>
     <a href="#app-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
-    <!-- Section: Sidebar -- empty, rendered by renderLayout() -->
+    <!-- Section: Sidebar: empty, rendered by renderLayout() -->
     <aside></aside>
 
-    <!-- Section: Main Content -- back link, student header, stat cards, subject breakdown, loading/error states -->
+    <!-- Section: Main Content: back link, student header, stat cards, subject breakdown, loading/error states -->
     <main>
         <div id="app-content">
         <div class="student-detail-container" id="app">
@@ -23,11 +23,11 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 <span data-i18n="student_detail_back">Back to</span> <span data-i18n="sidebar.students">Students</span>
             </a>
-            <!-- Section: Student Header -- avatar, name, grade, last active -->
+            <!-- Section: Student Header: avatar, name, grade, last active -->
             <div class="student-header" id="studentHeader"></div>
-            <!-- Section: Stat Cards -- time this week, streak, downloads -->
+            <!-- Section: Stat Cards: time this week, streak, downloads -->
             <div class="stat-grid" id="statGrid"></div>
-            <!-- Section: Subject Breakdown -- horizontal bar chart per subject -->
+            <!-- Section: Subject Breakdown: horizontal bar chart per subject -->
             <div class="card" id="subjectCard">
                 <div class="card-title" id="subjectCardTitle" data-i18n="student_detail_subject_breakdown">Subject Breakdown</div>
                 <div class="subject-list" id="subjectList"></div>
@@ -44,11 +44,11 @@
         </div>
     </main>
 
-    <!-- Section: Bottom Nav (Mobile) -- tab bar hidden by default, shown via media query -->
+    <!-- Section: Bottom Nav (Mobile): tab bar hidden by default, shown via media query -->
     <div id="bottomNav"></div>
 
     <script src="/static/js/lumina.js?v=10"></script>
-    <!-- Section: Inline Scripts -- student analytics rendering, API fetching -->
+    <!-- Section: Inline Scripts: student analytics rendering, API fetching -->
     <script>
         var subjectColors = ['#14b8a6','#6366f1','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981','#f97316'];
 

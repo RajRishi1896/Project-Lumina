@@ -5,7 +5,7 @@
 #          SSH access and the Lumina API keep working.
 # Usage:   sudo ./restore_ssh.sh
 # Args:    none
-# Idempotent: Yes -- re-running is a no-op once the hotspot is down.
+# Idempotent: Yes, re-running is a no-op once the hotspot is down.
 set -e
 
 # nmcli needs root to modify system connections.
@@ -22,7 +22,7 @@ if nmcli connection show LuminaHub >/dev/null 2>&1; then
     nmcli connection down LuminaHub || true
     echo "[OK] Hotspot 'LuminaHub' is down (autoconnect disabled)."
 else
-    echo "[INFO] No 'LuminaHub' hotspot connection -- nothing to tear down."
+    echo "[INFO] No 'LuminaHub' hotspot connection: nothing to tear down."
 fi
 
 # 2. Make sure the radio is on and scanning for client networks.

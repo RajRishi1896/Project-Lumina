@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head -- theme detection, metadata, page-specific styles -->
+<!-- Section: Head: theme detection, metadata, page-specific styles -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,10 +14,10 @@
 </head>
 <body>
     <a href="#app-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
-    <!-- Section: Sidebar -- empty, rendered by renderLayout() -->
+    <!-- Section: Sidebar: empty, rendered by renderLayout() -->
     <aside></aside>
 
-    <!-- Section: Main Content -- upload button, resource library, topic management -->
+    <!-- Section: Main Content: upload button, resource library, topic management -->
     <main>
         <div id="app-content">
         <div id="contentTab">
@@ -26,7 +26,7 @@
                 <p data-i18n="content.page_description">Upload and manage educational resources for your students.</p>
             </div>
 
-            <!-- Section: Mesh Library -- filterable resource table with search + upload button on same line -->
+            <!-- Section: Mesh Library: filterable resource table with search + upload button on same line -->
             <div class="card">
                 <div class="flex flex-col gap-3 mb-3">
                     <div class="card-title mb-0" data-i18n="content.library_title">Mesh Library</div>
@@ -84,7 +84,7 @@
                 </div>
             </div>
 
-            <!-- Section: Manage Topics -- searchable topic table with delete -->
+            <!-- Section: Manage Topics: searchable topic table with delete -->
             <div class="card">
                 <div class="flex flex-col mb-3 gap-3">
                     <div class="card-title mb-0 text-teal font-extrabold" data-i18n="content.topics_title">Manage Topics</div>
@@ -142,7 +142,7 @@
             </div>
         </div>
 
-        <!-- Section: Upload Resource Modal -- inside app-content so SPA nav preserves it -->
+        <!-- Section: Upload Resource Modal: inside app-content so SPA nav preserves it -->
         <div id="uploadResourceModal" class="hidden popup modal-overlay">
             <div class="modal creation">
                 <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="content.upload_title">Upload Resource</h3>
@@ -346,7 +346,7 @@
             </div>
         </div>
 
-        <!-- Section: Add Topic Modal -- inside app-content so SPA nav preserves it -->
+        <!-- Section: Add Topic Modal: inside app-content so SPA nav preserves it -->
         <div id="addTopicModal" class="hidden popup modal-overlay">
             <div class="modal creation">
                 <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="content.topics_modal_title">Add New Topic</h3>
@@ -420,14 +420,14 @@
         </div>
     </main>
 
-    <!-- Section: Bottom Navigation (Mobile) -- tab bar hidden by default, shown via media query -->
+    <!-- Section: Bottom Navigation (Mobile): tab bar hidden by default, shown via media query -->
     <div id="bottomNav"></div>
 
-    <!-- Section: Toast Container -- global notification area (top-right, fixed) -->
+    <!-- Section: Toast Container: global notification area (top-right, fixed) -->
     <div id="globalToastContainer" class="toast-container"></div>
 
     <script src="/static/js/lumina.js?v=10"></script>
-    <!-- Section: Inline Scripts -- resource CRUD, upload handler, topics -->
+    <!-- Section: Inline Scripts: resource CRUD, upload handler, topics -->
     <script>
         var typeLabels = { khan: 'VIDEO', video: 'VIDEO', videos: 'VIDEO', kiwix: 'ZIM', textbook: 'TEXTBOOK', pyq: 'PYQ', pastPaper: 'PYQ', notes: 'NOTES', quiz: 'QUIZ' };
         var allResources = [];
@@ -539,7 +539,7 @@
                     return '<tr>' +
                         '<td data-label="' + __('content.library_th_title') + '"><strong>' + esc(r.title) + '</strong></td>' +
                         '<td data-label="' + __('content.library_th_subject') + '"><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--teal);">' + symbolSvg + ' ' + esc(r.subject || 'General') + '</div></td>' +
-                        '<td data-label="' + __('content.library_th_topic') + '" style="font-size: 0.75rem; color: var(--text-muted);">' + (topicLabel ? esc(topicLabel) : '—') + '</td>' +
+                        '<td data-label="' + __('content.library_th_topic') + '" style="font-size: 0.75rem; color: var(--text-muted);">' + (topicLabel ? esc(topicLabel) : '-') + '</td>' +
                         '<td data-label="' + __('content.library_th_type') + '"><span class="type-badge ' + badgeClass + '">' + esc(typeLabels[r.type] || r.type.toUpperCase()) + '</span></td>' +
                         '<td data-label="' + __('content.library_th_downloads') + '" style="font-weight: 700;">' + dl + '</td>' +
                         '<td data-label="' + __('content.library_th_action') + '" style="text-align: left;">' +
@@ -994,7 +994,7 @@
 
         // --- Pagination handlers ---
 
-        // Pagination handlers -- move the resource/topic page window and re-render.
+        // Pagination handlers: move the resource/topic page window and re-render.
         function resourcePrevPage() { if (_resourcePage > 1) { _resourcePage--; renderResourcePage(); } }
         function resourceNextPage() { var tp = Math.ceil(_resourceFiltered.length / _perPage); if (_resourcePage < tp) { _resourcePage++; renderResourcePage(); } }
         function resourceChangePerPage(val) { _perPage = parseInt(val, 10) || 20; _resourcePage = 1; renderResourcePage(); }

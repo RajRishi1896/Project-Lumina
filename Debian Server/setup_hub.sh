@@ -5,7 +5,7 @@
 #          kernel-level concurrency limits.
 # Usage:   sudo ./setup_hub.sh
 # Args:    None
-# Idempotent: Yes -- safe to re-run as a repair install. Existing configs
+# Idempotent: Yes, safe to re-run as a repair install. Existing configs
 #             are overwritten with the latest defaults.
 set -e
 cd "$(dirname "$0")" || exit 1
@@ -184,7 +184,7 @@ HandleLidSwitchDocked=ignore
 EOF"
 systemctl restart systemd-logind
 
-# 10. Nightly Reboot + Daily Backup -- persisted in /etc/cron.d/ (survives reboots)
+# 10. Nightly Reboot + Daily Backup: persisted in /etc/cron.d/ (survives reboots)
 tee /etc/cron.d/lumina-hub > /dev/null << 'CRON'
 SHELL=/bin/bash
 # Nightly reboot at 3:00 AM to clear RAM leaks

@@ -122,7 +122,7 @@ async def teacher_student_analytics(scholar_id: str, teacher_user: str = Depends
 
 @router.get("/teachers", response_model=list[TeacherSummary],
             summary="List teacher profiles",
-            description="Returns all teacher profiles except the default admin, with name, department, and scholar_id. Admin-only -- usernames and departments are staff information.",
+            description="Returns all teacher profiles except the default admin, with name, department, and scholar_id. Admin-only: usernames and departments are staff information.",
             tags=["Teacher"],
             responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
 async def get_teachers(admin_user: str = Depends(verify_admin)):

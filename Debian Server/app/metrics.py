@@ -4,7 +4,7 @@ Tracks login success/failure, uploads, quiz attempts, enrollments, API
 response times, and slow endpoints. Thread-safe via GIL (all ops are
 atomic dict/list appends).
 
-Data resets on server restart -- acceptable for single-node LAN deployment.
+Data resets on server restart; acceptable for single-node LAN deployment.
 Add persistence only if needed for historical analysis.
 """
 import time
@@ -111,6 +111,6 @@ def get_metrics() -> dict:
 
 
 def get_counters() -> dict:
-    """Return just the counters."""
+    """Return the counters."""
     with _lock:
         return dict(_counters)

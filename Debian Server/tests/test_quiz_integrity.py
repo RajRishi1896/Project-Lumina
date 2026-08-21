@@ -99,14 +99,14 @@ async def test_fabricated_score_is_regraded(client):
     rid = await _seed_course_quiz(cid, pass_threshold=75)
     await client.post(f"/api/courses/{cid}/enroll", headers=_auth(token))
 
-    # One correct, one wrong -- but the client claims a perfect score.
+    # One correct, one wrong, but the client claims a perfect score.
     payload = _attempt_payload("att-fab", _answers_json(("q1", "2"), ("q2", "5")),
                                score=1.0, passed=1)
     resp = await client.post(f"/api/courses/{cid}/quiz/{rid}/submit", headers=_auth(token), json=payload)
     assert resp.status_code == 200
     body = resp.json()
     assert body["score"] == 0.5, "server must grade, not trust the client's 1.0"
-    assert body["passed"] == 0, "0.5 is below the 0.75 threshold -- must not pass"
+    assert body["passed"] == 0, "0.5 is below the 0.75 threshold; must not pass"
     assert body["threshold_at_submission"] == 0.75
 
 
@@ -183,11 +183,11 @@ async def test_course_detail_unpublished_404(client):
 
 @pytest.mark.asyncio
 async def test_standalone_submit_requires_approved_quiz(client):
-    """Standalone submit accepts only approved quiz resources -- and re-grades."""
+    """Standalone submit accepts only approved quiz resources, and re-grades."""
     _, token = await _make_student("stu_e")
     rid = await _seed_standalone_quiz()
 
-    # All-correct answers but the client claims a score of 0 -- server grades 1.0.
+    # All-correct answers but the client claims a score of 0; server grades 1.0.
     payload = _attempt_payload("att-e1", _answers_json(("q1", "2"), ("q2", "4")), score=0.0, passed=0)
     resp = await client.post(f"/api/quiz-resource/{rid}/submit", headers=_auth(token), json=payload)
     assert resp.status_code == 200

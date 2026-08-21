@@ -1,4 +1,4 @@
-"""Teacher course resource management -- upload, ZIP import/export."""
+"""Teacher course resource management: upload, ZIP import/export."""
 import os
 import io
 import re
@@ -28,7 +28,7 @@ class _ZipError(Exception):
     """Raised inside _process() threads to carry HTTP status + detail.
 
     HTTPException raised inside asyncio.to_thread doesn't propagate
-    through Starlette middleware -- it becomes a generic 500.  This
+    through Starlette middleware; it becomes a generic 500.  This
     plain exception crosses the thread boundary cleanly; the caller
     translates it to HTTPException.
     """

@@ -1,4 +1,4 @@
-"""Admin management -- default admin toggling and admin/teacher/student CRUD."""
+"""Admin management: default admin toggling and admin/teacher/student CRUD."""
 import sqlite3
 import uuid
 import asyncio

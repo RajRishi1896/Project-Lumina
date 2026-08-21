@@ -692,7 +692,7 @@ aside {
     transition: background-color var(--transition);
 }
 
-/* Legacy sidebar theme toggle -- hidden, theme toggle moved to navbar */
+/* Legacy sidebar theme toggle: hidden, theme toggle moved to navbar */
 aside .theme-toggle { display: none; }
 
 .sidebar-brand-horizontal { display: flex; align-items: center; padding: 0.75rem 0; }
@@ -750,7 +750,7 @@ aside .theme-toggle { display: none; }
 .nav-item.danger .danger-icon,
 .nav-item.danger svg { color: inherit; }
 
-/* Override global nav styles inside sidebar -- the bare `nav` selector below
+/* Override global nav styles inside sidebar: the bare `nav` selector below
    (Welcome Page section) would otherwise make sidebar nav horizontal */
 aside nav {
     display: block;

@@ -1,4 +1,4 @@
-"""Student course interaction -- catalog, enroll, progress, quizzes, assets."""
+"""Student course interaction: catalog, enroll, progress, quizzes, assets."""
 import os
 import json
 import sqlite3
@@ -224,7 +224,7 @@ async def enroll_course(course_id: str, student_id: str = Depends(verify_student
         )
     except sqlite3.IntegrityError:
         # Concurrent enroll: the (student_id, course_id) PK was inserted between
-        # the pre-check and this write -- report as already enrolled, not 500.
+        # the pre-check and this write; report as already enrolled, not 500.
         raise HTTPException(status_code=409, detail="Already enrolled in this course.")  # i18n: user-facing error message
     from app.metrics import incr
     incr("enrollment")
@@ -312,12 +312,12 @@ async def sync_progress(course_id: str, data: ProgressSync, student_id: str = De
     Returns:
         Updated progress dict.
     """
-    # Verify course exists and is published -- unpublished courses are invisible to students
+    # Verify course exists and is published: unpublished courses are invisible to students
     course = await db_fetch_one("SELECT id FROM courses WHERE id = ? AND published = 1", (course_id,))
     if not course:
         raise HTTPException(status_code=404, detail="Course not found or not published.")  # i18n: user-facing error message
 
-    # Progress only ever updates an existing enrollment -- never auto-enrolls
+    # Progress only ever updates an existing enrollment; never auto-enrolls
     enrolled = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
     if not enrolled:
         raise HTTPException(status_code=404, detail="Not enrolled in this course.")  # i18n: user-facing error message
@@ -434,7 +434,7 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
              tags=["Courses"],
              responses={403: {"description": "Not enrolled"}, 404: {"description": "Course or quiz not found"}})
 async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemptSubmit, student_id: str = Depends(verify_student)):
-    """Submit a quiz attempt. Idempotent -- duplicate attempt_id returns existing record.
+    """Submit a quiz attempt. Idempotent: duplicate attempt_id returns existing record.
 
     Args:
         course_id: UUID of the course.
@@ -447,7 +447,7 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
         HTTPException 403: If the student is not enrolled.
         HTTPException 404: If course not found or not published.
     """
-    # Idempotency check -- an attempt belongs to its submitting student only
+    # Idempotency check: an attempt belongs to its submitting student only
     existing = await db_fetch_one("SELECT * FROM quiz_attempts WHERE id = ?", (data.attempt_id,))
     if existing:
         if existing["student_id"] != student_id:
@@ -463,7 +463,7 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
     if not course:
         raise HTTPException(status_code=404, detail="Course not found or not published.")  # i18n: user-facing error message
 
-    # Re-grade server-side -- the client's score/passed are never trusted
+    # Re-grade server-side: the client's score/passed are never trusted
     quiz_path = os.path.join(COURSES_DIR, course_id, f"quiz_{resource_id}.json")
     quiz = await asyncio.to_thread(load_quiz_file, quiz_path)
     if quiz is None:
@@ -512,7 +512,7 @@ async def get_quiz_attempts(course_id: str, resource_id: str, student_id: str = 
 
 @router.get("/api/courses/{course_id}/asset/{path:path}",
             summary="Serve course asset file",
-            description="Serves static assets (images, PDFs, etc.) from the course's assets directory. Does not require enrollment -- only that the course is published.",
+            description="Serves static assets (images, PDFs, etc.) from the course's assets directory. Does not require enrollment, only that the course is published.",
             tags=["Courses"],
             responses={401: {"description": "Unauthorized"}, 404: {"description": "Course or asset not found"}})
 async def serve_asset(course_id: str, path: str, student_id: str = Depends(verify_student)):

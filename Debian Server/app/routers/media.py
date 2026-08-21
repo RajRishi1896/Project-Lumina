@@ -12,7 +12,7 @@ from app.async_db import db_fetch_one, db_exec
 router = APIRouter()
 
 # VAAPI hardware decode args, probed once. Empty list on machines without a
-# usable /dev/dri device or vaapi ffmpeg build -- CPU decode is the fallback.
+# usable /dev/dri device or vaapi ffmpeg build; CPU decode is the fallback.
 _vaapi_args: list = []
 
 
@@ -20,7 +20,7 @@ def _probe_vaapi():
     """Return ffmpeg args for VAAPI hardware decode, or [] if unavailable.
 
     Probed once at import. VAAPI offloads video decode to the Intel/AMD iGPU
-    -- the largest CPU cost in thumbnail/sprite generation.
+    (the largest CPU cost in thumbnail/sprite generation).
     """
     global _vaapi_args
     try:
@@ -150,7 +150,7 @@ async def _resolve_resource(resource_id: str):
     if not row:
         return None, None, None
     # Course-resource files live under uploads/courses/{course_id}/resources/,
-    # not directly in the uploads root -- build the correct path.
+    # not directly in the uploads root: build the correct path.
     if table == "course_resources":
         file_path = os.path.join(UPLOAD_DIR, "courses", str(row["course_id"]), "resources", row["filename"]) if row["filename"] else None
     else:

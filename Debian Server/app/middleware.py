@@ -77,7 +77,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 # ── Global Rate Limiting ──────────────────────────────────────────────────────
 
 # Per-route overrides: path_prefix → (limit, window_seconds)
-# Auth routes excluded -- auth.py has its own per-IP rate limiting.
+# Auth routes excluded: auth.py has its own per-IP rate limiting.
 ROUTE_RATE_LIMITS: dict[str, tuple[int, int]] = {
     "/api/upload": (20, 60),
     "/teacher/upload-zim": (5, 300),
@@ -90,7 +90,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Default: 200 requests/60s. Per-route overrides via ROUTE_RATE_LIMITS dict.
     Returns 429 with Retry-After header when exceeded.
 
-    In-memory only -- resets on server restart. Good enough for a single-node hub
+    In-memory only; resets on server restart. Good enough for a single-node hub
     serving 250 concurrent students.
     """
 
@@ -103,7 +103,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._last_full_prune = time.time()
 
     def _prune_if_needed(self):
-        """Periodic full sweep -- removes stale IPs and empty lists."""
+        """Periodic full sweep: removes stale IPs and empty lists."""
         now = time.time()
         # Full sweep every 60 seconds
         if now - self._last_full_prune < 60:
@@ -149,7 +149,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         if path.startswith("/static/") or path.startswith("/files/") or path in ("/ping", "/generate_204"):
             return await call_next(request)
-        # ZIM read paths are exempt (offline browsing); ZIM uploads are NOT --
+        # ZIM read paths are exempt (offline browsing); ZIM uploads are NOT:
         # they fall through to the /teacher/upload-zim (5, 300) override.
         if path.startswith("/zim/") and request.method == "GET":
             return await call_next(request)

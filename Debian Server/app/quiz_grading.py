@@ -1,4 +1,4 @@
-"""Server-side quiz grading -- attempts are re-graded against the stored quiz.
+"""Server-side quiz grading: attempts are re-graded against the stored quiz.
 
 Clients send their own ``score`` and ``passed`` values, which are ignored for
 integrity: the server reloads the quiz definition from disk and grades the
@@ -35,7 +35,7 @@ def normalize_threshold(raw) -> float:
     """Normalize a pass threshold to a 0.0-1.0 fraction.
 
     ``pass_threshold`` is stored as a percent (60) by teacher endpoints and
-    as a fraction (0.6) by some clients -- both must grade identically.
+    as a fraction (0.6) by some clients; both must grade identically.
     """
     if raw is None:
         return 0.0
@@ -70,7 +70,7 @@ def _parse_answers(raw: str) -> dict:
     """Parse answers_json into {question_id_or_index: entry}.
 
     Accepts both the current format (``{"answers": {"0": {"answer": ...,
-    "question_id": ...}}}`` -- keyed by display index with the id inside,
+    "question_id": ...}}}``: keyed by display index with the id inside,
     which survives client-side question shuffling) and the legacy list
     format (``[{"id": "q1", "selected": ...}]``).
     """
@@ -130,7 +130,7 @@ def _is_correct(q: dict, answers: dict, index: int) -> bool:
     """Grade one question: True when the student's answer matches the key.
 
     Answers are compared after normalization (trimmed, lowercased, internal
-    whitespace collapsed) and must be exact matches -- substring matching
+    whitespace collapsed) and must be exact matches; substring matching
     would let overlapping option texts (e.g. "Photosynthesis" vs
     "Photosynthesis in plants") both grade correct.  Multi-select uses
     exact set equality.

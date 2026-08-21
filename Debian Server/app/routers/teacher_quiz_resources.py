@@ -1,4 +1,4 @@
-"""Standalone quiz resources -- upload, serve, submit."""
+"""Standalone quiz resources: upload, serve, submit."""
 import os
 import uuid
 import json
@@ -189,7 +189,7 @@ async def submit_quiz_attempt(resource_id: str, data: dict, student_id: str = De
     if not resource or resource["resource_type"] != "quiz" or resource["status"] != "approved":
         raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
 
-    # Re-grade server-side -- the client's score/passed are never trusted
+    # Re-grade server-side: the client's score/passed are never trusted
     quiz_path = os.path.join(UPLOAD_DIR, resource["filename"] or "")
     quiz = await asyncio.to_thread(load_quiz_file, quiz_path)
     if quiz is None:

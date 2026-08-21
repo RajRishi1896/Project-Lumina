@@ -1,4 +1,4 @@
-"""Student routes -- sync, analytics, profile, password."""
+"""Student routes: sync, analytics, profile, password."""
 import os
 import re
 import base64

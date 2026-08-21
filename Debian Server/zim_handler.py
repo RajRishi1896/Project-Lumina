@@ -1,16 +1,16 @@
-"""ZIM article router -- fully lazy ZIM content serving.
+"""ZIM article router: fully lazy ZIM content serving.
 
 All articles and assets are served on-demand from the .zim binary.
 No HTML extraction to disk. The database stores article metadata
 (title, path) for search; content is always read from the ZIM file.
 
 Endpoints:
-    /archives       -- list all ZIM archives
-    /articles       -- paginated article browsing
-    /search         -- ranked title search with pagination
-    /page           -- article HTML with rewritten asset paths
-    /asset          -- on-demand asset (image/CSS/JS) from ZIM binary
-    /thumbnail      -- thumbnail image from disk cache
+    /archives       : list all ZIM archives
+    /articles       : paginated article browsing
+    /search         : ranked title search with pagination
+    /page           : article HTML with rewritten asset paths
+    /asset          : on-demand asset (image/CSS/JS) from ZIM binary
+    /thumbnail      : thumbnail image from disk cache
 
 """
 
@@ -160,10 +160,10 @@ _MIN_SEARCH_LEN = 3
 
 # ponytail: ranking CASE expression for 19M Wikipedia rows.
 # Uses TRIM() for robustness against whitespace variations in titles.
-#   rank 0: exact title match (case-sensitive -- "Python" beats "PYTHON")
+#   rank 0: exact title match (case-sensitive: "Python" beats "PYTHON")
 #   rank 1: case-insensitive exact match (with TRIM)
 #   rank 2: title starts with query (prefix match)
-#   rank 3: disambiguation -- title = "query (something)" e.g. "India (disambiguation)"
+#   rank 3: disambiguation; title = "query (something)" e.g. "India (disambiguation)"
 #   rank 4: query is a complete word boundary (surrounded by spaces or at start/end)
 #   rank 5: title ends with query as a word
 #   rank 6: FTS trigram substring match (weakest)

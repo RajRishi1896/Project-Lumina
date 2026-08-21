@@ -2,7 +2,7 @@
 # Purpose: Restore the Lumina Hub from a backup created by backup_hub.sh.
 # Usage:   sudo ./restore_hub.sh backups/20260715_120000
 # Args:    $1 = path to backup directory (required)
-# Idempotent: No -- overwrites existing data. Stop the server first.
+# Idempotent: No, overwrites existing data. Stop the server first.
 set -e
 
 if [ -z "$1" ]; then

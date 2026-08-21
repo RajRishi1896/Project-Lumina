@@ -40,8 +40,8 @@ async def admin_log(
         success: Filter by success field ("true" or "false").
         search: Full-text search across summary, action, user, and error fields.
         rid: Filter by request ID.
-        since: ISO 8601 timestamp -- only include events after this time.
-        until: ISO 8601 timestamp -- only include events before this time.
+        since: ISO 8601 timestamp; only include events after this time.
+        until: ISO 8601 timestamp; only include events before this time.
 
     Returns:
         Dict with a log list of structured event objects.

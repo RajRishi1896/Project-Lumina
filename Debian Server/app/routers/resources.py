@@ -16,7 +16,7 @@ from app.routers.teacher_courses import _write_chunked
 router = APIRouter()
 
 # Shared upload allowlists (also imported by teacher_course_resources.py).
-# No .svg/.html/.js -- those render as executable content when served.
+# No .svg/.html/.js: those render as executable content when served.
 ALLOWED_EXTENSIONS = {
     '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.ods', '.odp',
     '.txt', '.rtf', '.csv', '.json',

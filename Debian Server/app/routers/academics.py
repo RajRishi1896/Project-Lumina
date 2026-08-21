@@ -39,7 +39,7 @@ async def student_get_subjects(user: str = Depends(verify_user)):
 async def get_subjects(teacher_user: str = Depends(verify_teacher)):
     """List all subjects ordered by class and name.
 
-    Excludes 'General' -- a reserved subject that cannot be managed
+    Excludes 'General', a reserved subject that cannot be managed
     but is still available as an upload option and visible to students.
 
     Returns:
@@ -135,7 +135,7 @@ async def update_subject(subject_id: str, data: dict, admin_user: str = Depends(
 
 @router.delete("/teacher/subjects/{subject_id}", response_model=StatusResponse,
                summary="Delete a subject",
-               description="Deletes a subject by id, optionally transferring resources to another subject. Admin-only -- subject deletion removes resources and courses for every teacher.",
+               description="Deletes a subject by id, optionally transferring resources to another subject. Admin-only: subject deletion removes resources and courses for every teacher.",
                tags=["Subjects"],
                responses={400: {"description": "Invalid request or target subject missing"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}, 404: {"description": "Subject not found"}})
 async def delete_subject(subject_id: str, transfer_to: str = Query(None), admin_user: str = Depends(verify_admin),
@@ -225,7 +225,7 @@ async def student_get_grades(user: str = Depends(verify_user)):
     """List all grade levels for student profile setup.
 
     Includes 'General' (grade 0) as an option for students who don't
-    belong to a specific grade — they see all resources regardless of grade.
+    belong to a specific grade. They see all resources regardless of grade.
 
     Returns:
         List of dicts with id and name for each grade.
@@ -314,7 +314,7 @@ async def update_grade(grade_name: str, data: dict, admin_user: str = Depends(ve
 
 @router.delete("/grades/{name}", response_model=StatusResponse,
                summary="Delete a grade",
-               description="Deletes a grade level, optionally transferring resources to another grade first. Admin-only -- grade deletion removes assets for every teacher.",
+               description="Deletes a grade level, optionally transferring resources to another grade first. Admin-only: grade deletion removes assets for every teacher.",
                tags=["Subjects"],
                responses={400: {"description": "Target grade not found"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
 async def delete_grade(name: str, transfer_to: str = None, admin_user: str = Depends(verify_admin),

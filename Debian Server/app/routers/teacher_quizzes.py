@@ -1,4 +1,4 @@
-"""Teacher quiz management -- create and save quiz resources."""
+"""Teacher quiz management: create and save quiz resources."""
 import os
 import uuid
 import json

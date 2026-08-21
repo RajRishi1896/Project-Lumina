@@ -2,7 +2,7 @@
 # Purpose: Backup the Lumina Hub database and critical small data.
 # Usage:   sudo ./backup_hub.sh
 # Args:    None
-# Idempotent: Yes -- creates timestamped backup directory each run.
+# Idempotent: Yes, creates timestamped backup directory each run.
 # Note:    Uploads (PDFs, videos, ZIM archives) are NOT backed up.
 #          They are large and can be re-uploaded by teachers.
 #          Only the database (accounts, progress, metadata) is backed up.

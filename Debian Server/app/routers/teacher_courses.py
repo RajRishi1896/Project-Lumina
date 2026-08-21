@@ -1,4 +1,4 @@
-"""Teacher course management -- CRUD, publishing, and shared helpers."""
+"""Teacher course management: CRUD, publishing, and shared helpers."""
 import os
 import asyncio
 import logging

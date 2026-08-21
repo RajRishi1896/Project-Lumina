@@ -1,4 +1,4 @@
-"""Lumina EduMesh Hub -- FastAPI application entry point.
+"""Lumina EduMesh Hub: FastAPI application entry point.
 All route handlers are in app/routers/.
 """
 import os
@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.async_db import db_fetch, db_run
 
-# Logging -- records are queued and written by a background thread so the
+# Logging: records are queued and written by a background thread so the
 # event loop never blocks on disk I/O (per-request logger calls used to
 # flush synchronously, degrading latency under concurrency).
 import queue
@@ -102,7 +102,7 @@ async def lifespan(application: FastAPI):
             logging.info(f"Auto-reindex: {len(rows)} archive(s) with no articles")
             for aid, path, title in rows:
                 if not path or not os.path.isfile(path):
-                    logging.warning(f"Auto-reindex: skipping {aid} -- ZIM file not at {path}")
+                    logging.warning(f"Auto-reindex: skipping {aid}; ZIM file not at {path}")
                     continue
                 logging.info(f"Auto-reindex: indexing {aid} ({title})...")
                 try:

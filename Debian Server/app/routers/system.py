@@ -1,4 +1,4 @@
-"""System routes -- health, ping, captive portal, static files, whoami."""
+"""System routes: health, ping, captive portal, static files, whoami."""
 import os
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -59,7 +59,7 @@ async def generate_204():
 
 @router.get("/connecttest.txt", include_in_schema=False)
 async def windows_connect_test():
-    """Windows 10/11 captive portal probe -- must return exact string."""
+    """Windows 10/11 captive portal probe: must return exact string."""
     return PlainTextResponse("Microsoft Connect Test")
 
 

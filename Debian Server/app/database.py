@@ -106,7 +106,7 @@ def init_db():
         c.execute('CREATE INDEX IF NOT EXISTS idx_scholars_name ON scholars(name)')
     except Exception:
         pass
-    # ponytail: each index in its own try -- single try skips all on first failure
+    # ponytail: each index in its own try; single try skips all on first failure
     for _idx_sql in [
         'CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)',
         'CREATE INDEX IF NOT EXISTS idx_resources_status ON resources(status)',
@@ -333,7 +333,7 @@ def init_db():
             c.execute("ANALYZE zim_articles_fts")
             logging.info(f"FTS5 rebuilt on startup: {fts_count} → indexed")
     except sqlite3.OperationalError:
-        # Table doesn't exist — create it if zim_articles has data
+        # Table doesn't exist. Create it if zim_articles has data
         try:
             article_count = c.execute("SELECT COUNT(*) FROM zim_articles").fetchone()[0]
             if article_count > 0:
@@ -359,7 +359,7 @@ def init_db():
     except sqlite3.IntegrityError:
         pass
 
-    # Do NOT force-reset admin password on every restart -- let admin keep their password
+    # Do NOT force-reset admin password on every restart; let admin keep their password
 
     try:
         c.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')

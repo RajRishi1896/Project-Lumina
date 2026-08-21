@@ -12,7 +12,7 @@ from app.database import DB_PATH, UPLOAD_DIR, THUMBNAILS_DIR
 async def run_vacuum() -> dict:
     """VACUUM the database to reclaim fragmentation.
 
-    Must run outside a transaction -- uses raw connection in thread pool.
+    Must run outside a transaction; uses raw connection in thread pool.
     """
     def _vacuum():
         """Run VACUUM and report bytes reclaimed."""
@@ -37,7 +37,7 @@ async def run_analyze() -> dict:
     """ANALYZE to update query planner statistics.
 
     ANALYZE cannot run inside a transaction, so it uses a raw connection
-    in the thread pool -- same pattern as VACUUM.
+    in the thread pool, same pattern as VACUUM.
     """
     def _analyze():
         """Run ANALYZE inside the thread pool."""
@@ -114,7 +114,7 @@ async def get_storage_stats() -> dict:
             disk_free = st.f_bavail * st.f_frsize
             disk_used = disk_total - disk_free
         except (AttributeError, OSError):
-            # Windows / unsupported -- skip
+            # Windows / unsupported: skip
             disk_total = disk_used = disk_free = 0
 
         return {
@@ -152,7 +152,7 @@ async def purge_recycled_resources(days: int = 30) -> dict:
 
     Removes the physical file and thumbnail (tolerant of missing files),
     deletes scholar_downloads / student_bookmarks rows, removes ZIM archive
-    rows for kiwix resources, then deletes the resource row -- all in a
+    rows for kiwix resources, then deletes the resource row, all in a
     single transaction. All file I/O runs in the thread pool.
     """
     def _select(conn):

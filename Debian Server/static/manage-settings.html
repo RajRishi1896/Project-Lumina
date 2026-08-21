@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head -- theme detection, metadata -->
+<!-- Section: Head: theme detection, metadata -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,10 +13,10 @@
 <body>
     <a href="#app-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
 
-    <!-- Section: Sidebar -- empty, rendered by renderLayout() -->
+    <!-- Section: Sidebar: empty, rendered by renderLayout() -->
     <aside></aside>
 
-    <!-- Section: Main Content -- password, profile, and admin-only settings -->
+    <!-- Section: Main Content: password, profile, and admin-only settings -->
     <main>
         <div id="app-content">
         <div class="page-header">
@@ -24,7 +24,7 @@
             <p data-i18n="security.page_description">Update your password, display name, and department.</p>
         </div>
 
-        <!-- Section: Change Password -- current password, new password, toggle visibility -->
+        <!-- Section: Change Password: current password, new password, toggle visibility -->
         <div class="card">
             <div class="card-title" data-i18n="security_change_password_title">Change Password</div>
             <div id="securityNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
@@ -58,7 +58,7 @@
             </div>
         </div>
 
-        <!-- Section: My Profile -- editable name and department -->
+        <!-- Section: My Profile: editable name and department -->
         <div class="card">
             <div class="card-title" data-i18n="security_my_profile">My Profile</div>
             <div id="profileNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
@@ -75,7 +75,7 @@
             </div>
         </div>
 
-        <!-- Section: Account Overview -- visible to all roles -->
+        <!-- Section: Account Overview: visible to all roles -->
         <div class="card" id="accountOverviewCard">
             <div class="card-title" data-i18n="settings.account_overview">Account Overview</div>
             <div class="flex flex-col gap-2" style="font-size: 0.9rem;">
@@ -258,11 +258,11 @@
                     <strong data-i18n="settings.wifi_band_current">Current band:</strong>
                     <span id="wifiBandCurrent" style="font-weight: 700; color: var(--teal);"></span>
                 </div>
-                <div data-i18n="settings.wifi_band_hint" style="margin-bottom: 0.75rem;">5 GHz is faster but has shorter range. 2.4 GHz is slower but reaches further. Switching restarts the hotspot -- all devices will reconnect.</div>
+                <div data-i18n="settings.wifi_band_hint" style="margin-bottom: 0.75rem;">5 GHz is faster but has shorter range. 2.4 GHz is slower but reaches further. Switching restarts the hotspot: all devices will reconnect.</div>
             </div>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                <button id="btn-wifi5ghz" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--teal); color: var(--teal); font-weight: 700;">5 GHz — <span data-i18n="settings.wifi_band_5ghz_hint">faster speed, shorter range</span></button>
-                <button id="btn-wifi2ghz" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--teal); color: var(--teal); font-weight: 700;">2.4 GHz — <span data-i18n="settings.wifi_band_2ghz_hint">longer range, slower speed</span></button>
+                <button id="btn-wifi5ghz" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--teal); color: var(--teal); font-weight: 700;">5 GHz: <span data-i18n="settings.wifi_band_5ghz_hint">faster speed, shorter range</span></button>
+                <button id="btn-wifi2ghz" class="btn btn-outline" style="padding: 0.55rem 1.15rem; font-size: 0.875rem; border-color: var(--teal); color: var(--teal); font-weight: 700;">2.4 GHz: <span data-i18n="settings.wifi_band_2ghz_hint">longer range, slower speed</span></button>
             </div>
             <div id="wifiBandNote" style="display: none; margin-top: 0.75rem; padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); font-size: 0.8rem; color: var(--text-secondary);" data-i18n="settings.wifi_band_unsupported">Your WiFi adapter only supports one band. Band switching is not available.</div>
         </div>
@@ -282,7 +282,7 @@
     <div id="bottomNav"></div>
 
     <script src="/static/js/lumina.js?v=10"></script>
-    <!-- Section: Inline Scripts -- all page logic merged here -->
+    <!-- Section: Inline Scripts: all page logic merged here -->
     <script>
 
         var debouncedFilterAdminLogs = null;
@@ -431,7 +431,7 @@
             if (nextBtn) { nextBtn.disabled = _adminLogsPage >= totalPages; nextBtn.style.opacity = _adminLogsPage >= totalPages ? '0.4' : '1'; }
         }
 
-        // Pagination handlers -- move the log page window and re-render.
+        // Pagination handlers: move the log page window and re-render.
         function adminLogsPrevPage() { if (_adminLogsPage > 1) { _adminLogsPage--; _renderAdminLogsPage(); } }
         function adminLogsNextPage() { var totalPages = Math.ceil(_adminLogsFiltered.length / _adminLogsPerPage); if (_adminLogsPage < totalPages) { _adminLogsPage++; _renderAdminLogsPage(); } }
         function adminLogsChangePerPage(val) { _adminLogsPerPage = parseInt(val, 10) || 25; _adminLogsPage = 1; _renderAdminLogsPage(); }

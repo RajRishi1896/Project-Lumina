@@ -1,4 +1,4 @@
-"""Password management routes -- change, force-change, and admin reset."""
+"""Password management routes: change, force-change, and admin reset."""
 import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -34,7 +34,7 @@ async def change_password(data: dict, teacher_user: str = Depends(verify_teacher
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password.")  # i18n: user-facing error message
     valid, msg = validate_password_strength(data.get('new_password'))
     if not valid:
-        raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
+        raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength(); user-facing
     new_hash = await asyncio.to_thread(hash_password, data.get('new_password'))
     await db_exec("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
     await invalidate_tokens_for_user(teacher_user)
@@ -65,7 +65,7 @@ async def force_change_password(data: dict, teacher_user: str = Depends(verify_t
             raise HTTPException(status_code=400, detail="Password reset not required.")  # i18n: user-facing error message
         valid, msg = validate_password_strength(data.get('new_password'))
         if not valid:
-            raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
+            raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength(); user-facing
         new_hash = await asyncio.to_thread(hash_password, data.get('new_password'))
         await db_exec("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
         await invalidate_tokens_for_user(teacher_user)

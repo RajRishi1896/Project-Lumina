@@ -49,7 +49,7 @@ def _check_zim_magic(path: str) -> bool:
 
 @router.post("/teacher/upload-zim", response_model=dict,
              summary="Upload ZIM archive", tags=["Resources"],
-             description="Uploads and indexes a ZIM archive. Articles are indexed for search but HTML is served lazily from the ZIM binary -- nothing is extracted to disk. Supports resumable uploads via Content-Range.",
+             description="Uploads and indexes a ZIM archive. Articles are indexed for search but HTML is served lazily from the ZIM binary; nothing is extracted to disk. Supports resumable uploads via Content-Range.",
              responses={400: {"description": "Missing filename or processing failed"}, 401: {"description": "Unauthorized"}, 413: {"description": "Upload too large"}, 499: {"description": "Client disconnected"}, 507: {"description": "Insufficient disk space"}})
 async def upload_zim(file: UploadFile = File(...), title: str = Form(""), teacher_user: str = Depends(verify_teacher), request: Request = None):
     """Upload and index a ZIM archive.
@@ -232,7 +232,7 @@ def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, ti
         invalidate_catalog_cache()
 
         # Create FTS5 trigram index for fast title search.
-        # Commit FTS5 data BEFORE ANALYZE — ANALYZE on 19M trigram rows can
+        # Commit FTS5 data BEFORE ANALYZE. ANALYZE on 19M trigram rows can
         # take minutes; if it hangs, the FTS5 data must already be on disk.
         try:
             conn.execute("DROP TABLE IF EXISTS zim_articles_fts")
@@ -250,7 +250,7 @@ def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, ti
         except sqlite3.Error as e:
             logging.warning(f"FTS5 index creation failed (search will use LIKE fallback): {e}")
 
-        # ANALYZE is optional — improves query planner stats but is not
+        # ANALYZE is optional: improves query planner stats but is not
         # required for FTS5 to function. Run after commit so a slow
         # ANALYZE cannot prevent FTS5 data from being persisted.
         try:
@@ -270,7 +270,7 @@ def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, ti
 
 @router.post("/teacher/import-local-zim", response_model=dict,
              summary="Import a ZIM file already on disk", tags=["Resources"],
-             description="Imports and indexes a .zim file that already exists in uploads/ -- avoids uploading very large archives over HTTP.",
+             description="Imports and indexes a .zim file that already exists in uploads/; avoids uploading large archives over HTTP.",
              responses={400: {"description": "Not a valid ZIM archive or processing failed"}, 401: {"description": "Unauthorized"}, 404: {"description": "File not found in uploads/"}})
 async def import_local_zim(
     filename: str,

@@ -1,4 +1,4 @@
-"""Authentication routes -- register, login, token management, logout."""
+"""Authentication routes: register, login, token management, logout."""
 import uuid
 import time
 import sqlite3
@@ -40,7 +40,7 @@ def _record_failed_login(request: Request):
     """Record a failed login attempt for rate limiting."""
     ip = request.client.host if request.client else "unknown"
     now = time.time()
-    # ponytail: cap dict size -- drop oldest IPs if over limit
+    # ponytail: cap dict size; drop oldest IPs if over limit
     if len(_login_attempts) > _MAX_IPS:
         cutoff = now - _LOGIN_WINDOW
         stale = [k for k, v in _login_attempts.items() if not v or v[-1] < cutoff]
@@ -79,7 +79,7 @@ async def register_scholar(scholar: ScholarReg, request: Request):
     pwd = scholar.password
     valid, msg = validate_password_strength(pwd)
     if not valid:
-        raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength() -- user-facing
+        raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength(); user-facing
     hashed = await asyncio.to_thread(hash_password, pwd)
 
     unique_suffix = uuid.uuid4().hex

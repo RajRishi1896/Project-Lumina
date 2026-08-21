@@ -1,4 +1,4 @@
-"""Scholar management routes -- list, reset password, delete."""
+"""Scholar management routes: list, reset password, delete."""
 import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -60,7 +60,7 @@ async def teacher_reset_student_password(scholar_id: str, request: Request = Non
 
 @router.delete("/teacher/scholars/{scholar_id}", response_model=StatusResponse,
                summary="Delete a scholar",
-               description="Deletes a scholar and all associated activity logs and downloads. Admin-only -- hard deletion of a student account is an admin action.",
+               description="Deletes a scholar and all associated activity logs and downloads. Admin-only: hard deletion of a student account is an admin action.",
                tags=["Teacher"],
                responses={400: {"description": "Failed to delete student"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}, 404: {"description": "Scholar not found"}})
 async def teacher_delete_student(scholar_id: str, request: Request = None, admin_user: str = Depends(verify_admin)):

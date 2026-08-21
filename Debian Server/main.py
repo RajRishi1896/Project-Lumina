@@ -1,4 +1,4 @@
-"""Lumina EduMesh Hub -- Uvicorn launcher.
+"""Lumina EduMesh Hub: Uvicorn launcher.
 
 This module is the entry point for the EduMesh Hub server. It starts the
 FastAPI application (defined in app.api) via Uvicorn on 0.0.0.0:8000.

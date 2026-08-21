@@ -5,7 +5,7 @@
 #          the widest channel width the adapter supports (80 MHz if possible).
 # Usage:   sudo ./start_hotspot.sh
 # Args:    None
-# Idempotent: Yes -- deletes any existing LuminaHub connection profile before
+# Idempotent: Yes, deletes any existing LuminaHub connection profile before
 #             recreating it.
 set -e
 
@@ -20,7 +20,7 @@ killall wpa_supplicant 2>/dev/null || true
 # 3. Restart NetworkManager to apply changes
 sudo systemctl restart NetworkManager || true
 echo "Waiting for NetworkManager to restart..."
-# Wait until NM is actually back (boot can be slow) -- bounded, no hard sleep
+# Wait until NM is back (boot can be slow); bounded, no hard sleep
 for i in $(seq 1 30); do
     if nmcli -t -f RUNNING general status 2>/dev/null | grep -q running; then
         break
@@ -75,7 +75,7 @@ fi
 CENTER_FREQ="5745"
 if [ "$SAVED_BAND" = "a" ] && timeout 5 $IW list 2>/dev/null | grep -q "5180.*MHz"; then
     sudo nmcli connection modify LuminaHub 802-11-wireless.mode ap 802-11-wireless.band a 802-11-wireless.channel 149 ipv4.method shared
-    echo "[INFO] Using 5GHz (channel 149, saved preference) -- max width: ${MAX_WIDTH} MHz"
+    echo "[INFO] Using 5GHz (channel 149, saved preference); max width: ${MAX_WIDTH} MHz"
 else
     sudo nmcli connection modify LuminaHub 802-11-wireless.mode ap 802-11-wireless.band bg 802-11-wireless.channel 1 ipv4.method shared
     MAX_WIDTH="20"
@@ -93,7 +93,7 @@ nmcli device disconnect "$WIFI_IF" 2>/dev/null || true
 sudo nmcli radio wifi off
 sleep 2
 sudo nmcli radio wifi on
-# Firmware re-init after the radio cycle takes ~10s -- up too early and the
+# Firmware re-init after the radio cycle takes ~10s: up too early and the
 # supplicant times out (~60s). Settle first, then confirm the device is free.
 sleep 12
 for i in $(seq 1 15); do
@@ -101,7 +101,7 @@ for i in $(seq 1 15); do
     [ "$STATE" = "disconnected" ] && break
     sleep 1
 done
-# Transient supplicant timeouts occur right after a radio cycle -- retry a
+# Transient supplicant timeouts occur right after a radio cycle; retry a
 # few times, each attempt bounded so a hung activation can't stall boot.
 for i in 1 2 3; do
     if timeout 20 nmcli connection up LuminaHub 2>/dev/null; then
@@ -109,7 +109,7 @@ for i in 1 2 3; do
     fi
     sleep 2
 done
-# Wait for the AP to actually reach activated state
+# Wait for the AP to reach activated state
 for i in $(seq 1 15); do
     STATE=$(nmcli -t -f DEVICE,STATE device status 2>/dev/null | awk -F: -v d="$WIFI_IF" '$1==d {print $2}')
     [ "$STATE" = "connected" ] && break
@@ -118,7 +118,7 @@ done
 sleep 1
 
 # 8. Force max channel width (NetworkManager defaults to 20 MHz in AP mode)
-# For 80 MHz on channel 149, center freq = 5775. For 2.4GHz, just skip.
+# For 80 MHz on channel 149, center freq = 5775. For 2.4GHz, skip.
 if [ "$MAX_WIDTH" = "80" ]; then
     sudo $IW dev "$WIFI_IF" set freq "$CENTER_FREQ" 80 5775 2>/dev/null && \
         echo "[INFO] Channel width forced to 80 MHz" || \
@@ -128,4 +128,4 @@ elif [ "$MAX_WIDTH" = "40" ]; then
 fi
 
 ACTUAL=$($IW dev "$WIFI_IF" info 2>/dev/null | awk '/width/{print $2}')
-echo "[SUCCESS] Hotspot 'Lumina Hub' active -- ${ACTUAL:-unknown} channel width"
+echo "[SUCCESS] Hotspot 'Lumina Hub' active: ${ACTUAL:-unknown} channel width"

@@ -41,7 +41,7 @@ def _patched_write_audit_line(event):
         pass
 app.audit._write_audit_line = _patched_write_audit_line
 
-# Now safe to import the rest -- DB values are already overridden
+# Now safe to import the rest: DB values are already overridden
 from httpx import ASGITransport, AsyncClient
 from app.api import app
 

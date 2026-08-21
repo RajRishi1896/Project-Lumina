@@ -4,8 +4,8 @@ Every admin/teacher/security event is written as a single JSON line to
 ``data/admin_actions.log``.
 
 Design:
-- JSON-lines format (one JSON object per line) -- parseable, filterable, exportable
-- Async writes via ``asyncio.to_thread`` -- never blocks the request
+- JSON-lines format (one JSON object per line): parseable, filterable, exportable
+- Async writes via ``asyncio.to_thread``: never blocks the request
 - Bounded growth via existing retention pruning
 - No secrets, passwords, tokens, or PII are ever written
 """
@@ -44,7 +44,7 @@ def _get_db_path():
 # === Action enums ===
 
 class Action:
-    """Canonical action identifiers -- no free text."""
+    """Canonical action identifiers: no free text."""
     # Auth
     LOGIN = "login"
     LOGOUT = "logout"
@@ -171,7 +171,7 @@ async def audit(
         error: Error message if failed.
         changes: Dict of {field: {"old": x, "new": y}} for update operations.
         context: Additional metadata dict.
-        request: FastAPI Request object -- extracts IP and User-Agent automatically.
+        request: FastAPI Request object. Extracts IP and User-Agent automatically.
     """
     event_id = uuid.uuid4().hex[:12]
     timestamp = datetime.now(timezone.utc).isoformat()
@@ -276,7 +276,7 @@ def _write_audit_line(event: dict):
 
 
 def _prune_logs_if_needed(retention):
-    """Throttled log pruning -- at most once per 60s."""
+    """Throttled log pruning: at most once per 60s."""
     if retention == "never":
         return
     now = time.time()
@@ -287,7 +287,7 @@ def _prune_logs_if_needed(retention):
 
 
 def _prune_logs_now(retention=None):
-    """Immediate log pruning -- used by scheduled background task."""
+    """Immediate log pruning: used by scheduled background task."""
     if retention is None:
         try:
             conn = sqlite3.connect(_get_db_path(), timeout=5.0)

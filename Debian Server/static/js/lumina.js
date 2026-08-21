@@ -103,7 +103,7 @@ let currentLang = localStorage.getItem('lumina-lang') || 'en';
 
 /**
  * Translations are loaded from /static/lang/{code}.json into window._translations
- * (see loadTranslations). There is no inline fallback table -- a missing key
+ * (see loadTranslations). There is no inline fallback table; a missing key
  * renders as the key name itself as a debug signal.
  */
 
@@ -130,7 +130,7 @@ function __(key, params) {
  *
  * ## i18n source pattern
  * Called once on page load for the current language. English (en.json) is
- * ALWAYS fetched on every call so the fallback table is never stale -- do not
+ * ALWAYS fetched on every call so the fallback table is never stale; do not
  * reintroduce an early return for 'en'. If a file is missing, lookups fall
  * back to English, then to the raw key name.
  *
@@ -150,7 +150,7 @@ async function loadTranslations(code) {
             t.en = await enRes.json();
         }
     } catch (e) {
-        // File not found -- key names are shown as-is
+        // File not found: key names are shown as-is
     }
     applyLanguage();
 }
@@ -171,7 +171,7 @@ function applyLanguage() {
             } else if (el.tagName === 'META') {
                 el.setAttribute('content', translated);
             } else if (el.children.length > 0) {
-                // Has child elements (e.g. SVG icons) -- find and update the trailing text node
+                // Has child elements (e.g. SVG icons): find and update the trailing text node
                 var last = el.lastChild;
                 if (last && last.nodeType === 3) {
                     last.textContent = ' ' + translated;
@@ -780,7 +780,7 @@ function renderLayout() {
 
     var key = NAV_MAP[location.pathname.replace(/\/+$/, '')] || '';
 
-    // If sidebar already has nav items, just re-highlight (no flash)
+    // If sidebar already has nav items, re-highlight (no flash)
     var existingNav = aside.querySelector('nav');
     if (existingNav && existingNav.children.length > 0) {
         highlightNav();
@@ -1010,7 +1010,7 @@ async function navigateTo(url, pushHistory) {
         _pageCleanupFns.forEach(function(fn) { try { fn(); } catch(e) {} });
         _pageCleanupFns.length = 0;
         // Register the fetched page's init: run its inline scripts natively via
-        // script injection (no eval -- CSP-friendly, errors surface on their own
+        // script injection (no eval, CSP-friendly, errors surface on their own
         // line instead of being swallowed by an empty catch).
         doc.querySelectorAll('script').forEach(function(script) {
             if (!script.src) {

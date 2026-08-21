@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<!-- Section: Head -- theme detection, metadata -->
+<!-- Section: Head: theme detection, metadata -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -396,7 +396,7 @@
         var _gradePage = 1, _gradeFiltered = [];
         var _subjectPage = 1, _subjectFiltered = [];
 
-        // Pagination handlers -- move the danger-zone table page windows and re-render.
+        // Pagination handlers: move the danger-zone table page windows and re-render.
         function studentPrevPage() { if (_studentPage > 1) { _studentPage--; renderStudentPage(); } }
         function studentNextPage() { var tp = Math.ceil(_studentFiltered.length / _dangerPerPage); if (_studentPage < tp) { _studentPage++; renderStudentPage(); } }
         function studentChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _studentPage = 1; renderStudentPage(); }
@@ -1286,7 +1286,7 @@
             }
         }
 
-        // Debounced search wrappers -- 200ms wait prevents a filter call
+        // Debounced search wrappers: 200ms wait prevents a filter call
         // on every keystroke (see AGENTS.md web search-input rule).
         var debouncedFilterDangerStudents = debounce(filterDangerStudents, 200);
         var debouncedFilterDangerTeachers = debounce(filterDangerTeachers, 200);

@@ -1,4 +1,4 @@
-"""Async SQLite helpers -- wraps sqlite3 calls in a dedicated thread pool.
+"""Async SQLite helpers: wraps sqlite3 calls in a dedicated thread pool.
 
 Each worker thread keeps ONE persistent connection (thread-local), so the
 hot path never pays connection open/PRAGMA cost per query (measured 50x
@@ -8,7 +8,7 @@ bottlenecking under 250 concurrent students.
 
 For single-query hot paths, use the per-query helpers (``db_fetch``,
 ``db_fetch_one``, ``db_exec``). For multi-statement transactions, pass a
-callback to ``db_run()`` -- it executes the whole body in the thread pool.
+callback to ``db_run()``: it executes the whole body in the thread pool.
 """
 import sqlite3
 import asyncio
@@ -18,7 +18,7 @@ from app.database import DB_PATH
 
 TIMEOUT = 5.0
 
-# Dedicated executor -- 20 workers handles 250 concurrent students with
+# Dedicated executor: 20 workers handles 250 concurrent students with
 # headroom for burst activity.  On 2-core Celeron the default is only 6.
 # ponytail: hardcoded cap, make configurable if deployed on 8+ core hw.
 _DB_EXECUTOR = ThreadPoolExecutor(max_workers=20, thread_name_prefix="db")
@@ -31,7 +31,7 @@ def _conn():
 
     WAL mode allows concurrent readers across connections; writes serialize
     on the write lock via busy_timeout. Connections live for the process
-    lifetime -- 20 open handles is negligible for a single-node hub.
+    lifetime; 20 open handles is negligible for a single-node hub.
     """
     conn = getattr(_local, "conn", None)
     if conn is None:
@@ -46,7 +46,7 @@ def _conn():
 
 
 def _close_txn(conn):
-    """Roll back any open transaction -- matches the old close()-rolls-back semantics."""
+    """Roll back any open transaction; matches the old close()-rolls-back semantics."""
     if conn.in_transaction:
         conn.rollback()
 
@@ -119,7 +119,7 @@ async def db_run(func):
     Use this for short multi-statement transactions that do not fit the
     single-query helpers. The callback receives a connection and may return
     a value. The whole callback body (including any DML) runs inside the
-    thread pool -- nothing blocks the event loop.
+    thread pool; nothing blocks the event loop.
     """
     def _run():
         """Run the user callback inside the executor worker thread."""
