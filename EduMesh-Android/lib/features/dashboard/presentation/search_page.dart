@@ -74,6 +74,7 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void initState() {
     super.initState();
+    ConnectivityService().addListener(_onConnectivityChanged);
     _loadResources();
     _refreshSavedResources();
     _loadDownloadStatus();
@@ -83,6 +84,11 @@ class _SearchPageState extends State<SearchPage> {
     if (widget.openFilters) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showFilterSheet());
     }
+  }
+
+  void _onConnectivityChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> _loadResources() async {
@@ -165,7 +171,7 @@ class _SearchPageState extends State<SearchPage> {
             title: r['title'] as String? ?? '',
             subject: r['subject'] as String? ?? '',
             grade: r['grade'] as String? ?? '',
-            type: parseResourceType(r['type'] as String? ?? ''),
+            type: parseResourceType(r['type'] as String? ?? '', filename: r['local_path'] as String?),
           )).toList();
           _zimArticles = [];
           _applyFilters();
@@ -194,16 +200,24 @@ class _SearchPageState extends State<SearchPage> {
       }
     } catch (_) { } }
 
-  Future<bool> _toggleSaveStatus(String id) async {
+  Future<bool> _toggleSaveStatus(ResourceModel resource) async {
     try {
       final db = DBHelper();
+      final id = resource.id;
       final bookmarked = await db.getBookmarkedIds();
       if (bookmarked.contains(id)) {
         await db.removeBookmark(id);
         unawaited(ActivityTracker().logAction('unsave', resourceId: id));
         return false;
       }
-      await db.upsertBookmark(id, '', '', '', '');
+      await db.upsertBookmark(
+        id,
+        resource.title,
+        resource.subject,
+        resource.grade,
+        resource.type.name,
+        pdfUrl: resource.pdfUrl,
+      );
       unawaited(ActivityTracker().logAction('save', resourceId: id));
       return true;
     } catch (e) {
@@ -255,12 +269,6 @@ class _SearchPageState extends State<SearchPage> {
         }).timeout(const Duration(seconds: 8));
         final pageData = response.data;
         html = pageData?['html']?.toString() ?? '';
-        if (html.isNotEmpty) {
-          try {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('zim_page_$articleId', html);
-          } catch (_) {}
-        }
       }
       if (!mounted) return;
       if (html.isNotEmpty) {
@@ -295,7 +303,9 @@ class _SearchPageState extends State<SearchPage> {
       if (html.isEmpty) return;
 
       // Inline all asset references as data URIs for full offline support.
-      final assetPattern = RegExp(r"""(/zim/asset\?archive_id=[^"'&]+&path=([^"'&]+))""");
+      // Group 1 must span the FULL url incl. optional &h=: a truncated url
+      // leaves '&h=...' tails in data URIs and cross-corrupts same-prefix paths.
+      final assetPattern = RegExp(r"""(/zim/asset\?archive_id=[^"'&]+&path=([^"'&]+)(?:&h=[^"'&]+)?)""");
       const assetBasePath = '/zim/asset';
       final matches = assetPattern.allMatches(html).toList();
       // ponytail: fetch assets concurrently (5 at a time) instead of sequentially.
@@ -324,14 +334,11 @@ class _SearchPageState extends State<SearchPage> {
         }));
       }
 
-      // Save self-contained HTML to disk and SharedPreferences.
+      // Save self-contained HTML to disk (the prefs mirror write was removed:
+      // raw HTML blobs do not belong in SharedPreferences).
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/zim_${articleId.replaceAll('/', '_')}.html');
       await file.writeAsString(html);
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('zim_page_$articleId', html);
-      } catch (_) {}
 
       await ZimSyncService.instance.markDownloaded(articleId);
       if (mounted) setState(() {});
@@ -362,6 +369,9 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildDownloadButton(dynamic original, ColorScheme cs) {
+    // Quizzes live in the DB, not behind /files: a download control would
+    // always fail and leave a permanently pending item.
+    if (original.type == ResourceType.quiz) return const SizedBox.shrink();
     final resourceId = original.id.toString();
     final isDownloaded = _downloadedIds.contains(resourceId);
     final isDownloading = _downloadingIds.contains(resourceId);
@@ -697,6 +707,7 @@ class _SearchPageState extends State<SearchPage> {
   void dispose() {
     _searchDebounce?.cancel();
     _searchController.dispose();
+    ConnectivityService().removeListener(_onConnectivityChanged);
     super.dispose();
   }
 
@@ -923,10 +934,6 @@ class _SearchPageState extends State<SearchPage> {
             ),
           if (_searchQuery.trim().isEmpty && !_hasActiveFilters && _filteredResults.isNotEmpty)
             SliverToBoxAdapter(
-              child: _buildRecommendedSection(cs),
-            ),
-          if (_searchQuery.trim().isEmpty && !_hasActiveFilters && _filteredResults.isNotEmpty)
-            SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.only(top: AppSpacing.lg.h, bottom: AppSpacing.sm.h),
                 child: Text(l10n.sectionAllResources,
@@ -994,7 +1001,7 @@ class _SearchPageState extends State<SearchPage> {
                                     ScaffoldMessenger.of(context);
                                 final wasSaved =
                                     _savedStatuses[original.id] ?? false;
-                                await _toggleSaveStatus(original.id);
+                                await _toggleSaveStatus(original);
                                 if (mounted) {
                                   setState(() => _savedStatuses[original.id] =
                                       !wasSaved);
@@ -1043,6 +1050,7 @@ class _SearchPageState extends State<SearchPage> {
                                 isInitiallySaved:
                                     _savedStatuses[original.id] ?? false,
                                 resourceId: original.id.toString(),
+                                resource: original as ResourceModel?,
                               ),
                             ),
                           );
@@ -1065,6 +1073,7 @@ class _SearchPageState extends State<SearchPage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: cs.surface,
+        foregroundColor: cs.onSurface,
         iconTheme: IconThemeData(color: cs.primary),
         title: Text(l10n.pageTitleBrowseResources,
             style: tt.titleLarge?.copyWith(
@@ -1149,157 +1158,5 @@ class _SearchPageState extends State<SearchPage> {
         ],
       ),
     );
-  }
-
-  Widget _buildRecommendedSection(ColorScheme cs) {
-    final tt = Theme.of(context).textTheme;
-    final l10n = AppLocalizations.of(context)!;
-    final recommended = _computeRecommendations();
-    if (recommended.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.auto_awesome_rounded, size: 18.sp, color: cs.primary),
-            SizedBox(width: AppSpacing.sm.w),
-            Text(l10n.sectionRecommendedForYou,
-                style: tt.titleMedium?.copyWith(
-                    color: cs.onSurface)),
-          ],
-        ),
-        SizedBox(height: AppSpacing.sm.h),
-        SizedBox(
-          height: 136.h * MediaQuery.textScalerOf(context).scale(1),
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: recommended.length,
-            separatorBuilder: (_, __) => SizedBox(width: AppSpacing.md.w),
-            itemBuilder: (context, index) {
-              final r = recommended[index];
-              return _buildRecommendationCard(r, cs);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecommendationCard(ResourceModel r, ColorScheme cs) {
-    final tt = Theme.of(context).textTheme;
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ResourceDetailPage(
-            title: r.title,
-            subject: r.subject,
-            grade: r.grade,
-            resourceType: r.type.name,
-            isInitiallySaved: _savedStatuses[r.id] ?? false,
-            resourceId: r.id.toString(),
-          ),
-        ),
-      ),
-      child: Container(
-        width: 160.w,
-        padding: EdgeInsets.all(AppSpacing.md.w),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: cs.outlineVariant),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.auto_awesome, size: 14.sp, color: cs.primary),
-                SizedBox(width: AppSpacing.xs.w),
-                Expanded(
-                  child: Text(r.type.name.toUpperCase(),
-                      maxLines: 1,
-                      style: tt.labelSmall?.copyWith(
-                          fontWeight: AppSpacing.weightStrong,
-                          color: cs.primary),
-                      overflow: TextOverflow.ellipsis),
-                ),
-              ],
-            ),
-            SizedBox(height: AppSpacing.sm.h),
-            Text(r.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.titleSmall?.copyWith(
-                    color: cs.onSurface)),
-            const Spacer(),
-            Row(
-              children: [
-                Icon(Icons.school_outlined, size: 12.sp,
-                    color: cs.onSurfaceVariant),
-                SizedBox(width: AppSpacing.xs.w),
-                Flexible(
-                  child: Text(r.grade,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tt.labelSmall?.copyWith(
-                          color: cs.onSurfaceVariant)),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<ResourceModel> _computeRecommendations() {
-    if (_allResources.isEmpty) return [];
-    final downloadedOrSaved = <String>{..._downloadedIds};
-    for (final id in _savedStatuses.keys) {
-      if (_savedStatuses[id] == true) downloadedOrSaved.add(id.toString());
-    }
-    final candidateIds = <String>{};
-    final String? myGrade = widget.initialGrade.isNotEmpty ? widget.initialGrade : null;
-    final subjects = <String>{};
-    for (final r in _allResources) {
-      if (downloadedOrSaved.contains(r.id)) {
-        subjects.add(r.subject);
-      }
-    }
-    final scored = <(ResourceModel, int)>[];
-    for (final r in _allResources) {
-      final id = r.id;
-      if (downloadedOrSaved.contains(id) || candidateIds.contains(id)) continue;
-      int score = 0;
-      if (myGrade != null && r.grade == myGrade) score += 3;
-      if (subjects.contains(r.subject)) score += 2;
-      if (downloadedOrSaved.isNotEmpty) {
-        final favType = _mostFrequentType();
-        if (favType != null && r.type == favType) score += 1;
-      }
-      if (score > 0) {
-        scored.add((r, score));
-        candidateIds.add(id);
-      }
-    }
-    scored.sort((a, b) => b.$2.compareTo(a.$2));
-    return scored.take(6).map((s) => s.$1).toList();
-  }
-
-  ResourceType? _mostFrequentType() {
-    final counts = <ResourceType, int>{};
-    for (final id in _downloadedIds) {
-      final r = _allResources.where((r) => r.id == id).firstOrNull;
-      if (r != null) counts[r.type] = (counts[r.type] ?? 0) + 1;
-    }
-    for (final entry in _savedStatuses.entries) {
-      if (entry.value) {
-        final r = _allResources.where((r) => r.id == entry.key.toString()).firstOrNull;
-        if (r != null) counts[r.type] = (counts[r.type] ?? 0) + 1;
-      }
-    }
-    if (counts.isEmpty) return null;
-    return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
   }
 }

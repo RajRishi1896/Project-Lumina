@@ -22,6 +22,7 @@ import 'package:edumesh_android/core/services/catalog_service.dart';
 import 'package:edumesh_android/core/utils/file_utils.dart';
 import 'package:edumesh_android/core/services/recent_resources.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// A page that lists resources matching a given subject, grade, and type.
 ///
@@ -44,6 +45,13 @@ class ResourceDetailPage extends StatefulWidget {
   /// If set, fetch this specific resource by ID instead of filtering by subject/grade/type.
   final String? resourceId;
 
+  /// The already-known resource from the caller (e.g. the tapped search hit).
+  ///
+  /// Rendered as a last-resort fallback when both the network refetch and the
+  /// local DB fail, so an offline blip never shows a misleading "no resources"
+  /// empty state for an item the user just tapped.
+  final ResourceModel? resource;
+
   const ResourceDetailPage({
     super.key,
     required this.title,
@@ -52,6 +60,7 @@ class ResourceDetailPage extends StatefulWidget {
     required this.resourceType,
     this.isInitiallySaved = false,
     this.resourceId,
+    this.resource,
   });
 
   /// Creates the state for the [ResourceDetailPage].
@@ -62,6 +71,7 @@ class ResourceDetailPage extends StatefulWidget {
 class _ResourceDetailPageState extends State<ResourceDetailPage> {
   List<ResourceModel> items = [];
   bool _loading = true;
+  bool _loadFailed = false;
   Set<String> _downloadedIds = {};
   Set<String> _removedIds = {};
   Set<String> _pendingIds = {};
@@ -71,6 +81,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
   void initState() {
     super.initState();
     DownloadQueue().addListener(_onQueueChanged);
+    ConnectivityService().addListener(_onConnectivityChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _loadResources();
       if (mounted) _loadStatus();
@@ -81,7 +92,12 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
   void dispose() {
     _queueThrottle?.cancel();
     DownloadQueue().removeListener(_onQueueChanged);
+    ConnectivityService().removeListener(_onConnectivityChanged);
     super.dispose();
+  }
+
+  void _onConnectivityChanged() {
+    if (mounted) setState(() {});
   }
 
   Timer? _queueThrottle;
@@ -129,7 +145,15 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
           return;
         }
       } catch (_) {}
-      if (mounted) setState(() => _loading = false);
+      // Network and local DB both failed: fall back to the model the caller
+      // passed in, else surface a retryable error (never the empty state).
+      if (widget.resource != null) {
+        if (mounted) {
+          setState(() { items = [widget.resource!]; _loading = false; });
+        }
+        return;
+      }
+      if (mounted) setState(() { _loading = false; _loadFailed = true; });
       return;
     }
 
@@ -288,6 +312,9 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
   }
 
   Widget _buildDownloadButton(ResourceModel item, ColorScheme cs) {
+    // Quizzes live in the DB, not behind /files: a download control would
+    // always fail and leave a permanently pending item.
+    if (item.type == ResourceType.quiz) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
     final resourceId = item.id.toString();
     final isDownloaded = _downloadedIds.contains(resourceId);
@@ -480,7 +507,33 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : items.isEmpty
-              ? Center(
+              ? (_loadFailed
+                  ? Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(AppSpacing.section.w),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.cloud_off_rounded, size: 48.sp, color: cs.error),
+                            SizedBox(height: AppSpacing.lg.h),
+                            Text(l10n.errorNoServerNoCache,
+                                textAlign: TextAlign.center,
+                                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+                            SizedBox(height: AppSpacing.lg.h),
+                            FilledButton.tonalIcon(
+                              onPressed: () => setState(() {
+                                _loading = true;
+                                _loadFailed = false;
+                                _loadResources();
+                              }),
+                              icon: const Icon(Icons.refresh),
+                              label: Text(l10n.errorRetryButton),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Center(
                   child: Padding(
                     padding: EdgeInsets.all(AppSpacing.xxl.w),
                     child: Column(
@@ -502,7 +555,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                         ),
                       ],
                     ),
-                  ),
+                  ))
                 )
               : Center(
                   child: ConstrainedBox(
@@ -550,13 +603,29 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                   return;
                                 }
                                 if (item.type == ResourceType.kiwix) {
+                                  // Cache-first, same order as search_page:
+                                  // local download -> legacy prefs -> network.
                                   String? html;
                                   try {
-                                    final response = await ApiClient.get('/zim/page', queryParameters: {
-                                      'article_id': item.id,
-                                    }).timeout(const Duration(seconds: 8));
-                                    html = response.data?['html']?.toString();
+                                    final dir = await getApplicationDocumentsDirectory();
+                                    final file =
+                                        File('${dir.path}/zim_${item.id.replaceAll('/', '_')}.html');
+                                    if (await file.exists()) html = await file.readAsString();
                                   } catch (_) {}
+                                  if (html == null) {
+                                    try {
+                                      final prefs = await SharedPreferences.getInstance();
+                                      html = prefs.getString('zim_page_${item.id}');
+                                    } catch (_) {}
+                                  }
+                                  if (html == null) {
+                                    try {
+                                      final response = await ApiClient.get('/zim/page', queryParameters: {
+                                        'article_id': item.id,
+                                      }).timeout(const Duration(seconds: 8));
+                                      html = response.data?['html']?.toString();
+                                    } catch (_) {}
+                                  }
                                   if (!mounted) return;
                                   if (html != null && html.isNotEmpty) {
                                     unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
@@ -564,6 +633,10 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                     unawaited(Navigator.of(this.context).push(MaterialPageRoute(
                                       builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: ApiClient.baseUrl),
                                     )));
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                      content: Text(l10n.zimArticleNotFound),
+                                    ));
                                   }
                                   return;
                                 }
@@ -582,15 +655,12 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                   )));
                                   return;
                                 }
-                                if (item.pdfUrl == null || item.pdfUrl!.isEmpty) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                      content: Text(l10n.fileNotAvailable),
-                                    ));
-                                  }
-                                  return;
-                                }
-                                String url = item.pdfUrl!;
+                                // Same fallback videos get: empty pdfUrl still
+                                // resolves to the server file endpoint.
+                                final rawPdfUrl = item.pdfUrl;
+                                String url = (rawPdfUrl != null && rawPdfUrl.isNotEmpty)
+                                    ? rawPdfUrl
+                                    : '/files/${item.id}';
                                 if (isDl) {
                                   try {
                                     final downloads = await DBHelper().getDownloadedResources();
@@ -603,7 +673,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                         final dlPath = '${tempDir.path}/update_${item.id}_${DateTime.now().millisecondsSinceEpoch}.tmp';
                                         try {
                                           await ApiClient.ensureInitialized();
-                                          await ApiClient.dio.download(item.pdfUrl!, dlPath);
+                                          await ApiClient.dio.download(url, dlPath);
                                           final oldPath = match.first['local_path'] as String?;
                                           final newPath = oldPath ?? dlPath;
                                           if (oldPath != null) {

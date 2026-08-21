@@ -6,7 +6,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:edumesh_android/core/models/course.dart';
 import 'package:edumesh_android/core/services/course_service.dart';
-import 'package:edumesh_android/core/recommendation/on_device_scorer.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
@@ -53,6 +52,7 @@ class BrowsePageState extends State<BrowsePage> with SingleTickerProviderStateMi
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -60,6 +60,13 @@ class BrowsePageState extends State<BrowsePage> with SingleTickerProviderStateMi
       body: SafeArea(
         child: Column(
           children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
+              decoration: BoxDecoration(color: cs.surface, border: Border(bottom: BorderSide(color: cs.outlineVariant))),
+              child: Text(l10n.pageTitleBrowseResources,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
+            ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
               child: TabBar(
@@ -92,7 +99,7 @@ class BrowsePageState extends State<BrowsePage> with SingleTickerProviderStateMi
   }
 }
 
-/// Courses sub-tab: enrolled, recommended, similar, all courses.
+/// Courses sub-tab: enrolled, similar, all courses.
 class _CoursesTab extends StatefulWidget {
   const _CoursesTab();
   @override
@@ -101,14 +108,12 @@ class _CoursesTab extends StatefulWidget {
 
 class _CoursesTabState extends State<_CoursesTab> {
   bool _loading = true;
-  List<Course> _recommended = [];
   List<Course> _allCourses = [];
   List<({Course course, Map<String, dynamic>? progress})> _enrolledCourses = [];
   List<Course> _similarCourses = [];
   String? _grade;
   String? _error;
   String _searchQuery = '';
-  bool _showAll = false;
   String _filterGrade = '';
   String _filterSubject = '';
   bool get _hasActiveFilters => _filterGrade.isNotEmpty || _filterSubject.isNotEmpty;
@@ -136,9 +141,6 @@ class _CoursesTabState extends State<_CoursesTab> {
       _allCourses = await CourseService().getCachedCatalog();
       await CourseService().loadEnrolledCourses();
       _enrolledCourses = CourseService().enrolledCourses;
-      if (_grade != null && _grade!.isNotEmpty) {
-        _recommended = await OnDeviceScorer.getRecommendedCourses('', _grade!);
-      }
       final db = await DBHelper().database;
       final similarRows = await db.query('similar_courses');
       final similarIds = similarRows.map((r) => (r['similar_course_id'] ?? '').toString()).toSet();
@@ -235,24 +237,13 @@ class _CoursesTabState extends State<_CoursesTab> {
             _buildEnrolledList(cs, tt, l10n),
             SizedBox(height: AppSpacing.section.h),
           ],
-          if (_recommended.isNotEmpty && !_showAll) ...[
-            _buildSectionHeader(cs, tt, l10n.sectionRecommendedForYou),
-            SizedBox(height: AppSpacing.sm.h),
-            _buildHorizontalList(_recommended, cs, tt, l10n),
-            SizedBox(height: AppSpacing.section.h),
-          ],
-          if (_similarCourses.isNotEmpty && !_showAll) ...[
+          if (_similarCourses.isNotEmpty) ...[
             _buildSectionHeader(cs, tt, l10n.browseSimilarCourses),
             SizedBox(height: AppSpacing.sm.h),
             _buildHorizontalList(_similarCourses, cs, tt, l10n),
             SizedBox(height: AppSpacing.section.h),
           ],
-          _buildSectionHeader(cs, tt, l10n.browseAllCourses,
-            trailing: _recommended.isNotEmpty
-              ? TextButton(onPressed: () => setState(() => _showAll = !_showAll),
-                  child: Text(_showAll ? l10n.browseShowRecommended : l10n.browseShowAll))
-              : null,
-          ),
+          _buildSectionHeader(cs, tt, l10n.browseAllCourses),
           SizedBox(height: AppSpacing.sm.h),
           _buildAllCoursesList(cs, tt, l10n),
           SizedBox(height: AppSpacing.xxl.h),
@@ -636,12 +627,8 @@ class _WikiTabState extends State<_WikiTab> {
         final resp = await ApiClient.get('/zim/page', queryParameters: {'article_id': article.articleId})
             .timeout(const Duration(seconds: 8));
         html = resp.data?['html']?.toString() ?? '';
-        if (html.isNotEmpty) {
-          try {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('zim_page_${article.articleId}', html);
-          } catch (_) {}
-        }
+        // ponytail: legacy zim_page_ prefs entries are still read above (search_page
+        // writes them) but no longer written here: prefs loads eagerly on 1GB devices.
       }
       if (!mounted) return;
       if (html.isNotEmpty) {
@@ -661,7 +648,9 @@ class _WikiTabState extends State<_WikiTab> {
           .timeout(const Duration(seconds: 10));
       var html = res.data['html'] as String? ?? '';
       if (html.isEmpty) return;
-      final assetPattern = RegExp(r"""(/zim/asset\?archive_id=[^"'&]+&path=([^"'&]+))""");
+      // Group 1 must span the FULL url incl. optional &h=: a truncated url
+      // leaves '&h=...' tails in data URIs and cross-corrupts same-prefix paths.
+      final assetPattern = RegExp(r"""(/zim/asset\?archive_id=[^"'&]+&path=([^"'&]+)(?:&h=[^"'&]+)?)""");
       final matches = assetPattern.allMatches(html).toList();
       const concurrency = 5;
       for (var i = 0; i < matches.length; i += concurrency) {
@@ -685,12 +674,9 @@ class _WikiTabState extends State<_WikiTab> {
         }));
       }
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/zim_${article.articleId}.html');
+      // Same sanitization the readers use: slashed ids make writeAsString throw.
+      final file = File('${dir.path}/zim_${article.articleId.replaceAll('/', '_')}.html');
       await file.writeAsString(html);
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('zim_page_${article.articleId}', html);
-      } catch (_) {}
       await ZimSyncService.instance.markDownloaded(article.articleId);
       if (mounted) setState(() {});
     } catch (e) {

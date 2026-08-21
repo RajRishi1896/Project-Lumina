@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
 import 'package:edumesh_android/core/services/course_service.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
@@ -148,6 +151,29 @@ class _SavedListByTypeState extends State<_SavedListByType> {
         );
       }
 
+      // Bookmarks saved with empty metadata render as blank cards: fill
+      // title/subject/grade/type from the local catalog where possible.
+      final emptyIds = merged.values
+          .where((r) => r.title.trim().isEmpty)
+          .map((r) => r.id)
+          .toSet();
+      if (emptyIds.isNotEmpty) {
+        final meta = await db.getCatalogEntries(emptyIds);
+        for (final id in emptyIds) {
+          final m = meta[id];
+          final existing = merged[id]!;
+          if (m == null) continue;
+          merged[id] = ResourceModel(
+            id: id,
+            title: (m['title'] as String?)?.trim() ?? '',
+            subject: m['subject'] as String? ?? existing.subject,
+            grade: m['grade'] as String? ?? existing.grade,
+            type: parseResourceType(m['type'] as String? ?? ''),
+            pdfUrl: existing.pdfUrl,
+          );
+        }
+      }
+
       final all = merged.values.toList();
       final items = widget.type != null
           ? all.where((r) => r.type == widget.type!).toList()
@@ -188,6 +214,8 @@ class _SavedListByTypeState extends State<_SavedListByType> {
   }
 
   Future<void> _openItem(ResourceModel item) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
     String url = item.pdfUrl ?? '/files/${item.id}';
     if (_downloadedIds.contains(item.id)) {
       final downloads = await DBHelper().getDownloadedResources();
@@ -201,7 +229,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
     unawaited(RecentResources.record(item.id, item.title, item.type.name));
     if (item.type == ResourceType.videos) {
       unawaited(Navigator.push(context, MaterialPageRoute(
-        builder: (_) => VideoPlayerPage(title: item.title, videoUrl: url),
+        builder: (_) => VideoPlayerPage(title: item.title, videoUrl: url, subject: item.subject),
       )));
     } else if (item.type == ResourceType.quiz) {
       unawaited(Navigator.push(context, MaterialPageRoute(
@@ -212,22 +240,38 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       if (articleId.startsWith('zim_')) {
         articleId = articleId.substring(4);
       }
+      // Same fallback order as browse_page: local file -> legacy prefs -> network.
       String? html;
       try {
-        final response = await ApiClient.get('/zim/page', queryParameters: {
-          'article_id': articleId,
-        }).timeout(const Duration(seconds: 8));
-        html = response.data?['html']?.toString();
+        final dir = await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/zim_${articleId.replaceAll('/', '_')}.html');
+        if (await file.exists()) html = await file.readAsString();
       } catch (_) {}
+      if (html == null || html.isEmpty) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          html = prefs.getString('zim_page_$articleId');
+        } catch (_) {}
+      }
+      if (html == null || html.isEmpty) {
+        try {
+          final response = await ApiClient.get('/zim/page', queryParameters: {
+            'article_id': articleId,
+          }).timeout(const Duration(seconds: 8));
+          html = response.data?['html']?.toString();
+        } catch (_) {}
+      }
       if (!mounted) return;
       if (html != null && html.isNotEmpty) {
         unawaited(Navigator.push(context, MaterialPageRoute(
-          builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: ApiClient.baseUrl),
+          builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: ApiClient.baseUrl, subject: item.subject),
         )));
+      } else {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.zimArticleNotFound)));
       }
     } else {
       unawaited(Navigator.push(context, MaterialPageRoute(
-        builder: (_) => PdfViewerPage(title: item.title, pdfUrl: url),
+        builder: (_) => PdfViewerPage(title: item.title, pdfUrl: url, subject: item.subject),
       )));
     }
   }
@@ -263,6 +307,8 @@ class _SavedListByTypeState extends State<_SavedListByType> {
         final l10n = AppLocalizations.of(context)!;
         final item = _savedItems[index];
         final resourceId = item.id.toString();
+        // Bookmarks with unknown metadata (not in catalog either) still need a label.
+        final displayTitle = item.title.trim().isNotEmpty ? item.title : l10n.savedResourcesTitle;
         final isSavedDownloaded = _downloadedIds.contains(resourceId);
         final isSavedDownloading = _downloadingIds.contains(resourceId);
         final isRemoved = _removedIds.contains(resourceId);
@@ -285,7 +331,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(item.title,
+                      Text(displayTitle,
                           style: tt.titleSmall?.copyWith(color: cs.onSurface),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis),

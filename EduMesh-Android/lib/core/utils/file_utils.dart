@@ -7,8 +7,10 @@ import '../../l10n/app_localizations.dart';
 ///
 /// Accepts common casing variants and plural forms: "textbook", "video"/"videos",
 /// "pyq", "pastpaper"/"past_paper", "kiwix".
-/// Defaults to [ResourceType.textbook] for unrecognised input.
-ResourceType parseResourceType(String type) {
+/// When [type] is unrecognised and [filename] is given, the type is inferred
+/// from the file extension (videos must never land in the PDF viewer).
+/// Defaults to [ResourceType.textbook] otherwise.
+ResourceType parseResourceType(String type, {String? filename}) {
   switch (type.toLowerCase()) {
     case 'textbook':
       return ResourceType.textbook;
@@ -28,6 +30,15 @@ ResourceType parseResourceType(String type) {
     case 'notes':
       return ResourceType.notes;
     default:
+      // ponytail: legacy rows can carry an empty/unknown type; infer video
+      // extensions so they open in the video player. Everything else keeps
+      // the textbook default (the PDF viewer now shows an error state, not
+      // a blank page).
+      final ext = filename?.contains('.') == true
+          ? filename!.split('.').last.split('?').first.toLowerCase()
+          : '';
+      const videoExts = {'mp4', 'mkv', 'avi', 'webm', 'mov', '3gp'};
+      if (videoExts.contains(ext)) return ResourceType.videos;
       return ResourceType.textbook;
   }
 }

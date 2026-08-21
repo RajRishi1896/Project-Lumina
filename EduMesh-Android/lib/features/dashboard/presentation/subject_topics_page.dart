@@ -118,7 +118,7 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
     if (item.type == ResourceType.videos) {
       final url = item.pdfUrl ?? '/files/${item.id}';
       unawaited(Navigator.push(context, MaterialPageRoute(
-        builder: (_) => VideoPlayerPage(title: item.title, videoUrl: url),
+        builder: (_) => VideoPlayerPage(title: item.title, videoUrl: url, subject: item.subject),
       )));
     } else if (item.type == ResourceType.quiz) {
       unawaited(Navigator.push(context, MaterialPageRoute(
@@ -135,13 +135,13 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
       if (!mounted) return;
       if (html != null && html.isNotEmpty) {
         unawaited(Navigator.push(context, MaterialPageRoute(
-          builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: ApiClient.baseUrl),
+          builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: ApiClient.baseUrl, subject: item.subject),
         )));
       }
     } else {
       final url = item.pdfUrl ?? '/files/${item.id}';
       unawaited(Navigator.push(context, MaterialPageRoute(
-        builder: (_) => PdfViewerPage(title: item.title, pdfUrl: url),
+        builder: (_) => PdfViewerPage(title: item.title, pdfUrl: url, subject: item.subject),
       )));
     }
   }
@@ -176,11 +176,12 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
       backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: cs.surface,
+        foregroundColor: cs.onSurface,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: cs.primary),
+          icon: Icon(Icons.arrow_back, color: cs.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(widget.subject, style: tt.titleLarge?.copyWith(color: cs.primary)),
+        title: Text(widget.subject, style: tt.titleLarge?.copyWith(color: cs.onSurface)),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

@@ -71,7 +71,7 @@ class ResourceModel {
       title: json['title'] ?? '',
       subject: json['subject'] ?? kFallbackSubject,
       grade: json['grade'] ?? '',
-      type: parseResourceType(json['type']?.toString() ?? ''),
+      type: parseResourceType(json['type']?.toString() ?? '', filename: json['pdfUrl'] as String?),
       pdfUrl: json['pdfUrl'],
       mtime: (json['mtime'] as num?)?.toDouble() ?? 0,
       topicName: (json['topic_name'] as String?) ?? '',

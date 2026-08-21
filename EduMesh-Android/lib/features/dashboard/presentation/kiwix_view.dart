@@ -24,12 +24,16 @@ class KiwixView extends StatefulWidget {
   /// Required when [initialHtml] contains rewritten `/zim/asset` URLs.
   final String? baseUrl;
 
+  /// Subject associated with the content, passed to activity tracking.
+  final String? subject;
+
   const KiwixView({
     super.key,
     this.initialUrl,
     this.initialHtml,
     this.title,
     this.baseUrl,
+    this.subject,
   }) : assert(initialUrl != null || initialHtml != null,
             'Either initialUrl or initialHtml must be provided');
 
@@ -46,15 +50,21 @@ class _KiwixViewState extends State<KiwixView> {
   @override
   void initState() {
     super.initState();
-    ActivityTracker().startStudySession();
+    ActivityTracker().startStudySession(subject: widget.subject);
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(LuminaColors.surface)
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (_) => setState(() => _isLoading = true),
-          onPageFinished: (_) => setState(() => _isLoading = false),
+          onPageFinished: (_) => setState(() {
+            _isLoading = false;
+            _errorMessage = null;
+          }),
           onWebResourceError: (error) {
+            // Sub-frame failures (a blocked image, a stray script) must not
+            // replace the whole article with the error screen.
+            if (error.isForMainFrame != true) return;
             if (!mounted) return;
             setState(() {
               _isLoading = false;
@@ -98,7 +108,7 @@ class _KiwixViewState extends State<KiwixView> {
                 fontWeight: AppSpacing.weightDisplay,
               ),
         ),
-        backgroundColor: LuminaColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         elevation: 0,
         actions: [

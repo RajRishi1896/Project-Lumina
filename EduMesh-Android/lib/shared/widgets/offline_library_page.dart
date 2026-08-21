@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/lumina_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/models/resource_model.dart';
@@ -91,6 +92,18 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
         final db = await DBHelper().database;
         await db.update('zim_articles_local', {'is_downloaded': 0},
             where: 'article_id = ?', whereArgs: [articleId]);
+        // Best-effort cleanup of the cached HTML file and pref entry so the
+        // delete does not leave orphans on disk; never block the UI.
+        try {
+          final dir = await getApplicationDocumentsDirectory();
+          final file =
+              File('${dir.path}/zim_${articleId.replaceAll('/', '_')}.html');
+          if (await file.exists()) await file.delete();
+        } catch (_) {}
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('zim_page_$articleId');
+        } catch (_) {}
       } else {
         await DownloadService().deleteDownload(resourceId);
       }
@@ -111,6 +124,10 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(l10n.offlineLibraryAppBarTitle),
+        // Theme appBarTheme pairs a primary background with onPrimary
+        // foreground; this page uses a surface background, so the foreground
+        // must be overridden to match or both title and icon render white.
+        foregroundColor: cs.onSurface,
         backgroundColor: cs.surface,
       ),
       body: _loading

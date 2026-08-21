@@ -26,7 +26,16 @@ class DBHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 17, onCreate: _createDB, onUpgrade: _onUpgrade);
+    final db = await openDatabase(path, version: 17, onCreate: _createDB, onUpgrade: _onUpgrade);
+    // ponytail: in-schema additions for existing v17 DBs (no version bump).
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_activity_subject ON activity(subject)');
+    } catch (_) {}
+    try {
+      final cutoff = DateTime.now().subtract(const Duration(days: 90)).toIso8601String().substring(0, 10);
+      await db.delete('activity', where: 'date < ?', whereArgs: [cutoff]);
+    } catch (_) {}
+    return db;
   }
 
   Future _createDB(Database db, int version) async {
@@ -219,6 +228,9 @@ class DBHelper {
     ''');
 
     await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_activity_subject ON activity(subject)
+    ''');
+    await db.execute('''
       CREATE INDEX IF NOT EXISTS idx_cr_course_id ON course_resources(course_id)
     ''');
     await db.execute('''
@@ -273,6 +285,18 @@ class DBHelper {
     ''');
   }
 
+  /// Deletes course progress, quiz attempts, and cached course resources
+  /// whose parent course no longer exists in the local `courses` table.
+  ///
+  /// Call after replacing the courses table wholesale (e.g. catalog sync)
+  /// so removed courses do not leave orphaned rows forever.
+  Future<void> deleteOrphanedCourseData() async {
+    final db = await database;
+    await db.delete('course_progress', where: 'course_id NOT IN (SELECT id FROM courses)');
+    await db.delete('quiz_attempts', where: 'course_id NOT IN (SELECT id FROM courses)');
+    await db.delete('course_resources', where: 'course_id NOT IN (SELECT id FROM courses)');
+  }
+
   /// Inserts or replaces a bookmark for the given [resourceId] with its metadata.
   Future<void> upsertBookmark(String resourceId, String title, String subject, String grade, String type, {String? pdfUrl}) async {
     final db = await database;
@@ -304,6 +328,21 @@ class DBHelper {
   Future<List<Map<String, dynamic>>> getBookmarkedResources() async {
     final db = await database;
     return await db.query('bookmarks', orderBy: 'bookmarked_at DESC');
+  }
+
+  /// Looks up catalog metadata (title/subject/grade/type) for [ids].
+  ///
+  /// Returns a map keyed by resource ID; missing IDs are simply absent.
+  Future<Map<String, Map<String, dynamic>>> getCatalogEntries(Set<String> ids) async {
+    if (ids.isEmpty) return {};
+    final db = await database;
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final rows = await db.query(
+      'catalog',
+      where: 'id IN ($placeholders)',
+      whereArgs: ids.toList(),
+    );
+    return {for (final r in rows) r['id'] as String: r};
   }
 
   /// Inserts or replaces a download record for the given [resourceId] with its metadata.
@@ -403,16 +442,24 @@ class DBHelper {
 
   /// Marks an article as downloaded by setting `is_downloaded = 1`.
   ///
-  /// Uses INSERT OR REPLACE so the row exists even when no prior INSERT ever
-  /// populated `zim_articles_local` (the table was previously write-only).
-  /// The existing title (if any) is preserved.
+  /// Updates in place so archive_id/path/namespace/has_thumbnail survive.
+  /// If no row exists yet, inserts a minimal one (INSERT OR IGNORE guards
+  /// against a concurrent insert).
   Future<void> markZimArticleDownloaded(String articleId) async {
     final db = await database;
-    await db.rawInsert(
-      'INSERT OR REPLACE INTO zim_articles_local (article_id, title, is_downloaded) '
-      'VALUES (?, COALESCE((SELECT title FROM zim_articles_local WHERE article_id = ?), ""), 1)',
-      [articleId, articleId],
+    final updated = await db.update(
+      'zim_articles_local',
+      {'is_downloaded': 1},
+      where: 'article_id = ?',
+      whereArgs: [articleId],
     );
+    if (updated == 0) {
+      await db.insert('zim_articles_local', {
+        'article_id': articleId,
+        'title': '',
+        'is_downloaded': 1,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
   }
 
   /// Returns the IDs of all ZIM articles that have been downloaded locally.
