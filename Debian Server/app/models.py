@@ -297,6 +297,7 @@ class ProgressSync(BaseModel):
     """Student progress sync payload."""
     current_position: int = Field(0, ge=0, description="Index of the last viewed resource.", json_schema_extra={"example": 3})
     completed_count: int = Field(0, ge=0, description="Number of resources completed.", json_schema_extra={"example": 2})
+    completed: int = Field(0, ge=0, le=1, description="Whether the student finished the whole course (1=yes, 0=no).", json_schema_extra={"example": 0})
 class EnrollResponse(BaseModel):
     """Enrollment operation response."""
     status: str = Field("ok", description="Operation status.", json_schema_extra={"example": "ok"})
@@ -329,6 +330,7 @@ class QuizAttemptResponse(BaseModel):
     time_taken_seconds: int = Field(0, description="Time taken in seconds.", json_schema_extra={"example": 900})
     quiz_version: int = Field(1, description="Quiz version at time of attempt.", json_schema_extra={"example": 1})
     threshold_at_submission: float = Field(0.0, description="Pass threshold at submission time.", json_schema_extra={"example": 0.6})
+    results: Optional[list] = Field(None, description="Per-question grading for the client's review screen. Present only on submit responses: question_id, correct, correct_answers, explanation.", json_schema_extra={"example": [{"question_id": "q1", "correct": True, "correct_answers": ["2"], "explanation": ""}]})
 class SimilarLinkCreate(BaseModel):
     """Payload to link a course as similar."""
     similar_course_id: str = Field(..., description="UUID of the course to link as similar", json_schema_extra={"example": "CRS-abc123"})
@@ -374,5 +376,5 @@ class QuizBestScoreResponse(BaseModel):
     attempts_count: int = Field(0, description="Total attempts made.", json_schema_extra={"example": 3})
 class QuizBestScoreUpdate(BaseModel):
     """Update the best quiz score after submission."""
-    score: float = Field(..., description="Score as fraction 0-1.", json_schema_extra={"example": 0.85})
-    attempt_id: str = Field(..., description="ID of this attempt.", json_schema_extra={"example": "abc-123"})
+    score: float = Field(..., ge=0.0, le=1.0, description="Score as fraction 0-1.", json_schema_extra={"example": 0.85})
+    attempt_id: str = Field(..., min_length=1, description="ID of this attempt.", json_schema_extra={"example": "abc-123"})

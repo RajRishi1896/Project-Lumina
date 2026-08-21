@@ -11,10 +11,28 @@ from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one
 from app.dependencies import verify_student
 from app.models import ProgressSync, EnrollResponse, QuizAttemptSubmit, QuizAttemptResponse, EnrolledCoursesResponse, EnrolledCourseItem
-from app.quiz_grading import grade_quiz, load_quiz_file
+from app.quiz_grading import grade_quiz_detailed, load_quiz_file
 from app.routers.teacher_courses import COURSES_DIR
 
 router = APIRouter()
+
+# Question fields safe to send to students. Everything else (notably
+# correct_answer/correct_answers/explanation) is the answer key: grading
+# happens server-side in submit_quiz_attempt, which reloads this file.
+SAFE_QUESTION_FIELDS = frozenset({"id", "question", "type", "options", "image"})
+
+
+def strip_answer_keys(questions: list) -> list:
+    """Return copies of questions containing only student-safe fields.
+
+    Args:
+        questions: Quiz question dicts as stored on disk.
+
+    Returns:
+        New list of dicts with only SAFE_QUESTION_FIELDS kept, so the
+        answer key never reaches the client.
+    """
+    return [{k: v for k, v in q.items() if k in SAFE_QUESTION_FIELDS} for q in questions]
 
 
 @router.get("/api/courses/similar-courses", response_model=list[dict],
@@ -307,7 +325,8 @@ async def sync_progress(course_id: str, data: ProgressSync, student_id: str = De
 
     Args:
         course_id: UUID of the course.
-        data: ProgressSync payload with current_position and completed_count.
+        data: ProgressSync payload with current_position, completed_count,
+            and completed (1 once the whole course is finished).
 
     Returns:
         Updated progress dict.
@@ -323,8 +342,8 @@ async def sync_progress(course_id: str, data: ProgressSync, student_id: str = De
         raise HTTPException(status_code=404, detail="Not enrolled in this course.")  # i18n: user-facing error message
 
     await db_exec(
-        "UPDATE course_progress SET current_position = ?, completed_count = ?, last_synced = datetime('now') WHERE student_id = ? AND course_id = ?",
-        (data.current_position, data.completed_count, student_id, course_id)
+        "UPDATE course_progress SET current_position = ?, completed_count = ?, completed = ?, last_synced = datetime('now') WHERE student_id = ? AND course_id = ?",
+        (data.current_position, data.completed_count, data.completed, student_id, course_id)
     )
 
     row = await db_fetch_one(
@@ -391,7 +410,8 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
         resource_id: UUID of the course resource.
 
     Returns:
-        Quiz JSON content with quiz_version field added.
+        Quiz JSON content with quiz_version field added and per-question
+        answer fields stripped: grading is server-side only.
     Raises:
         HTTPException 403: If the student is not enrolled.
         HTTPException 404: If the quiz file does not exist.
@@ -424,6 +444,10 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
             q["question"] = q.pop("text")
         if "image" not in q and "image_data" in q:
             q["image"] = q.pop("image_data")
+
+    # Security: the answer key must never reach the client; grading is
+    # re-done server-side on submit from this same on-disk file.
+    quiz_inner["questions"] = strip_answer_keys(quiz_inner.get("questions", []))
 
     return quiz_data
 
@@ -468,7 +492,7 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
     quiz = await asyncio.to_thread(load_quiz_file, quiz_path)
     if quiz is None:
         raise HTTPException(status_code=404, detail="Quiz not found.")  # i18n: user-facing error message
-    score, passed, threshold = grade_quiz(quiz, data.answers_json)
+    score, passed, threshold, results = grade_quiz_detailed(quiz, data.answers_json)
 
     await db_exec(
         """INSERT INTO quiz_attempts (id, student_id, course_id, resource_id, attempt_number, score, passed, answers_json, started_at, submitted_at, time_taken_seconds, quiz_version, threshold_at_submission)
@@ -481,7 +505,9 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
     row = await db_fetch_one("SELECT * FROM quiz_attempts WHERE id = ?", (data.attempt_id,))
     from app.metrics import incr
     incr("quiz_attempt")
-    return dict(row)
+    response = dict(row)
+    response["results"] = results
+    return response
 
 
 @router.get("/api/courses/{course_id}/quiz/{resource_id}/attempts", response_model=list[QuizAttemptResponse],
