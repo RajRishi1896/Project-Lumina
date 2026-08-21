@@ -129,6 +129,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   Future<void> _loadData() async {
     await _tracker.sync();
     try {
+      // ponytail: sync() already cached fresh analytics when it synced, but
+      // skips that GET when there are no pending events — so getAnalytics()
+      // still runs to cover the online-with-no-events and offline paths.
       final analytics = await _tracker.getAnalytics();
       final history = await _tracker.getActivityHistory(limit: 50);
       if (mounted) {
@@ -212,44 +215,46 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
 
   String _formatActivityTitle(Map<String, dynamic> activity, AppLocalizations l10n) {
     final action = (activity['action'] as String? ?? '').toLowerCase();
-    final resourceId = activity['resource_id'] as String? ?? '';
-    String verb;
-    switch (action) {
-      case 'view':
-        verb = l10n.activityVerbViewed;
-        break;
-      case 'search':
-        verb = l10n.activityVerbSearched;
-        break;
-      case 'download':
-        verb = l10n.activityVerbDownloaded;
-        break;
-      case 'watch':
-        verb = l10n.activityVerbWatched;
-        break;
-      case 'save':
-        verb = l10n.activityVerbSaved;
-        break;
-      case 'open':
-        verb = l10n.activityVerbOpened;
-        break;
-      case 'complete':
-        verb = l10n.activityVerbCompleted;
-        break;
-      case '':
-        verb = '';
-        break;
-      default:
-        verb = action.isNotEmpty
-            ? '${action[0].toUpperCase()}${action.substring(1)}ed'
-            : '';
-    }
-    if (resourceId.isEmpty) return verb;
-    final title = activity['resource_title']?.toString() ?? activity['title']?.toString() ?? '';
-    if (title.isNotEmpty) return '$verb $title';
+    if (action.isEmpty) return '';
+    if (action == 'study_session') return _formatStudySessionTitle(activity, l10n);
+    final verb = switch (action) {
+      'view' => l10n.activityVerbViewed,
+      'search' => l10n.activityVerbSearched,
+      'download' => l10n.activityVerbDownloaded,
+      'watch' => l10n.activityVerbWatched,
+      'save' => l10n.activityVerbSaved,
+      'open' => l10n.activityVerbOpened,
+      'complete' => l10n.activityVerbCompleted,
+      _ => '',
+    };
     final meta = activity['metadata']?.toString() ?? '';
-    if (meta.isNotEmpty && !meta.startsWith('{')) return '$verb $meta';
+    final title = (meta.isNotEmpty && !meta.startsWith('{')) ? meta : '';
+    if (title.isNotEmpty) return verb.isEmpty ? title : '$verb $title';
+    if (verb.isEmpty) return '';
     return l10n.activityTitleFallback(verb);
+  }
+
+  /// Renders a study-session event as `Studied <subject> · <N> min`,
+  /// or `Studied · <N> min` when the session has no subject.
+  String _formatStudySessionTitle(Map<String, dynamic> activity, AppLocalizations l10n) {
+    String subject = '';
+    int minutes = 0;
+    final meta = activity['metadata']?.toString() ?? '';
+    if (meta.startsWith('{')) {
+      try {
+        final decoded = jsonDecode(meta);
+        if (decoded is Map<String, dynamic>) {
+          subject = decoded['subject']?.toString() ?? '';
+          minutes = (((decoded['duration_seconds'] as num?) ?? 0) / 60).round();
+        }
+      } catch (_) {}
+    }
+    final studied = l10n.activityVerbStudied;
+    final verb = studied.isNotEmpty
+        ? '${studied[0].toUpperCase()}${studied.substring(1)}'
+        : studied;
+    final label = subject.isEmpty ? verb : '$verb $subject';
+    return '$label · $minutes${l10n.studyReportMin}';
   }
 
   String _formatRelativeTime(dynamic timestamp, AppLocalizations l10n) {
@@ -352,24 +357,22 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         children: [
           Icon(Icons.person_rounded, color: cs.primary, size: 24.sp),
           SizedBox(width: AppSpacing.md.w),
-          Flexible(
+          Expanded(
             child: Text(l10n.headerMyProfile,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: tt.titleLarge?.copyWith(
                     color: cs.primary)),
           ),
-          const Spacer(),
+          SizedBox(width: AppSpacing.sm.w),
           Icon(Icons.bar_chart_rounded, color: cs.primary, size: 20.sp),
           SizedBox(width: AppSpacing.xs.w),
-          Flexible(
-            child: Text(l10n.headerAnalytics,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.end,
-                style: tt.titleSmall?.copyWith(
-                    color: cs.onSurfaceVariant)),
-          ),
+          Text(l10n.headerAnalytics,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: tt.titleSmall?.copyWith(
+                  color: cs.onSurfaceVariant)),
         ],
       ),
     );
@@ -854,29 +857,42 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 final total = (progress?['total_resources'] as num?)?.toInt() ?? 0;
                 final completed = (progress?['completed_count'] as num?)?.toInt() ?? 0;
                 final pct = total > 0 ? completed / total : 0.0;
-                return ListTile(
-                  title: Text(entry.course.title,
-                      style: tt.titleSmall?.copyWith(color: cs.onSurface)),
-                  subtitle: Padding(
-                    padding: EdgeInsets.only(top: AppSpacing.sm.h),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(3.r),
-                      child: LinearProgressIndicator(
-                        value: pct,
-                        backgroundColor: cs.surfaceContainerHighest,
-                        valueColor: AlwaysStoppedAnimation(cs.primary),
-                        minHeight: 6.h,
+                return Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(entry.course.title,
+                                maxLines: 2, overflow: TextOverflow.ellipsis,
+                                style: tt.titleSmall?.copyWith(color: cs.onSurface)),
+                            SizedBox(height: AppSpacing.sm.h),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(3.r),
+                              child: LinearProgressIndicator(
+                                value: pct,
+                                backgroundColor: cs.surfaceContainerHighest,
+                                valueColor: AlwaysStoppedAnimation(cs.primary),
+                                minHeight: 6.h,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
-                  trailing: TextButton(
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => CoursePlayerPage(course: entry.course),
-                      ));
-                    },
-                    child: Text(l10n.buttonContinue,
-                        style: tt.labelSmall?.copyWith(color: cs.primary)),
+                      SizedBox(width: AppSpacing.md.w),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => CoursePlayerPage(course: entry.course),
+                          ));
+                        },
+                        child: Text(l10n.buttonContinue,
+                            style: tt.labelSmall?.copyWith(color: cs.primary)),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -1013,6 +1029,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                     Divider(height: 1, indent: 56.w, color: cs.outlineVariant),
                 itemBuilder: (context, index) {
                   final act = _activityHistory[index];
+                  final title = _formatActivityTitle(act, l10n);
+                  // Same guard as study_report_page: unmapped actions
+                  // (e.g. 'unsave') format to '' and must not render.
+                  if (title.isEmpty) return const SizedBox.shrink();
                   return ListTile(
                     leading: CircleAvatar(
                       radius: 18.r,
@@ -1023,7 +1043,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         color: cs.primary,
                       ),
                     ),
-                    title: Text(_formatActivityTitle(act, l10n),
+                    title: Text(title,
                         style: tt.bodySmall?.copyWith(
                             color: cs.onSurface)),
                     trailing: Text(_formatRelativeTime(act['timestamp'], l10n),
