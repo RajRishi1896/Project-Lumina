@@ -68,10 +68,10 @@ class DownloadService {
 
       final sink = partFile.openWrite(mode: FileMode.append);
       try {
-        // ponytail: IOSink is a StreamConsumer<List<int>>; cast to the
-        // Uint8List-typed consumer pipe() expects. No buffer, no copy.
-        await response.data!.stream
-            .pipe(sink as StreamConsumer<Uint8List>);
+        // IOSink IS a StreamConsumer<List<int>>, which accepts Stream<Uint8List>.
+        // A cast to StreamConsumer<Uint8List> throws (reified generics), which
+        // killed every download before it started.
+        await sink.addStream(response.data!.stream);
       } finally {
         await sink.close();
       }
@@ -88,13 +88,22 @@ class DownloadService {
       return File(savePath);
     } on DioException catch (e) {
       // .part file remains for resume on next attempt
-      if (e.error is FileSystemException || e.message?.contains('No space left on device') == true) {
+      final code = e.response?.statusCode;
+      if (code == 404) throw Exception('NOT_FOUND');
+      if (code == 403) throw Exception('FORBIDDEN');
+      final errText = e.error?.toString() ?? '';
+      if (errText.contains('No space left on device') ||
+          e.message?.contains('No space left on device') == true) {
         throw Exception('STORAGE_FULL');
       }
       debugPrint('Download network error: $e');
       throw Exception('NETWORK_ERROR');
     } catch (e) {
       // .part file remains for resume on next attempt
+      // Thrown markers carry their own permanent-failure classification:
+      // preserve them instead of collapsing into UNKNOWN_ERROR.
+      if (e.toString().contains('RANGE_NOT_SUPPORTED')) rethrow;
+      if (e.toString().contains('EMPTY_RESPONSE')) rethrow;
       debugPrint('Unexpected download error: $e');
       throw Exception('UNKNOWN_ERROR');
     }

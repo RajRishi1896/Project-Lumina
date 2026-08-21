@@ -66,6 +66,14 @@ void main() async {
   _trace('T2 userId=$userId ${DateTime.now().microsecondsSinceEpoch}');
   bool isLoggedIn = userId != null;
 
+  // Assigned BEFORE the profile probe: a 401 during the probe hits the
+  // force-logout path, and a late assignment would leave it null (or crash
+  // on navigatorKey.currentState! before the first frame mounts the navigator).
+  ApiClient.onForceLogout = () {
+    final navigator = navigatorKey.currentState;
+    if (navigator != null) unawaited(routeAfterLogout(navigator));
+  };
+
   // Validate that the stored user still exists on the server.
   // Prevents N concurrent 401 handlers from crashing the app when a
   // logged-in student was deleted from the server. Timeboxed so an
@@ -84,10 +92,6 @@ void main() async {
   } else {
     _trace('T3 no-profile ${DateTime.now().microsecondsSinceEpoch}');
   }
-
-  ApiClient.onForceLogout = () {
-    unawaited(routeAfterLogout(navigatorKey.currentState!));
-  };
 
   try { ConnectivityService().start(); } catch (_) {}
   try { ActivityTracker().startAutoSync(); } catch (_) {}
@@ -161,13 +165,26 @@ Future<void> _onBackgroundStart(ServiceInstance service) async {
     service.stopSelf();
   });
 
+  // Latest download percent reported by DownloadQueue in the main isolate.
+  // The foreground-service notification is the single progress indicator.
+  // Registered BEFORE the awaited l10n setup below: progress invokes arriving
+  // during that async gap would otherwise be dropped.
+  int latestPercent = -1;
+  service.on('progress').listen((message) {
+    final pct = (message?['percent'] as num?)?.toInt();
+    if (pct != null && pct >= 0 && pct <= 100) latestPercent = pct;
+  });
+
   final l10n = await _backgroundL10n();
 
   Timer.periodic(const Duration(seconds: 30), (_) async {
     if (service is AndroidServiceInstance) {
-      service.setForegroundNotificationInfo(
+      final content = latestPercent >= 0
+          ? l10n.notifDownloading('$latestPercent${l10n.suffixPercent}')
+          : l10n.downloadInProgressNotificationContent;
+      await service.setForegroundNotificationInfo(
         title: l10n.downloadInProgressNotificationTitle,
-        content: l10n.downloadInProgressNotificationContent,
+        content: content,
       );
     }
   });
@@ -179,14 +196,21 @@ Future<void> _onBackgroundStart(ServiceInstance service) async {
 /// [ScreenUtilInit] for responsive sizing, and displays either the
 /// main [AppShell] or the [WelcomePage] based on [isLoggedIn].
 class LuminaApp extends ConsumerWidget {
+  /// Guards the one-time provider hydration so [build] stays side-effect
+  /// free on every rebuild after the first.
+  static bool _providersLoaded = false;
+
   final bool isLoggedIn;
 
   const LuminaApp({super.key, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.read(localeProvider.notifier).load();
-    ref.read(themeModeProvider.notifier).load();
+    if (!_providersLoaded) {
+      _providersLoaded = true;
+      ref.read(localeProvider.notifier).load();
+      ref.read(themeModeProvider.notifier).load();
+    }
     final themeMode = ref.watch(themeModeProvider);
 
     return ScreenUtilInit(
@@ -213,8 +237,6 @@ class LuminaApp extends ConsumerWidget {
               downloadCompleteBody: l10n.downloadCompleteNotificationBody('{title}'),
               downloadFailedTitle: l10n.downloadFailedNotificationTitle,
               downloadFailedBody: l10n.downloadFailedNotificationBody('{title}'),
-              downloadInProgressTitle: l10n.notifDownloadsActive,
-              downloadInProgressBody: l10n.notifDownloading('{title}'),
             );
             NotificationService().setRemovedStrings(
               title: l10n.removedFromServerNotificationTitle,

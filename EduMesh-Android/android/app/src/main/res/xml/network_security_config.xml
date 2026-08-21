@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ponytail: base-config permits cleartext because the hub is reached by
+     mDNS-discovered LAN IPs (e.g. 192.168.x.x) that cannot be allowlisted.
+     The app only ever talks to the local hub, never to the internet. -->
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">lumina.hub</domain>
-        <domain includeSubdomains="true">10.42.0.1</domain>
-    </domain-config>
-    <base-config cleartextTrafficPermitted="false" />
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -7,6 +8,7 @@ import '../../core/storage/db_helper.dart';
 import 'download_service.dart';
 import 'notification_service.dart';
 import 'connectivity_service.dart';
+import 'share_server.dart';
 
 /// An item waiting to be downloaded by [DownloadQueue].
 class _QueuedDownload {
@@ -44,9 +46,24 @@ class DownloadQueue extends ChangeNotifier {
 
   final List<_QueuedDownload> _queue = [];
   bool _processing = false;
-  static int _notifSeq = 0;
 
   Set<String> get queuedIds => _queue.map((d) => d.resourceId).toSet();
+
+  /// Drops every queued download.
+  ///
+  /// Called on logout/profile switch so one student's pending downloads never
+  /// run under another student's session.
+  // ponytail: an in-flight download may still complete; full cancellation
+  // needs a CancelToken threaded through DownloadService.
+  void clear() {
+    _queue.clear();
+    _processing = false;
+    // Best-effort cleanup: logout/profile switch must not leak the CPU
+    // wakelock or leave the foreground service running between profiles.
+    WakelockPlus.disable().ignore();
+    unawaited(_stopBackgroundServiceIfIdle());
+    notifyListeners();
+  }
 
   /// The resource ID currently being downloaded, or `null` if idle.
   String? get active => _processing && _queue.isNotEmpty ? _queue.first.resourceId : null;
@@ -86,93 +103,120 @@ class DownloadQueue extends ChangeNotifier {
     }
   }
 
+  /// Drains the queue sequentially.
+  ///
+  /// [_processing] is set synchronously before any await so two rapid
+  /// enqueues can never both pass the `!_processing` check and spawn
+  /// duplicate loops.
   Future<void> _processNext() async {
-    if (_queue.isEmpty) return;
-    if (!_processing) {
-      try { await WakelockPlus.enable(); } catch (_) {}
-      try {
-        final service = FlutterBackgroundService();
-        final isRunning = await service.isRunning();
-        if (!isRunning) await service.startService();
-      } catch (_) {
-        // ponytail: background service is best-effort; download still works in foreground
-      }
-    }
+    if (_processing) return;
     _processing = true;
-
-    final task = _queue.first;
-    final notifId = _notifSeq++;
-    String? path;
+    final service = FlutterBackgroundService();
+    try { await WakelockPlus.enable(); } catch (_) {}
     try {
-      path = await DownloadService().downloadAndTrack(
-        task.resourceId, task.url, task.fileName,
-        title: task.title, subject: task.subject, grade: task.grade,
-        type: task.type, mtime: task.mtime,
-        onProgress: (received, total) {
-          if (total > 0 && _progressNotifThrottle.elapsed >= const Duration(milliseconds: 500)) {
-            _progressNotifThrottle.reset();
-            final pct = received * 100 ~/ total;
-            NotificationService().showDownloadProgress(task.title, pct, id: notifId);
-          }
-        },
-      );
-      _lastErrorIsPermanent = false;
-    } catch (e) {
-      _lastErrorIsPermanent = e.toString().contains('STORAGE_FULL');
-      path = null;
+      final isRunning = await service.isRunning();
+      if (!isRunning) await service.startService();
+    } catch (_) {
+      // ponytail: background service is best-effort; download still works in foreground
     }
-    try { await NotificationService().cancelProgressNotification(notifId); } catch (_) {}
-    if (path != null) {
-      try { await DBHelper().removePendingDownload(task.resourceId); } catch (_) {}
-      if (task.title.isNotEmpty) {
-        unawaited(NotificationService().showDownloadComplete(task.title).catchError((_) {}));
+
+    while (_queue.isNotEmpty) {
+      final task = _queue.first;
+      String? path;
+      try {
+        // Reset the isolate-side percent: a finished download leaves 100%
+        // displayed while this one sits at 0.
+        service.invoke('progress', {'percent': 0});
+        // downloadFile (not downloadAndTrack) so the error type survives for
+        // permanent-failure classification; tracking is replicated below.
+        final file = await DownloadService().downloadFile(
+          task.url, task.fileName,
+          onProgress: (received, total) {
+            // The foreground-service notification is the single progress
+            // indicator: forward the percent to the background isolate instead
+            // of posting a second per-download notification.
+            if (total > 0 && _progressThrottle.elapsed >= const Duration(milliseconds: 500)) {
+              _progressThrottle.reset();
+              service.invoke('progress', {'percent': received * 100 ~/ total});
+            }
+          },
+        );
+        if (file != null) {
+          await DBHelper().insertDownload(task.resourceId, file.path, task.title, task.subject, task.grade, task.type, mtime: task.mtime);
+          ShareServer().markIndexDirty();
+          path = file.path;
+        }
+        _lastErrorIsPermanent = false;
+      } catch (e) {
+        _lastErrorIsPermanent = _isPermanentFailure(e);
+        path = null;
       }
-      unawaited(ActivityTracker().logAction('download', resourceId: task.resourceId, metadata: task.title).catchError((_) {}));
-      _queue.removeAt(0);
-      if (_queue.isEmpty) {
-        try { await WakelockPlus.disable(); } catch (_) {}
-        _processing = false;
-        _stopBackgroundServiceIfIdle();
+      if (path != null) {
+        try { await DBHelper().removePendingDownload(task.resourceId); } catch (_) {}
+        if (task.title.isNotEmpty) {
+          unawaited(NotificationService().showDownloadComplete(task.title).catchError((_) {}));
+        }
+        unawaited(ActivityTracker().logAction('download', resourceId: task.resourceId, metadata: task.title).catchError((_) {}));
+        _queue.removeAt(0);
+      } else if (task.retries > 0 && !_lastErrorIsPermanent) {
+        task.retries--;
+        debugPrint('DownloadQueue: retrying ${task.resourceId} (${task.retries} attempts left)');
+        final retryCount = 5 - task.retries;
+        await Future.delayed(Duration(seconds: 3 * (1 << retryCount)));
+        continue; // same task stays at the head
+      } else {
+        try { await DBHelper().removePendingDownload(task.resourceId); } catch (_) {}
+        if (task.title.isNotEmpty) {
+          unawaited(NotificationService().showDownloadFailed(task.title).catchError((_) {}));
+        }
+        _queue.removeAt(0);
       }
       notifyListeners();
-      if (_queue.isNotEmpty) unawaited(_processNext());
-    } else if (task.retries > 0 && !_lastErrorIsPermanent) {
-      task.retries--;
-      debugPrint('DownloadQueue: retrying ${task.resourceId} (${task.retries} attempts left)');
-      final retryCount = 5 - task.retries;
-      final delay = Duration(seconds: 3 * (1 << retryCount));
-      await Future.delayed(delay);
-      unawaited(_processNext());
-    } else {
-      try { await DBHelper().removePendingDownload(task.resourceId); } catch (_) {}
-      if (task.title.isNotEmpty) {
-        unawaited(NotificationService().showDownloadFailed(task.title).catchError((_) {}));
-      }
-      _queue.removeAt(0);
-      if (_queue.isEmpty) {
-        try { await WakelockPlus.disable(); } catch (_) {}
-        _processing = false;
-        _stopBackgroundServiceIfIdle();
-      }
-      notifyListeners();
-      if (_queue.isNotEmpty) unawaited(_processNext());
     }
+
+    try { await WakelockPlus.disable(); } catch (_) {}
+    _processing = false;
+    notifyListeners();
+    unawaited(_stopBackgroundServiceIfIdle());
   }
 
   bool _lastErrorIsPermanent = false;
 
-  final Stopwatch _progressNotifThrottle = Stopwatch()..start();
+  final Stopwatch _progressThrottle = Stopwatch()..start();
 
-  void _stopBackgroundServiceIfIdle() {
-    if (_queue.isEmpty && !_processing) {
-      try {
-        final service = FlutterBackgroundService();
-        service.isRunning().then((running) {
-          if (running) service.invoke('stop');
-        });
-      } catch (_) {
-        // ponytail: best-effort stop; service may not have started
+  /// Whether [error] can never succeed on retry: missing/forbidden resource
+  /// (HTTP 404/403), a range-resume the server rejected, empty response body,
+  /// or full storage. Only network and unknown errors go through the retry
+  /// loop.
+  bool _isPermanentFailure(Object error) {
+    if (error is DioException) {
+      final code = error.response?.statusCode;
+      return code == 404 || code == 403;
+    }
+    final text = error.toString();
+    const permanentMarkers = [
+      'EMPTY_RESPONSE',
+      'STORAGE_FULL',
+      'NOT_FOUND',
+      'FORBIDDEN',
+      'RANGE_NOT_SUPPORTED',
+    ];
+    return permanentMarkers.any(text.contains);
+  }
+
+  Future<void> _stopBackgroundServiceIfIdle() async {
+    if (_queue.isNotEmpty || _processing) return;
+    try {
+      final service = FlutterBackgroundService();
+      // Retry: invoke('stop') can reach the isolate before its on('stop')
+      // listener registers when a download fails right after start.
+      for (var attempt = 0; attempt < 3; attempt++) {
+        if (!await service.isRunning()) return;
+        service.invoke('stop');
+        await Future.delayed(const Duration(seconds: 3));
       }
+    } catch (_) {
+      // ponytail: best-effort stop; service may not have started
     }
   }
 }

@@ -25,8 +25,6 @@ class NotificationService {
   String _channelDescription = 'Download completion notifications';
   String _completeNotificationTitle = 'Download Complete';
   String _failedNotificationTitle = 'Download Failed';
-  String _inProgressNotificationTitle = 'Downloading...';
-  String _inProgressNotificationBodyTemplate = '{title} ({percent}%)';
   // English fallbacks (same values as the ARB keys in app_en.arb). Replaced
   // with locals via [setLocalizedStrings] once a BuildContext is available.
   String _completeNotificationBody = '"{title}" has been downloaded and saved to offline storage.';
@@ -92,14 +90,13 @@ class NotificationService {
     return granted != false;
   }
 
-  bool _permissionRequested = false;
   bool _permissionGranted = false;
 
-  /// Requests notification permission at most once per app run so the Android
-  /// 13+ system dialog is not re-shown for every notification.
+  /// Requests notification permission until granted. A denial is not cached:
+  /// the next notification asks again, so a dismissed system dialog doesn't
+  /// silence notifications for the rest of the app run.
   Future<bool> _ensurePermission() async {
-    if (_permissionRequested) return _permissionGranted;
-    _permissionRequested = true;
+    if (_permissionGranted) return true;
     _permissionGranted = await requestPermission();
     return _permissionGranted;
   }
@@ -141,8 +138,6 @@ class NotificationService {
     String? downloadCompleteBody,
     String? downloadFailedTitle,
     String? downloadFailedBody,
-    String? downloadInProgressTitle,
-    String? downloadInProgressBody,
   }) {
     if (channelName != null) _channelName = channelName;
     if (channelDescription != null) _channelDescription = channelDescription;
@@ -150,8 +145,6 @@ class NotificationService {
     if (downloadCompleteBody != null) _completeNotificationBody = downloadCompleteBody;
     if (downloadFailedTitle != null) _failedNotificationTitle = downloadFailedTitle;
     if (downloadFailedBody != null) _failedNotificationBody = downloadFailedBody;
-    if (downloadInProgressTitle != null) _inProgressNotificationTitle = downloadInProgressTitle;
-    if (downloadInProgressBody != null) _inProgressNotificationBodyTemplate = downloadInProgressBody;
   }
 
   /// Sets localized strings for the "removed from server" notification.
@@ -174,34 +167,14 @@ class NotificationService {
     );
   }
 
-  /// Shows or updates a progress notification for an active download.
-  Future<void> showDownloadProgress(String title, int percent, {required int id, String? notificationTitle, String? notificationBody}) {
-    final resolvedBody = (notificationBody ?? _inProgressNotificationBodyTemplate)
-        .replaceAll('{title}', title)
-        .replaceAll('{percent}', '$percent');
-    return _show(
-      id: id,
-      title: notificationTitle ?? _inProgressNotificationTitle,
-      body: resolvedBody,
-      androidDetails: AndroidNotificationDetails(
-        'download_channel',
-        _channelName,
-        importance: Importance.low,
-        priority: Priority.low,
-        ongoing: true,
-        showProgress: true,
-        maxProgress: 100,
-        progress: percent,
-      ),
-    );
-  }
-
   /// Requests permission, initializes the plugin, and shows a notification.
+  ///
+  /// Returns early when the user denied the notification permission.
   Future<void> _show({required int id, required String title, required String body, AndroidNotificationDetails? androidDetails}) async {
     try {
       if (!await isEnabled) return;
       if (!_initialized) await init();
-      await _ensurePermission();
+      if (!await _ensurePermission()) return;
     } catch (_) {
       return;
     }
@@ -221,15 +194,6 @@ class NotificationService {
       );
     } catch (e) {
       debugPrint('NotificationService: show failed: $e');
-    }
-  }
-
-  /// Cancels a progress notification by [id].
-  Future<void> cancelProgressNotification(int id) async {
-    try {
-      await _plugin.cancel(id);
-    } catch (e) {
-      debugPrint('NotificationService: cancel failed: $e');
     }
   }
 }

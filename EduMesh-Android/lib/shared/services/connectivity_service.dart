@@ -17,8 +17,12 @@ class ConnectivityService extends ChangeNotifier {
   factory ConnectivityService() => _instance;
   ConnectivityService._internal();
 
-  bool _online = false;
+  // Fail-open: assume online until the first FAILED ping proves otherwise.
+  // Starting at false left taps dead for the first seconds after launch even
+  // though catalog loads via Dio succeeded.
+  bool _online = true;
   int _checkSeq = 0;
+  bool _startupFlushed = false;
   StreamSubscription<List<ConnectivityResult>>? _platformSub;
   Timer? _heartbeat;
   static const String _pingPath = '/ping';
@@ -72,7 +76,15 @@ class ConnectivityService extends ChangeNotifier {
       ));
       if (mySeq != _checkSeq) return;
       _online = true;
-      unawaited(ApiClient.syncTime());
+      if (!_startupFlushed) {
+        // Cold start while already online: no offline->online transition
+        // will ever fire (because _online starts true), so flush the
+        // queued mutations and pending downloads once, right after the
+        // first confirmed ping.
+        _startupFlushed = true;
+        unawaited(ApiClient.syncTime());
+        unawaited(_flushPending());
+      }
     } catch (_) {
       if (mySeq != _checkSeq) return;
       _online = false;
@@ -80,6 +92,7 @@ class ConnectivityService extends ChangeNotifier {
     if (_online != wasOnline) {
       notifyListeners();
       if (_online) {
+        unawaited(ApiClient.syncTime());
         unawaited(_flushPending());
       }
     }
