@@ -242,7 +242,11 @@ async def add_security_headers(request, call_next):
             response.headers["Cache-Control"] = "no-store"
         else:
             response.headers["Cache-Control"] = "public, max-age=300"
-    else:
+    elif "cache-control" not in response.headers:
+        # Only set the default Cache-Control when the route did not set one:
+        # zim_handler serves /zim/asset and /zim/thumbnail with
+        # "public, max-age=86400" so 250 students do not refetch every
+        # article asset on each view.
         response.headers["Cache-Control"] = "no-cache, private"
     return response
 
@@ -297,4 +301,34 @@ app.include_router(zim_router, prefix="/zim")
 
 # Static file mounts (must be after routes)
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
-app.mount("/files", StaticFiles(directory="uploads"), name="files")
+
+
+# Imports kept local to the mount section: the top of this file is edited
+# concurrently (middleware work) and these are only needed here.
+import re  # noqa: E402
+from fastapi.responses import PlainTextResponse  # noqa: E402
+
+
+class SecureUploadFiles(StaticFiles):
+    """StaticFiles mount that withholds quiz answer-key files.
+
+    Quiz definitions under ``uploads/`` (``courses/{id}/quiz_*.json``)
+    embed the answer key, so the raw mount served answer keys to
+    unauthenticated callers. Clients fetch quizzes through the
+    auth-gated API routes instead; any direct ``/files`` request whose
+    final path segment matches ``quiz_*.json`` gets a 404. Everything
+    else (PDFs, videos, course resources) is served unchanged.
+    """
+
+    _QUIZ_KEY_RE = re.compile(r"(^|/)quiz_[^/]*\.json$")
+
+    async def get_response(self, path: str, scope):
+        """Answer 404 for quiz answer-key paths; defer the rest unchanged."""
+        # get_path() returns OS-native separators (backslashes on Windows).
+        normalized = path.replace("\\", "/")
+        if self._QUIZ_KEY_RE.search(normalized):
+            return PlainTextResponse("Not Found", status_code=404)
+        return await super().get_response(path, scope)
+
+
+app.mount("/files", SecureUploadFiles(directory="uploads"), name="files")

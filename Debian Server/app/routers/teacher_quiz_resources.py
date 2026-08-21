@@ -7,7 +7,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import verify_teacher, verify_student, verify_user, can_manage_resource
 from app.async_db import db_exec, db_fetch_one
 from app.database import UPLOAD_DIR
-from app.quiz_grading import grade_quiz, load_quiz_file
+from app.models import QuizBestScoreUpdate
+from app.quiz_grading import grade_quiz_detailed, load_quiz_file
+from app.routers.student_courses import strip_answer_keys
 
 router = APIRouter()
 
@@ -166,6 +168,10 @@ async def get_quiz_resource(resource_id: str, user: str = Depends(verify_user)):
         if "image" not in q and "image_data" in q:
             q["image"] = q.pop("image_data")
 
+    # Security: the answer key must never reach the client; grading is
+    # re-done server-side on submit from this same on-disk file.
+    quiz_inner["questions"] = strip_answer_keys(quiz_inner.get("questions", []))
+
     return quiz_data
 
 
@@ -194,7 +200,7 @@ async def submit_quiz_attempt(resource_id: str, data: dict, student_id: str = De
     quiz = await asyncio.to_thread(load_quiz_file, quiz_path)
     if quiz is None:
         raise HTTPException(status_code=404, detail="Quiz not found.")  # i18n: user-facing error message
-    score, passed, threshold = grade_quiz(quiz, data.get("answers_json", ""))
+    score, passed, threshold, results = grade_quiz_detailed(quiz, data.get("answers_json", ""))
 
     await db_exec(
         """INSERT INTO quiz_attempts (id, student_id, course_id, resource_id, attempt_number, score, passed, answers_json, started_at, submitted_at, time_taken_seconds, quiz_version, threshold_at_submission)
@@ -208,7 +214,9 @@ async def submit_quiz_attempt(resource_id: str, data: dict, student_id: str = De
     )
 
     row = await db_fetch_one("SELECT * FROM quiz_attempts WHERE id = ?", (data.get("attempt_id", ""),))
-    return dict(row)
+    response = dict(row)
+    response["results"] = results
+    return response
 
 
 @router.get("/api/quiz-resource/{resource_id}/best-score",
@@ -233,20 +241,44 @@ async def get_quiz_resource_best_score(resource_id: str, student_id: str = Depen
 
 @router.post("/api/quiz-resource/{resource_id}/best-score",
              summary="Update best score for a standalone quiz", tags=["Quizzes"],
-             description="Updates the student's best score, but only if the new score is higher.",
+             description="Updates the student's best score, but only if the new score is higher. "
+                         "The referenced attempt must exist, belong to this student, and match this "
+                         "quiz; the accepted score never exceeds the server-graded attempt score.",
              response_model=dict,
-             responses={200: {"description": "Best score updated"}})
-async def update_quiz_resource_best_score(resource_id: str, data: dict, student_id: str = Depends(verify_student)):
-    """Update the student's best score if the new score is higher."""
+             responses={200: {"description": "Best score updated"},
+                        403: {"description": "Attempt belongs to another student or quiz"},
+                        404: {"description": "Attempt not found"},
+                        422: {"description": "Invalid payload (score must be a number in 0.0-1.0)"}})
+async def update_quiz_resource_best_score(resource_id: str, data: QuizBestScoreUpdate, student_id: str = Depends(verify_student)):
+    """Update the student's best score if the new score is higher.
+
+    The client-reported score is never trusted outright: it is clamped to
+    the server-graded score of the referenced attempt, which must exist,
+    belong to this student, and match this standalone quiz (course_id '').
+
+    Raises:
+        HTTPException 404: If no attempt with this attempt_id exists.
+        HTTPException 403: If the attempt belongs to another student or a
+            different course/quiz than this endpoint is scoring.
+    """
+    attempt = await db_fetch_one(
+        "SELECT student_id, course_id, resource_id, score FROM quiz_attempts WHERE id = ?",
+        (data.attempt_id,))
+    if attempt is None:
+        raise HTTPException(status_code=404, detail="Attempt not found.")  # i18n: user-facing error message
+    if (attempt["student_id"] != student_id or attempt["course_id"] != ""
+            or attempt["resource_id"] != resource_id):
+        raise HTTPException(status_code=403, detail="Attempt does not belong to this student.")  # i18n: user-facing error message
+
+    new_score = min(data.score, attempt["score"] if attempt["score"] is not None else 0.0)
     existing = await db_fetch_one(
         "SELECT best_score FROM quiz_best_scores WHERE scholar_id = ? AND course_id = '' AND resource_id = ?",
         (student_id, resource_id))
-    new_score = data.get("score", 0.0)
     if existing and (existing["best_score"] or 0) >= new_score:
         return {"status": "ok"}
     await db_exec(
         """INSERT INTO quiz_best_scores (scholar_id, course_id, resource_id, best_score, best_attempt_id, updated_at)
            VALUES (?, '', ?, ?, ?, datetime('now'))
            ON CONFLICT(scholar_id, course_id, resource_id) DO UPDATE SET best_score = ?, best_attempt_id = ?, updated_at = datetime('now')""",
-        (student_id, resource_id, new_score, data.get("attempt_id", ""), new_score, data.get("attempt_id", "")))
+        (student_id, resource_id, new_score, data.attempt_id, new_score, data.attempt_id))
     return {"status": "ok"}

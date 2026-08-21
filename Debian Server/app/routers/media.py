@@ -4,10 +4,11 @@ import re
 import logging
 import asyncio
 import subprocess
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from app.database import UPLOAD_DIR, THUMBNAILS_DIR
 from app.async_db import db_fetch_one, db_exec
+from app.dependencies import verify_user
 
 router = APIRouter()
 
@@ -36,6 +37,34 @@ def _probe_vaapi():
 
 
 _vaapi_args = _probe_vaapi()
+
+
+# ── Single-flight generation locks ───────────────────────────────────────────
+# Without these, 250 students opening a brand-new course spawn 250 concurrent
+# ffmpeg/PyMuPDF generations for the same resource (a CPU thundering herd on
+# the hub's weak CPU). Concurrent requests wait on the lock, then find the
+# freshly generated file on the cache re-check.
+_gen_locks: dict[str, asyncio.Lock] = {}
+_MAX_GEN_LOCKS = 256
+
+
+def _gen_lock(resource_id: str) -> asyncio.Lock:
+    """Return the per-resource generation lock, creating it on first use.
+
+    Idle locks are dropped opportunistically when the table grows, keeping
+    memory bounded. A lock dropped between a waiter's lookup and its acquire()
+    can briefly allow a duplicate generation; that is harmless (both waiters
+    write the same cached file).
+    """
+    lock = _gen_locks.get(resource_id)
+    if lock is None:
+        lock = _gen_locks[resource_id] = asyncio.Lock()
+    if len(_gen_locks) > _MAX_GEN_LOCKS:
+        idle = [key for key, val in _gen_locks.items()
+                if not val.locked() and key != resource_id]
+        for key in idle:
+            _gen_locks.pop(key, None)
+    return lock
 
 
 @router.get("/api/stream/{filename:path}",
@@ -80,6 +109,12 @@ async def stream_file(filename: str, request: Request):
             raise HTTPException(status_code=400, detail="Malformed Range header")  # i18n: user-facing error message
         if start >= file_size:
             raise HTTPException(status_code=416, detail="Range not satisfiable")  # i18n: user-facing error message
+        # Clamp end to the last byte: "bytes=0-999999999" on a 1MB file must
+        # not advertise a ~1e9 Content-Length the generator cannot fill.
+        end = min(end, file_size - 1)
+        if end < start:
+            # e.g. "bytes=100-50": syntactically unsatisfiable range.
+            raise HTTPException(status_code=416, detail="Range not satisfiable")  # i18n: user-facing error message
         content_length = end - start + 1
 
         async def _stream_chunk():
@@ -111,10 +146,16 @@ async def stream_file(filename: str, request: Request):
 
 
 def _find_video_thumb_time(file_path: str, max_search: int = 30) -> float:
-    """Find a suitable thumbnail timestamp by skipping black intros via ffmpeg blackdetect."""
+    """Find a suitable thumbnail timestamp by skipping black intros via ffmpeg blackdetect.
+
+    The scan input is capped at 60 seconds of media (-t 60) so ffmpeg cannot
+    decode entire multi-hour videos looking for black segments; the chosen
+    timestamp is additionally clamped to ``max_search``.
+    """
     try:
         result = subprocess.run(
-            ["ffmpeg", *_vaapi_args, "-i", file_path, "-vf", "blackdetect=d=0.3:pix_th=0.1",
+            ["ffmpeg", *_vaapi_args, "-i", file_path, "-t", "60",
+             "-vf", "blackdetect=d=0.3:pix_th=0.1",
              "-f", "null", "-"],
             capture_output=True, text=True, timeout=30
         )
@@ -196,6 +237,11 @@ def _generate_video_sprite(file_path: str, sprite_path: str, interval: float, co
 async def resource_thumbnail(resource_id: str):
     """Get a thumbnail image for a resource.
 
+    NOTE: intentionally unauthenticated. The Flutter app fetches thumbnails
+    via Image.network() with no Authorization header (resource_thumbnail.dart);
+    requiring auth here would break every student thumbnail. Abuse is bounded
+    by the per-resource single-flight lock and the time-capped ffmpeg scan.
+
     Args:
         resource_id: The resource database id.
 
@@ -212,55 +258,60 @@ async def resource_thumbnail(resource_id: str):
     thumb_path = os.path.join(THUMBNAILS_DIR, f"{resource_id}.png")
     if await asyncio.to_thread(os.path.exists, thumb_path):
         return FileResponse(thumb_path, media_type="image/png")
-    if not await asyncio.to_thread(os.path.exists, file_path):
+    if not file_path or not await asyncio.to_thread(os.path.exists, file_path):
         raise HTTPException(status_code=404, detail="File not found")  # i18n: user-facing error message
     page_count = 0
     duration_seconds = 0
-    try:
-        if rtype in ("textbook", "notes", "pyq", "pastPaper"):
-            try:
-                import fitz
+    async with _gen_lock(resource_id):
+        # Single-flight re-check: another request may have generated the
+        # thumbnail while this one waited for the lock.
+        if await asyncio.to_thread(os.path.exists, thumb_path):
+            return FileResponse(thumb_path, media_type="image/png")
+        try:
+            if rtype in ("textbook", "notes", "pyq", "pastPaper"):
+                try:
+                    import fitz
 
-                def _gen_pdf_thumb(fp, tp):
-                    """Generate a 0.3x PNG thumbnail from the first page of a PDF. Runs in worker thread."""
-                    doc = fitz.open(fp)
-                    try:
-                        pix = doc[0].get_pixmap(matrix=fitz.Matrix(0.3, 0.3))
-                        pix.save(tp)
-                        return doc.page_count
-                    finally:
-                        doc.close()
-                page_count = await asyncio.to_thread(_gen_pdf_thumb, file_path, thumb_path)
-            except ImportError:
-                raise HTTPException(status_code=404, detail="Thumbnail unavailable (PyMuPDF not installed)")  # i18n: user-facing error message
-        elif rtype in ("videos", "khan"):
-            thumb_time = await asyncio.to_thread(_find_video_thumb_time, file_path)
-            ss = f"{int(thumb_time // 3600):02d}:{int((thumb_time % 3600) // 60):02d}:{int(thumb_time % 60):02d}"
-            result = await asyncio.to_thread(lambda: subprocess.run(
-                ["ffmpeg", *_vaapi_args, "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],
-                capture_output=True, timeout=15
-            ))
-            if result.returncode != 0 or not await asyncio.to_thread(os.path.exists, thumb_path):
-                raise HTTPException(status_code=404, detail="Thumbnail generation failed")  # i18n: user-facing error message
+                    def _gen_pdf_thumb(fp, tp):
+                        """Generate a 0.3x PNG thumbnail from the first page of a PDF. Runs in worker thread."""
+                        doc = fitz.open(fp)
+                        try:
+                            pix = doc[0].get_pixmap(matrix=fitz.Matrix(0.3, 0.3))
+                            pix.save(tp)
+                            return doc.page_count
+                        finally:
+                            doc.close()
+                    page_count = await asyncio.to_thread(_gen_pdf_thumb, file_path, thumb_path)
+                except ImportError:
+                    raise HTTPException(status_code=404, detail="Thumbnail unavailable (PyMuPDF not installed)")  # i18n: user-facing error message
+            elif rtype in ("videos", "khan"):
+                thumb_time = await asyncio.to_thread(_find_video_thumb_time, file_path)
+                ss = f"{int(thumb_time // 3600):02d}:{int((thumb_time % 3600) // 60):02d}:{int(thumb_time % 60):02d}"
+                result = await asyncio.to_thread(lambda: subprocess.run(
+                    ["ffmpeg", *_vaapi_args, "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],
+                    capture_output=True, timeout=15
+                ))
+                if result.returncode != 0 or not await asyncio.to_thread(os.path.exists, thumb_path):
+                    raise HTTPException(status_code=404, detail="Thumbnail generation failed")  # i18n: user-facing error message
 
-            duration_seconds = await asyncio.to_thread(_probe_duration, file_path)
-        else:
-            raise HTTPException(status_code=404, detail="No thumbnail for this type")  # i18n: user-facing error message
-        sets, params = [], []
-        if page_count:
-            sets.append("page_count = ?")
-            params.append(page_count)
-        if duration_seconds:
-            sets.append("duration_seconds = ?")
-            params.append(duration_seconds)
-        if sets:
-            params.append(resource_id)
-            await db_exec(f"UPDATE {table} SET {', '.join(sets)} WHERE id = ?", tuple(params))
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"thumbnail {resource_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Thumbnail generation failed.")  # i18n: user-facing error message
+                duration_seconds = await asyncio.to_thread(_probe_duration, file_path)
+            else:
+                raise HTTPException(status_code=404, detail="No thumbnail for this type")  # i18n: user-facing error message
+            sets, params = [], []
+            if page_count:
+                sets.append("page_count = ?")
+                params.append(page_count)
+            if duration_seconds:
+                sets.append("duration_seconds = ?")
+                params.append(duration_seconds)
+            if sets:
+                params.append(resource_id)
+                await db_exec(f"UPDATE {table} SET {', '.join(sets)} WHERE id = ?", tuple(params))
+        except HTTPException:
+            raise
+        except Exception as e:
+            logging.error(f"thumbnail {resource_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Thumbnail generation failed.")  # i18n: user-facing error message
     return FileResponse(thumb_path, media_type="image/png")
 
 
@@ -268,12 +319,14 @@ async def resource_thumbnail(resource_id: str):
             summary="Get video seek-preview sprite sheet",
             description="Returns the cached JPG sprite sheet for a video resource. The metadata route generates it on first request.",
             tags=["Resources"],
-            responses={404: {"description": "Sprite not found"}})
-async def video_preview_sprite(resource_id: str):
+            responses={401: {"description": "Unauthorized"}, 404: {"description": "Sprite not found"}})
+async def video_preview_sprite(resource_id: str, user: str = Depends(verify_user)):
     """Get the cached sprite sheet image for a video resource.
 
     Args:
         resource_id: The resource database id.
+        user: Authenticated username (any role; the Flutter app requests this
+            through its authenticated Dio client).
 
     Returns:
         JPEG image (FileResponse).
@@ -291,12 +344,14 @@ async def video_preview_sprite(resource_id: str):
             description="Returns sprite sheet metadata for a video resource, generating the sheet on first request. Clients use it for YouTube-style seek preview thumbnails.",
             tags=["Resources"],
             response_model=dict,
-            responses={404: {"description": "Video or preview unavailable"}, 500: {"description": "Preview generation error"}})
-async def video_preview_meta(resource_id: str):
+            responses={401: {"description": "Unauthorized"}, 404: {"description": "Video or preview unavailable"}, 500: {"description": "Preview generation error"}})
+async def video_preview_meta(resource_id: str, user: str = Depends(verify_user)):
     """Get (and lazily generate) the seek-preview sprite sheet for a video.
 
     Args:
         resource_id: The resource database id.
+        user: Authenticated username (any role; the Flutter app requests this
+            through its authenticated Dio client).
 
     Returns:
         JSON metadata describing the sprite grid and sampling interval.
@@ -321,9 +376,13 @@ async def video_preview_meta(resource_id: str):
     rows = (frames + columns - 1) // columns
     sprite_path = os.path.join(THUMBNAILS_DIR, f"{resource_id}_previews.jpg")
     if not await asyncio.to_thread(os.path.exists, sprite_path):
-        ok = await asyncio.to_thread(_generate_video_sprite, file_path, sprite_path, interval, columns, rows)
-        if not ok:
-            raise HTTPException(status_code=404, detail="Preview generation failed")  # i18n: user-facing error message
+        async with _gen_lock(resource_id):
+            # Single-flight re-check: another request may have generated the
+            # sprite sheet while this one waited for the lock.
+            if not await asyncio.to_thread(os.path.exists, sprite_path):
+                ok = await asyncio.to_thread(_generate_video_sprite, file_path, sprite_path, interval, columns, rows)
+                if not ok:
+                    raise HTTPException(status_code=404, detail="Preview generation failed")  # i18n: user-facing error message
     return {
         "resource_id": resource_id,
         "sprite_url": f"/api/video/previews/{resource_id}/sprite",

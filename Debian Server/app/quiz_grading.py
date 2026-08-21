@@ -57,13 +57,45 @@ def grade_quiz(quiz: dict, answers_json: str):
         Tuple of (score_fraction, passed, threshold_fraction).  The client's
         own score/passed are never consulted.
     """
+    score, passed, threshold, _ = grade_quiz_detailed(quiz, answers_json)
+    return score, passed, threshold
+
+
+def grade_quiz_detailed(quiz: dict, answers_json: str):
+    """Grade an attempt and return per-question results for post-submit review.
+
+    Quiz-serving routes strip the answer key, so the client cannot grade
+    locally. This returns everything the client needs to render the review
+    screen AFTER the attempt is stored: revealing the key at that point is
+    safe because the score was already computed server-side.
+
+    Args:
+        quiz: Inner quiz dict with ``questions`` and ``pass_threshold``.
+        answers_json: Raw answers payload from the client.
+
+    Returns:
+        Tuple of (score_fraction, passed, threshold_fraction, results) where
+        results is a list of ``{"question_id", "correct", "correct_answers",
+        "explanation"}`` dicts in quiz-definition order.
+    """
     questions = quiz.get("questions") or []
     answers = _parse_answers(answers_json)
-    correct = sum(1 for i, q in enumerate(questions) if _is_correct(q, answers, i))
+    results = []
+    correct = 0
+    for i, q in enumerate(questions):
+        is_correct = _is_correct(q, answers, i)
+        if is_correct:
+            correct += 1
+        results.append({
+            "question_id": str(q.get("id", "")),
+            "correct": is_correct,
+            "correct_answers": _correct_answers(q),
+            "explanation": str(q.get("explanation") or ""),
+        })
     total = len(questions)
     score = correct / total if total else 0.0
     threshold = normalize_threshold(quiz.get("pass_threshold"))
-    return score, score >= threshold, threshold
+    return score, score >= threshold, threshold, results
 
 
 def _parse_answers(raw: str) -> dict:
