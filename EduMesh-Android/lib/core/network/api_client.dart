@@ -21,8 +21,21 @@ class ApiClient {
   /// Callback invoked when a token refresh fails and the user must be logged out.
   static void Function()? onForceLogout;
 
+  /// Local-only teardown on an unrecoverable 401: clears credentials and
+  /// per-profile state without a network call, so it cannot re-enter this
+  /// interceptor and deadlock.
+  static Future<void> _forceLogoutLocal() async {
+    try { await AuthService().logoutLocal(); } catch (_) {}
+    onForceLogout?.call();
+  }
+
   /// Current clock skew between local device and server.
   static Duration get clockOffset => _clockOffset;
+
+  /// Monotonic session-generation counter from [AuthService]: bumped on
+  /// every logout/profile switch. Background services snapshot it at start
+  /// and re-check before writing per-profile data.
+  static int get sessionGeneration => AuthService.sessionGeneration;
 
   /// Returns [DateTime.now()] corrected for server clock skew.
   /// Returns uncorrected time if the last sync is over 1 hour stale.
@@ -44,35 +57,59 @@ class ApiClient {
     ));
     if (kDebugMode) dio.interceptors.add(LogInterceptor());
     dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) {
+        options.extra['lumina_gen'] = AuthService.sessionGeneration;
+        handler.next(options);
+      },
       onError: (error, handler) async {
         if (error.response?.statusCode == 401) {
           final path = error.requestOptions.path;
-          if (path.endsWith('/student/token') || path.endsWith('/token') || path.endsWith('/register') || path.endsWith('/student/refresh-token') || path.endsWith('/student/renew-session')) {
+          // Auth/logout endpoints must bypass the refresh queue: a 401 on
+          // /logout re-entering this interceptor would await the completer
+          // held by the very logout that triggered it (circular await).
+          if (path.endsWith('/student/token') || path.endsWith('/token') || path.endsWith('/register') || path.endsWith('/student/refresh-token') || path.endsWith('/student/renew-session') || path.endsWith('/logout')) {
             handler.next(error);
             return;
           }
           if (error.requestOptions.extra['lumina_retried'] == true) {
-            try { await AuthService().logout(); } catch (_) {}
-            onForceLogout?.call();
+            await _forceLogoutLocal();
             handler.next(error);
             return;
           }
           if (_refreshCompleter != null) {
-            await _refreshCompleter!.future;
+            try {
+              // ponytail: 8s cap so a deadlocked refresh degrades to
+              // force-logout instead of freezing the caller forever.
+              await _refreshCompleter!.future.timeout(const Duration(seconds: 8));
+            } catch (_) {
+              await _forceLogoutLocal();
+              handler.next(error);
+              return;
+            }
+            // Profile switched (or logged out) while we waited on the
+            // refresh completer. Whatever token is current belongs to
+            // another student: retrying would send this request under it.
+            // Surface the original 401 without triggering force-logout.
+            if (AuthService.sessionGeneration != error.requestOptions.extra['lumina_gen']) {
+              handler.next(error);
+              return;
+            }
             final newToken = await AuthService().getSessionToken();
             error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
             error.requestOptions.extra['lumina_retried'] = true;
             try {
               final retryResponse = await dio.fetch(error.requestOptions);
               handler.resolve(retryResponse);
-              return;
-            } catch (_) { }
-            handler.next(error);
+            } catch (_) {
+              handler.next(error);
+            }
             return;
           }
           _refreshCompleter = Completer<void>();
           try {
             try {
+              // refreshSession already falls back to renewSession internally;
+              // calling renewSession here too double-renews per 401.
               if (await AuthService().refreshSession()) {
                 final newToken = await AuthService().getSessionToken();
                 error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
@@ -80,31 +117,13 @@ class ApiClient {
                 try {
                   final retryResponse = await dio.fetch(error.requestOptions);
                   handler.resolve(retryResponse);
-                  return;
                 } catch (_) {
                   handler.next(error);
-                  return;
                 }
+                return;
               }
-              if (await AuthService().renewSession()) {
-                final newToken = await AuthService().getSessionToken();
-                error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-                error.requestOptions.extra['lumina_retried'] = true;
-                try {
-                  final retryResponse = await dio.fetch(error.requestOptions);
-                  handler.resolve(retryResponse);
-                  return;
-                } catch (_) {
-                  handler.next(error);
-                  return;
-                }
-              }
-              await AuthService().logout();
-              onForceLogout?.call();
-            } catch (_) {
-              try { await AuthService().logout(); } catch (_) {}
-              onForceLogout?.call();
-            }
+            } catch (_) {}
+            await _forceLogoutLocal();
           } finally {
             _refreshCompleter!.complete();
             _refreshCompleter = null;

@@ -19,15 +19,14 @@ class MutationQueue {
 
   /// Enqueues a mutation to be sent to the server.
   ///
-  /// If online, executes immediately via [ApiClient]. On success, returns
-  /// without persisting. On network failure, persists to the
-  /// `pending_mutations` table for later retry. If offline, persists
-  /// immediately.
-  Future<void> enqueue(String endpoint, {required String method, required Map<String, dynamic> body, String priority = 'normal'}) async {
+  /// If online, executes immediately via [ApiClient] and returns the
+  /// response data (or null when the method produces no body). On network
+  /// failure or offline, persists to the `pending_mutations` table for
+  /// later retry and returns null: the server's result is not known yet.
+  Future<dynamic> enqueue(String endpoint, {required String method, required Map<String, dynamic> body, String priority = 'normal'}) async {
     if (ConnectivityService().isOnline) {
       try {
-        await _executeMutation(endpoint, method, body);
-        return;
+        return await _executeMutation(endpoint, method, body);
       } on DioException {
         // Network error: persist for retry
       }
@@ -41,6 +40,7 @@ class MutationQueue {
       'retries': 0,
       'priority': priority,
     });
+    return null;
   }
 
   bool _flushing = false;
@@ -63,7 +63,12 @@ class MutationQueue {
   Future<void> _flushOnce() async {
     final db = await DBHelper().database;
     final rows = await db.query('pending_mutations', orderBy: 'id ASC');
+    final gen = ApiClient.sessionGeneration;
     for (final row in rows) {
+      // Profile switched mid-flush: the remaining rows belong to the new
+      // profile's account and must not execute under this flush. Stop; the
+      // next flush (under the right token) picks them up.
+      if (ApiClient.sessionGeneration != gen) return;
       final id = row['id'] as int;
       final endpoint = row['endpoint'] as String;
       final method = row['method'] as String;
@@ -73,7 +78,21 @@ class MutationQueue {
         final body = jsonDecode(row['body'] as String) as Map<String, dynamic>;
         await _executeMutation(endpoint, method, body);
         await db.delete('pending_mutations', where: 'id = ?', whereArgs: [id]);
-      } on DioException {
+      } on DioException catch (e) {
+        // Hub unreachable: leave this row and the tail for the next flush
+        // instead of burning a timeout per remaining row out of order.
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.connectionError) {
+          return;
+        }
+        // Permanent rejection (4xx bad response): retrying can never
+        // succeed. Drop immediately.
+        final status = e.response?.statusCode ?? 0;
+        if (e.type == DioExceptionType.badResponse && status >= 400 && status < 500) {
+          debugPrint('MutationQueue: dropping mutation $id ($endpoint): HTTP $status rejected permanently');
+          await db.delete('pending_mutations', where: 'id = ?', whereArgs: [id]);
+          continue;
+        }
         final retries = (row['retries'] as int) + 1;
         if (retries >= maxRetries) {
           if (priority == 'high') {
@@ -93,23 +112,25 @@ class MutationQueue {
     }
   }
 
-  Future<void> _executeMutation(String endpoint, String method, Map<String, dynamic> body) async {
+  /// Executes one mutation and returns the response data for body-bearing
+  /// methods, or null when the method has no response body to consume.
+  Future<dynamic> _executeMutation(String endpoint, String method, Map<String, dynamic> body) async {
     switch (method.toUpperCase()) {
       case 'POST':
-        await ApiClient.post(endpoint, data: body);
-        break;
+        final response = await ApiClient.post(endpoint, data: body);
+        return response.data;
       case 'PUT':
         await ApiClient.ensureInitialized();
         await ApiClient.dio.put(endpoint, data: body);
-        break;
+        return null;
       case 'DELETE':
         await ApiClient.ensureInitialized();
         await ApiClient.dio.delete(endpoint, data: body);
-        break;
+        return null;
       case 'PATCH':
         await ApiClient.ensureInitialized();
         await ApiClient.dio.patch(endpoint, data: body);
-        break;
+        return null;
       default:
         throw ArgumentError('Unsupported HTTP method: $method');
     }

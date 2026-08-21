@@ -27,13 +27,26 @@ class ActivityTracker {
     _autoSyncTimer = Timer.periodic(const Duration(seconds: 60), (_) => sync());
   }
 
+  /// Clears in-memory study-session state.
+  ///
+  /// Called on logout/profile switch so a stale session's duration is never
+  /// recorded under another student's profile.
+  void resetSessionState() {
+    _studyStartTime = null;
+  }
+
   /// Record the start of a focused study session.
+  ///
+  /// Flushes any active session first: overlapping viewers (PDF open under
+  /// a mini-player video) must both earn their time, not lose the first.
   Future<void> startStudySession({String? subject}) async {
+    await endStudySession();
+    final subj = subject?.trim();
     _studyStartTime = ApiClient.correctedNow();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_activeStudySessionKey, jsonEncode({
       'start_time': _studyStartTime!.toIso8601String(),
-      'subject': subject,
+      'subject': (subj != null && subj.isNotEmpty) ? subj : null,
     }));
   }
 
@@ -108,29 +121,35 @@ class ActivityTracker {
     final list = _decodeLocalEvents(prefs.getString(_localEventsKey));
     if (list.isEmpty) return [];
     final all = list;
-    all.sort((a, b) => (b['timestamp'] as String).compareTo(a['timestamp'] as String));
+    all.sort((a, b) => (b['timestamp'] as String? ?? '').compareTo(a['timestamp'] as String? ?? ''));
     final end = limit > all.length ? all.length : limit;
     return all.sublist(0, end);
   }
 
   /// Get analytics data including study time and streak info.
+  ///
+  /// Fetches fresh analytics from the hub when online and caches the result
+  /// on success; the cached copy is only used as an offline/failure fallback.
   Future<Map<String, dynamic>> getAnalytics() async {
     final prefs = await SharedPreferences.getInstance();
+    if (ConnectivityService().isOnline) {
+      try {
+        final response = await ApiClient.get('/student/analytics');
+        if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+          await prefs.setString(_cachedAnalyticsKey, jsonEncode(response.data));
+          return response.data;
+        }
+      } catch (_) { }
+    }
+
+    // Offline (or fetch failed): fall back to the cached copy.
     final cached = prefs.getString(_cachedAnalyticsKey);
     if (cached != null) {
       try {
         final decoded = jsonDecode(cached);
         if (decoded is Map<String, dynamic>) return decoded;
-      } catch (_) { } }
-
-    // Cache empty, fetch from server (e.g. after data clear)
-    try {
-      final response = await ApiClient.get('/student/analytics');
-      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
-        await prefs.setString(_cachedAnalyticsKey, jsonEncode(response.data));
-        return response.data;
-      }
-    } catch (_) { }
+      } catch (_) { }
+    }
 
     return {
       'study_minutes_this_week': 0,
@@ -157,6 +176,9 @@ class ActivityTracker {
       '${event['timestamp']}|${event['action']}|${event['resource_id']}|${event['metadata']}';
 
   Future<void> _sync() async {
+    // Snapshot before reading events: if the profile switches mid-sync,
+    // everything we read/post/write belongs to the previous student.
+    final gen = ApiClient.sessionGeneration;
     final prefs = await SharedPreferences.getInstance();
     final original = _decodeLocalEvents(prefs.getString(_localEventsKey));
     if (original.isEmpty) return;
@@ -186,15 +208,22 @@ class ActivityTracker {
       }
     }
 
-    // Compute streak: consecutive days with activity going back from today
+    // Compute streak: consecutive days with activity ending today. Built
+    // from the FULL event history (pre-prune), otherwise the 7-day cutoff
+    // above would silently cap the streak at 7 despite the 365-day loop.
     final activeDates = <String>{};
-    for (final event in list) {
+    for (final event in original) {
       final ts = DateTime.tryParse(event['timestamp'] as String? ?? '');
       if (ts != null) activeDates.add(ts.toIso8601String().split('T')[0]);
     }
     int streak = 0;
     final today = ApiClient.correctedNow();
-    for (int i = 0; i < 365; i++) {
+    final todayKey = today.toIso8601String().split('T')[0];
+    // If the student has not studied yet today, count from yesterday
+    // instead of breaking on today: posting streak=0 every morning would
+    // zero the stored streak before the first session of the day.
+    final int start = activeDates.contains(todayKey) ? 0 : 1;
+    for (int i = start; i < start + 365; i++) {
       final d = today.subtract(Duration(days: i));
       final key = d.toIso8601String().split('T')[0];
       if (activeDates.contains(key)) {
@@ -212,6 +241,9 @@ class ActivityTracker {
     } catch (_) {
       return;
     }
+    // Profile switched mid-sync: everything from here on belongs to
+    // another student. Abort silently; nothing is written back.
+    if (ApiClient.sessionGeneration != gen) return;
 
     // Compute and sync per-subject minutes
     final subjectMinutes = <String, int>{};
@@ -240,6 +272,7 @@ class ActivityTracker {
 
     /// Save pruned list, merging any events appended while this sync was in
     /// flight so concurrent logAction calls are not silently lost.
+    if (ApiClient.sessionGeneration != gen) return;
     final current = _decodeLocalEvents(prefs.getString(_localEventsKey));
     final known = original.map(_eventKey).toSet();
     for (final event in current) {

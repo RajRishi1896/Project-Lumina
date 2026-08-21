@@ -2,7 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/db_helper.dart';
+import '../../../core/services/activity_tracker.dart';
+import '../../../shared/services/download_queue.dart';
 
 /// A singleton service managing student authentication and secure credential storage.
 ///
@@ -13,6 +17,15 @@ class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
+
+  /// Monotonic counter bumped whenever the active profile's data is purged
+  /// (logout or profile switch). Background operations snapshot it at start
+  /// and re-check before writing: a changed value means their data now
+  /// belongs to a different student's session.
+  static int _sessionGeneration = 0;
+
+  /// The current session generation (see [_sessionGeneration]).
+  static int get sessionGeneration => _sessionGeneration;
 
   final _secureStorage = const FlutterSecureStorage();
   
@@ -157,20 +170,22 @@ class AuthService {
         // Non-Dio failure (e.g. timeout): try offline login below.
       }
 
-      // 2. Offline fallback: known username on this device + stored token
+      // 2. Offline fallback: the MATCHED profile's own stored token. Never
+      // reuse the active session token here: it may belong to a different
+      // profile, which would authenticate the entered user with another
+      // child's credentials (split-brain).
       final users = await _getUsers();
-      final known = users.any((u) => u['username'] == username);
-      final storedToken = await _secureStorage.read(key: _sessionTokenKey);
-      if (known && storedToken != null && storedToken.isNotEmpty) {
-        final userId = users.firstWhere(
-          (u) => u['username'] == username,
-          orElse: () => <String, dynamic>{},
-        )['userId']?.toString();
-        if (userId != null && userId.isNotEmpty) {
-          ApiClient.setAuth(storedToken);
-          await _saveSession(userId, username);
-          return 'local_only';
-        }
+      final profile = users.firstWhere(
+        (u) => u['username'] == username,
+        orElse: () => <String, dynamic>{},
+      );
+      final storedToken = profile['token']?.toString() ?? '';
+      final userId = profile['userId']?.toString() ?? '';
+      if (storedToken.isNotEmpty && userId.isNotEmpty) {
+        ApiClient.setAuth(storedToken);
+        await _secureStorage.write(key: _sessionTokenKey, value: storedToken);
+        await _saveSession(userId, username);
+        return 'local_only';
       }
 
       return null;
@@ -265,6 +280,11 @@ class AuthService {
     }
     if (profile == null || profile['username'] == null) return false;
 
+    // The profile picker switches without going through logout: purge the
+    // outgoing student's pending state BEFORE activating the target so it
+    // can never flush under the new profile's token.
+    await _purgeActiveProfileData();
+
     await _secureStorage.write(key: _userIdKey, value: userId);
     await _secureStorage.write(key: _usernameKey, value: profile['username'].toString());
     final token = profile['token']?.toString() ?? '';
@@ -306,6 +326,7 @@ class AuthService {
   /// Removes the active profile (tokens and its list entry) from the device,
   /// keeping all other known profiles switchable. Called by [logout].
   Future<void> _removeActiveProfile() async {
+    await _purgeActiveProfileData();
     try {
       final activeId = await _secureStorage.read(key: _userIdKey);
       final activeUsername = await _secureStorage.read(key: _usernameKey);
@@ -331,6 +352,41 @@ class AuthService {
       } catch (_) {}
     }
     ApiClient.clearAuth();
+  }
+
+  /// Drops all per-profile local state: pending mutations/downloads, the
+  /// activity table, cached analytics/events prefs, and in-memory session
+  /// and queue state. Without this, one student's queued writes would sync
+  /// under another student's token after a logout or profile switch.
+  Future<void> _purgeActiveProfileData() async {
+    // Bump FIRST so any in-flight operation that snapshots the generation
+    // sees the new value even while the purge below is still running.
+    _sessionGeneration++;
+    try {
+      final db = await DBHelper().database;
+      await db.transaction((txn) async {
+        await txn.delete('pending_mutations');
+        await txn.delete('pending_downloads');
+        await txn.delete('activity');
+      });
+    } catch (_) {}
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('local_events');
+      await prefs.remove('cached_analytics');
+      await prefs.remove('active_study_session');
+    } catch (_) {}
+    ActivityTracker().resetSessionState();
+    DownloadQueue().clear();
+  }
+
+  /// Logs out locally without any network call: clears the active profile's
+  /// credentials and per-profile state only.
+  ///
+  /// Used by [ApiClient]'s 401 terminal path, where a networked logout could
+  /// 401 again and re-enter the interceptor (circular await / app freeze).
+  Future<void> logoutLocal() async {
+    await _removeActiveProfile();
   }
 
   /// Logs the student out of the hub and removes only the active profile
@@ -375,16 +431,32 @@ class AuthService {
     await _secureStorage.write(key: _usernameKey, value: username);
   }
 
+  /// Consecutive [_getUsers] failures; 2 in a row means the users-list entry
+  /// is genuinely corrupted (e.g. Android Keystore broken after lock-screen
+  /// removal), not a transient read error.
+  static int _usersListReadFailures = 0;
+
   Future<List<Map<String, dynamic>>> _getUsers() async {
     try {
       final String? usersJson = await _secureStorage.read(key: _usersListKey);
-      if (usersJson == null) return [];
-      return List<Map<String, dynamic>>.from(jsonDecode(usersJson));
-    } catch (e) { 
-      // EDGE CASE: If Android Keystore is corrupted (e.g. user removed lock screen PIN),
-      // read() throws an exception. We must wipe the corrupted storage to prevent a permanent crash loop.
-      await _secureStorage.deleteAll();
-      return []; 
+      if (usersJson == null) {
+        _usersListReadFailures = 0;
+        return [];
+      }
+      final users = List<Map<String, dynamic>>.from(jsonDecode(usersJson));
+      _usersListReadFailures = 0;
+      return users;
+    } catch (e) {
+      _usersListReadFailures++;
+      // EDGE CASE: If Android Keystore is corrupted (e.g. user removed lock
+      // screen PIN), read() throws on every call. Drop ONLY the users list,
+      // and only after repeated failures: a single transient error must not
+      // wipe every profile, and deleteAll() would nuke the active session.
+      if (_usersListReadFailures >= 2) {
+        _usersListReadFailures = 0;
+        try { await _secureStorage.delete(key: _usersListKey); } catch (_) {}
+      }
+      return [];
     }
   }
 
