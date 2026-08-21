@@ -20,6 +20,7 @@ class MiniPlayerController extends ChangeNotifier {
   VideoPlayerController? _videoController;
   String _title = '';
   String _videoUrl = '';
+  String _subject = '';
   bool _active = false;
   bool _quizActive = false;
 
@@ -33,6 +34,10 @@ class MiniPlayerController extends ChangeNotifier {
   /// The video source URL associated with the active session.
   String get videoUrl => _videoUrl;
 
+  /// The subject associated with the active session, threaded into study
+  /// tracking when the video is reopened from the overlay.
+  String get subject => _subject;
+
   /// The active [VideoPlayerController], or `null` when no video is playing.
   VideoPlayerController? get videoController => _videoController;
 
@@ -40,23 +45,34 @@ class MiniPlayerController extends ChangeNotifier {
   ///
   /// Replaces any previous session and notifies listeners immediately. A
   /// different previous controller is disposed so ghost streams never pile up.
-  void start(String title, String videoUrl, VideoPlayerController videoController) {
+  void start(String title, String videoUrl, VideoPlayerController videoController, {String? subject}) {
     if (_videoController != null && !identical(_videoController, videoController)) {
+      _videoController!.removeListener(_onVideoEnded);
       _videoController!.dispose();
     }
     _title = title;
     _videoUrl = videoUrl;
+    _subject = subject ?? '';
     _videoController = videoController;
+    videoController.addListener(_onVideoEnded);
     _active = true;
     notifyListeners();
   }
 
   /// Stops playback, disposes the controller, and hides the overlay.
   void stop() {
+    _videoController?.removeListener(_onVideoEnded);
     _videoController?.dispose();
     _videoController = null;
     _active = false;
     notifyListeners();
+  }
+
+  /// Retires the session when the video finishes so the overlay never shows
+  /// a frozen last frame indefinitely (mirrors the full player's exit path).
+  void _onVideoEnded() {
+    final vc = _videoController;
+    if (vc != null && vc.value.isCompleted) stop();
   }
 
   /// Sets the quiz-active flag. When `true` the mini-player widget hides and

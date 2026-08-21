@@ -60,6 +60,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   _PreviewSheet? _preview;
   bool _previewsUnavailable = false;
   bool _previewLoading = false;
+  int _tickSecond = -1;
+  bool _tickPlaying = false;
 
   bool get _isLocal {
     final u = widget.videoUrl;
@@ -109,10 +111,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         _controller = VideoPlayerController.networkUrl(Uri.parse(url));
       }
       await _controller!.initialize();
-      if (_disposed) {
-        unawaited(_controller?.dispose());
-        return;
-      }
+      // State.dispose() ran mid-initialize and owns cleanup: disposing again
+      // here trips the controller's dispose assert.
+      if (_disposed) return;
       _controller!.addListener(_onTick);
       if (mounted) {
         setState(() => _initialized = true);
@@ -133,6 +134,13 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   void _onTick() {
     if (_disposed || !mounted || _controller == null) return;
+    final v = _controller!.value;
+    // ponytail: rebuild only on visible changes (second-granular position,
+    // play state); raw notifications fire far more often than the UI needs.
+    final second = v.position.inSeconds;
+    if (second == _tickSecond && v.isPlaying == _tickPlaying) return;
+    _tickSecond = second;
+    _tickPlaying = v.isPlaying;
     setState(() {});
   }
 
@@ -347,7 +355,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     _exitRequested = true;
     final ctrl = _controller;
     if (ctrl != null && ctrl.value.isInitialized && !ctrl.value.isCompleted) {
-      MiniPlayerController().start(widget.title, widget.videoUrl, ctrl);
+      MiniPlayerController().start(widget.title, widget.videoUrl, ctrl, subject: widget.subject);
       _ownsController = false;
     } else if (ctrl != null &&
         identical(MiniPlayerController().videoController, ctrl)) {

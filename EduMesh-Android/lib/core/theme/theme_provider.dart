@@ -39,13 +39,28 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 
 /// A [Notifier] that manages whether the dark app icon is active.
 class AppIconNotifier extends Notifier<bool> {
+  bool _loaded = false;
+
   @override
   bool build() {
+    // Load the persisted preference on first watch so the settings toggle
+    // reflects the live icon instead of defaulting to OFF.
+    _load();
     return false;
+  }
+
+  /// Reads the persisted dark icon preference from [SharedPreferences].
+  /// Idempotent: only reads once per app session.
+  Future<void> _load() async {
+    if (_loaded) return;
+    _loaded = true;
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getBool('dark_app_icon') ?? false;
   }
 
   /// Sets whether to use the dark app icon and persists the choice.
   Future<void> setDarkIcon(bool value) async {
+    _loaded = true;
     state = value;
     await setAppIcon(value);
     final prefs = await SharedPreferences.getInstance();

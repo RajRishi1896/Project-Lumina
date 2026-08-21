@@ -54,39 +54,51 @@ class _ConnectionGateState extends State<ConnectionGate> {
   }
 
   OverlayEntry _createOverlayEntry() {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final l10n = AppLocalizations.of(context)!;
+    // Resolve cs/l10n inside the builder: values captured at show-time go
+    // stale if the theme or locale changes during the 7s banner window.
     return OverlayEntry(
-      builder: (context) => Positioned(
-        top: MediaQuery.of(context).padding.top + AppSpacing.xs,
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-            decoration: BoxDecoration(
-              color: cs.error,
-              borderRadius: BorderRadius.circular(AppSpacing.md),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.connectionOfflineBanner,
-                    style: tt.bodyLarge?.copyWith(color: cs.onError),
-                  ),
+      builder: (context) {
+        final cs = Theme.of(context).colorScheme;
+        final tt = Theme.of(context).textTheme;
+        final l10n = AppLocalizations.of(context)!;
+        return Positioned(
+          top: MediaQuery.of(context).padding.top + AppSpacing.xs,
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          child: Material(
+            color: Colors.transparent,
+            child: Semantics(
+              liveRegion: true,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: cs.error,
+                  borderRadius: BorderRadius.circular(AppSpacing.md),
                 ),
-                GestureDetector(
-                  onTap: _dismissBanner,
-                  child: Icon(Icons.close, color: cs.onError, size: 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.connectionOfflineBanner,
+                        style: tt.bodyLarge?.copyWith(color: cs.onError),
+                      ),
+                    ),
+                    SizedBox(
+                      width: AppSpacing.touchTarget,
+                      height: AppSpacing.touchTarget,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _dismissBanner,
+                        child: Icon(Icons.close, color: cs.onError, size: 20),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

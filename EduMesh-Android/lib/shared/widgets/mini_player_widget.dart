@@ -43,6 +43,7 @@ class MiniPlayerWidget extends StatelessWidget {
                   builder: (_) => VideoPlayerPage(
                     title: ctrl.title,
                     videoUrl: ctrl.videoUrl,
+                    subject: ctrl.subject,
                     existingController: ctrl.videoController,
                   ),
                 ),

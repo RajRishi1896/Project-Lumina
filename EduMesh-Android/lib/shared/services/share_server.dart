@@ -52,9 +52,18 @@ class ShareServer {
   /// Maximum tracked source IPs before the rate map is pruned.
   static const int _maxTrackedIps = 64;
 
+  /// Maximum `have` replies sent per discovery request (amplification cap).
+  static const int _maxRepliesPerRequest = 3;
+
   RawDatagramSocket? _udpSocket;
   HttpServer? _tcpServer;
   bool _started = false;
+
+  /// Whether both listeners are currently bound and serving.
+  ///
+  /// False after [stop] or after a start/socket error tore the listeners
+  /// down; the settings toggle reads this to reflect the real state.
+  bool get isServing => _started;
 
   /// Last handled request time per source IP, for UDP rate limiting.
   final Map<String, DateTime> _lastRequestAt = {};
@@ -223,10 +232,13 @@ class ShareServer {
       final deviceId = await _deviceId();
       final name = await _deviceName();
       final ip = await _localIp();
+      var replies = 0;
       for (final record in downloads) {
+        if (replies >= _maxRepliesPerRequest) break;
         final recordTitle = record['title'] as String? ?? '';
         if (recordTitle.isEmpty) continue;
         if (!recordTitle.contains(title) && !title.contains(recordTitle)) continue;
+        replies++;
         final reply = jsonEncode({
           'req_id': reqId,
           'dev': deviceId,
@@ -394,20 +406,31 @@ class ShareServer {
 
   /// Parses a single-part `Range: bytes=start-end` header against [length].
   ///
-  /// Returns null when the header is not a usable byte range (serve full 200).
-  /// Returns `satisfiable: false` for out-of-bounds or inverted ranges, which
-  /// must be answered with 416 and `Content-Range: bytes */length`. Valid
-  /// ranges are clamped to the file size and returned for a 206 response.
+  /// Also accepts the suffix form `bytes=-n` (the last n bytes; a suffix
+  /// longer than the file yields the whole file). Returns null when the
+  /// header is not a usable byte range (serve full 200). Returns
+  /// `satisfiable: false` for out-of-bounds or inverted ranges, which must
+  /// be answered with 416 and `Content-Range: bytes */length`. Valid ranges
+  /// are clamped to the file size and returned for a 206 response.
   ({int start, int end, bool satisfiable})? _parseRange(String header, int length) {
-    final match = RegExp(r'^bytes=(\d+)-(\d*)\s*$').firstMatch(header);
+    final match = RegExp(r'^bytes=(\d*)-(\d*)\s*$').firstMatch(header);
     if (match == null) return null;
-    final start = int.tryParse(match.group(1)!) ?? -1;
+    final startGroup = match.group(1)!;
+    final endGroup = match.group(2)!;
+    if (startGroup.isEmpty) {
+      if (endGroup.isEmpty) return null;
+      final n = int.tryParse(endGroup) ?? -1;
+      if (n <= 0 || length <= 0) {
+        return (start: 0, end: 0, satisfiable: false);
+      }
+      return (start: length >= n ? length - n : 0, end: length - 1, satisfiable: true);
+    }
+    final start = int.tryParse(startGroup) ?? -1;
     if (start < 0 || start >= length) {
       return (start: 0, end: 0, satisfiable: false);
     }
     var end = length - 1;
-    final endGroup = match.group(2);
-    if (endGroup != null && endGroup.isNotEmpty) {
+    if (endGroup.isNotEmpty) {
       final parsedEnd = int.tryParse(endGroup) ?? -1;
       if (parsedEnd < 0 || parsedEnd < start) {
         return (start: 0, end: 0, satisfiable: false);

@@ -111,8 +111,9 @@ class LuminaSettingsSheet extends ConsumerWidget {
             title: Text(AppLocalizations.of(context)!.storageOfflineLibraryTitle),
             subtitle: Text(AppLocalizations.of(context)!.storageOfflineLibrarySubtitle),
             onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const OfflineLibraryPage()));
+              final nav = Navigator.of(context);
+              nav.pop();
+              nav.push(MaterialPageRoute(builder: (_) => const OfflineLibraryPage()));
             },
           ),
 
@@ -214,11 +215,10 @@ class _ShareToggleTileState extends State<_ShareToggleTile> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final prefs = await SharedPreferences.getInstance();
-      if (mounted) {
-        setState(() => _enabled = prefs.getBool(ShareServer.enabledPrefKey) ?? false);
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Show the real serving state, not the pref: a failed bind must not
+      // read as ON while nothing serves.
+      if (mounted) setState(() => _enabled = ShareServer().isServing);
     });
   }
 
@@ -232,14 +232,16 @@ class _ShareToggleTileState extends State<_ShareToggleTile> {
       subtitle: Text(l10n.shareSettingsDescription),
       value: _enabled,
       onChanged: (val) async {
-        setState(() => _enabled = val);
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool(ShareServer.enabledPrefKey, val);
+        // start() is idempotent and swallows its own bind errors, so
+        // tapping ON again after a failure retries cleanly.
         if (val) {
-          unawaited(ShareServer().start().catchError((_) {}));
+          await ShareServer().start();
         } else {
-          unawaited(ShareServer().stop());
+          await ShareServer().stop();
         }
+        if (mounted) setState(() => _enabled = ShareServer().isServing);
       },
     );
   }

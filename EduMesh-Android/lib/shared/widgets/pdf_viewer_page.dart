@@ -41,13 +41,15 @@ class PdfViewerPage extends StatefulWidget {
 }
 
 class _PdfViewerPageState extends State<PdfViewerPage> {
-  late final PdfControllerPinch _pdfController;
+  late PdfControllerPinch _pdfController;
   int _currentPage = 1;
   int _totalPages = 0;
   double _zoomLevel = 1.0;
   bool _controlsVisible = true;
   bool _loaded = false;
+  bool _docError = false;
   bool _disposed = false;
+  int? _pendingRestorePage;
   Timer? _savePositionDebounce;
 
   String get _positionKey => 'pdf_pos_${widget.pdfUrl}';
@@ -70,10 +72,21 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     return PdfDocument.openFile(widget.pdfUrl);
   }
 
+  /// FNV-1a over the full URL: deterministic across restarts, and distinct
+  /// URLs never collide (the old regex-to-'_' scheme collapsed
+  /// `/files/a_b.pdf` and `/files/a.b.pdf` onto one cache file).
+  String get _cacheKey {
+    var hash = 0xcbf29ce484222325;
+    for (final unit in widget.pdfUrl.codeUnits) {
+      hash ^= unit;
+      hash *= 0x100000001b3;
+    }
+    return 'fnv1a_${hash.toRadixString(16)}';
+  }
+
   Future<File> _getCachedPdfFile() async {
     final dir = await getTemporaryDirectory();
-    final key = widget.pdfUrl.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
-    return File('${dir.path}/pdf_cache_$key');
+    return File('${dir.path}/pdf_cache_$_cacheKey');
   }
 
   /// Caps the view-time PDF cache at [_maxPdfCacheFiles] by deleting the
@@ -108,8 +121,22 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   Future<void> _restorePosition() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getInt(_positionKey);
-    if (saved != null && saved > 1) {
-      unawaited(_pdfController.animateToPage(pageNumber: saved, duration: Duration.zero));
+    if (saved == null || saved <= 1 || _disposed) return;
+    _pendingRestorePage = saved;
+    _applyPendingRestore();
+  }
+
+  /// Applies the saved page once [PdfControllerPinch.pagesCount] is known,
+  /// clamped so a stale saved value can never address past the last page.
+  void _applyPendingRestore() {
+    final target = _pendingRestorePage;
+    final total = _pdfController.pagesCount;
+    if (target == null || total == null || _disposed) return;
+    _pendingRestorePage = null;
+    final page = target.clamp(1, total);
+    if (page > 1) {
+      unawaited(
+          _pdfController.animateToPage(pageNumber: page, duration: Duration.zero));
     }
   }
 
@@ -121,6 +148,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
   void _onPageChanged() {
     if (_disposed) return;
+    _applyPendingRestore();
     final page = _pdfController.page;
     final total = _pdfController.pagesCount ?? _totalPages;
     final zoom = _pdfController.value.getMaxScaleOnAxis();
@@ -248,6 +276,21 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     ).whenComplete(() => controller.dispose());
   }
 
+  /// Recreates the document future after a load failure so Retry gets a
+  /// fresh attempt instead of replaying the same failed Future.
+  void _retryLoad() {
+    setState(() {
+      _docError = false;
+      _loaded = false;
+      _currentPage = 1;
+      _totalPages = 0;
+    });
+    _pdfController.removeListener(_onPageChanged);
+    _pdfController.dispose();
+    _pdfController = PdfControllerPinch(document: _openPdf());
+    _pdfController.addListener(_onPageChanged);
+  }
+
   @override
   void dispose() {
     _disposed = true;
@@ -295,13 +338,36 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         onTap: () => setState(() => _controlsVisible = !_controlsVisible),
         child: Stack(
           children: [
-            PdfViewPinch(
-              controller: _pdfController,
-              onDocumentError: (_) {
-                if (mounted) setState(() {});
-              },
-            ),
-            if (_controlsVisible) ...[
+            if (_docError)
+              Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.section.w),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline, size: 48.sp, color: cs.error),
+                      SizedBox(height: AppSpacing.md.h),
+                      Text(l10n.fileNotAvailable,
+                          textAlign: TextAlign.center,
+                          style: tt.bodyLarge?.copyWith(color: cs.onSurface)),
+                      SizedBox(height: AppSpacing.lg.h),
+                      IconButton.filled(
+                        onPressed: _retryLoad,
+                        icon: const Icon(Icons.refresh),
+                        tooltip: l10n.buttonRetry,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              PdfViewPinch(
+                controller: _pdfController,
+                onDocumentError: (_) {
+                  if (mounted) setState(() => _docError = true);
+                },
+              ),
+            if (_controlsVisible && !_docError) ...[
               if (_totalPages > 1)
                 Positioned(
                   left: AppSpacing.md.w,
