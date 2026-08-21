@@ -70,7 +70,7 @@ async def upload_zim(file: UploadFile = File(...), title: str = Form(""), teache
     safe_filename = re.sub(r'[^A-Za-z0-9_.-]', '_', file.filename or 'archive.zim')
     archive_path = os.path.join(tmp_dir, safe_filename)
     part_path = f"{archive_path}.part"
-    os.makedirs(tmp_dir, exist_ok=True)
+    await asyncio.to_thread(os.makedirs, tmp_dir, exist_ok=True)
 
     chunk_size = 64 * 1024
     total_size = 0
@@ -153,10 +153,16 @@ def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, ti
     try:
         conn = sqlite3.connect(DB_PATH)
 
-        # Aggressive PRAGMAs for bulk insert (MUST be before any writes)
-        conn.execute("PRAGMA journal_mode = OFF")
+        # Bulk-insert PRAGMAs. journal_mode MUST NOT be changed here: it is a
+        # database-wide setting, and journal_mode=OFF removed the rollback
+        # journal for every other connection to the shared hub.db (crash =>
+        # corruption risk). synchronous and cache_size are per-connection and
+        # never persist globally.
         conn.execute("PRAGMA synchronous = OFF")
         conn.execute("PRAGMA cache_size = -64000")
+        # Wait (up to 60s) instead of instantly failing when another writer
+        # (concurrent upload, activity sync flush) holds the write lock.
+        conn.execute("PRAGMA busy_timeout = 60000")
 
         conn.execute("DROP INDEX IF EXISTS idx_zim_articles_archive")
         conn.execute("DROP INDEX IF EXISTS idx_zim_articles_title")
@@ -209,8 +215,10 @@ def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, ti
                 batch)
             total_indexed += len(batch)
 
-        conn.execute("CREATE INDEX idx_zim_articles_archive ON zim_articles(archive_id)")
-        conn.execute("CREATE INDEX idx_zim_articles_title ON zim_articles(title)")
+        # IF NOT EXISTS: a concurrent uploader that recreated the indexes
+        # between our DROP and CREATE must not crash this run.
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_zim_articles_archive ON zim_articles(archive_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_zim_articles_title ON zim_articles(title)")
 
         # Bridge into resources table so ZIM archives appear in content manager
         from datetime import datetime
@@ -224,8 +232,7 @@ def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, ti
 
         conn.commit()
 
-        # Revert PRAGMAs after commit
-        conn.execute("PRAGMA journal_mode = WAL")
+        # Reset the per-connection PRAGMAs (journal_mode was never changed).
         conn.execute("PRAGMA synchronous = NORMAL")
         conn.execute("PRAGMA cache_size = -8000")
         from app.routers.resources import invalidate_catalog_cache
@@ -330,9 +337,13 @@ def _reindex_zim_articles(zim_path: str, archive_id: str, archive_title: str):
 
     conn = sqlite3.connect(DB_PATH)
     try:
-        conn.execute("PRAGMA journal_mode = OFF")
+        # Per-connection bulk-insert PRAGMAs only. journal_mode is a
+        # database-wide setting and must never be changed on the shared
+        # hub.db (journal_mode=OFF disabled the rollback journal for every
+        # other connection; crash => corruption risk).
         conn.execute("PRAGMA synchronous = OFF")
         conn.execute("PRAGMA cache_size = -64000")
+        conn.execute("PRAGMA busy_timeout = 60000")
 
         conn.execute("DELETE FROM zim_articles WHERE archive_id = ?", (archive_id,))
 
@@ -385,7 +396,7 @@ def _reindex_zim_articles(zim_path: str, archive_id: str, archive_title: str):
         conn.execute("CREATE INDEX IF NOT EXISTS idx_zim_articles_title ON zim_articles(title)")
         conn.commit()
 
-        conn.execute("PRAGMA journal_mode = WAL")
+        # Reset the per-connection PRAGMAs (journal_mode was never changed).
         conn.execute("PRAGMA synchronous = NORMAL")
         conn.execute("PRAGMA cache_size = -8000")
 
@@ -469,10 +480,11 @@ async def delete_zim_archive(archive_id: str, teacher_user: str = Depends(verify
     def _remove_thumbs():
         for a in articles:
             aid = a["article_id"]
-            try:
-                os.remove(os.path.join(thumbs_dir, f"{aid}.png"))
-            except FileNotFoundError:
-                pass
+            for name in (f"{archive_id}_{aid}.png", f"{aid}.png"):
+                try:
+                    os.remove(os.path.join(thumbs_dir, name))
+                except FileNotFoundError:
+                    pass
 
     await asyncio.to_thread(_remove_thumbs)
 

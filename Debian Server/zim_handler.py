@@ -23,7 +23,6 @@ import logging
 import mimetypes
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse, Response
-from starlette.requests import Request
 from app.models import ZimArchiveResponse, ZimArticleResponse, ZimPageResponse, ZimSearchResponse
 from app.async_db import db_fetch, db_fetch_one
 
@@ -60,6 +59,10 @@ def _cache_put(key, value):
 def invalidate_zim_cache(archive_id: str) -> None:
     """Remove all cached entries for a ZIM archive."""
     _archive_cache.pop(archive_id, None)
+    # "_all" is the COUNT cache key for unfiltered listings (empty archive_id):
+    # deleting one archive changes every cross-archive total too.
+    _article_count_cache.pop("_all", None)
+    _article_count_ts.pop("_all", None)
     _article_count_cache.pop(archive_id, None)
     _article_count_ts.pop(archive_id, None)
     prefix = f"{archive_id}:"
@@ -91,8 +94,9 @@ def _rewrite_html_asset_paths(html: str, archive_id: str, base_url: str = '') ->
 
     Handles src, href, poster, data-src attributes, srcset (responsive images),
     and CSS url() references in inline styles and <style> blocks.
-    Produces absolute URLs (base_url + /zim/asset?...) to avoid WebView
-    baseUrl resolution issues with loadHtmlString.
+    Produces root-relative /zim/asset URLs (base_url is always '' since
+    the request param was removed): the client's WebView resolves them
+    against its baseUrl in loadHtmlString.
     """
     def _make_zim_url(asset_path: str) -> str:
         """Build a /zim/asset URL with an md5 integrity hash for an asset path."""
@@ -230,6 +234,18 @@ async def list_zim_archives() -> list[ZimArchiveResponse]:
     ]
 
 
+# First-character deny-list for /zim/articles: a title starting with one of
+# these ASCII punctuation chars (or a space) is junk ('! (CONFIG.SYS…').
+# The inverted allow-list ([0-9A-Za-z] OR unicode>127) was needed because an
+# ASCII-only allow-list hides every non-Latin script (Devanagari, Tamil,
+# Kannada, Telugu, CJK, accented Latin); the deny-list needs no script
+# knowledge and additionally hides whitespace-only titles. GLOB bracket
+# order matters: ']' first and '-' last are literals, no backslash escapes.
+# The apostrophe is SQL-doubled (''): this pattern is embedded verbatim in
+# the query text below, never passed as a bind parameter.
+_JUNK_FIRST_CHAR_GLOB = '[]!"#$%&\'\'()*+,./:;<=>?@\\[^_`{|}~ -]*'
+
+
 @router.get(
     "/articles",
     summary="Browse ZIM articles with pagination",
@@ -253,7 +269,12 @@ async def list_zim_articles(
     Returns:
         A ZimSearchResponse with articles and the total count.
     """
-    where = "WHERE za.namespace = 'A'"
+    # Filter junk titles ('!', '!!', '! (CONFIG.SYS…') so the Wiki tab
+    # starts at real articles. Applied to the COUNT too or totals lie.
+    # Deny-list on the first character: ASCII punctuation/space-led titles
+    # are junk; digits, letters, and every non-Latin script stay visible.
+    where = ("WHERE za.namespace = 'A' AND SUBSTR(TRIM(za.title), 1, 1) "
+             f"NOT GLOB '{_JUNK_FIRST_CHAR_GLOB}'")
     params: list = []
     if archive_id:
         where += " AND za.archive_id = ?"
@@ -421,18 +442,35 @@ async def search_zim(
 )
 async def get_zim_page(
     article_id: str = Query(..., description="The article ID to retrieve"),
-    request=None,
+    archive_id: str = Query(default="", description="The ZIM archive ID; scopes the lookup when two archives share article paths"),
 ):
     """Read article HTML directly from the ZIM binary.
 
     Looks up the article path in the DB, opens the ZIM archive,
-    reads the HTML content, and rewrites asset paths to absolute
-    /zim/asset URLs using the request's base URL.
+    reads the HTML content, and rewrites asset paths to root-relative
+    /zim/asset URLs (the client's WebView resolves them against its
+    baseUrl in loadHtmlString).
+
+    Args:
+        article_id: The article ID to retrieve.
+        archive_id: Optional archive scoping. Article IDs are path hashes,
+            so two archives indexing the same paths collide; pass
+            archive_id for an exact match. Omitted lookups fall back to
+            article_id-only for legacy clients.
     """
-    article = await db_fetch_one(
-        "SELECT article_id, archive_id, title, path FROM zim_articles WHERE article_id = ?",
-        (article_id,),
-    )
+    if archive_id:
+        article = await db_fetch_one(
+            "SELECT article_id, archive_id, title, path FROM zim_articles "
+            "WHERE article_id = ? AND archive_id = ?",
+            (article_id, archive_id),
+        )
+    else:
+        # ponytail: legacy clients omit archive_id; may match the wrong
+        # archive on path collisions. Pass archive_id from new clients.
+        article = await db_fetch_one(
+            "SELECT article_id, archive_id, title, path FROM zim_articles WHERE article_id = ?",
+            (article_id,),
+        )
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
 
@@ -475,11 +513,8 @@ async def get_zim_page(
     if html_content is None:
         raise HTTPException(status_code=404, detail="Article not found in ZIM archive")
 
-    base_url = ''
-    if request is not None:
-        base_url = str(request.base_url).rstrip('/')
     html_content = await asyncio.to_thread(
-        _rewrite_html_asset_paths, html_content, archive_id, base_url
+        _rewrite_html_asset_paths, html_content, archive_id, ''
     )
     return JSONResponse(content={"id": article_id, "html": html_content})
 
@@ -545,13 +580,26 @@ async def get_zim_asset(
 )
 async def get_zim_thumbnail(
     article_id: str = Query(..., description="The article ID"),
+    archive_id: str = Query(default="", description="The ZIM archive ID; scopes the thumbnail filename"),
 ):
     """Serve an article's cached thumbnail image.
+
+    Prefers the archive-scoped filename ({archive_id}_{article_id}.png)
+    so thumbnails cannot cross-contaminate between archives sharing
+    article IDs; falls back to the legacy {article_id}.png name.
+
+    Args:
+        article_id: The article ID.
+        archive_id: Optional archive scoping for the filename.
 
     Raises:
         HTTPException: 404 if the thumbnail is not on disk.
     """
-    thumb_path = os.path.join(ZIM_THUMBS_DIR, f"{article_id}.png")
-    if await asyncio.to_thread(os.path.isfile, thumb_path):
-        return FileResponse(thumb_path, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+    candidates = []
+    if archive_id:
+        candidates.append(os.path.join(ZIM_THUMBS_DIR, f"{archive_id}_{article_id}.png"))
+    candidates.append(os.path.join(ZIM_THUMBS_DIR, f"{article_id}.png"))
+    for thumb_path in candidates:
+        if await asyncio.to_thread(os.path.isfile, thumb_path):
+            return FileResponse(thumb_path, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
     raise HTTPException(status_code=404, detail="Thumbnail not found")
