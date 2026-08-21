@@ -67,11 +67,27 @@ class FlashcardService {
     ];
   }
 
+  /// Adds the optional `subject` column to the decks table if it is missing.
+  ///
+  /// ponytail: lives here because db_helper.dart's onCreate schema does not
+  /// include `subject` yet; move the column into that CREATE TABLE and drop
+  /// this helper when db_helper.dart is next editable.
+  Future<void> _ensureSubjectColumn(Database db) async {
+    try {
+      await db.execute(
+        "ALTER TABLE flashcard_decks_local ADD COLUMN subject TEXT NOT NULL DEFAULT ''",
+      );
+    } catch (_) {
+      // Column already exists: nothing to do.
+    }
+  }
+
   FlashcardDeck _assembleDeck(
       Map<String, Object?> row, List<FlashcardCard> cards, Map<String, Object?>? submission) {
     return FlashcardDeck(
       id: row['id'] as String,
       title: (row['title'] ?? '').toString(),
+      subject: (row['subject'] ?? '').toString(),
       source: (row['source'] ?? 'local').toString(),
       cards: cards,
       submissionStatus: submission == null ? '' : (submission['status'] ?? '').toString(),
@@ -117,6 +133,7 @@ class FlashcardService {
     return FlashcardDeck(
       id: deckId,
       title: (row['title'] ?? '').toString(),
+      subject: (row['subject'] ?? '').toString(),
       source: (row['source'] ?? 'local').toString(),
       cards: cards,
       submissionStatus: submissionStatus,
@@ -124,14 +141,16 @@ class FlashcardService {
     );
   }
 
-  Future<String> createDeck(String title, List<({String front, String back})> cards) async {
+  Future<String> createDeck(String title, String subject, List<({String front, String back})> cards) async {
     final db = await DBHelper().database;
+    await _ensureSubjectColumn(db);
     final now = DateTime.now().millisecondsSinceEpoch;
     final deckId = _newId();
     await db.transaction((txn) async {
       await txn.insert('flashcard_decks_local', {
         'id': deckId,
         'title': title,
+        'subject': subject,
         'source': 'local',
         'created_at': now,
         'updated_at': now,
@@ -143,14 +162,16 @@ class FlashcardService {
 
   /// Replaces a deck's cards (keeps review state for matching card ids only
   /// if ids were kept: we always re-issue ids, so reviews are reset).
-  Future<void> updateDeck(String deckId, String title, List<({String front, String back})> cards) async {
+  Future<void> updateDeck(String deckId, String title, String subject, List<({String front, String back})> cards) async {
     final db = await DBHelper().database;
+    await _ensureSubjectColumn(db);
     final now = DateTime.now().millisecondsSinceEpoch;
     await db.transaction((txn) async {
-      await txn.update('flashcard_decks_local', {'title': title, 'updated_at': now},
+      await txn.update('flashcard_decks_local', {'title': title, 'subject': subject, 'updated_at': now},
           where: 'id = ?', whereArgs: [deckId]);
-      await txn.delete('flashcard_cards_local', where: 'deck_id = ?', whereArgs: [deckId]);
+      // Reviews first: the delete subquery reads flashcard_cards_local.
       await txn.delete('flashcard_reviews_local', where: 'card_id IN (SELECT id FROM flashcard_cards_local WHERE deck_id = ?)', whereArgs: [deckId]);
+      await txn.delete('flashcard_cards_local', where: 'deck_id = ?', whereArgs: [deckId]);
       await _insertCards(txn, deckId, cards, now);
     });
   }
@@ -294,6 +315,15 @@ class FlashcardService {
           }
           staleIds.addAll(freeCards.keys);
           for (final id in staleIds) {
+            // Locally-reviewed cards (reviews_count > 0) carry student edits
+            // and SM-2 scheduling: keep them instead of deleting on sync.
+            final reviewRows = await txn.query('flashcard_reviews_local',
+                where: 'card_id = ?', whereArgs: [id],
+                columns: ['reviews_count'], limit: 1);
+            if (reviewRows.isNotEmpty &&
+                ((reviewRows.first['reviews_count'] as num?)?.toInt() ?? 0) > 0) {
+              continue;
+            }
             await txn.delete('flashcard_cards_local', where: 'id = ?', whereArgs: [id]);
             await txn.delete('flashcard_reviews_local', where: 'card_id = ?', whereArgs: [id]);
           }

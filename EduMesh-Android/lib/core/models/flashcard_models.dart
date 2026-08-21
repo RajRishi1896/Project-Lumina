@@ -8,6 +8,7 @@ class FlashcardDeck {
     required this.title,
     required this.source,
     required this.cards,
+    this.subject = '',
     this.submissionStatus = '',
     this.submissionReason = '',
   });
@@ -15,6 +16,9 @@ class FlashcardDeck {
   final String id;
 
   final String title;
+
+  /// Optional free-text subject label shown alongside the deck title.
+  final String subject;
 
   /// Origin of the deck: `local` or `hub`.
   final String source;

@@ -152,10 +152,11 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
           style: tt.titleMedium?.copyWith(color: cs.onSurface),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         tooltip: l10n.flashcardNewDeck,
         onPressed: _createDeck,
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: Text(l10n.flashcardNewDeck),
       ),
       body: _buildBody(cs, tt, l10n),
     );

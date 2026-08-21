@@ -23,6 +23,7 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _subjectController = TextEditingController();
   List<({TextEditingController front, TextEditingController back})> _cardControllers = [];
   bool _loading = false;
   bool _showNoCardsError = false;
@@ -50,6 +51,7 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
     }
     setState(() {
       _titleController.text = deck.title;
+      _subjectController.text = deck.subject;
       _cardControllers = [
         for (final c in deck.cards)
           (
@@ -64,6 +66,7 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
   @override
   void dispose() {
     _titleController.dispose();
+    _subjectController.dispose();
     for (final c in _cardControllers) {
       c.front.dispose();
       c.back.dispose();
@@ -97,7 +100,18 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
       return;
     }
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    // Form.validate() only reaches rows the ListView.builder has built;
+    // offscreen cards' FormFields never register, so sweep every controller.
+    final hasBlankCard = _cardControllers.any(
+        (c) => c.front.text.trim().isEmpty || c.back.text.trim().isEmpty);
+    if (hasBlankCard) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(AppLocalizations.of(context)!.errorFillAllFields),
+      ));
+      return;
+    }
     final title = _titleController.text.trim();
+    final subject = _subjectController.text.trim();
     final cards = [
       for (final c in _cardControllers)
         (front: c.front.text.trim(), back: c.back.text.trim()),
@@ -105,9 +119,9 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
     final id = widget.deckId;
     try {
       if (id == null) {
-        await FlashcardService().createDeck(title, cards);
+        await FlashcardService().createDeck(title, subject, cards);
       } else {
-        await FlashcardService().updateDeck(id, title, cards);
+        await FlashcardService().updateDeck(id, title, subject, cards);
       }
     } catch (e) {
       debugPrint('Save deck failed: $e');
@@ -133,13 +147,6 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
           widget.deckId == null ? l10n.flashcardNewDeck : l10n.flashcardEditDeck,
           style: tt.titleMedium?.copyWith(color: cs.onSurface),
         ),
-        actions: [
-          if (!_loading)
-            TextButton(
-              onPressed: _saveDeck,
-              child: Text(l10n.flashcardSaveDeck),
-            ),
-        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -162,12 +169,24 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
               AppSpacing.lg.w,
               AppSpacing.sm.h,
             ),
-            child: TextFormField(
-              controller: _titleController,
-              maxLength: 80,
-              decoration: InputDecoration(labelText: l10n.flashcardDeckTitle),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? l10n.errorFillAllFields : null,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: _titleController,
+                  maxLength: 80,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(labelText: l10n.flashcardDeckTitle),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? l10n.flashcardTitleRequired : null,
+                ),
+                SizedBox(height: AppSpacing.sm.h),
+                TextFormField(
+                  controller: _subjectController,
+                  maxLength: 40,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(labelText: l10n.flashcardSubjectOptional),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -196,13 +215,45 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
               AppSpacing.lg.w,
               AppSpacing.lg.h,
             ),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: OutlinedButton.icon(
-                onPressed: _cardControllers.length >= _maxCards ? null : _addCard,
-                icon: const Icon(Icons.add),
-                label: Text(l10n.flashcardAddCard),
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: OutlinedButton.icon(
+                    onPressed: _cardControllers.length >= _maxCards ? null : _addCard,
+                    icon: const Icon(Icons.add),
+                    label: Text(l10n.flashcardAddCard),
+                  ),
+                ),
+                SizedBox(height: AppSpacing.md.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          minimumSize: Size.fromHeight(AppSpacing.touchTarget.h),
+                        ),
+                        onPressed: _saveDeck,
+                        child: Text(
+                          widget.deckId == null
+                              ? l10n.flashcardCreateDeck
+                              : l10n.flashcardSaveDeck,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.sm.w),
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: Size.fromHeight(AppSpacing.touchTarget.h),
+                      ),
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text(l10n.buttonCancel),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],

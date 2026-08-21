@@ -11,7 +11,9 @@ import '../../../core/network/api_client.dart';
 import '../../../widgets/connection_gate.dart';
 import 'profile_setup_page.dart';
 import 'profile_picker_page.dart';
+import 'app_tour_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// A page for student registration and login.
 ///
@@ -99,7 +101,9 @@ class _LoginPageState extends State<LoginPage> {
           if (!mounted) return;
           unawaited(Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (_) => ProfileSetupPage(username: _usernameController.text),
+              builder: (_) => FirstRunTourGate(
+                child: ProfileSetupPage(username: _usernameController.text),
+              ),
             ),
           ));
         } else {
@@ -124,11 +128,7 @@ class _LoginPageState extends State<LoginPage> {
       } else if (result == 'ok') {
         setState(() => _isLoading = false);
         if (!mounted) return;
-        unawaited(Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const ConnectionGate(child: AppShell()),
-          ),
-        ));
+        await _routeAfterLogin();
       } else if (result == 'local_only') {
         setState(() => _isLoading = false);
         if (!mounted) return;
@@ -139,11 +139,7 @@ class _LoginPageState extends State<LoginPage> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        unawaited(Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const ConnectionGate(child: AppShell()),
-          ),
-        ));
+        await _routeAfterLogin();
       } else {
         setState(() {
           _isLoading = false;
@@ -151,6 +147,23 @@ class _LoginPageState extends State<LoginPage> {
         });
       }
     }
+  }
+
+  /// Routes to the first-run tour (shown once) or straight to the app shell.
+  ///
+  /// Reads the [AppTourPage.seenPrefKey] flag: first-time users see the tour
+  /// before the shell; returning users go directly to the shell.
+  Future<void> _routeAfterLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final seen = prefs.getBool(AppTourPage.seenPrefKey) ?? false;
+    unawaited(Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => seen
+            ? const ConnectionGate(child: AppShell())
+            : const AppTourPage(),
+      ),
+    ));
   }
 
   /// Maps [AuthService] register error sentinels to localized messages.

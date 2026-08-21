@@ -154,37 +154,7 @@ class _FlashcardStudyPageState extends State<FlashcardStudyPage> {
         if (_flipped)
           Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
-            child: Wrap(
-              spacing: AppSpacing.sm.w,
-              runSpacing: AppSpacing.sm.w,
-              alignment: WrapAlignment.center,
-              children: [
-                _GradeButton(
-                  label: l10n.flashcardAgain,
-                  background: cs.error,
-                  foreground: cs.onError,
-                  onPressed: () => _grade(ReviewGrade.again),
-                ),
-                _GradeButton(
-                  label: l10n.flashcardHard,
-                  background: cs.tertiary,
-                  foreground: cs.onTertiary,
-                  onPressed: () => _grade(ReviewGrade.hard),
-                ),
-                _GradeButton(
-                  label: l10n.flashcardGood,
-                  background: cs.primary,
-                  foreground: cs.onPrimary,
-                  onPressed: () => _grade(ReviewGrade.good),
-                ),
-                _GradeButton(
-                  label: l10n.flashcardEasy,
-                  background: cs.secondary,
-                  foreground: cs.onSecondary,
-                  onPressed: () => _grade(ReviewGrade.easy),
-                ),
-              ],
-            ),
+            child: _GradeOptions(card: _session[_index], onGrade: _grade),
           ),
         Padding(
           padding: EdgeInsets.only(bottom: AppSpacing.lg.h),
@@ -266,29 +236,153 @@ class _CardFace extends StatelessWidget {
   }
 }
 
-/// One of the four self-grading buttons shown after the card is flipped.
-class _GradeButton extends StatelessWidget {
-  const _GradeButton({
-    required this.label,
-    required this.background,
-    required this.foreground,
-    required this.onPressed,
-  });
+/// The four self-grading options shown after the card is flipped, laid out
+/// as a 2x2 grid (Again | Hard over Good | Easy).
+///
+/// Each option pairs the grade label with a plain-language description and
+/// the concrete next interval computed by [scheduleNext] for the current
+/// card, so students see what each choice does before tapping.
+class _GradeOptions extends StatelessWidget {
+  const _GradeOptions({required this.card, required this.onGrade});
 
-  final String label;
-  final Color background;
-  final Color foreground;
-  final VoidCallback onPressed;
+  final FlashcardCard card;
+  final ValueChanged<ReviewGrade> onGrade;
+
+  int _nextDays(ReviewGrade grade) {
+    final next = scheduleNext(
+      grade,
+      card.ease,
+      card.intervalDays,
+      DateTime.now().millisecondsSinceEpoch,
+    );
+    return next.intervalDays;
+  }
+
+  String _label(ReviewGrade grade, AppLocalizations l10n) {
+    switch (grade) {
+      case ReviewGrade.again:
+        return l10n.flashcardAgain;
+      case ReviewGrade.hard:
+        return l10n.flashcardHard;
+      case ReviewGrade.good:
+        return l10n.flashcardGood;
+      case ReviewGrade.easy:
+        return l10n.flashcardEasy;
+    }
+  }
+
+  String _description(ReviewGrade grade, AppLocalizations l10n) {
+    switch (grade) {
+      case ReviewGrade.again:
+        return l10n.flashcardAgainDesc;
+      case ReviewGrade.hard:
+        return l10n.flashcardHardDesc;
+      case ReviewGrade.good:
+        return l10n.flashcardGoodDesc;
+      case ReviewGrade.easy:
+        return l10n.flashcardEasyDesc;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
-      style: FilledButton.styleFrom(
-        backgroundColor: background,
-        foregroundColor: foreground,
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _option(
+                context, ReviewGrade.again, cs.error, cs.onError, cs, l10n,
+              ),
+            ),
+            SizedBox(width: AppSpacing.sm.w),
+            Expanded(
+              child: _option(
+                context, ReviewGrade.hard, cs.tertiary, cs.onTertiary, cs, l10n,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppSpacing.sm.h),
+        Row(
+          children: [
+            Expanded(
+              child: _option(
+                context, ReviewGrade.good, cs.primary, cs.onPrimary, cs, l10n,
+              ),
+            ),
+            SizedBox(width: AppSpacing.sm.w),
+            Expanded(
+              child: _option(
+                context, ReviewGrade.easy, cs.secondary, cs.onSecondary, cs, l10n,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _option(
+    BuildContext context,
+    ReviewGrade grade,
+    Color background,
+    Color foreground,
+    ColorScheme cs,
+    AppLocalizations l10n,
+  ) {
+    final tt = Theme.of(context).textTheme;
+    return InkWell(
+      onTap: () => onGrade(grade),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: AppSpacing.touchTarget.h),
+        child: Container(
+          padding: EdgeInsets.all(AppSpacing.md.w),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm.w,
+                  vertical: AppSpacing.xs.h,
+                ),
+                decoration: BoxDecoration(
+                  color: background,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                ),
+                child: Text(
+                  _label(grade, l10n),
+                  style: tt.labelMedium?.copyWith(
+                    color: foreground,
+                    fontWeight: AppSpacing.weightStrong,
+                  ),
+                ),
+              ),
+              SizedBox(height: AppSpacing.xs.h),
+              Text(
+                _description(grade, l10n),
+                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              SizedBox(height: AppSpacing.xs.h),
+              Text(
+                l10n.flashcardNextInDays(_nextDays(grade)),
+                style: tt.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: AppSpacing.weightStrong,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      onPressed: onPressed,
-      child: Text(label),
     );
   }
 }
