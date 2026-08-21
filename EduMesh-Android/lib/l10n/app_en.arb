@@ -426,10 +426,6 @@
   "@sectionAllResources": {
     "description": "Section header for the full resource list when no search query and no filters"
   },
-  "sectionRecommendedForYou": "Recommended for You",
-  "@sectionRecommendedForYou": {
-    "description": "Section header for personalized resource recommendations"
-  },
   "emptyNoResources": "No resources available on the hub.",
   "@emptyNoResources": {
     "description": "Empty state text when no resources exist at all"
@@ -1371,10 +1367,6 @@
   "@browseMyCourses": {
     "description": "Section header for the student's enrolled courses on the browse page"
   },
-  "browseRecommended": "Recommended for You",
-  "@browseRecommended": {
-    "description": "Section header for recommended courses section on the browse page"
-  },
   "browseSimilarCourses": "Similar Courses",
   "@browseSimilarCourses": {
     "description": "Section header for teacher-defined similar courses"
@@ -1382,14 +1374,6 @@
   "browseAllCourses": "All Courses",
   "@browseAllCourses": {
     "description": "Section header for the complete course catalog on the browse page"
-  },
-  "browseShowRecommended": "Show Recommended",
-  "@browseShowRecommended": {
-    "description": "Toggle button to show only recommended courses"
-  },
-  "browseShowAll": "Show All",
-  "@browseShowAll": {
-    "description": "Toggle button to show all available courses"
   },
   "browseSearchHint": "Search courses...",
   "@browseSearchHint": {
@@ -1598,6 +1582,14 @@
   "quizBackToCourse": "Back to Course",
   "@quizBackToCourse": {
     "description": "Button on the results screen to return to the course player"
+  },
+  "quizResultsPendingTitle": "Answers saved",
+  "@quizResultsPendingTitle": {
+    "description": "Neutral title on the quiz results screen when the attempt was queued offline and cannot be graded yet because the served quiz carries no answer key"
+  },
+  "quizResultsPendingBody": "Your answers are saved. Your score will appear when you connect to the hub.",
+  "@quizResultsPendingBody": {
+    "description": "Explanation under the pending title: answers are stored on the phone and the score will show once the hub grades the queued attempt"
   },
   "profileCoursesCompleted": "Courses Completed",
   "@profileCoursesCompleted": {
@@ -1966,5 +1958,87 @@
   "semanticsProfileSwitcher": "Switch student profile",
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"
-  }
+  },
+    "flashcardTitleRequired": "Please enter a deck title",
+    "@flashcardTitleRequired": {
+      "description": "Inline validation error shown under the deck title field on the deck editor when the title is empty"
+    },
+    "flashcardSubjectOptional": "Subject (optional)",
+    "@flashcardSubjectOptional": {
+      "description": "Persistent label for the optional subject input on the deck editor; keep the '(optional)' marker in translations"
+    },
+    "flashcardCreateDeck": "Create deck",
+    "@flashcardCreateDeck": {
+      "description": "Primary bottom action button on the new-deck screen; verb-first label"
+    },
+    "flashcardAgainDesc": "Couldn't recall. Shows it again soon.",
+    "@flashcardAgainDesc": {
+      "description": "Small explanation under the Again rating tile during flashcard review; grade-4 reading level"
+    },
+    "flashcardHardDesc": "Recalled with effort. Comes back sooner.",
+    "@flashcardHardDesc": {
+      "description": "Small explanation under the Hard rating tile during flashcard review; grade-4 reading level"
+    },
+    "flashcardGoodDesc": "Recalled. Normal next interval.",
+    "@flashcardGoodDesc": {
+      "description": "Small explanation under the Good rating tile during flashcard review; grade-4 reading level"
+    },
+    "flashcardEasyDesc": "Instant recall. Comes back much later.",
+    "@flashcardEasyDesc": {
+      "description": "Small explanation under the Easy rating tile during flashcard review; grade-4 reading level"
+    },
+    "flashcardNextInDays": "{days, plural, =1{Next in 1 day} other{Next in {days} days}}",
+    "@flashcardNextInDays": {
+      "description": "Scheduling preview under each rating tile showing when the card returns; ICU plural on days",
+      "placeholders": {
+        "days": {
+          "type": "int",
+          "example": "3"
+        }
+      }
+    },
+    "tourSkip": "Skip",
+    "@tourSkip": {
+      "description": "Button that dismisses the first-login tour without finishing it"
+    },
+    "tourNext": "Next",
+    "@tourNext": {
+      "description": "Button that advances to the next first-login tour slide"
+    },
+    "tourGetStarted": "Get Started",
+    "@tourGetStarted": {
+      "description": "Final button on the last tour slide that enters the app; verb-first label"
+    },
+    "tourTitleWelcome": "Welcome to EduMesh",
+    "@tourTitleWelcome": {
+      "description": "Title of the first-login tour welcome slide; brand name EduMesh stays untranslated"
+    },
+    "tourBodyWelcome": "Learn anytime, even without internet.",
+    "@tourBodyWelcome": {
+      "description": "Body of the first-login tour welcome slide; short plain sentence, allow 40-50% expansion"
+    },
+    "tourTitleOffline": "Download your lessons",
+    "@tourTitleOffline": {
+      "description": "Title of the first-login tour offline-download slide"
+    },
+    "tourBodyOffline": "Download lessons over the hub WiFi. Watch them offline later.",
+    "@tourBodyOffline": {
+      "description": "Body of the first-login tour offline-download slide; WiFi stays as-is, allow 40-50% expansion"
+    },
+    "tourTitleProgress": "Your progress is saved",
+    "@tourTitleProgress": {
+      "description": "Title of the first-login tour progress slide"
+    },
+    "tourBodyProgress": "Everything you open is saved to your profile. Switch accounts anytime from your avatar.",
+    "@tourBodyProgress": {
+      "description": "Body of the first-login tour progress slide; two short sentences, allow 40-50% expansion"
+    },
+    "tourTitleLanguage": "Choose your language",
+    "@tourTitleLanguage": {
+      "description": "Title of the first-login tour language slide"
+    },
+    "tourBodyLanguage": "Pick your language anytime in Settings.",
+    "@tourBodyLanguage": {
+      "description": "Body of the first-login tour language slide; allow 40-50% expansion"
+    }
 }

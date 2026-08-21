@@ -105,7 +105,6 @@
   "filtersActiveSorted": "வடிகட்டிகள் செயலில் உள்ளன · வரிசைப்படுத்தப்பட்டது: {sortBy}",
   "clearFiltersButton": "வடிகட்டிகளை நீக்கு",
   "sectionAllResources": "அனைத்து வளங்கள்",
-  "sectionRecommendedForYou": "உங்களுக்காக பரிந்துரைக்கப்படுவது",
   "emptyNoResources": "ஹப்பில் வளங்கள் எதுவும் இல்லை.",
   "emptyNoSearchResults": "முடிவுகள் எதுவும் கிடைக்கவில்லை.",
   "errorNoServerNoCache": "சர்வரை அணுக முடியவில்லை. கேஷ் செய்யப்பட்ட வளங்கள் இல்லை.",
@@ -260,15 +259,15 @@
   "@downloadActiveNotificationTitle": {
     "description": "Title of the Android foreground-service notification shown while downloads may run. Brand name, identical in all languages."
   },
-  "downloadActiveNotificationContent": "பதிவிறக்கங்கள் செயலில் உள்ளன",
+  "downloadActiveNotificationContent": "டவுன்லோடுகள் செயலில் உள்ளன",
   "@downloadActiveNotificationContent": {
     "description": "Content of the Android foreground-service notification shown while downloads may run. Max 20 characters."
   },
-  "downloadInProgressNotificationTitle": "EduMesh பதிவிறக்கங்கள்",
+  "downloadInProgressNotificationTitle": "EduMesh டவுன்லோடுகள்",
   "@downloadInProgressNotificationTitle": {
     "description": "Title of the Android foreground-service notification while a download is in progress. Brand name prefix, identical in all languages."
   },
-  "downloadInProgressNotificationContent": "பதிவிறக்கங்கள் நடைபெறுகின்றன...",
+  "downloadInProgressNotificationContent": "டவுன்லோடுகள் நடைபெறுகின்றன...",
   "@downloadInProgressNotificationContent": {
     "description": "Content of the Android foreground-service notification while a download is in progress. Max 25 characters."
   },
@@ -325,11 +324,8 @@
   "subjectFallbackGeneral": "பொதுவானது",
   "subjectNameUnknown": "அறியப்படாதது",
   "browseMyCourses": "என் பாடநெறிகள்",
-  "browseRecommended": "உங்களுக்காக பரிந்துரைக்கப்படுவது",
   "browseSimilarCourses": "ஒத்த பாடநெறிகள்",
   "browseAllCourses": "அனைத்து பாடநெறிகள்",
-  "browseShowRecommended": "பரிந்துரைக்கப்பட்டவற்றைக் காண்பி",
-  "browseShowAll": "அனைத்தையும் காண்பி",
   "browseSearchHint": "பாடநெறிகளைத் தேடுங்கள்...",
   "browseEnroll": "பதிவு செய்",
   "browseClassLabel": "வகுப்பு {grade}",
@@ -341,7 +337,7 @@
   "coursePlayerDownloading": "பாடநெறி டவுன்லோட் ஆகிறது...",
   "coursePlayerDownloadFailed": "டவுன்லோட் தோல்வி. சேமிப்பக இடத்தைச் சரிபார்க்கவும்.",
   "coursePlayerVideo": "வீடியோ",
-  "coursePlayerQuiz": "Quiz",
+  "coursePlayerQuiz": "வினாடி வினா",
   "coursePlayerPastPaper": "முந்தைய தாள்",
   "coursePlayerTextbook": "பாடப்புத்தகம்",
   "coursePlayerNoResources": "இந்த பாடநெறியில் வளங்கள் இல்லை",
@@ -349,8 +345,8 @@
   "coursePlayerDownloadButton": "பாடநெறியை டவுன்லோட் செய்",
   "coursePlayerCompleted": "முடிந்தது",
   "coursePlayerStart": "தொடங்கு",
-  "quizLoadingError": "Quiz ஐ ஏற்ற முடியவில்லை",
-  "quizNotAvailable": "Quiz கிடைக்கவில்லை",
+  "quizLoadingError": "வினாடி வினாவை ஏற்ற முடியவில்லை",
+  "quizNotAvailable": "வினாடி வினா கிடைக்கவில்லை",
   "quizQuestionOf": "கேள்வி {index} / {total}",
   "quizTypeMcq": "பல தேர்வு",
   "quizTypeTrueFalse": "சரி / தவறு",
@@ -364,12 +360,14 @@
   "quizNext": "அடுத்து",
   "quizPassed": "தேர்ச்சி!",
   "quizFailed": "தோல்வி",
-  "quizPassedMessage": "நன்றாக செய்தீர்கள்! Quiz இல் தேர்ச்சி பெற்றீர்கள்.",
+  "quizPassedMessage": "நன்றாக செய்தீர்கள்! வினாடி வினாவில் தேர்ச்சி பெற்றீர்கள்.",
   "quizFailedMessage": "தேர்ச்சி பெறவில்லை. கீழே உள்ள கேள்விகளை மதிப்பாய்வு செய்யுங்கள்.",
   "quizScoreFraction": "{correct}/{total}",
   "quizQuestionLabel": "கேள்வி {index}",
   "quizExplanation": "விளக்கம்: {text}",
   "quizBackToCourse": "பாடநெறிக்குத் திரும்பு",
+  "quizResultsPendingTitle": "பதில்கள் சேமிக்கப்பட்டன",
+  "quizResultsPendingBody": "உங்கள் பதில்கள் சேமிக்கப்பட்டுள்ளன. ஹப்புடன் இணைக்கும்போது உங்கள் மதிப்பெண் காட்டப்படும்.",
   "profileCoursesCompleted": "பாடநெறிகள் முடிக்கப்பட்டன",
   "profileMyCourses": "என் பாடநெறிகள்",
   "profileTapToResume": "தொடர டைப் செய்யுங்கள்",
@@ -427,7 +425,7 @@
       }
     }
   },
-  "shareSettingsTitle": "பதிவிறக்கிய கோப்புகளைப் பகிரவும்",
+  "shareSettingsTitle": "டவுன்லோட் செய்த கோப்புகளைப் பகிரவும்",
   "@shareSettingsTitle": {
     "description": "Settings sheet toggle title: lets nearby students download files saved on this phone."
   },
@@ -639,11 +637,11 @@
   "@badgeAchievements": {
     "description": "Section title: badges and streak statistics."
   },
-  "notifDownloadsActive": "பதிவிறக்கங்கள் நடக்கின்றன",
+  "notifDownloadsActive": "டவுன்லோடுகள் நடக்கின்றன",
   "@notifDownloadsActive": {
     "description": "Notification channel/title: downloads currently running."
   },
-  "notifDownloading": "{title} பதிவிறக்கப்படுகிறது",
+  "notifDownloading": "{title} டவுன்லோட் செய்யப்படுகிறது",
   "@notifDownloading": {
     "description": "Progress notification body. {title} is the file name.",
     "placeholders": {
@@ -653,7 +651,7 @@
       }
     }
   },
-  "notifDownloadComplete": "பதிவிறக்கம் முடிந்தது",
+  "notifDownloadComplete": "டவுன்லோட் முடிந்தது",
   "@notifDownloadComplete": {
     "description": "Notification title: a download finished."
   },
@@ -722,5 +720,106 @@
   "semanticsProfileSwitcher": "மாணவர் சுயவிவரத்தை மாற்று",
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"
-  }
+  },
+    "flashcardTitleRequired": "தயவுசெய்து டெக் தலைப்பை உள்ளிடவும்",
+    "@flashcardTitleRequired": {
+      "description": "Inline validation error shown under the deck title field on the deck editor when the title is empty",
+      "x_machine_translated": true
+    },
+    "flashcardSubjectOptional": "பாடம் (விருப்பம்)",
+    "@flashcardSubjectOptional": {
+      "description": "Persistent label for the optional subject input on the deck editor; keep the '(optional)' marker in translations",
+      "x_machine_translated": true
+    },
+    "flashcardCreateDeck": "டெக்கை உருவாக்கவும்",
+    "@flashcardCreateDeck": {
+      "description": "Primary bottom action button on the new-deck screen; verb-first label",
+      "x_machine_translated": true
+    },
+    "flashcardAgainDesc": "நினைவில் இல்லை. விரைவில் மீண்டும் வரும்.",
+    "@flashcardAgainDesc": {
+      "description": "Small explanation under the Again rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardHardDesc": "முயற்சியுடன் நினைவில் வந்தது. விரைவில் திரும்பும்.",
+    "@flashcardHardDesc": {
+      "description": "Small explanation under the Hard rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardGoodDesc": "நினைவில் வந்தது. சாதாரண நேரத்தில் திரும்பும்.",
+    "@flashcardGoodDesc": {
+      "description": "Small explanation under the Good rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardEasyDesc": "உடனே நினைவில் வந்தது. மிகவும் தாமதமாக திரும்பும்.",
+    "@flashcardEasyDesc": {
+      "description": "Small explanation under the Easy rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardNextInDays": "{days, plural, one{அடுத்த முறை 1 நாளில்} other{அடுத்த முறை {days} நாட்களில்}}",
+    "@flashcardNextInDays": {
+      "description": "Scheduling preview under each rating tile showing when the card returns; ICU plural on days",
+      "placeholders": {
+        "days": {
+          "type": "int",
+          "example": "3"
+        }
+      },
+      "x_machine_translated": true
+    },
+    "tourSkip": "தவிர்க்கவும்",
+    "@tourSkip": {
+      "description": "Button that dismisses the first-login tour without finishing it",
+      "x_machine_translated": true
+    },
+    "tourNext": "அடுத்து",
+    "@tourNext": {
+      "description": "Button that advances to the next first-login tour slide",
+      "x_machine_translated": true
+    },
+    "tourGetStarted": "தொடங்கவும்",
+    "@tourGetStarted": {
+      "description": "Final button on the last tour slide that enters the app; verb-first label",
+      "x_machine_translated": true
+    },
+    "tourTitleWelcome": "EduMesh-க்கு வரவேற்கிறோம்",
+    "@tourTitleWelcome": {
+      "description": "Title of the first-login tour welcome slide; brand name EduMesh stays untranslated",
+      "x_machine_translated": true
+    },
+    "tourBodyWelcome": "இணையம் இல்லாமலும் எப்போதும் கற்றுக்கொள்ளலாம்.",
+    "@tourBodyWelcome": {
+      "description": "Body of the first-login tour welcome slide; short plain sentence, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleOffline": "உங்கள் பாடங்களை டவுன்லோட் செய்யவும்",
+    "@tourTitleOffline": {
+      "description": "Title of the first-login tour offline-download slide",
+      "x_machine_translated": true
+    },
+    "tourBodyOffline": "ஹப் WiFi வழியாக பாடங்களை டவுன்லோட் செய்யவும். பின்னர் ஆஃப்லைனில் பாருங்கள்.",
+    "@tourBodyOffline": {
+      "description": "Body of the first-login tour offline-download slide; WiFi stays as-is, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleProgress": "உங்கள் முன்னேற்றம் சேமிக்கப்படுகிறது",
+    "@tourTitleProgress": {
+      "description": "Title of the first-login tour progress slide",
+      "x_machine_translated": true
+    },
+    "tourBodyProgress": "நீங்கள் திறக்கும் அனைத்தும் உங்கள் சுயவிவரத்தில் சேமிக்கப்படும். எப்போது வேண்டுமானாலும் சுயவிவரப் படத்திலிருந்து கணக்கை மாற்றலாம்.",
+    "@tourBodyProgress": {
+      "description": "Body of the first-login tour progress slide; two short sentences, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleLanguage": "உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்",
+    "@tourTitleLanguage": {
+      "description": "Title of the first-login tour language slide",
+      "x_machine_translated": true
+    },
+    "tourBodyLanguage": "அமைப்புகளில் எப்போது வேண்டுமானாலும் மொழியைத் தேர்ந்தெடுக்கலாம்.",
+    "@tourBodyLanguage": {
+      "description": "Body of the first-login tour language slide; allow 40-50% expansion",
+      "x_machine_translated": true
+    }
 }

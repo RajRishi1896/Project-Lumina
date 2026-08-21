@@ -100,7 +100,6 @@
   "filtersActiveSorted": "फ़िल्टर सक्रिय · क्रमबद्ध: {sortBy}",
   "clearFiltersButton": "फ़िल्टर साफ़ करें",
   "sectionAllResources": "सभी संसाधन",
-  "sectionRecommendedForYou": "आपके लिए अनुशंसित",
   "emptyNoResources": "हब पर कोई संसाधन उपलब्ध नहीं।",
   "emptyNoSearchResults": "कोई परिणाम नहीं मिला।",
   "errorNoServerNoCache": "सर्वर तक नहीं पहुंचा जा सका। कोई कैश्ड संसाधन उपलब्ध नहीं।",
@@ -220,7 +219,7 @@
   "relativeTimeJustNow": "अभी",
   "relativeTimeMinutesAgo": "{minutes} मिनट पहले",
   "relativeTimeHoursAgo": "{hours, plural, one{{hours} घंटा पहले} other{{hours} घंटे पहले}}",
-  "relativeTimeDaysAgo": "{days} दिन पहले",
+  "relativeTimeDaysAgo": "{days, plural, one{{days} दिन पहले} other{{days} दिन पहले}}",
   "relativeTimeMonthsAgo": "{months, plural, one{{months} महीना पहले} other{{months} महीने पहले}}",
   "settingsSheetTitle": "सेटिंग्स",
   "settingsLanguageTitle": "भाषा",
@@ -319,11 +318,8 @@
   "subjectFallbackGeneral": "सामान्य",
   "subjectNameUnknown": "अज्ञात",
   "browseMyCourses": "मेरे कोर्स",
-  "browseRecommended": "आपके लिए अनुशंसित",
   "browseSimilarCourses": "समान कोर्स",
   "browseAllCourses": "सभी कोर्स",
-  "browseShowRecommended": "अनुशंसित दिखाएँ",
-  "browseShowAll": "सभी दिखाएँ",
   "browseSearchHint": "कोर्स खोजें...",
   "browseEnroll": "नामांकन करें",
   "browseClassLabel": "कक्षा {grade}",
@@ -364,6 +360,8 @@
   "quizQuestionLabel": "प्रश्न {index}",
   "quizExplanation": "व्याख्या: {text}",
   "quizBackToCourse": "कोर्स पर वापस",
+  "quizResultsPendingTitle": "उत्तर सहेजे गए",
+  "quizResultsPendingBody": "आपके उत्तर सहेज लिए गए हैं। हब से जुड़ने पर आपका स्कोर दिखाई देगा।",
   "profileCoursesCompleted": "कोर्स पूर्ण",
   "profileMyCourses": "मेरे कोर्स",
   "profileTapToResume": "जारी रखने के लिए टैप करें",
@@ -688,9 +686,6 @@
   },
   "@sectionAllResources": {
     "description": "Section header for the full resource list when no search query and no filters"
-  },
-  "@sectionRecommendedForYou": {
-    "description": "Section header for personalized resource recommendations"
   },
   "@emptyNoResources": {
     "description": "Empty state text when no resources exist at all"
@@ -1415,20 +1410,11 @@
   "@browseMyCourses": {
     "description": "Section header for the student's enrolled courses on the browse page"
   },
-  "@browseRecommended": {
-    "description": "Section header for recommended courses section on the browse page"
-  },
   "@browseSimilarCourses": {
     "description": "Section header for teacher-defined similar courses"
   },
   "@browseAllCourses": {
     "description": "Section header for the complete course catalog on the browse page"
-  },
-  "@browseShowRecommended": {
-    "description": "Toggle button to show only recommended courses"
-  },
-  "@browseShowAll": {
-    "description": "Toggle button to show all available courses"
   },
   "@browseSearchHint": {
     "description": "Hint text inside the course search field on the browse page"
@@ -1940,5 +1926,106 @@
   "semanticsProfileSwitcher": "छात्र प्रोफ़ाइल बदलें",
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"
-  }
+  },
+    "flashcardTitleRequired": "कृपया डेक का शीर्षक लिखें",
+    "@flashcardTitleRequired": {
+      "description": "Inline validation error shown under the deck title field on the deck editor when the title is empty",
+      "x_machine_translated": true
+    },
+    "flashcardSubjectOptional": "विषय (वैकल्पिक)",
+    "@flashcardSubjectOptional": {
+      "description": "Persistent label for the optional subject input on the deck editor; keep the '(optional)' marker in translations",
+      "x_machine_translated": true
+    },
+    "flashcardCreateDeck": "डेक बनाएँ",
+    "@flashcardCreateDeck": {
+      "description": "Primary bottom action button on the new-deck screen; verb-first label",
+      "x_machine_translated": true
+    },
+    "flashcardAgainDesc": "याद नहीं हुआ। जल्दी फिर दिखेगा।",
+    "@flashcardAgainDesc": {
+      "description": "Small explanation under the Again rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardHardDesc": "मेहनत से याद हुआ। जल्दी लौटेगा।",
+    "@flashcardHardDesc": {
+      "description": "Small explanation under the Hard rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardGoodDesc": "याद हुआ। अगली बार सामान्य समय पर।",
+    "@flashcardGoodDesc": {
+      "description": "Small explanation under the Good rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardEasyDesc": "तुरंत याद हुआ। बहुत बाद में लौटेगा।",
+    "@flashcardEasyDesc": {
+      "description": "Small explanation under the Easy rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardNextInDays": "{days, plural, one{अगली बार 1 दिन बाद} other{अगली बार {days} दिन बाद}}",
+    "@flashcardNextInDays": {
+      "description": "Scheduling preview under each rating tile showing when the card returns; ICU plural on days",
+      "placeholders": {
+        "days": {
+          "type": "int",
+          "example": "3"
+        }
+      },
+      "x_machine_translated": true
+    },
+    "tourSkip": "छोड़ें",
+    "@tourSkip": {
+      "description": "Button that dismisses the first-login tour without finishing it",
+      "x_machine_translated": true
+    },
+    "tourNext": "आगे",
+    "@tourNext": {
+      "description": "Button that advances to the next first-login tour slide",
+      "x_machine_translated": true
+    },
+    "tourGetStarted": "शुरू करें",
+    "@tourGetStarted": {
+      "description": "Final button on the last tour slide that enters the app; verb-first label",
+      "x_machine_translated": true
+    },
+    "tourTitleWelcome": "EduMesh में आपका स्वागत है",
+    "@tourTitleWelcome": {
+      "description": "Title of the first-login tour welcome slide; brand name EduMesh stays untranslated",
+      "x_machine_translated": true
+    },
+    "tourBodyWelcome": "बिना इंटरनेट भी कभी भी सीखें।",
+    "@tourBodyWelcome": {
+      "description": "Body of the first-login tour welcome slide; short plain sentence, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleOffline": "अपने पाठ डाउनलोड करें",
+    "@tourTitleOffline": {
+      "description": "Title of the first-login tour offline-download slide",
+      "x_machine_translated": true
+    },
+    "tourBodyOffline": "हब WiFi से पाठ डाउनलोड करें। बाद में ऑफ़लाइन देखें।",
+    "@tourBodyOffline": {
+      "description": "Body of the first-login tour offline-download slide; WiFi stays as-is, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleProgress": "आपकी प्रगति सेव रहती है",
+    "@tourTitleProgress": {
+      "description": "Title of the first-login tour progress slide",
+      "x_machine_translated": true
+    },
+    "tourBodyProgress": "आप जो भी खोलते हैं, वह आपकी प्रोफ़ाइल में सेव हो जाता है। कभी भी प्रोफ़ाइल आइकन से अकाउंट बदलें।",
+    "@tourBodyProgress": {
+      "description": "Body of the first-login tour progress slide; two short sentences, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleLanguage": "अपनी भाषा चुनें",
+    "@tourTitleLanguage": {
+      "description": "Title of the first-login tour language slide",
+      "x_machine_translated": true
+    },
+    "tourBodyLanguage": "सेटिंग्स में कभी भी अपनी भाषा चुनें।",
+    "@tourBodyLanguage": {
+      "description": "Body of the first-login tour language slide; allow 40-50% expansion",
+      "x_machine_translated": true
+    }
 }

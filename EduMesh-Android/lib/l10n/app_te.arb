@@ -105,7 +105,6 @@
   "filtersActiveSorted": "ఫిల్టర్లు యాక్టివ్‌గా ఉన్నాయి · క్రమం: {sortBy}",
   "clearFiltersButton": "ఫిల్టర్లను క్లియర్ చేయండి",
   "sectionAllResources": "అన్ని వనరులు",
-  "sectionRecommendedForYou": "మీ కోసం సిఫార్సు చేయబడింది",
   "emptyNoResources": "హబ్‌లో వనరులు అందుబాటులో లేవు.",
   "emptyNoSearchResults": "ఫలితాలు కనుగొనబడలేదు.",
   "errorNoServerNoCache": "సర్వర్‌ను యాక్సెస్ చేయలేకపోయింది. కాష్ చేసిన వనరులు అందుబాటులో లేవు.",
@@ -186,7 +185,7 @@
   "tabPyqs": "PYQs",
   "tabZim": "ZIM",
   "tabCourses": "పాఠ్యక్రమాలు",
-  "tabQuizzes": "ప్రశ్నావళి",
+  "tabQuizzes": "క్విజ్‌లు",
   "tabNotes": "గమనికలు",
   "emptyStateAll": "ఇంకా సేవ్ చేసిన వనరులు లేవు.",
   "emptyStateByType": "సేవ్ చేసిన {type} కనుగొనబడలేదు.",
@@ -325,11 +324,8 @@
   "subjectFallbackGeneral": "సాధారణ",
   "subjectNameUnknown": "తెలియదు",
   "browseMyCourses": "నా కోర్సులు",
-  "browseRecommended": "మీ కోసం సిఫార్సు చేయబడింది",
   "browseSimilarCourses": "సమాన కోర్సులు",
   "browseAllCourses": "అన్ని కోర్సులు",
-  "browseShowRecommended": "సిఫార్సు చేసినవి చూపించు",
-  "browseShowAll": "అన్నీ చూపించు",
   "browseSearchHint": "కోర్సులను శోధించండి...",
   "browseEnroll": "నమోదు చేయండి",
   "browseClassLabel": "తరగతి {grade}",
@@ -341,7 +337,7 @@
   "coursePlayerDownloading": "కోర్సు డౌన్‌లోడ్ అవుతోంది...",
   "coursePlayerDownloadFailed": "డౌన్‌లోడ్ విఫలమైంది. స్టోరేజ్ స్థలాన్ని చెక్ చేయండి.",
   "coursePlayerVideo": "వీడియో",
-  "coursePlayerQuiz": "Quiz",
+  "coursePlayerQuiz": "క్విజ్",
   "coursePlayerPastPaper": "పాత పేపర్",
   "coursePlayerTextbook": "పాఠ్యపుస్తకం",
   "coursePlayerNoResources": "ఈ కోర్సులో వనరులు లేవు",
@@ -349,8 +345,8 @@
   "coursePlayerDownloadButton": "కోర్సును డౌన్‌లోడ్ చేయండి",
   "coursePlayerCompleted": "పూర్తయింది",
   "coursePlayerStart": "ప్రారంభించండి",
-  "quizLoadingError": "Quiz ను లోడ్ చేయడంలో విఫలమైంది",
-  "quizNotAvailable": "Quiz అందుబాటులో లేదు",
+  "quizLoadingError": "క్విజ్‌ను లోడ్ చేయడంలో విఫలమైంది",
+  "quizNotAvailable": "క్విజ్ అందుబాటులో లేదు",
   "quizQuestionOf": "ప్రశ్న {index} / {total}",
   "quizTypeMcq": "బహుళ ఎంపిక",
   "quizTypeTrueFalse": "సత్యం / అసత్యం",
@@ -364,12 +360,14 @@
   "quizNext": "తదుపరి",
   "quizPassed": "పాస్!",
   "quizFailed": "ఫెయిల్",
-  "quizPassedMessage": "చాలా బాగా! మీరు Quiz లో పాస్ అయ్యారు.",
+  "quizPassedMessage": "చాలా బాగా! మీరు క్విజ్‌లో పాస్ అయ్యారు.",
   "quizFailedMessage": "మీరు పాస్ కాలేదు. క్రింది ప్రశ్నలను సమీక్షించండి.",
   "quizScoreFraction": "{correct}/{total}",
   "quizQuestionLabel": "ప్రశ్న {index}",
   "quizExplanation": "వివరణ: {text}",
   "quizBackToCourse": "కోర్సుకు తిరిగి",
+  "quizResultsPendingTitle": "సమాధానాలు సేవ్ చేయబడ్డాయి",
+  "quizResultsPendingBody": "మీ సమాధానాలు సేవ్ చేయబడ్డాయి. హబ్ కనెక్ట్ అయినప్పుడు మీ స్కోర్ చూపబడుతుంది.",
   "profileCoursesCompleted": "కోర్సులు పూర్తయ్యాయి",
   "profileMyCourses": "నా కోర్సులు",
   "profileTapToResume": "కొనసాగించడానికి ట్యాప్ చేయండి",
@@ -722,5 +720,106 @@
   "semanticsProfileSwitcher": "విద్యార్థి ప్రొఫైల్‌ను మార్చండి",
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"
-  }
+  },
+    "flashcardTitleRequired": "దయచేసి డెక్ శీర్షికను నమోదు చేయండి",
+    "@flashcardTitleRequired": {
+      "description": "Inline validation error shown under the deck title field on the deck editor when the title is empty",
+      "x_machine_translated": true
+    },
+    "flashcardSubjectOptional": "సబ్జెక్ట్ (ఐచ్ఛికం)",
+    "@flashcardSubjectOptional": {
+      "description": "Persistent label for the optional subject input on the deck editor; keep the '(optional)' marker in translations",
+      "x_machine_translated": true
+    },
+    "flashcardCreateDeck": "డెక్ సృష్టించండి",
+    "@flashcardCreateDeck": {
+      "description": "Primary bottom action button on the new-deck screen; verb-first label",
+      "x_machine_translated": true
+    },
+    "flashcardAgainDesc": "గుర్తుండలేదు. త్వరలో మళ్ళీ వస్తుంది.",
+    "@flashcardAgainDesc": {
+      "description": "Small explanation under the Again rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardHardDesc": "కష్టపడి గుర్తొచ్చింది. త్వరలో తిరిగి వస్తుంది.",
+    "@flashcardHardDesc": {
+      "description": "Small explanation under the Hard rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardGoodDesc": "గుర్తొచ్చింది. సాధారణ సమయంలో తిరిగి వస్తుంది.",
+    "@flashcardGoodDesc": {
+      "description": "Small explanation under the Good rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardEasyDesc": "వెంటనే గుర్తొచ్చింది. చాలా తర్వాత తిరిగి వస్తుంది.",
+    "@flashcardEasyDesc": {
+      "description": "Small explanation under the Easy rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardNextInDays": "{days, plural, one{తర్వాత 1 రోజులో} other{తర్వాత {days} రోజుల్లో}}",
+    "@flashcardNextInDays": {
+      "description": "Scheduling preview under each rating tile showing when the card returns; ICU plural on days",
+      "placeholders": {
+        "days": {
+          "type": "int",
+          "example": "3"
+        }
+      },
+      "x_machine_translated": true
+    },
+    "tourSkip": "దాటవేయండి",
+    "@tourSkip": {
+      "description": "Button that dismisses the first-login tour without finishing it",
+      "x_machine_translated": true
+    },
+    "tourNext": "తదుపరి",
+    "@tourNext": {
+      "description": "Button that advances to the next first-login tour slide",
+      "x_machine_translated": true
+    },
+    "tourGetStarted": "ప్రారంభించండి",
+    "@tourGetStarted": {
+      "description": "Final button on the last tour slide that enters the app; verb-first label",
+      "x_machine_translated": true
+    },
+    "tourTitleWelcome": "EduMeshకి స్వాగతం",
+    "@tourTitleWelcome": {
+      "description": "Title of the first-login tour welcome slide; brand name EduMesh stays untranslated",
+      "x_machine_translated": true
+    },
+    "tourBodyWelcome": "ఇంటర్నెట్ లేకున్నా ఎప్పుడైనా నేర్చుకోండి.",
+    "@tourBodyWelcome": {
+      "description": "Body of the first-login tour welcome slide; short plain sentence, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleOffline": "మీ పాఠాలను డౌన్‌లోడ్ చేయండి",
+    "@tourTitleOffline": {
+      "description": "Title of the first-login tour offline-download slide",
+      "x_machine_translated": true
+    },
+    "tourBodyOffline": "హబ్ WiFi ద్వారా పాఠాలను డౌన్‌లోడ్ చేయండి. తర్వాత ఆఫ్‌లైన్‌లో చూడండి.",
+    "@tourBodyOffline": {
+      "description": "Body of the first-login tour offline-download slide; WiFi stays as-is, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleProgress": "మీ పురోగతి సేవ్ చేయబడుతుంది",
+    "@tourTitleProgress": {
+      "description": "Title of the first-login tour progress slide",
+      "x_machine_translated": true
+    },
+    "tourBodyProgress": "మీరు తెరిచేదల్లా మీ ప్రొఫైల్‌లో సేవ్ అవుతుంది. ఎప్పుడైనా ప్రొఫైల్ చిహ్నం నుండి ఖాతా మార్చండి.",
+    "@tourBodyProgress": {
+      "description": "Body of the first-login tour progress slide; two short sentences, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleLanguage": "మీ భాషను ఎంచుకోండి",
+    "@tourTitleLanguage": {
+      "description": "Title of the first-login tour language slide",
+      "x_machine_translated": true
+    },
+    "tourBodyLanguage": "సెట్టింగ్‌లలో ఎప్పుడైనా మీ భాషను ఎంచుకోండి.",
+    "@tourBodyLanguage": {
+      "description": "Body of the first-login tour language slide; allow 40-50% expansion",
+      "x_machine_translated": true
+    }
 }

@@ -100,7 +100,6 @@
   "filtersActiveSorted": "ಫಿಲ್ಟರ್‌ಗಳು ಸಕ್ರಿಯ · ವಿಂಗಡಿಸಲಾಗಿದೆ: {sortBy}",
   "clearFiltersButton": "ಫಿಲ್ಟರ್‌ಗಳನ್ನು ತೆರವುಗೊಳಿಸಿ",
   "sectionAllResources": "ಎಲ್ಲಾ ಸಂಪನ್ಮೂಲಗಳು",
-  "sectionRecommendedForYou": "ನಿಮಗಾಗಿ ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ",
   "emptyNoResources": "ಹಬ್‌ನಲ್ಲಿ ಯಾವುದೇ ಸಂಪನ್ಮೂಲಗಳು ಲಭ್ಯವಿಲ್ಲ.",
   "emptyNoSearchResults": "ಯಾವುದೇ ಫಲಿತಾಂಶಗಳಿಲ್ಲ.",
   "errorNoServerNoCache": "ಸರ್ವರ್ ತಲುಪಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಯಾವುದೇ ಕ್ಯಾಶ್ ಮಾಡಿದ ಸಂಪನ್ಮೂಲಗಳಿಲ್ಲ.",
@@ -132,7 +131,7 @@
   "@removedFromServerBadge": {
     "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."
   },
-  "removedFromServerSnackbar": "ಈ ಫೈಲ್ ಅನ್ನು ಸರ್ವರ್ನಿಂದ ತೆಗೆದುಹಾಕಲಾಗಿದೆ ಮತ್ತು ಇದನ್ನು ಮತ್ತೆ ಡೌನ್ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.",
+  "removedFromServerSnackbar": "ಈ ಫೈಲ್ ಅನ್ನು ಸರ್ವರ್ನಿಂದ ತೆಗೆದುಹಾಕಲಾಗಿದೆ ಮತ್ತು ಇದನ್ನು ಮತ್ತೆ ಡೌನ್‌ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.",
   "@removedFromServerSnackbar": {
     "description": "SnackBar shown when the student taps a download action on a resource that was deleted from the hub. The saved file still opens, but downloading it again is blocked."
   },
@@ -140,7 +139,7 @@
   "@removedFromServerNotificationTitle": {
     "description": "Title of the local notification shown after a catalog sync when a downloaded resource has disappeared from the hub catalog."
   },
-  "removedFromServerNotificationBody": "\"{title}\" ಸರ್ವರ್ನಿಂದ ತೆಗೆದುಹಾಕಲಾಗಿದೆ. ನೀವು ಇದನ್ನು ಆಫ್ಲೈನ್ನಲ್ಲಿ ಬಳಸಬಹುದು, ಆದರೆ ಇದನ್ನು ಮತ್ತೆ ಡೌನ್ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.",
+  "removedFromServerNotificationBody": "\"{title}\" ಸರ್ವರ್ನಿಂದ ತೆಗೆದುಹಾಕಲಾಗಿದೆ. ನೀವು ಇದನ್ನು ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ಬಳಸಬಹುದು, ಆದರೆ ಇದನ್ನು ಮತ್ತೆ ಡೌನ್‌ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.",
   "@removedFromServerNotificationBody": {
     "description": "Body of the local notification shown when a downloaded resource was removed from the hub catalog. Tells the student the file still works offline but cannot be downloaded again.",
     "placeholders": {
@@ -315,15 +314,12 @@
   "activityPastTense": "{verb}ಲಾಗಿದೆ",
   "storageAppSize": "{size} MB",
   "hubStrengthCalculating": "ಲೆಕ್ಕಾಚಾರ ಮಾಡಲಾಗುತ್ತಿದೆ...",
-  "resourceFallbackTitle": "Untitled",
-  "subjectFallbackGeneral": "General",
-  "subjectNameUnknown": "Unknown",
+  "resourceFallbackTitle": "ಶೀರ್ಷಿಕೆ ಇಲ್ಲ",
+  "subjectFallbackGeneral": "ಸಾಮಾನ್ಯ",
+  "subjectNameUnknown": "ಗೊತ್ತಿಲ್ಲ",
   "browseMyCourses": "ನನ್ನ ಕೋರ್ಸ್‌ಗಳು",
-  "browseRecommended": "ನಿಮಗಾಗಿ ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ",
   "browseSimilarCourses": "ಹೋಲುವ ಕೋರ್ಸ್‌ಗಳು",
   "browseAllCourses": "ಎಲ್ಲಾ ಕೋರ್ಸ್‌ಗಳು",
-  "browseShowRecommended": "ಶಿಫಾರಸುಗಳನ್ನು ತೋರಿಸಿ",
-  "browseShowAll": "ಎಲ್ಲಾ ತೋರಿಸಿ",
   "browseSearchHint": "ಕೋರ್ಸ್‌ಗಳನ್ನು ಹುಡುಕಿ...",
   "browseEnroll": "ದಾಖಲಾಗಿ",
   "browseClassLabel": "ತರಗತಿ {grade}",
@@ -364,6 +360,8 @@
   "quizQuestionLabel": "ಪ್ರಶ್ನೆ {index}",
   "quizExplanation": "ವಿವರಣೆ: {text}",
   "quizBackToCourse": "ಕೋರ್ಸ್‌ಗೆ ಹಿಂತಿರುಗಿ",
+  "quizResultsPendingTitle": "ಉತ್ತರಗಳು ಉಳಿಸಲ್ಪಟ್ಟವು",
+  "quizResultsPendingBody": "ನಿಮ್ಮ ಉತ್ತರಗಳು ಉಳಿಸಲಾಗಿವೆ. ಹಬ್ ಜೊತೆ ಸಂಪರ್ಕಿಸಿದಾಗ ನಿಮ್ಮ ಅಂಕ ತೋರಿಸಲಾಗುತ್ತದೆ.",
   "profileCoursesCompleted": "ಕೋರ್ಸ್‌ಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ",
   "profileMyCourses": "ನನ್ನ ಕೋರ್ಸ್‌ಗಳು",
   "profileTapToResume": "ಮುಂದುವರಿಯಲು ಟ್ಯಾಪ್ ಮಾಡಿ",
@@ -688,9 +686,6 @@
   },
   "@sectionAllResources": {
     "description": "Section header for the full resource list when no search query and no filters"
-  },
-  "@sectionRecommendedForYou": {
-    "description": "Section header for personalized resource recommendations"
   },
   "@emptyNoResources": {
     "description": "Empty state text when no resources exist at all"
@@ -1415,21 +1410,13 @@
   "@browseMyCourses": {
     "description": "Section header for the student's enrolled courses on the browse page"
   },
-  "@browseRecommended": {
-    "description": "Section header for recommended courses section on the browse page"
-  },
   "@browseSimilarCourses": {
     "description": "Section header for teacher-defined similar courses"
   },
   "@browseAllCourses": {
     "description": "Section header for the complete course catalog on the browse page"
   },
-  "@browseShowRecommended": {
-    "description": "Toggle button to show only recommended courses"
-  },
-  "@browseShowAll": {
-    "description": "Toggle button to show all available courses"
-  },
+  "browseSearchHint": "ಕೋರ್ಸ್‌ಗಳನ್ನು ಹುಡುಕಿ...",
   "@browseSearchHint": {
     "description": "Hint text inside the course search field on the browse page"
   },
@@ -1940,5 +1927,106 @@
   "semanticsProfileSwitcher": "ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಬದಲಿಸಿ",
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"
-  }
+  },
+    "flashcardTitleRequired": "ದಯವಿಟ್ಟು ಡೆಕ್ ಶೀರ್ಷಿಕೆ ಬರೆಯಿರಿ",
+    "@flashcardTitleRequired": {
+      "description": "Inline validation error shown under the deck title field on the deck editor when the title is empty",
+      "x_machine_translated": true
+    },
+    "flashcardSubjectOptional": "ವಿಷಯ (ಐಚ್ಛಿಕ)",
+    "@flashcardSubjectOptional": {
+      "description": "Persistent label for the optional subject input on the deck editor; keep the '(optional)' marker in translations",
+      "x_machine_translated": true
+    },
+    "flashcardCreateDeck": "ಡೆಕ್ ರಚಿಸಿ",
+    "@flashcardCreateDeck": {
+      "description": "Primary bottom action button on the new-deck screen; verb-first label",
+      "x_machine_translated": true
+    },
+    "flashcardAgainDesc": "ನೆನಪಾಗಲಿಲ್ಲ. ಬೇಗ ಮತ್ತೆ ಬರುತ್ತದೆ.",
+    "@flashcardAgainDesc": {
+      "description": "Small explanation under the Again rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardHardDesc": "ಕಷ್ಟಪಟ್ಟು ನೆನಪಾಯಿತು. ಬೇಗ ಮರಳಿ ಬರುತ್ತದೆ.",
+    "@flashcardHardDesc": {
+      "description": "Small explanation under the Hard rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardGoodDesc": "ನೆನಪಾಯಿತು. ಸಾಮಾನ್ಯ ಸಮಯದ ನಂತರ ಬರುತ್ತದೆ.",
+    "@flashcardGoodDesc": {
+      "description": "Small explanation under the Good rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardEasyDesc": "ತಕ್ಷಣ ನೆನಪಾಯಿತು. ಬಹಳ ಸಮಯದ ನಂತರ ಬರುತ್ತದೆ.",
+    "@flashcardEasyDesc": {
+      "description": "Small explanation under the Easy rating tile during flashcard review; grade-4 reading level",
+      "x_machine_translated": true
+    },
+    "flashcardNextInDays": "{days, plural, one{ಮುಂದೆ 1 ದಿನದಲ್ಲಿ} other{ಮುಂದೆ {days} ದಿನಗಳಲ್ಲಿ}}",
+    "@flashcardNextInDays": {
+      "description": "Scheduling preview under each rating tile showing when the card returns; ICU plural on days",
+      "placeholders": {
+        "days": {
+          "type": "int",
+          "example": "3"
+        }
+      },
+      "x_machine_translated": true
+    },
+    "tourSkip": "ಬಿಟ್ಟುಬಿಡಿ",
+    "@tourSkip": {
+      "description": "Button that dismisses the first-login tour without finishing it",
+      "x_machine_translated": true
+    },
+    "tourNext": "ಮುಂದೆ",
+    "@tourNext": {
+      "description": "Button that advances to the next first-login tour slide",
+      "x_machine_translated": true
+    },
+    "tourGetStarted": "ಪ್ರಾರಂಭಿಸಿ",
+    "@tourGetStarted": {
+      "description": "Final button on the last tour slide that enters the app; verb-first label",
+      "x_machine_translated": true
+    },
+    "tourTitleWelcome": "EduMesh ಗೆ ಸ್ವಾಗತ",
+    "@tourTitleWelcome": {
+      "description": "Title of the first-login tour welcome slide; brand name EduMesh stays untranslated",
+      "x_machine_translated": true
+    },
+    "tourBodyWelcome": "ಇಂಟರ್ನೆಟ್ ಇಲ್ಲದೆಯೂ ಯಾವಾಗ ಬೇಕಾದರೂ ಕಲಿಯಿರಿ.",
+    "@tourBodyWelcome": {
+      "description": "Body of the first-login tour welcome slide; short plain sentence, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleOffline": "ನಿಮ್ಮ ಪಾಠಗಳನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
+    "@tourTitleOffline": {
+      "description": "Title of the first-login tour offline-download slide",
+      "x_machine_translated": true
+    },
+    "tourBodyOffline": "ಹಬ್ WiFi ಮೂಲಕ ಪಾಠಗಳನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ. ನಂತರ ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ನೋಡಿ.",
+    "@tourBodyOffline": {
+      "description": "Body of the first-login tour offline-download slide; WiFi stays as-is, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleProgress": "ನಿಮ್ಮ ಪ್ರಗತಿ ಉಳಿಸಲಾಗುತ್ತದೆ",
+    "@tourTitleProgress": {
+      "description": "Title of the first-login tour progress slide",
+      "x_machine_translated": true
+    },
+    "tourBodyProgress": "ನೀವು ತೆರೆದ ಎಲ್ಲವೂ ನಿಮ್ಮ ಪ್ರೊಫೈಲ್‌ನಲ್ಲಿ ಉಳಿಯುತ್ತದೆ. ಯಾವಾಗ ಬೇಕಾದರೂ ಪ್ರೊಫೈಲ್ ಚಿಹ್ನೆಯಿಂದ ಖಾತೆ ಬದಲಿಸಿ.",
+    "@tourBodyProgress": {
+      "description": "Body of the first-login tour progress slide; two short sentences, allow 40-50% expansion",
+      "x_machine_translated": true
+    },
+    "tourTitleLanguage": "ನಿಮ್ಮ ಭಾಷೆ ಆಯ್ಕೆ ಮಾಡಿ",
+    "@tourTitleLanguage": {
+      "description": "Title of the first-login tour language slide",
+      "x_machine_translated": true
+    },
+    "tourBodyLanguage": "ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಯಾವಾಗ ಬೇಕಾದರೂ ಭಾಷೆ ಆಯ್ಕೆ ಮಾಡಿ.",
+    "@tourBodyLanguage": {
+      "description": "Body of the first-login tour language slide; allow 40-50% expansion",
+      "x_machine_translated": true
+    }
 }
