@@ -103,3 +103,5 @@ Debian Server/test_e2e_extended.py
 Debian Server/test_endpoint.py
 Debian Server/trigger_reimport.py
 Debian Server/wipe_zim.py
+# OpenChamber config backups (written next to opencode.json on MCP edits)
+*.openchamber.backup
