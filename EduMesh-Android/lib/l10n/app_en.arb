@@ -124,7 +124,7 @@
   "@storageCalculating": {
     "description": "Default display text for storage values while computing"
   },
-  "storageUnknown": "Unknown",
+  "storageUnknown": "N/A",
   "@storageUnknown": {
     "description": "Fallback text when storage calculation fails"
   },
@@ -312,7 +312,7 @@
   "@errorUsernameTaken": {
     "description": "Error shown when registering with a username that already exists on the hub"
   },
-  "snackbarOfflineLogin": "Logged in offline -- cannot connect to hub to save changes",
+  "snackbarOfflineLogin": "Logged in offline: cannot connect to hub to save changes",
   "@snackbarOfflineLogin": {
     "description": "SnackBar message shown when login succeeds but only local authentication was available"
   },
@@ -408,7 +408,7 @@
   "@filtersActiveLabel": {
     "description": "Label shown below search bar when filters are applied with default sort"
   },
-  "filtersActiveSorted": "Filters active Â· Sorted: {sortBy}",
+  "filtersActiveSorted": "Filters active · Sorted: {sortBy}",
   "@filtersActiveSorted": {
     "description": "Label shown when filters are active with a non-default sort",
     "placeholders": {
@@ -510,7 +510,7 @@
   "@filterApplyButton": {
     "description": "Button to apply current filter selections"
   },
-  "snackbarAddedToQueueOffline": "Added to queue -- will download when server is reachable",
+  "snackbarAddedToQueueOffline": "Added to queue: will download when server is reachable",
   "@snackbarAddedToQueueOffline": {
     "description": "SnackBar shown when resource is queued for download while offline"
   },
@@ -612,7 +612,7 @@
   "@fileSizeUnknownFallback": {
     "description": "Fallback text in download dialog when sizeLabel is null"
   },
-  "pageTitleDetail": "{title} -- {subject}",
+  "pageTitleDetail": "{title} - {subject}",
   "@pageTitleDetail": {
     "description": "AppBar title on the resource detail page",
     "placeholders": {
@@ -654,7 +654,7 @@
   "@emptyRefreshButton": {
     "description": "Button to reload resources from the empty state"
   },
-  "resourceSubtitle": "{subject} â€¢ {grade}",
+  "resourceSubtitle": "{subject} • {grade}",
   "@resourceSubtitle": {
     "description": "Subtitle text on each resource list item",
     "placeholders": {
@@ -1309,7 +1309,7 @@
       }
     }
   },
-  "connectionOfflineBanner": "Offline -- some features may be unavailable",
+  "connectionOfflineBanner": "Offline: some features may be unavailable",
   "@connectionOfflineBanner": {
     "description": "Banner text shown when the device is offline"
   },
@@ -1657,7 +1657,7 @@
       }
     }
   },
-  "shareFindingDevices": "Finding nearby devicesâ€¦",
+  "shareFindingDevices": "Finding nearby devices…",
   "@shareFindingDevices": {
     "description": "Snackbar shown while the app listens for nearby students' phones that have the requested file. User just tapped Download. Keep short."
   },
@@ -1932,21 +1932,39 @@
     }
   },
   "switchProfileTitle": "Switch Profile",
-  "@switchProfileTitle": { "description": "ListTile title that opens the profile picker to switch to another student on this shared device" },
+  "@switchProfileTitle": {
+    "description": "ListTile title that opens the profile picker to switch to another student on this shared device"
+  },
   "switchProfileSubtitle": "Use another student's profile on this phone",
-  "@switchProfileSubtitle": { "description": "ListTile subtitle explaining that other students can use this phone with their own profiles" },
+  "@switchProfileSubtitle": {
+    "description": "ListTile subtitle explaining that other students can use this phone with their own profiles"
+  },
   "profilePickerTitle": "Choose a Profile",
-  "@profilePickerTitle": { "description": "AppBar title of the profile picker page" },
+  "@profilePickerTitle": {
+    "description": "AppBar title of the profile picker page"
+  },
   "profilePickerCurrent": "Current",
-  "@profilePickerCurrent": { "description": "Badge on the currently active profile in the picker" },
+  "@profilePickerCurrent": {
+    "description": "Badge on the currently active profile in the picker"
+  },
   "profilePickerAddProfile": "Add Profile",
-  "@profilePickerAddProfile": { "description": "Action that starts the register/login flow for a new student" },
+  "@profilePickerAddProfile": {
+    "description": "Action that starts the register/login flow for a new student"
+  },
   "profilePickerAddProfileSubtitle": "Register or sign in a new student",
-  "@profilePickerAddProfileSubtitle": { "description": "Subtitle under the add-profile action in the picker" },
+  "@profilePickerAddProfileSubtitle": {
+    "description": "Subtitle under the add-profile action in the picker"
+  },
   "profilePickerEmpty": "No saved profiles yet. Add one to start.",
-  "@profilePickerEmpty": { "description": "Empty state shown when no profiles are saved on this device" },
+  "@profilePickerEmpty": {
+    "description": "Empty state shown when no profiles are saved on this device"
+  },
   "profileSwitchFailed": "Could not switch profile",
-  "@profileSwitchFailed": { "description": "Snackbar shown when switching to a profile fails" },
+  "@profileSwitchFailed": {
+    "description": "Snackbar shown when switching to a profile fails"
+  },
   "semanticsProfileSwitcher": "Switch student profile",
-  "@semanticsProfileSwitcher": { "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker" }
+  "@semanticsProfileSwitcher": {
+    "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"
+  }
 }
