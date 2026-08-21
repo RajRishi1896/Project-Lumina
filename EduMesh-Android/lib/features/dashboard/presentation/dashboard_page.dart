@@ -375,7 +375,7 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Row(
         children: [
           SvgPicture.asset(
-            Theme.of(context).brightness == Brightness.dark ? 'assets/images/logo-light.svg' : 'assets/images/logo-dark.svg',
+            Theme.of(context).brightness == Brightness.dark ? 'assets/images/logo-dark.svg' : 'assets/images/logo-light.svg',
             width: 28.sp,
             height: 28.sp,
           ),
