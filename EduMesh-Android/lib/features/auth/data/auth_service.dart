@@ -151,10 +151,10 @@ class AuthService {
           }
         }
       } on DioException catch (e) {
-        // Server unreachable (no status code) -- try offline login below.
+        // Server unreachable (no status code): try offline login below.
         if (e.response?.statusCode != null) return null;
       } catch (_) {
-        // Non-Dio failure (e.g. timeout) -- try offline login below.
+        // Non-Dio failure (e.g. timeout): try offline login below.
       }
 
       // 2. Offline fallback: known username on this device + stored token

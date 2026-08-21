@@ -142,7 +142,7 @@ class FlashcardService {
   }
 
   /// Replaces a deck's cards (keeps review state for matching card ids only
-  /// if ids were kept -- we always re-issue ids, so reviews are reset).
+  /// if ids were kept: we always re-issue ids, so reviews are reset).
   Future<void> updateDeck(String deckId, String title, List<({String front, String back})> cards) async {
     final db = await DBHelper().database;
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -302,7 +302,7 @@ class FlashcardService {
             where: 'card_id NOT IN (SELECT id FROM flashcard_cards_local)');
       });
     } catch (e) {
-      debugPrint('FlashcardService: sync failed -- $e');
+      debugPrint('FlashcardService: sync failed; $e');
     }
   }
 
@@ -348,7 +348,7 @@ class FlashcardService {
         }, where: 'deck_id = ?', whereArgs: [deckId]);
       }
     } catch (e) {
-      debugPrint('FlashcardService: refresh submissions failed -- $e');
+      debugPrint('FlashcardService: refresh submissions failed; $e');
     }
   }
 

@@ -482,7 +482,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       opacity: _showControls ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 200),
       child: Container(
-        // Solid theme token as the video-control scrim -- never alpha-on-text.
+        // Solid theme token as the video-control scrim: never alpha-on-text.
         color: cs.surfaceContainerHighest,
         child: Column(
           mainAxisSize: MainAxisSize.min,

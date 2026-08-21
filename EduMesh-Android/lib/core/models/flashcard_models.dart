@@ -21,7 +21,7 @@ class FlashcardDeck {
 
   final List<FlashcardCard> cards;
 
-  /// Pending / approved / rejected -- empty for purely local decks.
+  /// Pending / approved / rejected: empty for purely local decks.
   final String submissionStatus;
   final String submissionReason;
 

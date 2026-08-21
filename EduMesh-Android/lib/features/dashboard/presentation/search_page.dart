@@ -37,7 +37,7 @@ class SearchPage extends StatefulWidget {
   final bool openFilters;
 
   /// When true, skip the Scaffold/AppBar wrapper and return only the body
-  /// content -- useful for embedding inside another widget.
+  /// content: useful for embedding inside another widget.
   final bool embedded;
 
   const SearchPage({super.key, this.initialGrade = '', this.openFilters = false, this.embedded = false});
@@ -319,7 +319,7 @@ class _SearchPageState extends State<SearchPage> {
               html = html.replaceAll(fullUrl, dataUri);
             }
           } catch (_) {
-            // Asset fetch failed -- leave URL as-is, WebView may still load it online.
+            // Asset fetch failed: leave URL as-is, WebView may still load it online.
           }
         }));
       }
@@ -765,7 +765,7 @@ class _SearchPageState extends State<SearchPage> {
       final aZim = a['isZim'] == true;
       final bZim = b['isZim'] == true;
       if (aZim && bZim) {
-        // Preserve server-side relevance ranking -- do NOT re-sort alphabetically.
+        // Preserve server-side relevance ranking: do NOT re-sort alphabetically.
         final ai = _zimArticleIndex(a['articleId'] as String? ?? '');
         final bi = _zimArticleIndex(b['articleId'] as String? ?? '');
         return ai.compareTo(bi);

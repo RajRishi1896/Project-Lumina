@@ -22,7 +22,7 @@ class ResourceThumbnail extends StatelessWidget {
   const ResourceThumbnail({super.key, required this.resource, this.size = 56});
 
   /// A thumbnail for a bare resource id/title/type pair, without a full
-  /// [ResourceModel] -- used by [ResourceCard]. Not const because it builds
+  /// [ResourceModel]: used by [ResourceCard]. Not const because it builds
   /// a non-const [ResourceModel] internally.
   ResourceThumbnail.forCard({
     super.key,
@@ -215,7 +215,7 @@ class ResourceCard extends StatelessWidget {
   }
 
   /// Returns the badge label for [type], or `null` for kiwix (no coloured
-  /// badge -- the thumbnail already shows the "WIKI" fallback label).
+  /// badge: the thumbnail already shows the "WIKI" fallback label).
   /// Labels are English type markers by design, not translatable strings.
   static String? _badgeLabel(ResourceType type) {
     switch (type) {

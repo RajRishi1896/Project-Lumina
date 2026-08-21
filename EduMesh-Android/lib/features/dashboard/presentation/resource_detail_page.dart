@@ -623,7 +623,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                       }
                                     }
                                   } catch (_) {
-                                    // DB error — will open from server URL
+                                    // DB error, will open from server URL
                                   }
                                 }
                                 if (!mounted) return;

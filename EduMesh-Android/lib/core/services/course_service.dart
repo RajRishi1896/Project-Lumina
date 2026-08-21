@@ -120,7 +120,7 @@ class CourseService extends ChangeNotifier {
       }
       return null;
     } catch (e) {
-      debugPrint('CourseService: fetchCourseDetail failed -- $e');
+      debugPrint('CourseService: fetchCourseDetail failed; $e');
       return null;
     }
   }
@@ -147,7 +147,7 @@ class CourseService extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      debugPrint('CourseService: enroll failed -- $e');
+      debugPrint('CourseService: enroll failed; $e');
       return false;
     }
   }
@@ -173,7 +173,7 @@ class CourseService extends ChangeNotifier {
         );
         succeeded++;
       } catch (e) {
-        debugPrint('CourseService: downloadCourse failed for ${resource.id} -- $e');
+        debugPrint('CourseService: downloadCourse failed for ${resource.id}; $e');
       }
     }
     notifyListeners();
@@ -218,7 +218,7 @@ class CourseService extends ChangeNotifier {
       final rows = await db.query('courses', orderBy: 'synced_at DESC');
       return rows.map(_rowToCourse).toList();
     } catch (e) {
-      debugPrint('CourseService: getCachedCatalog failed -- $e');
+      debugPrint('CourseService: getCachedCatalog failed; $e');
       return [];
     }
   }
@@ -259,7 +259,7 @@ class CourseService extends ChangeNotifier {
       _enrolledCourses = result;
       notifyListeners();
     } catch (e) {
-      debugPrint('CourseService: loadEnrolledCourses failed -- $e');
+      debugPrint('CourseService: loadEnrolledCourses failed; $e');
     }
   }
 
@@ -303,7 +303,7 @@ class CourseService extends ChangeNotifier {
         }
       });
     } catch (e) {
-      debugPrint('CourseService: _restoreEnrollmentsFromServer failed -- $e');
+      debugPrint('CourseService: _restoreEnrollmentsFromServer failed; $e');
     }
   }
 
@@ -315,7 +315,7 @@ class CourseService extends ChangeNotifier {
       final result = await db.rawQuery('SELECT COUNT(*) AS cnt FROM course_progress WHERE completed = 1 AND student_id = ?', [studentId]);
       return Sqflite.firstIntValue(result) ?? 0;
     } catch (e) {
-      debugPrint('CourseService: getCompletedCourseCount failed -- $e');
+      debugPrint('CourseService: getCompletedCourseCount failed; $e');
       return 0;
     }
   }

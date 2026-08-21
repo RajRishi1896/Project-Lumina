@@ -62,13 +62,13 @@ class CatalogService {
       await _detectServerRemovals(data);
       _lastCatalogSync = DateTime.now();
     } catch (e) {
-      debugPrint('CatalogService: sync failed -- $e');
+      debugPrint('CatalogService: sync failed; $e');
     }
   }
 
   /// Resources that no longer exist in the fresh catalog are marked
   /// `server_removed` and the student is notified (capped to avoid spam on
-  /// mass deletions). Never throws -- failures are logged and skipped.
+  /// mass deletions). Never throws: failures are logged and skipped.
   Future<void> _detectServerRemovals(List<dynamic> catalogData) async {
     try {
       final db = await DBHelper().database;
@@ -96,7 +96,7 @@ class CatalogService {
         await NotificationService().showRemovedFromServer(row['title'] as String? ?? '');
       }
     } catch (e) {
-      debugPrint('CatalogService: removal detection failed -- $e');
+      debugPrint('CatalogService: removal detection failed; $e');
     }
   }
 
@@ -122,7 +122,7 @@ class CatalogService {
       });
       _lastSimilarSync = DateTime.now();
     } catch (e) {
-      debugPrint('CatalogService: similar-courses sync failed -- $e');
+      debugPrint('CatalogService: similar-courses sync failed; $e');
     }
   }
 

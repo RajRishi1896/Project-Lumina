@@ -140,7 +140,7 @@ class Quiz {
   /// The time limit in minutes (0 = no limit).
   final int timeLimitMinutes;
 
-  /// The minimum score fraction (0.0–1.0) required to pass.
+  /// The minimum score fraction (0.0-1.0) required to pass.
   final double passThreshold;
 
   /// The maximum number of attempts allowed.
@@ -267,7 +267,7 @@ class CourseResource {
 
 /// A course containing metadata and optionally its resources.
 class Course {
-  // -- Fields --
+  //: Fields
 
   final String id;
 

@@ -361,7 +361,7 @@ class ShareServer {
       if (rangeHeader != null && rangeHeader.startsWith('bytes=')) {
         final parsed = _parseRange(rangeHeader, length);
         if (parsed == null) {
-          // Not a usable byte range — serve the full file (200).
+          // Not a usable byte range, serve the full file (200).
         } else if (!parsed.satisfiable) {
           response.statusCode = HttpStatus.requestedRangeNotSatisfiable;
           response.headers

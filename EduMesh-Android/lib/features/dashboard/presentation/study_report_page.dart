@@ -13,7 +13,7 @@ import '../../../l10n/app_localizations.dart';
 ///
 /// Shows study time by subject, downloaded files, quiz best scores, and recent
 /// activity. Everything comes from [DBHelper] and [ActivityTracker] so the
-/// report works fully offline -- no server round-trips.
+/// report works fully offline: no server round-trips.
 class StudyReportPage extends StatefulWidget {
   const StudyReportPage({super.key});
 
@@ -28,7 +28,7 @@ class _StudyReportPageState extends State<StudyReportPage> {
   final List<Map<String, dynamic>> _recent = [];
   bool _loading = true;
 
-  /// Whether any data exists at all -- drives the empty state.
+  /// Whether any data exists at all: drives the empty state.
   bool get _hasData =>
       _subjectMinutes.isNotEmpty ||
       _downloads.isNotEmpty ||

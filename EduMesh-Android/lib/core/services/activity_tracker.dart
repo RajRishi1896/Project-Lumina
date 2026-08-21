@@ -123,7 +123,7 @@ class ActivityTracker {
         if (decoded is Map<String, dynamic>) return decoded;
       } catch (_) { } }
 
-    // Cache empty — fetch from server (e.g. after data clear)
+    // Cache empty, fetch from server (e.g. after data clear)
     try {
       final response = await ApiClient.get('/student/analytics');
       if (response.statusCode == 200 && response.data is Map<String, dynamic>) {

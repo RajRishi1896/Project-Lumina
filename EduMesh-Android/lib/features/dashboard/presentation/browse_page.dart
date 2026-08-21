@@ -92,7 +92,7 @@ class BrowsePageState extends State<BrowsePage> with SingleTickerProviderStateMi
   }
 }
 
-/// Courses sub-tab — enrolled, recommended, similar, all courses.
+/// Courses sub-tab: enrolled, recommended, similar, all courses.
 class _CoursesTab extends StatefulWidget {
   const _CoursesTab();
   @override
@@ -507,7 +507,7 @@ class _CoursesTabState extends State<_CoursesTab> {
   }
 }
 
-/// Resources sub-tab — catalog resources with search, filters, download, bookmark.
+/// Resources sub-tab: catalog resources with search, filters, download, bookmark.
 class _ResourcesTab extends StatefulWidget {
   const _ResourcesTab();
   @override
@@ -521,7 +521,7 @@ class _ResourcesTabState extends State<_ResourcesTab> {
   }
 }
 
-/// Wiki sub-tab — server-side ZIM search/browse with infinite scroll.
+/// Wiki sub-tab: server-side ZIM search/browse with infinite scroll.
 class _WikiTab extends StatefulWidget {
   const _WikiTab();
   @override

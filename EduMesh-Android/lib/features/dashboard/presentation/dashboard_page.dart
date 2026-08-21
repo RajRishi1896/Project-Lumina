@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
@@ -26,9 +27,9 @@ import 'flashcard_deck_list_page.dart';
 ///
 /// Shows a search bar, recently-viewed resources, subject category grid, and a
 /// local storage usage section. Connection status comes from the
-/// [ConnectivityService] heartbeat -- no duplicate polling here.
+/// [ConnectivityService] heartbeat: no duplicate polling here.
 class DashboardPage extends StatefulWidget {
-  /// Called when the user taps the search bar -- switch to Browse tab.
+  /// Called when the user taps the search bar: switch to Browse tab.
   final VoidCallback? onBrowseTap;
   const DashboardPage({super.key, this.onBrowseTap});
 
@@ -170,13 +171,15 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _calcTotalStorage() async {
-    // ponytail: use cached app size from SharedPreferences, compute in background.
+    // ponytail: paint last measured values instantly, re-measure in background.
     // Recursive dir listing on eMMC takes 0.5-2s and blocks first render.
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cachedSize = prefs.getInt('cached_app_size_bytes');
-      if (cachedSize != null && cachedSize > 0) {
-        _applyStorageValues(cachedSize);
+      final cachedApp = prefs.getInt('cached_app_size_bytes');
+      final cachedTotal = prefs.getInt('cached_storage_total_bytes');
+      final cachedAvail = prefs.getInt('cached_storage_available_bytes');
+      if (cachedApp != null && cachedApp > 0 && cachedTotal != null && cachedTotal > 0 && cachedAvail != null && cachedAvail > 0) {
+        _applyStorageValues(cachedApp, cachedTotal, cachedAvail);
         unawaited(_computeAndCacheStorage());
         return;
       }
@@ -185,6 +188,22 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _computeAndCacheStorage() async {
+    int apkSize;
+    int totalBytes;
+    int availableBytes;
+    try {
+      const channel = MethodChannel('com.edumesh.android/storage');
+      final info = await channel.invokeMethod<Map>('getStorageInfo');
+      apkSize = info?['apkSize'] as int? ?? 0;
+      totalBytes = info?['totalBytes'] as int? ?? 0;
+      availableBytes = info?['availableBytes'] as int? ?? 0;
+      if (apkSize <= 0 || totalBytes <= 0 || availableBytes <= 0) {
+        throw StateError('incomplete storage info');
+      }
+    } catch (_) {
+      _showStorageNA();
+      return;
+    }
     try {
       final dir = await getApplicationDocumentsDirectory();
       int appDataSize = 0;
@@ -193,21 +212,30 @@ class _DashboardPageState extends State<DashboardPage> {
           if (entity is File) appDataSize += await entity.length();
         }
       }
-      const apkSize = 65 * 1024 * 1024;
       final appUsedBytes = appDataSize + apkSize;
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('cached_app_size_bytes', appUsedBytes);
+        await prefs.setInt('cached_storage_total_bytes', totalBytes);
+        await prefs.setInt('cached_storage_available_bytes', availableBytes);
       } catch (_) {}
-      _applyStorageValues(appUsedBytes);
-    } catch (e) {
-      if (mounted) { final l10n = AppLocalizations.of(context)!; setState(() => _appUsedStr = _otherUsedStr = _freeRemainingStr = l10n.storageUnknown); }
+      _applyStorageValues(appUsedBytes, totalBytes, availableBytes);
+    } catch (_) {
+      _showStorageNA();
     }
   }
 
-  void _applyStorageValues(int appUsedBytes) {
-      const totalBytes = 128 * 1024 * 1024 * 1024;
-      const availableBytes = 64 * 1024 * 1024 * 1024;
+  void _showStorageNA() {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _appUsedStr = _otherUsedStr = _freeRemainingStr = l10n.storageUnknown;
+      _totalCapacityStr = l10n.storageUnknown;
+      _totalStorageUsedStr = l10n.storageUnknown;
+    });
+  }
+
+  void _applyStorageValues(int appUsedBytes, int totalBytes, int availableBytes) {
       final otherUsedBytes = (totalBytes - availableBytes - appUsedBytes).clamp(0, totalBytes);
 
       if (mounted) {

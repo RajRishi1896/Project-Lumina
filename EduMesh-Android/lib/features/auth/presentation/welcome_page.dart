@@ -53,7 +53,8 @@ class _WelcomePageState extends State<WelcomePage> {
     try {
       const channel = MethodChannel('com.edumesh.android/storage');
       final info = await channel.invokeMethod<Map>('getStorageInfo');
-      final apkSize = info?['apkSize'] as int? ?? 65 * 1024 * 1024;
+      final apkSize = info?['apkSize'] as int?;
+      if (apkSize == null || apkSize <= 0) throw StateError('no apk size');
       final dir = await getApplicationDocumentsDirectory();
       final sizeInBytes = await getDirSize(dir);
       final totalSizeInMb = (sizeInBytes + apkSize) / (1024 * 1024);
@@ -64,7 +65,7 @@ class _WelcomePageState extends State<WelcomePage> {
         });
       }
     } catch (_) {
-      // Storage calc failed -- leave null
+      // Storage calc failed: leave null
     }
   }
 

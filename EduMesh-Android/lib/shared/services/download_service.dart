@@ -60,7 +60,7 @@ class DownloadService {
         ),
       );
 
-      // Server ignored Range header — .part file is corrupt, restart
+      // Server ignored Range header, .part file is corrupt, restart
       if (startByte > 0 && response.statusCode == 200) {
         await partFile.delete();
         throw Exception('RANGE_NOT_SUPPORTED');
@@ -117,7 +117,7 @@ class DownloadService {
       final file = await downloadFile(url, fileName, onProgress: onProgress);
       if (file != null) {
         await DBHelper().insertDownload(resourceId, file.path, title, subject, grade, type, mtime: mtime);
-        // A new shareable file exists — the ShareServer index must reflect it.
+        // A new shareable file exists, the ShareServer index must reflect it.
         ShareServer().markIndexDirty();
         return file.path;
       }

@@ -61,7 +61,7 @@ void main() async {
     userId = await authService.getUniqueUserId();
   } catch (_) {
     // ponytail: secure-storage read throws on keystore corruption (e.g. lock
-    // screen removed) -- treat as logged out instead of crashing before runApp.
+    // screen removed): treat as logged out instead of crashing before runApp.
   }
   _trace('T2 userId=$userId ${DateTime.now().microsecondsSinceEpoch}');
   bool isLoggedIn = userId != null;

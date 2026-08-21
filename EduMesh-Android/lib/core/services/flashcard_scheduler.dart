@@ -1,6 +1,6 @@
 /// SM-2 spaced-repetition scheduling for flashcards.
 ///
-/// Pure functions -- no I/O, so the algorithm is unit-testable and the UI
+/// Pure functions: no I/O, so the algorithm is unit-testable and the UI
 /// stays fast on low-end devices.
 library;
 

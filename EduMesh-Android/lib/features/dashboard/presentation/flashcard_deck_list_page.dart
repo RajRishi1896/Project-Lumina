@@ -38,7 +38,7 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
       await FlashcardService().syncClassDecks();
       await FlashcardService().refreshSubmissions();
     } catch (_) {
-      // Best effort -- local decks must still load when the hub is offline.
+      // Best effort: local decks must still load when the hub is offline.
     }
     final decks = await FlashcardService().listDecks();
     if (!mounted) return;

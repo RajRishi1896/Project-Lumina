@@ -20,7 +20,7 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
   }
 
   /// Reads the persisted dark mode preference from [SharedPreferences].
-  /// Idempotent -- only reads once per app session.
+  /// Idempotent: only reads once per app session.
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;

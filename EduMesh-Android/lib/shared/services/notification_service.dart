@@ -19,7 +19,7 @@ class NotificationService {
   bool _initialized = false;
   int _nextId = 1000;
 
-  // Configurable strings for localization -- set via [setLocalizedStrings]
+  // Configurable strings for localization: set via [setLocalizedStrings]
   // when a BuildContext is available. Defaults are English fallbacks.
   String _channelName = 'Downloads';
   String _channelDescription = 'Download completion notifications';
@@ -37,7 +37,7 @@ class NotificationService {
   /// Initializes the notification plugin and creates the download channel.
   ///
   /// Must be called at least once before showing notifications. Calling
-  /// multiple times is safe -- subsequent calls are no-ops.
+  /// multiple times is safe: subsequent calls are no-ops.
   Future<void> init() async {
     if (_initialized) return;
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -107,7 +107,7 @@ class NotificationService {
   /// Shows a local notification confirming a download finished.
   ///
   /// Checks [isEnabled] and initializes the plugin if needed. Calls
-  /// [requestPermission] immediately before showing -- on Android 13+ this
+  /// [requestPermission] immediately before showing: on Android 13+ this
   /// surfaces the permission prompt at a natural UX moment (right after the
   /// user triggered a download).
   Future<void> showDownloadComplete(String title, {String? notificationTitle, String? notificationBody}) {
