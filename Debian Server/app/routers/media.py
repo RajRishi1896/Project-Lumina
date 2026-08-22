@@ -12,31 +12,38 @@ from app.dependencies import verify_user
 
 router = APIRouter()
 
-# VAAPI hardware decode args, probed once. Empty list on machines without a
-# usable /dev/dri device or vaapi ffmpeg build; CPU decode is the fallback.
-_vaapi_args: list = []
-
-
-def _probe_vaapi():
+def _probe_vaapi() -> list:
     """Return ffmpeg args for VAAPI hardware decode, or [] if unavailable.
 
-    Probed once at import. VAAPI offloads video decode to the Intel/AMD iGPU
-    (the largest CPU cost in thumbnail/sprite generation).
+    VAAPI offloads video decode to the Intel/AMD iGPU (the largest CPU cost
+    in thumbnail/sprite generation).
     """
-    global _vaapi_args
     try:
         if not os.path.exists("/dev/dri/renderD128"):
             return []
         result = subprocess.run(["ffmpeg", "-hwaccels"], capture_output=True, text=True, timeout=5)
         if result.returncode != 0 or "vaapi" not in result.stdout.lower():
             return []
-        _vaapi_args = ["-hwaccel", "vaapi", "-vaapi_device", "/dev/dri/renderD128"]
+        return ["-hwaccel", "vaapi", "-vaapi_device", "/dev/dri/renderD128"]
     except Exception:
-        pass
+        return []
+
+
+# ponytail: probed lazily on first ffmpeg use; an import-time probe stalled
+# boot up to ~5s on machines without ffmpeg. None sentinel = not yet probed.
+_vaapi_args: list | None = None
+
+
+def _get_vaapi_args() -> list:
+    """Return the memoized VAAPI args, probing ffmpeg on first call.
+
+    Call sites already run inside asyncio.to_thread workers, so the one-time
+    subprocess probe stays off the event loop.
+    """
+    global _vaapi_args
+    if _vaapi_args is None:
+        _vaapi_args = _probe_vaapi()
     return _vaapi_args
-
-
-_vaapi_args = _probe_vaapi()
 
 
 # ── Single-flight generation locks ───────────────────────────────────────────
@@ -139,7 +146,7 @@ def _find_video_thumb_time(file_path: str, max_search: int = 30) -> float:
     """
     try:
         result = subprocess.run(
-            ["ffmpeg", *_vaapi_args, "-i", file_path, "-t", "60",
+            ["ffmpeg", *_get_vaapi_args(), "-i", file_path, "-t", "60",
              "-vf", "blackdetect=d=0.3:pix_th=0.1",
              "-f", "null", "-"],
             capture_output=True, text=True, timeout=30
@@ -204,7 +211,7 @@ def _generate_video_sprite(file_path: str, sprite_path: str, interval: float, co
     try:
         # fps=1/{interval} samples one frame per interval; tile packs them into the grid.
         result = subprocess.run(
-            ["ffmpeg", *_vaapi_args, "-y", "-i", file_path,
+            ["ffmpeg", *_get_vaapi_args(), "-y", "-i", file_path,
              "-vf", f"fps=1/{interval},scale=160:90,tile={columns}x{rows}",
              "-frames:v", "1", "-q:v", "5", sprite_path],
             capture_output=True, timeout=120
@@ -270,7 +277,7 @@ async def resource_thumbnail(resource_id: str):
                 thumb_time = await asyncio.to_thread(_find_video_thumb_time, file_path)
                 ss = f"{int(thumb_time // 3600):02d}:{int((thumb_time % 3600) // 60):02d}:{int(thumb_time % 60):02d}"
                 result = await asyncio.to_thread(lambda: subprocess.run(
-                    ["ffmpeg", *_vaapi_args, "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],
+                    ["ffmpeg", *_get_vaapi_args(), "-i", file_path, "-ss", ss, "-vframes", "1", "-vf", "scale=320:-1", thumb_path, "-y"],
                     capture_output=True, timeout=15
                 ))
                 if result.returncode != 0 or not await asyncio.to_thread(os.path.exists, thumb_path):

@@ -35,24 +35,11 @@ os.makedirs(ZIM_THUMBS_DIR, exist_ok=True)
 # (header-only open, ~0s even for 124GB). Keeps fd open for repeated lookups.
 _archive_cache: dict[str, object] = {}
 
-# ponytail: path->entry index per asset request. Avoids get_entry_by_path
-# overhead for hot asset paths. Not needed for articles (low per-request variance).
-_asset_cache: dict[str, object] = {}
-_ASSET_CACHE_MAX = 500
-
 # ponytail: cached article counts. COUNT(*) on 19M rows takes ~1s;
 # this avoids it on every browse request. Refreshed every 60s.
 _article_count_cache: dict[str, int] = {}
 _article_count_ts: dict[str, float] = {}
 _COUNT_CACHE_TTL = 60
-
-
-def _cache_put(key, value):
-    """Store an asset in the bounded asset cache, evicting the oldest entry."""
-    if len(_asset_cache) >= _ASSET_CACHE_MAX:
-        # ponytail: evict oldest entry, not LRU. Good enough for static assets.
-        _asset_cache.pop(next(iter(_asset_cache)))
-    _asset_cache[key] = value
 
 
 def invalidate_zim_cache(archive_id: str) -> None:
@@ -64,12 +51,6 @@ def invalidate_zim_cache(archive_id: str) -> None:
     _article_count_ts.pop("_all", None)
     _article_count_cache.pop(archive_id, None)
     _article_count_ts.pop(archive_id, None)
-    prefix = f"{archive_id}:"
-    keys_to_delete = [k for k in _asset_cache if k.startswith(prefix)]
-    for k in keys_to_delete:
-        _asset_cache.pop(k, None)
-    if keys_to_delete:
-        logging.info(f"Invalidated {len(keys_to_delete)} asset cache entries for archive {archive_id}")
 
 
 _MIME_OVERRIDES = {
@@ -533,12 +514,8 @@ async def get_zim_asset(
         raise HTTPException(status_code=500, detail="ZIM file missing from disk")
 
     def _read_asset():
-        """Read the asset bytes from the ZIM binary in a worker thread, using the cache."""
+        """Read the asset bytes from the ZIM binary in a worker thread."""
         try:
-            index_key = f"{archive_id}:{path}"
-            cached = _asset_cache.get(index_key)
-            if cached is not None:
-                return cached, _get_mime(path)
             archive = _get_archive(archive_id, zim_path)
             if not archive.has_entry_by_path(path):
                 return None, None
@@ -549,7 +526,6 @@ async def get_zim_asset(
             data = item.content if hasattr(item, 'content') else (item.data if hasattr(item, 'data') else b'')
             if isinstance(data, memoryview):
                 data = bytes(data)
-            _cache_put(index_key, data)
             return data, _get_mime(path)
         except Exception as e:
             logging.error(f"ZIM asset fetch error: {e}")
