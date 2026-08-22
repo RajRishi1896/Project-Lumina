@@ -441,26 +441,11 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
               return;
             }
 
-            String? sizeLabel;
-            try {
-              if (url.isNotEmpty) {
-                await ApiClient.ensureInitialized();
-                final headResp = await ApiClient.dio.head(url);
-                final cl = headResp.headers.value('content-length');
-                if (cl != null) {
-                  sizeLabel = formatFileSize(int.tryParse(cl) ?? 0, l10n);
-                }
-              }
-            } catch (_) {
-              sizeLabel = l10n.fileSizeUnavailable;
-            }
-            if (!mounted) return;
-
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (ctx) => AlertDialog(
                 title: Text(l10n.dialogDownloadTitle),
-                content: Text(l10n.dialogDownloadContent(fileName, sizeLabel ?? l10n.fileSizeUnknownFallback)),
+                content: Text(l10n.dialogDownloadContentNoSize(fileName)),
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.buttonCancel)),
                   TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.dialogDownloadButton)),
