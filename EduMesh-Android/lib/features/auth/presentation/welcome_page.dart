@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:path_provider/path_provider.dart';
 import 'login_page.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/lumina_colors.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../shared/services/connectivity_service.dart';
 import '../../../shared/widgets/lumina_stepper.dart';
-import '../../../core/utils/file_utils.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 const _illustrationSvg = 'assets/images/illustration.svg';
@@ -27,7 +25,7 @@ class WelcomePage extends StatefulWidget {
 class _WelcomePageState extends State<WelcomePage> {
   bool _isConnected = false;
   int _latencyMs = 0;
-  double? _storageUsedMb;
+  int? _hubResourceCount;
   final ConnectivityService _connectivityService = ConnectivityService();
 
   @override
@@ -49,23 +47,20 @@ class _WelcomePageState extends State<WelcomePage> {
       });
     }
 
-    // 2. Calculate Local Storage Used (including APK)
-    try {
-      const channel = MethodChannel('com.edumesh.android/storage');
-      final info = await channel.invokeMethod<Map>('getStorageInfo');
-      final apkSize = info?['apkSize'] as int?;
-      if (apkSize == null || apkSize <= 0) throw StateError('no apk size');
-      final dir = await getApplicationDocumentsDirectory();
-      final sizeInBytes = await getDirSize(dir);
-      final totalSizeInMb = (sizeInBytes + apkSize) / (1024 * 1024);
-
-      if (mounted) {
-        setState(() {
-          _storageUsedMb = totalSizeInMb;
-        });
+    // 2. Fetch hub resource count for the status row (public /stats endpoint)
+    if (isConnected) {
+      try {
+        final resp = await ApiClient.get<Map<String, dynamic>>('/stats')
+            .timeout(const Duration(seconds: 3));
+        final count = resp.data?['resources'];
+        if (mounted) {
+          setState(() {
+            _hubResourceCount = count is num ? count.toInt() : null;
+          });
+        }
+      } catch (_) {
+        // Stats fetch failed: hide the resources row
       }
-    } catch (_) {
-      // Storage calc failed: leave null
     }
   }
 
@@ -210,7 +205,7 @@ class _WelcomePageState extends State<WelcomePage> {
         SizedBox(height: AppSpacing.md.h),
         Consumer(builder: (context, ref, child) {
           final currentLocale = ref.watch(localeProvider);
-          final allOptions = appLanguageOptions;
+          const allOptions = appLanguageOptions;
           const primaryCount = 3;
           final primaryItems = allOptions.sublist(0, primaryCount);
 
@@ -307,13 +302,23 @@ class _WelcomePageState extends State<WelcomePage> {
       hubText = l10n.hubStrengthFair;
     }
 
-    String storageText;
-    if (_storageUsedMb == null) {
-      storageText = l10n.storageCalculating;
-    } else if (_storageUsedMb! < 1024) {
-      storageText = l10n.storageMbUsed(_storageUsedMb!.toStringAsFixed(1));
-    } else {
-      storageText = l10n.storageGbUsed((_storageUsedMb! / 1024).toStringAsFixed(1));
+    final rows = <Widget>[
+      Flexible(child: _StatusItem(
+        icon: Icons.wifi,
+        label: l10n.statusHubStrength,
+        value: hubText,
+        cs: cs,
+      )),
+    ];
+    // Hidden entirely when offline or the /stats fetch failed
+    final resourceCount = _hubResourceCount;
+    if (resourceCount != null) {
+      rows.add(Flexible(child: _StatusItem(
+        icon: Icons.library_books,
+        label: l10n.statusHubResources,
+        value: l10n.welcomeHubResources(resourceCount),
+        cs: cs,
+      )));
     }
 
     return Container(
@@ -323,20 +328,7 @@ class _WelcomePageState extends State<WelcomePage> {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Flexible(child: _StatusItem(
-            icon: Icons.wifi,
-            label: l10n.statusHubStrength,
-            value: hubText,
-            cs: cs,
-          )),
-          Flexible(child: _StatusItem(
-            icon: Icons.storage,
-            label: l10n.statusLocalStorage,
-            value: storageText,
-            cs: cs,
-          )),
-        ],
+        children: rows,
       ),
     );
   }
