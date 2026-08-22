@@ -24,7 +24,6 @@ An offline-first educational mesh for rural schools. A repurposed laptop runs a 
 
 - [Overview](#overview)
 - [Who It Is For](#who-it-is-for)
-- [Architecture](#architecture)
 - [Features](#features)
 - [API / Interface Overview](#api--interface-overview)
 - [Data Model](#data-model)
@@ -110,32 +109,7 @@ Two independent codebases form the system: a Flutter Android client (`EduMesh-An
 
 ### Hub server (FastAPI)
 
-171 routes across 22 router modules plus `zim_handler.py`, covering auth, student sync, teacher analytics, course management, content CRUD, media streaming, account management, passwords, audit logs, system health, and ZIM serving.
-
-| Router | Lines | Purpose |
-|---|---|---|
-| `auth.py` | 343 | Login, register, token management |
-| `student.py` | 377 | Sync, analytics, profile, icons |
-| `student_courses.py` | 573 | Course browsing, enrollment, progress, quizzes |
-| `teacher_courses.py` | 323 | Course CRUD, publish toggle, similar suggestions |
-| `teacher_students.py` | 274 | Student listing, teacher analytics |
-| `teacher_course_resources.py` | 460 | Course resource upload, ZIP import/export |
-| `teacher_topics.py` | 216 | Course topic CRUD, ordering |
-| `teacher_quizzes.py` | 144 | Quiz creation and editing |
-| `teacher_similar.py` | 95 | Similar course links |
-| `teacher_flashcards.py` | 388 | Flashcard deck CRUD, review, submissions |
-| `teacher_quiz_resources.py` | 252 | Standalone quiz resources (not course-bound) |
-| `academics.py` | 607 | Subjects, grades, resource topics CRUD |
-| `resources.py` | 238 | Resource CRUD, upload, soft-delete |
-| `resource_catalog.py` | 204 | Read-only catalog/detail/files/limits + shared cache |
-| `resource_zim.py` | 493 | ZIM upload, processing, deletion |
-| `media.py` | 336 | HTTP Range streaming, thumbnails |
-| `administration.py` | 206 | Account management |
-| `passwords.py` | 109 | Password change, reset |
-| `admin_logs.py` | 220 | Audit log, settings, log download |
-| `system_stats.py` | 572 | Hub stats, health, time sync |
-| `system.py` | 188 | Health check, captive portal, static serving |
-| `scholars.py` | 99 | Scholar listing, reset, delete |
+22 focused router modules plus `zim_handler.py`, covering auth, student sync, teacher analytics, course management, content CRUD, media streaming, account management, passwords, audit logs, system health, and ZIM serving. The route-by-route reference is the OpenAPI spec at `/docs` when the server runs; module responsibilities are documented in docstrings under `Debian Server/app/routers/`.
 
 Operational details:
 
@@ -153,19 +127,7 @@ An 11-page vanilla HTML/CSS/JS teacher and admin dashboard served from the hub: 
 
 ## API / Interface Overview
 
-171 routes grouped by prefix. Student- and teacher-facing routes live under `/api`, `/student`, `/teacher`; captive-portal and health routes are public.
-
-| Prefix | Routes | What they do |
-|---|---|---|
-| `/api/*` | 74 | Catalog, resources, ZIM articles, uploads, streaming |
-| `/teacher/*` | 31 | Course CRUD, topics, quizzes, resources, students, flashcards, similar |
-| `/student/*` | 21 | Sync (study time, downloads, subjects), analytics, profile, icons |
-| `/zim/*` | 6 | ZIM page/asset/thumbnail serving, article search |
-| `/system/*` | 6 | Health, ping, captive portal, whoami, static serving |
-| `/grades` | 4 | Grade taxonomy CRUD |
-| `/resources`, `/sync`, `/logout` | 5 | Resource detail, student sync, session logout |
-| `/docs`, `/redoc`, `/openapi.json` | 4 | FastAPI interactive docs |
-| `/`, `/welcome`, `/dashboard`, `/index.html`, captive-portal probes | 20 | Web pages + OS captive-portal detection URLs |
+Routes are grouped by prefix: student- and teacher-facing routes live under `/api`, `/student`, `/teacher`; captive-portal and health routes are public. The authoritative route list is the OpenAPI spec served at `/docs` (and `/redoc`) when the server is running — a static count here would go stale.
 
 Notable endpoint behaviours:
 
@@ -173,7 +135,7 @@ Notable endpoint behaviours:
 - **Auth.** JWT-style session tokens with the three-tier renewal described above; newly registered students are forced through a password change. Passwords are bcrypt-hashed server-side; the offline-only login path uses a separate local SHA-256 credential that never shares the server hash.
 - **ZIM serving.** HTML from `/zim/page` has asset paths rewritten to `/zim/asset` endpoints that read lazily from the `.zim` binary; article search is capped at 500 results. An hourly auto-cleaner prunes archives by LRU policy against `zim_cache_config.json`.
 
-The full OpenAPI spec is served at `/docs` when the server is running.
+The full OpenAPI spec is served at `/docs` when the server is running; the route inventory changes too often to duplicate here.
 
 ---
 
@@ -181,74 +143,15 @@ The full OpenAPI spec is served at `/docs` when the server is running.
 
 Server: a single SQLite file at `data/hub.db` in WAL mode. All access goes through `app/async_db.py` helpers, which run queries in a thread pool (`asyncio.to_thread`) so the event loop stays free; `db_conn()` is reserved for multi-statement transactions.
 
-**Accounts and auth**
+The authoritative schema — accounts and auth tiers, resources, ZIM metadata, courses/quizzes/flashcards, analytics tables — lives in [`Debian Server/app/database.py`](Debian%20Server/app/database.py). Do not trust a summary here over that file.
 
-| Table | Purpose |
-|---|---|
-| `users` | Teacher/admin accounts (username, bcrypt hash, role) |
-| `scholars` | Student accounts (id, name, grade, username) |
-| `sessions` / `refresh_tokens` / `persistent_keys` | Three-tier token tables |
-| `settings` | Key/value hub settings |
-
-**Content**
-
-| Table | Purpose |
-|---|---|
-| `resources` | Uploaded files (title, subject, grade, language, type, source, license, status) |
-| `subjects`, `grades` | Taxonomy used across resources and courses |
-| `resource_topics` | Topic tags for standalone resources |
-| `zim_archives` / `zim_articles` | ZIM archive and per-article metadata |
-
-**Courses and quizzes**
-
-| Table | Purpose |
-|---|---|
-| `courses`, `course_resources`, `course_progress` | Course structure + per-student progress |
-| `topics` | Course topic ordering |
-| `similar_courses` | Teacher-linked similar course suggestions |
-| `quiz_attempts`, `quiz_best_scores` | Quiz results per student |
-| `flashcard_decks`, `flashcards`, `flashcard_submissions` | SM-2 deck/card/submission state |
-
-**Analytics**
-
-| Table | Purpose |
-|---|---|
-| `weekly_study` | Per-student study seconds + streak days |
-| `study_sessions` | Start/end/duration of study sessions |
-| `subject_minutes` | Per-student per-subject minutes |
-| `scholar_downloads` | Download history |
-| `activity_logs` | Per-student event log (references student IDs, never names) |
-| `student_bookmarks` | Student-saved resources |
-
-Client: the Flutter app mirrors catalog and progress state in its own local SQLite (schema version 17, migration chain from v2). Tables include `resources`, `catalog`, `activity`, `bookmarks`, `downloads`, `pending_downloads`, `pending_mutations`, course tables, `quiz_cache`, `zim_archives_local`, `zim_articles_local`, and flashcard tables (`flashcard_decks_local`, `flashcard_cards_local`, `flashcard_reviews_local`, `flashcard_submissions_local`).
+Client: the Flutter app mirrors catalog and progress state in its own local SQLite (schema version 17, migration chain from v2); see `EduMesh-Android/lib/core/storage/db_helper.dart`.
 
 ---
 
 ## Performance Data
 
-### Targets vs. measured (development hardware)
-
-Measured on a MediaTek MT6739 phone (1 GB RAM, Android 8) and an Intel Celeron N4020 server (4 GB RAM, 5400 RPM HDD).
-
-| Metric | Target | Measured |
-|---|---|---|
-| Cold start to interactive | ≤ 4 s | 3.2 s |
-| Dashboard catalog load (cached) | ≤ 800 ms | 450 ms |
-| Resource list scroll (60 fps) | 0 jank frames | 0 jank |
-| SQLite query (single resource) | ≤ 50 ms | 12 ms |
-| APK size (release, ARM-only) | ≤ 25 MB | 22 MB |
-| First video frame (streaming) | - | 1.1 s |
-
-### Server under 50 concurrent students (syncing every 60 s)
-
-| Metric | Result |
-|---|---|
-| Average response time | < 200 ms |
-| Catalog listing (200 resources) | 45 ms |
-| PDF thumbnail generation (10 MB file) | 350 ms (background) |
-| Video thumbnail generation (1080p, 15 min) | 4.2 s (background) |
-
-**Caveats.** The concurrency design target is 250 students without degraded response times, but no load test at that scale has been run; these figures come from development-scale sessions on the hardware named above. A repeatable benchmark harness is not yet published in the repo. Project conventions require a documented mitigation plan for any change that regresses a target by more than 20%.
+Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frames, single-resource query ≤ 50 ms, release APK ≤ 25 MB) and the regression rules around them are tracked in `AGENTS.md`. Measured figures are intentionally not published here: the 250-concurrent-student concurrency target has not been load-tested at scale, and development-hardware numbers would imply more certainty than exists. A repeatable benchmark harness is not yet in the repo.
 
 ---
 
@@ -357,11 +260,10 @@ The authoritative shipped/cut/open tracker is [`feature-roadmap.md`](Markdown%20
 
 ## Documentation
 
-- [`AGENTS.md`](AGENTS.md): engineering contract, covering architecture, performance rules, accessibility, i18n rules, security, offline-first requirements, and commit conventions.
-- [`DESIGN.md`](Markdown%20files/DESIGN.md): source of truth for colour tokens, typography, spacing grid.
-- [`implementation-details.md`](Markdown%20files/implementation-details.md): deep dives on `.part` atomicity, connectivity heartbeat, black-skip thumbnails, three-tier token renewal.
-- [`docs/`](docs/): ADRs, API sync verification, ZIM search redesign, operator guide, i18n debt tracker.
-- [`LMS Docs/`](LMS%20Docs/): course/quiz system design, implementation plan, and edge cases.
+- [`docs/`](docs/): ADRs, ZIM search redesign notes, and the i18n debt tracker.
+- [`feature-roadmap.md`](Markdown%20files/feature-roadmap.md): authoritative shipped/cut/open tracker.
+
+Other working documents (engineering contract, design system, implementation details) live in the repo but are intentionally untracked; ask a maintainer for pointers.
 
 ---
 

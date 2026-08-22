@@ -66,7 +66,6 @@ Thumbs.db
 .swiftpm/
 migrate_working_dir/
 coverage/
-assets/UI-Inspo/
 **/UI-Inspo/
 
 # === AI Agent Artifacts ===
@@ -80,7 +79,6 @@ IMPLEMENTATION_PLAN.md
 **/Implementation Plan*/
 Markdown files/
 docs/*
-docs/api-sync-verification.md
 LMS Docs/
 
 # === Ocode plugins ===
@@ -91,7 +89,8 @@ opencode.json
 .openchamber/
 
 # === Dev scratch (not part of the product) ===
-scripts/
+scripts/*
+!scripts/check_i18n.py
 _test.py
 check_db.py
 verify.py
