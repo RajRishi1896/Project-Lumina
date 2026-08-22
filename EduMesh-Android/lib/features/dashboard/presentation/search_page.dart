@@ -149,14 +149,7 @@ class _SearchPageState extends State<SearchPage> {
         final db = DBHelper();
         final rows = await db.getBookmarkedResources();
         if (rows.isNotEmpty) {
-          _allResources = rows.map((r) => ResourceModel(
-            id: r['resource_id'] as String? ?? '',
-            title: r['title'] as String? ?? '',
-            subject: r['subject'] as String? ?? '',
-            grade: r['grade'] as String? ?? '',
-            type: parseResourceType(r['type'] as String? ?? ''),
-            pdfUrl: r['pdf_url'] as String?,
-          )).toList();
+          _allResources = _rowsToModels(rows);
           _zimArticles = [];
           _applyFilters();
           if (mounted) setState(() { _isLoading = false; _loadError = null; });
@@ -166,13 +159,7 @@ class _SearchPageState extends State<SearchPage> {
       try {
         final downloadedRows = await DBHelper().getDownloadedResources();
         if (downloadedRows.isNotEmpty) {
-          _allResources = downloadedRows.map((r) => ResourceModel(
-            id: r['resource_id'] as String? ?? '',
-            title: r['title'] as String? ?? '',
-            subject: r['subject'] as String? ?? '',
-            grade: r['grade'] as String? ?? '',
-            type: parseResourceType(r['type'] as String? ?? '', filename: r['local_path'] as String?),
-          )).toList();
+          _allResources = _rowsToModels(downloadedRows);
           _zimArticles = [];
           _applyFilters();
           if (mounted) setState(() { _isLoading = false; _loadError = null; });
@@ -187,6 +174,21 @@ class _SearchPageState extends State<SearchPage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  /// Maps bookmark/download DB rows to catalog models. Missing columns
+  /// (bookmarks carry no local_path, downloads no pdf_url) degrade to null,
+  /// which parseResourceType treats identically to omission.
+  List<ResourceModel> _rowsToModels(List<Map<String, Object?>> rows) => rows
+      .map((r) => ResourceModel(
+            id: r['resource_id'] as String? ?? '',
+            title: r['title'] as String? ?? '',
+            subject: r['subject'] as String? ?? '',
+            grade: r['grade'] as String? ?? '',
+            type: parseResourceType(r['type'] as String? ?? '',
+                filename: r['local_path'] as String?),
+            pdfUrl: r['pdf_url'] as String?,
+          ))
+      .toList();
 
   Future<void> _loadDownloadStatus() async {
     try {
@@ -239,9 +241,6 @@ class _SearchPageState extends State<SearchPage> {
     } catch (_) {}
   }
 
-  Future<void> _openZimArticle(String articleId, String title) =>
-      _openArticle(articleId, title);
-
   Future<void> _openArticle(String articleId, String title) async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
@@ -285,11 +284,6 @@ class _SearchPageState extends State<SearchPage> {
       }
     }
   }
-
-  Future<void> _downloadZimArticle(ZimArticle article) => _downloadArticle(
-        articleId: article.articleId,
-        archiveId: article.archiveId,
-      );
 
   Future<void> _downloadArticle({
     required String articleId,
@@ -713,14 +707,6 @@ class _SearchPageState extends State<SearchPage> {
 
   int _zimRequestId = 0;
 
-  /// Returns the server-ranked index of a ZIM article for sort stability.
-  int _zimArticleIndex(String articleId) {
-    for (var i = 0; i < _zimArticles.length; i++) {
-      if (_zimArticles[i].articleId == articleId) return i;
-    }
-    return _zimArticles.length;
-  }
-
   Future<void> _fetchZimResults() async {
     final query = _searchQuery.trim().replaceAll(RegExp(r'\s+'), ' ');
     _zimRequestId++;
@@ -772,13 +758,19 @@ class _SearchPageState extends State<SearchPage> {
       }
     }
 
+    // Server-ranked index per article id, built once: the sort comparator
+    // runs O(n log n) lookups, a linear scan there is O(n·m).
+    final zimRank = <String, int>{
+      for (var i = 0; i < _zimArticles.length; i++) _zimArticles[i].articleId: i,
+    };
+
     results.sort((a, b) {
       final aZim = a['isZim'] == true;
       final bZim = b['isZim'] == true;
       if (aZim && bZim) {
         // Preserve server-side relevance ranking: do NOT re-sort alphabetically.
-        final ai = _zimArticleIndex(a['articleId'] as String? ?? '');
-        final bi = _zimArticleIndex(b['articleId'] as String? ?? '');
+        final ai = zimRank[a['articleId']] ?? zimRank.length;
+        final bi = zimRank[b['articleId']] ?? zimRank.length;
         return ai.compareTo(bi);
       }
       // When searching, ZIM results (server-ranked) appear first.
@@ -1109,7 +1101,7 @@ class _SearchPageState extends State<SearchPage> {
               child: Icon(Icons.article, color: cs.primary),
             ),
       onTap: () {
-        _openZimArticle(item['articleId'] as String, item['title'] as String);
+        _openArticle(item['articleId'] as String, item['title'] as String);
       },
       title: Row(
         children: [
@@ -1152,7 +1144,10 @@ class _SearchPageState extends State<SearchPage> {
               ),
               onPressed: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
                   ? null
-                  : () => _downloadZimArticle(zimArticle),
+                  : () => _downloadArticle(
+                        articleId: zimArticle.articleId,
+                        archiveId: zimArticle.archiveId,
+                      ),
             ),
           Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
         ],

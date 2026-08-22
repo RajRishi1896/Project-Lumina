@@ -140,7 +140,7 @@ class _ProfilePickerPageState extends State<ProfilePickerPage> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: tt.bodyMedium?.copyWith(
-                            color: isActive ? cs.onSurface : cs.onSurface,
+                            color: cs.onSurface,
                             fontWeight: isActive ? AppSpacing.weightStrong : AppSpacing.weightBody,
                           ),
                         ),

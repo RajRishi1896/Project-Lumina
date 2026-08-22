@@ -238,6 +238,15 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
   static bool _isServerUrl(String? url) =>
       url != null && url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/files/'));
 
+  /// Server URL for [item]: its own URL when server-hosted, else the
+  /// canonical `/files/{id}` fallback endpoint.
+  static String _fileUrlFor(ResourceModel item) =>
+      _isServerUrl(item.pdfUrl) ? item.pdfUrl! : '/files/${item.id}';
+
+  /// File extension for naming derived from [url], defaulting to `.pdf`.
+  static String _extFor(String url) =>
+      url.contains('.') ? '.${url.split('.').last.split('?').first}' : '.pdf';
+
   static String _resolveType(String resourceType) => switch (resourceType) {
     'textbooks' => 'textbook',
     'pyqs' => 'pyq',
@@ -360,10 +369,8 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
           } else {
             final onlineNow = ConnectivityService().isOnline;
             if (onlineNow) {
-              final peerRawUrl = item.pdfUrl;
-              final peerUrl = _isServerUrl(peerRawUrl) ? peerRawUrl! : '/files/$resourceId';
-              final peerExt = peerUrl.contains('.') ? '.${peerUrl.split('.').last.split('?').first}' : '.pdf';
-              final peerFileName = '${item.title}$peerExt';
+              final peerUrl = _fileUrlFor(item);
+              final peerFileName = '${item.title}${_extFor(peerUrl)}';
               messenger.showSnackBar(SnackBar(
                 content: Text(l10n.shareFindingDevices),
                 duration: const Duration(milliseconds: 2500),
@@ -399,10 +406,8 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
               messenger.hideCurrentSnackBar();
             }
 
-            final rawUrl = item.pdfUrl;
-            final url = _isServerUrl(rawUrl) ? rawUrl! : '/files/$resourceId';
-            final ext = url.contains('.') ? '.${url.split('.').last.split('?').first}' : '.pdf';
-            final fileName = '${item.title}$ext';
+            final url = _fileUrlFor(item);
+            final fileName = '${item.title}${_extFor(url)}';
 
             final isOnline = ConnectivityService().isOnline;
             if (!isOnline) {
@@ -581,11 +586,11 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                               onTap: () async {
                                 if (isGhost) {
                                   if (!mounted) return;
-                                  final ghostUrl = _isServerUrl(item.pdfUrl) ? item.pdfUrl! : '/files/${item.id}';
+                                  final ghostUrl = _fileUrlFor(item);
                                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                     content: Text(l10n.snackbarNotDownloaded(item.title)),
                                     action: SnackBarAction(label: l10n.snackbarQueueAction, onPressed: () {
-                                      DownloadQueue().enqueue(item.id, ghostUrl, '${item.title}${ghostUrl.contains('.') ? '.${ghostUrl.split('.').last.split('?').first}' : '.pdf'}',
+                                      DownloadQueue().enqueue(item.id, ghostUrl, '${item.title}${_extFor(ghostUrl)}',
                                         title: item.title, subject: item.subject, grade: item.grade,
                                         type: item.type.name, mtime: item.mtime,
                                       );
@@ -641,8 +646,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                   return;
                                 }
                                 if (item.type == ResourceType.videos) {
-                                  final rawUrl = item.pdfUrl;
-                                  final url = _isServerUrl(rawUrl) ? rawUrl! : '/files/${item.id}';
+                                  final url = _fileUrlFor(item);
                                   if (!mounted) return;
                                   unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
                                   unawaited(ActivityTracker().logAction('view', resourceId: item.id.toString(), metadata: item.title));

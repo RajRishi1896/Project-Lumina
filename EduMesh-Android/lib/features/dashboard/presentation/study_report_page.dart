@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/services/activity_tracker.dart';
@@ -90,7 +91,7 @@ class _StudyReportPageState extends State<StudyReportPage> {
   }
 
   /// Builds a `cache_key -> quiz title` map from the local [quiz_cache] table.
-  Future<Map<String, String>> _quizTitleByKey(dynamic db) async {
+  Future<Map<String, String>> _quizTitleByKey(Database db) async {
     final titles = <String, String>{};
     try {
       final cacheRows = await db.query('quiz_cache');

@@ -35,7 +35,6 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
   int _currentPosition = 0;
   bool _isDownloaded = false;
   bool _isDownloading = false;
-  bool _showDownloadPrompt = true;
   Map<String, String> _localPaths = {};
   bool _loadingResources = true;
   bool _loadFailedResources = false;
@@ -128,7 +127,6 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
         setState(() {
           _localPaths = pathMap;
           _isDownloaded = _resources.every((r) => dlIds.contains(r.id));
-          if (_isDownloaded) _showDownloadPrompt = false;
         });
       }
     } catch (e) {
@@ -254,7 +252,6 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
           setState(() {
             _isDownloaded = true;
             _isDownloading = false;
-            _showDownloadPrompt = false;
           });
         } else {
           setState(() => _isDownloading = false);
@@ -309,8 +306,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       ),
       body: Column(
         children: [
-          if (_showDownloadPrompt && !_isDownloaded)
-            _buildDownloadBanner(cs, tt, l10n),
+          if (!_isDownloaded) _buildDownloadBanner(cs, tt, l10n),
           Expanded(
             child: Center(
               child: ConstrainedBox(

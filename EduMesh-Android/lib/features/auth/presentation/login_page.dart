@@ -68,19 +68,23 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  /// Whether [pwd] meets the hub's password rules (length + upper/lower/digit).
+  static bool _isStrongPassword(String pwd) =>
+      pwd.length >= 8 &&
+      pwd.contains(upperCaseRegExp) &&
+      pwd.contains(lowerCaseRegExp) &&
+      pwd.contains(digitRegExp);
+
   Future<void> _handleAuth() async {
     if (!_isConnected) return; // Prevent action if offline
-    
+
     if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
       setState(() => _errorMessage = AppLocalizations.of(context)!.errorFillAllFields);
       return;
     }
-    if (_isRegisterMode) {
-      final pwd = _passwordController.text;
-      if (pwd.length < 8 || !pwd.contains(upperCaseRegExp) || !pwd.contains(lowerCaseRegExp) || !pwd.contains(digitRegExp)) {
-        setState(() => _errorMessage = AppLocalizations.of(context)!.errorPasswordStrength);
-        return;
-      }
+    if (_isRegisterMode && !_isStrongPassword(_passwordController.text)) {
+      setState(() => _errorMessage = AppLocalizations.of(context)!.errorPasswordStrength);
+      return;
     }
 
     setState(() {
@@ -261,7 +265,7 @@ class _LoginPageState extends State<LoginPage> {
                       setDialogState(() => dialogError = AppLocalizations.of(context)!.errorPasswordsDoNotMatch);
                       return;
                     }
-                    if (!pwd.contains(upperCaseRegExp) || !pwd.contains(lowerCaseRegExp) || !pwd.contains(digitRegExp)) {
+                    if (!_isStrongPassword(pwd)) {
                       setDialogState(() => dialogError = AppLocalizations.of(context)!.errorPasswordComplexity);
                       return;
                     }

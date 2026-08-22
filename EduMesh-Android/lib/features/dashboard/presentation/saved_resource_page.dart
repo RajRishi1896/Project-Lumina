@@ -535,9 +535,7 @@ class _SavedCoursesTabState extends State<_SavedCoursesTab> {
                 },
                 child: Text(isCompleted
                     ? l10n.coursePlayerCompleted
-                    : completedCount > 0
-                        ? l10n.coursePlayerStart
-                        : l10n.coursePlayerStart),
+                    : l10n.coursePlayerStart),
               ),
             ],
           ),

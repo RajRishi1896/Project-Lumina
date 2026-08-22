@@ -88,17 +88,14 @@ class AuthService {
       final String? refreshToken = data['refresh_token']?.toString();
       final String? persistentKey = data['persistent_key']?.toString();
 
-      List<Map<String, dynamic>> users = await _getUsers();
-      final newUser = {
-        'username': username,
-        'userId': hubGeneratedId,
-        if (name != null && name.isNotEmpty) 'displayName': name,
-        if (token != null && token.isNotEmpty) 'token': token,
-        if (refreshToken != null && refreshToken.isNotEmpty) 'refreshToken': refreshToken,
-        if (persistentKey != null && persistentKey.isNotEmpty) 'persistentKey': persistentKey,
-      };
-      _upsertProfile(users, newUser);
-      await _saveUsers(users);
+      await _rememberUser(
+        username,
+        hubGeneratedId,
+        token: token,
+        refreshToken: refreshToken,
+        persistentKey: persistentKey,
+        displayName: name,
+      );
       
       await _secureStorage.write(key: _userIdKey, value: hubGeneratedId);
       await _secureStorage.write(key: _usernameKey, value: username);
@@ -288,37 +285,24 @@ class AuthService {
     await _secureStorage.write(key: _userIdKey, value: userId);
     await _secureStorage.write(key: _usernameKey, value: profile['username'].toString());
     final token = profile['token']?.toString() ?? '';
-    final refreshToken = profile['refreshToken']?.toString() ?? '';
-    final persistentKey = profile['persistentKey']?.toString() ?? '';
-    final grade = profile['grade']?.toString() ?? '';
-    final displayName = profile['displayName']?.toString() ?? '';
-
+    final fields = <String, String>{
+      _sessionTokenKey: token,
+      _refreshTokenKey: profile['refreshToken']?.toString() ?? '',
+      _persistentKeyKey: profile['persistentKey']?.toString() ?? '',
+      _gradeKey: profile['grade']?.toString() ?? '',
+      _displayNameKey: profile['displayName']?.toString() ?? '',
+    };
+    for (final entry in fields.entries) {
+      if (entry.value.isNotEmpty) {
+        await _secureStorage.write(key: entry.key, value: entry.value);
+      } else {
+        await _secureStorage.delete(key: entry.key);
+      }
+    }
     if (token.isNotEmpty) {
-      await _secureStorage.write(key: _sessionTokenKey, value: token);
       ApiClient.setAuth(token);
     } else {
-      await _secureStorage.delete(key: _sessionTokenKey);
       ApiClient.clearAuth();
-    }
-    if (refreshToken.isNotEmpty) {
-      await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
-    } else {
-      await _secureStorage.delete(key: _refreshTokenKey);
-    }
-    if (persistentKey.isNotEmpty) {
-      await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
-    } else {
-      await _secureStorage.delete(key: _persistentKeyKey);
-    }
-    if (grade.isNotEmpty) {
-      await _secureStorage.write(key: _gradeKey, value: grade);
-    } else {
-      await _secureStorage.delete(key: _gradeKey);
-    }
-    if (displayName.isNotEmpty) {
-      await _secureStorage.write(key: _displayNameKey, value: displayName);
-    } else {
-      await _secureStorage.delete(key: _displayNameKey);
     }
     return true;
   }
@@ -411,13 +395,13 @@ class AuthService {
   /// Caches the display name locally without hitting the server.
   Future<void> cacheDisplayName(String name) async {
     await _secureStorage.write(key: _displayNameKey, value: name);
-    await _updateActiveProfileMetadata(displayName: name);
+    await _patchActiveProfile({'displayName': name});
   }
 
   /// Updates the student's display name on the hub and persists it locally.
   Future<bool> setDisplayName(String name) async {
     await _secureStorage.write(key: _displayNameKey, value: name);
-    await _updateActiveProfileMetadata(displayName: name);
+    await _patchActiveProfile({'displayName': name});
     try {
       await ApiClient.post('/student/profile/update', data: {'name': name});
       return true;
@@ -487,7 +471,7 @@ class AuthService {
             await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
           }
           ApiClient.setAuth(token);
-          await _updateActiveProfileTokens(token, newRefreshToken, persistentKey);
+          await _patchActiveProfile({'token': token, 'refreshToken': newRefreshToken ?? '', 'persistentKey': persistentKey ?? ''});
           return true;
         }
       }
@@ -523,7 +507,7 @@ class AuthService {
             await _secureStorage.write(key: _persistentKeyKey, value: newPersistentKey);
           }
           ApiClient.setAuth(token);
-          await _updateActiveProfileTokens(token, newRefreshToken, newPersistentKey);
+          await _patchActiveProfile({'token': token, 'refreshToken': newRefreshToken ?? '', 'persistentKey': newPersistentKey ?? ''});
           return true;
         }
       }
@@ -539,36 +523,22 @@ class AuthService {
   /// survives app restarts and is available offline.
   Future<void> saveGrade(String grade) async {
     await _secureStorage.write(key: _gradeKey, value: grade);
-    await _updateActiveProfileMetadata(grade: grade);
+    await _patchActiveProfile({'grade': grade});
   }
 
-  /// Mirrors refreshed token credentials into the active profile's list entry
-  /// so a later [switchToProfile] restores the latest tokens.
-  Future<void> _updateActiveProfileTokens(String? token, String? refreshToken, String? persistentKey) async {
+  /// Mirrors refreshed credentials or edited metadata ([patch]) into the
+  /// active profile's list entry so [switchToProfile] and the profile picker
+  /// see fresh values. Empty values are skipped.
+  Future<void> _patchActiveProfile(Map<String, String> patch) async {
     try {
       final activeId = await _secureStorage.read(key: _userIdKey);
       if (activeId == null || activeId.isEmpty) return;
       final users = await _getUsers();
       final index = users.indexWhere((u) => u['userId']?.toString() == activeId);
       if (index < 0) return;
-      if (token != null && token.isNotEmpty) users[index]['token'] = token;
-      if (refreshToken != null && refreshToken.isNotEmpty) users[index]['refreshToken'] = refreshToken;
-      if (persistentKey != null && persistentKey.isNotEmpty) users[index]['persistentKey'] = persistentKey;
-      await _saveUsers(users);
-    } catch (_) {}
-  }
-
-  /// Mirrors locally edited metadata (display name / grade) into the active
-  /// profile's list entry so the profile picker shows fresh values.
-  Future<void> _updateActiveProfileMetadata({String? displayName, String? grade}) async {
-    try {
-      final activeId = await _secureStorage.read(key: _userIdKey);
-      if (activeId == null || activeId.isEmpty) return;
-      final users = await _getUsers();
-      final index = users.indexWhere((u) => u['userId']?.toString() == activeId);
-      if (index < 0) return;
-      if (displayName != null && displayName.isNotEmpty) users[index]['displayName'] = displayName;
-      if (grade != null && grade.isNotEmpty) users[index]['grade'] = grade;
+      patch.forEach((key, value) {
+        if (value.isNotEmpty) users[index][key] = value;
+      });
       await _saveUsers(users);
     } catch (_) {}
   }

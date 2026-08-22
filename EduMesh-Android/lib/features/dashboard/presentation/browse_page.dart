@@ -87,7 +87,7 @@ class BrowsePageState extends State<BrowsePage> with SingleTickerProviderStateMi
                 controller: _tabController,
                 children: const [
                    _CoursesTab(),
-                   _ResourcesTab(),
+                   SearchPage(embedded: true),
                    _WikiTab(),
                 ],
               ),
@@ -495,20 +495,6 @@ class _CoursesTabState extends State<_CoursesTab> {
         padding: EdgeInsets.only(bottom: AppSpacing.md.h),
         child: _buildCourseCard(courses[i], cs, tt, l10n)),
     );
-  }
-}
-
-/// Resources sub-tab: catalog resources with search, filters, download, bookmark.
-class _ResourcesTab extends StatefulWidget {
-  const _ResourcesTab();
-  @override
-  State<_ResourcesTab> createState() => _ResourcesTabState();
-}
-
-class _ResourcesTabState extends State<_ResourcesTab> {
-  @override
-  Widget build(BuildContext context) {
-    return const SearchPage(embedded: true);
   }
 }
 

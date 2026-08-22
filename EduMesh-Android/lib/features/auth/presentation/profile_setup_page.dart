@@ -31,7 +31,6 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   List<String> _grades = [];
   bool _loading = true;
   bool _saving = false;
-  String? _loadError;
 
   @override
   void initState() {
@@ -55,28 +54,23 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         final grades = (res.data as List).map((g) => (g as Map)['name']?.toString() ?? '').where((n) => n.isNotEmpty).toList();
         if (grades.isNotEmpty) {
           await prefs.setStringList('cached_grades', grades);
-          if (mounted) setState(() { _grades = grades; _selectedGrade = grades.first; _loadError = null; _loading = false; });
+          if (mounted) setState(() { _grades = grades; _selectedGrade = grades.first; _loading = false; });
         } else {
-          if (mounted) setState(() { _grades = [_fallbackGrade]; _selectedGrade = _fallbackGrade; _loadError = null; _loading = false; });
+          if (mounted) setState(() { _grades = [_fallbackGrade]; _selectedGrade = _fallbackGrade; _loading = false; });
         }
         return;
       }
     } catch (_) {}
     if (_grades.isEmpty) {
-      if (mounted) setState(() { _grades = [_fallbackGrade]; _selectedGrade = _fallbackGrade; _loadError = null; _loading = false; });
+      if (mounted) setState(() { _grades = [_fallbackGrade]; _selectedGrade = _fallbackGrade; _loading = false; });
     } else {
       if (mounted) setState(() { _loading = false; });
     }
   }
 
-  Future<void> _retryLoadGrades() async {
-    setState(() { _loading = true; _loadError = null; });
-    await _loadGrades();
-  }
-
   Future<void> _saveAndContinue() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty || _saving || _loadError != null) return;
+    if (name.isEmpty || _saving) return;
     setState(() => _saving = true);
     try {
       await MutationQueue().enqueue('/student/profile/update', method: 'POST', body: {'name': name, 'grade': _selectedGrade});
@@ -130,16 +124,6 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               if (_loading)
                 const Center(child: CircularProgressIndicator())
               else ...[
-                if (_loadError != null) ...[
-                  Text(_loadError!, style: tt.bodyMedium?.copyWith(color: cs.error)),
-                  SizedBox(height: AppSpacing.md.h),
-                  ElevatedButton.icon(
-                    onPressed: _saving ? null : _retryLoadGrades,
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: Text(l10n.errorRetryButton),
-                  ),
-                  SizedBox(height: AppSpacing.sm.h),
-                ],
                 Text(l10n.labelDisplayName,
                     style: tt.titleSmall?.copyWith(color: cs.onSurfaceVariant)),
                 SizedBox(height: AppSpacing.sm.h),
@@ -173,7 +157,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _saving || _loadError != null ? null : _saveAndContinue,
+                  onPressed: _saving ? null : _saveAndContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: cs.primary,
                     foregroundColor: cs.onPrimary,

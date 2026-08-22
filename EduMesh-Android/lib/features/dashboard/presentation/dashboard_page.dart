@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -40,7 +41,6 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   bool _isConnected = false;
-  bool _isChecking = true;
 
   String _totalStorageUsedStr = '';
   String _totalCapacityStr = '';
@@ -87,7 +87,6 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!mounted) return;
     setState(() {
       _isConnected = ConnectivityService().isOnline;
-      _isChecking = false;
     });
   }
 
@@ -275,25 +274,23 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _loadSubjects() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cached = prefs.getStringList('cached_subjects');
+      final cached = prefs.getString('cached_subjects');
       if (cached != null && cached.isNotEmpty) {
-        _subjects = cached.map((s) {
-          final parts = s.split('|');
-          return {'name': parts[0], if (parts.length > 1) 'symbol': parts[1]};
-        }).toList();
-        _subjectsLoading = false;
-        if (mounted) setState(() {});
+        final decoded = jsonDecode(cached);
+        if (decoded is List) {
+          _subjects = decoded.whereType<Map>().map((m) => <String, dynamic>{
+            'name': m['name']?.toString() ?? '',
+            'symbol': m['symbol']?.toString() ?? '',
+          }).toList();
+          _subjectsLoading = false;
+          if (mounted) setState(() {});
+        }
       }
 
       final response = await ApiClient.get('/student/subjects');
       if (mounted && response.statusCode == 200 && response.data is List) {
         final raw = (response.data as List).whereType<Map<String, dynamic>>().toList();
-        final names = raw.map((s) {
-          final name = s['name']?.toString() ?? '';
-          final symbol = s['symbol']?.toString() ?? '';
-          return '$name|$symbol';
-        }).toList();
-        await prefs.setStringList('cached_subjects', names);
+        await prefs.setString('cached_subjects', jsonEncode(raw));
         setState(() {
           _subjects = raw;
           _subjectsLoading = false;
@@ -434,13 +431,13 @@ class _DashboardPageState extends State<DashboardPage> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
-    Color bgColor = _isChecking ? cs.surfaceContainerHighest.withAlpha(128) : (_isConnected ? cs.secondaryContainer : cs.errorContainer);
-    Color textColor = _isChecking ? cs.outline : (_isConnected ? cs.onSecondaryContainer : cs.onErrorContainer);
+    Color bgColor = _isConnected ? cs.secondaryContainer : cs.errorContainer;
+    Color textColor = _isConnected ? cs.onSecondaryContainer : cs.onErrorContainer;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
       decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(AppSpacing.radiusFull), border: Border.all(color: textColor)),
-      child: Text(_isChecking ? l10n.serverStatusChecking : (_isConnected ? l10n.serverStatusConnected : l10n.serverStatusDisconnected),
+      child: Text(_isConnected ? l10n.serverStatusConnected : l10n.serverStatusDisconnected,
         maxLines: 1, overflow: TextOverflow.ellipsis, style: tt.bodySmall?.copyWith(color: textColor)),
     );
   }

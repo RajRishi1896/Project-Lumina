@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../../core/services/activity_tracker.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -58,7 +57,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     LuminaColors.chartAmber,
     LuminaColors.danger,
   ];
-  late final TextEditingController _studentIdController;
   bool _loading = true;
   File? _profileImage;
   bool _uploadingIcon = false;
@@ -66,7 +64,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   @override
   void initState() {
     super.initState();
-    _studentIdController = TextEditingController(text: _studentId);
     _loadLocalProfile();
     _loadData();
   }
@@ -104,7 +101,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     final grade = await auth.getGradeOrDefault();
     if (mounted) {
       _studentId = id ?? _studentId;
-      _studentIdController.text = _studentId;
       setState(() {
         _studentName = name ?? _studentName;
         _username = uname ?? _username;
@@ -162,7 +158,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       if (mounted && profile.data is Map) {
         final p = profile.data as Map;
         _studentId = p['scholar_id']?.toString() ?? _studentId;
-        _studentIdController.text = _studentId;
         setState(() {
           _studentName = p['name']?.toString() ?? _studentName;
           _grade = p['grade']?.toString() ?? _grade;
@@ -383,20 +378,17 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   /// Picks a square image (max 256px) from the gallery, base64-encodes it,
   /// and sends it to `POST /student/profile/icon`. On success the icon is
   /// persisted locally via [_saveIconLocally] and displayed immediately.
-  /// Acquires a [WakelockPlus] wakelock during upload to prevent sleep.
   Future<void> _pickAndUploadIcon() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 256, maxHeight: 256);
     if (picked == null) return;
     setState(() => _uploadingIcon = true);
-    await WakelockPlus.enable();
     try {
       final bytes = await picked.readAsBytes();
       final b64 = base64Encode(bytes);
       final ext = picked.path.split('.').last;
       final scholarId = await AuthService().getUniqueUserId();
       if (scholarId == null) {
-        await WakelockPlus.disable();
         if (mounted) setState(() => _uploadingIcon = false);
         return;
       }
@@ -414,8 +406,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       }
     } catch (_) {
       if (mounted) setState(() => _uploadingIcon = false);
-    } finally {
-      await WakelockPlus.disable();
     }
   }
 
@@ -672,21 +662,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       style: tt.titleSmall?.copyWith(
                           color: cs.onSurfaceVariant)),
                   SizedBox(height: AppSpacing.sm.h),
-                  TextField(
-                    controller: _studentIdController,
-                    enabled: false,
-                    style: tt.bodyLarge?.copyWith(
-                        color: cs.onSurfaceVariant),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: cs.surfaceContainerHighest,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.md.h),
-                    ),
-                  ),
+                  Text(_studentId,
+                      style: tt.bodyLarge?.copyWith(
+                          color: cs.onSurfaceVariant)),
                   SizedBox(height: AppSpacing.xxl.h),
                   SizedBox(
                     width: double.infinity,
@@ -742,7 +720,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
 
   @override
   void dispose() {
-    _studentIdController.dispose();
     super.dispose();
   }
 

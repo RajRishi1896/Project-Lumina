@@ -92,7 +92,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   bool _showResults = false;
   bool _pendingResults = false;
   bool _loading = true;
-  String? _error;
+  bool _loadFailed = false;
   final Map<int, bool> _correctAnswers = {};
   // Selection identity is the tapped option INDEX, not its text: two options
   // with identical text must stay independently selectable.
@@ -153,19 +153,25 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     }
   }
 
+  /// Parses [quiz], shuffles it per its mode, renders it, and starts the
+  /// timer plus best-attempt fetch. Shared by all load paths.
+  void _applyQuiz(Quiz quiz) {
+    final questions = List<QuizQuestion>.from(quiz.questions);
+    _applyShuffle(quiz, questions);
+    if (!mounted) return;
+    setState(() {
+      _quiz = quiz;
+      _questions = questions;
+      _totalTimeSeconds = quiz.timeLimitMinutes * 60;
+      _loading = false;
+    });
+    _startTimer();
+    _fetchBestAttempt();
+  }
+
   Future<void> _loadQuiz() async {
     if (widget.quizData != null) {
-      final quiz = Quiz.fromJson(widget.quizData!);
-      final questions = List<QuizQuestion>.from(quiz.questions);
-      _applyShuffle(quiz, questions);
-      setState(() {
-        _quiz = quiz;
-        _questions = questions;
-        _totalTimeSeconds = quiz.timeLimitMinutes * 60;
-        _loading = false;
-      });
-      _startTimer();
-      _fetchBestAttempt();
+      _applyQuiz(Quiz.fromJson(widget.quizData!));
       return;
     }
 
@@ -174,43 +180,21 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       final resp = await ApiClient.get(_quizUrl);
       if (resp.statusCode == 200 && resp.data is Map) {
         final quizData = resp.data as Map<String, dynamic>;
-        final quiz = Quiz.fromJson(quizData);
         await DBHelper().cacheQuiz(cacheKey, quizData);
-        final questions = List<QuizQuestion>.from(quiz.questions);
-        _applyShuffle(quiz, questions);
-        if (!mounted) return;
-        setState(() {
-          _quiz = quiz;
-          _questions = questions;
-          _totalTimeSeconds = quiz.timeLimitMinutes * 60;
-          _loading = false;
-        });
-        _startTimer();
-        _fetchBestAttempt();
+        _applyQuiz(Quiz.fromJson(quizData));
         return;
       }
     } catch (_) {}
 
     final cached = await DBHelper().getCachedQuiz(cacheKey);
     if (cached != null) {
-      final quiz = Quiz.fromJson(cached);
-      final questions = List<QuizQuestion>.from(quiz.questions);
-      _applyShuffle(quiz, questions);
-      if (!mounted) return;
-      setState(() {
-        _quiz = quiz;
-        _questions = questions;
-        _totalTimeSeconds = quiz.timeLimitMinutes * 60;
-        _loading = false;
-      });
-      _startTimer();
-      _fetchBestAttempt();
+      _applyQuiz(Quiz.fromJson(cached));
       return;
     }
 
     if (!mounted) return;
     setState(() {
-      _error = 'load_failed';
+      _loadFailed = true;
       _loading = false;
     });
   }
@@ -479,7 +463,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
         body: Center(child: CircularProgressIndicator()),
       );
     }
-    if (_error != null) {
+    if (_loadFailed) {
       return Scaffold(
         body: Center(
           child: Padding(
@@ -489,7 +473,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
               children: [
                 Icon(Icons.error_outline, size: 48.sp, color: cs.error),
                 SizedBox(height: AppSpacing.md.h),
-                Text(_error == 'load_failed' ? l10n.quizLoadingError : _error!, style: tt.bodyLarge),
+                Text(l10n.quizLoadingError, style: tt.bodyLarge),
                 SizedBox(height: AppSpacing.lg.h),
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -726,65 +710,88 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
         ordered.map((i) => q.options[i]).toList();
   }
 
+  /// Option rows for single-choice (Radio) and multi-select (Checkbox)
+  /// questions: identical row chrome, differing only in the selection
+  /// control and toggle behaviour.
+  List<Widget> _buildChoiceOptions(
+      QuizQuestion q, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    final multi = q.type == QuizQuestionType.multiSelect;
+    final options = multi ? q.options : _displayOptions(q, l10n);
+    final selectedIdx = multi ? null : _selectedDisplayIndex(q, l10n);
+
+    void select(int idx) => setState(() {
+          if (multi) {
+            _toggleMulti(q, idx);
+          } else {
+            _answers[_currentIndex] = _canonicalOption(q, idx, l10n);
+            _selectedOption[_currentIndex] = idx;
+          }
+        });
+
+    return options.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final opt = entry.value;
+      final selected = multi
+          ? (_multiSelected[_currentIndex] ?? const <int>{}).contains(idx)
+          : selectedIdx == idx;
+      return Column(
+        children: [
+          InkWell(
+            onTap: () => select(idx),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: AppSpacing.touchTarget,
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm.w,
+                  vertical: AppSpacing.xs.h,
+                ),
+                child: Row(
+                  children: [
+                    multi
+                        ? Checkbox(
+                            value: selected,
+                            onChanged: (_) => select(idx),
+                            activeColor: cs.primary,
+                            visualDensity: VisualDensity.compact,
+                          )
+                        : Radio<int>(
+                            value: idx,
+                            groupValue: selectedIdx,
+                            onChanged: (_) => select(idx),
+                            activeColor: cs.primary,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                    SizedBox(width: AppSpacing.sm.w),
+                    Expanded(
+                      child: Text(
+                        opt,
+                        style: tt.bodyMedium?.copyWith(
+                          fontSize: 14.sp,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (idx < options.length - 1)
+            Divider(height: 1, color: cs.outlineVariant),
+        ],
+      );
+    }).toList();
+  }
+
   List<Widget> _buildOptions(QuizQuestion q, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     switch (q.type) {
       case QuizQuestionType.mcq:
       case QuizQuestionType.trueFalse:
-        final options = _displayOptions(q, l10n);
-        final selectedIdx = _selectedDisplayIndex(q, l10n);
-        return options.asMap().entries.map((entry) {
-          final idx = entry.key;
-          final opt = entry.value;
-          return Column(
-            children: [
-              InkWell(
-                onTap: () => setState(() {
-                  _answers[_currentIndex] = _canonicalOption(q, idx, l10n);
-                  _selectedOption[_currentIndex] = idx;
-                }),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minHeight: AppSpacing.touchTarget,
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm.w,
-                      vertical: AppSpacing.xs.h,
-                    ),
-                    child: Row(
-                      children: [
-                        Radio<int>(
-                          value: idx,
-                          groupValue: selectedIdx,
-                          onChanged: (_) => setState(() {
-                            _answers[_currentIndex] =
-                                _canonicalOption(q, idx, l10n);
-                            _selectedOption[_currentIndex] = idx;
-                          }),
-                          activeColor: cs.primary,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        SizedBox(width: AppSpacing.sm.w),
-                        Expanded(
-                          child: Text(
-                            opt,
-                            style: tt.bodyMedium?.copyWith(
-                              fontSize: 14.sp,
-                              color: cs.onSurface,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              if (entry.key < options.length - 1)
-                Divider(height: 1, color: cs.outlineVariant),
-            ],
-          );
-        }).toList();
+      case QuizQuestionType.multiSelect:
+        return _buildChoiceOptions(q, cs, tt, l10n);
 
       case QuizQuestionType.fillBlanks:
         return [
@@ -808,60 +815,6 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
             enableSuggestions: false,
           ),
         ];
-
-      case QuizQuestionType.multiSelect:
-        return q.options.asMap().entries.map((entry) {
-          final idx = entry.key;
-          final opt = entry.value;
-          final selected =
-              (_multiSelected[_currentIndex] ?? const <int>{}).contains(idx);
-          return Column(
-            children: [
-              InkWell(
-                onTap: () {
-                  setState(() => _toggleMulti(q, idx));
-                },
-                borderRadius:
-                    BorderRadius.circular(AppSpacing.radiusMd.r),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minHeight: AppSpacing.touchTarget,
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm.w,
-                      vertical: AppSpacing.xs.h,
-                    ),
-                    child: Row(
-                      children: [
-                        Checkbox(
-                          value: selected,
-                          onChanged: (_) {
-                            setState(() => _toggleMulti(q, idx));
-                          },
-                          activeColor: cs.primary,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        SizedBox(width: AppSpacing.sm.w),
-                        Expanded(
-                          child: Text(
-                            opt,
-                            style: tt.bodyMedium?.copyWith(
-                              fontSize: 14.sp,
-                              color: cs.onSurface,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              if (entry.key < q.options.length - 1)
-                Divider(height: 1, color: cs.outlineVariant),
-            ],
-          );
-        }).toList();
     }
   }
 
