@@ -22,11 +22,22 @@
   "hubStrengthGood": "ಉತ್ತಮ",
   "hubStrengthFair": "ಸಮಂಜಸ",
   "statusHubStrength": "ಹಬ್ ಸಾಮರ್ಥ್ಯ",
-  "statusLocalStorage": "ಸ್ಥಳೀಯ ಸಂಗ್ರಹ",
-  "storageCalculating": "ಲೆಕ್ಕಾಚಾರ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+  "statusHubResources": "ಹಬ್ ಸಂಪನ್ಮೂಲಗಳು",
+  "@statusHubResources": {
+    "description": "Label for the hub resources status row on the pre-login welcome page. Shown next to a count of learning materials available on the hub.",
+    "x_machine_translated": true
+  },
+  "welcomeHubResources": "{count, plural, =0{ಹಬ್‌ನಲ್ಲಿ ಇನ್ನೂ ಸಂಪನ್ಮೂಲಗಳಿಲ್ಲ} =1{ಹಬ್‌ನಲ್ಲಿ 1 ಸಂಪನ್ಮೂಲ} other{ಹಬ್‌ನಲ್ಲಿ {count} ಸಂಪನ್ಮೂಲಗಳು}}",
+  "@welcomeHubResources": {
+    "description": "Welcome page status row value showing how many learning resources are available on the hub. Shown after a successful hub connection, before login. {count} is the total resource count returned by /stats.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "x_machine_translated": true
+  },
   "storageUnknown": "N/A",
-  "storageMbUsed": "{size} MB ಬಳಕೆ",
-  "storageGbUsed": "{size} GB ಬಳಕೆ",
   "storageTotalCapacity": "{size} GB ಒಟ್ಟು",
   "storageUsedLabel": "{size} GB ಬಳಕೆ",
   "unitMegabytes": " MB",
@@ -144,6 +155,7 @@
   "snackbarQueueAction": "ಕ್ಯೂ",
   "dialogDownloadTitle": "ಡೌನ್‌ಲೋಡ್",
   "dialogDownloadContent": "\"{fileName}\" ಡೌನ್‌ಲೋಡ್ ಮಾಡಬೇಕೆ?\n\nಗಾತ್ರ: {sizeLabel}",
+  "dialogDownloadContentNoSize": "\"{fileName}\" ಡೌನ್‌ಲೋಡ್ ಮಾಡಬೇಕೆ?",
   "dialogDownloadButton": "ಡೌನ್‌ಲೋಡ್",
   "fileSizeUnavailable": "ಗಾತ್ರ ಲಭ್ಯವಿಲ್ಲ",
   "fileSizeUnknownFallback": "ತಿಳಿದಿಲ್ಲ",
@@ -378,32 +390,8 @@
   "@statusHubStrength": {
     "description": "Label for the hub connection strength status indicator"
   },
-  "@statusLocalStorage": {
-    "description": "Label for the local storage usage status indicator"
-  },
-  "@storageCalculating": {
-    "description": "Default display text for storage values while computing"
-  },
   "@storageUnknown": {
     "description": "Fallback text when storage calculation fails"
-  },
-  "@storageMbUsed": {
-    "description": "Local storage used display when total is under 1024 MB",
-    "placeholders": {
-      "size": {
-        "type": "String",
-        "example": "256.5"
-      }
-    }
-  },
-  "@storageGbUsed": {
-    "description": "Local storage used display when total is 1024 MB or more",
-    "placeholders": {
-      "size": {
-        "type": "String",
-        "example": "1.2"
-      }
-    }
   },
   "@storageTotalCapacity": {
     "description": "Total device capacity label in the storage section",

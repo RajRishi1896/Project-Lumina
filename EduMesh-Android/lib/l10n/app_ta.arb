@@ -24,11 +24,22 @@
   "hubStrengthGood": "நல்லது",
   "hubStrengthFair": "சரி",
   "statusHubStrength": "ஹப் வலிமை",
-  "statusLocalStorage": "உள்ளூர் சேமிப்பகம்",
-  "storageCalculating": "கணக்கிடுகிறது...",
+  "statusHubResources": "ஹப் வளங்கள்",
+  "@statusHubResources": {
+    "description": "Label for the hub resources status row on the pre-login welcome page. Shown next to a count of learning materials available on the hub.",
+    "x_machine_translated": true
+  },
+  "welcomeHubResources": "{count, plural, =0{ஹப்பில் இன்னும் வளங்கள் இல்லை} =1{ஹப்பில் 1 வளம்} other{ஹப்பில் {count} வளங்கள்}}",
+  "@welcomeHubResources": {
+    "description": "Welcome page status row value showing how many learning resources are available on the hub. Shown after a successful hub connection, before login. {count} is the total resource count returned by /stats.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "x_machine_translated": true
+  },
   "storageUnknown": "N/A",
-  "storageMbUsed": "{size} MB பயன்படுத்தப்பட்டது",
-  "storageGbUsed": "{size} GB பயன்படுத்தப்பட்டது",
   "storageTotalCapacity": "{size} GB மொத்தம்",
   "storageUsedLabel": "{size} GB பயன்படுத்தப்பட்டது",
   "unitMegabytes": " MB",
@@ -150,6 +161,7 @@
   "snackbarQueueAction": "வரிசை",
   "dialogDownloadTitle": "டவுன்லோட்",
   "dialogDownloadContent": "\"{fileName}\" டவுன்லோட் செய்யவா?\n\nஅளவு: {sizeLabel}",
+  "dialogDownloadContentNoSize": "\"{fileName}\" டவுன்லோட் செய்யவா?",
   "dialogDownloadButton": "டவுன்லோட்",
   "fileSizeUnavailable": "அளவு கிடைக்கவில்லை",
   "fileSizeUnknownFallback": "அறியப்படாதது",

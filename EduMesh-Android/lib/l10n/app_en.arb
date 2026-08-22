@@ -84,37 +84,22 @@
   "@statusHubStrength": {
     "description": "Label for the hub connection strength status indicator"
   },
-  "statusLocalStorage": "Local Storage",
-  "@statusLocalStorage": {
-    "description": "Label for the local storage usage status indicator"
+  "statusHubResources": "Hub Resources",
+  "@statusHubResources": {
+    "description": "Label for the hub resources status row on the pre-login welcome page. Shown next to a count of learning materials available on the hub."
   },
-  "storageCalculating": "Calculating...",
-  "@storageCalculating": {
-    "description": "Default display text for storage values while computing"
+  "welcomeHubResources": "{count, plural, =0{No resources on the hub yet} =1{1 resource on the hub} other{{count} resources on the hub}}",
+  "@welcomeHubResources": {
+    "description": "Welcome page status row value showing how many learning resources are available on the hub. Shown after a successful hub connection, before login. {count} is the total resource count returned by /stats.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "storageUnknown": "N/A",
   "@storageUnknown": {
     "description": "Fallback text when storage calculation fails"
-  },
-  "storageMbUsed": "{size} MB Used",
-  "@storageMbUsed": {
-    "description": "Local storage used display when total is under 1024 MB",
-    "placeholders": {
-      "size": {
-        "type": "String",
-        "example": "256.5"
-      }
-    }
-  },
-  "storageGbUsed": "{size} GB Used",
-  "@storageGbUsed": {
-    "description": "Local storage used display when total is 1024 MB or more",
-    "placeholders": {
-      "size": {
-        "type": "String",
-        "example": "1.2"
-      }
-    }
   },
   "storageTotalCapacity": "{size} GB Total",
   "@storageTotalCapacity": {
@@ -543,6 +528,10 @@
         "example": "5.2 MB"
       }
     }
+  },
+  "dialogDownloadContentNoSize": "Download \"{fileName}\"?",
+  "@dialogDownloadContentNoSize": {
+    "description": "Body of the download confirmation dialog. Shown when the user taps the download icon on a resource card and must confirm before the file is queued. The file size is intentionally omitted: it is no longer fetched from the hub before confirming."
   },
   "dialogDownloadButton": "Download",
   "@dialogDownloadButton": {

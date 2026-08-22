@@ -22,11 +22,22 @@
   "hubStrengthGood": "Bon",
   "hubStrengthFair": "Moyen",
   "statusHubStrength": "Puissance du Hub",
-  "statusLocalStorage": "Stockage local",
-  "storageCalculating": "Calcul...",
+  "statusHubResources": "Ressources du hub",
+  "@statusHubResources": {
+    "description": "Label for the hub resources status row on the pre-login welcome page. Shown next to a count of learning materials available on the hub.",
+    "x_machine_translated": true
+  },
+  "welcomeHubResources": "{count, plural, =0{Aucune ressource sur le hub pour l'instant} =1{1 ressource sur le hub} other{{count} ressources sur le hub}}",
+  "@welcomeHubResources": {
+    "description": "Welcome page status row value showing how many learning resources are available on the hub. Shown after a successful hub connection, before login. {count} is the total resource count returned by /stats.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "x_machine_translated": true
+  },
   "storageUnknown": "N/A",
-  "storageMbUsed": "{size} Mo utilisés",
-  "storageGbUsed": "{size} Go utilisés",
   "storageTotalCapacity": "{size} Go total",
   "storageUsedLabel": "{size} Go utilisés",
   "unitMegabytes": " Mo",
@@ -144,6 +155,7 @@
   "snackbarQueueAction": "File",
   "dialogDownloadTitle": "Téléchargement",
   "dialogDownloadContent": "Télécharger \"{fileName}\" ?\n\nTaille : {sizeLabel}",
+  "dialogDownloadContentNoSize": "Télécharger \"{fileName}\" ?",
   "dialogDownloadButton": "Télécharger",
   "fileSizeUnavailable": "Taille indisponible",
   "fileSizeUnknownFallback": "Inconnue",
@@ -378,32 +390,8 @@
   "@statusHubStrength": {
     "description": "Label for the hub connection strength status indicator"
   },
-  "@statusLocalStorage": {
-    "description": "Label for the local storage usage status indicator"
-  },
-  "@storageCalculating": {
-    "description": "Default display text for storage values while computing"
-  },
   "@storageUnknown": {
     "description": "Fallback text when storage calculation fails"
-  },
-  "@storageMbUsed": {
-    "description": "Local storage used display when total is under 1024 MB",
-    "placeholders": {
-      "size": {
-        "type": "String",
-        "example": "256.5"
-      }
-    }
-  },
-  "@storageGbUsed": {
-    "description": "Local storage used display when total is 1024 MB or more",
-    "placeholders": {
-      "size": {
-        "type": "String",
-        "example": "1.2"
-      }
-    }
   },
   "@storageTotalCapacity": {
     "description": "Total device capacity label in the storage section",
