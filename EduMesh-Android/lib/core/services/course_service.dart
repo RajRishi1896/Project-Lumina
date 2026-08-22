@@ -22,16 +22,12 @@ class CourseService extends ChangeNotifier {
   /// Returns the current student's scholar ID, or '' if unavailable.
   Future<String> _getStudentId() async => (await AuthService().getUniqueUserId()) ?? '';
 
-  List<Course> _cachedCourses = [];
   List<({Course course, Map<String, dynamic>? progress})> _enrolledCourses = [];
 
   bool get isLoading => _loading;
 
   /// The most recent error message, or `null` if no error.
   String? get error => _error;
-
-  /// Locally cached course list from the last successful [fetchCatalog] call.
-  List<Course> get cachedCourses => _cachedCourses;
 
   /// Courses the current student is enrolled in, with their progress rows.
   List<({Course course, Map<String, dynamic>? progress})> get enrolledCourses => _enrolledCourses;
@@ -101,7 +97,6 @@ class CourseService extends ChangeNotifier {
             'cover_image': c.coverImage ?? '',
             'published': c.published,
             'teacher_username': c.teacherUsername ?? '',
-            'enrollment_count': c.enrollmentCount,
             'created_at': c.createdAt ?? '',
             'updated_at': c.updatedAt ?? '',
             'synced_at': DateTime.now().millisecondsSinceEpoch,
@@ -110,7 +105,6 @@ class CourseService extends ChangeNotifier {
       });
       // Purge progress/quiz/resource rows for courses that vanished server-side.
       await DBHelper().deleteOrphanedCourseData();
-      _cachedCourses = courses;
       _loading = false;
       _error = null;
       notifyListeners();
@@ -225,7 +219,6 @@ class CourseService extends ChangeNotifier {
       '/api/courses/$courseId/quiz/$resourceId/submit',
       method: 'POST',
       body: attempt,
-      priority: 'high',
     );
     if (response is Map) {
       final graded = Map<String, dynamic>.from(attempt);
@@ -246,7 +239,6 @@ class CourseService extends ChangeNotifier {
       '/api/quiz-resource/$resourceId/submit',
       method: 'POST',
       body: attempt,
-      priority: 'high',
     );
   }
 
@@ -290,7 +282,7 @@ class CourseService extends ChangeNotifier {
       }
 
       final result = <({Course course, Map<String, dynamic>? progress})>[];
-      for (final pRow in progressRows.isEmpty ? await db.query('course_progress', where: 'student_id = ?', whereArgs: [studentId]) : progressRows) {
+      for (final pRow in progressRows) {
         final courseId = (pRow['course_id'] ?? '').toString();
         final courseRows = await db.query('courses', where: 'id = ?', whereArgs: [courseId]);
         if (courseRows.isNotEmpty) {
@@ -404,7 +396,6 @@ class CourseService extends ChangeNotifier {
       coverImage: (row['cover_image'] ?? '').toString(),
       published: (row['published'] as num?)?.toInt() ?? 0,
       teacherUsername: (row['teacher_username'] ?? '').toString(),
-      enrollmentCount: (row['enrollment_count'] as num?)?.toInt() ?? 0,
       createdAt: (row['created_at'] ?? '').toString(),
       updatedAt: (row['updated_at'] ?? '').toString(),
     );
