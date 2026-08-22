@@ -103,9 +103,6 @@ class SubjectResponse(BaseModel):
     class_name: str = Field(..., description="Associated class or grade.", json_schema_extra={"example": "Grade 10"})
 # ── Additional Response Models ───────────────────────────────────────────────
 
-class RestoreResponse(BaseModel):
-    """Download history restore response."""
-    download_history: list[str] = Field(default_factory=list, description="List of downloaded resource IDs.", json_schema_extra={"example": ["RES-a1b2c3d4", "RES-e5f6g7h8"]})
 class StudentAnalyticsResponse(BaseModel):
     """Student analytics from the student's own perspective."""
     study_minutes_this_week: int = Field(..., description="Total study minutes this week.", json_schema_extra={"example": 120})
@@ -122,10 +119,6 @@ class StudentProfileResponse(BaseModel):
     name: str = Field(..., description="Display name.", json_schema_extra={"example": "Alice"})
     grade: str = Field(..., description="Grade or class.", json_schema_extra={"example": "Grade 10"})
     scholar_id: str = Field(..., description="Scholar ID.", json_schema_extra={"example": "LUMINA_01-abc"})
-class WeeklyBreakdownResponse(BaseModel):
-    """Weekly study breakdown for a student."""
-    today_minutes: int = Field(..., description="Study minutes today.", json_schema_extra={"example": 30})
-    weekly_data: dict = Field(default_factory=dict, description="Day-to-minute mapping for past 7 days.", json_schema_extra={"example": {"Mon": 30, "Tue": 45, "Wed": 0}})
 class ScholarListItem(BaseModel):
     """Minimal scholar info for teacher listing."""
     id: str = Field(..., description="Scholar ID.", json_schema_extra={"example": "LUMINA_01-abc"})
@@ -344,9 +337,6 @@ class BookmarkItem(BaseModel):
 class BookmarkSync(BaseModel):
     """Full bookmark sync payload that replaces all server bookmarks."""
     bookmarks: list[BookmarkItem] = Field(default_factory=list, description="All bookmarks the student has.", json_schema_extra={"example": [{"resource_id": "RES-abc123", "title": "Chapter 1"}]})
-class BookmarkResponse(BaseModel):
-    """List of saved bookmarks."""
-    bookmarks: list[BookmarkItem] = Field(default_factory=list, description="All saved bookmarks.", json_schema_extra={"example": [{"resource_id": "RES-abc123", "title": "Chapter 1"}]})
 class EnrolledCourseItem(BaseModel):
     """An enrolled course with progress for restore."""
     course_id: str = Field(..., description="Unique course identifier.", json_schema_extra={"example": "CRS-abc123"})

@@ -377,68 +377,6 @@ async def delete_grade(name: str, transfer_to: str = None, admin_user: str = Dep
     return {"status": "success"}
 
 
-@router.get("/student/resource-topics", response_model=list[dict],
-            summary="List resource topics for students",
-            description="Returns resource topics (id, subject, name, position), optionally filtered by subject.",
-            tags=["Subjects"],
-            responses={401: {"description": "Unauthorized"}})
-async def student_list_resource_topics(user: str = Depends(verify_user),
-                                       subject: str = Query(None, description="Subject name (omit for all)")):
-    """List resource topics accessible to students.
-
-    Returns topics ordered by position within each subject.
-    """
-    if subject:
-        rows = await db_fetch(
-            "SELECT id, subject, name, position FROM resource_topics WHERE subject = ? ORDER BY position ASC",
-            (subject,))
-    else:
-        rows = await db_fetch(
-            "SELECT id, subject, name, position FROM resource_topics ORDER BY subject ASC, position ASC")
-    return [dict(r) for r in rows]
-
-
-@router.get("/student/resources-by-topic", response_model=list[dict],
-            summary="List resources by topic for students",
-            description="Returns approved resources (id, title, type, subject, grade, language, pdfUrl, topic_id, topic_name) filtered by subject and optionally topic.",
-            tags=["Subjects"],
-            responses={401: {"description": "Unauthorized"}, 422: {"description": "Missing subject"}})
-async def student_resources_by_topic(user: str = Depends(verify_user),
-                                     subject: str = Query(..., description="Subject name"),
-                                     topic_id: str = Query("", description="Topic ID (omit for all in subject)"),
-                                     grade: Optional[str] = Query(None, description="Grade filter")):
-    """List resources for a subject, optionally filtered by topic.
-
-    Returns approved resources ordered by title.
-    """
-    conditions = ["r.status = 'approved'", "r.subject = ?", "r.resource_type != 'kiwix'"]
-    params: list = [subject]
-    if topic_id:
-        conditions.append("r.topic_id = ?")
-        params.append(topic_id)
-    if grade:
-        conditions.append("(r.grade = ? OR r.grade = 'General')")
-        params.append(grade)
-    where = " AND ".join(conditions)
-    rows = await db_fetch(
-        f"""SELECT r.id, r.title, r.resource_type, r.subject, r.grade, r.language,
-            r.filename, r.topic_id, COALESCE(rt.name, '') AS topic_name
-            FROM resources r
-            LEFT JOIN resource_topics rt ON rt.id = r.topic_id
-            WHERE {where}
-            ORDER BY r.title ASC""",
-        tuple(params))
-    result = []
-    for r in rows:
-        result.append({
-            "id": r[0], "title": r[1], "type": r[2], "subject": r[3],
-            "grade": str(r[4]) if r[4] is not None else "", "language": r[5],
-            "pdfUrl": f"/files/{r[6]}" if r[6] else "",
-            "topic_id": r[7] or "", "topic_name": r[8],
-        })
-    return result
-
-
 # ─── Resource Topics (chapters within subjects) ────────────────────────────
 
 @router.get("/teacher/resource-topics", response_model=list[dict],

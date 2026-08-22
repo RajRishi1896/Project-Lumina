@@ -41,12 +41,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     Skips /ping and /generate_204 to reduce noise.
     """
     async def dispatch(self, request, call_next):
-        """Time the request, log it, and feed response-time/slow-endpoint metrics."""
+        """Time the request and log it with structured fields."""
         path = request.url.path
         if path in ("/ping", "/generate_204"):
             return await call_next(request)
 
-        from app.metrics import record_response_time, record_slow_endpoint
         start = time.monotonic()
         client_ip = request.client.host if request.client else "unknown"
         request_id = getattr(request.state, "request_id", "-")
@@ -62,8 +61,6 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             raise
 
         duration_ms = (time.monotonic() - start) * 1000
-        record_response_time(duration_ms)
-        record_slow_endpoint(path, duration_ms)
 
         level = logging.WARNING if response.status_code >= 400 else logging.INFO
         logger.log(

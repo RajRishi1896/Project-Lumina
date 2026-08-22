@@ -7,45 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 import logging
 from app.database import PROFILE_ICONS_DIR
-from app.async_db import db_exec, db_exec_many, db_fetch, db_fetch_one, db_run
-from app.models import StudyTimeSync, SubjectTimeSync, StudentChangePasswordRequest, StatusResponse, RestoreResponse, StudentAnalyticsResponse, IconUploadResponse, StudentProfileResponse, WeeklyBreakdownResponse, BookmarkSync, BookmarkResponse, BookmarkItem, QuizBestScoreResponse, QuizBestScoreUpdate
+from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
+from app.models import StudyTimeSync, SubjectTimeSync, StudentChangePasswordRequest, StatusResponse, StudentAnalyticsResponse, IconUploadResponse, StudentProfileResponse, BookmarkSync, QuizBestScoreResponse, QuizBestScoreUpdate
 from app.dependencies import verify_student, hash_password, verify_password, validate_password_strength, invalidate_tokens_for_user
 from app.audit import audit, Action
 
 router = APIRouter()
-
-
-@router.post("/sync/downloads", response_model=StatusResponse, summary="Sync downloaded resource IDs", description="Records which resources the student has downloaded. Used for offline sync and restore across devices. Auto-registers the student if not already in the database.", tags=["Sync"], responses={200: {"description": "Download IDs recorded successfully"}})
-async def sync_downloads(resource_ids: list[str], student_id: str = Depends(verify_student)):
-    """Record downloaded resource IDs for a student.
-
-    Args:
-        resource_ids: List of resource IDs the student has downloaded.
-        student_id: The authenticated student's ID, injected by the verify_student dependency.
-
-    Returns:
-        Dict with a status field indicating success.
-    """
-    await db_exec_many(
-        "INSERT OR IGNORE INTO scholar_downloads (scholar_id, resource_id) VALUES (?, ?)",
-        [(student_id, rid) for rid in resource_ids],
-    )
-    return {"status": "ok"}
-
-
-@router.get("/sync/restore", response_model=RestoreResponse, summary="Restore download history", description="Returns the list of resource IDs previously downloaded by the student. Used to restore offline content on a new device or after reinstalling the app.", tags=["Sync"], responses={200: {"description": "Download history retrieved successfully"}})
-async def restore_profile(student_id: str = Depends(verify_student)):
-    """Restore a student's download history.
-
-    Args:
-        student_id: The authenticated student's ID, injected by the verify_student dependency.
-
-    Returns:
-        Dict with a download_history list of resource IDs.
-    """
-    rows = await db_fetch("SELECT resource_id FROM scholar_downloads WHERE scholar_id = ?", (student_id,))
-    downloads = [r[0] for r in rows]
-    return {"download_history": downloads}
 
 
 @router.post("/student/sync-study-time", response_model=StatusResponse, summary="Sync weekly study time", description="Updates the student's total study seconds and streak days for the current week. Uses an upsert pattern against the weekly_study table.", tags=["Sync"], responses={200: {"description": "Study time synced successfully"}})
@@ -294,48 +261,6 @@ async def get_student_profile(student_id: str = Depends(verify_student)):
     if not row:
         raise HTTPException(status_code=404, detail="Student not found")  # i18n: user-facing error message
     return {"name": row[0], "grade": row[1] or "", "scholar_id": row[2]}
-
-
-@router.get("/student/weekly-breakdown", response_model=WeeklyBreakdownResponse,
-            summary="Get weekly study breakdown",
-            description="Returns daily study minutes for the past 7 days for a student.",
-            tags=["Student"],
-            responses={200: {"description": "Weekly breakdown retrieved successfully"}})
-async def weekly_breakdown(student_id: str = Depends(verify_student)):
-    """Get daily study minutes for the past 7 days.
-
-    Args:
-        student_id: The authenticated student's ID, injected by the verify_student dependency.
-
-    Returns:
-        Dict with weekly_data (day -> minutes mapping) and today_minutes.
-    """
-    row = await db_fetch_one("""
-        SELECT COALESCE(SUM(duration_seconds), 0) / 60 as minutes
-        FROM study_sessions
-        WHERE scholar_id = ?
-          AND date(start_time) = date('now')
-    """, (student_id,))
-    today_minutes = row[0] if row else 0
-
-    rows = await db_fetch("""
-        SELECT date(start_time) as day,
-               COALESCE(SUM(duration_seconds), 0) / 60 as minutes
-        FROM study_sessions
-        WHERE scholar_id = ?
-          AND start_time >= datetime('now', '-7 days')
-        GROUP BY date(start_time)
-        ORDER BY day
-    """, (student_id,))
-
-    return {"today_minutes": today_minutes, "weekly_data": {row[0]: row[1] for row in rows}}
-
-
-@router.get("/student/bookmarks", response_model=BookmarkResponse, summary="Get saved bookmarks", description="Returns all bookmarks saved by the student.", tags=["Student"], responses={401: {"description": "Unauthorized"}})
-async def get_bookmarks(student_id: str = Depends(verify_student)):
-    """Return the student's saved bookmarks with their cached metadata."""
-    rows = await db_fetch("SELECT resource_id, title, subject, grade, resource_type FROM student_bookmarks WHERE scholar_id = ?", (student_id,))
-    return {"bookmarks": [BookmarkItem(resource_id=r[0], title=r[1] or "", subject=r[2] or "", grade=r[3] or "", resource_type=r[4] or "") for r in rows]}
 
 
 @router.post("/student/sync-bookmarks", response_model=StatusResponse, summary="Sync bookmarks", description="Replaces all server-side bookmarks with the provided list.", tags=["Sync"], responses={401: {"description": "Unauthorized"}})

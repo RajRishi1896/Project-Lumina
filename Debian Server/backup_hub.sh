@@ -29,10 +29,7 @@ fi
 cp data/hub.log "$BACKUP_DIR/" 2>/dev/null || true
 cp data/admin_actions.log "$BACKUP_DIR/" 2>/dev/null || true
 
-# 3. ZIM config (tiny metadata)
-cp data/zim_cache_config.json "$BACKUP_DIR/" 2>/dev/null || true
-
-# 4. Profile icons (one small image per student)
+# 3. Profile icons (one small image per student)
 if [ -d "profile_icons" ] && [ "$(ls -A profile_icons 2>/dev/null)" ]; then
     tar -czf "$BACKUP_DIR/profile_icons.tar.gz" -C . profile_icons/
     echo "  -> profile_icons.tar.gz ($(du -h "$BACKUP_DIR/profile_icons.tar.gz" | cut -f1))"

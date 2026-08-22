@@ -12,25 +12,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.async_db import db_fetch, db_run
 
-# Logging: records are queued and written by a background thread so the
-# event loop never blocks on disk I/O (per-request logger calls used to
-# flush synchronously, degrading latency under concurrency).
-import queue
-import threading
-from logging.handlers import QueueHandler, QueueListener, RotatingFileHandler
-
+# Logging: rotating file + stdout console. Rotates at 5 MB with 3 backups.
 os.makedirs("data", exist_ok=True)
-log_handler = RotatingFileHandler('data/hub.log', maxBytes=5*1024*1024, backupCount=3)
-console_handler = logging.StreamHandler(sys.stdout)
 _log_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
-log_handler.setFormatter(_log_formatter)
-console_handler.setFormatter(_log_formatter)
+_file_handler = RotatingFileHandler('data/hub.log', maxBytes=5*1024*1024, backupCount=3)
+_console_handler = logging.StreamHandler(sys.stdout)
+_file_handler.setFormatter(_log_formatter)
+_console_handler.setFormatter(_log_formatter)
 logging.getLogger().setLevel(logging.INFO)
-_log_queue = queue.Queue(-1)
-logging.getLogger().addHandler(QueueHandler(_log_queue))
+logging.getLogger().addHandler(_file_handler)
+logging.getLogger().addHandler(_console_handler)
 logging.getLogger("lumina.middleware").setLevel(logging.INFO)
-_log_listener = QueueListener(_log_queue, log_handler, console_handler, respect_handler_level=True)
-_log_listener.start()
 
 _startup_time = __import__("time").time()
 
@@ -64,7 +56,7 @@ def _restore_hotspot() -> None:
 async def lifespan(application: FastAPI):
     """Startup/shutdown lifecycle for background services.
 
-    On startup: run DB init, ZIM auto-cleaner, and session pruning.
+    On startup: run DB init and start background maintenance tasks.
     On shutdown: cancel background tasks.
     """
     # --- STARTUP ---
@@ -74,15 +66,8 @@ async def lifespan(application: FastAPI):
 
     await asyncio.to_thread(init_db)
 
-    from app.database import ensure_media_columns
-    await ensure_media_columns()
-
     from app.routers.system_stats import detect_wifi_caps
     await detect_wifi_caps()
-
-    from app.zim_auto_cleaner import start_zim_auto_cleaner
-
-    start_zim_auto_cleaner(interval_seconds=3600)
 
     # Auto-reindex ZIM archives missing from zim_articles (e.g. manual SQL re-link)
     # Runs as a background task with a startup delay so the server is ready first.
@@ -160,26 +145,12 @@ async def lifespan(application: FastAPI):
     yield  # application runs here
 
     # --- SHUTDOWN ---
-    reindex_task.cancel()
-    try:
-        await reindex_task
-    except asyncio.CancelledError:
-        pass
-    log_prune_task.cancel()
-    try:
-        await log_prune_task
-    except asyncio.CancelledError:
-        pass
-    prune_task.cancel()
-    try:
-        await prune_task
-    except asyncio.CancelledError:
-        pass
-    recycle_task.cancel()
-    try:
-        await recycle_task
-    except asyncio.CancelledError:
-        pass
+    for task in (reindex_task, prune_task, log_prune_task, recycle_task):
+        task.cancel()
+    await asyncio.gather(
+        reindex_task, prune_task, log_prune_task, recycle_task,
+        return_exceptions=True,
+    )
 
 
 app = FastAPI(
@@ -229,10 +200,6 @@ async def add_security_headers(request, call_next):
     Adds X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, and
     Cache-Control headers to harden client-side security.
     """
-    from app.metrics import record_request
-    client_ip = request.client.host if request.client else "unknown"
-    record_request(client_ip)
-
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"

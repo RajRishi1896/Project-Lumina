@@ -53,12 +53,7 @@ if [ -f "$BACKUP_DIR/profile_icons.tar.gz" ]; then
     echo "  -> profile_icons/ restored"
 fi
 
-# 3. Restore ZIM config
-if [ -f "$BACKUP_DIR/zim_cache_config.json" ]; then
-    cp "$BACKUP_DIR/zim_cache_config.json" data/
-fi
-
-# 4. Fix permissions
+# 3. Fix permissions
 chmod -R 755 profile_icons/ 2>/dev/null || true
 
 echo "[INFO] Starting Lumina Hub service..."

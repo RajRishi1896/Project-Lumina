@@ -3,10 +3,9 @@ import os
 import json
 import sqlite3
 import asyncio
+from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
-from fastapi.responses import FileResponse
-from app.database import UPLOAD_DIR
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one
 from app.dependencies import verify_student
@@ -244,75 +243,11 @@ async def enroll_course(course_id: str, student_id: str = Depends(verify_student
         # Concurrent enroll: the (student_id, course_id) PK was inserted between
         # the pre-check and this write; report as already enrolled, not 500.
         raise HTTPException(status_code=409, detail="Already enrolled in this course.")  # i18n: user-facing error message
-    from app.metrics import incr
-    incr("enrollment")
     await db_exec("UPDATE courses SET enrollment_count = enrollment_count + 1 WHERE id = ?", (course_id,))
     await audit(action=Action.ENROLL_COURSE, username=student_id, resource_type="course",
                 resource_id=course_id, resource_name=course['title'])
 
     return EnrollResponse(status="ok", course_id=course_id, message="Successfully enrolled.")  # i18n: user-facing success message
-
-
-@router.post("/api/courses/{course_id}/unenroll", response_model=EnrollResponse,
-             summary="Unenroll from a course",
-             description="Removes the student's enrollment from a course and decrements the enrollment count.",
-             tags=["Courses"],
-             responses={404: {"description": "Not enrolled"}})
-async def unenroll_course(course_id: str, student_id: str = Depends(verify_student)):
-    """Unenroll the current student from a course.
-
-    Args:
-        course_id: UUID of the course.
-
-    Returns:
-        EnrollResponse with status and message.
-    Raises:
-        HTTPException 404: If the student is not enrolled.
-    """
-    existing = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
-    if not existing:
-        raise HTTPException(status_code=404, detail="Not enrolled in this course.")  # i18n: user-facing error message
-
-    await db_exec("DELETE FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
-    await db_exec("UPDATE courses SET enrollment_count = MAX(0, enrollment_count - 1) WHERE id = ?", (course_id,))
-
-    await audit(action=Action.UNENROLL_COURSE, username=student_id, resource_type="course",
-                resource_id=course_id)
-
-    return EnrollResponse(status="ok", course_id=course_id, message="Successfully unenrolled.")  # i18n: user-facing success message
-
-
-@router.get("/api/courses/{course_id}/progress", response_model=dict,
-            summary="Get course progress",
-            description="Returns the current student's progress for a course, or 404 if not enrolled.",
-            tags=["Courses"],
-            responses={401: {"description": "Unauthorized"}, 404: {"description": "Not enrolled"}})
-async def get_progress(course_id: str, student_id: str = Depends(verify_student)):
-    """Get the student's progress in a course.
-
-    Args:
-        course_id: UUID of the course.
-
-    Returns:
-        Progress dict with current_position, completed_count, total_resources, completed, last_synced, enrolled_at.
-    Raises:
-        HTTPException 404: If the student is not enrolled.
-    """
-    row = await db_fetch_one(
-        "SELECT current_position, completed_count, total_resources, completed, last_synced, enrolled_at FROM course_progress WHERE student_id = ? AND course_id = ?",
-        (student_id, course_id)
-    )
-    if not row:
-        raise HTTPException(status_code=404, detail="Not enrolled in this course.")  # i18n: user-facing error message
-
-    return {
-        "current_position": row["current_position"],
-        "completed_count": row["completed_count"],
-        "total_resources": row["total_resources"],
-        "completed": row["completed"],
-        "last_synced": row["last_synced"],
-        "enrolled_at": row["enrolled_at"],
-    }
 
 
 @router.put("/api/courses/{course_id}/progress", response_model=dict,
@@ -336,8 +271,10 @@ async def sync_progress(course_id: str, data: ProgressSync, student_id: str = De
     if not course:
         raise HTTPException(status_code=404, detail="Course not found or not published.")  # i18n: user-facing error message
 
-    # Progress only ever updates an existing enrollment; never auto-enrolls
-    enrolled = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
+    # Progress only ever updates an existing enrollment; never auto-enrolls.
+    # Grab total_resources/enrolled_at here so the response can be built from
+    # the payload without re-SELECTing the row we just updated.
+    enrolled = await db_fetch_one("SELECT total_resources, enrolled_at FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
     if not enrolled:
         raise HTTPException(status_code=404, detail="Not enrolled in this course.")  # i18n: user-facing error message
 
@@ -346,54 +283,13 @@ async def sync_progress(course_id: str, data: ProgressSync, student_id: str = De
         (data.current_position, data.completed_count, data.completed, student_id, course_id)
     )
 
-    row = await db_fetch_one(
-        "SELECT current_position, completed_count, total_resources, completed, last_synced, enrolled_at FROM course_progress WHERE student_id = ? AND course_id = ?",
-        (student_id, course_id)
-    )
-
     return {
-        "current_position": row["current_position"],
-        "completed_count": row["completed_count"],
-        "total_resources": row["total_resources"],
-        "completed": row["completed"],
-        "last_synced": row["last_synced"],
-        "enrolled_at": row["enrolled_at"],
-    }
-
-
-@router.get("/api/courses/{course_id}/resource/{resource_id}", response_model=dict,
-            summary="Get resource download URL",
-            description="Returns the download URL and metadata for a course resource. Requires enrollment.",
-            tags=["Courses"],
-            responses={401: {"description": "Unauthorized"}, 403: {"description": "Not enrolled"}, 404: {"description": "Resource not found"}})
-async def get_resource_url(course_id: str, resource_id: str, student_id: str = Depends(verify_student)):
-    """Get the download URL for a course resource.
-
-    Args:
-        course_id: UUID of the course.
-        resource_id: UUID of the course resource.
-
-    Returns:
-        Dict with url, filename, and file_size.
-    Raises:
-        HTTPException 403: If the student is not enrolled.
-        HTTPException 404: If the resource does not exist.
-    """
-    enrolled = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
-    if not enrolled:
-        raise HTTPException(status_code=403, detail="Enrollment required to access course resources.")  # i18n: user-facing error message
-
-    row = await db_fetch_one(
-        "SELECT filename, original_name, file_size FROM course_resources WHERE id = ? AND course_id = ?",
-        (resource_id, course_id)
-    )
-    if not row:
-        raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
-
-    return {
-        "url": f"/files/courses/{course_id}/resources/{row['filename']}",
-        "filename": row["original_name"] or row["filename"],
-        "file_size": row["file_size"] or 0,
+        "current_position": data.current_position,
+        "completed_count": data.completed_count,
+        "total_resources": enrolled["total_resources"] or 0,
+        "completed": data.completed,
+        "last_synced": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        "enrolled_at": enrolled["enrolled_at"],
     }
 
 
@@ -503,69 +399,9 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
     )
 
     row = await db_fetch_one("SELECT * FROM quiz_attempts WHERE id = ?", (data.attempt_id,))
-    from app.metrics import incr
-    incr("quiz_attempt")
     response = dict(row)
     response["results"] = results
     return response
-
-
-@router.get("/api/courses/{course_id}/quiz/{resource_id}/attempts", response_model=list[QuizAttemptResponse],
-            summary="Get quiz attempt history",
-            description="Returns all quiz attempts for the current student, course, and resource, ordered by attempt number descending.",
-            tags=["Courses"],
-            responses={401: {"description": "Unauthorized"}})
-async def get_quiz_attempts(course_id: str, resource_id: str, student_id: str = Depends(verify_student)):
-    """Get quiz attempt history for the student.
-
-    Args:
-        course_id: UUID of the course.
-        resource_id: UUID of the course resource.
-
-    Returns:
-        List of quiz attempt records ordered by attempt_number DESC.
-    """
-    rows = await db_fetch(
-        """SELECT id, student_id, course_id, resource_id, attempt_number, score, passed,
-                  answers_json, started_at, submitted_at, time_taken_seconds, quiz_version, threshold_at_submission
-           FROM quiz_attempts
-           WHERE student_id = ? AND course_id = ? AND resource_id = ?
-           ORDER BY attempt_number DESC""",
-        (student_id, course_id, resource_id)
-    )
-    return [dict(r) for r in rows]
-
-
-@router.get("/api/courses/{course_id}/asset/{path:path}",
-            summary="Serve course asset file",
-            description="Serves static assets (images, PDFs, etc.) from the course's assets directory. Does not require enrollment, only that the course is published.",
-            tags=["Courses"],
-            responses={401: {"description": "Unauthorized"}, 404: {"description": "Course or asset not found"}})
-async def serve_asset(course_id: str, path: str, student_id: str = Depends(verify_student)):
-    """Serve a course asset file from the assets subdirectory.
-
-    Args:
-        course_id: UUID of the course.
-        path: Relative asset path.
-
-    Returns:
-        FileResponse with the asset file.
-    Raises:
-        HTTPException 404: If the course is not published or the asset does not exist.
-    """
-    course = await db_fetch_one("SELECT id FROM courses WHERE id = ? AND published = 1", (course_id,))
-    if not course:
-        raise HTTPException(status_code=404, detail="Course not found or not published.")  # i18n: user-facing error message
-
-    asset_path = os.path.normpath(os.path.join(COURSES_DIR, course_id, "assets", path))
-    expected_prefix = os.path.normpath(os.path.join(COURSES_DIR, course_id, "assets"))
-    if not asset_path.startswith(expected_prefix):
-        raise HTTPException(status_code=404, detail="Invalid asset path.")  # i18n: user-facing error message
-
-    if not await asyncio.to_thread(os.path.isfile, asset_path):
-        raise HTTPException(status_code=404, detail="Asset not found.")  # i18n: user-facing error message
-
-    return FileResponse(asset_path)
 
 
 @router.get("/student/enrolled-courses", response_model=EnrolledCoursesResponse,
