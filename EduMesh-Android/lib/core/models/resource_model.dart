@@ -80,18 +80,4 @@ class ResourceModel {
       durationSeconds: (json['duration_seconds'] as num?)?.toInt() ?? 0,
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'subject': subject,
-    'grade': grade,
-    'type': type.name,
-    'pdfUrl': pdfUrl,
-    'mtime': mtime,
-    'topic_name': topicName,
-    'file_size': fileSize,
-    'page_count': pageCount,
-    'duration_seconds': durationSeconds,
-  };
 }

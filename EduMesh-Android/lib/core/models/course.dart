@@ -38,20 +38,6 @@ QuizQuestionType parseQuizQuestionType(String s) {
   }
 }
 
-/// Returns the wire string representation of a [QuizQuestionType].
-String quizQuestionTypeToShortString(QuizQuestionType type) {
-  switch (type) {
-    case QuizQuestionType.mcq:
-      return 'mcq';
-    case QuizQuestionType.trueFalse:
-      return 'true_false';
-    case QuizQuestionType.fillBlanks:
-      return 'fill_blanks';
-    case QuizQuestionType.multiSelect:
-      return 'multi_select';
-  }
-}
-
 /// A single quiz question with its options and correct answer(s).
 class QuizQuestion {
   final String id;
@@ -143,9 +129,6 @@ class Quiz {
   /// The minimum score fraction (0.0-1.0) required to pass.
   final double passThreshold;
 
-  /// The maximum number of attempts allowed.
-  final int maxAttempts;
-
   /// Shuffle mode: 'none', 'questions', 'options', or 'both'.
   final String shuffleMode;
 
@@ -159,7 +142,6 @@ class Quiz {
     this.description,
     required this.timeLimitMinutes,
     required this.passThreshold,
-    required this.maxAttempts,
     required this.shuffleMode,
     required this.questions,
     required this.quizVersion,
@@ -176,7 +158,6 @@ class Quiz {
         final raw = (data['pass_threshold'] as num?)?.toDouble() ?? 0.0;
         return raw > 1.0 ? raw / 100.0 : raw;
       })()),
-      maxAttempts: (data['max_attempts'] as num?)?.toInt() ?? 0,
       shuffleMode: data['shuffle_mode'] as String? ??
           ((data['shuffle_questions'] == true || data['shuffle'] == true) ? 'both' : 'none'),
       questions: (data['questions'] as List<dynamic>?)
@@ -292,9 +273,6 @@ class Course {
   /// The username of the teacher who created this course.
   final String? teacherUsername;
 
-  /// The number of enrolled students.
-  final int enrollmentCount;
-
   /// ISO 8601 creation timestamp.
   final String? createdAt;
 
@@ -303,9 +281,6 @@ class Course {
 
   /// The resources within this course (may be null if not loaded).
   final List<CourseResource>? resources;
-
-  /// IDs of similar courses for recommendations.
-  final List<String>? similarCourseIds;
 
   const Course({
     required this.id,
@@ -317,11 +292,9 @@ class Course {
     this.coverImage,
     required this.published,
     this.teacherUsername,
-    this.enrollmentCount = 0,
     this.createdAt,
     this.updatedAt,
     this.resources,
-    this.similarCourseIds,
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
@@ -335,14 +308,10 @@ class Course {
       coverImage: json['cover_image'] as String?,
       published: num.tryParse(json['published']?.toString() ?? '')?.toInt() ?? 0,
       teacherUsername: json['teacher_username'] as String?,
-      enrollmentCount: num.tryParse(json['enrollment_count']?.toString() ?? '')?.toInt() ?? 0,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
       resources: (json['resources'] as List<dynamic>?)
           ?.map((e) => CourseResource.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      similarCourseIds: (json['similar_course_ids'] as List<dynamic>?)
-          ?.map((e) => e.toString())
           .toList(),
     );
   }

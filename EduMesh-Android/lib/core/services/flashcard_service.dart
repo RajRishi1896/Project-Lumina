@@ -67,21 +67,6 @@ class FlashcardService {
     ];
   }
 
-  /// Adds the optional `subject` column to the decks table if it is missing.
-  ///
-  /// ponytail: lives here because db_helper.dart's onCreate schema does not
-  /// include `subject` yet; move the column into that CREATE TABLE and drop
-  /// this helper when db_helper.dart is next editable.
-  Future<void> _ensureSubjectColumn(Database db) async {
-    try {
-      await db.execute(
-        "ALTER TABLE flashcard_decks_local ADD COLUMN subject TEXT NOT NULL DEFAULT ''",
-      );
-    } catch (_) {
-      // Column already exists: nothing to do.
-    }
-  }
-
   FlashcardDeck _assembleDeck(
       Map<String, Object?> row, List<FlashcardCard> cards, Map<String, Object?>? submission) {
     return FlashcardDeck(
@@ -143,7 +128,6 @@ class FlashcardService {
 
   Future<String> createDeck(String title, String subject, List<({String front, String back})> cards) async {
     final db = await DBHelper().database;
-    await _ensureSubjectColumn(db);
     final now = DateTime.now().millisecondsSinceEpoch;
     final deckId = _newId();
     await db.transaction((txn) async {
@@ -164,7 +148,6 @@ class FlashcardService {
   /// if ids were kept: we always re-issue ids, so reviews are reset).
   Future<void> updateDeck(String deckId, String title, String subject, List<({String front, String back})> cards) async {
     final db = await DBHelper().database;
-    await _ensureSubjectColumn(db);
     final now = DateTime.now().millisecondsSinceEpoch;
     await db.transaction((txn) async {
       await txn.update('flashcard_decks_local', {'title': title, 'subject': subject, 'updated_at': now},
