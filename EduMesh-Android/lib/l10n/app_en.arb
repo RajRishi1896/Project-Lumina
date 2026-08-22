@@ -52,38 +52,6 @@
   "@moreLanguages": {
     "description": "Label of the welcome page language button that opens the full language list"
   },
-  "languageEnglish": "English",
-  "@languageEnglish": {
-    "description": "Language button label for English"
-  },
-  "languageHindi": "Hindi",
-  "@languageHindi": {
-    "description": "Language button label for Hindi"
-  },
-  "languageKannada": "Kannada",
-  "@languageKannada": {
-    "description": "Language button label for Kannada"
-  },
-  "languageFrench": "French",
-  "@languageFrench": {
-    "description": "Language button label for French"
-  },
-  "languageTamil": "Tamil",
-  "@languageTamil": {
-    "description": "Language option label for Tamil on the welcome page language picker"
-  },
-  "languageTelugu": "Telugu",
-  "@languageTelugu": {
-    "description": "Language option label for Telugu on the welcome page language picker"
-  },
-  "languageKiswahili": "Kiswahili",
-  "@languageKiswahili": {
-    "description": "Language button label for Swahili"
-  },
-  "languageMore": "More...",
-  "@languageMore": {
-    "description": "Language button label indicating additional language options exist"
-  },
   "settingsLanguagePickerTitle": "Select Language",
   "@settingsLanguagePickerTitle": {
     "description": "Title of the language picker bottom sheet in settings"
@@ -372,25 +340,9 @@
   "@labelDisplayName": {
     "description": "Label for the display name text field on the profile setup page"
   },
-  "labelOther": "Other",
-  "@labelOther": {
-    "description": "Section header for resources without an assigned topic"
-  },
   "buttonContinue": "Continue",
   "@buttonContinue": {
     "description": "Submit button on the profile setup page to save and proceed to the main app"
-  },
-  "sectionRecentlyViewed": "Recently Viewed",
-  "@sectionRecentlyViewed": {
-    "description": "Section header for recently viewed resources list"
-  },
-  "sectionSubjectCategories": "Subject Categories",
-  "@sectionSubjectCategories": {
-    "description": "Section header for subject category grid"
-  },
-  "emptyNoSubjects": "No subjects available",
-  "@emptyNoSubjects": {
-    "description": "Empty state text when no subject categories are loaded"
   },
   "sectionLocalStorage": "Local Storage",
   "@sectionLocalStorage": {
@@ -453,10 +405,6 @@
   "filterResourceTypeHeader": "Resource Type",
   "@filterResourceTypeHeader": {
     "description": "Section header for resource type filter chips"
-  },
-  "filterShowLabel": "Show:",
-  "@filterShowLabel": {
-    "description": "Label before grade filter choice chips"
   },
   "filterMyGrade": "My Grade",
   "@filterMyGrade": {
@@ -664,34 +612,6 @@
       }
     }
   },
-  "resourceTypeTextbooks": "Textbooks",
-  "@resourceTypeTextbooks": {
-    "description": "Card title for the Textbooks resource category"
-  },
-  "resourceTypeTextbooksSubtitle": "Chapter-wise PDFs and study materials",
-  "@resourceTypeTextbooksSubtitle": {
-    "description": "Card subtitle description for Textbooks category"
-  },
-  "resourceTypeVideos": "Videos",
-  "@resourceTypeVideos": {
-    "description": "Card title for the Videos resource category"
-  },
-  "resourceTypeVideosSubtitle": "Watch lessons and concept explanations",
-  "@resourceTypeVideosSubtitle": {
-    "description": "Card subtitle description for Videos category"
-  },
-  "resourceTypePyqs": "PYQs",
-  "@resourceTypePyqs": {
-    "description": "Card title for the Previous Year Questions resource category"
-  },
-  "resourceTypePyqsSubtitle": "Previous year papers and practice sets",
-  "@resourceTypePyqsSubtitle": {
-    "description": "Card subtitle description for PYQs category"
-  },
-  "resourceCardOpenButton": "Open",
-  "@resourceCardOpenButton": {
-    "description": "Button label on each resource category card to open its resources"
-  },
   "savedResourcesTitle": "Saved Resources",
   "@savedResourcesTitle": {
     "description": "AppBar title at top of saved resources page"
@@ -781,16 +701,6 @@
   "@editProfileLabelStudentId": {
     "description": "Label above the read-only student-ID field in the edit profile sheet"
   },
-  "editProfileErrorSnackbar": "Failed to update profile: {error}",
-  "@editProfileErrorSnackbar": {
-    "description": "SnackBar shown when the profile update API call fails",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "example": "Connection refused"
-      }
-    }
-  },
   "editProfileSaveButton": "Save Changes",
   "@editProfileSaveButton": {
     "description": "Elevated button label to submit profile edits"
@@ -802,10 +712,6 @@
   "statCardThisWeek": "This Week",
   "@statCardThisWeek": {
     "description": "Stat card label for this week's study time"
-  },
-  "statCardSaved": "Saved",
-  "@statCardSaved": {
-    "description": "Stat card label for the count of saved/bookmarked resources"
   },
   "statCardStreak": "Streak",
   "@statCardStreak": {
@@ -826,20 +732,6 @@
   "emptyStateRecentActivity": "No recent activity yet.\nStart browsing resources to see your activity here.",
   "@emptyStateRecentActivity": {
     "description": "Empty-state message in the recent-activity section when no history exists"
-  },
-  "toggleShowLess": "Show Less",
-  "@toggleShowLess": {
-    "description": "Toggle label to collapse the activity list back to 5 items"
-  },
-  "toggleShowAll": "Show All ({count})",
-  "@toggleShowAll": {
-    "description": "Toggle label to expand the activity list showing the total count",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "12"
-      }
-    }
   },
   "suffixMinutes": "m",
   "@suffixMinutes": {
@@ -946,10 +838,6 @@
   "settingsLanguageTitle": "Language",
   "@settingsLanguageTitle": {
     "description": "ListTile title for the language picker in settings"
-  },
-  "settingsLanguageSubtitle": "Change app display language",
-  "@settingsLanguageSubtitle": {
-    "description": "ListTile subtitle for the language picker in settings"
   },
   "darkModeLabel": "Dark Mode",
   "@darkModeLabel": {
@@ -1155,10 +1043,6 @@
       }
     }
   },
-  "videoMiniPlayerTooltip": "Mini player",
-  "@videoMiniPlayerTooltip": {
-    "description": "Tooltip on the picture-in-picture icon button in the app bar"
-  },
   "kiwixDefaultTitle": "KNOWLEDGE BASE",
   "@kiwixDefaultTitle": {
     "description": "Default app bar title when no title is provided for the Kiwix WebView"
@@ -1166,10 +1050,6 @@
   "thumbnailWikiLabel": "WIKI",
   "@thumbnailWikiLabel": {
     "description": "Fallback label shown on thumbnail for kiwix-type resources when no image is available"
-  },
-  "zimAppBarTitle": "Wikipedia",
-  "@zimAppBarTitle": {
-    "description": "App bar title for the ZIM/Wikipedia browser page"
   },
   "zimSearchHint": "Search Wikipedia articles...",
   "@zimSearchHint": {
@@ -1187,26 +1067,6 @@
   "@zimUntitledArticleFallback": {
     "description": "Fallback display title when an article has no title in the API response"
   },
-  "zimFailedToLoadArticles": "Failed to load articles: {error}",
-  "@zimFailedToLoadArticles": {
-    "description": "Error message when the initial article list fails to load from the server",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "example": "Connection refused"
-      }
-    }
-  },
-  "zimSearchFailed": "Search failed: {error}",
-  "@zimSearchFailed": {
-    "description": "Error message when a search request fails",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "example": "Timeout"
-      }
-    }
-  },
   "zimFailedToLoadArticle": "Failed to load article: {error}",
   "@zimFailedToLoadArticle": {
     "description": "SnackBar error when opening an individual article fails",
@@ -1216,22 +1076,6 @@
         "example": "404"
       }
     }
-  },
-  "dialogSetNameTitle": "Set Your Name",
-  "@dialogSetNameTitle": {
-    "description": "Title of the dialog prompting a student to set their display name after login"
-  },
-  "dialogSetNameBody": "Please enter your name to personalize your experience.",
-  "@dialogSetNameBody": {
-    "description": "Body text in the name prompt dialog explaining why a name is requested"
-  },
-  "buttonSave": "Save",
-  "@buttonSave": {
-    "description": "Submit button to save a value, e.g. in the name prompt dialog"
-  },
-  "buttonSkip": "Skip",
-  "@buttonSkip": {
-    "description": "Button to skip a non-required action, e.g. setting a display name"
   },
   "zimArticleNotFound": "Article not found",
   "@zimArticleNotFound": {
@@ -1244,10 +1088,6 @@
   "sectionSubjectsEmpty": "No subjects available",
   "@sectionSubjectsEmpty": {
     "description": "Empty state text when no subject categories are loaded"
-  },
-  "resourcePageResources": "Resources",
-  "@resourcePageResources": {
-    "description": "Section label above the resource type list on the resource page"
   },
   "showPassword": "Show password",
   "@showPassword": {
@@ -1308,60 +1148,6 @@
   "connectionOfflineBanner": "Offline: some features may be unavailable",
   "@connectionOfflineBanner": {
     "description": "Banner text shown when the device is offline"
-  },
-  "notificationDownloadFailedTitle": "Download Failed",
-  "@notificationDownloadFailedTitle": {
-    "description": "Title of the notification shown when a download fails"
-  },
-  "notificationDownloadFailedBody": "{title} could not be downloaded. Check your connection and try again.",
-  "@notificationDownloadFailedBody": {
-    "description": "Notification body shown when download fails",
-    "placeholders": {
-      "title": {
-        "type": "String",
-        "example": "Chapter 1"
-      }
-    }
-  },
-  "studentNameUnknown": "Unknown",
-  "@studentNameUnknown": {
-    "description": "Fallback text when a student's name is not available"
-  },
-  "activityPastTense": "{verb}ed",
-  "@activityPastTense": {
-    "description": "Fallback past-tense verb construction for unknown activity types",
-    "placeholders": {
-      "verb": {
-        "type": "String",
-        "example": "View"
-      }
-    }
-  },
-  "storageAppSize": "{size} MB",
-  "@storageAppSize": {
-    "description": "App cache size label",
-    "placeholders": {
-      "size": {
-        "type": "String",
-        "example": "42.5"
-      }
-    }
-  },
-  "hubStrengthCalculating": "Calculating...",
-  "@hubStrengthCalculating": {
-    "description": "Hub strength status label while connection quality is being recalculated"
-  },
-  "resourceFallbackTitle": "Untitled",
-  "@resourceFallbackTitle": {
-    "description": "Fallback title for a resource when no title is available"
-  },
-  "subjectFallbackGeneral": "General",
-  "@subjectFallbackGeneral": {
-    "description": "Fallback subject name when no subject is provided by the server"
-  },
-  "subjectNameUnknown": "Unknown",
-  "@subjectNameUnknown": {
-    "description": "Fallback text for an unknown subject name in subject breakdown"
   },
   "browseMyCourses": "My Courses",
   "@browseMyCourses": {
@@ -1447,10 +1233,6 @@
   "@coursePlayerTextbook": {
     "description": "Label for textbook-type course resources"
   },
-  "coursePlayerNoResources": "No resources in this course",
-  "@coursePlayerNoResources": {
-    "description": "Empty state when a course has no resources"
-  },
   "coursePlayerDownloadPrompt": "Download all resources to study offline",
   "@coursePlayerDownloadPrompt": {
     "description": "Message above the download button prompting offline download"
@@ -1489,22 +1271,6 @@
       }
     }
   },
-  "quizTypeMcq": "Multiple Choice",
-  "@quizTypeMcq": {
-    "description": "Label for multiple-choice question type"
-  },
-  "quizTypeTrueFalse": "True / False",
-  "@quizTypeTrueFalse": {
-    "description": "Label for true/false question type"
-  },
-  "quizTypeFillBlanks": "Fill in the Blanks",
-  "@quizTypeFillBlanks": {
-    "description": "Label for fill-in-the-blanks question type"
-  },
-  "quizTypeMultiSelect": "Multi-Select",
-  "@quizTypeMultiSelect": {
-    "description": "Label for multi-select question type"
-  },
   "quizTrue": "True",
   "@quizTrue": {
     "description": "True option label in true/false questions"
@@ -1537,14 +1303,6 @@
   "@quizFailed": {
     "description": "Pass/fail badge label when the student failed the quiz"
   },
-  "quizPassedMessage": "Great job! You passed the quiz.",
-  "@quizPassedMessage": {
-    "description": "Encouraging message shown after passing a quiz"
-  },
-  "quizFailedMessage": "You did not pass. Review the questions below.",
-  "@quizFailedMessage": {
-    "description": "Constructive message shown after failing a quiz"
-  },
   "quizScoreFraction": "{correct}/{total}",
   "@quizScoreFraction": {
     "description": "Score display showing correct answers out of total questions",
@@ -1556,16 +1314,6 @@
       "total": {
         "type": "int",
         "example": "10"
-      }
-    }
-  },
-  "quizQuestionLabel": "Question {index}",
-  "@quizQuestionLabel": {
-    "description": "Heading label for each question in the results review",
-    "placeholders": {
-      "index": {
-        "type": "int",
-        "example": "1"
       }
     }
   },
@@ -1783,10 +1531,6 @@
       }
     }
   },
-  "flashcardStudy": "Study",
-  "@flashcardStudy": {
-    "description": "Button label: start studying a deck."
-  },
   "flashcardStudyingDeck": "Studying {title}",
   "@flashcardStudyingDeck": {
     "description": "Study screen title. {title} is the deck name.",
@@ -1875,10 +1619,6 @@
   "@badgeAchievements": {
     "description": "Section title: badges and streak statistics."
   },
-  "notifDownloadsActive": "Downloads in progress",
-  "@notifDownloadsActive": {
-    "description": "Notification channel/title: downloads currently running."
-  },
   "notifDownloading": "Downloading {title}",
   "@notifDownloading": {
     "description": "Progress notification body. {title} is the file name.",
@@ -1888,10 +1628,6 @@
         "example": "Chapter 1"
       }
     }
-  },
-  "notifDownloadComplete": "Download complete",
-  "@notifDownloadComplete": {
-    "description": "Notification title: a download finished."
   },
   "activityVerbStudied": "studied",
   "@activityVerbStudied": {
@@ -1959,86 +1695,86 @@
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"
   },
-    "flashcardTitleRequired": "Please enter a deck title",
-    "@flashcardTitleRequired": {
-      "description": "Inline validation error shown under the deck title field on the deck editor when the title is empty"
-    },
-    "flashcardSubjectOptional": "Subject (optional)",
-    "@flashcardSubjectOptional": {
-      "description": "Persistent label for the optional subject input on the deck editor; keep the '(optional)' marker in translations"
-    },
-    "flashcardCreateDeck": "Create deck",
-    "@flashcardCreateDeck": {
-      "description": "Primary bottom action button on the new-deck screen; verb-first label"
-    },
-    "flashcardAgainDesc": "Couldn't recall. Shows it again soon.",
-    "@flashcardAgainDesc": {
-      "description": "Small explanation under the Again rating tile during flashcard review; grade-4 reading level"
-    },
-    "flashcardHardDesc": "Recalled with effort. Comes back sooner.",
-    "@flashcardHardDesc": {
-      "description": "Small explanation under the Hard rating tile during flashcard review; grade-4 reading level"
-    },
-    "flashcardGoodDesc": "Recalled. Normal next interval.",
-    "@flashcardGoodDesc": {
-      "description": "Small explanation under the Good rating tile during flashcard review; grade-4 reading level"
-    },
-    "flashcardEasyDesc": "Instant recall. Comes back much later.",
-    "@flashcardEasyDesc": {
-      "description": "Small explanation under the Easy rating tile during flashcard review; grade-4 reading level"
-    },
-    "flashcardNextInDays": "{days, plural, =1{Next in 1 day} other{Next in {days} days}}",
-    "@flashcardNextInDays": {
-      "description": "Scheduling preview under each rating tile showing when the card returns; ICU plural on days",
-      "placeholders": {
-        "days": {
-          "type": "int",
-          "example": "3"
-        }
+  "flashcardTitleRequired": "Please enter a deck title",
+  "@flashcardTitleRequired": {
+    "description": "Inline validation error shown under the deck title field on the deck editor when the title is empty"
+  },
+  "flashcardSubjectOptional": "Subject (optional)",
+  "@flashcardSubjectOptional": {
+    "description": "Persistent label for the optional subject input on the deck editor; keep the '(optional)' marker in translations"
+  },
+  "flashcardCreateDeck": "Create deck",
+  "@flashcardCreateDeck": {
+    "description": "Primary bottom action button on the new-deck screen; verb-first label"
+  },
+  "flashcardAgainDesc": "Couldn't recall. Shows it again soon.",
+  "@flashcardAgainDesc": {
+    "description": "Small explanation under the Again rating tile during flashcard review; grade-4 reading level"
+  },
+  "flashcardHardDesc": "Recalled with effort. Comes back sooner.",
+  "@flashcardHardDesc": {
+    "description": "Small explanation under the Hard rating tile during flashcard review; grade-4 reading level"
+  },
+  "flashcardGoodDesc": "Recalled. Normal next interval.",
+  "@flashcardGoodDesc": {
+    "description": "Small explanation under the Good rating tile during flashcard review; grade-4 reading level"
+  },
+  "flashcardEasyDesc": "Instant recall. Comes back much later.",
+  "@flashcardEasyDesc": {
+    "description": "Small explanation under the Easy rating tile during flashcard review; grade-4 reading level"
+  },
+  "flashcardNextInDays": "{days, plural, =1{Next in 1 day} other{Next in {days} days}}",
+  "@flashcardNextInDays": {
+    "description": "Scheduling preview under each rating tile showing when the card returns; ICU plural on days",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
       }
-    },
-    "tourSkip": "Skip",
-    "@tourSkip": {
-      "description": "Button that dismisses the first-login tour without finishing it"
-    },
-    "tourNext": "Next",
-    "@tourNext": {
-      "description": "Button that advances to the next first-login tour slide"
-    },
-    "tourGetStarted": "Get Started",
-    "@tourGetStarted": {
-      "description": "Final button on the last tour slide that enters the app; verb-first label"
-    },
-    "tourTitleWelcome": "Welcome to EduMesh",
-    "@tourTitleWelcome": {
-      "description": "Title of the first-login tour welcome slide; brand name EduMesh stays untranslated"
-    },
-    "tourBodyWelcome": "Learn anytime, even without internet.",
-    "@tourBodyWelcome": {
-      "description": "Body of the first-login tour welcome slide; short plain sentence, allow 40-50% expansion"
-    },
-    "tourTitleOffline": "Download your lessons",
-    "@tourTitleOffline": {
-      "description": "Title of the first-login tour offline-download slide"
-    },
-    "tourBodyOffline": "Download lessons over the hub WiFi. Watch them offline later.",
-    "@tourBodyOffline": {
-      "description": "Body of the first-login tour offline-download slide; WiFi stays as-is, allow 40-50% expansion"
-    },
-    "tourTitleProgress": "Your progress is saved",
-    "@tourTitleProgress": {
-      "description": "Title of the first-login tour progress slide"
-    },
-    "tourBodyProgress": "Everything you open is saved to your profile. Switch accounts anytime from your avatar.",
-    "@tourBodyProgress": {
-      "description": "Body of the first-login tour progress slide; two short sentences, allow 40-50% expansion"
-    },
-    "tourTitleLanguage": "Choose your language",
-    "@tourTitleLanguage": {
-      "description": "Title of the first-login tour language slide"
-    },
-    "tourBodyLanguage": "Pick your language anytime in Settings.",
-    "@tourBodyLanguage": {
-      "description": "Body of the first-login tour language slide; allow 40-50% expansion"
     }
+  },
+  "tourSkip": "Skip",
+  "@tourSkip": {
+    "description": "Button that dismisses the first-login tour without finishing it"
+  },
+  "tourNext": "Next",
+  "@tourNext": {
+    "description": "Button that advances to the next first-login tour slide"
+  },
+  "tourGetStarted": "Get Started",
+  "@tourGetStarted": {
+    "description": "Final button on the last tour slide that enters the app; verb-first label"
+  },
+  "tourTitleWelcome": "Welcome to EduMesh",
+  "@tourTitleWelcome": {
+    "description": "Title of the first-login tour welcome slide; brand name EduMesh stays untranslated"
+  },
+  "tourBodyWelcome": "Learn anytime, even without internet.",
+  "@tourBodyWelcome": {
+    "description": "Body of the first-login tour welcome slide; short plain sentence, allow 40-50% expansion"
+  },
+  "tourTitleOffline": "Download your lessons",
+  "@tourTitleOffline": {
+    "description": "Title of the first-login tour offline-download slide"
+  },
+  "tourBodyOffline": "Download lessons over the hub WiFi. Watch them offline later.",
+  "@tourBodyOffline": {
+    "description": "Body of the first-login tour offline-download slide; WiFi stays as-is, allow 40-50% expansion"
+  },
+  "tourTitleProgress": "Your progress is saved",
+  "@tourTitleProgress": {
+    "description": "Title of the first-login tour progress slide"
+  },
+  "tourBodyProgress": "Everything you open is saved to your profile. Switch accounts anytime from your avatar.",
+  "@tourBodyProgress": {
+    "description": "Body of the first-login tour progress slide; two short sentences, allow 40-50% expansion"
+  },
+  "tourTitleLanguage": "Choose your language",
+  "@tourTitleLanguage": {
+    "description": "Title of the first-login tour language slide"
+  },
+  "tourBodyLanguage": "Pick your language anytime in Settings.",
+  "@tourBodyLanguage": {
+    "description": "Body of the first-login tour language slide; allow 40-50% expansion"
+  }
 }

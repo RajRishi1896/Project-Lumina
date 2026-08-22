@@ -14,14 +14,6 @@
   "illustrationBadgeNoInternet": "ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕದ ಅಗತ್ಯವಿಲ್ಲ!",
   "languageSectionHeader": "ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ",
   "moreLanguages": "ಹೆಚ್ಚು",
-  "languageEnglish": "ಇಂಗ್ಲಿಷ್",
-  "languageHindi": "ಹಿಂದಿ",
-  "languageKannada": "ಕನ್ನಡ",
-  "languageFrench": "ಫ್ರೆಂಚ್",
-  "languageKiswahili": "ಸ್ವಾಹಿಲಿ",
-  "languageTamil": "ತಮಿಳು",
-  "languageTelugu": "ತೆಲುಗು",
-  "languageMore": "ಇನ್ನಷ್ಟು...",
   "settingsLanguagePickerTitle": "ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ",
   "ctaEnterPortal": "ಪೋರ್ಟಲ್ ಪ್ರವೇಶಿಸಿ",
   "hubStrengthChecking": "ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...",
@@ -88,11 +80,7 @@
   "profileSetupTitle": "ಸ್ವಾಗತ!",
   "profileSetupSubtitle": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಹೊಂದಿಸೋಣ",
   "labelDisplayName": "ಪ್ರದರ್ಶನ ಹೆಸರು",
-  "labelOther": "ಇತರೆ",
   "buttonContinue": "ಮುಂದುವರಿಸಿ",
-  "sectionRecentlyViewed": "ಇತ್ತೀಚೆಗೆ ವೀಕ್ಷಿಸಲಾಗಿದೆ",
-  "sectionSubjectCategories": "ವಿಷಯ ವರ್ಗಗಳು",
-  "emptyNoSubjects": "ಯಾವುದೇ ವಿಷಯಗಳು ಲಭ್ಯವಿಲ್ಲ",
   "sectionLocalStorage": "ಸ್ಥಳೀಯ ಸಂಗ್ರಹ",
   "pageTitleBrowseResources": "ಸಂಪನ್ಮೂಲಗಳನ್ನು ಬ್ರೌಸ್ ಮಾಡಿ",
   "searchFieldHint": "ಶೀರ್ಷಿಕೆ, ವಿಷಯ ಅಥವಾ ತರಗತಿಯಿಂದ ಹುಡುಕಿ...",
@@ -107,7 +95,6 @@
   "badgeKiwixWiki": "ವಿಕಿ",
   "filterSheetTitle": "ಫಿಲ್ಟರ್",
   "filterResourceTypeHeader": "ಸಂಪನ್ಮೂಲ ಪ್ರಕಾರ",
-  "filterShowLabel": "ತೋರಿಸು:",
   "filterMyGrade": "ನನ್ನ ತರಗತಿ",
   "filterAllGrades": "ಎಲ್ಲಾ ತರಗತಿಗಳು",
   "filterGradeHeader": "ತರಗತಿ",
@@ -165,13 +152,6 @@
   "emptyNoResourcesDetail": "{subject} ನಲ್ಲಿ {grade} ಗೆ ಯಾವುದೇ ಸಂಪನ್ಮೂಲಗಳಿಲ್ಲ.",
   "emptyRefreshButton": "ರಿಫ್ರೆಶ್",
   "resourceSubtitle": "{subject} • {grade}",
-  "resourceTypeTextbooks": "ಪಠ್ಯಪುಸ್ತಕಗಳು",
-  "resourceTypeTextbooksSubtitle": "ಅಧ್ಯಾಯವಾರು PDF ಮತ್ತು ಅಧ್ಯಯನ ಸಾಮಗ್ರಿ",
-  "resourceTypeVideos": "ವೀಡಿಯೊಗಳು",
-  "resourceTypeVideosSubtitle": "ಪಾಠಗಳು ಮತ್ತು ಪರಿಕಲ್ಪನೆ ವಿವರಣೆಗಳನ್ನು ವೀಕ್ಷಿಸಿ",
-  "resourceTypePyqs": "ಹಿಂದಿನ ವರ್ಷದ ಪ್ರಶ್ನೆಗಳು",
-  "resourceTypePyqsSubtitle": "ಹಿಂದಿನ ವರ್ಷದ ಪ್ರಶ್ನೆಪತ್ರಿಕೆಗಳು ಮತ್ತು ಅಭ್ಯಾಸ ಸೆಟ್‌ಗಳು",
-  "resourceCardOpenButton": "ತೆರೆಯಿರಿ",
   "savedResourcesTitle": "ಉಳಿಸಿದ ಸಂಪನ್ಮೂಲಗಳು",
   "tabAll": "ಎಲ್ಲಾ",
   "tabTextbooks": "ಪಠ್ಯಪುಸ್ತಕಗಳು",
@@ -192,18 +172,14 @@
   "editProfileLabelGrade": "ತರಗತಿ",
   "editProfileGradeHint": "ತರಗತಿ ಆಯ್ಕೆಮಾಡಿ",
   "editProfileLabelStudentId": "ವಿದ್ಯಾರ್ಥಿ ಐಡಿ",
-  "editProfileErrorSnackbar": "ಪ್ರೊಫೈಲ್ ಅಪ್‌ಡೇಟ್ ವಿಫಲ: {error}",
   "editProfileSaveButton": "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ",
   "statCardToday": "ಇಂದು",
   "statCardThisWeek": "ಈ ವಾರ",
-  "statCardSaved": "ಉಳಿಸಲಾಗಿದೆ",
   "statCardStreak": "ಸ್ಟ್ರೀಕ್",
   "sectionSubjectBreakdown": "ವಿಷಯದ ಪ್ರಕಾರ ಅಧ್ಯಯನ ಸಮಯ",
   "sectionRecentActivity": "ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ",
   "emptyStateSubjectBreakdown": "ಇನ್ನೂ ಯಾವುದೇ ದತ್ತಾಂಶವಿಲ್ಲ.\nನೀವು ಅಪ್ಲಿಕೇಶನ್ ಬಳಸಿದಂತೆ ನಿಮ್ಮ ವಿಷಯ ಸಮಯ ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತದೆ.",
   "emptyStateRecentActivity": "ಇನ್ನೂ ಯಾವುದೇ ಚಟುವಟಿಕೆಯಿಲ್ಲ.\nಸಂಪನ್ಮೂಲಗಳನ್ನು ಬ್ರೌಸ್ ಮಾಡಲು ಪ್ರಾರಂಭಿಸಿ.",
-  "toggleShowLess": "ಕಡಿಮೆ ತೋರಿಸು",
-  "toggleShowAll": "ಎಲ್ಲವನ್ನು ತೋರಿಸು ({count})",
   "suffixMinutes": "ನಿ",
   "suffixHours": "ಗಂ",
   "suffixDays": " ದಿ",
@@ -223,7 +199,6 @@
   "relativeTimeMonthsAgo": "{months, plural, one{{months} ತಿಂಗಳ ಹಿಂದೆ} other{{months} ತಿಂಗಳುಗಳ ಹಿಂದೆ}}",
   "settingsSheetTitle": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
   "settingsLanguageTitle": "ಭಾಷೆ",
-  "settingsLanguageSubtitle": "ಅಪ್ಲಿಕೇಶನ್ ಪ್ರದರ್ಶನ ಭಾಷೆಯನ್ನು ಬದಲಾಯಿಸಿ",
   "darkModeLabel": "ಡಾರ್ಕ್ ಮೋಡ್",
   "lightModeLabel": "ಲೈಟ್ ಮೋಡ್",
   "switchToLightThemeSubtitle": "ಲೈಟ್ ಥೀಮ್‌ಗೆ ಬದಲಾಯಿಸಿ",
@@ -277,25 +252,16 @@
   "pdfZoomPercent": "{zoomLevel}%",
   "videoLocalFileNotFound": "ಸ್ಥಳೀಯ ಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ",
   "videoFailedToLoad": "ವೀಡಿಯೊ ಲೋಡ್ ವಿಫಲ: {error}",
-  "videoMiniPlayerTooltip": "ಮಿನಿ ಪ್ಲೇಯರ್",
   "kiwixDefaultTitle": "ಜ್ಞಾನಕೋಶ",
   "thumbnailWikiLabel": "ವಿಕಿ",
-  "zimAppBarTitle": "ವಿಕಿಪೀಡಿಯ",
   "zimSearchHint": "ವಿಕಿಪೀಡಿಯ ಲೇಖನಗಳನ್ನು ಹುಡುಕಿ...",
   "zimNoArticlesEmpty": "ಸರ್ವರ್‌ನಲ್ಲಿ ಯಾವುದೇ ಲೇಖನಗಳು ಲಭ್ಯವಿಲ್ಲ",
   "zimNoResultsEmpty": "ಯಾವುದೇ ಫಲಿತಾಂಶಗಳಿಲ್ಲ",
   "zimUntitledArticleFallback": "ಶೀರ್ಷಿಕೆ ಇಲ್ಲ",
-  "zimFailedToLoadArticles": "ಲೇಖನಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲ: {error}",
-  "zimSearchFailed": "ಹುಡುಕಾಟ ವಿಫಲ: {error}",
   "zimFailedToLoadArticle": "ಲೇಖನ ಲೋಡ್ ಮಾಡಲು ವಿಫಲ: {error}",
-  "dialogSetNameTitle": "ನಿಮ್ಮ ಹೆಸರನ್ನು ಹೊಂದಿಸಿ",
-  "dialogSetNameBody": "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಅನುಭವವನ್ನು ವೈಯಕ್ತೀಕರಿಸಲು ಹೆಸರನ್ನು ನಮೂದಿಸಿ.",
-  "buttonSave": "ಉಳಿಸು",
-  "buttonSkip": "ಬಿಟ್ಟುಬಿಡಿ",
   "zimArticleNotFound": "ಲೇಖನ ಕಂಡುಬಂದಿಲ್ಲ",
   "sectionSubjects": "ವಿಷಯಗಳು",
   "sectionSubjectsEmpty": "ಯಾವುದೇ ವಿಷಯಗಳು ಲಭ್ಯವಿಲ್ಲ",
-  "resourcePageResources": "ಸಂಪನ್ಮೂಲಗಳು",
   "showPassword": "ಪಾಸ್‌ವರ್ಡ್ ತೋರಿಸಿ",
   "hidePassword": "ಪಾಸ್‌ವರ್ಡ್ ಮರೆಮಾಡಿ",
   "semanticsSettings": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
@@ -308,15 +274,6 @@
   "tooltipBackToResource": "ಸಂಪನ್ಮೂಲಕ್ಕೆ ಹಿಂತಿರುಗಿ",
   "tooltipDeleteDownload": "{title} ಅಳಿಸಿ",
   "connectionOfflineBanner": "ಆಫ್‌ಲೈನ್: ಕೆಲವು ವೈಶಿಷ್ಟ್ಯಗಳು ಲಭ್ಯವಿಲ್ಲದಿರಬಹುದು",
-  "notificationDownloadFailedTitle": "ಡೌನ್‌ಲೋಡ್ ವಿಫಲವಾಗಿದೆ",
-  "notificationDownloadFailedBody": "{title} ಡೌನ್‌ಲೋಡ್ ಆಗಲಿಲ್ಲ. ನಿಮ್ಮ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
-  "studentNameUnknown": "ತಿಳಿದಿಲ್ಲ",
-  "activityPastTense": "{verb}ಲಾಗಿದೆ",
-  "storageAppSize": "{size} MB",
-  "hubStrengthCalculating": "ಲೆಕ್ಕಾಚಾರ ಮಾಡಲಾಗುತ್ತಿದೆ...",
-  "resourceFallbackTitle": "ಶೀರ್ಷಿಕೆ ಇಲ್ಲ",
-  "subjectFallbackGeneral": "ಸಾಮಾನ್ಯ",
-  "subjectNameUnknown": "ಗೊತ್ತಿಲ್ಲ",
   "browseMyCourses": "ನನ್ನ ಕೋರ್ಸ್‌ಗಳು",
   "browseSimilarCourses": "ಹೋಲುವ ಕೋರ್ಸ್‌ಗಳು",
   "browseAllCourses": "ಎಲ್ಲಾ ಕೋರ್ಸ್‌ಗಳು",
@@ -334,7 +291,6 @@
   "coursePlayerQuiz": "ಕ್ವಿಜ್",
   "coursePlayerPastPaper": "ಹಿಂದಿನ ಪೇಪರ",
   "coursePlayerTextbook": "ಪಠ್ಯಪುಸ್ತಕ",
-  "coursePlayerNoResources": "ಈ ಕೋರ್ಸ್‌ನಲ್ಲಿ ಯಾವುದೇ ಸಂಪನ್ಮೂಲಗಳು ಇಲ್ಲ",
   "coursePlayerDownloadPrompt": "ಎಲ್ಲಾ ಸಂಪನ್ಮೂಲಗಳನ್ನು ಆಫ್‌ಲೈನ್ ಅಧ್ಯಯನಕ್ಕಾಗಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
   "coursePlayerDownloadButton": "ಕೋರ್ಸ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
   "coursePlayerCompleted": "ಪೂರ್ಣಗೊಳಿಸಲಾಗಿದೆ",
@@ -342,10 +298,6 @@
   "quizLoadingError": "ಕ್ವಿಜ್ ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
   "quizNotAvailable": "ಕ್ವಿಜ್ ಲಭ್ಯವಿಲ್ಲ",
   "quizQuestionOf": "ಪ್ರಶ್ನೆ {index} / {total}",
-  "quizTypeMcq": "ಬಹು ಆಯ್ಕೆ",
-  "quizTypeTrueFalse": "ಸರಿ / ತಪ್ಪು",
-  "quizTypeFillBlanks": "ಖಾಲಿ ಜಾಗಗಳನ್ನು ತುಂಬಿಸಿ",
-  "quizTypeMultiSelect": "ಬಹು-ಆಯ್ಕೆ",
   "quizTrue": "ಸರಿ",
   "quizFalse": "ತಪ್ಪು",
   "quizFillBlanksHint": "ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಇಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ...",
@@ -354,10 +306,7 @@
   "quizNext": "ಮುಂದಿನ",
   "quizPassed": "ಉತ್ತೀರ್ಣ!",
   "quizFailed": "ವಿಫಲ",
-  "quizPassedMessage": "ಬಹಳ ಚೆನ್ನಾಗಿದೆ! ನೀವು ಕ್ವಿಜ್ ಪಾಸ್ ಮಾಡಿದ್ದೀರಿ.",
-  "quizFailedMessage": "ನೀವು ಪಾಸ್ ಆಗಿಲ್ಲ. ಕೆಳಗಿನ ಪ್ರಶ್ನೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.",
   "quizScoreFraction": "{correct}/{total}",
-  "quizQuestionLabel": "ಪ್ರಶ್ನೆ {index}",
   "quizExplanation": "ವಿವರಣೆ: {text}",
   "quizBackToCourse": "ಕೋರ್ಸ್‌ಗೆ ಹಿಂತಿರುಗಿ",
   "quizResultsPendingTitle": "ಉತ್ತರಗಳು ಉಳಿಸಲ್ಪಟ್ಟವು",
@@ -404,24 +353,6 @@
   },
   "@moreLanguages": {
     "description": "Label of the welcome page language button that opens the full language list"
-  },
-  "@languageEnglish": {
-    "description": "Language button label for English"
-  },
-  "@languageHindi": {
-    "description": "Language button label for Hindi"
-  },
-  "@languageKannada": {
-    "description": "Language button label for Kannada"
-  },
-  "@languageFrench": {
-    "description": "Language button label for French"
-  },
-  "@languageKiswahili": {
-    "description": "Language button label for Swahili"
-  },
-  "@languageMore": {
-    "description": "Language button label indicating additional language options exist"
   },
   "@settingsLanguagePickerTitle": {
     "description": "Title of the language picker bottom sheet in settings"
@@ -645,20 +576,8 @@
   "@labelDisplayName": {
     "description": "Label for the display name text field on the profile setup page"
   },
-  "@labelOther": {
-    "description": "Section header for resources without an assigned topic"
-  },
   "@buttonContinue": {
     "description": "Submit button on the profile setup page to save and proceed to the main app"
-  },
-  "@sectionRecentlyViewed": {
-    "description": "Section header for recently viewed resources list"
-  },
-  "@sectionSubjectCategories": {
-    "description": "Section header for subject category grid"
-  },
-  "@emptyNoSubjects": {
-    "description": "Empty state text when no subject categories are loaded"
   },
   "@sectionLocalStorage": {
     "description": "Section header for device storage usage display"
@@ -707,9 +626,6 @@
   },
   "@filterResourceTypeHeader": {
     "description": "Section header for resource type filter chips"
-  },
-  "@filterShowLabel": {
-    "description": "Label before grade filter choice chips"
   },
   "@filterMyGrade": {
     "description": "Choice chip to filter resources by the student's own grade"
@@ -860,27 +776,6 @@
       }
     }
   },
-  "@resourceTypeTextbooks": {
-    "description": "Card title for the Textbooks resource category"
-  },
-  "@resourceTypeTextbooksSubtitle": {
-    "description": "Card subtitle description for Textbooks category"
-  },
-  "@resourceTypeVideos": {
-    "description": "Card title for the Videos resource category"
-  },
-  "@resourceTypeVideosSubtitle": {
-    "description": "Card subtitle description for Videos category"
-  },
-  "@resourceTypePyqs": {
-    "description": "Card title for the Previous Year Questions resource category"
-  },
-  "@resourceTypePyqsSubtitle": {
-    "description": "Card subtitle description for PYQs category"
-  },
-  "@resourceCardOpenButton": {
-    "description": "Button label on each resource category card to open its resources"
-  },
   "@savedResourcesTitle": {
     "description": "AppBar title at top of saved resources page"
   },
@@ -950,15 +845,6 @@
   "@editProfileLabelStudentId": {
     "description": "Label above the read-only student-ID field in the edit profile sheet"
   },
-  "@editProfileErrorSnackbar": {
-    "description": "SnackBar shown when the profile update API call fails",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "example": "Connection refused"
-      }
-    }
-  },
   "@editProfileSaveButton": {
     "description": "Elevated button label to submit profile edits"
   },
@@ -967,9 +853,6 @@
   },
   "@statCardThisWeek": {
     "description": "Stat card label for this week's study time"
-  },
-  "@statCardSaved": {
-    "description": "Stat card label for the count of saved/bookmarked resources"
   },
   "@statCardStreak": {
     "description": "Stat card label for consecutive-day streak count"
@@ -985,18 +868,6 @@
   },
   "@emptyStateRecentActivity": {
     "description": "Empty-state message in the recent-activity section when no history exists"
-  },
-  "@toggleShowLess": {
-    "description": "Toggle label to collapse the activity list back to 5 items"
-  },
-  "@toggleShowAll": {
-    "description": "Toggle label to expand the activity list showing the total count",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "12"
-      }
-    }
   },
   "@suffixMinutes": {
     "description": "Minutes suffix appended to numeric values in stat cards"
@@ -1084,9 +955,6 @@
   },
   "@settingsLanguageTitle": {
     "description": "ListTile title for the language picker in settings"
-  },
-  "@settingsLanguageSubtitle": {
-    "description": "ListTile subtitle for the language picker in settings"
   },
   "@darkModeLabel": {
     "description": "Label on the theme toggle tile when dark mode is active"
@@ -1239,17 +1107,11 @@
       }
     }
   },
-  "@videoMiniPlayerTooltip": {
-    "description": "Tooltip on the picture-in-picture icon button in the app bar"
-  },
   "@kiwixDefaultTitle": {
     "description": "Default app bar title when no title is provided for the Kiwix WebView"
   },
   "@thumbnailWikiLabel": {
     "description": "Fallback label shown on thumbnail for kiwix-type resources when no image is available"
-  },
-  "@zimAppBarTitle": {
-    "description": "App bar title for the ZIM/Wikipedia browser page"
   },
   "@zimSearchHint": {
     "description": "Hint text in the search text field of the ZIM browser"
@@ -1263,24 +1125,6 @@
   "@zimUntitledArticleFallback": {
     "description": "Fallback display title when an article has no title in the API response"
   },
-  "@zimFailedToLoadArticles": {
-    "description": "Error message when the initial article list fails to load from the server",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "example": "Connection refused"
-      }
-    }
-  },
-  "@zimSearchFailed": {
-    "description": "Error message when a search request fails",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "example": "Timeout"
-      }
-    }
-  },
   "@zimFailedToLoadArticle": {
     "description": "SnackBar error when opening an individual article fails",
     "placeholders": {
@@ -1290,18 +1134,6 @@
       }
     }
   },
-  "@dialogSetNameTitle": {
-    "description": "Title of the dialog prompting a student to set their display name after login"
-  },
-  "@dialogSetNameBody": {
-    "description": "Body text in the name prompt dialog explaining why a name is requested"
-  },
-  "@buttonSave": {
-    "description": "Submit button to save a value, e.g. in the name prompt dialog"
-  },
-  "@buttonSkip": {
-    "description": "Button to skip a non-required action, e.g. setting a display name"
-  },
   "@zimArticleNotFound": {
     "description": "Snackbar message when a ZIM article fetch returns empty content"
   },
@@ -1310,9 +1142,6 @@
   },
   "@sectionSubjectsEmpty": {
     "description": "Empty state text when no subject categories are loaded"
-  },
-  "@resourcePageResources": {
-    "description": "Section label above the resource type list on the resource page"
   },
   "@showPassword": {
     "description": "Tooltip for the password visibility toggle icon button when the password is hidden"
@@ -1362,51 +1191,6 @@
   "@connectionOfflineBanner": {
     "description": "Banner text shown when the device is offline"
   },
-  "@notificationDownloadFailedTitle": {
-    "description": "Title of the notification shown when a download fails"
-  },
-  "@notificationDownloadFailedBody": {
-    "description": "Notification body shown when download fails",
-    "placeholders": {
-      "title": {
-        "type": "String",
-        "example": "Chapter 1"
-      }
-    }
-  },
-  "@studentNameUnknown": {
-    "description": "Fallback text when a student's name is not available"
-  },
-  "@activityPastTense": {
-    "description": "Fallback past-tense verb construction for unknown activity types",
-    "placeholders": {
-      "verb": {
-        "type": "String",
-        "example": "View"
-      }
-    }
-  },
-  "@storageAppSize": {
-    "description": "App cache size label",
-    "placeholders": {
-      "size": {
-        "type": "String",
-        "example": "42.5"
-      }
-    }
-  },
-  "@hubStrengthCalculating": {
-    "description": "Hub strength status label while connection quality is being recalculated"
-  },
-  "@resourceFallbackTitle": {
-    "description": "Fallback title for a resource when no title is available"
-  },
-  "@subjectFallbackGeneral": {
-    "description": "Fallback subject name when no subject is provided by the server"
-  },
-  "@subjectNameUnknown": {
-    "description": "Fallback text for an unknown subject name in subject breakdown"
-  },
   "@browseMyCourses": {
     "description": "Section header for the student's enrolled courses on the browse page"
   },
@@ -1416,7 +1200,6 @@
   "@browseAllCourses": {
     "description": "Section header for the complete course catalog on the browse page"
   },
-  "browseSearchHint": "ಕೋರ್ಸ್‌ಗಳನ್ನು ಹುಡುಕಿ...",
   "@browseSearchHint": {
     "description": "Hint text inside the course search field on the browse page"
   },
@@ -1475,9 +1258,6 @@
   "@coursePlayerTextbook": {
     "description": "Label for textbook-type course resources"
   },
-  "@coursePlayerNoResources": {
-    "description": "Empty state when a course has no resources"
-  },
   "@coursePlayerDownloadPrompt": {
     "description": "Message above the download button prompting offline download"
   },
@@ -1509,18 +1289,6 @@
       }
     }
   },
-  "@quizTypeMcq": {
-    "description": "Label for multiple-choice question type"
-  },
-  "@quizTypeTrueFalse": {
-    "description": "Label for true/false question type"
-  },
-  "@quizTypeFillBlanks": {
-    "description": "Label for fill-in-the-blanks question type"
-  },
-  "@quizTypeMultiSelect": {
-    "description": "Label for multi-select question type"
-  },
   "@quizTrue": {
     "description": "True option label in true/false questions"
   },
@@ -1545,12 +1313,6 @@
   "@quizFailed": {
     "description": "Pass/fail badge label when the student failed the quiz"
   },
-  "@quizPassedMessage": {
-    "description": "Encouraging message shown after passing a quiz"
-  },
-  "@quizFailedMessage": {
-    "description": "Constructive message shown after failing a quiz"
-  },
   "@quizScoreFraction": {
     "description": "Score display showing correct answers out of total questions",
     "placeholders": {
@@ -1561,15 +1323,6 @@
       "total": {
         "type": "int",
         "example": "10"
-      }
-    }
-  },
-  "@quizQuestionLabel": {
-    "description": "Heading label for each question in the results review",
-    "placeholders": {
-      "index": {
-        "type": "int",
-        "example": "1"
       }
     }
   },
@@ -1752,10 +1505,6 @@
       }
     }
   },
-  "flashcardStudy": "ಅಭ್ಯಾಸ",
-  "@flashcardStudy": {
-    "description": "Button label: start studying a deck."
-  },
   "flashcardStudyingDeck": "{title} ಅಭ್ಯಾಸ",
   "@flashcardStudyingDeck": {
     "description": "Study screen title. {title} is the deck name.",
@@ -1844,10 +1593,6 @@
   "@badgeAchievements": {
     "description": "Section title: badges and streak statistics."
   },
-  "notifDownloadsActive": "ಡೌನ್‌ಲೋಡ್ಗಳು ನಡೆಯುತ್ತಿವೆ",
-  "@notifDownloadsActive": {
-    "description": "Notification channel/title: downloads currently running."
-  },
   "notifDownloading": "{title} ಡೌನ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ",
   "@notifDownloading": {
     "description": "Progress notification body. {title} is the file name.",
@@ -1857,10 +1602,6 @@
         "example": "Chapter 1"
       }
     }
-  },
-  "notifDownloadComplete": "ಡೌನ್‌ಲೋಡ್ ಪೂರ್ಣಗೊಂಡಿದೆ",
-  "@notifDownloadComplete": {
-    "description": "Notification title: a download finished."
   },
   "activityVerbStudied": "ಅಭ್ಯಾಸ ಮಾಡಿದರು",
   "@activityVerbStudied": {
@@ -1928,105 +1669,105 @@
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"
   },
-    "flashcardTitleRequired": "ದಯವಿಟ್ಟು ಡೆಕ್ ಶೀರ್ಷಿಕೆ ಬರೆಯಿರಿ",
-    "@flashcardTitleRequired": {
-      "description": "Inline validation error shown under the deck title field on the deck editor when the title is empty",
-      "x_machine_translated": true
+  "flashcardTitleRequired": "ದಯವಿಟ್ಟು ಡೆಕ್ ಶೀರ್ಷಿಕೆ ಬರೆಯಿರಿ",
+  "@flashcardTitleRequired": {
+    "description": "Inline validation error shown under the deck title field on the deck editor when the title is empty",
+    "x_machine_translated": true
+  },
+  "flashcardSubjectOptional": "ವಿಷಯ (ಐಚ್ಛಿಕ)",
+  "@flashcardSubjectOptional": {
+    "description": "Persistent label for the optional subject input on the deck editor; keep the '(optional)' marker in translations",
+    "x_machine_translated": true
+  },
+  "flashcardCreateDeck": "ಡೆಕ್ ರಚಿಸಿ",
+  "@flashcardCreateDeck": {
+    "description": "Primary bottom action button on the new-deck screen; verb-first label",
+    "x_machine_translated": true
+  },
+  "flashcardAgainDesc": "ನೆನಪಾಗಲಿಲ್ಲ. ಬೇಗ ಮತ್ತೆ ಬರುತ್ತದೆ.",
+  "@flashcardAgainDesc": {
+    "description": "Small explanation under the Again rating tile during flashcard review; grade-4 reading level",
+    "x_machine_translated": true
+  },
+  "flashcardHardDesc": "ಕಷ್ಟಪಟ್ಟು ನೆನಪಾಯಿತು. ಬೇಗ ಮರಳಿ ಬರುತ್ತದೆ.",
+  "@flashcardHardDesc": {
+    "description": "Small explanation under the Hard rating tile during flashcard review; grade-4 reading level",
+    "x_machine_translated": true
+  },
+  "flashcardGoodDesc": "ನೆನಪಾಯಿತು. ಸಾಮಾನ್ಯ ಸಮಯದ ನಂತರ ಬರುತ್ತದೆ.",
+  "@flashcardGoodDesc": {
+    "description": "Small explanation under the Good rating tile during flashcard review; grade-4 reading level",
+    "x_machine_translated": true
+  },
+  "flashcardEasyDesc": "ತಕ್ಷಣ ನೆನಪಾಯಿತು. ಬಹಳ ಸಮಯದ ನಂತರ ಬರುತ್ತದೆ.",
+  "@flashcardEasyDesc": {
+    "description": "Small explanation under the Easy rating tile during flashcard review; grade-4 reading level",
+    "x_machine_translated": true
+  },
+  "flashcardNextInDays": "{days, plural, one{ಮುಂದೆ 1 ದಿನದಲ್ಲಿ} other{ಮುಂದೆ {days} ದಿನಗಳಲ್ಲಿ}}",
+  "@flashcardNextInDays": {
+    "description": "Scheduling preview under each rating tile showing when the card returns; ICU plural on days",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
+      }
     },
-    "flashcardSubjectOptional": "ವಿಷಯ (ಐಚ್ಛಿಕ)",
-    "@flashcardSubjectOptional": {
-      "description": "Persistent label for the optional subject input on the deck editor; keep the '(optional)' marker in translations",
-      "x_machine_translated": true
-    },
-    "flashcardCreateDeck": "ಡೆಕ್ ರಚಿಸಿ",
-    "@flashcardCreateDeck": {
-      "description": "Primary bottom action button on the new-deck screen; verb-first label",
-      "x_machine_translated": true
-    },
-    "flashcardAgainDesc": "ನೆನಪಾಗಲಿಲ್ಲ. ಬೇಗ ಮತ್ತೆ ಬರುತ್ತದೆ.",
-    "@flashcardAgainDesc": {
-      "description": "Small explanation under the Again rating tile during flashcard review; grade-4 reading level",
-      "x_machine_translated": true
-    },
-    "flashcardHardDesc": "ಕಷ್ಟಪಟ್ಟು ನೆನಪಾಯಿತು. ಬೇಗ ಮರಳಿ ಬರುತ್ತದೆ.",
-    "@flashcardHardDesc": {
-      "description": "Small explanation under the Hard rating tile during flashcard review; grade-4 reading level",
-      "x_machine_translated": true
-    },
-    "flashcardGoodDesc": "ನೆನಪಾಯಿತು. ಸಾಮಾನ್ಯ ಸಮಯದ ನಂತರ ಬರುತ್ತದೆ.",
-    "@flashcardGoodDesc": {
-      "description": "Small explanation under the Good rating tile during flashcard review; grade-4 reading level",
-      "x_machine_translated": true
-    },
-    "flashcardEasyDesc": "ತಕ್ಷಣ ನೆನಪಾಯಿತು. ಬಹಳ ಸಮಯದ ನಂತರ ಬರುತ್ತದೆ.",
-    "@flashcardEasyDesc": {
-      "description": "Small explanation under the Easy rating tile during flashcard review; grade-4 reading level",
-      "x_machine_translated": true
-    },
-    "flashcardNextInDays": "{days, plural, one{ಮುಂದೆ 1 ದಿನದಲ್ಲಿ} other{ಮುಂದೆ {days} ದಿನಗಳಲ್ಲಿ}}",
-    "@flashcardNextInDays": {
-      "description": "Scheduling preview under each rating tile showing when the card returns; ICU plural on days",
-      "placeholders": {
-        "days": {
-          "type": "int",
-          "example": "3"
-        }
-      },
-      "x_machine_translated": true
-    },
-    "tourSkip": "ಬಿಟ್ಟುಬಿಡಿ",
-    "@tourSkip": {
-      "description": "Button that dismisses the first-login tour without finishing it",
-      "x_machine_translated": true
-    },
-    "tourNext": "ಮುಂದೆ",
-    "@tourNext": {
-      "description": "Button that advances to the next first-login tour slide",
-      "x_machine_translated": true
-    },
-    "tourGetStarted": "ಪ್ರಾರಂಭಿಸಿ",
-    "@tourGetStarted": {
-      "description": "Final button on the last tour slide that enters the app; verb-first label",
-      "x_machine_translated": true
-    },
-    "tourTitleWelcome": "EduMesh ಗೆ ಸ್ವಾಗತ",
-    "@tourTitleWelcome": {
-      "description": "Title of the first-login tour welcome slide; brand name EduMesh stays untranslated",
-      "x_machine_translated": true
-    },
-    "tourBodyWelcome": "ಇಂಟರ್ನೆಟ್ ಇಲ್ಲದೆಯೂ ಯಾವಾಗ ಬೇಕಾದರೂ ಕಲಿಯಿರಿ.",
-    "@tourBodyWelcome": {
-      "description": "Body of the first-login tour welcome slide; short plain sentence, allow 40-50% expansion",
-      "x_machine_translated": true
-    },
-    "tourTitleOffline": "ನಿಮ್ಮ ಪಾಠಗಳನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
-    "@tourTitleOffline": {
-      "description": "Title of the first-login tour offline-download slide",
-      "x_machine_translated": true
-    },
-    "tourBodyOffline": "ಹಬ್ WiFi ಮೂಲಕ ಪಾಠಗಳನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ. ನಂತರ ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ನೋಡಿ.",
-    "@tourBodyOffline": {
-      "description": "Body of the first-login tour offline-download slide; WiFi stays as-is, allow 40-50% expansion",
-      "x_machine_translated": true
-    },
-    "tourTitleProgress": "ನಿಮ್ಮ ಪ್ರಗತಿ ಉಳಿಸಲಾಗುತ್ತದೆ",
-    "@tourTitleProgress": {
-      "description": "Title of the first-login tour progress slide",
-      "x_machine_translated": true
-    },
-    "tourBodyProgress": "ನೀವು ತೆರೆದ ಎಲ್ಲವೂ ನಿಮ್ಮ ಪ್ರೊಫೈಲ್‌ನಲ್ಲಿ ಉಳಿಯುತ್ತದೆ. ಯಾವಾಗ ಬೇಕಾದರೂ ಪ್ರೊಫೈಲ್ ಚಿಹ್ನೆಯಿಂದ ಖಾತೆ ಬದಲಿಸಿ.",
-    "@tourBodyProgress": {
-      "description": "Body of the first-login tour progress slide; two short sentences, allow 40-50% expansion",
-      "x_machine_translated": true
-    },
-    "tourTitleLanguage": "ನಿಮ್ಮ ಭಾಷೆ ಆಯ್ಕೆ ಮಾಡಿ",
-    "@tourTitleLanguage": {
-      "description": "Title of the first-login tour language slide",
-      "x_machine_translated": true
-    },
-    "tourBodyLanguage": "ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಯಾವಾಗ ಬೇಕಾದರೂ ಭಾಷೆ ಆಯ್ಕೆ ಮಾಡಿ.",
-    "@tourBodyLanguage": {
-      "description": "Body of the first-login tour language slide; allow 40-50% expansion",
-      "x_machine_translated": true
-    }
+    "x_machine_translated": true
+  },
+  "tourSkip": "ಬಿಟ್ಟುಬಿಡಿ",
+  "@tourSkip": {
+    "description": "Button that dismisses the first-login tour without finishing it",
+    "x_machine_translated": true
+  },
+  "tourNext": "ಮುಂದೆ",
+  "@tourNext": {
+    "description": "Button that advances to the next first-login tour slide",
+    "x_machine_translated": true
+  },
+  "tourGetStarted": "ಪ್ರಾರಂಭಿಸಿ",
+  "@tourGetStarted": {
+    "description": "Final button on the last tour slide that enters the app; verb-first label",
+    "x_machine_translated": true
+  },
+  "tourTitleWelcome": "EduMesh ಗೆ ಸ್ವಾಗತ",
+  "@tourTitleWelcome": {
+    "description": "Title of the first-login tour welcome slide; brand name EduMesh stays untranslated",
+    "x_machine_translated": true
+  },
+  "tourBodyWelcome": "ಇಂಟರ್ನೆಟ್ ಇಲ್ಲದೆಯೂ ಯಾವಾಗ ಬೇಕಾದರೂ ಕಲಿಯಿರಿ.",
+  "@tourBodyWelcome": {
+    "description": "Body of the first-login tour welcome slide; short plain sentence, allow 40-50% expansion",
+    "x_machine_translated": true
+  },
+  "tourTitleOffline": "ನಿಮ್ಮ ಪಾಠಗಳನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
+  "@tourTitleOffline": {
+    "description": "Title of the first-login tour offline-download slide",
+    "x_machine_translated": true
+  },
+  "tourBodyOffline": "ಹಬ್ WiFi ಮೂಲಕ ಪಾಠಗಳನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ. ನಂತರ ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ನೋಡಿ.",
+  "@tourBodyOffline": {
+    "description": "Body of the first-login tour offline-download slide; WiFi stays as-is, allow 40-50% expansion",
+    "x_machine_translated": true
+  },
+  "tourTitleProgress": "ನಿಮ್ಮ ಪ್ರಗತಿ ಉಳಿಸಲಾಗುತ್ತದೆ",
+  "@tourTitleProgress": {
+    "description": "Title of the first-login tour progress slide",
+    "x_machine_translated": true
+  },
+  "tourBodyProgress": "ನೀವು ತೆರೆದ ಎಲ್ಲವೂ ನಿಮ್ಮ ಪ್ರೊಫೈಲ್‌ನಲ್ಲಿ ಉಳಿಯುತ್ತದೆ. ಯಾವಾಗ ಬೇಕಾದರೂ ಪ್ರೊಫೈಲ್ ಚಿಹ್ನೆಯಿಂದ ಖಾತೆ ಬದಲಿಸಿ.",
+  "@tourBodyProgress": {
+    "description": "Body of the first-login tour progress slide; two short sentences, allow 40-50% expansion",
+    "x_machine_translated": true
+  },
+  "tourTitleLanguage": "ನಿಮ್ಮ ಭಾಷೆ ಆಯ್ಕೆ ಮಾಡಿ",
+  "@tourTitleLanguage": {
+    "description": "Title of the first-login tour language slide",
+    "x_machine_translated": true
+  },
+  "tourBodyLanguage": "ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಯಾವಾಗ ಬೇಕಾದರೂ ಭಾಷೆ ಆಯ್ಕೆ ಮಾಡಿ.",
+  "@tourBodyLanguage": {
+    "description": "Body of the first-login tour language slide; allow 40-50% expansion",
+    "x_machine_translated": true
+  }
 }
