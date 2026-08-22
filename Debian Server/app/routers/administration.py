@@ -2,7 +2,6 @@
 import sqlite3
 import uuid
 import asyncio
-import logging
 from fastapi import APIRouter, Depends, HTTPException
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
@@ -104,31 +103,25 @@ async def _create_user(data: TeacherCreate, admin_user: str, role: str, default_
         Dict with status, username, name, and scholar_id.
 
     Raises:
-        HTTPException: 400 if username exists or creation fails.
+        HTTPException: 400 if username exists.
     """
+    display_name = data.name or data.username
+    dept = data.department or default_dept
+    user_id = f"LUMINA_01-T{uuid.uuid4().hex}"
+    hashed_pwd = await asyncio.to_thread(hash_password, data.password)
+    # Race-safe: users.username is the PRIMARY KEY, so a concurrent
+    # create with the same username loses the INSERT and gets a 400.
     try:
-        display_name = data.name or data.username
-        dept = data.department or default_dept
-        user_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-        hashed_pwd = await asyncio.to_thread(hash_password, data.password)
-        # Race-safe: users.username is the PRIMARY KEY, so a concurrent
-        # create with the same username loses the INSERT and gets a 400.
-        try:
-            await db_exec(
-                "INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, ?)",
-                (data.username, hashed_pwd, display_name, dept, user_id, role),
-            )
-        except sqlite3.IntegrityError:
-            raise HTTPException(status_code=400, detail="Username already exists.")  # i18n: user-facing error message
-        await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
-                    resource_id=data.username, resource_name=display_name,
-                    target_user=data.username, context={"role": role})
-        return {"status": "success", "username": data.username, "name": display_name, "scholar_id": user_id}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"create_{role}: {e}")
-        raise HTTPException(status_code=400, detail=f"Failed to create {role} account")  # i18n: user-facing error message
+        await db_exec(
+            "INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, ?)",
+            (data.username, hashed_pwd, display_name, dept, user_id, role),
+        )
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="Username already exists.")  # i18n: user-facing error message
+    await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
+                resource_id=data.username, resource_name=display_name,
+                target_user=data.username, context={"role": role})
+    return {"status": "success", "username": data.username, "name": display_name, "scholar_id": user_id}
 
 
 @router.post("/api/admin/create", response_model=AdminCreateResponse,
@@ -173,34 +166,22 @@ async def create_student(data: AdminStudentCreate, admin_user: str = Depends(ver
     Returns:
         Dict with status, username, name, and scholar_id.
     Raises:
-        HTTPException 400: If the username is already taken or creation fails.
+        HTTPException 400: If the username is already taken.
     """
+    display_name = data.name or data.username
+    scholar_id = f"LUMINA_01-{uuid.uuid4().hex}"
+    pwd = data.password or "lumina2026"
+    hashed_pwd = await asyncio.to_thread(hash_password, pwd)
+    # Race-safe: scholars.username has a UNIQUE index, so a concurrent
+    # create with the same username loses the INSERT and gets a 400.
     try:
-        display_name = data.name or data.username
-        scholar_id = f"LUMINA_01-{uuid.uuid4().hex}"
-        pwd = data.password or "lumina2026"
-        hashed_pwd = await asyncio.to_thread(hash_password, pwd)
-        # Race-safe: scholars.username has a UNIQUE index, so a concurrent
-        # create with the same username loses the INSERT and gets a 400.
-        try:
-            if data.grade:
-                await db_exec(
-                    "INSERT INTO scholars (id, username, name, hashed_password, reset_required, grade) VALUES (?, ?, ?, ?, 0, ?)",
-                    (scholar_id, data.username, display_name, hashed_pwd, data.grade),
-                )
-            else:
-                await db_exec(
-                    "INSERT INTO scholars (id, username, name, hashed_password, reset_required) VALUES (?, ?, ?, ?, 0)",
-                    (scholar_id, data.username, display_name, hashed_pwd),
-                )
-        except sqlite3.IntegrityError:
-            raise HTTPException(status_code=400, detail="Username already exists.")  # i18n: user-facing error message
-        await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
-                    resource_id=data.username, resource_name=display_name,
-                    target_user=data.username, context={"role": "student"})
-        return {"status": "success", "username": data.username, "name": display_name, "scholar_id": scholar_id}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"create_student: {e}")
-        raise HTTPException(status_code=400, detail="Failed to create student account")  # i18n: user-facing error message
+        await db_exec(
+            "INSERT INTO scholars (id, username, name, hashed_password, reset_required, grade) VALUES (?, ?, ?, ?, 0, ?)",
+            (scholar_id, data.username, display_name, hashed_pwd, data.grade or ""),
+        )
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="Username already exists.")  # i18n: user-facing error message
+    await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
+                resource_id=data.username, resource_name=display_name,
+                target_user=data.username, context={"role": "student"})
+    return {"status": "success", "username": data.username, "name": display_name, "scholar_id": scholar_id}

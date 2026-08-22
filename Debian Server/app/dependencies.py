@@ -260,48 +260,27 @@ async def invalidate_tokens_for_user(username: str):
     await db_run(_delete_tokens)
 
 
-async def verify_student(request: Request):
+async def verify_student(request: Request) -> str:
     """FastAPI dependency that validates the session and enforces student role.
 
-    Extracts the session token, verifies it belongs to a ``student`` user,
-    confirms the scholar account still exists, and caches the result.
+    Composes ``_extract_user`` (shared token extraction + cache) with a
+    student role check and a scholar-exists lookup, so students resolve
+    through the same session path as teachers/admins.
 
     Returns:
         The student's username (scholar ID).
 
     Raises:
-        HTTPException: 401 if not authenticated or account deleted,
-            403 never (role is checked implicitly by the session query).
+        HTTPException: 401 if not authenticated, not a student, or the
+            scholar account has been deleted.
     """
-    if hasattr(request.state, "_student_id"):
-        return request.state._student_id
-
-    auth = request.headers.get("Authorization", "")
-    token = request.cookies.get("lumina_session") or (auth.removeprefix("Bearer ") if auth.startswith("Bearer ") else "")
-    if not token:
+    user = await _extract_user(request)
+    if user["role"] != "student":
         raise HTTPException(status_code=401, detail="Not authenticated")  # i18n: user-facing auth error
 
-    # ponytail: check cache first (same token format, student role)
-    cached = _cache_get(token)
-    if cached and cached.get("role") == "student":
-        request.state._student_id = cached["username"]
-        return cached["username"]
-
-    row = await db_fetch_one(
-        "SELECT username, last_accessed FROM sessions WHERE token = ? AND role = 'student' AND used = 0 AND expiry > datetime('now')",
-        (token,)
-    )
-    if not row:
-        raise HTTPException(status_code=401, detail="Invalid or expired student session")  # i18n: user-facing auth error
-
-    if _is_session_stale(row["last_accessed"]):
-        await db_exec("UPDATE sessions SET last_accessed = datetime('now') WHERE token = ?", (token,))
-
-    exists = await db_fetch_one("SELECT id FROM scholars WHERE id = ?", (row["username"],))
-    if not exists:
-        raise HTTPException(status_code=401, detail="Account no longer exists.")  # i18n: user-facing auth error
-
-    result = {"username": row["username"], "role": "student"}
-    _cache_put(token, result)
-    request.state._student_id = row["username"]
-    return row["username"]
+    if not hasattr(request.state, "_scholar_exists"):
+        exists = await db_fetch_one("SELECT id FROM scholars WHERE id = ?", (user["username"],))
+        if not exists:
+            raise HTTPException(status_code=401, detail="Account no longer exists.")  # i18n: user-facing auth error
+        request.state._scholar_exists = True
+    return user["username"]

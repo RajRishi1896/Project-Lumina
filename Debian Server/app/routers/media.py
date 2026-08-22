@@ -7,7 +7,7 @@ import subprocess
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from app.database import UPLOAD_DIR, THUMBNAILS_DIR
-from app.async_db import db_fetch_one, db_exec
+from app.async_db import db_fetch_one
 from app.dependencies import verify_user
 
 router = APIRouter()
@@ -45,26 +45,11 @@ _vaapi_args = _probe_vaapi()
 # the hub's weak CPU). Concurrent requests wait on the lock, then find the
 # freshly generated file on the cache re-check.
 _gen_locks: dict[str, asyncio.Lock] = {}
-_MAX_GEN_LOCKS = 256
 
 
 def _gen_lock(resource_id: str) -> asyncio.Lock:
-    """Return the per-resource generation lock, creating it on first use.
-
-    Idle locks are dropped opportunistically when the table grows, keeping
-    memory bounded. A lock dropped between a waiter's lookup and its acquire()
-    can briefly allow a duplicate generation; that is harmless (both waiters
-    write the same cached file).
-    """
-    lock = _gen_locks.get(resource_id)
-    if lock is None:
-        lock = _gen_locks[resource_id] = asyncio.Lock()
-    if len(_gen_locks) > _MAX_GEN_LOCKS:
-        idle = [key for key, val in _gen_locks.items()
-                if not val.locked() and key != resource_id]
-        for key in idle:
-            _gen_locks.pop(key, None)
-    return lock
+    """Return the per-resource generation lock, creating it on first use."""
+    return _gen_locks.setdefault(resource_id, asyncio.Lock())
 
 
 @router.get("/api/stream/{filename:path}",
@@ -251,7 +236,7 @@ async def resource_thumbnail(resource_id: str):
         HTTPException 404: If resource, file, or thumbnail is unavailable.
         HTTPException 500: If thumbnail generation fails unexpectedly.
     """
-    row, table, file_path = await _resolve_resource(resource_id)
+    row, _table, file_path = await _resolve_resource(resource_id)
     if not row:
         raise HTTPException(status_code=404, detail="Resource not found")  # i18n: user-facing error message
     rtype = row["resource_type"]
@@ -260,8 +245,6 @@ async def resource_thumbnail(resource_id: str):
         return FileResponse(thumb_path, media_type="image/png")
     if not file_path or not await asyncio.to_thread(os.path.exists, file_path):
         raise HTTPException(status_code=404, detail="File not found")  # i18n: user-facing error message
-    page_count = 0
-    duration_seconds = 0
     async with _gen_lock(resource_id):
         # Single-flight re-check: another request may have generated the
         # thumbnail while this one waited for the lock.
@@ -278,10 +261,9 @@ async def resource_thumbnail(resource_id: str):
                         try:
                             pix = doc[0].get_pixmap(matrix=fitz.Matrix(0.3, 0.3))
                             pix.save(tp)
-                            return doc.page_count
                         finally:
                             doc.close()
-                    page_count = await asyncio.to_thread(_gen_pdf_thumb, file_path, thumb_path)
+                    await asyncio.to_thread(_gen_pdf_thumb, file_path, thumb_path)
                 except ImportError:
                     raise HTTPException(status_code=404, detail="Thumbnail unavailable (PyMuPDF not installed)")  # i18n: user-facing error message
             elif rtype in ("videos", "khan"):
@@ -293,20 +275,8 @@ async def resource_thumbnail(resource_id: str):
                 ))
                 if result.returncode != 0 or not await asyncio.to_thread(os.path.exists, thumb_path):
                     raise HTTPException(status_code=404, detail="Thumbnail generation failed")  # i18n: user-facing error message
-
-                duration_seconds = await asyncio.to_thread(_probe_duration, file_path)
             else:
                 raise HTTPException(status_code=404, detail="No thumbnail for this type")  # i18n: user-facing error message
-            sets, params = [], []
-            if page_count:
-                sets.append("page_count = ?")
-                params.append(page_count)
-            if duration_seconds:
-                sets.append("duration_seconds = ?")
-                params.append(duration_seconds)
-            if sets:
-                params.append(resource_id)
-                await db_exec(f"UPDATE {table} SET {', '.join(sets)} WHERE id = ?", tuple(params))
         except HTTPException:
             raise
         except Exception as e:

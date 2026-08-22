@@ -1,6 +1,5 @@
 """Password management routes: change, force-change, and admin reset."""
 import asyncio
-import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.async_db import db_exec, db_fetch_one
 from app.models import StatusResponse
@@ -59,24 +58,18 @@ async def force_change_password(data: dict, teacher_user: str = Depends(verify_t
     Raises:
         HTTPException 400: If reset is not required or new password is weak.
     """
-    try:
-        row = await db_fetch_one("SELECT reset_required FROM users WHERE username = ?", (teacher_user,))
-        if not row or not row[0]:
-            raise HTTPException(status_code=400, detail="Password reset not required.")  # i18n: user-facing error message
-        valid, msg = validate_password_strength(data.get('new_password'))
-        if not valid:
-            raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength(); user-facing
-        new_hash = await asyncio.to_thread(hash_password, data.get('new_password'))
-        await db_exec("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
-        await invalidate_tokens_for_user(teacher_user)
-        await audit(action=Action.FORCE_PASSWORD_CHANGE, username=teacher_user, resource_type="account",
-                    severity="notice")
-        return {"status": "success"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"force_change_password: {e}")
-        raise HTTPException(status_code=400, detail="Failed to change password")  # i18n: user-facing error message
+    row = await db_fetch_one("SELECT reset_required FROM users WHERE username = ?", (teacher_user,))
+    if not row or not row[0]:
+        raise HTTPException(status_code=400, detail="Password reset not required.")  # i18n: user-facing error message
+    valid, msg = validate_password_strength(data.get('new_password'))
+    if not valid:
+        raise HTTPException(status_code=400, detail=msg)  # i18n: msg is from validate_password_strength(); user-facing
+    new_hash = await asyncio.to_thread(hash_password, data.get('new_password'))
+    await db_exec("UPDATE users SET hashed_password = ?, reset_required = 0 WHERE username = ?", (new_hash, teacher_user))
+    await invalidate_tokens_for_user(teacher_user)
+    await audit(action=Action.FORCE_PASSWORD_CHANGE, username=teacher_user, resource_type="account",
+                severity="notice")
+    return {"status": "success"}
 
 
 @router.post("/teacher/reset-password/{username}", response_model=StatusResponse,

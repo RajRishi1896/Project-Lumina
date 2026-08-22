@@ -9,7 +9,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, Form, 
 from fastapi.responses import JSONResponse, RedirectResponse
 from app.async_db import db_exec, db_fetch_one, db_run
 from app.audit import audit, Action
-from app.metrics import incr
 from app.models import ScholarReg, StudentLoginRequest, ScholarRegisterResponse, StudentLoginResponse, LoginTokenResponse, TokenResponse
 from app.dependencies import hash_password, verify_password, validate_password_strength, generate_session_token, invalidate_tokens_for_user
 
@@ -54,6 +53,41 @@ def _record_failed_login(request: Request):
 def _secure_cookie(request) -> bool:
     """Return True when the request arrived over HTTPS (direct or proxied)."""
     return request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "") == "https"
+
+
+async def _consume_one_time(table: str, field: str, value):
+    """Atomically validate and mark used a one-time token row.
+
+    Args:
+        table: Token table name (``refresh_tokens`` or ``persistent_keys``).
+        field: Column holding the token value.
+        value: The presented token.
+
+    Returns:
+        Tuple of (username, role).
+
+    Raises:
+        HTTPException 401: If the token is invalid, already used, or expired.
+    """
+    label = table[:-1].replace("_", " ")
+
+    def _consume(conn):
+        """Validate and one-time-use the token; returns (username, role)."""
+        row = conn.execute(
+            f"SELECT username, role, used, expires_at FROM {table} WHERE {field} = ?",
+            (value,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=401, detail=f"Invalid {label}")  # i18n: user-facing error message
+        if row[2]:
+            raise HTTPException(status_code=401, detail=f"{label.capitalize()} already used")  # i18n: user-facing error message
+        if row[3] and datetime.fromisoformat(row[3]).replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+            raise HTTPException(status_code=401, detail=f"{label.capitalize()} expired")  # i18n: user-facing error message
+        conn.execute(f"UPDATE {table} SET used = 1 WHERE {field} = ?", (value,))
+        conn.commit()
+        return row[0], row[1]
+
+    return await db_run(_consume)
 
 
 @router.post("/register", response_model=ScholarRegisterResponse, summary="Register a new student scholar", description="Creates or updates a scholar account with username and optional password. Returns session, refresh, and persistent tokens on success.", tags=["Auth"], responses={400: {"description": "Registration failed or validation error"}})
@@ -129,25 +163,21 @@ async def student_login(data: StudentLoginRequest, request: Request):
 
     if not row:
         _record_failed_login(request)
-        incr("login_failed")
         await audit(action=Action.LOGIN_FAILED, username=data.username, request=request,
                     success=False, error="student account not found", role="student")
         raise HTTPException(status_code=401, detail="Student account not found.")  # i18n: user-facing error message
 
     scholar_id, hashed_pwd, reset_req, srow_name, srow_grade = row
 
-    pwd_to_check = hashed_pwd
-    if not pwd_to_check:
+    if not hashed_pwd:
         _record_failed_login(request)
-        incr("login_failed")
         await audit(action=Action.LOGIN_FAILED, username=data.username, request=request,
                     success=False, error="password not set", role="student")
         raise HTTPException(status_code=401, detail="Password not set. Contact teacher to set your password.")  # i18n: user-facing error message
 
-    password_ok = await asyncio.to_thread(verify_password, data.password, pwd_to_check)
+    password_ok = await asyncio.to_thread(verify_password, data.password, hashed_pwd)
     if not password_ok:
         _record_failed_login(request)
-        incr("login_failed")
         await audit(action=Action.LOGIN_FAILED, username=data.username, request=request,
                     success=False, error="invalid password", role="student")
         raise HTTPException(status_code=401, detail="Invalid student credentials.")  # i18n: user-facing error message
@@ -158,7 +188,6 @@ async def student_login(data: StudentLoginRequest, request: Request):
     srow_grade = srow_grade or "General"
 
     await audit(action=Action.LOGIN, username=data.username, request=request, role="student")
-    incr("login_success")
     response = JSONResponse({
         "status": "ok", "scholar_id": scholar_id,
         "token": tokens["session_token"],
@@ -192,43 +221,27 @@ async def login(response: Response, request: Request, username: str = Form(...),
 
     if not row:
         _record_failed_login(request)
-        incr("login_failed")
         await audit(action=Action.LOGIN_FAILED, username=username, request=request,
                     success=False, error="account not found")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")  # i18n: user-facing login error
     if row[0] == 'DISABLED':
         _record_failed_login(request)
-        incr("login_failed")
         await audit(action=Action.LOGIN_FAILED, username=username, request=request,
                     success=False, error="account disabled", severity="warning")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="This account has been disabled by an administrator.")  # i18n: user-facing login error
     password_ok = await asyncio.to_thread(verify_password, password, row[0])
     if not password_ok:
         _record_failed_login(request)
-        incr("login_failed")
         await audit(action=Action.LOGIN_FAILED, username=username, request=request,
                     success=False, error="invalid password")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials. Please try again.")  # i18n: user-facing login error
 
     user_role = row[5]
-    if user_role == "student":
-        tokens = await generate_session_token(username, user_role)
-    else:
-        from app.dependencies import _cache_invalidate_user
-        import uuid as _uuid
-        _cache_invalidate_user(username)
-        stoken = f"LUMINA_HUB-{_uuid.uuid4().hex}"
-        from app.async_db import db_run
-        def _create_session(conn):
-            """Insert a fresh teacher/admin session, pruning to the newest 5."""
-            conn.execute("DELETE FROM sessions WHERE username = ? AND rowid NOT IN (SELECT rowid FROM sessions WHERE username = ? ORDER BY rowid DESC LIMIT 5)", (username, username))
-            conn.execute("INSERT INTO sessions (token, username, role, used, expiry) VALUES (?, ?, ?, 0, datetime('now', '+1 day'))", (stoken, username, user_role))
-            conn.commit()
-        await db_run(_create_session)
-        tokens = {"session_token": stoken}
+    # Same token path as students: prunes to newest 5 sessions and
+    # invalidates cached sessions for the user.
+    tokens = await generate_session_token(username, user_role)
     scholar_id = row[3]
     await audit(action=Action.LOGIN, username=username, request=request, role=user_role)
-    incr("login_success")
     response.set_cookie(key="lumina_session", value=tokens["session_token"], httponly=True, max_age=86400, samesite="lax", secure=_secure_cookie(request))
     return {
         "access_token": tokens["session_token"],
@@ -278,23 +291,7 @@ async def refresh_session(data: dict, request: Request):
         HTTPException 401: If the refresh token is invalid, already used, or expired.
         HTTPException 500: If the refresh process fails unexpectedly.
     """
-    def _consume_refresh_token(conn):
-        """Validate and one-time-use the refresh token; returns (username, role)."""
-        row = conn.execute(
-            "SELECT username, role, used, expires_at FROM refresh_tokens WHERE token = ?",
-            (data.get('refresh_token'),),
-        ).fetchone()
-        if not row:
-            raise HTTPException(status_code=401, detail="Invalid refresh token")  # i18n: user-facing error message
-        if row[2]:
-            raise HTTPException(status_code=401, detail="Refresh token already used")  # i18n: user-facing error message
-        if row[3] and datetime.fromisoformat(row[3]).replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
-            raise HTTPException(status_code=401, detail="Refresh token expired")  # i18n: user-facing error message
-        conn.execute("UPDATE refresh_tokens SET used = 1 WHERE token = ?", (data.get('refresh_token'),))
-        conn.commit()
-        return row[0], row[1]
-
-    username, role = await db_run(_consume_refresh_token)
+    username, role = await _consume_one_time("refresh_tokens", "token", data.get('refresh_token'))
     tokens = await generate_session_token(username, role)
     return {
         "token": tokens["session_token"],
@@ -318,23 +315,7 @@ async def renew_session(data: dict, request: Request):
         HTTPException 401: If the persistent key is invalid, already used, or expired.
         HTTPException 500: If the renewal process fails unexpectedly.
     """
-    def _consume_persistent_key(conn):
-        """Validate and one-time-use the persistent key; returns (username, role)."""
-        row = conn.execute(
-            "SELECT username, role, used, expires_at FROM persistent_keys WHERE token = ?",
-            (data.get('persistent_key'),),
-        ).fetchone()
-        if not row:
-            raise HTTPException(status_code=401, detail="Invalid persistent key")  # i18n: user-facing error message
-        if row[2]:
-            raise HTTPException(status_code=401, detail="Persistent key already used")  # i18n: user-facing error message
-        if row[3] and datetime.fromisoformat(row[3]).replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
-            raise HTTPException(status_code=401, detail="Persistent key expired")  # i18n: user-facing error message
-        conn.execute("UPDATE persistent_keys SET used = 1 WHERE token = ?", (data.get('persistent_key'),))
-        conn.commit()
-        return row[0], row[1]
-
-    username, role = await db_run(_consume_persistent_key)
+    username, role = await _consume_one_time("persistent_keys", "token", data.get('persistent_key'))
     tokens = await generate_session_token(username, role)
     return {
         "token": tokens["session_token"],

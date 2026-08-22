@@ -17,7 +17,6 @@ Endpoints:
 import os
 import re
 import time
-import hashlib
 import asyncio
 import logging
 import mimetypes
@@ -99,10 +98,9 @@ def _rewrite_html_asset_paths(html: str, archive_id: str, base_url: str = '') ->
     against its baseUrl in loadHtmlString.
     """
     def _make_zim_url(asset_path: str) -> str:
-        """Build a /zim/asset URL with an md5 integrity hash for an asset path."""
+        """Build a /zim/asset URL for an asset path."""
         asset_path = asset_path.lstrip('/')
-        encoded = hashlib.md5(asset_path.encode()).hexdigest()[:8]
-        return f'{base_url}/zim/asset?archive_id={archive_id}&path={asset_path}&h={encoded}'
+        return f'{base_url}/zim/asset?archive_id={archive_id}&path={asset_path}'
 
     def _replace_attr(match):
         """Rewrite one src/href/poster/data-src attribute to a /zim/asset URL."""
@@ -162,27 +160,8 @@ def _get_archive(archive_id: str, zim_path: str):
 # Shorter queries return empty results (no useful trigrams).
 _MIN_SEARCH_LEN = 3
 
-# ponytail: ranking CASE expression for 19M Wikipedia rows.
-# Uses TRIM() for robustness against whitespace variations in titles.
-#   rank 0: exact title match (case-sensitive: "Python" beats "PYTHON")
-#   rank 1: case-insensitive exact match (with TRIM)
-#   rank 2: title starts with query (prefix match)
-#   rank 3: disambiguation; title = "query (something)" e.g. "India (disambiguation)"
-#   rank 4: query is a complete word boundary (surrounded by spaces or at start/end)
-#   rank 5: title ends with query as a word
-#   rank 6: FTS trigram substring match (weakest)
-# ORDER BY rank, LENGTH(title), title ensures deterministic pagination.
-_RANK_CASE = """
-    CASE
-      WHEN TRIM(za.title) = TRIM(?) THEN 0
-      WHEN LOWER(TRIM(za.title)) = LOWER(TRIM(?)) THEN 1
-      WHEN LOWER(TRIM(za.title)) LIKE LOWER(TRIM(?)) || '%%' THEN 2
-      WHEN LOWER(TRIM(za.title)) LIKE LOWER(TRIM(?)) || ' (%%' THEN 3
-      WHEN LOWER(TRIM(za.title)) LIKE '%% ' || LOWER(TRIM(?)) || ' %%' THEN 4
-      WHEN LOWER(TRIM(za.title)) LIKE '%% ' || LOWER(TRIM(?)) THEN 5
-      ELSE 6
-    END
-"""
+# ponytail: ranking = exact title match first, then FTS bm25 relevance.
+# ORDER BY adds LENGTH(title), title for deterministic pagination.
 
 
 def _fts_quote(query: str) -> str:
@@ -194,19 +173,31 @@ def _fts_quote(query: str) -> str:
     return '"' + query.replace('"', '""') + '"'
 
 
+# ponytail: cached after first success only; a False result keeps probing
+# so a later-completed FTS build is still picked up.
+_fts_available: bool | None = None
+
+
 async def _check_fts() -> bool:
     """Check if zim_articles_fts table exists AND has data.
 
     The table may exist but be empty if the FTS5 build was interrupted
     (e.g. ANALYZE hung before the commit). In that case, callers should
     fall back to LIKE-based search. Runs via the async helper so the
-    COUNT query stays off the event loop.
+    COUNT query stays off the event loop. A successful check is cached
+    module-level and never re-probed.
     """
+    global _fts_available
+    if _fts_available is True:
+        return True
     try:
         row = await db_fetch_one("SELECT COUNT(*) AS cnt FROM zim_articles_fts")
-        return row is not None and row["cnt"] > 0
+        result = row is not None and row["cnt"] > 0
     except Exception:
         return False
+    if result:
+        _fts_available = True
+    return result
 
 
 # ── Endpoints ────────────────────────────────────────────────────────
@@ -354,16 +345,14 @@ async def _search_local(
         )
         total = count_row["cnt"] if count_row else 0
 
-        rank_params = [query, query, query, query, query, query]
         rows = await db_fetch(
-            f"SELECT za.article_id, za.title, za.archive_id, za.has_thumbnail, "
-            f"  {_RANK_CASE} as rank "
+            f"SELECT za.article_id, za.title, za.archive_id, za.has_thumbnail "
             f"FROM zim_articles za "
             f"JOIN zim_articles_fts fts ON za.id = fts.rowid "
             f"WHERE {where_fts} "
-            f"ORDER BY rank, LENGTH(za.title), za.title "
+            f"ORDER BY (TRIM(za.title) = TRIM(?)) DESC, fts.rank, LENGTH(za.title), za.title "
             f"LIMIT ? OFFSET ?",
-            (*rank_params, *base_params, limit, offset),
+            (*base_params, query, limit, offset),
         )
     else:
         pattern = f"%{query}%"
@@ -407,8 +396,8 @@ async def _search_local(
     "/search",
     summary="Search ZIM articles by title with relevance ranking",
     description="Server-side ranked search using FTS5 trigram index. "
-                "Results ordered by: exact match, case-insensitive exact, "
-                "prefix, disambiguation, word boundary, word suffix, FTS substring. "
+                "Results ordered by: exact title match first, then FTS "
+                "relevance, then title length. "
                 "Quotes query for safe FTS matching. Queries < 3 chars return empty.",
     tags=["ZIM"],
     response_model=ZimSearchResponse,

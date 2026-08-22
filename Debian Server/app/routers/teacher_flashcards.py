@@ -55,6 +55,28 @@ def _validate_cards(cards) -> list[dict]:
     return cleaned
 
 
+def _group_decks(rows) -> list[dict]:
+    """Group JOINed deck/card rows into ordered deck dicts with card lists.
+
+    Args:
+        rows: Rows from a flashcard_decks LEFT JOIN flashcards query,
+            ordered so each deck's cards appear contiguously by position.
+
+    Returns:
+        Deck dicts in first-seen order, each with title, topic_id,
+        created_at, and its non-null cards.
+    """
+    decks: dict[str, dict] = {}
+    for r in rows:
+        d = decks.setdefault(r["id"], {
+            "id": r["id"], "title": r["title"], "topic_id": r["topic_id"] or "",
+            "created_at": r["created_at"], "cards": [],
+        })
+        if r["front"] is not None:
+            d["cards"].append({"front": r["front"], "back": r["back"]})
+    return list(decks.values())
+
+
 @router.post("/api/teacher/flashcards/decks",
              summary="Create a flashcard deck",
              description="Creates a published deck owned by the calling teacher. topic_id is optional but must exist in resource_topics when given.",
@@ -100,16 +122,10 @@ async def list_decks(teacher_user: str = Depends(verify_teacher)):
         "FROM flashcard_decks d LEFT JOIN flashcards c ON c.deck_id = d.id "
         "WHERE d.created_by = ? ORDER BY d.created_at DESC, c.position ASC",
         (teacher_user,))
-    decks: dict[str, dict] = {}
-    for r in rows:
-        d = decks.setdefault(r["id"], {
-            "id": r["id"], "title": r["title"], "topic_id": r["topic_id"] or "",
-            "created_at": r["created_at"], "cards": [], "card_count": 0,
-        })
-        if r["front"] is not None:
-            d["cards"].append({"front": r["front"], "back": r["back"]})
-            d["card_count"] += 1
-    return list(decks.values())
+    decks = _group_decks(rows)
+    for d in decks:
+        d["card_count"] = len(d["cards"])
+    return decks
 
 
 async def _own_deck(deck_id: str, teacher_user: str):
@@ -358,15 +374,7 @@ async def published_decks(topic_id: str = Query(None, description="Filter by res
         params = (topic_id,)
     sql += " ORDER BY d.created_at DESC, c.position ASC"
     rows = await db_fetch(sql, params)
-    decks: dict[str, dict] = {}
-    for r in rows:
-        d = decks.setdefault(r["id"], {
-            "id": r["id"], "title": r["title"], "topic_id": r["topic_id"] or "",
-            "created_at": r["created_at"], "cards": [],
-        })
-        if r["front"] is not None:
-            d["cards"].append({"front": r["front"], "back": r["back"]})
-    return list(decks.values())
+    return _group_decks(rows)
 
 
 @router.get("/api/flashcards/my-submissions",

@@ -109,13 +109,9 @@ async def update_quiz_resource(resource_id: str, data: dict, teacher_user: str =
         return os.path.getsize(path)
 
     file_size = await asyncio.to_thread(_save)
+    await db_exec("UPDATE resources SET title = ?, file_size = ? WHERE id = ?", (title, file_size, resource_id))
     from app.routers.resources import invalidate_catalog_cache
     invalidate_catalog_cache()
-    if resource["title"] != title:
-        await db_exec("UPDATE resources SET title = ?, file_size = ? WHERE id = ?", (title, file_size, resource_id))
-    else:
-        await db_exec("UPDATE resources SET file_size = ? WHERE id = ?", (file_size, resource_id))
-
     return {"status": "ok"}
 
 
