@@ -11,11 +11,13 @@ import '../../../core/storage/db_helper.dart';
 import '../../auth/data/auth_service.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// A parent-facing study report compiled locally from the app's SQLite data.
+/// A parent-facing study report compiled locally from on-device data.
 ///
 /// Shows study time by subject, downloaded files, quiz best scores, and recent
 /// activity. Everything comes from [DBHelper] and [ActivityTracker] so the
 /// report works fully offline: no server round-trips.
+/// Study time is aggregated from [ActivityTracker]'s prefs event buffer,
+/// which is the single local store for study sessions.
 class StudyReportPage extends StatefulWidget {
   const StudyReportPage({super.key});
 
@@ -47,18 +49,35 @@ class _StudyReportPageState extends State<StudyReportPage> {
     try {
       final db = await DBHelper().database;
 
-      final subjectRows = await db.rawQuery(
-        'SELECT subject, SUM(seconds) AS total FROM activity '
-        'WHERE subject IS NOT NULL AND seconds >= 30 '
-        'GROUP BY subject ORDER BY total DESC',
-      );
+      final secondsBySubject = <String, int>{};
+      final displayNames = <String, String>{};
+      for (final event in await ActivityTracker().getLocalEvents()) {
+        if (event['action'] != 'study_session') continue;
+        Map<String, dynamic>? meta;
+        final metaRaw = event['metadata'];
+        if (metaRaw is String && metaRaw.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(metaRaw);
+            if (decoded is Map<String, dynamic>) meta = decoded;
+          } catch (_) {}
+        }
+        final subject = (meta?['subject'] as String?)?.trim() ?? '';
+        final seconds = (meta?['duration_seconds'] as num?)?.toInt() ?? 0;
+        // Same thresholds the old SQL query applied: non-empty subject,
+        // session of at least 30 seconds.
+        if (subject.isEmpty || seconds < 30) continue;
+        final key = subject.toLowerCase();
+        secondsBySubject[key] = (secondsBySubject[key] ?? 0) + seconds;
+        displayNames.putIfAbsent(key, () => subject);
+      }
+      final subjects = secondsBySubject.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
       _subjectMinutes
         ..clear()
-        ..addAll(subjectRows.map((r) {
-          final name = r['subject']?.toString() ?? '';
-          final minutes = (((r['total'] as num?)?.toInt() ?? 0) / 60).round();
-          return (subject: name, minutes: minutes);
-        }).where((e) => e.subject.isNotEmpty));
+        ..addAll(subjects.map((e) => (
+              subject: displayNames[e.key] ?? e.key,
+              minutes: (e.value / 60).round(),
+            )));
 
       final downloaded = await DBHelper().getDownloadedResources();
       _downloads

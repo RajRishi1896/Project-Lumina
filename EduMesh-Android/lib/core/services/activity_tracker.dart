@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
-import '../storage/db_helper.dart';
 import '../../shared/services/connectivity_service.dart';
 
 /// Tracks study sessions and user actions, persists them locally, and
@@ -42,7 +41,7 @@ class ActivityTracker {
   Future<void> startStudySession({String? subject}) async {
     await endStudySession();
     final subj = subject?.trim();
-    _studyStartTime = ApiClient.correctedNow();
+    _studyStartTime = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_activeStudySessionKey, jsonEncode({
       'start_time': _studyStartTime!.toIso8601String(),
@@ -53,7 +52,7 @@ class ActivityTracker {
   /// Record the end of a focused study session and log the duration.
   Future<void> endStudySession() async {
     if (_studyStartTime == null) return;
-    final duration = ApiClient.correctedNow().difference(_studyStartTime!);
+    final duration = DateTime.now().difference(_studyStartTime!);
     final prefs = await SharedPreferences.getInstance();
     final activeRaw = prefs.getString(_activeStudySessionKey);
     String? subject;
@@ -72,19 +71,8 @@ class ActivityTracker {
       'action': 'study_session',
       'resource_id': null,
       'metadata': jsonEncode(meta),
-      'timestamp': ApiClient.correctedNow().toIso8601String(),
+      'timestamp': DateTime.now().toIso8601String(),
     });
-    if (subject != null && subject.isNotEmpty && duration.inSeconds >= 30) {
-      try {
-        final db = await DBHelper().database;
-        await db.insert('activity', {
-          'resource_id': '',
-          'date': ApiClient.correctedNow().toIso8601String().substring(0, 10),
-          'subject': subject,
-          'seconds': duration.inSeconds,
-        });
-      } catch (_) {}
-    }
     await sync();
   }
 
@@ -95,7 +83,7 @@ class ActivityTracker {
       'action': action,
       'resource_id': resourceId,
       'metadata': metadata,
-      'timestamp': ApiClient.correctedNow().toIso8601String(),
+      'timestamp': DateTime.now().toIso8601String(),
     });
   }
 
@@ -113,6 +101,12 @@ class ActivityTracker {
     } catch (_) {
       return [];
     }
+  }
+
+  /// All buffered local events, oldest first.
+  Future<List<Map<String, dynamic>>> getLocalEvents() async {
+    final prefs = await SharedPreferences.getInstance();
+    return _decodeLocalEvents(prefs.getString(_localEventsKey));
   }
 
   /// Get the recorded activity history for the current session.
@@ -184,7 +178,7 @@ class ActivityTracker {
     if (original.isEmpty) return;
     final list = [...original];
 
-    final cutoff = ApiClient.correctedNow().subtract(const Duration(days: 7));
+    final cutoff = DateTime.now().subtract(const Duration(days: 7));
     final before = list.length;
     list.removeWhere((e) {
       final ts = DateTime.tryParse(e['timestamp'] as String? ?? '');
@@ -217,7 +211,7 @@ class ActivityTracker {
       if (ts != null) activeDates.add(ts.toIso8601String().split('T')[0]);
     }
     int streak = 0;
-    final today = ApiClient.correctedNow();
+    final today = DateTime.now();
     final todayKey = today.toIso8601String().split('T')[0];
     // If the student has not studied yet today, count from yesterday
     // instead of breaking on today: posting streak=0 every morning would
