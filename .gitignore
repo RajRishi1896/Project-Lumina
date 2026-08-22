@@ -108,3 +108,5 @@ Debian Server/wipe_zim.py
 
 # ZCode QA session artifacts
 .zcode_*
+# Local agent-config backups (MCP/skill kit edits)
+opencode.json*.bak
