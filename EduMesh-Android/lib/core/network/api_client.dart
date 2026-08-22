@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
+import 'package:multicast_dns/multicast_dns.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/auth/data/auth_service.dart';
-import '../../shared/services/discovery_service.dart';
 
 /// A singleton HTTP client wrapper around [Dio] that handles server discovery,
 /// token-based authentication, and automatic retry on 401/403 responses.
@@ -30,8 +30,6 @@ class ApiClient {
   }
 
   /// Current clock skew between local device and server.
-  static Duration get clockOffset => _clockOffset;
-
   /// Monotonic session-generation counter from [AuthService]: bumped on
   /// every logout/profile switch. Background services snapshot it at start
   /// and re-check before writing per-profile data.
@@ -174,6 +172,52 @@ class ApiClient {
     }
   }
 
+  static const String _mdnsServiceType = '_http._tcp.local.';
+  static const String _mdnsInstanceName = 'EduMeshHub';
+  static const int _hubPort = 8000;
+
+  /// Looks up the hub via mDNS and returns its base URL.
+  ///
+  /// The hub advertises `EduMeshHub._http._tcp.local.` on port 8000. Returns
+  /// `http://{ip}:8000`, or null if no hub is advertised, the lookup times
+  /// out (4s), or multicast is unavailable.
+  static Future<String?> _mdnsDiscover() async {
+    final client = MDnsClient();
+    try {
+      await client.start();
+      final ptr = await client
+          .lookup<PtrResourceRecord>(
+              ResourceRecordQuery.serverPointer(_mdnsServiceType))
+          .timeout(const Duration(seconds: 4))
+          .firstWhere(
+            (r) => r.domainName.startsWith('$_mdnsInstanceName.'),
+            orElse: () => throw StateError('hub not advertised'),
+          );
+      final srv = await client
+          .lookup<SrvResourceRecord>(ResourceRecordQuery.service(ptr.domainName))
+          .timeout(const Duration(seconds: 4))
+          .firstWhere(
+            (r) => r.target.isNotEmpty,
+            orElse: () => throw StateError('no SRV record'),
+          );
+      final ips = await client
+          .lookup<IPAddressResourceRecord>(
+              ResourceRecordQuery.addressIPv4(srv.target))
+          .timeout(const Duration(seconds: 4))
+          .toList();
+      if (ips.isEmpty) return null;
+      final best = ips.firstWhere(
+        (r) => !r.address.isLinkLocal,
+        orElse: () => ips.first,
+      );
+      return 'http://${best.address.address}:$_hubPort';
+    } catch (_) {
+      return null;
+    } finally {
+      client.stop();
+    }
+  }
+
   static Future<void> _doInitialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -195,7 +239,7 @@ class ApiClient {
             debugPrint('ApiClient: DNS lookup failed');
           }
           if (!discovered) {
-            final mdnsUrl = await HubDiscoveryService().findHubBaseUrl();
+            final mdnsUrl = await _mdnsDiscover();
             if (mdnsUrl != null) {
               _baseUrl = mdnsUrl;
               debugPrint('ApiClient: mDNS discovered hub at $mdnsUrl');

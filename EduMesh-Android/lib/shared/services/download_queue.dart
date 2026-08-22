@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -184,24 +183,18 @@ class DownloadQueue extends ChangeNotifier {
 
   final Stopwatch _progressThrottle = Stopwatch()..start();
 
-  /// Whether [error] can never succeed on retry: missing/forbidden resource
-  /// (HTTP 404/403), a range-resume the server rejected, empty response body,
-  /// or full storage. Only network and unknown errors go through the retry
-  /// loop.
+  /// Whether [error] can never succeed on retry: missing/forbidden resource,
+  /// a range-resume the server rejected, empty response body, or full storage.
+  /// Only network and unknown errors go through the retry loop.
   bool _isPermanentFailure(Object error) {
-    if (error is DioException) {
-      final code = error.response?.statusCode;
-      return code == 404 || code == 403;
-    }
-    final text = error.toString();
-    const permanentMarkers = [
-      'EMPTY_RESPONSE',
-      'STORAGE_FULL',
-      'NOT_FOUND',
-      'FORBIDDEN',
-      'RANGE_NOT_SUPPORTED',
-    ];
-    return permanentMarkers.any(text.contains);
+    return error is DownloadError && switch (error.code) {
+      DownloadErrorCode.notFound ||
+      DownloadErrorCode.forbidden ||
+      DownloadErrorCode.rangeNotSupported ||
+      DownloadErrorCode.storageFull ||
+      DownloadErrorCode.emptyResponse => true,
+      _ => false,
+    };
   }
 
   Future<void> _stopBackgroundServiceIfIdle() async {

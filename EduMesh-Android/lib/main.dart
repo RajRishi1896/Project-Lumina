@@ -230,17 +230,15 @@ class LuminaApp extends ConsumerWidget {
           supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) {
             final l10n = AppLocalizations.of(context)!;
-            NotificationService().setLocalizedStrings(
+            NotificationService().setStrings(
               channelName: l10n.downloadChannelName,
               channelDescription: l10n.downloadChannelDescription,
-              downloadCompleteTitle: l10n.downloadCompleteNotificationTitle,
-              downloadCompleteBody: l10n.downloadCompleteNotificationBody('{title}'),
-              downloadFailedTitle: l10n.downloadFailedNotificationTitle,
-              downloadFailedBody: l10n.downloadFailedNotificationBody('{title}'),
-            );
-            NotificationService().setRemovedStrings(
-              title: l10n.removedFromServerNotificationTitle,
-              body: l10n.removedFromServerNotificationBody('{title}'),
+              completeTitle: l10n.downloadCompleteNotificationTitle,
+              completeBody: l10n.downloadCompleteNotificationBody('{title}'),
+              failedTitle: l10n.downloadFailedNotificationTitle,
+              failedBody: l10n.downloadFailedNotificationBody('{title}'),
+              removedTitle: l10n.removedFromServerNotificationTitle,
+              removedBody: l10n.removedFromServerNotificationBody('{title}'),
             );
             return child!;
           },

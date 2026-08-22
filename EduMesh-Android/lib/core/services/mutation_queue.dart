@@ -15,7 +15,9 @@ class MutationQueue {
   factory MutationQueue() => _instance;
   MutationQueue._internal();
 
-  static int _maxRetries(String priority) => priority == 'high' ? 10 : 3;
+  /// Retry cap for every queued mutation. Quiz results must survive long
+  /// outages, so the cap is the old high-priority tier's value for all.
+  static const int _maxRetries = 10;
 
   /// Enqueues a mutation to be sent to the server.
   ///
@@ -23,7 +25,7 @@ class MutationQueue {
   /// response data (or null when the method produces no body). On network
   /// failure or offline, persists to the `pending_mutations` table for
   /// later retry and returns null: the server's result is not known yet.
-  Future<dynamic> enqueue(String endpoint, {required String method, required Map<String, dynamic> body, String priority = 'normal'}) async {
+  Future<dynamic> enqueue(String endpoint, {required String method, required Map<String, dynamic> body}) async {
     if (ConnectivityService().isOnline) {
       try {
         return await _executeMutation(endpoint, method, body);
@@ -38,7 +40,6 @@ class MutationQueue {
       'body': jsonEncode(body),
       'created_at': DateTime.now().millisecondsSinceEpoch,
       'retries': 0,
-      'priority': priority,
     });
     return null;
   }
@@ -72,8 +73,6 @@ class MutationQueue {
       final id = row['id'] as int;
       final endpoint = row['endpoint'] as String;
       final method = row['method'] as String;
-      final priority = (row['priority'] as String?) ?? 'normal';
-      final maxRetries = _maxRetries(priority);
       try {
         final body = jsonDecode(row['body'] as String) as Map<String, dynamic>;
         await _executeMutation(endpoint, method, body);
@@ -94,11 +93,8 @@ class MutationQueue {
           continue;
         }
         final retries = (row['retries'] as int) + 1;
-        if (retries >= maxRetries) {
-          if (priority == 'high') {
-            debugPrint('MutationQueue: DROPPED HIGH-PRIORITY mutation $id; quiz result may never sync');
-          }
-          debugPrint('MutationQueue: dropping mutation $id ($endpoint) after $maxRetries retries');
+        if (retries >= _maxRetries) {
+          debugPrint('MutationQueue: dropping mutation $id ($endpoint) after $_maxRetries retries');
           await db.delete('pending_mutations', where: 'id = ?', whereArgs: [id]);
         } else {
           await db.update('pending_mutations', {'retries': retries}, where: 'id = ?', whereArgs: [id]);
@@ -122,14 +118,6 @@ class MutationQueue {
       case 'PUT':
         await ApiClient.ensureInitialized();
         await ApiClient.dio.put(endpoint, data: body);
-        return null;
-      case 'DELETE':
-        await ApiClient.ensureInitialized();
-        await ApiClient.dio.delete(endpoint, data: body);
-        return null;
-      case 'PATCH':
-        await ApiClient.ensureInitialized();
-        await ApiClient.dio.patch(endpoint, data: body);
         return null;
       default:
         throw ArgumentError('Unsupported HTTP method: $method');

@@ -71,7 +71,6 @@ class ShareServer {
   /// Cached shareable-file index, keyed by precomputed record maps.
   List<Map<String, dynamic>>? _shareIndex;
   DateTime _indexBuiltAt = DateTime.fromMillisecondsSinceEpoch(0);
-  Future<List<Map<String, dynamic>>>? _indexBuild;
   bool _indexDirty = true;
 
   /// Binds the UDP and TCP listeners, but only while the share setting is ON.
@@ -282,17 +281,9 @@ class ShareServer {
 
   /// Rebuilds the shareable-file index in one pass: DB scan + file stat per
   /// downloaded record, cached until the next download completes.
-  ///
-  /// Concurrent rebuild requests share a single in-flight build.
-  Future<List<Map<String, dynamic>>> _buildShareIndex() {
-    final running = _indexBuild;
-    if (running != null) return running;
-    final build = _buildShareIndexInner();
-    _indexBuild = build;
-    return build.whenComplete(() => _indexBuild = null);
-  }
-
-  Future<List<Map<String, dynamic>>> _buildShareIndexInner() async {
+  // ponytail: two concurrent UDP requests may both rebuild; the scan is
+  // idempotent and rare, so no in-flight dedup needed.
+  Future<List<Map<String, dynamic>>> _buildShareIndex() async {
     try {
       final downloads = await DBHelper().getDownloadedResources();
       final records = <Map<String, dynamic>>[];

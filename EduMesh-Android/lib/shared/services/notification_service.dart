@@ -19,14 +19,13 @@ class NotificationService {
   bool _initialized = false;
   int _nextId = 1000;
 
-  // Configurable strings for localization: set via [setLocalizedStrings]
-  // when a BuildContext is available. Defaults are English fallbacks.
+  // Localized strings for notifications and channel metadata: set via
+  // [setStrings] when a BuildContext is available. Defaults are English
+  // fallbacks (same values as the ARB keys in app_en.arb).
   String _channelName = 'Downloads';
   String _channelDescription = 'Download completion notifications';
   String _completeNotificationTitle = 'Download Complete';
   String _failedNotificationTitle = 'Download Failed';
-  // English fallbacks (same values as the ARB keys in app_en.arb). Replaced
-  // with locals via [setLocalizedStrings] once a BuildContext is available.
   String _completeNotificationBody = '"{title}" has been downloaded and saved to offline storage.';
   String _failedNotificationBody = '"{title}" could not be downloaded. Check the server connection and try again.';
   String _removedNotificationTitle = 'Removed from server';
@@ -78,40 +77,17 @@ class NotificationService {
     }
   }
 
-  ///
-  /// On Android 13+ this triggers the system permission dialog if not yet decided.
-  /// On Android <13 the permission is auto-granted from the manifest and the
-  /// plugin returns `null`, which this method treats as granted (`!= false`).
-  /// Returns `false` on non-Android platforms where the plugin is unavailable.
-  Future<bool> requestPermission() async {
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    if (androidPlugin == null) return false;
-    final granted = await androidPlugin.requestNotificationsPermission();
-    return granted != false;
-  }
-
-  bool _permissionGranted = false;
-
-  /// Requests notification permission until granted. A denial is not cached:
-  /// the next notification asks again, so a dismissed system dialog doesn't
-  /// silence notifications for the rest of the app run.
-  Future<bool> _ensurePermission() async {
-    if (_permissionGranted) return true;
-    _permissionGranted = await requestPermission();
-    return _permissionGranted;
-  }
-
   /// Shows a local notification confirming a download finished.
   ///
-  /// Checks [isEnabled] and initializes the plugin if needed. Calls
-  /// [requestPermission] immediately before showing: on Android 13+ this
-  /// surfaces the permission prompt at a natural UX moment (right after the
-  /// user triggered a download).
-  Future<void> showDownloadComplete(String title, {String? notificationTitle, String? notificationBody}) {
+  /// Checks [isEnabled] and initializes the plugin if needed. Requests
+  /// permission immediately before showing: on Android 13+ this surfaces the
+  /// permission prompt at a natural UX moment (right after the user
+  /// triggered a download).
+  Future<void> showDownloadComplete(String title) {
     return _show(
       id: _nextId++,
-      title: notificationTitle ?? _completeNotificationTitle,
-      body: (notificationBody ?? _completeNotificationBody).replaceAll('{title}', title),
+      title: _completeNotificationTitle,
+      body: _completeNotificationBody.replaceAll('{title}', title),
     );
   }
 
@@ -127,54 +103,54 @@ class NotificationService {
     );
   }
 
-  /// Sets localized strings for notifications.
+  /// Sets all localized notification strings.
   ///
   /// Call this with [AppLocalizations] values when a [BuildContext] is
-  /// available (e.g. in [LuminaApp.build] or after locale change).
-  void setLocalizedStrings({
-    String? channelName,
-    String? channelDescription,
-    String? downloadCompleteTitle,
-    String? downloadCompleteBody,
-    String? downloadFailedTitle,
-    String? downloadFailedBody,
+  /// available (e.g. in the MaterialApp builder). The English values assigned
+  /// above are fallbacks for anything shown before the first frame.
+  void setStrings({
+    required String channelName,
+    required String channelDescription,
+    required String completeTitle,
+    required String completeBody,
+    required String failedTitle,
+    required String failedBody,
+    required String removedTitle,
+    required String removedBody,
   }) {
-    if (channelName != null) _channelName = channelName;
-    if (channelDescription != null) _channelDescription = channelDescription;
-    if (downloadCompleteTitle != null) _completeNotificationTitle = downloadCompleteTitle;
-    if (downloadCompleteBody != null) _completeNotificationBody = downloadCompleteBody;
-    if (downloadFailedTitle != null) _failedNotificationTitle = downloadFailedTitle;
-    if (downloadFailedBody != null) _failedNotificationBody = downloadFailedBody;
-  }
-
-  /// Sets localized strings for the "removed from server" notification.
-  ///
-  /// Call this with [AppLocalizations] values alongside [setLocalizedStrings]
-  /// when a [BuildContext] is available.
-  void setRemovedStrings({required String title, required String body}) {
-    _removedNotificationTitle = title;
-    _removedNotificationBody = body;
+    _channelName = channelName;
+    _channelDescription = channelDescription;
+    _completeNotificationTitle = completeTitle;
+    _completeNotificationBody = completeBody;
+    _failedNotificationTitle = failedTitle;
+    _failedNotificationBody = failedBody;
+    _removedNotificationTitle = removedTitle;
+    _removedNotificationBody = removedBody;
   }
 
   /// Shows a local notification when a download fails after all retries.
   ///
   /// Uses the same channel and permission flow as [showDownloadComplete].
-  Future<void> showDownloadFailed(String title, {String? notificationTitle, String? notificationBody}) {
+  Future<void> showDownloadFailed(String title) {
     return _show(
       id: _nextId++,
-      title: notificationTitle ?? _failedNotificationTitle,
-      body: (notificationBody ?? _failedNotificationBody).replaceAll('{title}', title),
+      title: _failedNotificationTitle,
+      body: _failedNotificationBody.replaceAll('{title}', title),
     );
   }
 
   /// Requests permission, initializes the plugin, and shows a notification.
   ///
-  /// Returns early when the user denied the notification permission.
+  /// Returns early when the user denied the notification permission. A denial
+  /// is not cached: the next notification asks again, so a dismissed system
+  /// dialog doesn't silence notifications for the rest of the app run.
+  /// On Android <13 the plugin returns `null`, treated as granted.
   Future<void> _show({required int id, required String title, required String body, AndroidNotificationDetails? androidDetails}) async {
     try {
       if (!await isEnabled) return;
       if (!_initialized) await init();
-      if (!await _ensurePermission()) return;
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null && await androidPlugin.requestNotificationsPermission() == false) return;
     } catch (_) {
       return;
     }

@@ -7,6 +7,30 @@ import '../../core/network/api_client.dart';
 import '../../core/storage/db_helper.dart';
 import 'share_server.dart';
 
+/// Failure categories a download can produce. [network] and [unknown] are
+/// retryable; every other code is permanent and skips the retry loop.
+enum DownloadErrorCode {
+  notFound,
+  forbidden,
+  rangeNotSupported,
+  storageFull,
+  emptyResponse,
+  network,
+  unknown,
+}
+
+/// A download failure carrying its classification as data, so the queue can
+/// match on [code] instead of string-sniffing exception messages.
+class DownloadError implements Exception {
+  final DownloadErrorCode code;
+  final String? detail;
+
+  DownloadError(this.code, [this.detail]);
+
+  @override
+  String toString() => detail == null ? 'DownloadError.${code.name}' : 'DownloadError.${code.name}: $detail';
+}
+
 /// Downloads resource files to local storage with resumable `.part` staging.
 class DownloadService {
 
@@ -63,7 +87,7 @@ class DownloadService {
       // Server ignored Range header, .part file is corrupt, restart
       if (startByte > 0 && response.statusCode == 200) {
         await partFile.delete();
-        throw Exception('RANGE_NOT_SUPPORTED');
+        throw DownloadError(DownloadErrorCode.rangeNotSupported);
       }
 
       final sink = partFile.openWrite(mode: FileMode.append);
@@ -78,7 +102,7 @@ class DownloadService {
 
       if (await partFile.length() == 0) {
         await partFile.delete();
-        throw Exception('EMPTY_RESPONSE');
+        throw DownloadError(DownloadErrorCode.emptyResponse);
       }
 
       if (await partFile.exists()) {
@@ -89,23 +113,21 @@ class DownloadService {
     } on DioException catch (e) {
       // .part file remains for resume on next attempt
       final code = e.response?.statusCode;
-      if (code == 404) throw Exception('NOT_FOUND');
-      if (code == 403) throw Exception('FORBIDDEN');
+      if (code == 404) throw DownloadError(DownloadErrorCode.notFound);
+      if (code == 403) throw DownloadError(DownloadErrorCode.forbidden);
       final errText = e.error?.toString() ?? '';
       if (errText.contains('No space left on device') ||
           e.message?.contains('No space left on device') == true) {
-        throw Exception('STORAGE_FULL');
+        throw DownloadError(DownloadErrorCode.storageFull);
       }
       debugPrint('Download network error: $e');
-      throw Exception('NETWORK_ERROR');
+      throw DownloadError(DownloadErrorCode.network, e.type.name);
+    } on DownloadError {
+      rethrow;
     } catch (e) {
       // .part file remains for resume on next attempt
-      // Thrown markers carry their own permanent-failure classification:
-      // preserve them instead of collapsing into UNKNOWN_ERROR.
-      if (e.toString().contains('RANGE_NOT_SUPPORTED')) rethrow;
-      if (e.toString().contains('EMPTY_RESPONSE')) rethrow;
       debugPrint('Unexpected download error: $e');
-      throw Exception('UNKNOWN_ERROR');
+      throw DownloadError(DownloadErrorCode.unknown, e.toString());
     }
   }
 
@@ -133,7 +155,7 @@ class DownloadService {
       return null;
     } catch (e) {
       debugPrint('DownloadService: downloadAndTrack failed: $e');
-      if (e is Exception && e.toString().contains('STORAGE_FULL')) rethrow;
+      if (e is DownloadError && e.code == DownloadErrorCode.storageFull) rethrow;
       return null;
     }
   }

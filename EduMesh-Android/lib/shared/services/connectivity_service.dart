@@ -48,14 +48,6 @@ class ConnectivityService extends ChangeNotifier {
     _heartbeat = Timer.periodic(const Duration(seconds: 30), (_) => _checkNow());
   }
 
-  /// Stops all connectivity monitoring and cancels timers.
-  void stop() {
-    _platformSub?.cancel();
-    _platformSub = null;
-    _heartbeat?.cancel();
-    _heartbeat = null;
-  }
-
   void _setOffline() {
     _checkSeq++;
     final wasOnline = _online;
