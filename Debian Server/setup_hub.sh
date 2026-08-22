@@ -221,31 +221,13 @@ root hard nofile 65535
 EOF"
 fi
 
-# 13. RTC Wake Alarm (Auto-boot on power loss, re-arms every 6 hours)
-echo "[INFO] Setting up RTC wake alarm for power-loss recovery..."
-bash -c "cat > /usr/local/bin/wake-alarm.sh << 'WAKE_ALARM'
-#!/bin/bash
-# Re-arm RTC alarm 6 hours from now. Harmless if system is already running.
-/usr/sbin/rtcwake -m no -s 21600
-WAKE_ALARM"
-chmod 755 /usr/local/bin/wake-alarm.sh
-
-cat > /etc/systemd/system/wake-alarm.service << 'WAKE_SVC'
-[Unit]
-Description=Re-arm RTC wake alarm every 6 hours for power-loss recovery
-After=network.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/wake-alarm.sh
-
-[Install]
-WantedBy=multi-user.target
-WAKE_SVC"
-systemctl daemon-reload
-systemctl enable wake-alarm.service 2>/dev/null || true
-systemctl start wake-alarm.service 2>/dev/null || true
-echo "[INFO] RTC wake alarm set. Re-arms every 6 hours. Auto-boots on power restore."
+# 13. RTC Wake Alarm (one-shot arm at install)
+# rtcwake -m no writes the alarm to the RTC's persistent registers, so it
+# survives reboots (including the nightly 3 AM reboot cron above). Arming
+# once here is enough; no periodic re-arm service is needed.
+echo "[INFO] Arming RTC wake alarm for power-loss recovery..."
+/usr/sbin/rtcwake -m no -s 21600 2>/dev/null || true
+echo "[INFO] RTC wake alarm armed. Auto-boots on power restore."
 
 echo "-----------------------------------"
 echo "[SUCCESS] HARDENED SETUP COMPLETE!"
