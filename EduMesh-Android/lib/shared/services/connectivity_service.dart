@@ -74,7 +74,7 @@ class ConnectivityService extends ChangeNotifier {
         // queued mutations and pending downloads once, right after the
         // first confirmed ping.
         _startupFlushed = true;
-        unawaited(ApiClient.syncTime());
+        unawaited(ApiClient.maybeReResolve());
         unawaited(_flushPending());
       }
     } catch (_) {
@@ -84,7 +84,7 @@ class ConnectivityService extends ChangeNotifier {
     if (_online != wasOnline) {
       notifyListeners();
       if (_online) {
-        unawaited(ApiClient.syncTime());
+        unawaited(ApiClient.maybeReResolve());
         unawaited(_flushPending());
       }
     }

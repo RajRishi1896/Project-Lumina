@@ -15,8 +15,6 @@ class ApiClient {
   static bool _initialized = false;
   static Completer<void>? _initCompleter;
   static Completer<void>? _refreshCompleter;
-  static Duration _clockOffset = Duration.zero;
-  static DateTime? _lastSyncTime;
 
   /// Callback invoked when a token refresh fails and the user must be logged out.
   static void Function()? onForceLogout;
@@ -29,20 +27,10 @@ class ApiClient {
     onForceLogout?.call();
   }
 
-  /// Current clock skew between local device and server.
   /// Monotonic session-generation counter from [AuthService]: bumped on
   /// every logout/profile switch. Background services snapshot it at start
   /// and re-check before writing per-profile data.
   static int get sessionGeneration => AuthService.sessionGeneration;
-
-  /// Returns [DateTime.now()] corrected for server clock skew.
-  /// Returns uncorrected time if the last sync is over 1 hour stale.
-  static DateTime correctedNow() {
-    if (_lastSyncTime != null && DateTime.now().difference(_lastSyncTime!) > const Duration(hours: 1)) {
-      return DateTime.now();
-    }
-    return DateTime.now().add(_clockOffset);
-  }
 
   static final Dio _dio = _createDio();
 
@@ -292,7 +280,10 @@ class ApiClient {
   /// Safe to call multiple times; only performs initialization once.
   static Future<void> ensureInitialized() => _ensureInitialized();
 
-  static Future<void> _maybeReResolve() async {
+  /// If the current base URL is a raw fallback IP, re-checks DNS for
+  /// `lumina.hub` and switches back to the hostname once it resolves.
+  /// Call on every connectivity restore.
+  static Future<void> maybeReResolve() async {
     final uri = Uri.tryParse(_baseUrl);
     if (uri == null) return;
     if (InternetAddress.tryParse(uri.host) == null) return;
@@ -303,27 +294,6 @@ class ApiClient {
         _baseUrl = _defaultDomain;
         _dio.options.baseUrl = _baseUrl;
         debugPrint('ApiClient: DNS recovered, using default domain');
-      }
-    } catch (_) {}
-  }
-
-  /// Sync time with server and compute clock skew offset.
-  /// Call this on every connectivity restore.
-  static Future<void> syncTime() async {
-    try {
-      await _ensureInitialized();
-      await _maybeReResolve();
-      final resp = await _dio.get(
-        '$_baseUrl/system/time',
-        options: Options(sendTimeout: const Duration(seconds: 3), receiveTimeout: const Duration(seconds: 3)),
-      );
-      final serverTimeStr = resp.data['server_time']?.toString();
-      if (serverTimeStr != null) {
-        final serverTime = DateTime.parse(serverTimeStr).toUtc();
-        final localTime = DateTime.now().toUtc();
-        _clockOffset = serverTime.difference(localTime);
-        _lastSyncTime = DateTime.now();
-        debugPrint('ApiClient: clock offset = ${_clockOffset.inMilliseconds}ms');
       }
     } catch (_) {}
   }
