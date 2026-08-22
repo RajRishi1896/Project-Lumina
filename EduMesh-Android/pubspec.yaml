@@ -86,15 +86,3 @@ flutter:
           weight: 400
         - asset: assets/fonts/NotoSansTelugu-Bold.ttf
           weight: 700
-    - family: NotoSansMalayalam
-      fonts:
-        - asset: assets/fonts/NotoSansMalayalam-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/NotoSansMalayalam-Bold.ttf
-          weight: 700
-    - family: NotoSansBengali
-      fonts:
-        - asset: assets/fonts/NotoSansBengali-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/NotoSansBengali-Bold.ttf
-          weight: 700
