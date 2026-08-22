@@ -10,7 +10,7 @@ import shutil
 import zipfile
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
 from app.database import UPLOAD_DIR, DB_PATH, gen_composite_uid
 from app.audit import audit, Action
@@ -38,6 +38,110 @@ class _ZipError(Exception):
         super().__init__(detail)
 
 
+async def _stage_zip(file: UploadFile):
+    """Write an uploaded ZIP to a fresh temp dir in 64KB chunks (4MB flush batches).
+
+    Returns:
+        Tuple of (tmp_dir, archive_path). Caller removes tmp_dir when done.
+
+    Raises:
+        HTTPException: 400 if the ZIP exceeds the 500 MB limit.
+    """
+    tmp_dir = os.path.join(COURSES_DIR, f"tmp_{uuid.uuid4().hex}")
+    os.makedirs(tmp_dir, exist_ok=True)
+    safe_filename = re.sub(r'[^A-Za-z0-9_.-]', '_', file.filename or 'archive.zip')
+    archive_path = os.path.join(tmp_dir, safe_filename)
+
+    def _flush(buf):
+        """Append a buffer of uploaded bytes to the temp archive file."""
+        with open(archive_path, "ab") as f:
+            f.write(buf)
+
+    chunk_size = 64 * 1024
+    total_size = 0
+    buf = []
+    while True:
+        chunk = await file.read(chunk_size)
+        if not chunk:
+            break
+        buf.append(chunk)
+        total_size += len(chunk)
+        if total_size > 500 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="ZIP exceeds 500 MB limit.")  # i18n: user-facing error message
+        if len(buf) >= 64:
+            await asyncio.to_thread(_flush, b"".join(buf))
+            buf = []
+    if buf:
+        await asyncio.to_thread(_flush, b"".join(buf))
+    await file.close()
+    return tmp_dir, archive_path
+
+
+def _extract_into_course(conn_sql, zf, course_id, next_pos,
+                         res_topic_map=None, old_to_new_topic=None):
+    """Extract quiz_*.json, assets/, and resources/ ZIP entries into a course.
+
+    Writes quiz files to the course dir, assets to assets/, resource files to
+    resources/, and inserts one course_resources row per resources/ entry.
+    When ``res_topic_map``/``old_to_new_topic`` are given, imported resources
+    are linked to their manifest topics.
+
+    Args:
+        conn_sql: Open sqlite3 connection for course_resources inserts.
+        zf: The opened ZipFile.
+        course_id: Target course id.
+        next_pos: First position index to assign.
+        res_topic_map: Optional original_name -> old topic id map from course.json.
+        old_to_new_topic: Optional old topic id -> new topic id map.
+
+    Returns:
+        Tuple (resources_created, quizzes_found, assets_extracted, next_pos).
+    """
+    res_dir = _resources_dir(course_id)
+    ast_dir = _assets_dir(course_id)
+    res_topic_map = res_topic_map or {}
+    old_to_new_topic = old_to_new_topic or {}
+    resources_created = quizzes_found = assets_extracted = 0
+
+    for name in zf.namelist():
+        if zf.getinfo(name).is_dir() or name == "course.json":
+            continue
+        if name.startswith("quiz_") and name.endswith(".json"):
+            with open(os.path.join(COURSES_DIR, course_id, name), "wb") as f:
+                f.write(zf.read(name))
+            quizzes_found += 1
+            continue
+        if name.startswith("assets/"):
+            arcname = os.path.relpath(name, "assets")
+            dest = os.path.join(ast_dir, arcname)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            with open(dest, "wb") as f:
+                f.write(zf.read(name))
+            assets_extracted += 1
+            continue
+        if name.startswith("resources/"):
+            orig = os.path.basename(name)
+            rid = str(uuid.uuid4())
+            _, ext = os.path.splitext(orig)
+            saved_name = f"{rid}{ext}"
+            dest = os.path.join(res_dir, saved_name)
+            with open(dest, "wb") as f:
+                f.write(zf.read(name))
+            fsize = os.path.getsize(dest)
+            rtype = "video" if ext.lower() in (".mp4", ".webm", ".avi", ".mkv") else "textbook"
+            topic_fk = old_to_new_topic.get(res_topic_map.get(orig, ""), "")
+            conn_sql.execute(
+                """INSERT INTO course_resources
+                   (id, course_id, resource_type, title, original_name, filename, file_size, position, topic_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (rid, course_id, rtype, orig, orig, saved_name, fsize, next_pos, topic_fk)
+            )
+            next_pos += 1
+            resources_created += 1
+
+    return resources_created, quizzes_found, assets_extracted, next_pos
+
+
 @router.post("/api/teacher/courses/{course_id}/upload-resource",
              summary="Upload a resource file to a course", tags=["Teacher Courses"],
              description="Uploads a single resource file to a course. Accepts multipart form data with an optional title and topic assignment.",
@@ -50,7 +154,6 @@ async def upload_course_resource(
     topic_id: str = Query("", description="Topic ID to assign"),
     file: UploadFile = File(...),
     teacher_user: str = Depends(verify_teacher),
-    request: Request = None,
 ):
     """Upload a single resource file to a course.
 
@@ -70,8 +173,7 @@ async def upload_course_resource(
     saved_name = f"{resource_id}{ext}"
     dest_path = os.path.join(_resources_dir(course_id), saved_name)
 
-    total_size = await _write_chunked(dest_path, file, 500 * 1024 * 1024,
-                                       request=request, support_resume=True)
+    total_size = await _write_chunked(dest_path, file, 500 * 1024 * 1024)
     disp_title = title if title else original_name
 
     from app.async_db import db_exec
@@ -108,34 +210,7 @@ async def upload_course_zip(
         Counts of resources created, quizzes found, and assets extracted.
     """
     await _ensure_course_exists(course_id)
-
-    tmp_dir = os.path.join(COURSES_DIR, f"tmp_{uuid.uuid4().hex}")
-    os.makedirs(tmp_dir, exist_ok=True)
-    safe_filename = re.sub(r'[^A-Za-z0-9_.-]', '_', file.filename or 'archive.zip')
-    archive_path = os.path.join(tmp_dir, safe_filename)
-
-    def _flush(buf):
-        """Append a buffer of uploaded bytes to the temp archive file."""
-        with open(archive_path, "ab") as f:
-            f.write(buf)
-
-    chunk_size = 64 * 1024
-    total_size = 0
-    buf = []
-    while True:
-        chunk = await file.read(chunk_size)
-        if not chunk:
-            break
-        buf.append(chunk)
-        total_size += len(chunk)
-        if total_size > 500 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="ZIP exceeds 500 MB limit.")  # i18n: user-facing error message
-        if len(buf) >= 64:
-            await asyncio.to_thread(_flush, b"".join(buf))
-            buf = []
-    if buf:
-        await asyncio.to_thread(_flush, b"".join(buf))
-    await file.close()
+    tmp_dir, archive_path = await _stage_zip(file)
 
     def _process():
         """Extract the ZIP in a worker thread, validating paths and writing rows."""
@@ -147,12 +222,6 @@ async def upload_course_zip(
                     if '..' in name or name.startswith('/'):
                         raise _ZipError(400, f"ZIP contains invalid path: {name}")  # i18n: user-facing error message
 
-                resources_created = 0
-                quizzes_found = 0
-                assets_extracted = 0
-                res_dir = _resources_dir(course_id)
-                ast_dir = _assets_dir(course_id)
-
                 conn_sql = sqlite3.connect(DB_PATH, timeout=5.0)
                 conn_sql.row_factory = sqlite3.Row
                 last_row = conn_sql.execute(
@@ -160,6 +229,8 @@ async def upload_course_zip(
                     (course_id,)
                 ).fetchone()
                 next_pos = (last_row["mp"] if last_row and last_row["mp"] is not None else -1) + 1
+
+                resources_created = quizzes_found = assets_extracted = 0
 
                 if "course.json" in names:
                     md = json.loads(zf.read("course.json"))
@@ -177,40 +248,8 @@ async def upload_course_zip(
                          md.get("language", fallback.get("language", "en")), course_id)
                     )
 
-                for name in names:
-                    if zf.getinfo(name).is_dir() or name == "course.json":
-                        continue
-                    if name.startswith("quiz_") and name.endswith(".json"):
-                        with open(os.path.join(COURSES_DIR, course_id, name), "wb") as f:
-                            f.write(zf.read(name))
-                        quizzes_found += 1
-                        continue
-                    if name.startswith("assets/"):
-                        arcname = os.path.relpath(name, "assets")
-                        dest = os.path.join(ast_dir, arcname)
-                        os.makedirs(os.path.dirname(dest), exist_ok=True)
-                        with open(dest, "wb") as f:
-                            f.write(zf.read(name))
-                        assets_extracted += 1
-                        continue
-                    if name.startswith("resources/"):
-                        orig = os.path.basename(name)
-                        rid = str(uuid.uuid4())
-                        _, ext = os.path.splitext(orig)
-                        saved_name = f"{rid}{ext}"
-                        dest = os.path.join(res_dir, saved_name)
-                        with open(dest, "wb") as f:
-                            f.write(zf.read(name))
-                        fsize = os.path.getsize(dest)
-                        rtype = "video" if ext.lower() in (".mp4", ".webm", ".avi", ".mkv") else "textbook"
-                        conn_sql.execute(
-                            """INSERT INTO course_resources
-                               (id, course_id, resource_type, title, original_name, filename, file_size, position)
-                               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                            (rid, course_id, rtype, orig, orig, saved_name, fsize, next_pos)
-                        )
-                        next_pos += 1
-                        resources_created += 1
+                resources_created, quizzes_found, assets_extracted, _ = _extract_into_course(
+                    conn_sql, zf, course_id, next_pos)
 
                 conn_sql.commit()
                 return {"status": "ok", "resources_created": resources_created,
@@ -222,8 +261,7 @@ async def upload_course_zip(
         except Exception as e:
             raise _ZipError(400, f"Failed to extract archive: {e}")  # i18n: user-facing error message, {e} is the exception detail
         finally:
-            if os.path.exists(tmp_dir):
-                shutil.rmtree(tmp_dir, ignore_errors=True)
+            shutil.rmtree(tmp_dir, ignore_errors=True)
             try:
                 if conn_sql:
                     conn_sql.close()
@@ -262,33 +300,7 @@ async def import_course_zip(
         201 with the new course_id and extraction counts.
     """
     from app.database import gen_uid
-    tmp_dir = os.path.join(COURSES_DIR, f"tmp_{uuid.uuid4().hex}")
-    os.makedirs(tmp_dir, exist_ok=True)
-    safe_filename = re.sub(r'[^A-Za-z0-9_.-]', '_', file.filename or 'archive.zip')
-    archive_path = os.path.join(tmp_dir, safe_filename)
-
-    def _flush(buf):
-        """Append a buffer of uploaded bytes to the temp archive file."""
-        with open(archive_path, "ab") as f:
-            f.write(buf)
-
-    chunk_size = 64 * 1024
-    total_size = 0
-    buf = []
-    while True:
-        chunk = await file.read(chunk_size)
-        if not chunk:
-            break
-        buf.append(chunk)
-        total_size += len(chunk)
-        if total_size > 500 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="ZIP exceeds 500 MB limit.")  # i18n: user-facing error message
-        if len(buf) >= 64:
-            await asyncio.to_thread(_flush, b"".join(buf))
-            buf = []
-    if buf:
-        await asyncio.to_thread(_flush, b"".join(buf))
-    await file.close()
+    tmp_dir, archive_path = await _stage_zip(file)
 
     def _process():
         """Create the course and extract the ZIP in a worker thread."""
@@ -320,17 +332,12 @@ async def import_course_zip(
                     (course_id, title, description, subject, subject_id, grade, language, teacher_user, now, now)
                 )
 
-                resources_created = quizzes_found = assets_extracted = 0
-                res_dir = _resources_dir(course_id)
-                ast_dir = _assets_dir(course_id)
-                next_pos = 0
-
                 old_to_new_topic = {}
                 for t in md.get("topics", []):
                     new_tid = gen_uid("TPC")
                     conn_sql.execute(
                         "INSERT INTO topics (id, course_id, title, description, position, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                        (new_tid, course_id, t.get("title", ""), t.get("description", ""), t.get("position", next_pos), now)
+                        (new_tid, course_id, t.get("title", ""), t.get("description", ""), t.get("position", 0), now)
                     )
                     old_to_new_topic[t["id"]] = new_tid
 
@@ -339,41 +346,9 @@ async def import_course_zip(
                     if r.get("topic_id") and r.get("original_name"):
                         res_topic_map[r["original_name"]] = r["topic_id"]
 
-                for name in names:
-                    if zf.getinfo(name).is_dir() or name == "course.json":
-                        continue
-                    if name.startswith("quiz_") and name.endswith(".json"):
-                        with open(os.path.join(COURSES_DIR, course_id, name), "wb") as f:
-                            f.write(zf.read(name))
-                        quizzes_found += 1
-                        continue
-                    if name.startswith("assets/"):
-                        arcname = os.path.relpath(name, "assets")
-                        dest = os.path.join(ast_dir, arcname)
-                        os.makedirs(os.path.dirname(dest), exist_ok=True)
-                        with open(dest, "wb") as f:
-                            f.write(zf.read(name))
-                        assets_extracted += 1
-                        continue
-                    if name.startswith("resources/"):
-                        orig = os.path.basename(name)
-                        rid = str(uuid.uuid4())
-                        _, ext = os.path.splitext(orig)
-                        saved_name = f"{rid}{ext}"
-                        dest = os.path.join(res_dir, saved_name)
-                        with open(dest, "wb") as f:
-                            f.write(zf.read(name))
-                        fsize = os.path.getsize(dest)
-                        rtype = "video" if ext.lower() in (".mp4", ".webm", ".avi", ".mkv") else "textbook"
-                        topic_fk = old_to_new_topic.get(res_topic_map.get(orig, ""), "")
-                        conn_sql.execute(
-                            """INSERT INTO course_resources
-                               (id, course_id, resource_type, title, original_name, filename, file_size, position, topic_id)
-                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                            (rid, course_id, rtype, orig, orig, saved_name, fsize, next_pos, topic_fk)
-                        )
-                        next_pos += 1
-                        resources_created += 1
+                resources_created, quizzes_found, assets_extracted, _ = _extract_into_course(
+                    conn_sql, zf, course_id, 0,
+                    res_topic_map=res_topic_map, old_to_new_topic=old_to_new_topic)
 
                 conn_sql.commit()
             return {"status": "ok", "course_id": course_id, "resources_created": resources_created,
@@ -385,8 +360,7 @@ async def import_course_zip(
         except Exception as e:
             raise _ZipError(400, f"Failed to extract archive: {e}")  # i18n: user-facing error message, {e} is the exception detail
         finally:
-            if os.path.exists(tmp_dir):
-                shutil.rmtree(tmp_dir, ignore_errors=True)
+            shutil.rmtree(tmp_dir, ignore_errors=True)
             try:
                 if conn_sql:
                     conn_sql.close()

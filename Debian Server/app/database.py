@@ -42,23 +42,15 @@ def gen_composite_uid(conn, grade: int, subject: str, prefix: str) -> str:
         subject_uid = row[0]
     return f"{grade_uid}-{subject_uid}-{uuid.uuid4().hex[:8]}"
 
-RETENTION_DELTAS = {
-    "24h": 86400,
-    "7d": 604800,
-    "30d": 2592000,
-    "3m": 7776000,
-    "6m": 15552000,
-}
-
 
 def init_db():
     """Initialise the SQLite database schema and seed default data.
 
-    Creates all tables idempotently (IF NOT EXISTS), runs composite indexes for
-    hot query paths, seeds default grades/subjects, and creates a default admin
-    account (username ``admin``, password ``lumina2026``) on first run.  Schema
-    migrations are wrapped in try/except so they pass silently when columns or
-    tables already exist.
+    Creates all tables idempotently (IF NOT EXISTS) with every column declared
+    inline, runs composite indexes for hot query paths, seeds default
+    grades/subjects, and creates a default admin account (username ``admin``,
+    password ``lumina2026``) on first run.  No migration chain: the database
+    may be recreated from scratch at any time.
     """
     from app.dependencies import hash_password
 
@@ -91,7 +83,10 @@ def init_db():
         file_path TEXT,
         type TEXT,
         page_count INTEGER DEFAULT 0,
-        duration_seconds INTEGER DEFAULT 0
+        duration_seconds INTEGER DEFAULT 0,
+        file_size INTEGER DEFAULT 0,
+        subject_id TEXT DEFAULT '',
+        deleted_at TEXT
     )''')
     c.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, hashed_password TEXT, name TEXT, department TEXT, scholar_id TEXT, reset_required INTEGER DEFAULT 0, role TEXT NOT NULL DEFAULT "teacher")')
     try:
@@ -122,29 +117,6 @@ def init_db():
             c.execute(_idx_sql)
         except Exception:
             pass
-    # Migration: ensure resources table has file_size column
-    try:
-        c.execute('ALTER TABLE resources ADD COLUMN file_size INTEGER DEFAULT 0')
-    except Exception:
-        pass
-    # Migration: add subject_id FK column to resources
-    try:
-        c.execute("ALTER TABLE resources ADD COLUMN subject_id TEXT DEFAULT ''")
-    except Exception:
-        pass
-    # Backfill subject_id from subjects table by matching name
-    try:
-        c.execute('''UPDATE resources SET subject_id = (
-            SELECT s.id FROM subjects s WHERE s.name = resources.subject
-            LIMIT 1
-        ) WHERE subject_id = '' OR subject_id IS NULL''')
-    except Exception:
-        pass
-    # Migration: add deleted_at column for recycle bin soft deletes
-    try:
-        c.execute('ALTER TABLE resources ADD COLUMN deleted_at TEXT')
-    except Exception:
-        pass
     c.execute('CREATE TABLE IF NOT EXISTS weekly_study (scholar_id TEXT PRIMARY KEY, total_seconds INTEGER DEFAULT 0, streak_days INTEGER DEFAULT 0, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
     c.execute('CREATE TABLE IF NOT EXISTS scholar_downloads (scholar_id TEXT, resource_id TEXT, PRIMARY KEY(scholar_id, resource_id))')
     c.execute('CREATE TABLE IF NOT EXISTS activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, scholar_id TEXT NOT NULL, action TEXT NOT NULL, timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (scholar_id) REFERENCES scholars(id))')
@@ -166,20 +138,9 @@ def init_db():
       updated_at TEXT DEFAULT (datetime('now')),
       published INTEGER DEFAULT 0,
       teacher_username TEXT DEFAULT '',
-      enrollment_count INTEGER DEFAULT 0
+      enrollment_count INTEGER DEFAULT 0,
+      subject_id TEXT DEFAULT ''
     )''')
-    # Migration: add subject_id FK column to courses (table created above)
-    try:
-        c.execute("ALTER TABLE courses ADD COLUMN subject_id TEXT DEFAULT ''")
-    except Exception:
-        pass
-    try:
-        c.execute('''UPDATE courses SET subject_id = (
-            SELECT s.id FROM subjects s WHERE s.name = courses.subject
-            LIMIT 1
-        ) WHERE subject_id = '' OR subject_id IS NULL''')
-    except Exception:
-        pass
     c.execute('''CREATE TABLE IF NOT EXISTS course_resources (
       id TEXT PRIMARY KEY,
       course_id TEXT NOT NULL,
@@ -406,28 +367,6 @@ def init_db():
     c.execute('CREATE INDEX IF NOT EXISTS idx_flashcard_submissions_status ON flashcard_submissions(status)')
     conn.commit()
     conn.close()
-
-
-async def ensure_media_columns():
-    """Idempotently add columns introduced after a table's first release.
-
-    Fresh databases get the columns from the CREATE TABLE statements; this
-    upgrade path covers existing databases that predate them.  Uses the
-    async per-query helpers so the checks run in the DB thread pool.
-    """
-    from app.async_db import db_fetch, db_exec
-
-    for table in ("resources", "course_resources"):
-        rows = await db_fetch(f"PRAGMA table_info({table})")
-        cols = {r["name"] for r in rows}
-        for col in ("page_count", "duration_seconds"):
-            if col not in cols:
-                await db_exec(f"ALTER TABLE {table} ADD COLUMN {col} INTEGER DEFAULT 0")
-
-    rows = await db_fetch("PRAGMA table_info(flashcard_submissions)")
-    cols = {r["name"] for r in rows}
-    if "deck_id" not in cols:
-        await db_exec("ALTER TABLE flashcard_submissions ADD COLUMN deck_id TEXT")
 
 
 

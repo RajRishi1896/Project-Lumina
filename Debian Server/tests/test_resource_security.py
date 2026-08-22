@@ -1,5 +1,5 @@
 """Security tests: resource editing/deletion, course export ownership,
-and auth gating on upload-status / quiz-resource endpoints."""
+and auth gating on quiz-resource endpoints."""
 import os
 import uuid
 
@@ -114,20 +114,6 @@ async def test_purge_recycled_resources_deletes_old_and_keeps_fresh(client):
     assert await db_fetch_one("SELECT id FROM resources WHERE id = ?", (old_rid,)) is None
     fresh_row = await db_fetch_one("SELECT id, status FROM resources WHERE id = ?", (fresh_rid,))
     assert fresh_row and fresh_row["status"] == "deleted"
-
-
-async def test_upload_status_requires_auth(client, admin_client):
-    """Upload-status requires auth; students are forbidden."""
-    resp = await client.get("/upload-status/some-upload-id")
-    assert resp.status_code == 401
-
-    _, student_token = await _make_student("s.upload")
-    resp = await client.get("/upload-status/some-upload-id", headers=_auth(student_token))
-    assert resp.status_code == 403
-
-    resp = await admin_client.get("/upload-status/some-upload-id")
-    assert resp.status_code == 200
-    assert resp.json()["found"] is False
 
 
 async def test_quiz_resource_requires_auth_but_students_may_fetch(client, admin_client):

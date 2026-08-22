@@ -20,22 +20,12 @@ from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File, R
 from app.database import UPLOAD_DIR, DB_PATH, gen_composite_uid
 from app.async_db import db_exec, db_fetch
 from app.dependencies import verify_teacher
-from zim_handler import invalidate_zim_cache
+from zim_handler import invalidate_zim_cache, ZIM_THUMBS_DIR
 from app.audit import audit, Action
 
 router = APIRouter()
 
 _MIN_FREE_GB = 2
-
-
-def _zim_target_dir():
-    """Return the ZIM pages directory (must match zim_handler)."""
-    return os.path.join(os.path.dirname(os.path.dirname(__file__)), "zim_pages")
-
-
-def _thumbs_dir():
-    """Return the ZIM article thumbnail cache directory."""
-    return os.path.join(_zim_target_dir(), "thumbs")
 
 
 def _check_zim_magic(path: str) -> bool:
@@ -49,7 +39,7 @@ def _check_zim_magic(path: str) -> bool:
 
 @router.post("/teacher/upload-zim", response_model=dict,
              summary="Upload ZIM archive", tags=["Resources"],
-             description="Uploads and indexes a ZIM archive. Articles are indexed for search but HTML is served lazily from the ZIM binary; nothing is extracted to disk. Supports resumable uploads via Content-Range.",
+             description="Uploads and indexes a ZIM archive. Articles are indexed for search but HTML is served lazily from the ZIM binary; nothing is extracted to disk.",
              responses={400: {"description": "Missing filename or processing failed"}, 401: {"description": "Unauthorized"}, 413: {"description": "Upload too large"}, 499: {"description": "Client disconnected"}, 507: {"description": "Insufficient disk space"}})
 async def upload_zim(file: UploadFile = File(...), title: str = Form(""), teacher_user: str = Depends(verify_teacher), request: Request = None):
     """Upload and index a ZIM archive.
@@ -75,21 +65,6 @@ async def upload_zim(file: UploadFile = File(...), title: str = Form(""), teache
     chunk_size = 64 * 1024
     total_size = 0
     max_size = free - (_MIN_FREE_GB * 1024 * 1024 * 1024)
-
-    existing_bytes = 0
-    content_range = request.headers.get("content-range") if request else None
-    if await asyncio.to_thread(os.path.exists, part_path):
-        if content_range:
-            try:
-                range_spec = content_range.split(" ", 1)[1]
-                byte_range, _total = range_spec.split("/")
-                start_str, _end_str = byte_range.split("-")
-                existing_bytes = int(start_str)
-            except Exception:
-                existing_bytes = await asyncio.to_thread(os.path.getsize, part_path)
-        else:
-            existing_bytes = await asyncio.to_thread(os.path.getsize, part_path)
-    total_size = existing_bytes
 
     def _flush_chunks(chunks):
         """Append a batch of in-memory chunks to the .part file in one open/write/close cycle."""
@@ -232,9 +207,6 @@ def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, ti
 
         conn.commit()
 
-        # Reset the per-connection PRAGMAs (journal_mode was never changed).
-        conn.execute("PRAGMA synchronous = NORMAL")
-        conn.execute("PRAGMA cache_size = -8000")
         from app.routers.resources import invalidate_catalog_cache
         invalidate_catalog_cache()
 
@@ -396,10 +368,6 @@ def _reindex_zim_articles(zim_path: str, archive_id: str, archive_title: str):
         conn.execute("CREATE INDEX IF NOT EXISTS idx_zim_articles_title ON zim_articles(title)")
         conn.commit()
 
-        # Reset the per-connection PRAGMAs (journal_mode was never changed).
-        conn.execute("PRAGMA synchronous = NORMAL")
-        conn.execute("PRAGMA cache_size = -8000")
-
         # Rebuild FTS5 and commit before ANALYZE
         try:
             conn.execute("DROP TABLE IF EXISTS zim_articles_fts")
@@ -475,7 +443,7 @@ async def delete_zim_archive(archive_id: str, teacher_user: str = Depends(verify
 
     # Delete thumbnails
     articles = await db_fetch("SELECT article_id FROM zim_articles WHERE archive_id = ?", (archive_id,))
-    thumbs_dir = _thumbs_dir()
+    thumbs_dir = ZIM_THUMBS_DIR
 
     def _remove_thumbs():
         for a in articles:

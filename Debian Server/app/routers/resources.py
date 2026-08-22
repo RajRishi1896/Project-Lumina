@@ -27,6 +27,8 @@ ALLOWED_EXTENSIONS = {
 }
 ALLOWED_RESOURCE_TYPES = {"textbook", "videos", "pyq", "notes", "pastPaper", "kiwix"}
 ALLOWED_LANGUAGES = {"en", "hi", "kn", "fr"}
+_TYPE_ALIASES = {"khan": "videos", "video": "videos", "textbooks": "textbook",
+                 "past_paper": "pastPaper", "pastpaper": "pastPaper"}
 
 
 @router.post("/teacher/upload", response_model=UploadResponse,
@@ -65,8 +67,6 @@ async def upload_resource(title: str = Query(..., description="Display title"),
         raise HTTPException(status_code=400, detail=f"File type '{ext}' is not allowed. Allowed types: {', '.join(sorted(ALLOWED_EXTENSIONS))}")  # i18n: user-facing error message
     uuid_name = f"{uuid.uuid4().hex}{ext}"
 
-    _TYPE_ALIASES = {"khan": "videos", "video": "videos", "textbooks": "textbook",
-                     "past_paper": "pastPaper", "pastpaper": "pastPaper"}
     type = _TYPE_ALIASES.get(type.lower(), type)
 
     if len(title) > 120:
@@ -80,11 +80,10 @@ async def upload_resource(title: str = Query(..., description="Display title"),
     if type not in ALLOWED_RESOURCE_TYPES:
         raise HTTPException(status_code=400, detail=f"Resource type '{type}' is not supported.")  # i18n: user-facing validation message
 
-    db_subject = await db_fetch_one("SELECT name FROM subjects WHERE name = ?", (subject,))
-    if not db_subject:
+    subj_row = await db_fetch_one("SELECT name, id FROM subjects WHERE name = ?", (subject,))
+    if not subj_row:
         raise HTTPException(status_code=400, detail=f"Subject '{subject}' not found in the system.")  # i18n: user-facing error message
-    subj_row = await db_fetch_one("SELECT id FROM subjects WHERE name = ?", (subject,))
-    subject_id = subj_row["id"] if subj_row else ""
+    subject_id = subj_row["id"]
 
     if not force_upload:
         existing = await db_fetch_one("""SELECT id FROM resources
@@ -95,8 +94,7 @@ async def upload_resource(title: str = Query(..., description="Display title"),
 
     file_path = os.path.join(UPLOAD_DIR, uuid_name)
     try:
-        await _write_chunked(file_path, file, 100 * 1024 * 1024,
-                             request=request, support_resume=True)
+        await _write_chunked(file_path, file, 100 * 1024 * 1024)
     except HTTPException:
         raise
     except Exception:
@@ -121,35 +119,7 @@ async def upload_resource(title: str = Query(..., description="Display title"),
     await audit(action=Action.UPLOAD_RESOURCE, username=teacher_user, resource_type="resource",
                 resource_id=resource_id, resource_name=title,
                 context={"subject": subject, "grade": grade, "type": type})
-    from app.metrics import incr
-    incr("upload")
     return {"status": "success", "filename": uuid_name, "original_name": original_filename}
-
-
-@router.get("/upload-status/{upload_id}", response_model=dict,
-            summary="Check upload resume position", tags=["Resources"],
-            description="Returns the byte count of a partial (.part) upload so the client can resume.",
-            responses={401: {"description": "Unauthorized"}})
-async def upload_status(upload_id: str, teacher_user: str = Depends(verify_teacher)):
-    """Return the byte count of a .part file so the client can resume.
-
-    The upload_id is the UUID-based saved filename (without extension).
-    Checks for ``{upload_id}.ext.part`` in the uploads directory.
-
-    Args:
-        upload_id: The UUID-based saved filename without extension.
-        teacher_user: Authenticated teacher username (auth gate).
-
-    Returns:
-        Dict with upload_id, bytes_written, and found flag.
-    """
-    import glob as glob_mod
-    matches = await asyncio.to_thread(glob_mod.glob, os.path.join(UPLOAD_DIR, f"{upload_id}*.part"))
-    if not matches:
-        return {"upload_id": upload_id, "bytes_written": 0, "found": False}
-    part_file = matches[0]
-    size = await asyncio.to_thread(os.path.getsize, part_file)
-    return {"upload_id": upload_id, "bytes_written": size, "found": True}
 
 
 @router.put("/teacher/resources/{resource_id}", response_model=dict,
