@@ -217,12 +217,17 @@ async def get_course_detail(course_id: str, teacher_user: str = Depends(verify_t
 
 
 @router.put("/api/teacher/courses/{course_id}",
-            summary="Update course metadata", tags=["Teacher Courses"],
-            description="Updates course metadata (title, description, subject, grade, language).",
+            summary="Update course metadata",
+            tags=["Teacher Courses"],
+            description="Updates course metadata (title, description, subject, grade, language). An optional `status` of 'draft' or 'published' also moves the course out of / into the published state.",
             response_model=dict,
             responses={200: {"description": "Updated course"}, 404: {"description": "Course not found"}})
 async def update_course(course_id: str, data: CourseCreate, teacher_user: str = Depends(verify_teacher)):
     """Update course metadata (title, description, subject, grade, language).
+
+    An explicit `status` of 'draft' or 'published' also moves the course
+    between draft (0) and published (1); any other value leaves the current
+    publish state untouched.
 
     Verifies ownership before updating. Logs the change to the audit log.
     """
@@ -233,6 +238,16 @@ async def update_course(course_id: str, data: CourseCreate, teacher_user: str = 
            WHERE id = ?""",
         (data.title, data.description, data.subject, data.grade, data.language, now, course_id)
     )
+    if data.status in ("draft", "published"):
+        new_val = 0 if data.status == "draft" else 1
+        await db_exec(
+            "UPDATE courses SET published = ?, updated_at = datetime('now') WHERE id = ?",
+            (new_val, course_id)
+        )
+        action = Action.UNPUBLISH_COURSE if new_val == 0 else Action.PUBLISH_COURSE
+        await audit(action=action, username=teacher_user, resource_type="course",
+                    resource_id=course_id, resource_name=data.title,
+                    context={"published": new_val})
     row = await db_fetch_one("SELECT * FROM courses WHERE id = ?", (course_id,))
     await audit(action=Action.UPDATE_COURSE, username=teacher_user, resource_type="course",
                 resource_id=course_id, resource_name=data.title)

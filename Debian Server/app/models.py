@@ -262,6 +262,7 @@ class CourseCreate(BaseModel):
     subject: str = Field("General", description="From approved subject taxonomy", json_schema_extra={"example": "Mathematics"})
     grade: int = Field(0, description="Grade level 0-13", ge=0, le=13, json_schema_extra={"example": 9})
     language: str = Field("en", description="ISO 639-1 code", json_schema_extra={"example": "en"})
+    status: str = Field("", description="Optional publish state: 'draft' (0) or 'published' (1). Empty leaves it unchanged on update.", json_schema_extra={"example": "draft"})
 class CourseQuizCreate(BaseModel):
     """Payload for creating or editing a course quiz."""
     model_config = ConfigDict(extra='ignore')
