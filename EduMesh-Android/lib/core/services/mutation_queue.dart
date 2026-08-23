@@ -62,9 +62,12 @@ class MutationQueue {
   }
 
   Future<void> _flushOnce() async {
+    // Snapshot BEFORE reading rows: a purge that lands between query and
+    // snapshot would let this flush run rows that no longer belong to the
+    // active profile. The loop re-checks per row below.
+    final gen = ApiClient.sessionGeneration;
     final db = await DBHelper().database;
     final rows = await db.query('pending_mutations', orderBy: 'id ASC');
-    final gen = ApiClient.sessionGeneration;
     for (final row in rows) {
       // Profile switched mid-flush: the remaining rows belong to the new
       // profile's account and must not execute under this flush. Stop; the

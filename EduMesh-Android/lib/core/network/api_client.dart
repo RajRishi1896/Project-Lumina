@@ -97,6 +97,13 @@ class ApiClient {
               // refreshSession already falls back to renewSession internally;
               // calling renewSession here too double-renews per 401.
               if (await AuthService().refreshSession()) {
+                // Profile switched while this request was in flight or the
+                // refresh was running: the fresh token belongs to another
+                // student, so retrying would send it under their identity.
+                if (AuthService.sessionGeneration != error.requestOptions.extra['lumina_gen']) {
+                  handler.next(error);
+                  return;
+                }
                 final newToken = await AuthService().getSessionToken();
                 error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                 error.requestOptions.extra['lumina_retried'] = true;

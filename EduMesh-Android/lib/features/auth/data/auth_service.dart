@@ -7,6 +7,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/storage/db_helper.dart';
 import '../../../core/services/activity_tracker.dart';
 import '../../../shared/services/download_queue.dart';
+import '../../../shared/widgets/mini_player_controller.dart';
 
 /// A singleton service managing student authentication and secure credential storage.
 ///
@@ -88,6 +89,11 @@ class AuthService {
       final String? refreshToken = data['refresh_token']?.toString();
       final String? persistentKey = data['persistent_key']?.toString();
 
+      // Registration from the picker's "Add Profile" flow switches accounts:
+      // drop the outgoing student's pending state before activating the new
+      // one, or it flushes under the new profile's token.
+      await _purgeIfSwitching(username);
+
       await _rememberUser(
         username,
         hubGeneratedId,
@@ -144,6 +150,10 @@ class AuthService {
           final bool resetReq = respData['reset_required'] == true;
           final String? grade = respData['grade']?.toString();
           if (token != null && scholarId != null) {
+            // Login after "Add Profile" switches accounts: purge the
+            // outgoing student's pending state before their queues can
+            // flush under the incoming profile's token.
+            await _purgeIfSwitching(username);
             await _secureStorage.write(key: _sessionTokenKey, value: token);
             await _secureStorage.write(key: _userIdKey, value: scholarId);
             await _secureStorage.write(key: _usernameKey, value: username);
@@ -179,6 +189,7 @@ class AuthService {
       final storedToken = profile['token']?.toString() ?? '';
       final userId = profile['userId']?.toString() ?? '';
       if (storedToken.isNotEmpty && userId.isNotEmpty) {
+        await _purgeIfSwitching(username);
         ApiClient.setAuth(storedToken);
         await _secureStorage.write(key: _sessionTokenKey, value: storedToken);
         await _saveSession(userId, username);
@@ -339,9 +350,10 @@ class AuthService {
   }
 
   /// Drops all per-profile local state: pending mutations/downloads, the
-  /// activity table, cached analytics/events prefs, and in-memory session
-  /// and queue state. Without this, one student's queued writes would sync
-  /// under another student's token after a logout or profile switch.
+  /// activity table, bookmarks, flashcard reviews/submissions, cached
+  /// analytics/events prefs, and in-memory session and queue state. Without
+  /// this, one student's queued writes would sync under another student's
+  /// token after a logout or profile switch.
   Future<void> _purgeActiveProfileData() async {
     // Bump FIRST so any in-flight operation that snapshots the generation
     // sees the new value even while the purge below is still running.
@@ -352,6 +364,9 @@ class AuthService {
         await txn.delete('pending_mutations');
         await txn.delete('pending_downloads');
         await txn.delete('activity');
+        await txn.delete('bookmarks');
+        await txn.delete('flashcard_reviews_local');
+        await txn.delete('flashcard_submissions_local');
       });
     } catch (_) {}
     try {
@@ -362,6 +377,18 @@ class AuthService {
     } catch (_) {}
     ActivityTracker().resetSessionState();
     DownloadQueue().clear();
+    MiniPlayerController().stop();
+  }
+
+  /// Purges per-profile state only when [username] differs from the
+  /// currently active profile, so re-authenticating as the same student
+  /// keeps their own queued work intact.
+  Future<void> _purgeIfSwitching(String username) async {
+    try {
+      final active = await _secureStorage.read(key: _usernameKey);
+      if (active != null && active == username) return;
+    } catch (_) {}
+    await _purgeActiveProfileData();
   }
 
   /// Logs out locally without any network call: clears the active profile's
