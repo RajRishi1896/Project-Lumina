@@ -7,7 +7,7 @@
     <title data-i18n="index.page_title">Lumina Hub | Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
-    <link rel="stylesheet" href="/static/css/lumina.css?v=14">
+    <link rel="stylesheet" href="/static/css/lumina.css?v=16">
 
 </head>
 <body>
@@ -51,7 +51,7 @@
     <div id="bottomNav"></div>
 
     <!-- Section: Scripts - shared JS + dashboard init -->
-    <script src="/static/js/lumina.js?v=10"></script>
+    <script src="/static/js/lumina.js?v=11"></script>
     <script>
         var _uptimeEl = document.getElementById('infoUptime');
         var _statUptimeEl = document.getElementById('statUptime');
@@ -125,6 +125,8 @@
                         const _battLabel = d.battery_charging ? __('battery.charging') : __('battery.on_battery');
                         _batt.textContent = d.battery_percent + '%';
                         _batt.title = _battLabel;
+                    } else {
+                        document.getElementById('statBattery').textContent = __('index.uptime_na');
                     }
                     if (d.disk_usage) document.getElementById('infoDisk').textContent = d.disk_usage;
                     document.getElementById('infoHost').textContent = window.location.hostname;

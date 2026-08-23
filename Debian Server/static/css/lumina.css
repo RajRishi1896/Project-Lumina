@@ -13,6 +13,7 @@
     --on-primary: #FFFFFF;
     --bg-page: #F8FAFC;
     --bg-surface: #FFFFFF;
+    --nav-h: 3.75rem;
     --bg-sidebar: #1A2B44;
     --bg-input: #FFFFFF;
     --outline: #E2E8F0;
@@ -1063,9 +1064,8 @@ body > nav, #welcome-content nav {
     body { flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     *, *::before, *::after { transition: none !important; animation: none !important; }
     aside { display: none; }
-    main { margin-left: 0; padding: 1.5rem 1rem 6.5rem; width: 100%; max-width: 100%; overflow-x: hidden; }
-    #bottomNav { display: flex; position: sticky; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 2px solid var(--outline); z-index: 1000; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0.375rem 0; gap: 0; scroll-snap-type: x proximity; }
-    #bottomNav::-webkit-scrollbar { display: none; }
+    main { margin-left: 0; padding: 1.5rem 1rem calc(var(--nav-h, 3.75rem) + 1.25rem); width: 100%; max-width: 100%; overflow-x: hidden; }
+    #bottomNav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 2px solid var(--outline); z-index: 1000; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0.375rem 0; gap: 0; scroll-snap-type: x proximity; }
     .stat-grid { grid-template-columns: repeat(2, 1fr); }
     .card:hover { transform: none !important; box-shadow: var(--card-shadow) !important; }
     .btn-primary:hover { transform: none !important; }
@@ -1130,7 +1130,7 @@ body > nav, #welcome-content nav {
 }
 
 @media (max-width: 480px) {
-    main { padding: 1rem 0.75rem 6.5rem; }
+    main { padding: 1rem 0.75rem calc(var(--nav-h, 4.5rem) + 1rem); }
     #bottomNav { justify-content: flex-start; gap: 0; padding: 0.375rem 0; }
     .bottom-nav-item { font-size: 0.6rem; }
     .stat-grid { grid-template-columns: 1fr; gap: 0.5rem; }

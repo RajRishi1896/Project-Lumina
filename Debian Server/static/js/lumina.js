@@ -840,6 +840,7 @@ function renderLayout() {
 
     btmNav += '<a href="/logout" class="bottom-nav-item" id="bottom-nav-logout" onclick="sessionStorage.clear()">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
     bottomNav.innerHTML = btmNav;
+    updateNavHeight();
 
     var savedScroll = parseInt(sessionStorage.getItem('bottomNavScroll') || '0', 10);
     setTimeout(function () { bottomNav.scrollLeft = savedScroll; }, 0);
@@ -847,6 +848,19 @@ function renderLayout() {
         sessionStorage.setItem('bottomNavScroll', String(bottomNav.scrollLeft));
     }, { passive: true });
 }
+
+/**
+ * Sets the --nav-h custom property to the rendered bottom-nav height so main
+ * content padding always clears the fixed nav, including the wrapped 2-row
+ * layout used on screens up to 480px wide.
+ * @returns {void}
+ */
+function updateNavHeight() {
+    var n = document.getElementById('bottomNav');
+    if (!n || getComputedStyle(n).display === 'none') return;
+    document.documentElement.style.setProperty('--nav-h', Math.ceil(n.getBoundingClientRect().height) + 'px');
+}
+window.addEventListener('resize', updateNavHeight, { passive: true });
 
 /**
  * Injects global modal HTML (confirm modal, force-reset modal) into document.body.
