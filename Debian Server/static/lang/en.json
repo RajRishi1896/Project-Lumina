@@ -200,7 +200,7 @@
   "security_name_placeholder": "Enter your display name",
   "security_new_password": "New Password",
   "security_new_password_placeholder": "Enter new password",
-  "security_password_requirements": "Must be 8+ chars, with uppercase, lowercase &amp; a digit.",
+  "security_password_requirements": "Must be 8+ chars, with uppercase, lowercase & a digit.",
   "security_save": "Save",
   "security_update_password": "Update Password",
   "settings.account_overview": "Account Overview",

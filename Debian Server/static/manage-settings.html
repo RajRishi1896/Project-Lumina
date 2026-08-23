@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
-<link rel="stylesheet" href="/static/css/lumina.css?v=14">
+<link rel="stylesheet" href="/static/css/lumina.css?v=16">
 </head>
 <body>
     <a href="#app-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
@@ -123,7 +123,7 @@
             <div class="flex flex-wrap items-center gap-2 mb-3">
                 <div class="search-wrap-inline" style="flex: 1 1 180px; min-width: 140px;">
                     <label for="adminLogSearch" class="sr-only" data-i18n="settings.search_logs_label">Search logs</label>
-                    <input type="text" id="adminLogSearch" placeholder="Search logs..." class="form-input">
+                    <input type="text" id="adminLogSearch" placeholder="Search logs..." data-i18n="settings.search_logs_label" class="form-input">
                     <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                     </span>
@@ -281,7 +281,7 @@
     <!-- Section: Bottom Nav (Mobile) -->
     <div id="bottomNav"></div>
 
-    <script src="/static/js/lumina.js?v=10"></script>
+    <script src="/static/js/lumina.js?v=11"></script>
     <!-- Section: Inline Scripts: all page logic merged here -->
     <script>
 
