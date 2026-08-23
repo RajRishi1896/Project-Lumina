@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
-<link rel="stylesheet" href="/static/css/lumina.css?v=14">
+<link rel="stylesheet" href="/static/css/lumina.css?v=16">
 
 
 </head>
@@ -43,6 +43,7 @@
                             </span>
                         </div>
                         <button id="btn-openUploadModal" class="btn btn-primary" style="white-space: nowrap;"><span data-i18n="content.upload_button">+ Upload Resource</span></button>
+                        <a id="btn-flashcards" class="btn btn-outline" href="/static/flashcards" style="white-space: nowrap;"><span data-i18n="sidebar.flashcards">Flashcards</span></a>
                     </div>
                 </div>
                 <div class="table-wrapper">
@@ -426,7 +427,7 @@
     <!-- Section: Toast Container: global notification area (top-right, fixed) -->
     <div id="globalToastContainer" class="toast-container"></div>
 
-    <script src="/static/js/lumina.js?v=10"></script>
+    <script src="/static/js/lumina.js?v=11"></script>
     <!-- Section: Inline Scripts: resource CRUD, upload handler, topics -->
     <script>
         var typeLabels = { khan: 'VIDEO', video: 'VIDEO', videos: 'VIDEO', kiwix: 'ZIM', textbook: 'TEXTBOOK', pyq: 'PYQ', pastPaper: 'PYQ', notes: 'NOTES', quiz: 'QUIZ' };
