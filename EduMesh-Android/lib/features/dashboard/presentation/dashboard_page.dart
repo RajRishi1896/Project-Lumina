@@ -392,8 +392,8 @@ class _DashboardPageState extends State<DashboardPage> {
               behavior: HitTestBehavior.opaque,
               onTap: () => _openProfilePicker(context),
               child: SizedBox(
-                width: AppSpacing.touchTarget.w,
-                height: AppSpacing.touchTarget.w,
+                width: AppSpacing.touchTarget,
+                height: AppSpacing.touchTarget,
                 child: CircleAvatar(
                   radius: 16.r,
                   backgroundColor: cs.primaryContainer,
@@ -416,8 +416,8 @@ class _DashboardPageState extends State<DashboardPage> {
               behavior: HitTestBehavior.opaque,
               onTap: () => _showSettings(context),
               child: SizedBox(
-                width: AppSpacing.touchTarget.w,
-                height: AppSpacing.touchTarget.w,
+                width: AppSpacing.touchTarget,
+                height: AppSpacing.touchTarget,
                 child: Icon(Icons.settings, color: cs.primary, size: 24.sp),
               ),
             ),
