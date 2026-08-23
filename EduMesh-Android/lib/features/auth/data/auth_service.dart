@@ -478,6 +478,11 @@ class AuthService {
   /// back to [renewSession] if the refresh token is expired or invalid.
   /// Returns `true` if the session was successfully refreshed.
   Future<bool> refreshSession() async {
+    // Snapshot BEFORE the network round-trip: if a profile switch lands
+    // while the refresh is in flight, these derived tokens belong to the
+    // previous student and must not be written into the new profile's
+    // record or pushed into the shared auth header.
+    final gen = _sessionGeneration;
     try {
       final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
       if (refreshToken == null || refreshToken.isEmpty) return renewSession();
@@ -488,6 +493,7 @@ class AuthService {
         final data = response.data as Map;
         final token = data['token']?.toString() ?? '';
         if (token.isNotEmpty) {
+          if (_sessionGeneration != gen) return false;
           await _secureStorage.write(key: _sessionTokenKey, value: token);
           final newRefreshToken = data['refresh_token']?.toString();
           final persistentKey = data['persistent_key']?.toString();
@@ -514,6 +520,9 @@ class AuthService {
   /// the new token chain. Returns `true` on success, `false` if the persistent
   /// key is expired or the hub is unreachable (user must re-login).
   Future<bool> renewSession() async {
+    // Same guard as [refreshSession]: the persistent-key round-trip can
+    // outlive a profile switch, and its derived tokens are then stale.
+    final gen = _sessionGeneration;
     try {
       final persistentKey = await _secureStorage.read(key: _persistentKeyKey);
       if (persistentKey == null || persistentKey.isEmpty) return false;
@@ -524,6 +533,7 @@ class AuthService {
         final data = response.data as Map;
         final token = data['token']?.toString() ?? '';
         if (token.isNotEmpty) {
+          if (_sessionGeneration != gen) return false;
           await _secureStorage.write(key: _sessionTokenKey, value: token);
           final newRefreshToken = data['refresh_token']?.toString();
           final newPersistentKey = data['persistent_key']?.toString();

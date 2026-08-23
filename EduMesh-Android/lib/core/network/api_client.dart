@@ -116,7 +116,12 @@ class ApiClient {
                 return;
               }
             } catch (_) {}
-            await _forceLogoutLocal();
+            // Only tear down the session when it is still the one this
+            // request belonged to. A refresh that bailed because another
+            // profile switched in must not log THAT profile out.
+            if (AuthService.sessionGeneration == error.requestOptions.extra['lumina_gen']) {
+              await _forceLogoutLocal();
+            }
           } finally {
             _refreshCompleter!.complete();
             _refreshCompleter = null;
