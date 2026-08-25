@@ -85,15 +85,17 @@ async def welcome_page():
     """
     return FileResponse("static/welcome.html")
 
-    @router.get("/studentguide", summary="Serve student guide", description="Serves the complete student guide - a crash course on using the EduMesh app. Public - no authentication required.", tags=["System"], responses={200: {"description": "Student guide HTML"}})
-    @router.get("/studentguide.html", summary="Serve student guide (.html)", description="Alternate URL for the student guide. Both URLs serve the same content. Public - no authentication required.", tags=["System"])
-    async def studentguide_page():
-        """Serve the student guide crash-course page.
 
-        Returns:
-            FileResponse serving static/studentguide.html.
-        """
-        return FileResponse("static/studentguide.html")
+
+@router.get("/studentguide", summary="Serve student guide", description="Serves the complete student guide - a crash course on using the EduMesh app. Public - no authentication required.", tags=["System"], responses={200: {"description": "Student guide HTML"}})
+@router.get("/studentguide.html", summary="Serve student guide (.html)", description="Alternate URL for the student guide. Both URLs serve the same content. Public - no authentication required.", tags=["System"])
+async def studentguide_page():
+    """Serve the student guide crash-course page.
+
+    Returns:
+        FileResponse serving static/studentguide.html.
+    """
+    return FileResponse("static/studentguide.html")
 
 
 @router.get("/dashboard", summary="Serve teacher dashboard", description="Serves the main teacher dashboard HTML page. Requires a valid lumina_session cookie; redirects to /welcome if not authenticated.", tags=["System"], responses={200: {"description": "Dashboard HTML page"}, 302: {"description": "Redirect to welcome page if not authenticated"}})
