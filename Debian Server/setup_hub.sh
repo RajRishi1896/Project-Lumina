@@ -53,11 +53,15 @@ else
     echo "[WARNING] UFW not installed. Skipping firewall."
 fi
 
+# Detect LAN IP + interface (used by captive portal DNS, dnsmasq, and banner)
+LAN_IFACE=$(ip -o -4 route show default | awk '{print $5}')
+LAN_IP=$(ip -o -4 addr show "$LAN_IFACE" | awk '{print $4}' | cut -d/ -f1)
+
 # 6. Configure Captive Portal DNS via NetworkManager
 echo "[INFO] Configuring Captive Portal DNS..."
 mkdir -p /etc/NetworkManager/dnsmasq-shared.d
 bash -c "cat > /etc/NetworkManager/dnsmasq-shared.d/lumina.conf <<EOF
-address=/#/127.0.0.1
+address=/#/$LAN_IP
 EOF"
 
 # 6a. Configure LAN DNS forwarder (dnsmasq)
@@ -65,8 +69,6 @@ EOF"
 # conflicts with NetworkManager's captive-portal dnsmasq on the hotspot.
 echo "[INFO] Configuring LAN DNS forwarder..."
 mkdir -p /etc/dnsmasq.d
-LAN_IFACE=$(ip -o -4 route show default | awk '{print $5}')
-LAN_IP=$(ip -o -4 addr show "$LAN_IFACE" | awk '{print $4}' | cut -d/ -f1)
 bash -c "cat > /etc/dnsmasq.d/lumina-lan.conf <<EOF
 server=$(ip route | grep default | awk '{print $3}')
 
@@ -113,11 +115,11 @@ HUB_DIR="$(pwd)"
 import qrcode, subprocess, socket
 try:
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(('127.0.0.1', 80))
+    s.connect((LAN_IP, 80))
     ip = s.getsockname()[0]
     s.close()
 except:
-    ip = '127.0.0.1'
+    ip = LAN_IP
 qr = qrcode.QRCode(box_size=1, border=1)
 qr.add_data('WIFI:T:WPA;S:Lumina Hub;P:lumina2026;;')
 qr.make(fit=True)
@@ -226,7 +228,7 @@ echo "[INFO] RTC wake alarm armed. Auto-boots on power restore."
 
 echo "-----------------------------------"
 echo "[SUCCESS] HARDENED SETUP COMPLETE!"
-echo "[INFO] Hub Address: http://127.0.0.1:8000"
+echo "[INFO] Hub Address: http://$LAN_IP:8000"
 echo "[INFO] Logs: data/hub.log"
 echo "[INFO] Firewall: Active (SSH & API ports open only)"
 echo "[INFO] Run 'sudo systemctl start lumina-hotspot' to activate WiFi hotspot"

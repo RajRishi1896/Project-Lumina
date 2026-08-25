@@ -7,9 +7,6 @@ ACTIVE=$(ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}'
 if [ -z "$ACTIVE" ]; then
   ACTIVE=$(hostname -I 2>/dev/null | awk '{print $1}')
 fi
-if [ -z "$ACTIVE" ]; then
-  ACTIVE="127.0.0.1"
-fi
 
 echo ""
 echo "======================================"
