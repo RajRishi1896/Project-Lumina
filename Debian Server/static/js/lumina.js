@@ -539,6 +539,7 @@ function showConfirm(title, message, isDanger, confirmText, body, secondary) {
             iconEl.style.background = 'transparent';
             iconEl.style.color = 'var(--danger)';
             modal.firstElementChild.style.border = '2px solid var(--danger)';
+            titleEl.style.color = 'var(--danger)';
         } else {
             confirmBtn.style.background = 'var(--teal)';
             confirmBtn.style.borderColor = 'var(--teal)';
@@ -546,6 +547,7 @@ function showConfirm(title, message, isDanger, confirmText, body, secondary) {
             iconEl.style.background = 'transparent';
             iconEl.style.color = 'var(--teal)';
             modal.firstElementChild.style.border = '2px solid var(--teal)';
+            titleEl.style.color = 'var(--on-surface)';
         }
         if (confirmText) confirmBtn.innerText = confirmText;
         if (secondary) {

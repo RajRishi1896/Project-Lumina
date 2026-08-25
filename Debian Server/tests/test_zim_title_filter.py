@@ -2,10 +2,11 @@
 
 The WHERE clause hides punctuation-led titles ('!', '!!', '! (CONFIG.SYS
 directive...)') from the articles listing, but must NOT hide real
-non-Latin-script articles: the filter is an inverted first-character
-deny-list — ``SUBSTR(TRIM(za.title), 1, 1) NOT GLOB '<ASCII punctuation /
-space class>*'`` — so digits, letters, and any script above U+007F
-(Devanagari, Tamil, Kannada, Telugu, CJK, accented Latin) count as valid.
+non-Latin-script articles. The filter is an inverted first-character
+deny-list: ``SUBSTR(TRIM(za.title), 1, 1) NOT GLOB '<ASCII punctuation /
+space class>*'`` hides only punctuation- and space-led titles, so digits,
+letters, and any script above U+007F (Devanagari, Tamil, Kannada, Telugu,
+CJK, accented Latin) count as valid.
 An ASCII-only allow-list would return 0 rows for every non-Latin script.
 Applied to both COUNT and SELECT so totals stay consistent. /zim/search is
 intentionally untouched.

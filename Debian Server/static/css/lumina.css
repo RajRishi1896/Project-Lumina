@@ -36,13 +36,13 @@
     --danger: #EF4444;
     --text-primary: #CDD6F4;
     --text-secondary: #A6ADC8;
-    --text-muted: #6C7086;
+    --text-muted: #9BA1B6;
     --on-primary: #181825;
     --bg-page: #181825;
     --bg-surface: #1E1E2E;
     --bg-sidebar: #11111B;
     --bg-input: #181825;
-    --outline: #313244;
+    --outline: #2B2C40;
     --on-surface: var(--text-primary);
     --card-shadow: 0 1px 3px rgba(0,0,0,0.3);
     --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.4);
@@ -1158,3 +1158,48 @@ body > nav, #welcome-content nav {
     .hero p { font-size: 0.9rem; line-height: 1.4; max-width: 380px; }
     .welcome-container { margin-top: -1rem; }
 }
+
+/* === Live refinement layer (AA + consistency pass) === */
+:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+}
+.page-header h1 {
+    letter-spacing: -.01em;
+}
+.card-title {
+    font-size: .95rem;
+    font-weight: 700;
+}
+thead th {
+    text-transform: uppercase;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: var(--text-muted);
+}
+tbody td {
+    padding: .65rem .75rem;
+}
+[data-theme="dark"] tbody tr:hover {
+    background: rgba(255,255,255,.03);
+}
+tbody tr:hover {
+    background: rgba(16,24,40,.03);
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(0,112,131,.15);
+}
+.empty-state {
+    padding: 2rem 1rem;
+    text-align: center;
+}
+
+/* Touch-target floor (AA pass addendum): every tappable control >=44px */
+:is(input:not([type='checkbox']):not([type='radio']):not([type='hidden']), select, button) { min-height: 44px; }
