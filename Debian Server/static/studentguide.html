@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Section: Head: metadata, theme detection, shared styles -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="sg.page_title">Student Guide | Lumina Hub</title>
+    <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
+    <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));</script>
+    <script src="/static/js/lumina.js?v=15"></script>
+    <link rel="stylesheet" href="/static/css/lumina.css?v=19">
+</head>
+<body>
+    <a href="#sg-main" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
+
+    <!-- Section: Header: back link + language selector -->
+    <header style="max-width:940px;margin:0 auto;padding:1rem 1.25rem 0;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <a href="/welcome" class="btn btn-outline" data-i18n="sg.back">Back to welcome</a>
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+            <label for="sgLangSelect" class="sr-only" data-i18n="sg.lang_aria">Choose language</label>
+            <select id="sgLangSelect" style="padding:0.4rem 0.6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated,transparent);color:inherit;"></select>
+        </div>
+    </header>
+
+    <!-- Section: Main: complete student guide (crash course) -->
+    <main id="sg-main" style="max-width:940px;margin:0 auto;padding:1rem 1.25rem 4rem;">
+        <div class="card" style="padding:1.5rem 1.25rem 0.5rem;">
+            <div class="card-label" data-i18n="app.title">Lumina Hub</div>
+            <h1 data-i18n="sg.title" style="margin-top:0.25rem;">Student Guide</h1>
+            <p class="subtitle" data-i18n="sg.subtitle">A complete crash course on using the EduMesh app.</p>
+
+            <div class="guide-section">
+                <h3 data-i18n="sg.app_title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> What is EduMesh?</h3>
+                <div class="guide-content" id="sgApp"></div>
+            </div>
+
+            <div class="guide-section">
+                <h3 data-i18n="sg.browse_title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Finding resources</h3>
+                <div class="guide-content"><ol class="steps" id="sgBrowse"></ol></div>
+            </div>
+
+            <div class="guide-section">
+                <h3 data-i18n="sg.download_title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Downloading for offline</h3>
+                <div class="guide-content"><ol class="steps" id="sgDownload"></ol></div>
+            </div>
+
+            <div class="guide-section">
+                <h3 data-i18n="sg.flash_title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="13" height="13" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v11"/></svg> Flashcards: remember more</h3>
+                <div class="guide-content" id="sgFlash"></div>
+            </div>
+
+            <div class="guide-section">
+                <h3 data-i18n="sg.quiz_title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Quizzes</h3>
+                <div class="guide-content" id="sgQuiz"></div>
+            </div>
+
+            <div class="guide-section">
+                <h3 data-i18n="sg.profile_title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Your profile &amp; language</h3>
+                <div class="guide-content"><ol class="steps" id="sgProfile"></ol></div>
+            </div>
+
+            <div class="guide-section" style="border-top:none;padding-bottom:1.75rem;">
+                <h3 data-i18n="sg.tips_title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 9 2"/></svg> Study tips</h3>
+                <div class="guide-content"><ul id="sgTips"></ul></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Section: Inline Scripts: language loading + guide rendering -->
+    <script>
+        /* Language options — same set as the welcome page (translations load from lang/*.json). */
+        var WELCOME_LANGS = [
+            { code:'en', name:'English', native:'English' },
+            { code:'hi', name:'Hindi', native:'हिन्दी' },
+            { code:'kn', name:'Kannada', native:'ಕನ್ನಡ' },
+            { code:'fr', name:'French', native:'Français' },
+            { code:'ta', name:'Tamil', native:'தமிழ்' },
+            { code:'te', name:'Telugu', native:'తెలుగు' },
+        ];
+        currentLang = localStorage.getItem('lumina-lang') || 'en';
+
+        /**
+         * Fill the language <select> from WELCOME_LANGS and reflect the saved choice.
+         */
+        function initSgLangSelect() {
+            var sel = document.getElementById('sgLangSelect');
+            if (!sel) return;
+            sel.innerHTML = WELCOME_LANGS.map(function(l){
+                return '<option value="' + l.code + '"' + (l.code === currentLang ? ' selected' : '') + '>' + l.native + ' (' + l.name + ')</option>';
+            }).join('');
+            sel.addEventListener('change', function() {
+                currentLang = sel.value;
+                localStorage.setItem('lumina-lang', currentLang);
+                document.documentElement.setAttribute('lang', currentLang);
+                loadTranslations(currentLang).then(renderSgGuide).catch(function(){});
+            });
+        }
+
+        /**
+         * Render rich HTML guide bodies that data-i18n (textContent-only) cannot handle.
+         * Called after every language load so sections re-render in the active language.
+         */
+        function renderSgGuide() {
+            if (typeof __ !== 'function') return;
+            try {
+                var ids = ['sgApp','sgBrowse','sgDownload','sgFlash','sgQuiz','sgProfile','sgTips'];
+                var keys = ['sg.app_body','sg.browse_body','sg.download_body','sg.flash_body','sg.quiz_body','sg.profile_body','sg.tips_body'];
+                for (var i = 0; i < ids.length; i++) {
+                    var el = document.getElementById(ids[i]);
+                    if (el) el.innerHTML = __(keys[i]);
+                }
+            } catch(e) { console.error('renderSgGuide error:', e); }
+        }
+
+        initSgLangSelect();
+        loadTranslations(currentLang).then(function(){ renderSgGuide(); }).catch(function(){ renderSgGuide(); });
+    </script>
+</body>
+</html>
