@@ -39,8 +39,13 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 /// resolves the user's authentication status, starts [ConnectivityService]
 /// and [ActivityTracker], and finally runs the [LuminaApp] widget inside a
 /// [ProviderScope].
-void main() async { 
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // TEMP DIAGNOSTIC: capture the silent NoSuchMethodError (remove after).
+  FlutterError.onError = (details) {
+    debugPrint('LUMINA_ERR: ${details.exception}');
+    debugPrint('LUMINA_STACK: ${details.stack}');
+  };
   unawaited(AnimationPrefs().load());
   _trace('T0 start ${DateTime.now().microsecondsSinceEpoch}');
 

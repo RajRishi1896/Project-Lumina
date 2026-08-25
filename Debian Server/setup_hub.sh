@@ -57,7 +57,7 @@ fi
 echo "[INFO] Configuring Captive Portal DNS..."
 mkdir -p /etc/NetworkManager/dnsmasq-shared.d
 bash -c "cat > /etc/NetworkManager/dnsmasq-shared.d/lumina.conf <<EOF
-address=/#/10.42.0.1
+address=/#/127.0.0.1
 EOF"
 
 # 6a. Configure LAN DNS forwarder (dnsmasq)
@@ -113,11 +113,11 @@ HUB_DIR="$(pwd)"
 import qrcode, subprocess, socket
 try:
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(('10.42.0.1', 80))
+    s.connect(('127.0.0.1', 80))
     ip = s.getsockname()[0]
     s.close()
 except:
-    ip = '10.42.0.1'
+    ip = '127.0.0.1'
 qr = qrcode.QRCode(box_size=1, border=1)
 qr.add_data('WIFI:T:WPA;S:Lumina Hub;P:lumina2026;;')
 qr.make(fit=True)
@@ -226,7 +226,7 @@ echo "[INFO] RTC wake alarm armed. Auto-boots on power restore."
 
 echo "-----------------------------------"
 echo "[SUCCESS] HARDENED SETUP COMPLETE!"
-echo "[INFO] Hub Address: http://10.42.0.1:8000"
+echo "[INFO] Hub Address: http://127.0.0.1:8000"
 echo "[INFO] Logs: data/hub.log"
 echo "[INFO] Firewall: Active (SSH & API ports open only)"
 echo "[INFO] Run 'sudo systemctl start lumina-hotspot' to activate WiFi hotspot"

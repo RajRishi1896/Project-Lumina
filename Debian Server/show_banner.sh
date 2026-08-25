@@ -3,7 +3,7 @@
 # Usage:   Called by lumina-banner.service on boot.
 # Args:    None
 IP=$(ip -4 addr show scope global | grep inet | head -1 | cut -d/ -f1 | awk '{print $2}')
-[ -z "$IP" ] && IP=10.42.0.1
+[ -z "$IP" ] && IP=127.0.0.1
 
 echo ""
 echo "============================================================"

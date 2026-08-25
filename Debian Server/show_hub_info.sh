@@ -8,7 +8,7 @@ if [ -z "$ACTIVE" ]; then
   ACTIVE=$(hostname -I 2>/dev/null | awk '{print $1}')
 fi
 if [ -z "$ACTIVE" ]; then
-  ACTIVE="10.42.0.1"
+  ACTIVE="127.0.0.1"
 fi
 
 echo ""
