@@ -747,5 +747,6 @@
   "sg.tips_title": "Study tips",
   "sg.tips_body": "<ul><li>Study a little every day — daily 10 minutes beats weekly marathons.</li><li>Download resources while the hub is on.</li><li>Use flashcards daily; grade yourself honestly.</li><li>Finished a quiz? Review what you got wrong.</li></ul>",
   "sg.back": "Back to welcome",
-  "sg.lang_aria": "Choose language"
+  "sg.lang_aria": "Choose language",
+  "nav.studentguide": "Student Guide"
 }
