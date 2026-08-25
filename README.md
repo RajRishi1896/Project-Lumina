@@ -18,7 +18,7 @@
 
 ---
 
-An offline-first educational mesh for rural schools. A repurposed laptop runs a WiFi hotspot, a FastAPI content server, and a captive portal; students access textbooks, videos, and interactive content from Android phones, with no internet connection required.
+A repurposed laptop runs a WiFi hotspot, a FastAPI content server, and a captive portal. Students reach textbooks, videos, and interactive content from Android phones over the local network. No internet connection exists in the loop.
 
 ## Table of Contents
 
@@ -86,7 +86,7 @@ Two independent codebases form the system: a Flutter Android client (`EduMesh-An
 **Content experience**
 
 - **Course browser and player.** Browse, enroll, and track progress through structured courses. Courses contain resources organized into ordered topics with teacher-authored quizzes.
-- **Flashcards.** SM-2 spaced-repetition decks reviewed in the app; teachers create decks and review submissions on the web dashboard.
+- **Flashcards.** SM-2 spaced-repetition decks with a dedicated library, deck details, editor, and tap-to-flip study mode; teachers create decks and review submissions on the web dashboard. Optional subtle animations ship behind a Settings toggle (off by default).
 - **Video with picture-in-picture.** `MiniPlayerController` is a process-wide singleton. Leaving full-screen playback continues in a mini overlay; closing it disposes both `VideoPlayerController` and `ChewieController`. Video streams via `/api/stream/` with HTTP Range support for seeking.
 - **PDF viewer.** `pdfx` with pinch-to-zoom and zoom buttons (0.25x steps). Page position persists to `SharedPreferences`; a 6-column page grid provides rapid navigation.
 - **ZIM article browser.** Kiwix archives are searchable server-side with a 1 to 500 article cap per query (a deliberate OOM guard for 1 GB phones). Articles render in-app; downloaded articles inline all assets as data URIs for fully offline rendering.
@@ -127,7 +127,7 @@ An 11-page vanilla HTML/CSS/JS teacher and admin dashboard served from the hub: 
 
 ## API / Interface Overview
 
-Routes are grouped by prefix: student- and teacher-facing routes live under `/api`, `/student`, `/teacher`; captive-portal and health routes are public. The authoritative route list is the OpenAPI spec served at `/docs` (and `/redoc`) when the server is running — a static count here would go stale.
+Routes are grouped by prefix: student- and teacher-facing routes live under `/api`, `/student`, `/teacher`; captive-portal and health routes are public. The authoritative route list is the OpenAPI spec served at `/docs` (and `/redoc`) when the server is running; a static count here would go stale.
 
 Notable endpoint behaviours:
 
@@ -143,7 +143,7 @@ The full OpenAPI spec is served at `/docs` when the server is running; the route
 
 Server: a single SQLite file at `data/hub.db` in WAL mode. All access goes through `app/async_db.py` helpers, which run queries in a thread pool (`asyncio.to_thread`) so the event loop stays free; `db_conn()` is reserved for multi-statement transactions.
 
-The authoritative schema — accounts and auth tiers, resources, ZIM metadata, courses/quizzes/flashcards, analytics tables — lives in [`Debian Server/app/database.py`](Debian%20Server/app/database.py). Do not trust a summary here over that file.
+The authoritative schema, spanning accounts and auth tiers, resources, ZIM metadata, courses, quizzes, flashcards, and analytics tables, lives in [`Debian Server/app/database.py`](Debian%20Server/app/database.py). Do not trust a summary here over that file.
 
 Client: the Flutter app mirrors catalog and progress state in its own local SQLite (schema version 17, migration chain from v2); see `EduMesh-Android/lib/core/storage/db_helper.dart`.
 
@@ -161,7 +161,7 @@ Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frame
 
 **500-article ZIM search cap.** Kiwix archives hold hundreds of thousands of articles; loading them all would OOM a 1 GB phone. Capping search at 500 results guarantees the app never crashes on query, at the cost of requiring multiple queries for deep research across large archives.
 
-**Test coverage vs. offline reliability.** Development time went to offline reliability (mutation queue, download atomicity, Keystore recovery) rather than test volume. The resulting suite is 38 tests across 5 files (API, flashcards, quiz integrity, resource security) plus a Flutter smoke test: enough to make refactoring safe, not exhaustive. This was the correct order for v1; the suite is the planned growth area.
+**Test coverage vs. offline reliability.** Development time went to offline reliability (mutation queue, download atomicity, Keystore recovery) rather than test volume. The server suite is 38 tests across 5 files (API, flashcards, quiz integrity, resource security); the Flutter suite is 46 tests across 7 files (scheduler, flip card, animation system, profile flows, smoke): enough to make refactoring safe, not exhaustive. This was the correct order for v1; the suite is the planned growth area.
 
 **`.part` rename on FAT32.** The download rename is not atomic on FAT32/exFAT, the filesystems on most cheap SD cards. The `.part` convention still prevents corrupted files from masquerading as complete, and a crash mid-rename leaves at most one orphaned file. Writing to a temp directory and moving has the same fundamental limitation on these filesystems.
 

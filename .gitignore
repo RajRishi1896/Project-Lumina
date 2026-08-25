@@ -88,6 +88,7 @@ skills/
 opencode.json
 .openchamber/
 
+# === Temporary redesign proposal (remove after side-by-side decision) ===
 # === Dev scratch (not part of the product) ===
 scripts/*
 !scripts/check_i18n.py
@@ -109,3 +110,4 @@ Debian Server/wipe_zim.py
 .zcode_*
 # Local agent-config backups (MCP/skill kit edits)
 opencode.json*.bak
+
