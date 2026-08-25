@@ -57,23 +57,18 @@ fi
 echo "[INFO] Configuring Captive Portal DNS..."
 mkdir -p /etc/NetworkManager/dnsmasq-shared.d
 bash -c "cat > /etc/NetworkManager/dnsmasq-shared.d/lumina.conf <<EOF
-address=/lumina.hub/10.42.0.1
 address=/#/10.42.0.1
 EOF"
 
-# 6a. Configure LAN DNS (dnsmasq) for Chromium compatibility
-# Resolves Lumina.hub locally so Chromium browsers can find it without /etc/hosts
-echo "[INFO] Configuring LAN DNS for Lumina.hub..."
+# 6a. Configure LAN DNS forwarder (dnsmasq)
+# Forwards LAN DNS upstream; bound to the LAN interface only so it never
+# conflicts with NetworkManager's captive-portal dnsmasq on the hotspot.
+echo "[INFO] Configuring LAN DNS forwarder..."
 mkdir -p /etc/dnsmasq.d
 LAN_IFACE=$(ip -o -4 route show default | awk '{print $5}')
 LAN_IP=$(ip -o -4 addr show "$LAN_IFACE" | awk '{print $4}' | cut -d/ -f1)
 bash -c "cat > /etc/dnsmasq.d/lumina-lan.conf <<EOF
-address=/Lumina.hub/$LAN_IP
-address=/lumina.hub/$LAN_IP
-
 server=$(ip route | grep default | awk '{print $3}')
-local=/Lumina.hub/
-local=/lumina.hub/
 
 bind-interfaces
 interface=$LAN_IFACE
@@ -231,7 +226,7 @@ echo "[INFO] RTC wake alarm armed. Auto-boots on power restore."
 
 echo "-----------------------------------"
 echo "[SUCCESS] HARDENED SETUP COMPLETE!"
-echo "[INFO] Hub Address: http://lumina.hub:8000 (or http://10.42.0.1:8000)"
+echo "[INFO] Hub Address: http://10.42.0.1:8000"
 echo "[INFO] Logs: data/hub.log"
 echo "[INFO] Firewall: Active (SSH & API ports open only)"
 echo "[INFO] Run 'sudo systemctl start lumina-hotspot' to activate WiFi hotspot"
