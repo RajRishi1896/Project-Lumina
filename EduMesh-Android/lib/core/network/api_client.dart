@@ -10,7 +10,9 @@ import '../../features/auth/data/auth_service.dart';
 /// A singleton HTTP client wrapper around [Dio] that handles server discovery,
 /// token-based authentication, and automatic retry on 401/403 responses.
 class ApiClient {
-  static const String _defaultDomain = 'http://lumina.hub:8000';
+  static const String _defaultDomain = 'http://127.0.0.1:8000';
+  // ponytail: compiled once; fileBaseUrl is called per URL construction.
+  static final RegExp _apiSuffixRe = RegExp(r'/api/?$');
   static String _baseUrl = _defaultDomain;
   static bool _initialized = false;
   static Completer<void>? _initCompleter;
@@ -176,13 +178,44 @@ class ApiClient {
   static const String _mdnsInstanceName = 'EduMeshHub';
   static const int _hubPort = 8000;
 
+  /// Probes loopback addresses 127.0.0.1..127.0.0.255 for a listening hub
+  /// and returns the first base URL that answers /ping, or null.
+  ///
+  /// Closed loopback ports fail fast (connection refused); a per-attempt
+  /// timeout of 400ms covers silently-dropping firewalls, and a 10s overall
+  /// budget bounds the whole sweep on slow devices.
+  static Future<String?> _loopbackDiscover() async {
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(milliseconds: 400);
+    final deadline = DateTime.now().add(const Duration(seconds: 10));
+    try {
+      for (var x = 1; x <= 255; x++) {
+        if (DateTime.now().isAfter(deadline)) return null;
+        final base = 'http://127.0.0.$x:$_hubPort';
+        try {
+          final req = await client
+              .getUrl(Uri.parse('$base/ping'))
+              .timeout(const Duration(milliseconds: 400));
+          final res = await req.close().timeout(const Duration(milliseconds: 400));
+          final ok = res.statusCode == 200;
+          await res.drain<void>();
+          if (ok) return base;
+        } catch (_) {
+          // Refused or timed out -> next candidate.
+        }
+      }
+    } finally {
+      client.close();
+    }
+    return null;
+  }
+
   /// Looks up the hub via mDNS and returns its base URL.
   ///
   /// The hub advertises `EduMeshHub._http._tcp.local.` on port 8000. Returns
   /// `http://{ip}:8000`, or null if no hub is advertised, the lookup times
   /// out (4s), or multicast is unavailable.
-  static Future<String?> _mdnsDiscover() async {
-    final client = MDnsClient();
+  static Future<String?> _mdnsDiscover() async {    final client = MDnsClient();
     try {
       await client.start();
       final ptr = await client
@@ -226,30 +259,26 @@ class ApiClient {
           _baseUrl = 'http://$fallbackIp:8000';
           debugPrint('ApiClient: Using fallback IP $fallbackIp');
         } else {
-          var discovered = false;
-          try {
-            final result = await InternetAddress.lookup('lumina.hub')
-                .timeout(const Duration(seconds: 3));
-            if (result.isNotEmpty) {
-              _baseUrl = _defaultDomain;
-              discovered = true;
-              debugPrint('ApiClient: DNS lookup succeeded, using default domain');
+          final mdnsUrl = await _mdnsDiscover();
+          if (mdnsUrl != null) {
+            _baseUrl = mdnsUrl;
+            debugPrint('ApiClient: mDNS discovered hub at $mdnsUrl');
+            final host = Uri.tryParse(mdnsUrl)?.host;
+            if (host != null && host.isNotEmpty) {
+              await prefs.setString('server_fallback_ip', host);
             }
-          } catch (_) {
-            debugPrint('ApiClient: DNS lookup failed');
-          }
-          if (!discovered) {
-            final mdnsUrl = await _mdnsDiscover();
-            if (mdnsUrl != null) {
-              _baseUrl = mdnsUrl;
-              debugPrint('ApiClient: mDNS discovered hub at $mdnsUrl');
-              final host = Uri.tryParse(mdnsUrl)?.host;
+          } else {
+            final loopback = await _loopbackDiscover();
+            if (loopback != null) {
+              _baseUrl = loopback;
+              debugPrint('ApiClient: loopback discovered hub at $loopback');
+              final host = Uri.tryParse(loopback)?.host;
               if (host != null && host.isNotEmpty) {
                 await prefs.setString('server_fallback_ip', host);
               }
             } else {
-              _baseUrl = 'http://10.42.0.1:8000';
-              debugPrint('ApiClient: DNS and mDNS failed, falling back to 10.42.0.1');
+              _baseUrl = _defaultDomain;
+              debugPrint('ApiClient: mDNS and loopback discovery failed; using loopback default');
             }
           }
         }
@@ -282,32 +311,29 @@ class ApiClient {
     return _dio;
   }
 
-  /// The resolved server base URL (e.g. `http://lumina.hub:8000`).
+  /// The resolved server base URL (e.g. `http://127.0.0.1:8000`).
   static String get baseUrl => _baseUrl;
 
   /// The server base URL with any trailing `/api` stripped, for file URLs.
-  static String get fileBaseUrl => _baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+  static String get fileBaseUrl => _baseUrl.replaceAll(_apiSuffixRe, '');
 
   /// Ensures the server base URL is resolved via DNS or fallback IP.
   /// Safe to call multiple times; only performs initialization once.
   static Future<void> ensureInitialized() => _ensureInitialized();
 
-  /// If the current base URL is a raw fallback IP, re-checks DNS for
-  /// `lumina.hub` and switches back to the hostname once it resolves.
+  /// If the current base URL is a raw fallback IP, re-runs mDNS discovery and
+  /// switches back to an advertised hub address once one is found.
   /// Call on every connectivity restore.
   static Future<void> maybeReResolve() async {
     final uri = Uri.tryParse(_baseUrl);
     if (uri == null) return;
     if (InternetAddress.tryParse(uri.host) == null) return;
-    try {
-      final result = await InternetAddress.lookup('lumina.hub')
-          .timeout(const Duration(seconds: 3));
-      if (result.isNotEmpty) {
-        _baseUrl = _defaultDomain;
-        _dio.options.baseUrl = _baseUrl;
-        debugPrint('ApiClient: DNS recovered, using default domain');
-      }
-    } catch (_) {}
+    final mdnsUrl = await _mdnsDiscover();
+    if (mdnsUrl != null) {
+      _baseUrl = mdnsUrl;
+      _dio.options.baseUrl = _baseUrl;
+      debugPrint('ApiClient: mDNS recovered, using advertised hub');
+    }
   }
 
 }
