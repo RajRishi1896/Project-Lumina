@@ -87,7 +87,7 @@ async def welcome_page():
 
 
 
-@router.get("/studentguide", summary="Serve student guide", description="Serves the complete student guide - a crash course on using the EduMesh app. Public - no authentication required.", tags=["System"], responses={200: {"description": "Student guide HTML"}})
+@router.get("/studentguide", summary="Serve student guide", description="Serves the complete student guide - a crash course on using Project Lumina. Public - no authentication required.", tags=["System"], responses={200: {"description": "Student guide HTML"}})
 @router.get("/studentguide.html", summary="Serve student guide (.html)", description="Alternate URL for the student guide. Both URLs serve the same content. Public - no authentication required.", tags=["System"])
 async def studentguide_page():
     """Serve the student guide crash-course page.
