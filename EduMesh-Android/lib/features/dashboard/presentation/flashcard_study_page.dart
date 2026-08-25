@@ -3,15 +3,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/core/models/flashcard_models.dart';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:edumesh_android/core/services/flashcard_scheduler.dart';
 import 'package:edumesh_android/core/services/flashcard_service.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
+import 'flashcard_flip_card.dart';
+
 /// Runs a review session over the due cards of one flashcard deck.
 ///
-/// Each card is shown front-first and flips on tap; the student then grades
-/// it with one of the four self-assessment buttons, which writes the SM-2
-/// review state through [FlashcardService].
+/// Each card is shown front-first and flips on tap with a short Y-rotation
+/// (architect-approved exception to the animation ban, scoped to this card).
+/// After the reveal the student grades the card with one of the four SM-2
+/// buttons, which writes the review state through [FlashcardService].
 class FlashcardStudyPage extends StatefulWidget {
   /// The id of the deck whose due cards are reviewed.
   final String deckId;
@@ -23,12 +27,24 @@ class FlashcardStudyPage extends StatefulWidget {
   State<FlashcardStudyPage> createState() => _FlashcardStudyPageState();
 }
 
-class _FlashcardStudyPageState extends State<FlashcardStudyPage> {
+class _FlashcardStudyPageState extends State<FlashcardStudyPage>
+    with SingleTickerProviderStateMixin {
   FlashcardDeck? _deck;
   List<FlashcardCard> _session = const [];
   int _index = 0;
-  bool _flipped = false;
   bool _loading = true;
+
+  /// Logical reveal state; tracked separately from the controller value so
+  /// taps during a mid-flight animation still toggle to the opposite side.
+  bool _flipped = false;
+
+  /// Architect-approved flip animation, scoped to the study card:
+  /// 160 ms Y-rotation, easeOut, center-aligned, conservative perspective.
+  late final AnimationController _flipController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 160),
+    value: 0,
+  );
 
   bool get _finished => !_loading && (_session.isEmpty || _index >= _session.length);
 
@@ -36,6 +52,12 @@ class _FlashcardStudyPageState extends State<FlashcardStudyPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _flipController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -52,6 +74,20 @@ class _FlashcardStudyPageState extends State<FlashcardStudyPage> {
       _index = 0;
       _flipped = false;
     });
+    _flipController.value = 0;
+  }
+
+  void _flip() {
+    // The global setting plus reduced motion both force an instant swap;
+    // otherwise run the approved 160 ms flip.
+    final animate = LuminaTransitions.enabled(context);
+    _flipped = !_flipped;
+    final target = _flipped ? 1.0 : 0.0;
+    if (!animate) {
+      _flipController.value = target;
+    } else {
+      _flipController.animateTo(target, curve: Curves.easeOut);
+    }
   }
 
   Future<void> _grade(ReviewGrade grade) async {
@@ -59,9 +95,10 @@ class _FlashcardStudyPageState extends State<FlashcardStudyPage> {
     await FlashcardService().reviewCard(card.id, grade);
     if (!mounted) return;
     setState(() {
-      _flipped = false;
       _index += 1;
+      _flipped = false;
     });
+    _flipController.value = 0;
   }
 
   @override
@@ -106,157 +143,128 @@ class _FlashcardStudyPageState extends State<FlashcardStudyPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
           child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.check_circle_outline, size: 72.sp, color: cs.primary),
-          SizedBox(height: AppSpacing.md.h),
-          Text(l10n.flashcardSessionComplete, style: tt.titleMedium),
-          SizedBox(height: AppSpacing.xl.h),
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.buttonContinue),
-          ),
-        ],
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.check_circle_outline, size: 72.sp, color: cs.primary),
+              SizedBox(height: AppSpacing.md.h),
+              Text(l10n.flashcardSessionComplete, style: tt.titleMedium),
+              SizedBox(height: AppSpacing.xl.h),
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.buttonContinue),
+              ),
+            ],
           ),
         ),
       );
     }
 
     final total = _session.length;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
-        child: Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(AppSpacing.lg.w, AppSpacing.lg.h, AppSpacing.lg.w, 0),
-          child: Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              l10n.flashcardCardProgress(_index + 1, total),
-              style: tt.titleMedium?.copyWith(
-                color: cs.onSurface,
-                fontWeight: AppSpacing.weightStrong,
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
-            child: _CardFace(
-              card: _session[_index],
-              flipped: _flipped,
-              onTap: () => setState(() => _flipped = !_flipped),
-            ),
-          ),
-        ),
-        if (_flipped)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
-            child: _GradeOptions(card: _session[_index], onGrade: _grade),
-          ),
-        Padding(
-          padding: EdgeInsets.only(bottom: AppSpacing.lg.h),
-          child: Text(
-            l10n.flashcardCardProgress(total - _index, total),
-            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-          ),
-        ),
-      ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The flippable card face; front before flip, back plus hint after.
-class _CardFace extends StatelessWidget {
-  const _CardFace({
-    required this.card,
-    required this.flipped,
-    required this.onTap,
-  });
-
-  final FlashcardCard card;
-  final bool flipped;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final l10n = AppLocalizations.of(context)!;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(AppSpacing.xl.w),
-        decoration: BoxDecoration(
-          color: flipped ? cs.primaryContainer : cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (!flipped)
+    return SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints:
+              const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+          child: Column(
+            children: [
               Padding(
-                padding: EdgeInsets.only(bottom: AppSpacing.md.h),
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: AppSpacing.xs.w,
+                padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg.w, AppSpacing.lg.h, AppSpacing.lg.w, 0),
+                child: Row(
                   children: [
-                    Icon(Icons.touch_app_outlined, size: AppSpacing.lg.sp, color: cs.onSurfaceVariant),
                     Text(
-                      l10n.flashcardFlipHint,
-                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      l10n.flashcardFocusMode,
+                      style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
+                    ),
+                    const Spacer(),
+                    Text(
+                      l10n.flashcardCardProgress(_index + 1, total),
+                      style: tt.labelSmall?.copyWith(
+                        color: cs.primary,
+                        fontWeight: AppSpacing.weightStrong,
+                      ),
                     ),
                   ],
                 ),
               ),
-            Flexible(
-              child: SingleChildScrollView(
-                child: Text(
-                  flipped ? card.back : card.front,
-                  textAlign: TextAlign.center,
-                  style: tt.titleMedium?.copyWith(
-                    color: flipped ? cs.onPrimaryContainer : cs.onSurface,
-                    fontWeight: AppSpacing.weightStrong,
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg.w, AppSpacing.sm.h, AppSpacing.lg.w, 0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  child: LinearProgressIndicator(
+                    value: (_index + (_flipped ? 0.5 : 0.0)) / total,
+                    minHeight: 8.h,
+                    backgroundColor: cs.primaryContainer,
+                    valueColor: AlwaysStoppedAnimation(cs.tertiary),
                   ),
                 ),
               ),
-            ),
-          ],
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+                  child: FlashcardFlipCard(
+                    flipController: _flipController,
+                    subject: deck.subject.isEmpty ? deck.title : deck.subject,
+                    card: _session[_index],
+                    onFlip: _flip,
+                  ),
+                ),
+              ),
+              AnimatedBuilder(
+                animation: _flipController,
+                builder: (context, _) {
+                  final showBack = _flipController.value >= 0.5;
+                  final animate = LuminaTransitions.enabled(context);
+                  return AnimatedSwitcher(
+                    duration: animate
+                        ? const Duration(milliseconds: 150)
+                        : Duration.zero,
+                    child: Padding(
+                      key: ValueKey(showBack),
+                      padding: EdgeInsets.only(bottom: AppSpacing.lg.h),
+                      child: showBack
+                          ? _SrsControls(
+                              card: _session[_index], onGrade: _grade)
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.touch_app_outlined,
+                                    size: AppSpacing.lg.sp,
+                                    color: cs.onSurfaceVariant),
+                                SizedBox(width: AppSpacing.xs.w),
+                                Text(
+                                  l10n.flashcardTapReveal,
+                                  style: tt.bodySmall
+                                      ?.copyWith(color: cs.onSurfaceVariant),
+                                ),
+                              ],
+                            ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// The four self-grading options shown after the card is flipped, laid out
-/// as a 2x2 grid (Again | Hard over Good | Easy).
-///
-/// Each option pairs the grade label with a plain-language description and
-/// the concrete next interval computed by [scheduleNext] for the current
-/// card, so students see what each choice does before tapping.
-class _GradeOptions extends StatelessWidget {
-  const _GradeOptions({required this.card, required this.onGrade});
+/// The four SM-2 self-grading buttons shown after the reveal, each with the
+/// concrete next interval computed by [scheduleNext].
+class _SrsControls extends StatelessWidget {
+  const _SrsControls({required this.card, required this.onGrade});
 
   final FlashcardCard card;
   final ValueChanged<ReviewGrade> onGrade;
 
-  int _nextDays(ReviewGrade grade) {
-    final next = scheduleNext(
-      grade,
-      card.ease,
-      card.intervalDays,
-      DateTime.now().millisecondsSinceEpoch,
-    );
-    return next.intervalDays;
-  }
+  int _nextDays(ReviewGrade grade) =>
+      scheduleNext(grade, card.ease, card.intervalDays,
+              DateTime.now().millisecondsSinceEpoch)
+          .intervalDays;
 
   String _label(ReviewGrade grade, AppLocalizations l10n) {
     switch (grade) {
@@ -271,118 +279,57 @@ class _GradeOptions extends StatelessWidget {
     }
   }
 
-  String _description(ReviewGrade grade, AppLocalizations l10n) {
-    switch (grade) {
-      case ReviewGrade.again:
-        return l10n.flashcardAgainDesc;
-      case ReviewGrade.hard:
-        return l10n.flashcardHardDesc;
-      case ReviewGrade.good:
-        return l10n.flashcardGoodDesc;
-      case ReviewGrade.easy:
-        return l10n.flashcardEasyDesc;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _option(
-                context, ReviewGrade.again, cs.error, cs.onError, cs, l10n,
-              ),
-            ),
-            SizedBox(width: AppSpacing.sm.w),
-            Expanded(
-              child: _option(
-                context, ReviewGrade.hard, cs.tertiary, cs.onTertiary, cs, l10n,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: AppSpacing.sm.h),
-        Row(
-          children: [
-            Expanded(
-              child: _option(
-                context, ReviewGrade.good, cs.primary, cs.onPrimary, cs, l10n,
-              ),
-            ),
-            SizedBox(width: AppSpacing.sm.w),
-            Expanded(
-              child: _option(
-                context, ReviewGrade.easy, cs.secondary, cs.onSecondary, cs, l10n,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _option(
-    BuildContext context,
-    ReviewGrade grade,
-    Color background,
-    Color foreground,
-    ColorScheme cs,
-    AppLocalizations l10n,
-  ) {
     final tt = Theme.of(context).textTheme;
-    return InkWell(
-      onTap: () => onGrade(grade),
-      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: AppSpacing.touchTarget.h),
-        child: Container(
-          padding: EdgeInsets.all(AppSpacing.md.w),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm.w,
-                  vertical: AppSpacing.xs.h,
-                ),
+    final l10n = AppLocalizations.of(context)!;
+    const grades = ReviewGrade.values;
+    return Row(
+      children: [
+        for (var i = 0; i < grades.length; i++) ...[
+          if (i > 0) SizedBox(width: AppSpacing.xs.w),
+          Expanded(
+            child: InkWell(
+              onTap: () => onGrade(grades[i]),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              child: Container(
+                constraints:
+                    BoxConstraints(minHeight: AppSpacing.touchTarget.h),
                 decoration: BoxDecoration(
-                  color: background,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  color: cs.surface,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  border: Border.all(color: cs.outline),
                 ),
-                child: Text(
-                  _label(grade, l10n),
-                  style: tt.labelMedium?.copyWith(
-                    color: foreground,
-                    fontWeight: AppSpacing.weightStrong,
-                  ),
+                padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs.w, vertical: AppSpacing.xs.h),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _label(grades[i], l10n),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tt.labelSmall?.copyWith(
+                        color: cs.onSurface,
+                        fontWeight: AppSpacing.weightStrong,
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.xs.h),
+                    Text(
+                      l10n.flashcardNextInDays(_nextDays(grades[i])),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tt.labelSmall
+                          ?.copyWith(color: cs.onSurfaceVariant),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: AppSpacing.xs.h),
-              Text(
-                _description(grade, l10n),
-                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-              ),
-              SizedBox(height: AppSpacing.xs.h),
-              Text(
-                l10n.flashcardNextInDays(_nextDays(grade)),
-                style: tt.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant,
-                  fontWeight: AppSpacing.weightStrong,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        ],
+      ],
     );
   }
 }

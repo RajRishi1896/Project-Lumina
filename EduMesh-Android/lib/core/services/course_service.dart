@@ -84,6 +84,8 @@ class CourseService extends ChangeNotifier {
           return cached;
         }
       }
+      // ponytail: one timestamp per sync run; per-row DateTime.now() is wasted allocations
+      final syncedAt = DateTime.now().millisecondsSinceEpoch;
       await db.transaction((txn) async {
         await txn.delete('courses');
         for (final c in courses) {
@@ -99,7 +101,7 @@ class CourseService extends ChangeNotifier {
             'teacher_username': c.teacherUsername ?? '',
             'created_at': c.createdAt ?? '',
             'updated_at': c.updatedAt ?? '',
-            'synced_at': DateTime.now().millisecondsSinceEpoch,
+            'synced_at': syncedAt,
           }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
       });
@@ -281,13 +283,26 @@ class CourseService extends ChangeNotifier {
         }
       }
 
+      // ponytail: one IN(...) lookup instead of a per-row query (N+1)
       final result = <({Course course, Map<String, dynamic>? progress})>[];
+      final ids = progressRows
+          .map((pRow) => (pRow['course_id'] ?? '').toString())
+          .where((id) => id.isNotEmpty)
+          .toList();
+      final coursesById = <String, Map<String, dynamic>>{};
+      if (ids.isNotEmpty) {
+        final placeholders = List.filled(ids.length, '?').join(',');
+        final courseRows =
+            await db.query('courses', where: 'id IN ($placeholders)', whereArgs: ids);
+        for (final r in courseRows) {
+          coursesById[(r['id'] ?? '').toString()] = r;
+        }
+      }
       for (final pRow in progressRows) {
         final courseId = (pRow['course_id'] ?? '').toString();
-        final courseRows = await db.query('courses', where: 'id = ?', whereArgs: [courseId]);
-        if (courseRows.isNotEmpty) {
-          final course = _rowToCourse(courseRows.first);
-          result.add((course: course, progress: pRow));
+        final row = coursesById[courseId];
+        if (row != null) {
+          result.add((course: _rowToCourse(row), progress: pRow));
         } else {
           final detail = await fetchCourseDetail(courseId);
           if (detail != null) {
@@ -312,6 +327,9 @@ class CourseService extends ChangeNotifier {
       final items = data['courses'] as List<dynamic>? ?? [];
       if (items.isEmpty) return;
       final db = await DBHelper().database;
+      final studentId = await _getStudentId();
+      final lastSynced = DateTime.now().toIso8601String();
+      final syncedAt = DateTime.now().millisecondsSinceEpoch;
       await db.transaction((txn) async {
         for (final item in items) {
           final m = item as Map<String, dynamic>;
@@ -328,16 +346,16 @@ class CourseService extends ChangeNotifier {
             'enrollment_count': m['enrollment_count'] ?? 0,
             'created_at': m['created_at'] ?? '',
             'updated_at': m['updated_at'] ?? '',
-            'synced_at': DateTime.now().millisecondsSinceEpoch,
+            'synced_at': syncedAt,
           }, conflictAlgorithm: ConflictAlgorithm.replace);
           await txn.insert('course_progress', {
-            'student_id': await _getStudentId(),
+            'student_id': studentId,
             'course_id': m['course_id'] ?? '',
             'current_position': m['current_position'] ?? 0,
             'completed_count': m['completed_count'] ?? 0,
             'total_resources': m['total_resources'] ?? 0,
             'completed': m['completed'] ?? 0,
-            'last_synced': DateTime.now().toIso8601String(),
+            'last_synced': lastSynced,
             'enrolled_at': m['enrolled_at'] ?? '',
           }, conflictAlgorithm: ConflictAlgorithm.replace);
         }

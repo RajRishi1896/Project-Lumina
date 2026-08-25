@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
@@ -45,6 +46,7 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
 
   @override
   void dispose() {
+    _queueThrottle?.cancel();
     DownloadQueue().removeListener(_onQueueChanged);
     super.dispose();
   }
@@ -117,11 +119,11 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
   Future<void> _openResource(ResourceModel item) async {
     if (item.type == ResourceType.videos) {
       final url = item.pdfUrl ?? '/files/${item.id}';
-      unawaited(Navigator.push(context, MaterialPageRoute(
+      unawaited(Navigator.push(context, luminaRoute(
         builder: (_) => VideoPlayerPage(title: item.title, videoUrl: url, subject: item.subject),
       )));
     } else if (item.type == ResourceType.quiz) {
-      unawaited(Navigator.push(context, MaterialPageRoute(
+      unawaited(Navigator.push(context, luminaRoute(
         builder: (_) => QuizPlayerPage.fromResource(item),
       )));
     } else if (item.type == ResourceType.kiwix) {
@@ -134,13 +136,13 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
       } catch (_) {}
       if (!mounted) return;
       if (html != null && html.isNotEmpty) {
-        unawaited(Navigator.push(context, MaterialPageRoute(
+        unawaited(Navigator.push(context, luminaRoute(
           builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: ApiClient.baseUrl, subject: item.subject),
         )));
       }
     } else {
       final url = item.pdfUrl ?? '/files/${item.id}';
-      unawaited(Navigator.push(context, MaterialPageRoute(
+      unawaited(Navigator.push(context, luminaRoute(
         builder: (_) => PdfViewerPage(title: item.title, pdfUrl: url, subject: item.subject),
       )));
     }
@@ -311,45 +313,45 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
 
     final widgets = <Widget>[];
     final entries = grouped.entries.toList();
+    // ponytail: fully-available rows skip the ghost-dim Opacity layer.
+    Widget resourceRow(ResourceModel item) {
+      final isOfflineUnavailable = isOffline && !_downloadedIds.contains(item.id);
+      final card = Card(
+        color: isOfflineUnavailable ? cs.surfaceContainerHighest : null,
+        margin: EdgeInsets.only(bottom: AppSpacing.sm.h),
+        child: ListTile(
+          leading: ResourceThumbnail(resource: item, size: 40),
+          title: Text(item.title,
+              style: tt.titleSmall?.copyWith(color: cs.onSurface),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis),
+          subtitle: Text(item.grade,
+              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: AppLocalizations.of(context)!.bottomNavSaved,
+                icon: Icon(
+                  _bookmarkedIds.contains(item.id.toString()) ? Icons.bookmark : Icons.bookmark_border,
+                  color: _bookmarkedIds.contains(item.id.toString()) ? cs.primary : cs.onSurfaceVariant,
+                ),
+                onPressed: () => _toggleBookmark(item),
+              ),
+              _buildDownloadButton(item, cs),
+              Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+            ],
+          ),
+          onTap: () => _openResource(item),
+        ),
+      );
+      return isOfflineUnavailable ? Opacity(opacity: 0.45, child: card) : card;
+    }
     for (var i = 0; i < entries.length; i++) {
       final entry = entries[i];
       if (entry.key.isEmpty) {
         for (final item in entry.value) {
-          final isOfflineUnavailable = isOffline && !_downloadedIds.contains(item.id);
-          widgets.add(
-            Opacity(
-              opacity: isOfflineUnavailable ? 0.45 : 1.0,
-              child: Card(
-                color: isOfflineUnavailable ? cs.surfaceContainerHighest : null,
-                margin: EdgeInsets.only(bottom: AppSpacing.sm.h),
-                child: ListTile(
-                  leading: ResourceThumbnail(resource: item, size: 40),
-                  title: Text(item.title,
-                      style: tt.titleSmall?.copyWith(color: cs.onSurface),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis),
-                  subtitle: Text(item.grade,
-                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: AppLocalizations.of(context)!.bottomNavSaved,
-                        icon: Icon(
-                          _bookmarkedIds.contains(item.id.toString()) ? Icons.bookmark : Icons.bookmark_border,
-                          color: _bookmarkedIds.contains(item.id.toString()) ? cs.primary : cs.onSurfaceVariant,
-                        ),
-                        onPressed: () => _toggleBookmark(item),
-                      ),
-                      _buildDownloadButton(item, cs),
-                      Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-                    ],
-                  ),
-                  onTap: () => _openResource(item),
-                ),
-              ),
-            ),
-          );
+          widgets.add(resourceRow(item));
         }
         continue;
       }
@@ -362,40 +364,7 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
         ),
       );
       for (final item in entry.value) {
-        final isOfflineUnavailable = isOffline && !_downloadedIds.contains(item.id);
-        widgets.add(
-          Opacity(
-            opacity: isOfflineUnavailable ? 0.45 : 1.0,
-            child: Card(
-              color: isOfflineUnavailable ? cs.surfaceContainerHighest : null,
-              margin: EdgeInsets.only(bottom: AppSpacing.sm.h),
-              child: ListTile(
-                leading: ResourceThumbnail(resource: item, size: 40),
-                title: Text(item.title,
-                    style: tt.titleSmall?.copyWith(color: cs.onSurface),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
-                subtitle: Text(item.grade,
-                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        _bookmarkedIds.contains(item.id.toString()) ? Icons.bookmark : Icons.bookmark_border,
-                        color: _bookmarkedIds.contains(item.id.toString()) ? cs.primary : cs.onSurfaceVariant,
-                      ),
-                      onPressed: () => _toggleBookmark(item),
-                    ),
-                    _buildDownloadButton(item, cs),
-                    Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-                  ],
-                ),
-                  onTap: () => _openResource(item),
-              ),
-            ),
-          ),
-        );
+        widgets.add(resourceRow(item));
       }
     }
     return Center(

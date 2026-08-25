@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:edumesh_android/features/dashboard/presentation/dashboard_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/saved_resource_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/student_profile_page.dart';
@@ -20,13 +21,32 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell>
+    with SingleTickerProviderStateMixin {
   int _index = 0;
   DateTime? _lastBackPress;
   final _browseKey = GlobalKey<BrowsePageState>();
 
+  /// Subtle fade when switching tabs; skipped entirely when animations are
+  /// off or reduced motion is on (the IndexedStack swap is already instant).
+  late final AnimationController _tabFade = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 150),
+    value: 1,
+  );
+
+  void _selectTab(int index) {
+    if (index == _index) return;
+    setState(() => _index = index);
+    if (LuminaTransitions.enabled(context)) {
+      _tabFade.forward(from: 0);
+    } else {
+      _tabFade.value = 1;
+    }
+  }
+
   void _openBrowseResources() {
-    setState(() => _index = 1);
+    _selectTab(1);
     _browseKey.currentState?.switchTab(1);
   }
 
@@ -36,6 +56,12 @@ class _AppShellState extends State<AppShell> {
     const SavedResourcesPage(),
     const StudentProfilePage(),
   ];
+
+  @override
+  void dispose() {
+    _tabFade.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +89,10 @@ class _AppShellState extends State<AppShell> {
       child: Scaffold(
         body: Stack(
           children: [
-            IndexedStack(index: _index, children: _pages),
+            FadeTransition(
+              opacity: _tabFade,
+              child: IndexedStack(index: _index, children: _pages),
+            ),
             const MiniPlayerWidget(),
           ],
         ),
@@ -78,7 +107,7 @@ class _AppShellState extends State<AppShell> {
               child: BottomNavigationBar(
                 type: BottomNavigationBarType.fixed,
                 currentIndex: _index,
-                onTap: (val) => setState(() => _index = val),
+                onTap: _selectTab,
                 items: [
                   BottomNavigationBarItem(icon: const Icon(Icons.dashboard_rounded), label: AppLocalizations.of(context)!.bottomNavDashboard),
                   BottomNavigationBarItem(icon: const Icon(Icons.explore_rounded), label: AppLocalizations.of(context)!.bottomNavBrowse),

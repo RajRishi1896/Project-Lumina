@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
@@ -186,7 +187,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: _currentPage.toString());
-    showDialog(
+    showLuminaDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: cs.surfaceContainerHighest,

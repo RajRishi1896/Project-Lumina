@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/constants/app_spacing.dart';
 import 'mini_player_controller.dart';
@@ -39,7 +40,7 @@ class MiniPlayerWidget extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
+                luminaRoute(
                   builder: (_) => VideoPlayerPage(
                     title: ctrl.title,
                     videoUrl: ctrl.videoUrl,

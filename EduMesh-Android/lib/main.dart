@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:ui' show DartPluginRegistrant;
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart' show DioException;
 
 // Ensure these imports match your project structure exactly
 import 'package:edumesh_android/core/theme/lumina_lite_theme.dart';
@@ -22,6 +22,7 @@ import 'package:edumesh_android/shared/services/notification_service.dart';
 import 'package:edumesh_android/shared/services/connectivity_service.dart';
 import 'package:edumesh_android/core/services/activity_tracker.dart';
 import 'package:edumesh_android/core/providers/locale_provider.dart';
+import 'package:edumesh_android/core/providers/animation_prefs.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import 'package:edumesh_android/shared/services/download_service.dart';
 import 'package:edumesh_android/shared/services/share_server.dart';
@@ -40,6 +41,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 /// [ProviderScope].
 void main() async { 
   WidgetsFlutterBinding.ensureInitialized();
+  unawaited(AnimationPrefs().load());
   _trace('T0 start ${DateTime.now().microsecondsSinceEpoch}');
 
   // All platform-thread-heavy plugin init is deferred to after the first
@@ -75,28 +77,29 @@ void main() async {
   };
 
   // Validate that the stored user still exists on the server.
-  // Prevents N concurrent 401 handlers from crashing the app when a
-  // logged-in student was deleted from the server. Timeboxed so an
-  // unreachable hub can't hold cold start hostage.
+  // Deferred to first frame so an unreachable hub can't hold cold start hostage.
+  // A 401 during any later request hits the force-logout path anyway.
   if (isLoggedIn) {
-    try {
-      await ApiClient.get('/student/profile').timeout(const Duration(seconds: 5));
-      _trace('T3 profile-ok ${DateTime.now().microsecondsSinceEpoch}');
-    } catch (e) {
-      _trace('T3 profile-err ${DateTime.now().microsecondsSinceEpoch}');
-      if (e is DioException &&
-          (e.response?.statusCode == 401 || e.response?.statusCode == 404)) {
-        isLoggedIn = false;
-      }
-    }
-  } else {
-    _trace('T3 no-profile ${DateTime.now().microsecondsSinceEpoch}');
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await ApiClient.get('/student/profile');
+      } on DioException catch (e) {
+        // Dio throws on non-2xx: a 401/404 here means the stored account no
+        // longer exists on the hub. The interceptor also force-logs-out on
+        // 401; this keeps the probe's own path correct if it ever fires first.
+        final code = e.response?.statusCode;
+        if (code == 401 || code == 404) {
+          final navigator = navigatorKey.currentState;
+          if (navigator != null) unawaited(routeAfterLogout(navigator));
+        }
+      } catch (_) {}
+    });
   }
 
   try { ConnectivityService().start(); } catch (_) {}
   try { ActivityTracker().startAutoSync(); } catch (_) {}
 
-  try { await _initBackgroundService(); } catch (_) {}
+  unawaited(_initBackgroundService().onError((_, __) {}));
   _trace('T4 bgservice ${DateTime.now().microsecondsSinceEpoch}');
   unawaited(DownloadService.cleanStaleParts(const Duration(days: 7)));
 
@@ -213,8 +216,18 @@ class LuminaApp extends ConsumerWidget {
     }
     final themeMode = ref.watch(themeModeProvider);
 
+    // ponytail: the design size IS the viewport, clamped. ScreenUtil scale
+    // factors become width/designW and height/designH, so clamping the design
+    // size to the phone baseline caps every scale at ~1.5x on tablets and
+    // keeps 1.0x on phones, in any orientation, without device checks.
+    final view = WidgetsBinding.instance.platformDispatcher.views.first;
+    final logicalSize = view.physicalSize / view.devicePixelRatio;
+    final designSize = Size(
+      logicalSize.width.clamp(360.0, 1280.0),
+      logicalSize.height.clamp(640.0, 1280.0),
+    );
     return ScreenUtilInit(
-      designSize: const Size(360, 800),
+      designSize: designSize,
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {

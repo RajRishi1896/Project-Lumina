@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
@@ -126,7 +127,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     await _tracker.sync();
     try {
       // ponytail: sync() already cached fresh analytics when it synced, but
-      // skips that GET when there are no pending events — so getAnalytics()
+      // skips that GET when there are no pending events, so getAnalytics()
       // still runs to cover the online-with-no-events and offline paths.
       final analytics = await _tracker.getAnalytics();
       final history = await _tracker.getActivityHistory(limit: 50);
@@ -310,24 +311,26 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       child: Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
-                          child: ListView(
+                          // ponytail: builder defers offscreen sections on 1GB devices.
+                          child: ListView.builder(
                       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
-                      children: [
-                        _buildProfileCard(cs),
-                        SizedBox(height: AppSpacing.sm.h),
-                        _buildSwitchProfileTile(cs),
-                        SizedBox(height: AppSpacing.xl.h),
-                        _buildStatsRow(cs),
-                        SizedBox(height: AppSpacing.md.h),
-                        _buildStudyReportEntry(cs),
-                        SizedBox(height: AppSpacing.xxl.h),
-                        _buildMyCoursesSection(cs),
-                        SizedBox(height: AppSpacing.xxl.h),
-                        _buildSubjectBreakdown(cs),
-                        SizedBox(height: AppSpacing.xxl.h),
-                        _buildRecentActivity(cs),
-                        SizedBox(height: AppSpacing.xxl.h),
-                      ],
+                      itemCount: 14,
+                      itemBuilder: (_, i) => switch (i) {
+                        0 => _buildProfileCard(cs),
+                        1 => SizedBox(height: AppSpacing.sm.h),
+                        2 => _buildSwitchProfileTile(cs),
+                        3 => SizedBox(height: AppSpacing.xl.h),
+                        4 => _buildStatsRow(cs),
+                        5 => SizedBox(height: AppSpacing.md.h),
+                        6 => _buildStudyReportEntry(cs),
+                        7 => SizedBox(height: AppSpacing.xxl.h),
+                        8 => _buildMyCoursesSection(cs),
+                        9 => SizedBox(height: AppSpacing.xxl.h),
+                        10 => _buildSubjectBreakdown(cs),
+                        11 => SizedBox(height: AppSpacing.xxl.h),
+                        12 => _buildRecentActivity(cs),
+                        _ => SizedBox(height: AppSpacing.xxl.h),
+                      },
                           ),
                         ),
                       ),
@@ -533,7 +536,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         trailing: Icon(Icons.chevron_right_rounded, color: cs.outline),
         onTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ProfilePickerPage()),
+            luminaRoute(builder: (_) => const ProfilePickerPage()),
           );
         },
       ),
@@ -581,7 +584,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       modalSetStateRef?.call(() {});
     });
 
-    showModalBottomSheet(
+    showLuminaSheet(
       context: context,
       isScrollControlled: true,
       shape: RoundedRectangleBorder(
@@ -769,7 +772,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       child: GestureDetector(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const StudyReportPage()),
+          luminaRoute(builder: (_) => const StudyReportPage()),
         ),
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.lg.h),
@@ -862,7 +865,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       SizedBox(width: AppSpacing.md.w),
                       TextButton(
                         onPressed: () {
-                          Navigator.push(context, MaterialPageRoute(
+                          Navigator.push(context, luminaRoute(
                             builder: (_) => CoursePlayerPage(course: entry.course),
                           ));
                         },
@@ -900,12 +903,13 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             children: [
               if (_subjectBreakdown.isEmpty)
                 Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl.h),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.lg.h),
                   child: Center(
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.bar_chart_rounded, size: 36.sp, color: cs.onSurfaceVariant),
-                        SizedBox(height: AppSpacing.sm.h),
+                        Icon(Icons.bar_chart_rounded, size: 24.sp, color: cs.onSurfaceVariant),
+                        SizedBox(height: AppSpacing.xs.h),
                         Text(l10n.emptyStateSubjectBreakdown,
                             textAlign: TextAlign.center,
                             style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
@@ -983,13 +987,13 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             children: [
               if (_activityHistory.isEmpty)
                 Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.section.h),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.lg.h),
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.history_rounded, size: 40.sp, color: cs.onSurfaceVariant),
-                        SizedBox(height: AppSpacing.md.h),
+                        Icon(Icons.history_rounded, size: 24.sp, color: cs.onSurfaceVariant),
+                        SizedBox(height: AppSpacing.xs.h),
                         Text(l10n.emptyStateRecentActivity,
                             textAlign: TextAlign.center,
                             style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -558,15 +559,11 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                     final isDl = _downloadedIds.contains(item.id);
                     final isOnline = ConnectivityService().isOnline;
                     final isGhost = !isDl && !isOnline;
-                    return Card(
-                      margin: EdgeInsets.only(bottom: AppSpacing.lg.h),
-                      color: isGhost ? cs.surfaceContainerHighest : null,
-                      child: Opacity(
-                        opacity: isGhost ? 0.5 : 1.0,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                    // ponytail: available rows skip the ghost-dim Opacity layer.
+                    Widget row = Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                             InkWell(
                               onTap: () async {
                                 if (isGhost) {
@@ -587,7 +584,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                 if (item.type == ResourceType.quiz) {
                                   unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
                                   unawaited(ActivityTracker().logAction('view', resourceId: item.id.toString(), metadata: item.title));
-                                  unawaited(Navigator.of(this.context).push(MaterialPageRoute(
+                                  unawaited(Navigator.of(this.context).push(luminaRoute(
                                     builder: (_) => QuizPlayerPage.fromResource(item),
                                   )));
                                   return;
@@ -620,7 +617,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                   if (html != null && html.isNotEmpty) {
                                     unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
                                     unawaited(ActivityTracker().logAction('view', resourceId: item.id.toString(), metadata: item.title));
-                                    unawaited(Navigator.of(this.context).push(MaterialPageRoute(
+                                    unawaited(Navigator.of(this.context).push(luminaRoute(
                                       builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: ApiClient.baseUrl),
                                     )));
                                   } else {
@@ -635,7 +632,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                   if (!mounted) return;
                                   unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
                                   unawaited(ActivityTracker().logAction('view', resourceId: item.id.toString(), metadata: item.title));
-                                  unawaited(Navigator.of(this.context).push(MaterialPageRoute(
+                                  unawaited(Navigator.of(this.context).push(luminaRoute(
                                     builder: (_) => VideoPlayerPage(
                                       title: item.title,
                                       videoUrl: url,
@@ -688,7 +685,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                 if (!mounted) return;
                                 unawaited(RecentResources.record(item.id.toString(), item.title, item.type.name));
                                 unawaited(ActivityTracker().logAction('view', resourceId: item.id.toString(), metadata: item.title));
-                                unawaited(Navigator.of(this.context).push(MaterialPageRoute(
+                                unawaited(Navigator.of(this.context).push(luminaRoute(
                                   builder: (_) => PdfViewerPage(
                                     title: item.title,
                                     pdfUrl: url,
@@ -763,9 +760,13 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                             ),
 
                           ],
-                        ),
-                      ),
+                        );
+                    final card = Card(
+                      margin: EdgeInsets.only(bottom: AppSpacing.lg.h),
+                      color: isGhost ? cs.surfaceContainerHighest : null,
+                      child: isGhost ? Opacity(opacity: 0.5, child: row) : row,
                     );
+                    return card;
                   },
                     ),
                   ),

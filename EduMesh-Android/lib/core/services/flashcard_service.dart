@@ -31,7 +31,7 @@ class FlashcardService {
     final placeholders = List.filled(deckIds.length, '?').join(',');
     final cardRows = await db.rawQuery(
       'SELECT c.id, c.deck_id, c.front, c.back, '
-      'r.ease, r.interval_days, r.due_at '
+      'r.ease, r.interval_days, r.due_at, r.last_reviewed_at '
       'FROM flashcard_cards_local c '
       'LEFT JOIN flashcard_reviews_local r ON r.card_id = c.id '
       'WHERE c.deck_id IN ($placeholders) '
@@ -39,6 +39,7 @@ class FlashcardService {
       deckIds,
     );
     final cardsByDeck = <String, List<FlashcardCard>>{};
+    final lastStudiedByDeck = <String, int>{};
     for (final c in cardRows) {
       final deckId = c['deck_id'] as String;
       (cardsByDeck[deckId] ??= []).add(FlashcardCard(
@@ -50,6 +51,10 @@ class FlashcardService {
         intervalDays: ((c['interval_days'] as num?)?.toInt() ?? 0),
         dueAt: ((c['due_at'] as num?)?.toInt() ?? 0),
       ));
+      final reviewedAt = ((c['last_reviewed_at'] as num?)?.toInt() ?? 0);
+      if (reviewedAt > (lastStudiedByDeck[deckId] ?? 0)) {
+        lastStudiedByDeck[deckId] = reviewedAt;
+      }
     }
 
     final submissions = <String, Map<String, Object?>>{};
@@ -63,12 +68,13 @@ class FlashcardService {
           row,
           cardsByDeck[row['id'] as String] ?? const [],
           submissions[row['id'] as String],
+          lastStudiedByDeck[row['id'] as String] ?? 0,
         ),
     ];
   }
 
-  FlashcardDeck _assembleDeck(
-      Map<String, Object?> row, List<FlashcardCard> cards, Map<String, Object?>? submission) {
+  FlashcardDeck _assembleDeck(Map<String, Object?> row, List<FlashcardCard> cards,
+      Map<String, Object?>? submission, int lastStudiedAt) {
     return FlashcardDeck(
       id: row['id'] as String,
       title: (row['title'] ?? '').toString(),
@@ -77,6 +83,7 @@ class FlashcardService {
       cards: cards,
       submissionStatus: submission == null ? '' : (submission['status'] ?? '').toString(),
       submissionReason: submission == null ? '' : (submission['reason'] ?? '').toString(),
+      lastStudiedAt: lastStudiedAt,
     );
   }
 
@@ -96,6 +103,7 @@ class FlashcardService {
       orderBy: 'c.position ASC',
     );
     final cards = <FlashcardCard>[];
+    var lastStudiedAt = 0;
     for (final c in cardRows) {
       cards.add(FlashcardCard(
         id: c['id'] as String,
@@ -106,6 +114,8 @@ class FlashcardService {
         intervalDays: ((c['interval_days'] as num?)?.toInt() ?? 0),
         dueAt: ((c['due_at'] as num?)?.toInt() ?? 0),
       ));
+      final reviewedAt = ((c['last_reviewed_at'] as num?)?.toInt() ?? 0);
+      if (reviewedAt > lastStudiedAt) lastStudiedAt = reviewedAt;
     }
     String submissionStatus = '';
     String submissionReason = '';
@@ -123,6 +133,7 @@ class FlashcardService {
       cards: cards,
       submissionStatus: submissionStatus,
       submissionReason: submissionReason,
+      lastStudiedAt: lastStudiedAt,
     );
   }
 

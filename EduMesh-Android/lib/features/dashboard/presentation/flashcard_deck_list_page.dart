@@ -1,9 +1,6 @@
-import 'dart:async';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/core/models/flashcard_models.dart';
@@ -11,10 +8,10 @@ import 'package:edumesh_android/core/services/flashcard_service.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 import 'flashcard_edit_page.dart';
-import 'flashcard_study_page.dart';
 
-/// Lists the student's flashcard decks with due counts, submission status,
-/// and the overflow actions (edit, send, export, delete).
+/// The flashcard deck library: hub-published decks under Recommended, the
+/// student's own decks with mastery progress under My Decks, plus search and
+/// the create-deck FAB.
 class FlashcardDeckListPage extends StatefulWidget {
   /// Creates the flashcard deck list page.
   const FlashcardDeckListPage({super.key});
@@ -26,6 +23,7 @@ class FlashcardDeckListPage extends StatefulWidget {
 class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
   List<FlashcardDeck> _decks = const [];
   bool _loading = true;
+  String _query = '';
 
   @override
   void initState() {
@@ -48,10 +46,10 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
     });
   }
 
-  Future<void> _openDeck(FlashcardDeck deck) async {
+  Future<void> _openDetails(FlashcardDeck deck) async {
     await Navigator.push<void>(
       context,
-      MaterialPageRoute(builder: (_) => FlashcardStudyPage(deckId: deck.id)),
+      luminaRoute(builder: (_) => FlashcardEditPage(deckId: deck.id)),
     );
     if (mounted) await _load();
   }
@@ -59,80 +57,19 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
   Future<void> _createDeck() async {
     await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => const FlashcardEditPage()),
+      luminaRoute(builder: (_) => const FlashcardEditPage()),
     );
     if (mounted) await _load();
   }
 
-  Future<void> _editDeck(FlashcardDeck deck) async {
-    await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => FlashcardEditPage(deckId: deck.id)),
-    );
-    if (mounted) await _load();
-  }
-
-  Future<void> _sendToTeacher(FlashcardDeck deck) async {
-    await FlashcardService().submitDeck(deck.id);
-    if (!mounted) return;
-    final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.flashcardDeckSent)),
-    );
-    await _load();
-  }
-
-  Future<void> _exportDeck(FlashcardDeck deck) async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/flashcards_${deck.id}.json');
-      await file.writeAsString(FlashcardService().exportDeckJson(deck));
-    } catch (e) {
-      debugPrint('Flashcard export failed: $e');
-      return;
-    }
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.flashcardDeckExported)),
-    );
-  }
-
-  Future<void> _confirmDeleteDeck(FlashcardDeck deck) async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.flashcardDeleteDeck),
-        content: Text(deck.title),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.buttonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.flashcardDeleteDeck),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await FlashcardService().deleteDeck(deck.id);
-    if (mounted) await _load();
-  }
-
-  Future<void> _onMenuSelected(FlashcardDeck deck, String value) async {
-    switch (value) {
-      case 'edit':
-        await _editDeck(deck);
-      case 'send':
-        await _sendToTeacher(deck);
-      case 'export':
-        await _exportDeck(deck);
-      case 'delete':
-        await _confirmDeleteDeck(deck);
-    }
+  List<FlashcardDeck> _filtered(Iterable<FlashcardDeck> decks) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return decks.toList();
+    return decks
+        .where((d) =>
+            d.title.toLowerCase().contains(q) ||
+            d.subject.toLowerCase().contains(q))
+        .toList();
   }
 
   @override
@@ -152,66 +89,233 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
           style: tt.titleMedium?.copyWith(color: cs.onSurface),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        tooltip: l10n.flashcardNewDeck,
-        onPressed: _createDeck,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.flashcardNewDeck),
-      ),
-      body: _buildBody(cs, tt, l10n),
+      floatingActionButton: _CreateFab(onTap: _createDeck),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints:
+                      const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+                  child: ListView(
+                    padding: EdgeInsets.all(AppSpacing.lg.w),
+                    children: [
+                      _SearchField(
+                        onChanged: (v) => setState(() => _query = v),
+                      ),
+                      SizedBox(height: AppSpacing.section.h),
+                      ..._buildRecommended(cs, tt, l10n),
+                      ..._buildMyDecks(cs, tt, l10n),
+                      SizedBox(height: AppSpacing.touchTarget.h),
+                    ],
+                  ),
+                ),
+              ),
+            ),
     );
   }
 
-  Widget _buildBody(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_decks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.style_outlined, size: 64.sp, color: cs.onSurfaceVariant),
-            SizedBox(height: AppSpacing.md.h),
-            Text(
-              l10n.flashcardNoDecks,
-              style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
-            ),
-          ],
+  List<Widget> _buildRecommended(
+      ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    final hubDecks =
+        _filtered(_decks.where((d) => d.source == 'hub'));
+    if (hubDecks.isEmpty) return const [];
+    return [
+      Text(
+        l10n.flashcardRecommended,
+        style: tt.titleMedium?.copyWith(
+          color: cs.onSurface,
+          fontWeight: AppSpacing.weightDisplay,
         ),
-      );
+      ),
+      SizedBox(height: AppSpacing.md.h),
+      for (final deck in hubDecks)
+        Padding(
+          padding: EdgeInsets.only(bottom: AppSpacing.sm.h),
+          child: _RecommendedCard(deck: deck, onTap: () => _openDetails(deck)),
+        ),
+      SizedBox(height: AppSpacing.section.h),
+    ];
+  }
+
+  List<Widget> _buildMyDecks(
+      ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    final localDecks =
+        _filtered(_decks.where((d) => d.source != 'hub'));
+    if (localDecks.isEmpty && _query.isEmpty) {
+      return [
+        Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.section.h),
+            child: Column(
+              children: [
+                Icon(Icons.style_outlined,
+                    size: 64.sp, color: cs.onSurfaceVariant),
+                SizedBox(height: AppSpacing.md.h),
+                Text(
+                  l10n.flashcardNoDecks,
+                  style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ];
     }
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
-        child: ListView.builder(
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm.h),
-      itemCount: _decks.length,
-      itemBuilder: (ctx, index) {
-        final deck = _decks[index];
-        return _DeckCard(
-          deck: deck,
-          onTap: () => unawaited(_openDeck(deck)),
-          onMenuSelected: (value) => unawaited(_onMenuSelected(deck, value)),
-        );
-      },
+    if (localDecks.isEmpty) return const [];
+    return [
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.flashcardMyDecks,
+              style: tt.titleMedium?.copyWith(
+                color: cs.onSurface,
+                fontWeight: AppSpacing.weightDisplay,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => setState(() => _query = ''),
+            child: Text(
+              l10n.flashcardViewAll,
+              style: tt.labelLarge?.copyWith(color: cs.secondary),
+            ),
+          ),
+        ],
+      ),
+      SizedBox(height: AppSpacing.md.h),
+      for (final deck in localDecks)
+        Padding(
+          padding: EdgeInsets.only(bottom: AppSpacing.sm.h),
+          child: _MyDeckCard(deck: deck, onTap: () => _openDetails(deck)),
+        ),
+    ];
+  }
+}
+
+/// Rounded-square dark create-deck FAB from the mockup.
+class _CreateFab extends StatelessWidget {
+  const _CreateFab({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    return Semantics(
+      button: true,
+      label: l10n.flashcardNewDeck,
+      child: Material(
+        color: cs.primary,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          child: SizedBox(
+            width: 56.w,
+            height: 56.w,
+            child: Icon(Icons.add, color: cs.onPrimary, size: 24.sp),
+          ),
         ),
       ),
     );
   }
 }
 
-/// A single deck row with due chip, submission status, and overflow menu.
-class _DeckCard extends StatelessWidget {
-  const _DeckCard({
-    required this.deck,
-    required this.onTap,
-    required this.onMenuSelected,
-  });
+/// Search input styled per the library mockup.
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.onChanged});
+
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    return TextField(
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        hintText: l10n.flashcardSearchHint,
+        prefixIcon: Icon(Icons.search, color: cs.onSurfaceVariant),
+        filled: true,
+        fillColor: cs.surface,
+        contentPadding: EdgeInsets.symmetric(vertical: AppSpacing.md.h),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          borderSide: BorderSide(color: cs.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          borderSide: BorderSide(color: cs.primary, width: 2),
+        ),
+      ),
+      style: tt.bodyLarge?.copyWith(color: cs.onSurface),
+    );
+  }
+}
+
+/// Teacher-published deck card: subject label, title, estimated time.
+class _RecommendedCard extends StatelessWidget {
+  const _RecommendedCard({required this.deck, required this.onTap});
 
   final FlashcardDeck deck;
   final VoidCallback onTap;
-  final ValueChanged<String> onMenuSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    // ponytail: ~20 s per card is a rough estimate; the model has no duration.
+    final mins = (deck.cards.length * 20 / 60).ceil();
+
+    return _DeckCardShell(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  deck.subject,
+                  style: tt.labelLarge?.copyWith(color: cs.primary),
+                ),
+              ),
+              Icon(Icons.cloud_done_outlined,
+                  size: 16.sp, color: cs.secondary),
+            ],
+          ),
+          SizedBox(height: AppSpacing.xs.h),
+          Text(
+            deck.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: tt.titleMedium?.copyWith(
+              color: cs.onSurface,
+              fontWeight: AppSpacing.weightDisplay,
+            ),
+          ),
+          SizedBox(height: AppSpacing.sm.h),
+          Text(
+            l10n.flashcardCardCountMinutes(deck.cards.length, mins),
+            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Student deck card: title, saffron mastery bar with %, due count.
+class _MyDeckCard extends StatelessWidget {
+  const _MyDeckCard({required this.deck, required this.onTap});
+
+  final FlashcardDeck deck;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -219,154 +323,80 @@ class _DeckCard extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
 
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.xs.h),
-      child: ListTile(
-        onTap: onTap,
-        title: Text(
-          deck.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: tt.titleMedium?.copyWith(
-            color: cs.onSurface,
-            fontWeight: AppSpacing.weightStrong,
+    return _DeckCardShell(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            deck.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tt.titleMedium?.copyWith(
+              color: cs.onSurface,
+              fontWeight: AppSpacing.weightDisplay,
+            ),
           ),
-        ),
-        subtitle: _buildSubtitle(cs, tt, l10n),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (deck.dueCount > 0) ...[
-              Tooltip(
-                message: l10n.flashcardDueToday,
-                child: _DueChip(count: deck.dueCount),
+          SizedBox(height: AppSpacing.sm.h),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  child: LinearProgressIndicator(
+                    value: deck.progressPercent / 100,
+                    minHeight: 8.h,
+                    backgroundColor: cs.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation(cs.tertiary),
+                  ),
+                ),
               ),
               SizedBox(width: AppSpacing.sm.w),
+              SizedBox(
+                width: 40.w,
+                child: Text(
+                  '${deck.progressPercent}%',
+                  textAlign: TextAlign.end,
+                  style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ),
             ],
-            PopupMenuButton<String>(
-              onSelected: onMenuSelected,
-              itemBuilder: (ctx) => [
-                PopupMenuItem(value: 'edit', child: Text(l10n.flashcardEditDeck)),
-                if (deck.source == 'local' && deck.submissionStatus != 'pending')
-                  PopupMenuItem(value: 'send', child: Text(l10n.flashcardSendToTeacher)),
-                PopupMenuItem(value: 'export', child: Text(l10n.flashcardExportDeck)),
-                PopupMenuItem(value: 'delete', child: Text(l10n.flashcardDeleteDeck)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget? _buildSubtitle(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
-    final List<Widget> children = [];
-    if (deck.source == 'hub') {
-      children.add(_StatusChip(
-        label: l10n.flashcardStatusApproved,
-        foreground: cs.primary,
-        background: cs.primaryContainer,
-      ));
-    } else if (deck.submissionStatus.isNotEmpty) {
-      switch (deck.submissionStatus) {
-        case 'pending':
-          children.add(_StatusChip(
-            label: l10n.flashcardStatusPending,
-            foreground: cs.tertiary,
-            background: cs.tertiaryContainer,
-          ));
-          break;
-        case 'approved':
-          children.add(_StatusChip(
-            label: l10n.flashcardStatusApproved,
-            foreground: cs.primary,
-            background: cs.primaryContainer,
-          ));
-          break;
-        case 'rejected':
-          children.add(_StatusChip(
-            label: l10n.flashcardStatusRejected,
-            foreground: cs.error,
-            background: cs.errorContainer,
-          ));
-          break;
-      }
-      if (deck.submissionStatus == 'rejected' && deck.submissionReason.isNotEmpty) {
-        children.add(
-          Padding(
-            padding: EdgeInsets.only(top: AppSpacing.xs.h),
-            child: Text(
-              l10n.flashcardRejectedReason(deck.submissionReason),
-              style: tt.bodySmall?.copyWith(color: cs.error),
-            ),
           ),
-        );
-      }
-    }
-    if (children.isEmpty) return null;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: children,
+          SizedBox(height: AppSpacing.xs.h),
+          Text(
+            l10n.flashcardDueToday(deck.dueCount),
+            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// The count of cards due today for a deck.
-class _DueChip extends StatelessWidget {
-  const _DueChip({required this.count});
+/// Shared white bordered card shell for library entries.
+class _DeckCardShell extends StatelessWidget {
+  const _DeckCardShell({required this.child, required this.onTap});
 
-  final int count;
+  final Widget child;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
-      decoration: BoxDecoration(
-        color: cs.primary,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-      ),
-      child: Text(
-        '$count',
-        style: tt.labelMedium?.copyWith(
-          color: cs.onPrimary,
-          fontWeight: AppSpacing.weightStrong,
-        ),
-      ),
-    );
-  }
-}
-
-/// A small rounded badge showing a submission or source status.
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({
-    required this.label,
-    required this.foreground,
-    required this.background,
-  });
-
-  final String label;
-  final Color foreground;
-  final Color background;
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: EdgeInsets.only(top: AppSpacing.xs.h),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-        ),
-        child: Text(
-          label,
-          style: tt.labelSmall?.copyWith(
-            color: foreground,
-            fontWeight: AppSpacing.weightStrong,
+    return Material(
+      color: cs.surface,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(AppSpacing.lg.w),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            border: Border.all(color: cs.outlineVariant),
           ),
+          child: child,
         ),
       ),
     );

@@ -1413,6 +1413,119 @@
   "@flashcardFlipHint": {
     "description": "Study screen hint: tap the card to see the answer."
   },
+  "flashcardFlipSide": "Retourner la carte",
+  "@flashcardFlipSide": {
+    "description": "Editor button: swap the card editor between the question side and the answer side. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardSearchHint": "Rechercher des paquets...",
+  "@flashcardSearchHint": {
+    "description": "Deck library search field placeholder. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardRecommended": "Paquets recommandés",
+  "@flashcardRecommended": {
+    "description": "Deck library section header above teacher-published decks. Max 30 characters in English; allow up to 45 in translation."
+  },
+  "flashcardViewAll": "Tout voir",
+  "@flashcardViewAll": {
+    "description": "Deck library link button beside the My Decks header. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardCardCountMinutes": "{count, plural, =1{1 carte • {mins} min} other{{count} cartes • {mins} min}}",
+  "@flashcardCardCountMinutes": {
+    "description": "Deck library recommended card meta line: card count and estimated study minutes at ~20 seconds per card.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "mins": { "type": "int" }
+    }
+  },
+  "flashcardDueToday": "{count, plural, =0{Aucune carte aujourd'hui} =1{1 carte aujourd'hui} other{{count} cartes aujourd'hui}}",
+  "@flashcardDueToday": {
+    "description": "Deck library my-deck card meta line: how many cards are due for review now.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "flashcardOfficial": "Officiel",
+  "@flashcardOfficial": {
+    "description": "Deck details badge for teacher-published decks. Max 15 characters in English; allow up to 20 in translation."
+  },
+  "flashcardTotalCards": "Total de cartes",
+  "@flashcardTotalCards": {
+    "description": "Deck details stat label: number of cards in the deck. Shown in caps as a chip label. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardMastered": "Maîtrisées",
+  "@flashcardMastered": {
+    "description": "Deck details stat label: cards whose review interval reached graduation (21+ days). Shown in caps as a chip label. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardMasteryProgress": "Progression",
+  "@flashcardMasteryProgress": {
+    "description": "Deck details progress card label. Shown in caps as a chip label. Max 25 characters in English; allow up to 40 in translation."
+  },
+  "flashcardLastStudied": "{days, plural, =0{Étudié aujourd'hui} =1{Étudié hier} other{Étudié il y a {days} jours}}",
+  "@flashcardLastStudied": {
+    "description": "Deck details line under the mastery bar: when the deck was last reviewed. Hidden when never studied.",
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "flashcardStudyNow": "Réviser",
+  "@flashcardStudyNow": {
+    "description": "Deck details primary button: start a study session. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardDownload": "Télécharger",
+  "@flashcardDownload": {
+    "description": "Deck details secondary button: refresh this hub deck from the teacher. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardDownloading": "Téléchargement...",
+  "@flashcardDownloading": {
+    "description": "Deck details button state while re-syncing from the hub. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardDownloaded": "Téléchargé",
+  "@flashcardDownloaded": {
+    "description": "Deck details button state after a successful sync. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardCardPreview": "Aperçu des cartes",
+  "@flashcardCardPreview": {
+    "description": "Deck details section header above the front/back preview cards. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardAnswer": "Réponse",
+  "@flashcardAnswer": {
+    "description": "Study mode back-face header above the revealed answer text. Max 10 characters in English; allow up to 20 in translation."
+  },
+  "flashcardTapReveal": "Touchez la carte pour voir la réponse",
+  "@flashcardTapReveal": {
+    "description": "Study mode hint below the card before the first flip. Max 30 characters in English; allow up to 45 in translation."
+  },
+  "flashcardFocusMode": "Mode focus",
+  "@flashcardFocusMode": {
+    "description": "Study mode progress row label on the left. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardSavedChip": "Enregistré",
+  "@flashcardSavedChip": {
+    "description": "Editor chip inside the title field shown after a successful save. Max 10 characters in English; allow up to 20 in translation."
+  },
+  "flashcardCategory": "Catégorie",
+  "@flashcardCategory": {
+    "description": "Editor form field label for the deck subject. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardCardsCount": "{count, plural, =0{0 carte} =1{1 carte} other{{count} cartes}}",
+  "@flashcardCardsCount": {
+    "description": "Editor Cards header count on the right, and deck details stat number context.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "flashcardPreview": "Aperçu",
+  "@flashcardPreview": {
+    "description": "Editor bottom-bar button: study the saved deck without leaving the editor flow. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "settingsAnimationsTitle": "Animations",
+  "@settingsAnimationsTitle": {
+    "description": "Settings toggle title: enables subtle transitions (page navigation, tab switching, dialogs). One word if natural in the language. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "settingsAnimationsSubtitle": "Transitions discrètes entre les écrans. Désactivé, tout est instantané.",
+  "@settingsAnimationsSubtitle": {
+    "description": "Settings toggle subtitle: explains what the animations setting does and that Off is instant. Plain language, max 20 words."
+  },
   "flashcardAgain": "Encore",
   "@flashcardAgain": {
     "description": "Self-grading button: card was not remembered."

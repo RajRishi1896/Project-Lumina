@@ -11,6 +11,7 @@ class FlashcardDeck {
     this.subject = '',
     this.submissionStatus = '',
     this.submissionReason = '',
+    this.lastStudiedAt = 0,
   });
 
   final String id;
@@ -29,7 +30,19 @@ class FlashcardDeck {
   final String submissionStatus;
   final String submissionReason;
 
+  /// Epoch ms of the deck's most recent card review; 0 = never studied.
+  final int lastStudiedAt;
+
   int get dueCount => cards.where((c) => c.isDue).length;
+
+  /// Cards whose SM-2 interval has reached graduation (>= 21 days).
+  int get masteredCount => cards.where((c) => c.intervalDays >= 21).length;
+
+  /// 0-100 share of cards already cleared for today (not due) — the deck
+  /// progress bar fills as the student works through today's reviews.
+  int get progressPercent => cards.isEmpty
+      ? 0
+      : ((cards.where((c) => !c.isDue).length * 100) / cards.length).round();
 }
 
 /// A single front/back card with its review schedule state.

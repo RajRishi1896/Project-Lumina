@@ -48,6 +48,7 @@ class CatalogService {
       }
 
       final db = await DBHelper().database;
+      final syncedAt = DateTime.now().millisecondsSinceEpoch;
       await db.transaction((txn) async {
         await txn.delete('catalog');
         final batch = txn.batch();
@@ -64,7 +65,7 @@ class CatalogService {
             'file_size': (item['file_size'] as num?)?.toInt() ?? 0,
             'page_count': (item['page_count'] as num?)?.toInt() ?? 0,
             'duration_seconds': (item['duration_seconds'] as num?)?.toInt() ?? 0,
-            'synced_at': DateTime.now().millisecondsSinceEpoch,
+            'synced_at': syncedAt,
           });
         }
         await batch.commit(noResult: true);

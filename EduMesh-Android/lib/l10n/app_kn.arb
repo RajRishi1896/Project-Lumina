@@ -1413,6 +1413,119 @@
   "@flashcardFlipHint": {
     "description": "Study screen hint: tap the card to see the answer."
   },
+  "flashcardFlipSide": "ಕಾರ್ಡ್ ತಿರುಗಿಸಿ",
+  "@flashcardFlipSide": {
+    "description": "Editor button: swap the card editor between the question side and the answer side. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardSearchHint": "ಡೆಕ್ ಹುಡುಕಿ...",
+  "@flashcardSearchHint": {
+    "description": "Deck library search field placeholder. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardRecommended": "ಶಿಫಾರಸು ಮಾಡಿದ ಡೆಕ್‌ಗಳು",
+  "@flashcardRecommended": {
+    "description": "Deck library section header above teacher-published decks. Max 30 characters in English; allow up to 45 in translation."
+  },
+  "flashcardViewAll": "ಎಲ್ಲವನ್ನೂ ನೋಡಿ",
+  "@flashcardViewAll": {
+    "description": "Deck library link button beside the My Decks header. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardCardCountMinutes": "{count, plural, =1{1 ಕಾರ್ಡ್ • {mins} ನಿಮಿಷ} other{{count} ಕಾರ್ಡ್‌ಗಳು • {mins} ನಿಮಿಷ}}",
+  "@flashcardCardCountMinutes": {
+    "description": "Deck library recommended card meta line: card count and estimated study minutes at ~20 seconds per card.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "mins": { "type": "int" }
+    }
+  },
+  "flashcardDueToday": "{count, plural, =0{ಇಂದು ಯಾವುದೇ ಕಾರ್ಡ್ ಇಲ್ಲ} =1{ಇಂದು 1 ಕಾರ್ಡ್ ಬಾಕಿ} other{ಇಂದು {count} ಕಾರ್ಡ್‌ಗಳು ಬಾಕಿ}}",
+  "@flashcardDueToday": {
+    "description": "Deck library my-deck card meta line: how many cards are due for review now.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "flashcardOfficial": "ಅಧಿಕೃತ",
+  "@flashcardOfficial": {
+    "description": "Deck details badge for teacher-published decks. Max 15 characters in English; allow up to 20 in translation."
+  },
+  "flashcardTotalCards": "ಒಟ್ಟು ಕಾರ್ಡ್",
+  "@flashcardTotalCards": {
+    "description": "Deck details stat label: number of cards in the deck. Shown in caps as a chip label. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardMastered": "ಪರಿಣತಿ",
+  "@flashcardMastered": {
+    "description": "Deck details stat label: cards whose review interval reached graduation (21+ days). Shown in caps as a chip label. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardMasteryProgress": "ಪರಿಣತಿ ಪ್ರಗತಿ",
+  "@flashcardMasteryProgress": {
+    "description": "Deck details progress card label. Shown in caps as a chip label. Max 25 characters in English; allow up to 40 in translation."
+  },
+  "flashcardLastStudied": "{days, plural, =0{ಇಂದು ಓದಿದೆ} =1{ನಿನ್ನೆ ಓದಿದೆ} other{{days} ದಿನಗಳ ಹಿಂದೆ ಓದಿದೆ}}",
+  "@flashcardLastStudied": {
+    "description": "Deck details line under the mastery bar: when the deck was last reviewed. Hidden when never studied.",
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "flashcardStudyNow": "ಈಗ ಓದಿ",
+  "@flashcardStudyNow": {
+    "description": "Deck details primary button: start a study session. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardDownload": "ಡೌನ್‌ಲೋಡ್",
+  "@flashcardDownload": {
+    "description": "Deck details secondary button: refresh this hub deck from the teacher. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardDownloading": "ಡೌನ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
+  "@flashcardDownloading": {
+    "description": "Deck details button state while re-syncing from the hub. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardDownloaded": "ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ",
+  "@flashcardDownloaded": {
+    "description": "Deck details button state after a successful sync. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardCardPreview": "ಕಾರ್ಡ್ ಪ್ರಿವ್ಯೂ",
+  "@flashcardCardPreview": {
+    "description": "Deck details section header above the front/back preview cards. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardAnswer": "ಉತ್ತರ",
+  "@flashcardAnswer": {
+    "description": "Study mode back-face header above the revealed answer text. Max 10 characters in English; allow up to 20 in translation."
+  },
+  "flashcardTapReveal": "ಉತ್ತರ ನೋಡಲು ಕಾರ್ಡ್ ಒತ್ತಿ",
+  "@flashcardTapReveal": {
+    "description": "Study mode hint below the card before the first flip. Max 30 characters in English; allow up to 45 in translation."
+  },
+  "flashcardFocusMode": "ಫೋಕಸ್ ಮೋಡ್",
+  "@flashcardFocusMode": {
+    "description": "Study mode progress row label on the left. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardSavedChip": "ಉಳಿಸಿದೆ",
+  "@flashcardSavedChip": {
+    "description": "Editor chip inside the title field shown after a successful save. Max 10 characters in English; allow up to 20 in translation."
+  },
+  "flashcardCategory": "ವರ್ಗ",
+  "@flashcardCategory": {
+    "description": "Editor form field label for the deck subject. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardCardsCount": "{count, plural, =1{1 ಕಾರ್ಡ್} other{{count} ಕಾರ್ಡ್‌ಗಳು}}",
+  "@flashcardCardsCount": {
+    "description": "Editor Cards header count on the right, and deck details stat number context.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "flashcardPreview": "ಪ್ರಿವ್ಯೂ",
+  "@flashcardPreview": {
+    "description": "Editor bottom-bar button: study the saved deck without leaving the editor flow. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "settingsAnimationsTitle": "ಆನಿಮೇಷನ್",
+  "@settingsAnimationsTitle": {
+    "description": "Settings toggle title: enables subtle transitions (page navigation, tab switching, dialogs). One word if natural in the language. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "settingsAnimationsSubtitle": "ಪರದೆಗಳ ನಡುವೆ ಸೂಕ್ಷ್ಮ ಪರಿವರ್ತನೆಗಳು. ಆಫ್ ಮಾಡಿದರೆ ಎಲ್ಲವೂ ತಕ್ಷಣ ತೆರೆಯುತ್ತದೆ.",
+  "@settingsAnimationsSubtitle": {
+    "description": "Settings toggle subtitle: explains what the animations setting does and that Off is instant. Plain language, max 20 words."
+  },
   "flashcardAgain": "ಮತ್ತೆ",
   "@flashcardAgain": {
     "description": "Self-grading button: card was not remembered."

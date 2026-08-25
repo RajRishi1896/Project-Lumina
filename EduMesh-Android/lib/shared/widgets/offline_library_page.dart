@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -204,7 +205,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                                 } catch (_) {}
                                 if (html != null && context.mounted) {
                                   unawaited(RecentResources.record(articleId, title, 'kiwix'));
-                                  unawaited(Navigator.push(context, MaterialPageRoute(
+                                  unawaited(Navigator.push(context, luminaRoute(
                                     builder: (_) => KiwixView(initialHtml: html, title: title, baseUrl: ApiClient.baseUrl),
                                   )));
                                 }
@@ -233,11 +234,11 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
       final title = item['title'] as String? ?? '';
       final subject = item['subject'] as String? ?? '';
       if (parseResourceType(item['type'] as String? ?? '') == ResourceType.videos) {
-        unawaited(Navigator.of(context).push(MaterialPageRoute(
+        unawaited(Navigator.of(context).push(luminaRoute(
           builder: (_) => VideoPlayerPage(title: title, videoUrl: path, subject: subject),
         )));
       } else {
-        unawaited(Navigator.of(context).push(MaterialPageRoute(
+        unawaited(Navigator.of(context).push(luminaRoute(
           builder: (_) => PdfViewerPage(title: title, pdfUrl: path, subject: subject),
         )));
       }
@@ -253,7 +254,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
     } catch (_) {}
     if (html == null || !context.mounted) return;
     unawaited(RecentResources.record(articleId, item['title'] as String? ?? '', 'kiwix'));
-    unawaited(Navigator.push(context, MaterialPageRoute(
+    unawaited(Navigator.push(context, luminaRoute(
       builder: (_) => KiwixView(initialHtml: html, title: item['title'] as String? ?? '', baseUrl: ApiClient.baseUrl),
     )));
   }

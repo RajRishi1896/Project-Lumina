@@ -142,57 +142,56 @@ class ResourceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-    return Card(
-      margin: EdgeInsets.zero,
-      color: backgroundColor,
-      clipBehavior: Clip.antiAlias,
-      child: Opacity(
-        opacity: opacity,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
+    final content = InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildThumbnailWithBadge(),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildThumbnailWithBadge(),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: tt.titleSmall?.copyWith(color: cs.onSurface)),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(subtitle!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-                      ],
-                      const SizedBox(height: AppSpacing.sm),
-                      _buildMetadataRow(tt, cs, l10n),
-                      if (isReady) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        _buildReadyChip(tt, l10n),
-                      ],
-                    ],
-                  ),
-                ),
-                if (trailing != null) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  trailing!,
+                Text(title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: tt.titleSmall?.copyWith(color: cs.onSurface)),
+                if (subtitle != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                ],
+                const SizedBox(height: AppSpacing.sm),
+                _buildMetadataRow(tt, cs, l10n),
+                if (isReady) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildReadyChip(tt, l10n),
                 ],
               ],
             ),
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            trailing!,
+          ],
+        ],
         ),
       ),
+    );
+    // ponytail: full-opacity cards skip the Opacity layer entirely.
+    return Card(
+      margin: EdgeInsets.zero,
+      color: backgroundColor,
+      clipBehavior: Clip.antiAlias,
+      child: opacity == 1 ? content : Opacity(opacity: opacity, child: content),
     );
   }
 

@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -106,22 +109,25 @@ class _WelcomePageState extends State<WelcomePage> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
+    // ponytail: clamp hero square to viewport so landscape never crops it.
+    final size = MediaQuery.sizeOf(context);
+    final side = math.max(120.0, math.min(312.w, math.min(size.width * 0.85, size.height * 0.5)));
 
     return Container(
-      width: 312.w,
-      height: 312.w,
+      width: side,
+      height: side,
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg.r),
         border: Border.all(color: cs.outlineVariant),
       ),
-      padding: EdgeInsets.all(AppSpacing.xxl.w),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Stack(
         children: [
           Center(
             child: SvgPicture.asset(
               _illustrationSvg,
-              width: 240.w,
+              width: side - AppSpacing.xxl * 2,
             ),
           ),
           Positioned(
@@ -129,27 +135,30 @@ class _WelcomePageState extends State<WelcomePage> {
             left: 0,
             right: 0,
             child: Center(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.sm.h),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(8.r),
-                  border: Border.all(color: cs.outlineVariant),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.sync, color: cs.secondary, size: 18.sp),
-                    SizedBox(width: AppSpacing.sm.w),
-                    Text(
-                      l10n.illustrationBadgeNoInternet,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tt.labelSmall?.copyWith(
-                        color: cs.onSurfaceVariant,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(color: cs.outlineVariant),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.sync, color: cs.secondary, size: 18.sp),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        l10n.illustrationBadgeNoInternet,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.labelSmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -211,34 +220,41 @@ class _WelcomePageState extends State<WelcomePage> {
 
           return Column(
             children: [
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                mainAxisSpacing: 12.h,
-                crossAxisSpacing: 12.w,
-                childAspectRatio: 2.5,
-                children: [
-                  ...primaryItems.map((o) {
-                    final code = o['code']!;
-                    final label = o['label'] ?? code;
-                    final isSelected = code == currentLocale.languageCode;
-                    return _LanguageButton(
-                      label: label,
-                      isSelected: isSelected,
-                      isEnabled: true,
-                      cs: cs,
-                      onTap: () => ref.read(localeProvider.notifier).setLocale(code),
-                    );
-                  }),
-                  _LanguageButton(
-                    label: l10n.moreLanguages,
-                    isSelected: false,
-                    isEnabled: true,
-                    cs: cs,
-                    onTap: () => _showMoreLanguages(context, ref, allOptions, currentLocale, l10n, cs),
-                  ),
-                ],
+              // ponytail: clamp tile height so landscape width can't balloon the cards.
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final tileW = (constraints.maxWidth - 12.w) / 2;
+                  final tileH = (tileW / 2.5).clamp(56.0, 72.0);
+                  return GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12.h,
+                    crossAxisSpacing: 12.w,
+                    childAspectRatio: tileW / tileH,
+                    children: [
+                      ...primaryItems.map((o) {
+                        final code = o['code']!;
+                        final label = o['label'] ?? code;
+                        final isSelected = code == currentLocale.languageCode;
+                        return _LanguageButton(
+                          label: label,
+                          isSelected: isSelected,
+                          isEnabled: true,
+                          cs: cs,
+                          onTap: () => ref.read(localeProvider.notifier).setLocale(code),
+                        );
+                      }),
+                      _LanguageButton(
+                        label: l10n.moreLanguages,
+                        isSelected: false,
+                        isEnabled: true,
+                        cs: cs,
+                        onTap: () => _showMoreLanguages(context, ref, allOptions, currentLocale, l10n, cs),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           );
@@ -255,7 +271,7 @@ class _WelcomePageState extends State<WelcomePage> {
       child: ElevatedButton(
         onPressed: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LoginPage()),
+            luminaRoute(builder: (_) => const LoginPage()),
           );
         },
         style: ElevatedButton.styleFrom(
@@ -400,7 +416,7 @@ void _showMoreLanguages(
   AppLocalizations l10n,
   ColorScheme cs,
 ) {
-  showDialog(
+  showLuminaDialog(
     context: context,
     builder: (ctx) => SimpleDialog(
       title: Text(l10n.settingsLanguagePickerTitle),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,6 +7,7 @@ import 'package:app_settings/app_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../core/providers/locale_provider.dart';
+import '../../../core/providers/animation_prefs.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/password_strength.dart';
 import '../../../core/network/api_client.dart';
@@ -102,6 +104,21 @@ class LuminaSettingsSheet extends ConsumerWidget {
             );
           }),
 
+          // Animations toggle (global, OFF by default)
+          ListenableBuilder(
+            listenable: AnimationPrefs(),
+            builder: (context, _) {
+              final l10n = AppLocalizations.of(context)!;
+              return SwitchListTile(
+                secondary: Icon(Icons.animation, color: cs.primary),
+                title: Text(l10n.settingsAnimationsTitle),
+                subtitle: Text(l10n.settingsAnimationsSubtitle),
+                value: AnimationPrefs().enabled,
+                onChanged: (val) => AnimationPrefs().setEnabled(val),
+              );
+            },
+          ),
+
           // Share files toggle
           const _ShareToggleTile(),
 
@@ -113,7 +130,7 @@ class LuminaSettingsSheet extends ConsumerWidget {
             onTap: () {
               final nav = Navigator.of(context);
               nav.pop();
-              nav.push(MaterialPageRoute(builder: (_) => const OfflineLibraryPage()));
+              nav.push(luminaRoute(builder: (_) => const OfflineLibraryPage()));
             },
           ),
 
@@ -138,7 +155,7 @@ class LuminaSettingsSheet extends ConsumerWidget {
               title: Text(l10n.settingsLanguageTitle),
               subtitle: Text(currentLabel),
               onTap: () {
-                showDialog(
+                showLuminaDialog(
                   context: context,
                   builder: (ctx) => SimpleDialog(
                     title: Text(l10n.settingsLanguagePickerTitle),
@@ -261,7 +278,7 @@ void _showChangePasswordDialog(BuildContext context) {
   final newPwdCtrl = TextEditingController();
   final confirmPwdCtrl = TextEditingController();
 
-  showDialog(
+  showLuminaDialog(
     context: context,
     builder: (ctx) {
       bool obscureOld = true;

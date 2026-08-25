@@ -19,6 +19,12 @@ class ActivityTracker {
 
   DateTime? _studyStartTime;
   Timer? _autoSyncTimer;
+  // ponytail: getInstance() is a singleton lookup; cache the future's result
+  // so hot paths (logAction) skip an async hop per call.
+  SharedPreferences? _prefs;
+
+  Future<SharedPreferences> _getPrefs() async =>
+      _prefs ??= await SharedPreferences.getInstance();
 
   /// Start the periodic auto-sync timer. Syncs every 60 seconds.
   void startAutoSync() {
@@ -42,7 +48,7 @@ class ActivityTracker {
     await endStudySession();
     final subj = subject?.trim();
     _studyStartTime = DateTime.now();
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setString(_activeStudySessionKey, jsonEncode({
       'start_time': _studyStartTime!.toIso8601String(),
       'subject': (subj != null && subj.isNotEmpty) ? subj : null,
@@ -53,7 +59,7 @@ class ActivityTracker {
   Future<void> endStudySession() async {
     if (_studyStartTime == null) return;
     final duration = DateTime.now().difference(_studyStartTime!);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final activeRaw = prefs.getString(_activeStudySessionKey);
     String? subject;
     if (activeRaw != null) {
@@ -78,7 +84,7 @@ class ActivityTracker {
 
   /// Logs a general user action to local storage for later sync.
   Future<void> logAction(String action, {String? resourceId, String? metadata}) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await _storeLocal(prefs, {
       'action': action,
       'resource_id': resourceId,
@@ -105,13 +111,13 @@ class ActivityTracker {
 
   /// All buffered local events, oldest first.
   Future<List<Map<String, dynamic>>> getLocalEvents() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     return _decodeLocalEvents(prefs.getString(_localEventsKey));
   }
 
   /// Get the recorded activity history for the current session.
   Future<List<Map<String, dynamic>>> getActivityHistory({int limit = 25}) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final list = _decodeLocalEvents(prefs.getString(_localEventsKey));
     if (list.isEmpty) return [];
     final all = list;
@@ -125,7 +131,7 @@ class ActivityTracker {
   /// Fetches fresh analytics from the hub when online and caches the result
   /// on success; the cached copy is only used as an offline/failure fallback.
   Future<Map<String, dynamic>> getAnalytics() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     if (ConnectivityService().isOnline) {
       try {
         final response = await ApiClient.get('/student/analytics');
@@ -173,7 +179,7 @@ class ActivityTracker {
     // Snapshot before reading events: if the profile switches mid-sync,
     // everything we read/post/write belongs to the previous student.
     final gen = ApiClient.sessionGeneration;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     final original = _decodeLocalEvents(prefs.getString(_localEventsKey));
     if (original.isEmpty) return;
     final list = [...original];

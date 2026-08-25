@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -17,7 +18,7 @@ Future<void> routeAfterLogout(NavigatorState navigator) async {
   final profiles = await AuthService().getKnownProfiles();
   final target = profiles.isNotEmpty ? const ProfilePickerPage() : const WelcomePage();
   unawaited(navigator.pushAndRemoveUntil(
-    MaterialPageRoute(builder: (_) => target),
+    luminaRoute(builder: (_) => target),
     (route) => false,
   ));
 }
@@ -78,14 +79,14 @@ class _ProfilePickerPageState extends State<ProfilePickerPage> {
       return;
     }
     unawaited(Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const ConnectionGate(child: AppShell())),
+      luminaRoute(builder: (_) => const ConnectionGate(child: AppShell())),
       (route) => false,
     ));
   }
 
   void _addProfile() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const LoginPage()),
+      luminaRoute(builder: (_) => const LoginPage()),
     );
   }
 
@@ -101,96 +102,113 @@ class _ProfilePickerPageState extends State<ProfilePickerPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
-              children: [
-                if (_profiles.isEmpty)
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl.h),
-                    child: Text(
-                      l10n.profilePickerEmpty,
-                      textAlign: TextAlign.center,
-                      style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                    ),
-                  )
-                else
-                  ..._profiles.map((profile) {
-                    final userId = profile['userId']?.toString() ?? '';
-                    final displayName = profile['displayName']?.toString() ?? '';
-                    final username = profile['username']?.toString() ?? '';
-                    final name = displayName.isNotEmpty ? displayName : username;
-                    final isActive = userId.isNotEmpty && userId == _activeUserId;
-                    return Card(
-                      margin: EdgeInsets.only(bottom: AppSpacing.md.h),
-                      child: ListTile(
-                        onTap: isActive ? null : () => _switchTo(profile),
-                        leading: CircleAvatar(
-                          radius: 20.r,
-                          backgroundColor: cs.primaryContainer,
-                          child: Text(
-                            _initials(name, l10n),
-                            style: tt.titleMedium?.copyWith(
-                              color: cs.onPrimaryContainer,
-                              fontWeight: AppSpacing.weightStrong,
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tt.bodyMedium?.copyWith(
-                            color: cs.onSurface,
-                            fontWeight: isActive ? AppSpacing.weightStrong : AppSpacing.weightBody,
-                          ),
-                        ),
-                        subtitle: username.isNotEmpty
-                            ? Text('@$username',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant))
-                            : null,
-                        trailing: isActive
-                            ? Container(
-                                padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
-                                decoration: BoxDecoration(
-                                  color: cs.primaryContainer,
-                                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-                                ),
-                                child: Text(
-                                  l10n.profilePickerCurrent,
-                                  style: tt.labelSmall?.copyWith(
-                                    color: cs.onPrimaryContainer,
-                                    fontWeight: AppSpacing.weightStrong,
-                                  ),
-                                ),
-                              )
-                            : Icon(Icons.chevron_right_rounded, color: cs.outline),
+          : Builder(builder: (context) {
+              final isEmpty = _profiles.isEmpty;
+              // ponytail: builder over profiles; the two-item tail (spacer +
+              // add-card) plus the empty-state message are indexed slots.
+              final itemCount = isEmpty ? 3 : _profiles.length + 2;
+              Widget addProfileCard() => Card(
+                    margin: EdgeInsets.only(bottom: AppSpacing.md.h),
+                    child: ListTile(
+                      onTap: _addProfile,
+                      leading: CircleAvatar(
+                        radius: 20.r,
+                        backgroundColor: cs.surfaceContainerHighest,
+                        child: Icon(Icons.person_add_rounded, color: cs.primary, size: 20.sp),
                       ),
-                    );
-                  }),
-                SizedBox(height: AppSpacing.xl.h),
-                Card(
-                  margin: EdgeInsets.only(bottom: AppSpacing.md.h),
-                  child: ListTile(
-                    onTap: _addProfile,
-                    leading: CircleAvatar(
-                      radius: 20.r,
-                      backgroundColor: cs.surfaceContainerHighest,
-                      child: Icon(Icons.person_add_rounded, color: cs.primary, size: 20.sp),
+                      title: Text(
+                        l10n.profilePickerAddProfile,
+                        style: tt.bodyMedium?.copyWith(color: cs.primary, fontWeight: AppSpacing.weightStrong),
+                      ),
+                      subtitle: Text(
+                        l10n.profilePickerAddProfileSubtitle,
+                        style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      ),
                     ),
-                    title: Text(
-                      l10n.profilePickerAddProfile,
-                      style: tt.bodyMedium?.copyWith(color: cs.primary, fontWeight: AppSpacing.weightStrong),
+                  );
+              return ListView.builder(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+                itemCount: itemCount,
+                itemBuilder: (context, index) {
+                  if (!isEmpty && index >= _profiles.length) {
+                    return index == _profiles.length
+                        ? SizedBox(height: AppSpacing.xl.h)
+                        : addProfileCard();
+                  }
+                  if (isEmpty) {
+                    switch (index) {
+                      case 0:
+                        return Padding(
+                          padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl.h),
+                          child: Text(
+                            l10n.profilePickerEmpty,
+                            textAlign: TextAlign.center,
+                            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                          ),
+                        );
+                      case 1:
+                        return SizedBox(height: AppSpacing.xl.h);
+                      default:
+                        return addProfileCard();
+                    }
+                  }
+                  final profile = _profiles[index];
+                  final userId = profile['userId']?.toString() ?? '';
+                  final displayName = profile['displayName']?.toString() ?? '';
+                  final username = profile['username']?.toString() ?? '';
+                  final name = displayName.isNotEmpty ? displayName : username;
+                  final isActive = userId.isNotEmpty && userId == _activeUserId;
+                  return Card(
+                    margin: EdgeInsets.only(bottom: AppSpacing.md.h),
+                    child: ListTile(
+                      onTap: isActive ? null : () => _switchTo(profile),
+                      leading: CircleAvatar(
+                        radius: 20.r,
+                        backgroundColor: cs.primaryContainer,
+                        child: Text(
+                          _initials(name, l10n),
+                          style: tt.titleMedium?.copyWith(
+                            color: cs.onPrimaryContainer,
+                            fontWeight: AppSpacing.weightStrong,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodyMedium?.copyWith(
+                          color: cs.onSurface,
+                          fontWeight: isActive ? AppSpacing.weightStrong : AppSpacing.weightBody,
+                        ),
+                      ),
+                      subtitle: username.isNotEmpty
+                          ? Text('@$username',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant))
+                          : null,
+                      trailing: isActive
+                          ? Container(
+                              padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm.w, vertical: AppSpacing.xs.h),
+                              decoration: BoxDecoration(
+                                color: cs.primaryContainer,
+                                borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                              ),
+                              child: Text(
+                                l10n.profilePickerCurrent,
+                                style: tt.labelSmall?.copyWith(
+                                  color: cs.onPrimaryContainer,
+                                  fontWeight: AppSpacing.weightStrong,
+                                ),
+                              ),
+                            )
+                          : Icon(Icons.chevron_right_rounded, color: cs.outline),
                     ),
-                    subtitle: Text(
-                      l10n.profilePickerAddProfileSubtitle,
-                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                  );
+                },
+              );
+            }),
     );
   }
 }

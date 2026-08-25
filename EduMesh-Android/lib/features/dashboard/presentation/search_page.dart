@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -272,7 +273,7 @@ class _SearchPageState extends State<SearchPage> {
       if (!mounted) return;
       if (html.isNotEmpty) {
         unawaited(RecentResources.record(articleId, title, 'kiwix'));
-        unawaited(Navigator.push(context, MaterialPageRoute(
+        unawaited(Navigator.push(context, luminaRoute(
           builder: (_) => KiwixView(initialHtml: html, title: title, baseUrl: ApiClient.baseUrl),
         )));
       } else {
@@ -512,7 +513,7 @@ class _SearchPageState extends State<SearchPage> {
     String tempSubject = _subjectFilter;
     String tempSort = _sortBy;
 
-    showModalBottomSheet(
+    showLuminaSheet(
       context: context,
       isScrollControlled: true,
       shape: RoundedRectangleBorder(
@@ -1032,7 +1033,7 @@ class _SearchPageState extends State<SearchPage> {
                           }
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
+                            luminaRoute(
                               builder: (_) => ResourceDetailPage(
                                 title: item['title'] as String? ?? '',
                                 subject:

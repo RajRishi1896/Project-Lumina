@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -228,11 +229,11 @@ class _SavedListByTypeState extends State<_SavedListByType> {
     if (!mounted) return;
     unawaited(RecentResources.record(item.id, item.title, item.type.name));
     if (item.type == ResourceType.videos) {
-      unawaited(Navigator.push(context, MaterialPageRoute(
+      unawaited(Navigator.push(context, luminaRoute(
         builder: (_) => VideoPlayerPage(title: item.title, videoUrl: url, subject: item.subject),
       )));
     } else if (item.type == ResourceType.quiz) {
-      unawaited(Navigator.push(context, MaterialPageRoute(
+      unawaited(Navigator.push(context, luminaRoute(
         builder: (_) => QuizPlayerPage.fromResource(item),
       )));
     } else if (item.type == ResourceType.kiwix) {
@@ -263,14 +264,14 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       }
       if (!mounted) return;
       if (html != null && html.isNotEmpty) {
-        unawaited(Navigator.push(context, MaterialPageRoute(
+        unawaited(Navigator.push(context, luminaRoute(
           builder: (_) => KiwixView(initialHtml: html, title: item.title, baseUrl: ApiClient.baseUrl, subject: item.subject),
         )));
       } else {
         messenger.showSnackBar(SnackBar(content: Text(l10n.zimArticleNotFound)));
       }
     } else {
-      unawaited(Navigator.push(context, MaterialPageRoute(
+      unawaited(Navigator.push(context, luminaRoute(
         builder: (_) => PdfViewerPage(title: item.title, pdfUrl: url, subject: item.subject),
       )));
     }
@@ -528,7 +529,7 @@ class _SavedCoursesTabState extends State<_SavedCoursesTab> {
                 onPressed: () {
                   unawaited(Navigator.push(
                     context,
-                    MaterialPageRoute(
+                    luminaRoute(
                       builder: (_) => CoursePlayerPage(course: course),
                     ),
                   ));

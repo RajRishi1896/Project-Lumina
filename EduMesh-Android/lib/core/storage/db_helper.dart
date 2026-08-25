@@ -277,9 +277,12 @@ class DBHelper {
   /// so removed courses do not leave orphaned rows forever.
   Future<void> deleteOrphanedCourseData() async {
     final db = await database;
-    await db.delete('course_progress', where: 'course_id NOT IN (SELECT id FROM courses)');
-    await db.delete('quiz_attempts', where: 'course_id NOT IN (SELECT id FROM courses)');
-    await db.delete('course_resources', where: 'course_id NOT IN (SELECT id FROM courses)');
+    // ponytail: single txn = one WAL commit instead of three
+    await db.transaction((txn) async {
+      await txn.delete('course_progress', where: 'course_id NOT IN (SELECT id FROM courses)');
+      await txn.delete('quiz_attempts', where: 'course_id NOT IN (SELECT id FROM courses)');
+      await txn.delete('course_resources', where: 'course_id NOT IN (SELECT id FROM courses)');
+    });
   }
 
   /// Inserts or replaces a bookmark for the given [resourceId] with its metadata.

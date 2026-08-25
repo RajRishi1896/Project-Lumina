@@ -164,15 +164,13 @@ class DownloadService {
   Future<void> deleteDownload(String resourceId) async {
     try {
       final db = DBHelper();
-      final downloads = await db.getDownloadedResources();
-      final match = downloads.where((d) => d['resource_id'] == resourceId);
-      if (match.isNotEmpty) {
-        final localPath = match.first['local_path'] as String?;
-        if (localPath != null) {
-          final file = File(localPath);
-          if (await file.exists()) {
-            await file.delete();
-          }
+      // ponytail: indexed point lookup instead of loading the full downloads table
+      final record = await db.getDownloadedResource(resourceId);
+      final localPath = record?['local_path'] as String?;
+      if (localPath != null) {
+        final file = File(localPath);
+        if (await file.exists()) {
+          await file.delete();
         }
       }
       await db.removeDownload(resourceId);

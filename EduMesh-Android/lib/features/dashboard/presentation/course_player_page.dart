@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/models/course.dart';
@@ -197,7 +198,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     if (resource.isQuiz) {
       unawaited(Navigator.push(
         context,
-        MaterialPageRoute(
+        luminaRoute(
           builder: (_) => QuizPlayerPage(
             course: widget.course,
             resource: resource,
@@ -213,14 +214,14 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       if (resource.resourceType == CourseType.video) {
         unawaited(Navigator.push(
           context,
-          MaterialPageRoute(
+          luminaRoute(
             builder: (_) => VideoPlayerPage(title: resource.title, videoUrl: url, subject: widget.course.subject),
           ),
         ).then((_) => _markCompleted(resource.id)));
       } else {
         unawaited(Navigator.push(
           context,
-          MaterialPageRoute(
+          luminaRoute(
             builder: (_) => PdfViewerPage(title: resource.title, pdfUrl: url, subject: widget.course.subject),
           ),
         ).then((_) => _markCompleted(resource.id)));
@@ -231,7 +232,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
   Future<void> _downloadCourse() async {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isDownloading = true);
-    unawaited(showDialog(
+    unawaited(showLuminaDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(

@@ -26,6 +26,11 @@ class ConnectivityService extends ChangeNotifier {
   StreamSubscription<List<ConnectivityResult>>? _platformSub;
   Timer? _heartbeat;
   static const String _pingPath = '/ping';
+  // ponytail: one shared instance; Dio only reads Options during compose.
+  static final Options _pingOptions = Options(
+    sendTimeout: const Duration(seconds: 4),
+    receiveTimeout: const Duration(seconds: 4),
+  );
 
   /// Whether the server is currently reachable (both platform and HTTP).
   bool get isOnline => _online;
@@ -62,10 +67,7 @@ class ConnectivityService extends ChangeNotifier {
     final wasOnline = _online;
     try {
       await ApiClient.ensureInitialized();
-      await ApiClient.dio.get(_pingPath, options: Options(
-        sendTimeout: const Duration(seconds: 4),
-        receiveTimeout: const Duration(seconds: 4),
-      ));
+      await ApiClient.dio.get(_pingPath, options: _pingOptions);
       if (mySeq != _checkSeq) return;
       _online = true;
       if (!_startupFlushed) {

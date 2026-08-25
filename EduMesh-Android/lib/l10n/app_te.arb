@@ -426,6 +426,119 @@
   "@flashcardFlipHint": {
     "description": "Study screen hint: tap the card to see the answer."
   },
+  "flashcardFlipSide": "కార్డ్ తిప్పు",
+  "@flashcardFlipSide": {
+    "description": "Editor button: swap the card editor between the question side and the answer side. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardSearchHint": "డెక్‌లను వెతకండి...",
+  "@flashcardSearchHint": {
+    "description": "Deck library search field placeholder. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardRecommended": "సిఫారసు చేసిన డెక్‌లు",
+  "@flashcardRecommended": {
+    "description": "Deck library section header above teacher-published decks. Max 30 characters in English; allow up to 45 in translation."
+  },
+  "flashcardViewAll": "అన్నీ చూడండి",
+  "@flashcardViewAll": {
+    "description": "Deck library link button beside the My Decks header. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardCardCountMinutes": "{count, plural, =1{1 కార్డు • {mins} నిమిషం} other{{count} కార్డులు • {mins} నిమిషాలు}}",
+  "@flashcardCardCountMinutes": {
+    "description": "Deck library recommended card meta line: card count and estimated study minutes at ~20 seconds per card.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "mins": { "type": "int" }
+    }
+  },
+  "flashcardDueToday": "{count, plural, =0{ఈరోజు కార్డులు లేవు} =1{ఈరోజు 1 కార్డు ఉంది} other{ఈరోజు {count} కార్డులు ఉన్నాయి}}",
+  "@flashcardDueToday": {
+    "description": "Deck library my-deck card meta line: how many cards are due for review now.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "flashcardOfficial": "అధికారిక",
+  "@flashcardOfficial": {
+    "description": "Deck details badge for teacher-published decks. Max 15 characters in English; allow up to 20 in translation."
+  },
+  "flashcardTotalCards": "మొత్తం కార్డులు",
+  "@flashcardTotalCards": {
+    "description": "Deck details stat label: number of cards in the deck. Shown in caps as a chip label. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardMastered": "నేర్చుకున్నవి",
+  "@flashcardMastered": {
+    "description": "Deck details stat label: cards whose review interval reached graduation (21+ days). Shown in caps as a chip label. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardMasteryProgress": "నైపుణ్య పురోగతి",
+  "@flashcardMasteryProgress": {
+    "description": "Deck details progress card label. Shown in caps as a chip label. Max 25 characters in English; allow up to 40 in translation."
+  },
+  "flashcardLastStudied": "{days, plural, =0{ఈరోజు చదివారు} =1{నిన్న చదివారు} other{{days} రోజుల క్రితం చదివారు}}",
+  "@flashcardLastStudied": {
+    "description": "Deck details line under the mastery bar: when the deck was last reviewed. Hidden when never studied.",
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "flashcardStudyNow": "ఇప్పుడే చదవండి",
+  "@flashcardStudyNow": {
+    "description": "Deck details primary button: start a study session. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardDownload": "డౌన్‌లోడ్",
+  "@flashcardDownload": {
+    "description": "Deck details secondary button: refresh this hub deck from the teacher. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardDownloading": "డౌన్‌లోడ్ అవుతోంది...",
+  "@flashcardDownloading": {
+    "description": "Deck details button state while re-syncing from the hub. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardDownloaded": "డౌన్‌లోడ్ అయింది",
+  "@flashcardDownloaded": {
+    "description": "Deck details button state after a successful sync. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardCardPreview": "కార్డు మునుజూపు",
+  "@flashcardCardPreview": {
+    "description": "Deck details section header above the front/back preview cards. Max 20 characters in English; allow up to 30 in translation."
+  },
+  "flashcardAnswer": "జవాబు",
+  "@flashcardAnswer": {
+    "description": "Study mode back-face header above the revealed answer text. Max 10 characters in English; allow up to 20 in translation."
+  },
+  "flashcardTapReveal": "జవాబు చూడటానికి కార్డు నొక్కండి",
+  "@flashcardTapReveal": {
+    "description": "Study mode hint below the card before the first flip. Max 30 characters in English; allow up to 45 in translation."
+  },
+  "flashcardFocusMode": "ఫోకస్ మోడ్",
+  "@flashcardFocusMode": {
+    "description": "Study mode progress row label on the left. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardSavedChip": "సేవ్ అయింది",
+  "@flashcardSavedChip": {
+    "description": "Editor chip inside the title field shown after a successful save. Max 10 characters in English; allow up to 20 in translation."
+  },
+  "flashcardCategory": "వర్గం",
+  "@flashcardCategory": {
+    "description": "Editor form field label for the deck subject. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "flashcardCardsCount": "{count, plural, =1{1 కార్డు} other{{count} కార్డులు}}",
+  "@flashcardCardsCount": {
+    "description": "Editor Cards header count on the right, and deck details stat number context.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "flashcardPreview": "మునుజూపు",
+  "@flashcardPreview": {
+    "description": "Editor bottom-bar button: study the saved deck without leaving the editor flow. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "settingsAnimationsTitle": "యానిమేషన్లు",
+  "@settingsAnimationsTitle": {
+    "description": "Settings toggle title: enables subtle transitions (page navigation, tab switching, dialogs). One word if natural in the language. Max 15 characters in English; allow up to 25 in translation."
+  },
+  "settingsAnimationsSubtitle": "తెరల మధ్య సున్నితమైన మార్పులు. ఆఫ్ చేస్తే అన్నీ వెంటనే తెరుచుకుంటాయి.",
+  "@settingsAnimationsSubtitle": {
+    "description": "Settings toggle subtitle: explains what the animations setting does and that Off is instant. Plain language, max 20 words."
+  },
   "flashcardAgain": "మళ్ళీ",
   "@flashcardAgain": {
     "description": "Self-grading button: card was not remembered."

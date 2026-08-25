@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -60,7 +61,7 @@ class _AppTourPageState extends State<AppTourPage> {
       return;
     }
     unawaited(Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
+      luminaRoute(
         builder: (_) => const ConnectionGate(child: AppShell()),
       ),
     ));

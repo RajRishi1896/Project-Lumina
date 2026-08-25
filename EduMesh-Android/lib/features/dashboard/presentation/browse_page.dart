@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -57,41 +58,36 @@ class BrowsePageState extends State<BrowsePage> with SingleTickerProviderStateMi
 
     return Scaffold(
       backgroundColor: cs.surface,
+      appBar: AppBar(
+        backgroundColor: cs.surface,
+        foregroundColor: cs.onSurface,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: Text(
+          l10n.pageTitleBrowseResources,
+          maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: tt.titleMedium?.copyWith(color: cs.onSurface),
+        ),
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: cs.primary,
+          unselectedLabelColor: cs.onSurfaceVariant,
+          indicatorColor: cs.primary,
+          indicatorWeight: 3.0,
+          tabs: [
+            Tab(text: l10n.browseTabCourses),
+            Tab(text: l10n.browseTabResources),
+            Tab(text: l10n.browseTabWiki),
+          ],
+        ),
+      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
-              decoration: BoxDecoration(color: cs.surface, border: Border(bottom: BorderSide(color: cs.outlineVariant))),
-              child: Text(l10n.pageTitleBrowseResources,
-                  maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
-              child: TabBar(
-                controller: _tabController,
-                labelColor: cs.primary,
-                unselectedLabelColor: cs.onSurfaceVariant,
-                indicatorColor: cs.primary,
-                indicatorWeight: 3.0,
-                tabs: [
-                  Tab(text: l10n.browseTabCourses),
-                  Tab(text: l10n.browseTabResources),
-                  Tab(text: l10n.browseTabWiki),
-                ],
-              ),
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: const [
-                   _CoursesTab(),
-                   SearchPage(embedded: true),
-                   _WikiTab(),
-                ],
-              ),
-            ),
+        child: TabBarView(
+          controller: _tabController,
+          children: const [
+             _CoursesTab(),
+             SearchPage(embedded: true),
+             _WikiTab(),
           ],
         ),
       ),
@@ -205,7 +201,8 @@ class _CoursesTabState extends State<_CoursesTab> {
       ]));
     }
 
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
         child: SingleChildScrollView(
@@ -310,7 +307,7 @@ class _CoursesTabState extends State<_CoursesTab> {
     String tempGrade = _filterGrade;
     String tempSubject = _filterSubject;
 
-    showModalBottomSheet(
+    showLuminaSheet(
       context: context,
       isScrollControlled: true,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20.r))),
@@ -402,7 +399,7 @@ class _CoursesTabState extends State<_CoursesTab> {
           final pct = totalResources > 0 ? completedCount / totalResources : 0.0;
           return SizedBox(width: 200.w, child: Card(
             child: InkWell(
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CoursePlayerPage(course: course))),
+              onTap: () => Navigator.push(context, luminaRoute(builder: (_) => CoursePlayerPage(course: course))),
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
               child: Padding(padding: EdgeInsets.all(AppSpacing.lg.w), child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -420,7 +417,7 @@ class _CoursesTabState extends State<_CoursesTab> {
                     style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                   const Spacer(),
                   SizedBox(width: double.infinity, child: FilledButton(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CoursePlayerPage(course: course))),
+                    onPressed: () => Navigator.push(context, luminaRoute(builder: (_) => CoursePlayerPage(course: course))),
                     child: Text(l10n.buttonContinue),
                   )),
                 ],
@@ -443,7 +440,7 @@ class _CoursesTabState extends State<_CoursesTab> {
   Widget _buildCourseCard(Course course, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final isEnrolled = _enrolledCourses.any((e) => e.course.id == course.id);
     return Card(child: InkWell(
-      onTap: isEnrolled ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => CoursePlayerPage(course: course))) : null,
+      onTap: isEnrolled ? () => Navigator.push(context, luminaRoute(builder: (_) => CoursePlayerPage(course: course))) : null,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
       child: Padding(padding: EdgeInsets.all(AppSpacing.lg.w), child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -462,10 +459,10 @@ class _CoursesTabState extends State<_CoursesTab> {
               style: tt.labelSmall),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, visualDensity: VisualDensity.compact, padding: EdgeInsets.zero),
           ]),
-          const Spacer(),
+          SizedBox(height: AppSpacing.sm.h),
           if (isEnrolled)
             SizedBox(width: double.infinity, child: OutlinedButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CoursePlayerPage(course: course))),
+              onPressed: () => Navigator.push(context, luminaRoute(builder: (_) => CoursePlayerPage(course: course))),
               child: Text(l10n.buttonContinue)))
           else
             SizedBox(width: double.infinity, child: FilledButton(
@@ -619,7 +616,7 @@ class _WikiTabState extends State<_WikiTab> {
       if (!mounted) return;
       if (html.isNotEmpty) {
         unawaited(RecentResources.record(article.articleId, article.title, 'kiwix'));
-        unawaited(Navigator.push(context, MaterialPageRoute(builder: (_) => KiwixView(initialHtml: html, title: article.title, baseUrl: ApiClient.baseUrl))));
+        unawaited(Navigator.push(context, luminaRoute(builder: (_) => KiwixView(initialHtml: html, title: article.title, baseUrl: ApiClient.baseUrl))));
       } else {
         messenger.showSnackBar(SnackBar(content: Text(l10n.zimArticleNotFound)));
       }
@@ -755,11 +752,10 @@ class _WikiTabState extends State<_WikiTab> {
                         final article = _articles[i];
                         final isDownloaded = ZimSyncService.instance.downloadedIds.contains(article.articleId);
                         final offlineUnavailable = isOffline && !isDownloaded;
-                        return Opacity(
-                          opacity: offlineUnavailable ? 0.45 : 1.0,
-                          child: Card(
-                            color: offlineUnavailable ? cs.surfaceContainerHighest : null,
-                            child: ListTile(
+                        // ponytail: available rows skip the ghost-dim Opacity layer.
+                        final card = Card(
+                          color: offlineUnavailable ? cs.surfaceContainerHighest : null,
+                          child: ListTile(
                               leading: article.hasThumbnail
                                 ? ClipRRect(
                                     borderRadius: BorderRadius.circular(6.r),
@@ -791,9 +787,11 @@ class _WikiTabState extends State<_WikiTab> {
                                 Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
                               ]),
                               onTap: () => _openArticle(article),
-                            ),
-                          ),
-                        );
+                        ),
+                      );
+                      return offlineUnavailable
+                          ? Opacity(opacity: 0.45, child: card)
+                          : card;
                       },
                     ),
                   ),

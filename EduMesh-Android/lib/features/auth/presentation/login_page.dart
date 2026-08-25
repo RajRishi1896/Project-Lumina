@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../shared/widgets/lumina_stepper.dart';
@@ -104,7 +105,7 @@ class _LoginPageState extends State<LoginPage> {
           setState(() => _isLoading = false);
           if (!mounted) return;
           unawaited(Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
+            luminaRoute(
               builder: (_) => FirstRunTourGate(
                 child: ProfileSetupPage(username: _usernameController.text),
               ),
@@ -162,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
     final seen = prefs.getBool(AppTourPage.seenPrefKey) ?? false;
     unawaited(Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
+      luminaRoute(
         builder: (_) => seen
             ? const ConnectionGate(child: AppShell())
             : const AppTourPage(),
@@ -347,12 +348,10 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 SizedBox(height: AppSpacing.touchTarget.h),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTextField(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildTextField(
                         controller: _usernameController,
                         label: AppLocalizations.of(context)!.labelUsername,
                         hint: AppLocalizations.of(context)!.hintUsername,
@@ -404,8 +403,7 @@ class _LoginPageState extends State<LoginPage> {
                             style: tt.bodySmall?.copyWith(color: cs.outline),
                           ),
                         ),
-                    ],
-                  ),
+                  ],
                 ),
                 SizedBox(height: AppSpacing.xxl.h),
                 Center(

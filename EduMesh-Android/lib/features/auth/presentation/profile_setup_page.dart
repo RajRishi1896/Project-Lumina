@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -82,7 +83,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     }
     if (!mounted) return;
     unawaited(Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const ConnectionGate(child: AppShell())),
+      luminaRoute(builder: (_) => const ConnectionGate(child: AppShell())),
     ));
   }
 
