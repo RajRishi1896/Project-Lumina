@@ -6,12 +6,12 @@ import '../providers/animation_prefs.dart';
 ///
 /// Every supported animation funnels through [enabled] so the settings
 /// toggle and the platform reduced-motion flag are honoured in one place.
-/// Durations stay in the 150-200 ms band; nothing here loops or chains.
+/// Durations stay in the ~100 ms band; nothing here loops or chains.
 class LuminaTransitions {
   LuminaTransitions._();
 
   /// Standard transition length when animations are enabled.
-  static const Duration duration = Duration(milliseconds: 180);
+  static const Duration duration = Duration(milliseconds: 100);
 
   /// Whether transitions should run at this [context]: the user setting must
   /// be ON and the platform reduced-motion flag must be OFF.
