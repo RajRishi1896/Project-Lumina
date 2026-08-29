@@ -824,6 +824,10 @@
   "@settingsSheetTitle": {
     "description": "Header/title of the settings bottom sheet panel"
   },
+  "settingsSheetClose": "Close",
+  "@settingsSheetClose": {
+    "description": "Tooltip and semantic label for the close (X) button in the settings bottom sheet header. Shown while the user views settings; tapping dismisses the sheet. Max ~10 characters in English; allow up to 16 in translations."
+  },
   "settingsLanguageTitle": "Language",
   "@settingsLanguageTitle": {
     "description": "ListTile title for the language picker in settings"
@@ -1746,6 +1750,18 @@
   "tooltipFullscreen": "Fullscreen",
   "@tooltipFullscreen": {
     "description": "Tooltip for the fullscreen toggle button in the video player"
+  },
+  "buttonMinimizeVideo": "Minimize video",
+  "@buttonMinimizeVideo": {
+    "description": "Tooltip for the picture-in-picture minimize button in the video player controls bar, next to the fullscreen button. User shrinks the playing video into the floating mini-player overlay while it keeps playing. Max 16 characters in English; allow up to 24 in translations."
+  },
+  "videoPlayingInPiP": "Playing in picture-in-picture",
+  "@videoPlayingInPiP": {
+    "description": "Placeholder text shown on the video player page while the video is playing in the OS-level Picture-in-Picture floating window. The Flutter page is blank except for this message and a 'return' button."
+  },
+  "buttonReturnToVideo": "Return to video",
+  "@buttonReturnToVideo": {
+    "description": "Button label on the PiP placeholder screen. Tapping exits PiP mode and restores the full video player page. Max 20 characters in English; allow up to 30 in translations."
   },
   "videoPlaybackSpeed": "Playback speed",
   "@videoPlaybackSpeed": {

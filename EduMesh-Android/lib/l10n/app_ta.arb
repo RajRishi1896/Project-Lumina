@@ -216,6 +216,7 @@
   "relativeTimeDaysAgo": "{days, plural, one{{days} நாளுக்கு முன்} other{{days} நாட்களுக்கு முன்}}",
   "relativeTimeMonthsAgo": "{months, plural, one{{months} மாதத்திற்கு முன்} other{{months} மாதங்களுக்கு முன்}}",
   "settingsSheetTitle": "அமைப்புகள்",
+  "settingsSheetClose": "மூடு",
   "settingsLanguageTitle": "மொழி",
   "darkModeLabel": "இருண்ட பயன்முறை",
   "lightModeLabel": "ஒளிர் பயன்முறை",
@@ -732,6 +733,18 @@
   "tooltipFullscreen": "முழு திரை",
   "@tooltipFullscreen": {
     "description": "Tooltip for the fullscreen toggle button in the video player"
+  },
+  "buttonMinimizeVideo": "வீடியோ சிறிதாக்கு",
+  "@buttonMinimizeVideo": {
+    "description": "Tooltip for the picture-in-picture minimize button in the video player controls bar, next to the fullscreen button. User shrinks the playing video into the floating mini-player overlay while it keeps playing. Max 16 characters in English; allow up to 24 in translations."
+  },
+  "videoPlayingInPiP": "படம்-இன்-படம் முறையில் இயங்குகிறது",
+  "@videoPlayingInPiP": {
+    "description": "Placeholder text shown on the video player page while the video is playing in the OS-level Picture-in-Picture floating window."
+  },
+  "buttonReturnToVideo": "வீடியோவுக்குத் திரும்பு",
+  "@buttonReturnToVideo": {
+    "description": "Button label on the PiP placeholder screen. Tapping exits PiP mode and restores the full video player page."
   },
   "videoPlaybackSpeed": "இயக்க வேகம்",
   "@videoPlaybackSpeed": {

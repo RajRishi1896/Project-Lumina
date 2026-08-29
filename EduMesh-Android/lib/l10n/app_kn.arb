@@ -210,6 +210,7 @@
   "relativeTimeDaysAgo": "{days, plural, one{{days} ದಿನ ಹಿಂದೆ} other{{days} ದಿನಗಳ ಹಿಂದೆ}}",
   "relativeTimeMonthsAgo": "{months, plural, one{{months} ತಿಂಗಳ ಹಿಂದೆ} other{{months} ತಿಂಗಳುಗಳ ಹಿಂದೆ}}",
   "settingsSheetTitle": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
+  "settingsSheetClose": "ಮುಚ್ಚಿರಿ",
   "settingsLanguageTitle": "ಭಾಷೆ",
   "darkModeLabel": "ಡಾರ್ಕ್ ಮೋಡ್",
   "lightModeLabel": "ಲೈಟ್ ಮೋಡ್",
@@ -1719,6 +1720,18 @@
   "tooltipFullscreen": "ಪೂರ್ಣ ಪರದೆ",
   "@tooltipFullscreen": {
     "description": "Tooltip for the fullscreen toggle button in the video player"
+  },
+  "buttonMinimizeVideo": "ವೀಡಿಯೊ ಚಿಕ್ಕದಾಗಿಸಿ",
+  "@buttonMinimizeVideo": {
+    "description": "Tooltip for the picture-in-picture minimize button in the video player controls bar, next to the fullscreen button. User shrinks the playing video into the floating mini-player overlay while it keeps playing. Max 16 characters in English; allow up to 24 in translations."
+  },
+  "videoPlayingInPiP": "ಪಿಕ್ಚರ್-ಇನ್-ಪಿಕ್ಚರ್‌ನಲ್ಲಿ ಚಲಾಯಿಸಲಾಗುತ್ತಿದೆ",
+  "@videoPlayingInPiP": {
+    "description": "Placeholder text shown on the video player page while the video is playing in the OS-level Picture-in-Picture floating window."
+  },
+  "buttonReturnToVideo": "ವೀಡಿಯೊಗೆ ಹಿಂತಿರುಗಿ",
+  "@buttonReturnToVideo": {
+    "description": "Button label on the PiP placeholder screen. Tapping exits PiP mode and restores the full video player page."
   },
   "videoPlaybackSpeed": "ಪ್ಲೇಬ್ಯಾಕ್ ವೇಗ",
   "@videoPlaybackSpeed": {

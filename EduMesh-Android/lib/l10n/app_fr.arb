@@ -210,6 +210,7 @@
   "relativeTimeDaysAgo": "Il y a {days, plural, one{{days} jour} other{{days} jours}}",
   "relativeTimeMonthsAgo": "Il y a {months, plural, one{{months} mois} other{{months} mois}}",
   "settingsSheetTitle": "Paramètres",
+  "settingsSheetClose": "Fermer",
   "settingsLanguageTitle": "Langue",
   "darkModeLabel": "Mode sombre",
   "lightModeLabel": "Mode clair",
@@ -1719,6 +1720,18 @@
   "tooltipFullscreen": "Plein écran",
   "@tooltipFullscreen": {
     "description": "Tooltip for the fullscreen toggle button in the video player"
+  },
+  "buttonMinimizeVideo": "Réduire la vidéo",
+  "@buttonMinimizeVideo": {
+    "description": "Tooltip for the picture-in-picture minimize button in the video player controls bar, next to the fullscreen button. User shrinks the playing video into the floating mini-player overlay while it keeps playing. Max 16 characters in English; allow up to 24 in translations."
+  },
+  "videoPlayingInPiP": "Lecture en picture-in-picture",
+  "@videoPlayingInPiP": {
+    "description": "Placeholder text shown on the video player page while the video is playing in the OS-level Picture-in-Picture floating window."
+  },
+  "buttonReturnToVideo": "Retour à la vidéo",
+  "@buttonReturnToVideo": {
+    "description": "Button label on the PiP placeholder screen. Tapping exits PiP mode and restores the full video player page."
   },
   "videoPlaybackSpeed": "Vitesse de lecture",
   "@videoPlaybackSpeed": {
