@@ -1,0 +1,134 @@
+MIT License
+
+Copyright (c) 2026 Project Lumina
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+==========================================================================
+THIRD-PARTY DEPENDENCIES
+==========================================================================
+
+The project includes or depends on the following third-party libraries,
+each with its own license. The MIT license above applies to Project Lumina's
+own code only; dependency licenses are listed below.
+
+--------------------------------------------------------------------------
+Flutter / Dart packages (EduMesh-Android/)
+--------------------------------------------------------------------------
+
+Package                     License             Copyright
+-------------------------   -----------------   --------------------------------
+intl 0.20.2                 BSD-3-Clause        Copyright 2013, the Dart project authors
+flutter_screenutil 5.9.0    Apache-2.0          Copyright 2019 OpenFlutter
+dio 5.4.0                   MIT                 Copyright 2019 Awei
+path_provider 2.1.2         BSD-3-Clause        Copyright 2017 The Chromium Authors
+sqflite 2.3.0               BSD-2-Clause        Copyright 2019, tekartik
+path 1.9.0                  BSD-3-Clause        Copyright 2019, the Dart project authors
+shared_preferences 2.5.5    BSD-3-Clause        Copyright 2017 The Chromium Authors
+webview_flutter 4.4.2       BSD-3-Clause        Copyright 2013 The Chromium Authors
+video_player 2.8.2          BSD-3-Clause        Copyright 2019 The Chromium Authors
+pdfx 2.0.0                  BSD-3-Clause        Copyright 2019 ScerIO packages authors
+flutter_riverpod 3.3.1      MIT                 Copyright 2020 Remi Rousselet
+flutter_svg 2.3.0           MIT                 Copyright 2018 Dan Field
+flutter_secure_storage 10.2 BSD-3-Clause        Copyright 2017 Robert Boll
+app_settings 7.0.0          MIT                 Copyright 2019 Michael FCoder
+wakelock_plus 1.6.1         MIT                 Copyright 2021 creativecreatorormaybenot
+image_picker 1.1.2          BSD-3-Clause        Copyright 2018 The Chromium Authors
+flutter_local_notifications BSD-3-Clause        Copyright 2018 Michael Bauland
+connectivity_plus 6.0.3     BSD-3-Clause        Copyright 2017 The Chromium Authors
+multicast_dns 0.3.2         BSD-3-Clause        Copyright 2018 The Chromium Authors
+flutter_background_service  MIT                 Copyright 2021 BedirTapkn
+flutter_lints 6.0.0         Apache-2.0          Copyright 2013 The Chromium Authors
+
+--------------------------------------------------------------------------
+Python packages (Debian Server/)
+--------------------------------------------------------------------------
+
+Package                 License             Copyright
+---------------------   -----------------   --------------------------------
+fastapi 0.115.0         MIT                 Copyright 2018 Sebastián Ramírez
+uvicorn 0.30.6          BSD-3-Clause        Copyright 2017 Encode OSS
+python-multipart 0.0.9  Apache-2.0          Copyright 2006 Andrew Dunstan
+bcrypt 4.2.0            Apache-2.0          Copyright 2013 The Python Cryptographic Auth
+PyMuPDF 1.24.9          AGPL-3.0            Copyright 2023 Artifex Software (pre-April 2024
+                                              license; see PyMuPDF LICENSE for terms)
+pytest 7.0+             MIT                 Copyright 2010 Holger Krekel
+pytest-asyncio 0.23+    Apache-2.0          Copyright 2022 Pytest-asyncio contributors
+httpx 0.27+             BSD-3-Clause        Copyright 2019 Encode OSS
+qrcode 7.0+             BSD-3-Clause        Copyright 2010 Lincoln Loop
+
+--------------------------------------------------------------------------
+Bundled fonts
+--------------------------------------------------------------------------
+
+Font family                  License             Copyright
+--------------------------   -----------------   --------------------------------
+Noto Sans                    SIL OFL 1.1         Copyright 2012 Google Inc.
+Noto Sans Devanagari         SIL OFL 1.1         Copyright 2012 Google Inc.
+Noto Sans Kannada            SIL OFL 1.1         Copyright 2012 Google Inc.
+Noto Sans Tamil              SIL OFL 1.1         Copyright 2012 Google Inc.
+Noto Sans Telugu             SIL OFL 1.1         Copyright 2012 Google Inc.
+
+All Noto fonts are licensed under the SIL Open Font License, Version 1.1.
+This license permits embedding, bundling, redistribution, and modification
+with the following conditions:
+  - The fonts cannot be sold by themselves.
+  - Derivative works must be distributed under the same OFL license.
+  - Reserved Font Names may not be used in derivative works without
+    explicit permission.
+Full license text: https://scripts.sil.org/OFL
+
+--------------------------------------------------------------------------
+Educational content (NCERT)
+--------------------------------------------------------------------------
+
+NCERT e-content distributed through this project is subject to the NCERT
+License for Use of E-content (https://epathshala.nic.in). Key terms:
+
+  - Free to download and redistribute digitally in original form.
+  - No commercial use permitted.
+  - No modifications, adaptations, translations, or derivative works.
+  - Must provide clear attribution to NCERT.
+  - Must not remove watermarks, logos, or rights management information.
+
+This license is MORE RESTRICTIVE than Creative Commons. NCERT content
+must remain in its original, unmodified form. Teachers who upload
+content under other licenses (CC BY 4.0, CC BY-SA 4.0, etc.) retain
+their own licensing terms — see the `license` field on each resource
+in the database.
+
+--------------------------------------------------------------------------
+Content licensing in the hub
+--------------------------------------------------------------------------
+
+Uploaded resources carry a per-item `license` field. Valid values:
+  - CC BY 4.0          Creative Commons Attribution 4.0 International
+  - CC BY-SA 4.0       Creative Commons Attribution-ShareAlike 4.0
+  - CC BY-NC 4.0       Creative Commons Attribution-NonCommercial 4.0
+  - CC BY-NC-SA 4.0    Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+  - NCERT Open License  NCERT e-content (no modifications)
+  - Internal Only       Teacher-created content, not for redistribution
+  - Public Domain       No copyright restrictions
+
+Students and teachers must comply with the license on each resource.
+The hub does not grant additional rights beyond the resource's license.
+
+==========================================================================
+END OF THIRD-PARTY NOTICES
+==========================================================================

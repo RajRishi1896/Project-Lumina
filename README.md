@@ -277,4 +277,6 @@ Before touching code, read [`AGENTS.md`](AGENTS.md) in full. It defines the conv
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE) for the full text, including third-party dependency
+notices (Dart/Python packages, bundled Noto fonts under SIL OFL, NCERT content
+under its own license).
