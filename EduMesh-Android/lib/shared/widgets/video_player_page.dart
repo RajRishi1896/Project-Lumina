@@ -5,13 +5,15 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
+import 'package:edumesh_android/core/system_ui/lumina_system_ui.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
-import '../../../core/constants/app_spacing.dart';
-import '../../../core/network/api_client.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../core/constants/app_spacing.dart';
+import '../../core/network/api_client.dart';
+import '../../core/widgets/pip_helper.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/services/activity_tracker.dart';
-import 'mini_player_controller.dart';
+import '../widgets/mini_player_controller.dart';
 
 const _speedOptions = <double>[0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 
@@ -30,19 +32,24 @@ class VideoPlayerPage extends StatefulWidget {
   /// creating a new one.
   final VideoPlayerController? existingController;
 
+  /// Whether the page opens directly in fullscreen (landscape) mode.
+  final bool startInFullscreen;
+
   const VideoPlayerPage({
     super.key,
     required this.title,
     required this.videoUrl,
     this.subject,
     this.existingController,
+    this.startInFullscreen = false,
   });
 
   @override
   State<VideoPlayerPage> createState() => _VideoPlayerPageState();
 }
 
-class _VideoPlayerPageState extends State<VideoPlayerPage> {
+class _VideoPlayerPageState extends State<VideoPlayerPage>
+    with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   bool _initialized = false;
   String? _error;
@@ -51,6 +58,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   bool _disposed = false;
   bool _ownsController = true;
   bool _exitRequested = false;
+  bool _isFullscreen = false;
+  int _uiPushes = 0;
   double _playbackSpeed = 1.0;
   _SeekFeedback? _seekFeedback;
   bool _feedbackVisible = false;
@@ -62,6 +71,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   bool _previewLoading = false;
   int _tickSecond = -1;
   bool _tickPlaying = false;
+  bool _inPiP = false;
 
   bool get _isLocal {
     final u = widget.videoUrl;
@@ -72,14 +82,25 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initPiP();
     ActivityTracker().startStudySession(subject: widget.subject);
     WakelockPlus.enable();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _isFullscreen = widget.startInFullscreen;
+    _uiPushes++;
+    LuminaSystemUi.push(
+      orientations: _isFullscreen
+          ? const [
+              DeviceOrientation.landscapeLeft,
+              DeviceOrientation.landscapeRight,
+            ]
+          : [
+              DeviceOrientation.portraitUp,
+              DeviceOrientation.landscapeLeft,
+              DeviceOrientation.landscapeRight,
+            ],
+      mode: SystemUiMode.edgeToEdge,
+    );
     if (widget.existingController != null &&
         widget.existingController!.value.isInitialized) {
       _controller = widget.existingController;
@@ -88,7 +109,64 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       _controller!.addListener(_onTick);
     } else {
       _ownsController = true;
-      _initPlayer();
+      // Deferred: _initPlayer reads AppLocalizations via context, and
+      // dependOnInheritedWidget is illegal until the first frame mounts.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _initPlayer();
+      });
+    }
+  }
+
+  Future<void> _initPiP() async {
+    final pip = PiPHelper();
+    await pip.init();
+    pip.onModeChanged = (inPiP) {
+      if (!mounted) return;
+      setState(() => _inPiP = inPiP);
+      if (!inPiP) {
+        _startHideTimer();
+      }
+    };
+    pip.onAction = (action) {
+      if (!mounted || _controller == null) return;
+      switch (action) {
+        case 'play_pause':
+          _togglePlay();
+          _syncPiPActions();
+          break;
+        case 'forward':
+          final pos = _controller!.value.position;
+          final dur = _controller!.value.duration;
+          final target = pos + const Duration(seconds: 10);
+          _controller!.seekTo(target < dur ? target : dur);
+          break;
+      }
+    };
+  }
+
+  void _syncPiPActions() {
+    if (_controller == null) return;
+    PiPHelper().updatePiPActions(isPlaying: _controller!.value.isPlaying);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_disposed) return;
+    if (state == AppLifecycleState.resumed && !_inPiP) {
+      // Returned from background (not PiP). Restore system UI.
+      LuminaSystemUi.push(
+        orientations: _isFullscreen
+            ? const [
+                DeviceOrientation.landscapeLeft,
+                DeviceOrientation.landscapeRight,
+              ]
+            : [
+                DeviceOrientation.portraitUp,
+                DeviceOrientation.landscapeLeft,
+                DeviceOrientation.landscapeRight,
+              ],
+        mode: SystemUiMode.edgeToEdge,
+      );
     }
   }
 
@@ -151,6 +229,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     } else {
       _controller!.play();
     }
+    if (_inPiP) _syncPiPActions();
     _startHideTimer();
   }
 
@@ -166,17 +245,21 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   void _toggleFullscreen() {
     if (_controller == null) return;
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
-    if (isLandscape) {
-      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    setState(() => _isFullscreen = !_isFullscreen);
+    if (_isFullscreen) {
+      _uiPushes++;
+      LuminaSystemUi.push(
+        orientations: const [
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        ],
+        mode: SystemUiMode.edgeToEdge,
+      );
     } else {
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
+      // Unwind the landscape claim; the page's entry config applies again.
+      LuminaSystemUi.restore();
+      _uiPushes--;
     }
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
   String _fmt(Duration d) {
@@ -343,25 +426,29 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     }
   }
 
-  /// Hands the live video controller to the [MiniPlayerController] so playback
-  /// continues in the floating overlay, then pops back to the shell.
-  ///
-  /// Also fires when leaving a page reopened from the mini-player: the
-  /// controller is not owned by this page, but it must return to the overlay
-  /// instead of playing invisibly with no UI. If the video has ended, the
-  /// overlay session is retired instead of showing a stale frame.
-  void _exitToMiniPlayer() {
+  /// Closes the player entirely: pops the page and, when this page adopted
+  /// the mini-player's controller, ends that session so no orphaned audio
+  /// keeps playing. When in PiP, exits PiP first.
+  void _closePlayer() {
     if (_exitRequested) return;
     _exitRequested = true;
-    final ctrl = _controller;
-    if (ctrl != null && ctrl.value.isInitialized && !ctrl.value.isCompleted) {
-      MiniPlayerController().start(widget.title, widget.videoUrl, ctrl, subject: widget.subject);
-      _ownsController = false;
-    } else if (ctrl != null &&
-        identical(MiniPlayerController().videoController, ctrl)) {
-      MiniPlayerController().stop();
+    if (PiPHelper().isInPiP) {
+      PiPHelper().exitPiP();
     }
+    final mini = MiniPlayerController();
+    if (!_ownsController && identical(mini.videoController, _controller)) {
+      mini.stop();
+    }
+    _controller = null;
     Navigator.of(context).pop();
+  }
+
+  /// Enters OS-level Picture-in-Picture mode. The video keeps playing in a
+  /// system floating window while the user navigates the app.
+  void _minimize() {
+    if (_exitRequested || !_initialized || _controller == null) return;
+    _exitRequested = true;
+    PiPHelper().enterPiP(isPlaying: _controller!.value.isPlaying);
   }
 
   void _retry() {
@@ -377,12 +464,20 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   @override
   void dispose() {
     _disposed = true;
+    WidgetsBinding.instance.removeObserver(this);
+    PiPHelper().onModeChanged = null;
+    PiPHelper().onAction = null;
     _hideTimer?.cancel();
     _feedbackTimer?.cancel();
     ActivityTracker().endStudySession();
     WakelockPlus.disable();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // Unwind every claim this page pushed (entry + fullscreen); the app
+    // baseline returns when the stack empties, so the user's own rotation
+    // setting applies again.
+    while (_uiPushes > 0) {
+      LuminaSystemUi.restore();
+      _uiPushes--;
+    }
     if (_controller != null) {
       _controller!.removeListener(_onTick);
       if (_ownsController) _controller!.dispose();
@@ -398,15 +493,15 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _exitToMiniPlayer();
+        if (!didPop) _closePlayer();
       },
       child: Scaffold(
           backgroundColor: cs.surfaceContainerHighest,
-          appBar: _showControls
+          appBar: _showControls && !_isFullscreen && !_inPiP
               ? AppBar(
                   leading: IconButton(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: _exitToMiniPlayer,
+                    onPressed: _closePlayer,
                     tooltip: l10n.tooltipBackToResource,
                   ),
                   title: Text(widget.title),
@@ -415,6 +510,28 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 )
               : null,
           body: _buildBody(l10n, cs),
+      ),
+    );
+  }
+
+  Widget _buildPiPPlaceholder(AppLocalizations l10n, ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.picture_in_picture_alt, size: 48, color: cs.primary),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.videoPlayingInPiP,
+            style: tt.bodyLarge?.copyWith(color: cs.onSurface),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          TextButton(
+            onPressed: _closePlayer,
+            child: Text(l10n.buttonReturnToVideo),
+          ),
+        ],
       ),
     );
   }
@@ -465,9 +582,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 child: VideoPlayer(_controller!),
               ),
             ),
-            if (_seekFeedback != null) _buildSeekFeedback(),
-            if (_showControls) _buildOverlay(l10n, cs),
-            if (!_showControls)
+            if (_seekFeedback != null && !_inPiP) _buildSeekFeedback(),
+            if (_showControls && !_inPiP) _buildOverlay(l10n, cs),
+            if (!_showControls || _inPiP)
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -558,9 +675,15 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                     ),
                   ),
                   IconButton(
+                    onPressed: _minimize,
+                    icon: Icon(Icons.picture_in_picture_alt,
+                        color: cs.onSurface, size: 24),
+                    tooltip: l10n.buttonMinimizeVideo,
+                  ),
+                  IconButton(
                     onPressed: _toggleFullscreen,
                     icon: Icon(
-                      MediaQuery.of(context).orientation == Orientation.landscape
+                      _isFullscreen
                           ? Icons.fullscreen_exit
                           : Icons.fullscreen,
                       color: cs.onSurface,
