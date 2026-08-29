@@ -97,7 +97,7 @@ void main() {
     Navigator.of(tester.element(find.text('target'))).pop();
     await tester.pumpAndSettle();
 
-    // ON: 180 ms slide+fade forward and reverse.
+    // ON: ~100 ms slide+fade forward and reverse.
     await enableAnimations();
     await pumpHome();
     await tester.pumpAndSettle();
@@ -150,7 +150,7 @@ void main() {
     Navigator.of(observer.navigator!.context).pop();
     await tester.pumpAndSettle();
 
-    // ON: 180 ms transitions.
+    // ON: ~100 ms transitions.
     await enableAnimations();
 
     await tester.pumpWidget(MaterialApp(
