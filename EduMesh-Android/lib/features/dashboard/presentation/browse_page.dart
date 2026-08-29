@@ -66,7 +66,7 @@ class BrowsePageState extends State<BrowsePage> with SingleTickerProviderStateMi
         title: Text(
           l10n.pageTitleBrowseResources,
           maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: tt.titleMedium?.copyWith(color: cs.onSurface),
+          style: tt.titleMedium?.copyWith(fontSize: 16.sp, color: cs.onSurface),
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -74,6 +74,8 @@ class BrowsePageState extends State<BrowsePage> with SingleTickerProviderStateMi
           unselectedLabelColor: cs.onSurfaceVariant,
           indicatorColor: cs.primary,
           indicatorWeight: 3.0,
+          labelStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
+          unselectedLabelStyle: TextStyle(fontSize: 14.sp),
           tabs: [
             Tab(text: l10n.browseTabCourses),
             Tab(text: l10n.browseTabResources),

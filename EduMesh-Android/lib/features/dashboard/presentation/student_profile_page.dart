@@ -142,7 +142,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             minutes: ((s['minutes'] ?? 0) as num).toInt(),
             color: _colorForSubject(s['name']?.toString() ?? ''),
           )).toList();
-          _activityHistory = history;
+          _activityHistory = history.where((a) => (a['action'] as String?) != 'study_session').toList();
           _loading = false;
         });
       }

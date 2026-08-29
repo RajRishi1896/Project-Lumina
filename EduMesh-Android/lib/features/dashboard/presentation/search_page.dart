@@ -363,7 +363,7 @@ class _SearchPageState extends State<SearchPage> {
     return mimeMap[ext] ?? 'application/octet-stream';
   }
 
-  Widget _buildDownloadButton(dynamic original, ColorScheme cs) {
+  Widget _buildDownloadButton(ResourceModel original, ColorScheme cs) {
     // Quizzes live in the DB, not behind /files: a download control would
     // always fail and leave a permanently pending item.
     if (original.type == ResourceType.quiz) return const SizedBox.shrink();
@@ -954,7 +954,10 @@ class _SearchPageState extends State<SearchPage> {
                     (context, index) {
                       final item = _filteredResults[index];
                       final isZim = item['isZim'] == true;
-                      final dynamic original = item['originalObject'];
+                      // Typed: `.name` on enums only resolves statically in
+                      // this Dart SDK — dynamic dispatch throws NoSuchMethodError.
+                      final ResourceModel original =
+                          item['originalObject'] as ResourceModel;
                       final ZimArticle? zimArticle = item['zimArticle'];
 
                       final isOfflineUnavailable = !isZim && !ConnectivityService().isOnline && !_downloadedIds.contains(original.id.toString());
@@ -965,12 +968,12 @@ class _SearchPageState extends State<SearchPage> {
                       final subtitle = [
                         original.subject,
                         original.grade,
-                      ].where((s) => s != null && s.toString().trim().isNotEmpty)
+                      ].where((s) => s.toString().trim().isNotEmpty)
                           .map((s) => s.toString())
                           .join(' \u00B7 ');
                       return ResourceCard(
                         resourceId: original.id.toString(),
-                        title: (item['title'] as String?) ?? original.title ?? '',
+                        title: (item['title'] as String?) ?? original.title,
                         type: original.type,
                         fileSize: original.fileSize,
                         pageCount: original.pageCount,
@@ -1036,9 +1039,8 @@ class _SearchPageState extends State<SearchPage> {
                             luminaRoute(
                               builder: (_) => ResourceDetailPage(
                                 title: item['title'] as String? ?? '',
-                                subject:
-                                    (original.subject ?? '').toString(),
-                                grade: (original.grade ?? '').toString(),
+                                subject: original.subject,
+                                grade: original.grade,
                                 resourceType: original.type.name,
                                 isInitiallySaved:
                                     _savedStatuses[original.id] ?? false,

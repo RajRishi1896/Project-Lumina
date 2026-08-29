@@ -520,16 +520,18 @@ class _DashboardPageState extends State<DashboardPage> {
         Text(l10n.sectionRecentlyAccessed, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         SizedBox(
-          height: 124.h * MediaQuery.textScalerOf(context).scale(1),
+          height: 120.r,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _recentResources.length,
             separatorBuilder: (_, __) => SizedBox(width: AppSpacing.sm.w),
             itemBuilder: (context, index) {
-              final r = _recentResources[index];
-              final type = r['type'] ?? '';
-              final icon = _iconForResourceType(type);
-              return GestureDetector(
+        final r = _recentResources[index];
+        final type = r['type'] ?? '';
+        final icon = _iconForResourceType(type);
+        // ponytail: one scale (.r) for both axes so the card stays square
+        final side = 120.r;
+        return GestureDetector(
                 onTap: () {
                   if (type == 'kiwix') {
                     _openRecentKiwix(r);
@@ -546,8 +548,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   }
                 },
                 child: Container(
-                  width: 120.w,
+                  width: side,
+                  height: side,
                   padding: EdgeInsets.all(AppSpacing.md.w),
+                  clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
                     color: cs.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
@@ -555,11 +559,14 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(icon, size: 24.sp, color: cs.primary),
                       SizedBox(height: AppSpacing.xs.h),
-                      Text(r['title'] ?? '', style: tt.labelSmall?.copyWith(color: cs.onSurface),
-                        maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                      Flexible(
+                        child: Text(r['title'] ?? '', style: tt.labelSmall?.copyWith(color: cs.onSurface),
+                          maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                      ),
                     ],
                   ),
                 ),

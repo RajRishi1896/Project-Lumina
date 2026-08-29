@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/models/course.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
 import 'package:edumesh_android/core/services/course_service.dart';
+import 'package:edumesh_android/core/system_ui/lumina_system_ui.dart';
 import 'package:edumesh_android/core/services/mutation_queue.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
@@ -121,14 +122,13 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   }
 
   void _enableSecure() {
-    SystemChrome.setEnabledSystemUIMode(
-      SystemUiMode.immersiveSticky,
-      overlays: [],
+    LuminaSystemUi.push(
+      orientations: const [
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ],
+      mode: SystemUiMode.immersiveSticky,
     );
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
   }
 
   void _onAppBackgrounded() {
@@ -441,13 +441,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     _timer?.cancel();
     _lifecycleListener.dispose();
     _fillController.dispose();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    LuminaSystemUi.restore();
     MiniPlayerController().setQuizActive(false);
     super.dispose();
   }

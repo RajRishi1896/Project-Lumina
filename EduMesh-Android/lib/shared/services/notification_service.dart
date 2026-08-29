@@ -164,6 +164,8 @@ class NotificationService {
               AndroidNotificationDetails(
                 'download_channel',
                 _channelName,
+                playSound: false,
+                enableVibration: false,
               ),
           iOS: const DarwinNotificationDetails(),
         ),

@@ -37,14 +37,13 @@ class LuminaSettingsSheet extends ConsumerWidget {
         color: cs.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusXl.r)),
       ),
-      child: Center(
+      child: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
-          child: ListView.builder(
-            shrinkWrap: true,
+          child: ListView(
             padding: EdgeInsets.only(bottom: AppSpacing.section.h),
-            itemCount: items.length,
-            itemBuilder: (_, i) => items[i],
+            children: items,
           ),
         ),
       ),
@@ -68,10 +67,21 @@ class LuminaSettingsSheet extends ConsumerWidget {
           SizedBox(height: AppSpacing.lg.h),
 
           Padding(
-            padding: EdgeInsets.only(left: AppSpacing.lg.w, bottom: AppSpacing.sm.h),
-            child: Text(AppLocalizations.of(context)!.settingsSheetTitle,
-                style: tt.titleLarge?.copyWith(
-                    color: cs.onSurface)),
+            padding: EdgeInsetsDirectional.only(
+                start: AppSpacing.lg.w, end: AppSpacing.sm.w, bottom: AppSpacing.sm.h),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(AppLocalizations.of(context)!.settingsSheetTitle,
+                      style: tt.titleLarge?.copyWith(color: cs.onSurface)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  tooltip: AppLocalizations.of(context)!.settingsSheetClose,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
           ),
 
           Consumer(builder: (context, ref, child) {
@@ -280,6 +290,7 @@ void _showChangePasswordDialog(BuildContext context) {
 
   showLuminaDialog(
     context: context,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
     builder: (ctx) {
       bool obscureOld = true;
       bool obscureNew = true;
@@ -288,8 +299,11 @@ void _showChangePasswordDialog(BuildContext context) {
       bool loading = false;
       return StatefulBuilder(
         builder: (context, setState) {
-          return AlertDialog(
-            title: Text(l10n.dialogChangePasswordTitle, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay)),
+          return ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+              title: Text(l10n.dialogChangePasswordTitle, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -351,42 +365,55 @@ void _showChangePasswordDialog(BuildContext context) {
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: loading ? null : () => Navigator.of(ctx).pop(),
-                child: Text(l10n.buttonCancel),
-              ),
-              ElevatedButton(
-                onPressed: loading ? null : () async {
-                  final old = oldPwdCtrl.text;
-                  final pwd = newPwdCtrl.text;
-                  if (old.isEmpty) { setState(() => error = l10n.errorCurrentPasswordRequired); return; }
-                  if (pwd.length < 8) { setState(() => error = l10n.errorPasswordMinLength); return; }
-                  if (pwd != confirmPwdCtrl.text) { setState(() => error = l10n.errorPasswordsDoNotMatch); return; }
-                  if (!pwd.contains(upperCaseRegExp) || !pwd.contains(lowerCaseRegExp) || !pwd.contains(digitRegExp)) {
-                    setState(() => error = l10n.errorPasswordComplexity);
-                    return;
-                  }
-                  setState(() { error = null; loading = true; });
-                  try {
-                    await ApiClient.post('/student/change-password', data: {
-                      'old_password': old,
-                      'new_password': pwd,
-                    });
-                    if (context.mounted) {
-                      Navigator.of(ctx).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.snackbarPasswordChanged),
-                            backgroundColor: cs.tertiary, behavior: SnackBarBehavior.floating),
-                      );
-                    }
-                  } catch (_) {
-                    setState(() { loading = false; error = l10n.errorPasswordChangeFailed; });
-                  }
-                },
-                child: Text(l10n.buttonUpdatePassword),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: loading ? null : () async {
+                        final old = oldPwdCtrl.text;
+                        final pwd = newPwdCtrl.text;
+                        if (old.isEmpty) { setState(() => error = l10n.errorCurrentPasswordRequired); return; }
+                        if (pwd.length < 8) { setState(() => error = l10n.errorPasswordMinLength); return; }
+                        if (pwd != confirmPwdCtrl.text) { setState(() => error = l10n.errorPasswordsDoNotMatch); return; }
+                        if (!pwd.contains(upperCaseRegExp) || !pwd.contains(lowerCaseRegExp) || !pwd.contains(digitRegExp)) {
+                          setState(() => error = l10n.errorPasswordComplexity);
+                          return;
+                        }
+                        setState(() { error = null; loading = true; });
+                        try {
+                          await ApiClient.post('/student/change-password', data: {
+                            'old_password': old,
+                            'new_password': pwd,
+                          });
+                          if (context.mounted) {
+                            Navigator.of(ctx).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.snackbarPasswordChanged),
+                                  backgroundColor: cs.tertiary, behavior: SnackBarBehavior.floating),
+                            );
+                          }
+                        } catch (_) {
+                          setState(() { loading = false; error = l10n.errorPasswordChangeFailed; });
+                        }
+                      },
+                      child: Text(l10n.buttonUpdatePassword),
+                    ),
+                  ),
+                  SizedBox(height: AppSpacing.sm.h),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: loading ? null : () => Navigator.of(ctx).pop(),
+                      child: Text(l10n.buttonCancel),
+                    ),
+                  ),
+                ],
               ),
             ],
-          );
+          ),
+        );
         },
       );
     },

@@ -21,17 +21,22 @@ class RecentResources {
 
   /// Load the last 5 recently accessed resources.
   static Future<List<Map<String, String>>> load() async {
+    // Invariant: only resource entries are served; anything else recorded is dropped.
+    const knownTypes = {'textbook', 'videos', 'pyq', 'pastPaper', 'kiwix', 'quiz', 'notes'};
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getStringList(_key) ?? [];
-      return raw.map((e) {
-        final parts = e.split('|||');
-        return {
-          'id': parts[0],
-          'title': parts.length > 1 ? parts[1] : '',
-          'type': parts.length > 2 ? parts[2] : '',
-        };
-      }).toList();
+      return raw
+          .map((e) {
+            final parts = e.split('|||');
+            return {
+              'id': parts[0],
+              'title': parts.length > 1 ? parts[1] : '',
+              'type': parts.length > 2 ? parts[2] : '',
+            };
+          })
+          .where((m) => knownTypes.contains(m['type']))
+          .toList();
     } catch (_) {
       return [];
     }

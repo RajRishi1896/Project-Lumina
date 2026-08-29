@@ -10,7 +10,7 @@ import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
 import 'package:edumesh_android/shared/services/download_service.dart';
 import 'package:edumesh_android/shared/services/download_queue.dart';
-import 'package:edumesh_android/shared/services/share_server.dart';
+
 import 'package:edumesh_android/shared/services/connectivity_service.dart';
 import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
 import 'package:edumesh_android/shared/widgets/resource_thumbnail.dart';
@@ -369,49 +369,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
             ));
           } else {
             final onlineNow = ConnectivityService().isOnline;
-            if (onlineNow) {
-              final peerUrl = _fileUrlFor(item);
-              final peerFileName = '${item.title}${_extFor(peerUrl)}';
-              messenger.showSnackBar(SnackBar(
-                content: Text(l10n.shareFindingDevices),
-                duration: const Duration(milliseconds: 2500),
-              ));
-              final peerPath = await ShareServer().discoverAndDownload(
-                item,
-                peerFileName,
-                subject: item.subject,
-                grade: item.grade,
-                type: item.type.name,
-                onPeerFound: (name) {
-                  if (mounted) setState(() => _pendingIds.add(resourceId));
-                  messenger.hideCurrentSnackBar();
-                  messenger.showSnackBar(SnackBar(
-                    content: Text(l10n.shareDownloadingFrom(name)),
-                    duration: const Duration(seconds: 3),
-                  ));
-                },
-              );
-              if (peerPath != null) {
-                if (mounted) {
-                  setState(() {
-                    _pendingIds.remove(resourceId);
-                    _downloadedIds.add(resourceId);
-                  });
-                }
-                messenger.showSnackBar(SnackBar(
-                  content: Text(l10n.snackbarDownloadComplete),
-                  duration: const Duration(milliseconds: 600),
-                ));
-                return;
-              }
-              messenger.hideCurrentSnackBar();
-            }
-
-            final url = _fileUrlFor(item);
-            final fileName = '${item.title}${_extFor(url)}';
-
-            final isOnline = ConnectivityService().isOnline;
-            if (!isOnline) {
+            if (!onlineNow) {
               final promoted = await _promoteCachedPdf(item, resourceId);
               if (promoted) {
                 if (mounted) {
@@ -426,47 +384,54 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                 }
                 return;
               }
-              try {
-                await DownloadQueue().enqueue(resourceId, url, fileName,
-                  title: item.title, subject: item.subject, grade: item.grade,
-                  type: item.type.name, mtime: item.mtime,
-                );
-              } catch (_) {}
-              if (mounted) {
-                setState(() => _pendingIds.add(resourceId));
-                messenger.showSnackBar(SnackBar(
-                  content: Text(l10n.snackbarAddedToQueueOffline),
-                  duration: const Duration(seconds: 3),
-                ));
-              }
+            }
+
+            final url = _fileUrlFor(item);
+            final fileName = '${item.title}${_extFor(url)}';
+
+            if (onlineNow) {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(l10n.dialogDownloadTitle),
+                  content: Text(l10n.dialogDownloadContentNoSize(fileName)),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.buttonCancel)),
+                    TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.dialogDownloadButton)),
+                  ],
+                ),
+              );
+              if (confirmed != true) return;
+
+              unawaited(DownloadQueue().enqueue(resourceId, url, fileName,
+                title: item.title,
+                subject: item.subject,
+                grade: item.grade,
+                type: item.type.name,
+                mtime: item.mtime,
+              ).catchError((_) {}));
+              if (mounted) setState(() => _pendingIds.add(resourceId));
+              messenger.showSnackBar(SnackBar(
+                content: Text(l10n.snackbarAddedToQueue),
+                duration: const Duration(milliseconds: 600),
+              ));
               return;
             }
 
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: Text(l10n.dialogDownloadTitle),
-                content: Text(l10n.dialogDownloadContentNoSize(fileName)),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.buttonCancel)),
-                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.dialogDownloadButton)),
-                ],
-              ),
-            );
-            if (confirmed != true) return;
-
-            unawaited(DownloadQueue().enqueue(resourceId, url, fileName,
-              title: item.title,
-              subject: item.subject,
-              grade: item.grade,
-              type: item.type.name,
-              mtime: item.mtime,
-            ).catchError((_) {}));
-            if (mounted) setState(() => _pendingIds.add(resourceId));
-            messenger.showSnackBar(SnackBar(
-              content: Text(l10n.snackbarAddedToQueue),
-              duration: const Duration(milliseconds: 600),
-            ));
+            try {
+              await DownloadQueue().enqueue(resourceId, url, fileName,
+                title: item.title, subject: item.subject, grade: item.grade,
+                type: item.type.name, mtime: item.mtime,
+              );
+            } catch (_) {}
+            if (mounted) {
+              setState(() => _pendingIds.add(resourceId));
+              messenger.showSnackBar(SnackBar(
+                content: Text(l10n.snackbarAddedToQueueOffline),
+                duration: const Duration(seconds: 3),
+              ));
+            }
+            return;
           }
         } catch (e, st) {
           debugPrint('Download button crash: $e\n$st');

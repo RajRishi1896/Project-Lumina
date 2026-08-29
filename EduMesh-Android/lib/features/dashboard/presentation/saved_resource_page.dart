@@ -26,6 +26,9 @@ import 'package:edumesh_android/l10n/app_localizations.dart';
 /// A page that displays the user's bookmarked resources, organised into
 /// tabs for each resource type plus enrolled courses.
 class SavedResourcesPage extends StatelessWidget {
+  /// Increment to force all child tabs to reload their data.
+  static final ValueNotifier<int> refreshNotifier = ValueNotifier(0);
+
   const SavedResourcesPage({super.key});
 
   @override
@@ -44,7 +47,7 @@ class SavedResourcesPage extends StatelessWidget {
           elevation: 0,
           title: Text(
             l10n.savedResourcesTitle,
-            style: tt.titleMedium?.copyWith(color: cs.onSurface),
+            style: tt.titleMedium?.copyWith(fontSize: 16.sp, color: cs.onSurface),
           ),
           bottom: TabBar(
             isScrollable: true,
@@ -53,6 +56,8 @@ class SavedResourcesPage extends StatelessWidget {
             unselectedLabelColor: cs.onSurfaceVariant,
             indicatorColor: cs.primary,
             indicatorWeight: 3.0,
+            labelStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
+            unselectedLabelStyle: TextStyle(fontSize: 14.sp),
             tabs: [
               Tab(text: l10n.tabAll),
               Tab(text: l10n.tabTextbooks),
@@ -103,6 +108,13 @@ class _SavedListByTypeState extends State<_SavedListByType> {
   void initState() {
     super.initState();
     _loadData();
+    SavedResourcesPage.refreshNotifier.addListener(_loadData);
+  }
+
+  @override
+  void dispose() {
+    SavedResourcesPage.refreshNotifier.removeListener(_loadData);
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -441,6 +453,13 @@ class _SavedCoursesTabState extends State<_SavedCoursesTab> {
   void initState() {
     super.initState();
     _load();
+    SavedResourcesPage.refreshNotifier.addListener(_load);
+  }
+
+  @override
+  void dispose() {
+    SavedResourcesPage.refreshNotifier.removeListener(_load);
+    super.dispose();
   }
 
   Future<void> _load() async {
