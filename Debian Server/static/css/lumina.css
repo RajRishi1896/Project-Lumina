@@ -1043,9 +1043,10 @@ body > nav, #welcome-content nav {
 /* === Guide Section === */
 .guide-section { margin-bottom: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--outline); }
 .guide-section:first-of-type { border-top: none; padding-top: 0; }
-.guide-section h3 { font-size: 0.9375rem; font-weight: 700; color: var(--primary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+.guide-section h3 { font-size: 0.9375rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
 .guide-content { color: var(--text-secondary); font-size: 0.875rem; line-height: 1.7; }
 .guide-content p { color: var(--text-secondary); font-size: 0.875rem; line-height: 1.7; margin: 0; }
+.guide-content p + p { margin-top: 0.75rem; }
 .guide-content ol, .guide-content ul { padding-left: 0; margin: 0.5rem 0; list-style-position: inside; }
 
 /* === Tablet Responsive (769-1024px) === */
