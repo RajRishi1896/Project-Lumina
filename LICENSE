@@ -94,40 +94,33 @@ with the following conditions:
     explicit permission.
 Full license text: https://scripts.sil.org/OFL
 
---------------------------------------------------------------------------
-Educational content (NCERT)
---------------------------------------------------------------------------
+==========================================================================
+DISCLAIMER
+==========================================================================
 
-NCERT e-content distributed through this project is subject to the NCERT
-License for Use of E-content (https://epathshala.nic.in). Key terms:
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
-  - Free to download and redistribute digitally in original form.
-  - No commercial use permitted.
-  - No modifications, adaptations, translations, or derivative works.
-  - Must provide clear attribution to NCERT.
-  - Must not remove watermarks, logos, or rights management information.
+IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; BUSINESS INTERRUPTION; OR SYSTEM
+DAMAGE) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
 
-This license is MORE RESTRICTIVE than Creative Commons. NCERT content
-must remain in its original, unmodified form. Teachers who upload
-content under other licenses (CC BY 4.0, CC BY-SA 4.0, etc.) retain
-their own licensing terms — see the `license` field on each resource
-in the database.
+This software is provided for educational purposes. Users are solely
+responsible for:
+  - Backup of their data before use.
+  - The content they upload to and store on the hub.
+  - Compliance with applicable laws and regulations in their jurisdiction.
+  - Any damage to their system, data loss, or other consequences arising
+    from the use or misuse of this software.
 
---------------------------------------------------------------------------
-Content licensing in the hub
---------------------------------------------------------------------------
-
-Uploaded resources carry a per-item `license` field. Valid values:
-  - CC BY 4.0          Creative Commons Attribution 4.0 International
-  - CC BY-SA 4.0       Creative Commons Attribution-ShareAlike 4.0
-  - CC BY-NC 4.0       Creative Commons Attribution-NonCommercial 4.0
-  - CC BY-NC-SA 4.0    Creative Commons Attribution-NonCommercial-ShareAlike 4.0
-  - NCERT Open License  NCERT e-content (no modifications)
-  - Internal Only       Teacher-created content, not for redistribution
-  - Public Domain       No copyright restrictions
-
-Students and teachers must comply with the license on each resource.
-The hub does not grant additional rights beyond the resource's license.
+The authors make no guarantees regarding uptime, data integrity, or
+suitability for any particular purpose. Use at your own risk.
 
 ==========================================================================
 END OF THIRD-PARTY NOTICES
