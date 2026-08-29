@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:edumesh_android/core/system_ui/lumina_system_ui.dart';
+import 'package:edumesh_android/core/widgets/responsive_init.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart' show DioException;
 
@@ -41,11 +42,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 /// [ProviderScope].
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // TEMP DIAGNOSTIC: capture the silent NoSuchMethodError (remove after).
-  FlutterError.onError = (details) {
-    debugPrint('LUMINA_ERR: ${details.exception}');
-    debugPrint('LUMINA_STACK: ${details.stack}');
-  };
+  LuminaSystemUi.initBaseline();
   unawaited(AnimationPrefs().load());
   _trace('T0 start ${DateTime.now().microsecondsSinceEpoch}');
 
@@ -201,7 +198,7 @@ Future<void> _onBackgroundStart(ServiceInstance service) async {
 /// The root MaterialApp widget for Edu-Mesh Scholar.
 ///
 /// Configures light and dark themes via [LuminaLiteTheme], sets up
-/// [ScreenUtilInit] for responsive sizing, and displays either the
+/// [ResponsiveInit] for responsive sizing, and displays either the
 /// main [AppShell] or the [WelcomePage] based on [isLoggedIn].
 class LuminaApp extends ConsumerWidget {
   /// Guards the one-time provider hydration so [build] stays side-effect
@@ -221,21 +218,12 @@ class LuminaApp extends ConsumerWidget {
     }
     final themeMode = ref.watch(themeModeProvider);
 
-    // ponytail: the design size IS the viewport, clamped. ScreenUtil scale
-    // factors become width/designW and height/designH, so clamping the design
-    // size to the phone baseline caps every scale at ~1.5x on tablets and
-    // keeps 1.0x on phones, in any orientation, without device checks.
-    final view = WidgetsBinding.instance.platformDispatcher.views.first;
-    final logicalSize = view.physicalSize / view.devicePixelRatio;
-    final designSize = Size(
-      logicalSize.width.clamp(360.0, 1280.0),
-      logicalSize.height.clamp(640.0, 1280.0),
-    );
-    return ScreenUtilInit(
-      designSize: designSize,
-      minTextAdapt: true,
-      splitScreenMode: true,
-      builder: (context, child) {
+    // ponytail: the design size IS the viewport, clamped, recomputed on every
+    // metrics change inside ResponsiveInit — clamping to the phone baseline
+    // caps every scale on tablets while keeping 1.0x on phones, in any
+    // orientation, without device checks.
+    return ResponsiveInit(
+      builder: (context) {
         return MaterialApp(
           navigatorKey: navigatorKey,
           onGenerateTitle: (context) => AppLocalizations.of(context)!.materialAppTitle,

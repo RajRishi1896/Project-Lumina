@@ -5,15 +5,14 @@ import 'package:edumesh_android/features/dashboard/presentation/dashboard_page.d
 import 'package:edumesh_android/features/dashboard/presentation/saved_resource_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/student_profile_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/browse_page.dart';
-import 'package:edumesh_android/shared/widgets/mini_player_widget.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
+import 'package:edumesh_android/shared/widgets/mini_player_widget.dart';
 
 /// The main application shell with a 4-tab bottom navigation bar.
 ///
 /// Hosts the [DashboardPage], [BrowsePage], [SavedResourcesPage],
-/// and [StudentProfilePage] in an [IndexedStack]
-/// and overlays the [MiniPlayerWidget] on top. Pressing back twice within
-/// two seconds exits the app via [SystemNavigator.pop].
+/// and [StudentProfilePage] in an [IndexedStack].
+/// Pressing back twice within two seconds exits the app via [SystemNavigator.pop].
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -31,7 +30,7 @@ class _AppShellState extends State<AppShell>
   /// off or reduced motion is on (the IndexedStack swap is already instant).
   late final AnimationController _tabFade = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 150),
+    duration: const Duration(milliseconds: 100),
     value: 1,
   );
 
@@ -43,6 +42,7 @@ class _AppShellState extends State<AppShell>
     } else {
       _tabFade.value = 1;
     }
+    if (index == 2) SavedResourcesPage.refreshNotifier.value++;
   }
 
   void _openBrowseResources() {

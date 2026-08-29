@@ -7,13 +7,11 @@ import 'package:video_player/video_player.dart';
 ///
 /// Holds a reference to the active [VideoPlayerController] so it can be
 /// transferred between the full-screen [VideoPlayerPage] and the floating
-/// [MiniPlayerWidget] without re-initialising the video stream.
+/// mini-player without re-initialising the video stream.
 ///
-/// Extends [ChangeNotifier] so widgets can listen for visibility changes.
+/// Uses an [OverlayEntry] so the mini-player renders above all pushed pages.
 class MiniPlayerController extends ChangeNotifier {
   static final MiniPlayerController _instance = MiniPlayerController._internal();
-
-  /// Returns the singleton [MiniPlayerController] instance.
   factory MiniPlayerController() => _instance;
   MiniPlayerController._internal();
 
@@ -22,30 +20,20 @@ class MiniPlayerController extends ChangeNotifier {
   String _videoUrl = '';
   String _subject = '';
   bool _active = false;
+  bool _expanded = false;
   bool _quizActive = false;
+  OverlayEntry? _overlayEntry;
 
   bool get isActive => _active;
-
-  /// Whether a quiz is currently active (mini-player should hide).
+  bool get isExpanded => _expanded;
   bool get isQuizActive => _quizActive;
-
   String get title => _title;
-
-  /// The video source URL associated with the active session.
   String get videoUrl => _videoUrl;
-
-  /// The subject associated with the active session, threaded into study
-  /// tracking when the video is reopened from the overlay.
   String get subject => _subject;
-
-  /// The active [VideoPlayerController], or `null` when no video is playing.
   VideoPlayerController? get videoController => _videoController;
 
-  /// Activates the mini-player with the given [title], [videoUrl], and controller.
-  ///
-  /// Replaces any previous session and notifies listeners immediately. A
-  /// different previous controller is disposed so ghost streams never pile up.
-  void start(String title, String videoUrl, VideoPlayerController videoController, {String? subject}) {
+  /// Activates the mini-player with the given parameters.
+  void start(String title, String videoUrl, VideoPlayerController videoController, {String? subject, OverlayEntry? overlayEntry}) {
     if (_videoController != null && !identical(_videoController, videoController)) {
       _videoController!.removeListener(_onVideoEnded);
       _videoController!.dispose();
@@ -56,6 +44,8 @@ class MiniPlayerController extends ChangeNotifier {
     _videoController = videoController;
     videoController.addListener(_onVideoEnded);
     _active = true;
+    _expanded = false;
+    _overlayEntry = overlayEntry;
     notifyListeners();
   }
 
@@ -65,19 +55,41 @@ class MiniPlayerController extends ChangeNotifier {
     _videoController?.dispose();
     _videoController = null;
     _active = false;
+    _expanded = false;
+    _overlayEntry?.remove();
+    _overlayEntry = null;
     notifyListeners();
   }
 
-  /// Retires the session when the video finishes so the overlay never shows
-  /// a frozen last frame indefinitely (mirrors the full player's exit path).
+  /// Expands the mini-player to the larger panel view.
+  void expand() {
+    if (_expanded) return;
+    _expanded = true;
+    _overlayEntry?.markNeedsBuild();
+    notifyListeners();
+  }
+
+  /// Collapses the mini-player back to the compact bar.
+  void collapse() {
+    if (!_expanded) return;
+    _expanded = false;
+    _overlayEntry?.markNeedsBuild();
+    notifyListeners();
+  }
+
+  /// Toggles between collapsed and expanded states.
+  void toggleExpanded() => _expanded ? collapse() : expand();
+
+  /// Updates the overlay entry reference (called when overlay is rebuilt).
+  void setOverlayEntry(OverlayEntry? entry) {
+    _overlayEntry = entry;
+  }
+
   void _onVideoEnded() {
     final vc = _videoController;
     if (vc != null && vc.value.isCompleted) stop();
   }
 
-  /// Sets the quiz-active flag. When `true` the mini-player widget hides and
-  /// the video pauses so audio never leaks into exam mode; it resumes (unless
-  /// the video ended) when the flag clears.
   void setQuizActive(bool value) {
     if (_quizActive == value) return;
     _quizActive = value;
@@ -88,6 +100,7 @@ class MiniPlayerController extends ChangeNotifier {
     } else if (!vc.value.isCompleted) {
       unawaited(vc.play());
     }
+    _overlayEntry?.markNeedsBuild();
     notifyListeners();
   }
 
