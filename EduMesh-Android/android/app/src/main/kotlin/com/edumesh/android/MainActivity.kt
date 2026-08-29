@@ -1,12 +1,21 @@
 package com.edumesh.android
 
+import android.app.PendingIntent
+import android.app.PictureInPictureParams
+import android.app.RemoteAction
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.drawable.Icon
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.StatFs
+import android.util.Rational
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -14,6 +23,14 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val STORAGE_CHANNEL = "com.edumesh.android/storage"
     private val ICON_CHANNEL = "com.edumesh.android/app_icon"
+    private val PIP_CHANNEL = "com.edumesh.android/pip"
+    private var pipMethodChannel: MethodChannel? = null
+
+    private val PIP_ACTION = "com.edumesh.android.PIP_ACTION"
+    private val PIP_REQUEST_PLAY_PAUSE = 0
+    private val PIP_REQUEST_FORWARD = 1
+
+    private var pipActionReceiver: BroadcastReceiver? = null
 
     // Held for the app's lifetime so mDNS multicast packets reach the app.
     private var multicastLock: WifiManager.MulticastLock? = null
@@ -25,16 +42,114 @@ class MainActivity : FlutterActivity() {
         lock.setReferenceCounted(true)
         lock.acquire()
         multicastLock = lock
+
+        pipActionReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                val action = intent.getStringExtra("action") ?: return
+                pipMethodChannel?.invokeMethod("onPiPAction", action)
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(pipActionReceiver, IntentFilter(PIP_ACTION), Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(pipActionReceiver, IntentFilter(PIP_ACTION))
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         multicastLock?.let { if (it.isHeld) it.release() }
         multicastLock = null
+        pipActionReceiver?.let { unregisterReceiver(it) }
+        pipActionReceiver = null
+        pipMethodChannel = null
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode)
+        pipMethodChannel?.invokeMethod("onPiPModeChanged", isInPictureInPictureMode)
+    }
+
+    private fun buildPipParams(width: Int, height: Int, isPlaying: Boolean): PictureInPictureParams {
+        val playPauseIcon = Icon.createWithResource(
+            this,
+            if (isPlaying) R.drawable.ic_pip_pause else R.drawable.ic_pip_play
+        )
+        val playPauseAction = RemoteAction(
+            playPauseIcon,
+            if (isPlaying) "Pause" else "Play",
+            if (isPlaying) "Pause video" else "Play video",
+            PendingIntent.getBroadcast(
+                this, PIP_REQUEST_PLAY_PAUSE,
+                Intent(PIP_ACTION).putExtra("action", "play_pause"),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        )
+
+        val forwardAction = RemoteAction(
+            Icon.createWithResource(this, R.drawable.ic_pip_forward),
+            "Forward 10s",
+            "Forward 10 seconds",
+            PendingIntent.getBroadcast(
+                this, PIP_REQUEST_FORWARD,
+                Intent(PIP_ACTION).putExtra("action", "forward"),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        )
+
+        return PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(width, height))
+            .setActions(listOf(playPauseAction, forwardAction))
+            .apply {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    setAutoEnterEnabled(false)
+                }
+            }
+            .build()
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Picture-in-Picture channel
+        pipMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PIP_CHANNEL)
+        pipMethodChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "enterPiP" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val width = call.argument<Int>("width") ?: 16
+                        val height = call.argument<Int>("height") ?: 9
+                        val isPlaying = call.argument<Boolean>("isPlaying") ?: true
+                        val params = buildPipParams(width, height, isPlaying)
+                        result.success(enterPictureInPictureMode(params))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        result.success(enterPictureInPictureMode())
+                    }
+                }
+                "updatePiPActions" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val width = call.argument<Int>("width") ?: 16
+                        val height = call.argument<Int>("height") ?: 9
+                        val isPlaying = call.argument<Boolean>("isPlaying") ?: true
+                        val params = buildPipParams(width, height, isPlaying)
+                        setPictureInPictureParams(params)
+                        result.success(true)
+                    } else {
+                        result.success(false)
+                    }
+                }
+                "exitPiP" -> {
+                    // PiP exits automatically when the user taps to expand.
+                    // No programmatic exit API exists on FlutterActivity.
+                    result.success(true)
+                }
+                "isSupported" -> {
+                    result.success(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                }
+                else -> result.notImplemented()
+            }
+        }
 
         // Storage info channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, STORAGE_CHANNEL).setMethodCallHandler { call, result ->
