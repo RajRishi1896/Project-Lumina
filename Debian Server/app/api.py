@@ -179,13 +179,13 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=lambda: [
+    allow_origins=[
         f"http://{ip}:8000"
         for iface in __import__('socket').getaddrinfo(
             __import__('socket').gethostname(), None
         )
         for ip in [iface[4][0]] if not iface[4][0].startswith('fe80')
-    ] + ["http://localhost:8000"],
+    ] + ["http://localhost:8000", "http://127.0.0.1:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
