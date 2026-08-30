@@ -76,7 +76,7 @@ Future<T?> showLuminaDialog<T>({
     barrierLabel: barrierLabel ??
         MaterialLocalizations.of(context).modalBarrierDismissLabel,
     transitionDuration: animate ? LuminaTransitions.duration : Duration.zero,
-    barrierColor: Colors.black54,
+    barrierColor: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.54),
     pageBuilder: (context, animation, secondaryAnimation) =>
         Dialog(shape: shape, child: builder(context)),
     transitionBuilder: (context, animation, secondaryAnimation, child) {
@@ -128,7 +128,7 @@ Future<T?> showLuminaSheet<T>({
     context: context,
     barrierDismissible: true,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: Colors.black54,
+    barrierColor: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.54),
     transitionDuration: animate ? LuminaTransitions.duration : Duration.zero,
     pageBuilder: (context, animation, secondaryAnimation) => sheet,
     transitionBuilder: (context, animation, secondaryAnimation, child) {

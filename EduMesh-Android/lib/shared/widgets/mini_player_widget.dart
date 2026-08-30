@@ -153,7 +153,7 @@ class _MiniPlayerOverlayState extends State<MiniPlayerWidget> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
+                    color: cs.shadow,
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
