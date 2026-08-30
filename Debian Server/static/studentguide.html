@@ -29,12 +29,8 @@
     <a href="#sg-main" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
 
     <!-- Section: Header: back link + language selector -->
-    <header style="max-width:940px;margin:0 auto;padding:1rem 1.25rem 0;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+    <header style="max-width:940px;margin:0 auto;padding:1rem 1.25rem 0;display:flex;justify-content:flex-start;align-items:center;">
         <a href="/welcome" class="btn btn-outline" data-i18n="sg.back">Back to welcome</a>
-        <div style="display:flex;align-items:center;gap:0.5rem;">
-            <label for="sgLangSelect" class="sr-only" data-i18n="sg.lang_aria">Choose language</label>
-            <select id="sgLangSelect" style="padding:0.4rem 0.6rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated,transparent);color:inherit;"></select>
-        </div>
     </header>
 
     <!-- Section: Main: complete student guide (crash course) -->
@@ -83,33 +79,7 @@
 
     <!-- Section: Inline Scripts: language loading + guide rendering -->
     <script>
-        /* Language options — same set as the welcome page (translations load from lang/*.json). */
-        var WELCOME_LANGS = [
-            { code:'en', name:'English', native:'English' },
-            { code:'hi', name:'Hindi', native:'हिन्दी' },
-            { code:'kn', name:'Kannada', native:'ಕನ್ನಡ' },
-            { code:'fr', name:'French', native:'Français' },
-            { code:'ta', name:'Tamil', native:'தமிழ்' },
-            { code:'te', name:'Telugu', native:'తెలుగు' },
-        ];
         currentLang = localStorage.getItem('lumina-lang') || 'en';
-
-        /**
-         * Fill the language <select> from WELCOME_LANGS and reflect the saved choice.
-         */
-        function initSgLangSelect() {
-            var sel = document.getElementById('sgLangSelect');
-            if (!sel) return;
-            sel.innerHTML = WELCOME_LANGS.map(function(l){
-                return '<option value="' + l.code + '"' + (l.code === currentLang ? ' selected' : '') + '>' + l.native + ' (' + l.name + ')</option>';
-            }).join('');
-            sel.addEventListener('change', function() {
-                currentLang = sel.value;
-                localStorage.setItem('lumina-lang', currentLang);
-                document.documentElement.setAttribute('lang', currentLang);
-                loadTranslations(currentLang).then(renderSgGuide).catch(function(){});
-            });
-        }
 
         /**
          * Render rich HTML guide bodies that data-i18n (textContent-only) cannot handle.
@@ -127,7 +97,6 @@
             } catch(e) { console.error('renderSgGuide error:', e); }
         }
 
-        initSgLangSelect();
         loadTranslations(currentLang).then(function(){ renderSgGuide(); }).catch(function(){ renderSgGuide(); });
     </script>
 </body>
