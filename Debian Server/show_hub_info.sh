@@ -3,7 +3,7 @@
 # Usage:   sudo ./show_hub_info.sh
 # Idempotent: Yes, read-only.
 
-ACTIVE=$(ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+ACTIVE=$(ip -4 addr show wlp0s20f3 scope global 2>/dev/null | grep -oP '(?<=inet )\d+\.\d+\.\d+\.\d+')
 if [ -z "$ACTIVE" ]; then
   ACTIVE=$(hostname -I 2>/dev/null | awk '{print $1}')
 fi

@@ -2,7 +2,8 @@
 # Purpose: Prints the Lumina Hub connection banner + QR code to the laptop console.
 # Usage:   Called by lumina-banner.service on boot.
 # Args:    None
-IP=$(ip -4 addr show scope global | grep inet | head -1 | cut -d/ -f1 | awk '{print $2}')
+IP=$(ip -4 addr show wlp0s20f3 scope global 2>/dev/null | grep -oP '(?<=inet )\d+\.\d+\.\d+\.\d+')
+[ -z "$IP" ] && IP=$(ip -4 addr show scope global | grep inet | head -1 | cut -d/ -f1 | awk '{print $2}')
 
 echo ""
 echo "============================================================"
