@@ -731,8 +731,6 @@
   "welcome.appguide_body": "<p>బ్రౌజింగ్, డౌన్‌లోడ్, ఫ్లాష్‌కార్డ్‌లు, క్విజ్‌లతో కూడిన పూర్తి విద్యార్థి గైడ్ తయారు చేసాము.</p><p><a class=\"btn btn-primary\" href=\"/studentguide.html\">స్టూడెంట్ గైడ్ తెరవండి</a></p>",
   "sg.page_title": "Student Guide | Lumina Hub",
   "sg.title": "విద్యార్థి మార్గదర్శిక",
-  "sg.subtitle": "A complete crash course on using the Project Lumina app.",
-  "sg.app_title": "What is Project Lumina?",
   "sg.app_body": "<p>Project Lumina is your offline learning app. It connects to your school’s Lumina Hub over Wi-Fi — no internet needed. Textbooks, videos, quizzes, and flashcards all live inside.</p>",
   "sg.browse_title": "వనరులను కనుగర్టమ",
   "sg.browse_body": "<ol class=\"steps\"><li>ఆప్ తెరేయండి. మీ డాష్బోర్డ్ <strong>విషయాలు</strong> మరియు వనరులను చూపిస్తాయి.</li><li>పాఠ్యపుస్తకాలు, వీడియో, నోట్స్ మరియు పాఠాల ప్రశ్నేలు చూడాలను విషయా మీద టైప్ చేయండి.</li><li><strong>శోధించు</strong> బటన్ ఏ ఎనే జానకా కనుగర చేయండి.</li></ol>",
@@ -740,13 +738,15 @@
   "sg.download_body": "<ol class=\"steps\"><li>ఎనే వనరు తెరేయడి.</li><li><strong>డౌన్లోడ్</strong> బటన్ నోజు ండిణి.</li><li>అన్ని సమస్త పాതമానోల్— హబ్ లేకపോ మరు పరిచార అవ్తోతతో పనిస్తంాయి.</li></ol>",
   "sg.flash_title": "ఫ్లాశ్ కార్డ్: మరినసి మేలగ చేయండి",
   "sg.flash_body": "<p>ఫ్లాశ్ కార్డ్ ముందో ప్రశ్న మరియు వెన జవాబ ఉంటుంతాయి. మీత గానో మీ జవాబ చెప్మను ప్రయత్నిస్చే ప్లాస్టాවాది, ఆ మీత వెల్ అవసరం ప్నిసి నిర్మిస్చుతాయి.</p><p>ప్లాస్టాවాദ తర్వాതాව మీ స్వయంత്ല మూల೙యమాപనം చేయండి: <strong>మరల ముంచాවి</strong>, <strong>కష೙ా అయిවాദి</strong>, లేകా <strong>వచ೙ాദి</strong>. ఆప్ అవసరను మీ అవసరത് మరల చూపిస్తുംദాയి.</p>",
-  "sg.quiz_title": "Quizzes",
   "sg.quiz_body": "<p>ఉపాധ೘యాడ్యులు మీ విషయాల కోసం క్విజ్ ప్రచారిస్తారు. క్విజ్ తెరేయాවసి, ప్రశ్నలకు సమాധాවనయి మరియు సమర೙ల్చంദి. మీ స్కోర్ ప్రగతిని ట్రైల് చేయబవుതുംദా చెస్కోవదవ చేయంഡి.</p>",
   "sg.profile_title": "మీ ప్రోఫసైల్ మరియు ಭాషా",
   "sg.profile_body": "<ol class=\"steps\"><li>మీ ప్రోఫసైల్ ఇకాన్ మీദ టైప్ చేయంഡి మీ పేరు, తరగతి మరియు అధ೘యయన గణాంికలకు చూపిస్తాయి.</li><li>ఎప్പുഡു ಭాషను మార్చాවഡి — ఆప్ ఆంగ్లవీ, హిందీ, కన్నడ, తమిళ, తెలుగు మరియు ఫ೙రెంచ్ మాటలాഡుതായి.</li></ol>",
-  "sg.tips_title": "Study tips",
   "sg.tips_body": "<ul><li>ప్പുഡു కోച് చിന്ക చരുഗതി — ప్പുഡു 10 నిమిഷ്ടാലു వారാനിకి మారഥോවദീഡി.</li><li>హబ് లేకపോ ఉంടേ మోജോട వనరులను డౌన్లోడ్ చేయంഡి.</li><li>ప్പുഡു ఫ్లాశ్ కార్డ్లను వాഡసാවംഡి; స్వಯంത്ല మూల೙యమాപనം చేయంഡి.</li><li>అధ೘యాయం పూర്തായിවാ? తരുപു അനലീകി వెళ്താවി.</li></ul>",
   "sg.back": "స్వాగత పేజ఼ീകി త௶രുഗാനിకി",
   "sg.lang_aria": "ಭాషను ఎണുകോണു",
-  "nav.studentguide": "స్టూడెంట్ గైడ్"
+  "nav.studentguide": "స్టూడెంట్ గైడ్",
+  "sg.subtitle": "Project Lumina యాప్ ఉపయోగించడంపై పూర్తి క్రాష్ కోర్స్.",
+  "sg.quiz_title": "క్విజ్",
+  "sg.app_title": "Project Lumina అంటే ఏమిటి?",
+  "sg.tips_title": "అధ్యయన చిట్కాలు"
 }

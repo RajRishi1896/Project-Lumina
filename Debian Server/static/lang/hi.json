@@ -731,8 +731,6 @@
   "welcome.appguide_body": "<p>हमने एक पूरा स्टूडेंट गाइड बनाया है: ब्राउज़िंग, डाउनलोड, फ्लैशकार्ड, क्विज़ और बहुत कुछ।</p><p><a class=\"btn btn-primary\" href=\"/studentguide.html\">स्टूडेंट गाइड खोलें</a></p>",
   "sg.page_title": "Student Guide | Lumina Hub",
   "sg.title": "छात्र गाइड",
-  "sg.subtitle": "A complete crash course on using the Project Lumina app.",
-  "sg.app_title": "What is Project Lumina?",
   "sg.app_body": "<p>Project Lumina is your offline learning app. It connects to your school’s Lumina Hub over Wi-Fi — no internet needed. Textbooks, videos, quizzes, and flashcards all live inside.</p>",
   "sg.browse_title": "संसाधन खोजना",
   "sg.browse_body": "<ol class=\"steps\"><li>ऐप खोलें। आपका <strong>डैशबोर्ड</strong> विषय और संसाधन दिखाता है।</li><li>किसी विषय पर टैप करें उसकी पाठ्यपुस्तकें, वीडियो, नोट्स और पिछले प्रश्नपत्र देखने के लिए।</li><li><strong>खोजें</strong> बटन से कोई भी चीज़ ढूंढें।</li></ol>",
@@ -740,13 +738,15 @@
   "sg.download_body": "<ol class=\"steps\"><li>कोई भी संसाधन खोलने के लिए टैप करें।</li><li><strong>डाउनलोड</strong> बटन दबाएं।</li><li>सब कुछ <strong>सहेजे गए</strong> में मिलेगा — यह हब से जुड़े बिना भी काम करता है।</li></ol>",
   "sg.flash_title": "फ़्लैशकार्ड: बेहतर याद रखें",
   "sg.flash_body": "<p>फ़्लैशकार्ड में सामने सवाल और पीछे जवाब होता है। पहले अपने आप से जवाब देने की कोशिश करें, फिर पलटें। यही कोशिश याददाश्त बनाती है।</p><p>पलटने के बाद ईमानदारी से खुद को ग्रेड दें: <strong>फिर से करें</strong>, <strong>कठिन लगा</strong>, या <strong>आ गया</strong>। ऐप आपको वही दोबारा दिखाएगा जिसकी ज़रूरत है।</p>",
-  "sg.quiz_title": "Quizzes",
   "sg.quiz_body": "<p>शिक्षक आपके विषयों के लिए क्विज़ जारी करते हैं। क्विज़ खोलें, सवालों के जवाब दें और जमा करें। आपका स्कोर सहेजा जाता है ताकि आप अपनी प्रगति देख सकें।</p>",
   "sg.profile_title": "आपकी प्रोफ़ाइल और भाषा",
   "sg.profile_body": "<ol class=\"steps\"><li>अपने <strong>प्रोफ़ाइल आइकन</strong> पर टैप करें अपना नाम, कक्षा और अध्ययन आंकड़े देखने के लिए।</li><li>कभी भी भाषा बदलें — ऐप अंग्रेज़ी, हिंदी, कन्नड़, तमिल, तेलुगु और फ़्रेंच बोलता है।</li></ol>",
-  "sg.tips_title": "Study tips",
   "sg.tips_body": "<ul><li>रोज़ाना थोड़ा पढ़ें — हर दिन 10 मिनट हफ़्ते भर की मेहनत से बेहतर है।</li><li>जब हब चालू हो तब संसाधन डाउनलोड करें।</li><li>रोज़ाना फ़्लैशकार्ड का उपयोग करें; ईमानदारी से ग्रेड दें।</li><li>कोई पाठ पूरा कर लिया? अगले पर जाएं।</li></ul>",
   "sg.back": "वेलकम पेज पर वापस",
   "sg.lang_aria": "भाषा चुनें",
-  "nav.studentguide": "स्टूडेंट गाइड"
+  "nav.studentguide": "स्टूडेंट गाइड",
+  "sg.subtitle": "Project Lumina ऐप का पूरा क्रैश कोर्स।",
+  "sg.quiz_title": "क्विज़",
+  "sg.app_title": "Project Lumina क्या है?",
+  "sg.tips_title": "पढ़ाई के सुझाव"
 }

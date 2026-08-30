@@ -731,8 +731,6 @@
   "welcome.appguide_body": "<p>Nous avons créé un guide complet : navigation, téléchargement, cartes, quiz et plus.</p><p><a class=\"btn btn-primary\" href=\"/studentguide.html\">Ouvrir le guide étudiant</a></p>",
   "sg.page_title": "Student Guide | Lumina Hub",
   "sg.title": "Guide de l’étudiant",
-  "sg.subtitle": "A complete crash course on using the Project Lumina app.",
-  "sg.app_title": "What is Project Lumina?",
   "sg.app_body": "<p>Project Lumina is your offline learning app. It connects to your school’s Lumina Hub over Wi-Fi — no internet needed. Textbooks, videos, quizzes, and flashcards all live inside.</p>",
   "sg.browse_title": "Trouver des ressources",
   "sg.browse_body": "<ol class=\"steps\"><li>Ouvrez l’application. Votre <strong>tableau de bord</strong> affiche les matières et les ressources.</li><li>Appuyez sur une matière pour voir ses manuels, vidéos, notes et annales.</li><li>Utilisez <strong>Rechercher</strong> pour trouver n’importe quoi.</li></ol>",
@@ -740,13 +738,15 @@
   "sg.download_body": "<ol class=\"steps\"><li>Appuyez sur n’importe quelle ressource pour l’ouvrir.</li><li>Appuyez sur le bouton <strong>Télécharger</strong>.</li><li>Trouvez tout dans <strong>Enregistré</strong> — ça fonctionne même sans le hub.</li></ol>",
   "sg.flash_title": "Flashcards : mieux retenir",
   "sg.flash_body": "<p>Une flashcarte a une question au recto et une réponse au verso. Essayez de répondre dans votre tête d’abord, puis retournez. C’est cet effort qui construit la mémoire.</p><p>Après avoir retourné, notez-vous honnêtement : <strong>à revoir</strong>, <strong>difficile</strong>, ou <strong>évident</strong>. L’application vous montrera ce dont vous avez besoin.</p>",
-  "sg.quiz_title": "Quizzes",
   "sg.quiz_body": "<p>Les enseignants publient des quiz pour vos matières. Ouvrez un quiz, répondez aux questions et soumettez. Votre score est enregistré pour suivre vos progrès.</p>",
   "sg.profile_title": "Votre profil et langue",
   "sg.profile_body": "<ol class=\"steps\"><li>Appuyez sur votre <strong>icône de profil</strong> pour voir votre nom, niveau et statistiques.</li><li>Changez de langue à tout moment — l’application parle anglais, hindi, kannada, tamoul, télégou et français.</li></ol>",
-  "sg.tips_title": "Study tips",
   "sg.tips_body": "<ul><li>Étudiez un peu chaque jour — 10 minutes quotidiennes valent mieux qu’une marathon hebdomadaire.</li><li>Téléchargez les ressources quand le hub est allumé.</li><li>Utilisez les flashcards chaque jour ; notez-vous honnêtement.</li><li>Terminé un chapitre ? Passez au suivant.</li></ul>",
   "sg.back": "Retour à l’accueil",
   "sg.lang_aria": "Choisir la langue",
-  "nav.studentguide": "Guide étudiant"
+  "nav.studentguide": "Guide étudiant",
+  "sg.subtitle": "Cours accéléré complet pour utiliser l'application Project Lumina.",
+  "sg.quiz_title": "Quiz",
+  "sg.app_title": "Qu'est-ce que Project Lumina ?",
+  "sg.tips_title": "Conseils d'étude"
 }
