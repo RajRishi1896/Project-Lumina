@@ -514,28 +514,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     );
   }
 
-  Widget _buildPiPPlaceholder(AppLocalizations l10n, ColorScheme cs) {
-    final tt = Theme.of(context).textTheme;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.picture_in_picture_alt, size: 48, color: cs.primary),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            l10n.videoPlayingInPiP,
-            style: tt.bodyLarge?.copyWith(color: cs.onSurface),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          TextButton(
-            onPressed: _closePlayer,
-            child: Text(l10n.buttonReturnToVideo),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBody(AppLocalizations l10n, ColorScheme cs) {
     final tt = Theme.of(context).textTheme;
     if (_error != null) {
