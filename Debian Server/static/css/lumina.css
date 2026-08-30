@@ -922,11 +922,21 @@ body > nav, #welcome-content nav {
     transition: background-color var(--transition), border-color var(--transition);
 }
 [data-theme="dark"] body > nav, [data-theme="dark"] #welcome-content nav { background: var(--surface); }
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.nav-actions > * {
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+}
 .nav-download {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
+    padding: 0 1rem;
     background: var(--teal);
     color: #fff;
     text-decoration: none;
@@ -941,16 +951,18 @@ body > nav, #welcome-content nav {
     background: none;
     border: 1px solid var(--outline);
     color: var(--primary);
-    padding: 0.5rem;
+    padding: 0 0.75rem;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.4rem;
+    font-size: 0.8125rem;
     transition: all var(--transition);
 }
 .theme-toggle-btn:hover { background: rgba(0,112,131,0.1); border-color: var(--teal); }
-.theme-toggle-btn svg { width: 18px; height: 18px; }
+.theme-toggle-btn svg { width: 16px; height: 16px; }
 
 .hero {
     padding: 5rem 5% 6rem;
