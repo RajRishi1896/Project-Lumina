@@ -8,12 +8,12 @@
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
     <script src="/static/js/lumina.js?v=15"></script>
-    <link rel="stylesheet" href="/static/css/lumina.css?v=20">
+    <link rel="stylesheet" href="/static/css/lumina.css?v=23">
 </head>
 <body>
     <a href="#welcome-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
     <!-- Section: Navbar: brand, language picker, theme toggle, app download link -->
-    <nav>
+    <nav aria-label="Lumina Hub">
         <div class="nav-brand">
             <img src="/static/assets/logo-light.svg" alt="" class="logo-light" width="24" height="24" style="flex-shrink:0;border-radius:2px;">
             <img src="/static/assets/logo-dark.svg" alt="" class="logo-dark" width="24" height="24" style="flex-shrink:0;border-radius:2px;">
@@ -38,7 +38,7 @@
             </button>
             <a href="/studentguide.html" class="theme-toggle-btn" style="text-decoration:none;" data-i18n-title="nav.studentguide" data-i18n-aria-label="nav.studentguide" title="Student Guide" aria-label="Student Guide">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                <span data-i18n="nav.studentguide">Student Guide</span>
+                <span class="sg-label" data-i18n="nav.studentguide">Student Guide</span>
             </a>
             <a href="/files/EduMesh.apk" class="nav-download" download>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
@@ -187,8 +187,6 @@
                 </div>
             </div>
         </div>
-
-    </div>
 
     <!-- Section: Inline Scripts: theme, language selection, stats fetching, auth handling -->
     <script>
