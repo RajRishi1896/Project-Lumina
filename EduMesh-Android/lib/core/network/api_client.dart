@@ -11,6 +11,10 @@ import '../../features/auth/data/auth_service.dart';
 /// token-based authentication, and automatic retry on 401/403 responses.
 class ApiClient {
   static const String _defaultDomain = 'http://127.0.0.1:8000';
+
+  /// Standard Android hotspot gateway IP — last-resort fallback when mDNS
+  /// and loopback discovery both fail (typical when phone connects to hub WiFi).
+  static const String _gatewayFallback = 'http://10.42.0.1:8000';
   // ponytail: compiled once; fileBaseUrl is called per URL construction.
   static final RegExp _apiSuffixRe = RegExp(r'/api/?$');
   static String _baseUrl = _defaultDomain;
@@ -277,8 +281,10 @@ class ApiClient {
                 await prefs.setString('server_fallback_ip', host);
               }
             } else {
-              _baseUrl = _defaultDomain;
-              debugPrint('ApiClient: mDNS and loopback discovery failed; using loopback default');
+              // Ponytail: gateway fallback. On hotspot WiFi the hub is at
+              // 10.42.0.1; neither mDNS nor 127.0.0.x scan finds it.
+              _baseUrl = _gatewayFallback;
+              debugPrint('ApiClient: using gateway fallback $_gatewayFallback');
             }
           }
         }
