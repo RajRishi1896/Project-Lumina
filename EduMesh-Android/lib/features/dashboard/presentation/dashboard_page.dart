@@ -232,17 +232,24 @@ class _DashboardPageState extends State<DashboardPage> {
         }
       }
 
-      final response = await ApiClient.get('/student/subjects');
-      if (mounted && response.statusCode == 200 && response.data is List) {
-        final raw = (response.data as List).whereType<Map<String, dynamic>>().toList();
-        await prefs.setString('cached_subjects', jsonEncode(raw));
-        setState(() {
-          _subjects = raw;
-          _subjectsLoading = false;
-        });
-        return;
+      // Always clear loading immediately — don't block UI on network.
+      if (_subjectsLoading) {
+        _subjectsLoading = false;
+        if (mounted) setState(() {});
       }
-    } catch (_) { } try {
+
+      // Fire-and-forget: update from server when reachable.
+      unawaited(ApiClient.get('/student/subjects').then((response) async {
+        if (mounted && response.statusCode == 200 && response.data is List) {
+          final raw = (response.data as List)
+              .whereType<Map<String, dynamic>>()
+              .toList();
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('cached_subjects', jsonEncode(raw));
+          if (mounted) setState(() => _subjects = raw);
+        }
+      }).catchError((_) {}));
+
       if (_subjects.isEmpty) {
         final db = DBHelper();
         final bookmarks = await db.getBookmarkedResources();
@@ -260,7 +267,6 @@ class _DashboardPageState extends State<DashboardPage> {
         if (mounted && local.isNotEmpty) {
           setState(() {
             _subjects = local;
-            _subjectsLoading = false;
           });
         }
       }
