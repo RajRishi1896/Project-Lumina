@@ -357,6 +357,33 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
               icon: const Icon(Icons.play_arrow),
               label: Text(l10n.flashcardStudyNow),
             ),
+            if (deck.dueCount > 0) ...[
+              SizedBox(height: AppSpacing.sm.h),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: cs.secondary,
+                  side: BorderSide(color: cs.secondary, width: 2),
+                  minimumSize: Size.fromHeight(AppSpacing.touchTarget.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  ),
+                ),
+                onPressed: () async {
+                  await Navigator.push<void>(
+                    context,
+                    luminaRoute(
+                      builder: (_) => FlashcardStudyPage(
+                          deckId: deck.id, studyAll: false),
+                    ),
+                  );
+                  if (mounted) await _load();
+                },
+                icon: const Icon(Icons.today_outlined),
+                label: Text(
+                  l10n.flashcardDueToday(deck.dueCount),
+                ),
+              ),
+            ],
             SizedBox(height: AppSpacing.sm.h),
             Row(
               children: [

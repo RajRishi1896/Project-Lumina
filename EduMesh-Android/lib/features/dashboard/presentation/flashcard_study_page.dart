@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -20,8 +22,12 @@ class FlashcardStudyPage extends StatefulWidget {
   /// The id of the deck whose due cards are reviewed.
   final String deckId;
 
+  /// When true, study all cards in random order (full review).
+  /// When false, only study cards that are due today.
+  final bool studyAll;
+
   /// Creates the flashcard study page for [deckId].
-  const FlashcardStudyPage({super.key, required this.deckId});
+  const FlashcardStudyPage({super.key, required this.deckId, this.studyAll = true});
 
   @override
   State<FlashcardStudyPage> createState() => _FlashcardStudyPageState();
@@ -67,9 +73,12 @@ class _FlashcardStudyPageState extends State<FlashcardStudyPage>
       Navigator.pop(context);
       return;
     }
+    final cards = widget.studyAll
+        ? (deck.cards.toList()..shuffle(Random()))
+        : deck.cards.where((c) => c.isDue).toList();
     setState(() {
       _deck = deck;
-      _session = deck.cards.where((c) => c.isDue).toList();
+      _session = cards;
       _loading = false;
       _index = 0;
       _flipped = false;

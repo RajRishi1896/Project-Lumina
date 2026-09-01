@@ -8,6 +8,7 @@ import 'package:edumesh_android/core/services/flashcard_service.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 import 'flashcard_edit_page.dart';
+import 'flashcard_study_page.dart';
 
 /// The flashcard deck library: hub-published decks under Recommended, the
 /// student's own decks with mastery progress under My Decks, plus search and
@@ -46,7 +47,17 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
     });
   }
 
-  Future<void> _openDetails(FlashcardDeck deck) async {
+  Future<void> _startStudy(FlashcardDeck deck) async {
+    await Navigator.push<void>(
+      context,
+      luminaRoute(
+        builder: (_) => FlashcardStudyPage(deckId: deck.id),
+      ),
+    );
+    if (mounted) await _load();
+  }
+
+  Future<void> _openEdit(FlashcardDeck deck) async {
     await Navigator.push<void>(
       context,
       luminaRoute(builder: (_) => FlashcardEditPage(deckId: deck.id)),
@@ -160,7 +171,11 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
       for (final deck in hubDecks)
         Padding(
           padding: EdgeInsets.only(bottom: AppSpacing.sm.h),
-          child: _RecommendedCard(deck: deck, onTap: () => _openDetails(deck)),
+          child: _RecommendedCard(
+            deck: deck,
+            onTap: () => _startStudy(deck),
+            onEdit: () => _openEdit(deck),
+          ),
         ),
       SizedBox(height: AppSpacing.section.h),
     ];
@@ -226,7 +241,11 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
       for (final deck in localDecks)
         Padding(
           padding: EdgeInsets.only(bottom: AppSpacing.sm.h),
-          child: _MyDeckCard(deck: deck, onTap: () => _openDetails(deck)),
+          child: _MyDeckCard(
+            deck: deck,
+            onTap: () => _startStudy(deck),
+            onEdit: () => _openEdit(deck),
+          ),
         ),
     ];
   }
@@ -297,10 +316,11 @@ class _SearchField extends StatelessWidget {
 
 /// Teacher-published deck card: subject label, title, estimated time.
 class _RecommendedCard extends StatelessWidget {
-  const _RecommendedCard({required this.deck, required this.onTap});
+  const _RecommendedCard({required this.deck, required this.onTap, required this.onEdit});
 
   final FlashcardDeck deck;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -325,6 +345,12 @@ class _RecommendedCard extends StatelessWidget {
               ),
               Icon(Icons.cloud_done_outlined,
                   size: 16.sp, color: cs.secondary),
+              SizedBox(width: AppSpacing.xs.w),
+              GestureDetector(
+                onTap: onEdit,
+                child: Icon(Icons.edit_outlined,
+                    size: 16.sp, color: cs.onSurfaceVariant),
+              ),
             ],
           ),
           SizedBox(height: AppSpacing.xs.h),
@@ -350,10 +376,11 @@ class _RecommendedCard extends StatelessWidget {
 
 /// Student deck card: title, saffron mastery bar with %, due count.
 class _MyDeckCard extends StatelessWidget {
-  const _MyDeckCard({required this.deck, required this.onTap});
+  const _MyDeckCard({required this.deck, required this.onTap, required this.onEdit});
 
   final FlashcardDeck deck;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -366,14 +393,25 @@ class _MyDeckCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            deck.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: tt.titleMedium?.copyWith(
-              color: cs.onSurface,
-              fontWeight: AppSpacing.weightDisplay,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  deck.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tt.titleMedium?.copyWith(
+                    color: cs.onSurface,
+                    fontWeight: AppSpacing.weightDisplay,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: onEdit,
+                child: Icon(Icons.edit_outlined,
+                    size: 16.sp, color: cs.onSurfaceVariant),
+              ),
+            ],
           ),
           SizedBox(height: AppSpacing.sm.h),
           Row(
