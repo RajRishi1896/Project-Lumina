@@ -842,6 +842,31 @@
     },
     "x_machine_translated": true
   },
+  "flashcardResetProgress": "పురోగతిని రీసెట్ చేయండి",
+  "@flashcardResetProgress": {
+    "description": "Popup menu item in deck details to reset SM-2 scheduling progress for all cards in this deck",
+    "x_machine_translated": true
+  },
+  "flashcardResetProgressConfirm": "ఈ డెక్ యొక్క మొత్తం పురోగతిని రీసెట్ చేయాలా? అన్ని కార్డులు మళ్ళీ డ్యూ అవుతాయి.",
+  "@flashcardResetProgressConfirm": {
+    "description": "Confirmation dialog body when resetting a single deck's progress",
+    "x_machine_translated": true
+  },
+  "flashcardRestartAll": "అన్నీ రీసెట్ చేయండి",
+  "@flashcardRestartAll": {
+    "description": "Button label in the My Decks section header to reset progress across all decks",
+    "x_machine_translated": true
+  },
+  "flashcardRestartAllConfirm": "ప్రతి డెక్ యొక్క మొత్తం పురోగతిని రీసెట్ చేయాలా? అన్ని కార్డులు మళ్ళీ డ్యూ అవుతాయి.",
+  "@flashcardRestartAllConfirm": {
+    "description": "Confirmation dialog body when resetting all decks' progress",
+    "x_machine_translated": true
+  },
+  "flashcardProgressReset": "పురోగతి రీసెట్ చేయబడింది",
+  "@flashcardProgressReset": {
+    "description": "Snackbar message shown after a deck's review progress has been cleared",
+    "x_machine_translated": true
+  },
   "tourSkip": "దాటవేయండి",
   "@tourSkip": {
     "description": "Button that dismisses the first-login tour without finishing it",

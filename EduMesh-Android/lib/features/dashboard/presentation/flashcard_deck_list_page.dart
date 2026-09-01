@@ -62,6 +62,34 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
     if (mounted) await _load();
   }
 
+  Future<void> _confirmRestartAll() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.flashcardRestartAll),
+        content: Text(l10n.flashcardRestartAllConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.buttonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.flashcardRestartAll),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await FlashcardService().resetAllProgress();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.flashcardProgressReset)),
+    );
+    await _load();
+  }
+
   List<FlashcardDeck> _filtered(Iterable<FlashcardDeck> decks) {
     final q = _query.trim().toLowerCase();
     if (q.isEmpty) return decks.toList();
@@ -182,6 +210,16 @@ class _FlashcardDeckListPageState extends State<FlashcardDeckListPage> {
               style: tt.labelLarge?.copyWith(color: cs.secondary),
             ),
           ),
+          if (localDecks.any((d) => d.dueCount < d.cards.length)) ...[
+            SizedBox(width: AppSpacing.md.w),
+            GestureDetector(
+              onTap: _confirmRestartAll,
+              child: Text(
+                l10n.flashcardRestartAll,
+                style: tt.labelLarge?.copyWith(color: cs.error),
+              ),
+            ),
+          ],
         ],
       ),
       SizedBox(height: AppSpacing.md.h),

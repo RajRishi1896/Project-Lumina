@@ -1829,6 +1829,31 @@
     },
     "x_machine_translated": true
   },
+  "flashcardResetProgress": "ಪ್ರಗತಿಯನ್ನು ಮರುಹೊಂದಿಸಿ",
+  "@flashcardResetProgress": {
+    "description": "Popup menu item in deck details to reset SM-2 scheduling progress for all cards in this deck",
+    "x_machine_translated": true
+  },
+  "flashcardResetProgressConfirm": "ಈ ಡೆಕ್‌ನ ಎಲ್ಲಾ ಪ್ರಗತಿಯನ್ನು ಮರುಹೊಂದಿಸಬೇಕೇ? ಎಲ್ಲಾ ಕಾರ್ಡ್‌ಗಳು ಮತ್ತೆ ಬಾಕಿಯಾಗುತ್ತವೆ.",
+  "@flashcardResetProgressConfirm": {
+    "description": "Confirmation dialog body when resetting a single deck's progress",
+    "x_machine_translated": true
+  },
+  "flashcardRestartAll": "ಎಲ್ಲವನ್ನೂ ಮರುಹೊಂದಿಸಿ",
+  "@flashcardRestartAll": {
+    "description": "Button label in the My Decks section header to reset progress across all decks",
+    "x_machine_translated": true
+  },
+  "flashcardRestartAllConfirm": "ಪ್ರತಿ ಡೆಕ್‌ನ ಎಲ್ಲಾ ಪ್ರಗತಿಯನ್ನು ಮರುಹೊಂದಿಸಬೇಕೇ? ಎಲ್ಲಾ ಕಾರ್ಡ್‌ಗಳು ಮತ್ತೆ ಬಾಕಿಯಾಗುತ್ತವೆ.",
+  "@flashcardRestartAllConfirm": {
+    "description": "Confirmation dialog body when resetting all decks' progress",
+    "x_machine_translated": true
+  },
+  "flashcardProgressReset": "ಪ್ರಗತಿ ಮರುಹೊಂದಿಸಲಾಗಿದೆ",
+  "@flashcardProgressReset": {
+    "description": "Snackbar message shown after a deck's review progress has been cleared",
+    "x_machine_translated": true
+  },
   "tourSkip": "ಬಿಟ್ಟುಬಿಡಿ",
   "@tourSkip": {
     "description": "Button that dismisses the first-login tour without finishing it",

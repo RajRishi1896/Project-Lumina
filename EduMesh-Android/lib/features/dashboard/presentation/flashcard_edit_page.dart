@@ -222,6 +222,36 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
     );
   }
 
+  Future<void> _resetProgress() async {
+    final id = widget.deckId;
+    if (id == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.flashcardResetProgress),
+        content: Text(l10n.flashcardResetProgressConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.buttonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.flashcardResetProgress),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await FlashcardService().resetDeckProgress(id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.flashcardProgressReset)),
+    );
+    await _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -246,9 +276,11 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
               onSelected: (value) {
                 if (value == 'delete') _deleteDeck();
                 if (value == 'send') _sendToTeacher();
+                if (value == 'reset') _resetProgress();
               },
               itemBuilder: (ctx) => [
                 PopupMenuItem(value: 'send', child: Text(l10n.flashcardDeckSent)),
+                PopupMenuItem(value: 'reset', child: Text(l10n.flashcardResetProgress)),
                 PopupMenuItem(
                     value: 'delete', child: Text(l10n.flashcardDeleteDeck)),
               ],

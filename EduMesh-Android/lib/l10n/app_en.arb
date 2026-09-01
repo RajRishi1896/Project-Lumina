@@ -1851,6 +1851,26 @@
       }
     }
   },
+  "flashcardResetProgress": "Reset progress",
+  "@flashcardResetProgress": {
+    "description": "Popup menu item in deck details to reset SM-2 scheduling progress for all cards in this deck"
+  },
+  "flashcardResetProgressConfirm": "Reset all progress for this deck? All cards will become due again.",
+  "@flashcardResetProgressConfirm": {
+    "description": "Confirmation dialog body when resetting a single deck's progress"
+  },
+  "flashcardRestartAll": "Restart all",
+  "@flashcardRestartAll": {
+    "description": "Button label in the My Decks section header to reset progress across all decks"
+  },
+  "flashcardRestartAllConfirm": "Reset all progress for every deck? All cards will become due again.",
+  "@flashcardRestartAllConfirm": {
+    "description": "Confirmation dialog body when resetting all decks' progress"
+  },
+  "flashcardProgressReset": "Progress reset",
+  "@flashcardProgressReset": {
+    "description": "Snackbar message shown after a deck's review progress has been cleared"
+  },
   "tourSkip": "Skip",
   "@tourSkip": {
     "description": "Button that dismisses the first-login tour without finishing it"

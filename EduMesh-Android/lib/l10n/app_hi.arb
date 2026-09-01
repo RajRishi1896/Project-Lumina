@@ -1829,6 +1829,31 @@
     },
     "x_machine_translated": true
   },
+  "flashcardResetProgress": "प्रगति रीसेट करें",
+  "@flashcardResetProgress": {
+    "description": "Popup menu item in deck details to reset SM-2 scheduling progress for all cards in this deck",
+    "x_machine_translated": true
+  },
+  "flashcardResetProgressConfirm": "इस डेक की सारी प्रगति रीसेट करें? सभी कार्ड फिर से देय हो जाएंगे।",
+  "@flashcardResetProgressConfirm": {
+    "description": "Confirmation dialog body when resetting a single deck's progress",
+    "x_machine_translated": true
+  },
+  "flashcardRestartAll": "सभी रीसेट करें",
+  "@flashcardRestartAll": {
+    "description": "Button label in the My Decks section header to reset progress across all decks",
+    "x_machine_translated": true
+  },
+  "flashcardRestartAllConfirm": "हर डेक की सारी प्रगति रीसेट करें? सभी कार्ड फिर से देय हो जाएंगे।",
+  "@flashcardRestartAllConfirm": {
+    "description": "Confirmation dialog body when resetting all decks' progress",
+    "x_machine_translated": true
+  },
+  "flashcardProgressReset": "प्रगति रीसेट हो गई",
+  "@flashcardProgressReset": {
+    "description": "Snackbar message shown after a deck's review progress has been cleared",
+    "x_machine_translated": true
+  },
   "tourSkip": "छोड़ें",
   "@tourSkip": {
     "description": "Button that dismisses the first-login tour without finishing it",

@@ -842,6 +842,31 @@
     },
     "x_machine_translated": true
   },
+  "flashcardResetProgress": "முன்னேற்றத்தை மீட்டமை",
+  "@flashcardResetProgress": {
+    "description": "Popup menu item in deck details to reset SM-2 scheduling progress for all cards in this deck",
+    "x_machine_translated": true
+  },
+  "flashcardResetProgressConfirm": "இந்த டெக்கின் அனைத்து முன்னேற்றத்தையும் மீட்டமைக்க வேண்டுமா? அனைத்து கார்டுகளும் மீண்டும் நிலுவையில் வரும்.",
+  "@flashcardResetProgressConfirm": {
+    "description": "Confirmation dialog body when resetting a single deck's progress",
+    "x_machine_translated": true
+  },
+  "flashcardRestartAll": "அனைத்தையும் மீட்டமை",
+  "@flashcardRestartAll": {
+    "description": "Button label in the My Decks section header to reset progress across all decks",
+    "x_machine_translated": true
+  },
+  "flashcardRestartAllConfirm": "ஒவ்வொரு டெக்கின் அனைத்து முன்னேற்றத்தையும் மீட்டமைக்க வேண்டுமா? அனைத்து கார்டுகளும் மீண்டும் நிலுவையில் வரும்.",
+  "@flashcardRestartAllConfirm": {
+    "description": "Confirmation dialog body when resetting all decks' progress",
+    "x_machine_translated": true
+  },
+  "flashcardProgressReset": "முன்னேற்றம் மீட்டமைக்கப்பட்டது",
+  "@flashcardProgressReset": {
+    "description": "Snackbar message shown after a deck's review progress has been cleared",
+    "x_machine_translated": true
+  },
   "tourSkip": "தவிர்க்கவும்",
   "@tourSkip": {
     "description": "Button that dismisses the first-login tour without finishing it",

@@ -1829,6 +1829,31 @@
     },
     "x_machine_translated": true
   },
+  "flashcardResetProgress": "Réinitialiser la progression",
+  "@flashcardResetProgress": {
+    "description": "Popup menu item in deck details to reset SM-2 scheduling progress for all cards in this deck",
+    "x_machine_translated": true
+  },
+  "flashcardResetProgressConfirm": "Réinitialiser toute la progression de ce paquet ? Toutes les cartes redeviendront à étudier.",
+  "@flashcardResetProgressConfirm": {
+    "description": "Confirmation dialog body when resetting a single deck's progress",
+    "x_machine_translated": true
+  },
+  "flashcardRestartAll": "Tout réinitialiser",
+  "@flashcardRestartAll": {
+    "description": "Button label in the My Decks section header to reset progress across all decks",
+    "x_machine_translated": true
+  },
+  "flashcardRestartAllConfirm": "Réinitialiser la progression de tous les paquets ? Toutes les cartes redeviendront à étudier.",
+  "@flashcardRestartAllConfirm": {
+    "description": "Confirmation dialog body when resetting all decks' progress",
+    "x_machine_translated": true
+  },
+  "flashcardProgressReset": "Progression réinitialisée",
+  "@flashcardProgressReset": {
+    "description": "Snackbar message shown after a deck's review progress has been cleared",
+    "x_machine_translated": true
+  },
   "tourSkip": "Passer",
   "@tourSkip": {
     "description": "Button that dismisses the first-login tour without finishing it",

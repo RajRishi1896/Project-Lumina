@@ -193,6 +193,38 @@ class FlashcardService {
     }
   }
 
+  /// Resets all review progress for a deck: ease, interval, due date, counts.
+  /// Cards and deck remain unchanged.
+  Future<void> resetDeckProgress(String deckId) async {
+    final db = await DBHelper().database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.update(
+      'flashcard_reviews_local',
+      {
+        'ease': 2.5,
+        'interval_days': 0,
+        'due_at': now,
+        'reviews_count': 0,
+        'last_reviewed_at': 0,
+      },
+      where: 'card_id IN (SELECT id FROM flashcard_cards_local WHERE deck_id = ?)',
+      whereArgs: [deckId],
+    );
+  }
+
+  /// Resets review progress for every deck.
+  Future<void> resetAllProgress() async {
+    final db = await DBHelper().database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.update('flashcard_reviews_local', {
+      'ease': 2.5,
+      'interval_days': 0,
+      'due_at': now,
+      'reviews_count': 0,
+      'last_reviewed_at': 0,
+    });
+  }
+
   /// Deletes a deck and all its cards + review state.
   Future<void> deleteDeck(String deckId) async {
     final db = await DBHelper().database;
