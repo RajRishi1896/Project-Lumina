@@ -188,8 +188,32 @@ app.add_middleware(
     ] + ["http://localhost:8000", "http://127.0.0.1:8000"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Accept-Encoding"],
 )
+
+# GZip compression for API responses and text content.
+# Skips range requests (video/PDF streaming) and binary content.
+# Minimum 500 bytes to avoid overhead on tiny responses.
+from starlette.middleware.gzip import GZipMiddleware as _GZip
+from starlette.types import ASGIApp, Receive, Scope, Send
+
+class _SmartGZip:
+    """GZip that skips Range requests (video/PDF streaming)."""
+    def __init__(self, app: ASGIApp, minimum_size: int = 500) -> None:
+        self._gzip = _GZip(app, minimum_size=minimum_size)
+        self._plain = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        # Skip compression for Range requests (video/PDF byte-range streaming)
+        has_range = any(
+            k == b"range" for k, _ in scope.get("headers", [])
+        )
+        if scope["type"] == "http" and has_range:
+            await self._plain(scope, receive, send)
+        else:
+            await self._gzip(scope, receive, send)
+
+app.add_middleware(_SmartGZip, minimum_size=500)
 
 # Request ID, structured logging, and rate limiting
 from app.middleware import RequestIDMiddleware, RequestLoggingMiddleware, RateLimitMiddleware
