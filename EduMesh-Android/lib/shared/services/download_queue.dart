@@ -64,6 +64,21 @@ class DownloadQueue extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Cancels a single queued download by resource ID.
+  ///
+  /// If the item is currently being downloaded it will complete but not retry;
+  /// pending items are removed from queue and DB.
+  Future<void> cancel(String resourceId) async {
+    _queue.removeWhere((d) => d.resourceId == resourceId);
+    await DBHelper().removePendingDownload(resourceId);
+    notifyListeners();
+    if (_queue.isEmpty) {
+      _processing = false;
+      try { await WakelockPlus.disable(); } catch (_) {}
+      unawaited(_stopBackgroundServiceIfIdle());
+    }
+  }
+
   /// The resource ID currently being downloaded, or `null` if idle.
   String? get active => _processing && _queue.isNotEmpty ? _queue.first.resourceId : null;
 
@@ -119,6 +134,10 @@ class DownloadQueue extends ChangeNotifier {
       // ponytail: background service is best-effort; download still works in foreground
     }
 
+    int completedCount = 0;
+    int failedCount = 0;
+    String lastCompletedTitle = '';
+
     while (_queue.isNotEmpty) {
       final task = _queue.first;
       String? path;
@@ -152,10 +171,8 @@ class DownloadQueue extends ChangeNotifier {
       }
       if (path != null) {
         try { await DBHelper().removePendingDownload(task.resourceId); } catch (_) {}
-        if (task.title.isNotEmpty) {
-          unawaited(NotificationService().showDownloadComplete(task.title).catchError((_) {}));
-        }
-        unawaited(ActivityTracker().logAction('download', resourceId: task.resourceId, metadata: task.title).catchError((_) {}));
+        completedCount++;
+        lastCompletedTitle = task.title;
         _queue.removeAt(0);
       } else if (task.retries > 0 && !_lastErrorIsPermanent) {
         task.retries--;
@@ -165,12 +182,29 @@ class DownloadQueue extends ChangeNotifier {
         continue; // same task stays at the head
       } else {
         try { await DBHelper().removePendingDownload(task.resourceId); } catch (_) {}
-        if (task.title.isNotEmpty) {
-          unawaited(NotificationService().showDownloadFailed(task.title).catchError((_) {}));
-        }
+        failedCount++;
         _queue.removeAt(0);
       }
       notifyListeners();
+    }
+
+    // Single summary notification instead of per-item.
+    if (completedCount > 0 || failedCount > 0) {
+      final msg = completedCount == 1
+          ? lastCompletedTitle
+          : completedCount > 1
+              ? '$completedCount downloads complete'
+              : '';
+      if (msg.isNotEmpty) {
+        unawaited(NotificationService().showDownloadComplete(msg).catchError((_) {}));
+      }
+      if (completedCount > 0) {
+        final activityMeta = completedCount == 1 ? lastCompletedTitle : '$completedCount resources downloaded';
+        unawaited(ActivityTracker().logAction('download', metadata: activityMeta).catchError((_) {}));
+      }
+      if (failedCount > 0) {
+        unawaited(NotificationService().showDownloadFailed('$failedCount download${failedCount > 1 ? 's' : ''} failed').catchError((_) {}));
+      }
     }
 
     try { await WakelockPlus.disable(); } catch (_) {}

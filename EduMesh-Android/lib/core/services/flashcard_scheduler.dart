@@ -45,7 +45,22 @@ CardSchedule scheduleNext(
       nextEase += 0.10;
   }
 
-  if (nextInterval < 1) nextInterval = 1;
+  // New cards (intervalDays == 0) get staggered starting intervals
+  // so small decks don't all collapse to "due tomorrow".
+  if (intervalDays == 0) {
+    switch (grade) {
+      case ReviewGrade.hard:
+        if (nextInterval < 1) nextInterval = 1;
+      case ReviewGrade.good:
+        if (nextInterval < 1) nextInterval = 1;
+      case ReviewGrade.easy:
+        if (nextInterval < 4) nextInterval = 4;
+      case ReviewGrade.again:
+        break;
+    }
+  } else if (nextInterval < 1) {
+    nextInterval = 1;
+  }
   if (nextEase < 1.3) nextEase = 1.3;
   if (nextEase > 3.0) nextEase = 3.0;
 

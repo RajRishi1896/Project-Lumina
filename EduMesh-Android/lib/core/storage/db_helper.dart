@@ -360,6 +360,13 @@ class DBHelper {
   /// A set of all downloaded resource IDs.
   Future<Set<String>> getDownloadedIds() => _resourceIdSet('downloads');
 
+  /// A set of all resource IDs that belong to a course.
+  Future<Set<String>> getCourseResourceIds() async {
+    final db = await database;
+    final rows = await db.query('course_resources', columns: ['id']);
+    return rows.map((r) => r['id']?.toString() ?? '').where((id) => id.isNotEmpty).toSet();
+  }
+
   /// A list of all downloaded resources ordered by most recent first.
   Future<List<Map<String, dynamic>>> getDownloadedResources() async {
     final db = await database;
@@ -421,21 +428,35 @@ class DBHelper {
   /// Updates in place so archive_id/path/namespace/has_thumbnail survive.
   /// If no row exists yet, inserts a minimal one (INSERT OR IGNORE guards
   /// against a concurrent insert).
-  Future<void> markZimArticleDownloaded(String articleId) async {
+  Future<void> markZimArticleDownloaded(String articleId, {String title = ''}) async {
     final db = await database;
     final updated = await db.update(
       'zim_articles_local',
-      {'is_downloaded': 1},
+      {'is_downloaded': 1, if (title.isNotEmpty) 'title': title},
       where: 'article_id = ?',
       whereArgs: [articleId],
     );
     if (updated == 0) {
       await db.insert('zim_articles_local', {
         'article_id': articleId,
-        'title': '',
+        'title': title,
         'is_downloaded': 1,
       }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
+  }
+
+  /// Records a quiz download in the downloads table for tracking.
+  Future<void> recordQuizDownload(String resourceId, String title, String subject, String grade) async {
+    final db = await database;
+    await db.insert('downloads', {
+      'resource_id': resourceId,
+      'local_path': 'quiz_cache',
+      'title': title,
+      'subject': subject,
+      'grade': grade,
+      'type': 'quiz',
+      'downloaded_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Returns the IDs of all ZIM articles that have been downloaded locally.
@@ -487,6 +508,19 @@ class DBHelper {
     try {
       return jsonDecode(rows.first['quiz_json'] as String) as Map<String, dynamic>;
     } catch (_) { return null; }
+  }
+
+  /// Removes a cached quiz by [cacheKey].
+  Future<void> removeCachedQuiz(String cacheKey) async {
+    final db = await database;
+    await db.delete('quiz_cache', where: 'cache_key = ?', whereArgs: [cacheKey]);
+  }
+
+  /// Returns the set of quiz cache keys that exist in the cache.
+  Future<Set<String>> getCachedQuizKeys() async {
+    final db = await database;
+    final rows = await db.query('quiz_cache', columns: ['cache_key']);
+    return rows.map((r) => r['cache_key'] as String).toSet();
   }
 }
 

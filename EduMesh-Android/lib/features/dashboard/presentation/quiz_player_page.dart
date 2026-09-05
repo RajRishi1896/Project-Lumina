@@ -10,6 +10,7 @@ import 'package:edumesh_android/core/services/course_service.dart';
 import 'package:edumesh_android/core/system_ui/lumina_system_ui.dart';
 import 'package:edumesh_android/core/services/mutation_queue.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'package:edumesh_android/shared/widgets/mini_player_controller.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
@@ -105,6 +106,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   final TextEditingController _fillController = TextEditingController();
   double _bestScore = 0.0;
   int _totalAttempts = 0;
+  Map<String, dynamic> _answerKey = {};
 
   bool get _isStandalone => widget.resourceModel != null;
 
@@ -155,9 +157,12 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
 
   /// Parses [quiz], shuffles it per its mode, renders it, and starts the
   /// timer plus best-attempt fetch. Shared by all load paths.
-  void _applyQuiz(Quiz quiz) {
+  /// [answerKey] is the offline grading map from `_answer_key` in the quiz JSON.
+  void _applyQuiz(Quiz quiz, {Map<String, dynamic>? answerKey}) {
     final questions = List<QuizQuestion>.from(quiz.questions);
     _applyShuffle(quiz, questions);
+    if (answerKey != null) _answerKey = answerKey;
+    _injectAnswerKey(questions);
     if (!mounted) return;
     setState(() {
       _quiz = quiz;
@@ -169,9 +174,36 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     _fetchBestAttempt();
   }
 
+  /// Injects the offline answer key into questions so `_isAnswerCorrect`
+  /// works without a server response. Called during quiz load.
+  void _injectAnswerKey(List<QuizQuestion> questions) {
+    if (_answerKey.isEmpty) return;
+    for (int i = 0; i < questions.length; i++) {
+      final q = questions[i];
+      final key = _answerKey[q.id];
+      if (key is! Map) continue;
+      final correctAnswer = key['correct_answer']?.toString();
+      final rawCorrect = key['correct_answers'];
+      final correctAnswers = rawCorrect is List
+          ? rawCorrect.map((e) => e.toString()).toList()
+          : q.correctAnswers;
+      questions[i] = QuizQuestion(
+        id: q.id,
+        type: q.type,
+        image: q.image,
+        question: q.question,
+        options: q.options,
+        correctAnswer: correctAnswer ?? q.correctAnswer,
+        correctAnswers: correctAnswers,
+        explanation: q.explanation,
+        exactMatch: q.exactMatch,
+      );
+    }
+  }
+
   Future<void> _loadQuiz() async {
     if (widget.quizData != null) {
-      _applyQuiz(Quiz.fromJson(widget.quizData!));
+      _applyQuiz(Quiz.fromJson(widget.quizData!), answerKey: widget.quizData!['_answer_key'] != null ? Map<String, dynamic>.from(widget.quizData!['_answer_key']) : null);
       return;
     }
 
@@ -181,14 +213,14 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       if (resp.statusCode == 200 && resp.data is Map) {
         final quizData = resp.data as Map<String, dynamic>;
         await DBHelper().cacheQuiz(cacheKey, quizData);
-        _applyQuiz(Quiz.fromJson(quizData));
+        _applyQuiz(Quiz.fromJson(quizData), answerKey: quizData['_answer_key'] != null ? Map<String, dynamic>.from(quizData['_answer_key']) : null);
         return;
       }
     } catch (_) {}
 
     final cached = await DBHelper().getCachedQuiz(cacheKey);
     if (cached != null) {
-      _applyQuiz(Quiz.fromJson(cached));
+      _applyQuiz(Quiz.fromJson(cached), answerKey: cached['_answer_key'] != null ? Map<String, dynamic>.from(cached['_answer_key']) : null);
       return;
     }
 
@@ -436,6 +468,27 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     setState(() => _currentIndex = index);
   }
 
+  void _confirmQuit() {
+    final l10n = AppLocalizations.of(context)!;
+    showLuminaDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.quizQuitTitle),
+        content: Text(l10n.quizQuitConfirm),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.buttonCancel)),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _submitQuiz(autoSubmit: true);
+            },
+            child: Text(l10n.quizSubmit),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -499,6 +552,10 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       backgroundColor: cs.surface,
       body: PopScope(
         canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          _confirmQuit();
+        },
         child: SafeArea(
           child: Column(
             children: [
@@ -553,28 +610,30 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                       ),
                       SizedBox(height: AppSpacing.xl.h),
                       ..._buildOptions(q, cs, tt, l10n),
-                      if (isLast) ...[
-                        SizedBox(height: AppSpacing.xxl.h),
-                        SizedBox(
-                          width: double.infinity,
-                          height: AppSpacing.touchTarget,
-                          child: FilledButton(
-                            onPressed: _submitted ? null : _submitQuiz,
-                            child: Text(
-                              l10n.quizSubmit,
-                              style: tt.labelLarge?.copyWith(
-                                fontWeight: AppSpacing.weightStrong,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                   ),
                 ),
               ),
               ),
+              if (isLast)
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w)
+                      .copyWith(bottom: AppSpacing.md.h),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: AppSpacing.touchTarget,
+                    child: FilledButton(
+                      onPressed: _submitted ? null : _submitQuiz,
+                      child: Text(
+                        l10n.quizSubmit,
+                        style: tt.labelLarge?.copyWith(
+                          fontWeight: AppSpacing.weightStrong,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               _buildBottomNav(cs, tt, l10n),
             ],
           ),

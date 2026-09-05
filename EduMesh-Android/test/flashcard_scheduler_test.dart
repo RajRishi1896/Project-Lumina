@@ -41,13 +41,17 @@ void main() {
 
   // Cases folded from test/fix_regressions_test.dart (rating-tile semantics).
 
-  test('brand-new card (ease 2.5, interval 0): every grade yields the minimum 1-day step', () {
-    for (final grade in ReviewGrade.values) {
+  test('brand-new card (ease 2.5, interval 0): Again/Hard/Good yield 1 day, Easy yields 4', () {
+    for (final grade in [ReviewGrade.again, ReviewGrade.hard, ReviewGrade.good]) {
       final next = scheduleNext(grade, 2.5, 0, 1000);
       expect(next.intervalDays, 1,
           reason: '$grade on a new card must produce the 1-day floor');
       expect(next.dueAt, 1000 + dayMs);
     }
+    final easyNext = scheduleNext(ReviewGrade.easy, 2.5, 0, 1000);
+    expect(easyNext.intervalDays, 4,
+        reason: 'Easy on a new card must jump to 4 days');
+    expect(easyNext.dueAt, 1000 + 4 * dayMs);
   });
 
   test('Again always yields the minimum 1-day step regardless of prior interval', () {
