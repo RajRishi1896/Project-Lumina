@@ -3,7 +3,6 @@ import os
 import uuid
 import asyncio
 import logging
-import shutil
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Query
 from app.database import UPLOAD_DIR, gen_composite_uid
 from app.audit import audit, Action
@@ -35,7 +34,7 @@ _TYPE_ALIASES = {"khan": "videos", "video": "videos", "textbooks": "textbook",
              summary="Upload a resource", tags=["Resources"],
              description="Uploads a resource file with metadata. Validates extension, subject, grade, language, and type; enforces duplicate detection unless force_upload is set.",
              responses={400: {"description": "Validation or upload failure"}, 401: {"description": "Unauthorized"}, 409: {"description": "Duplicate resource (use force_upload to override)"}, 499: {"description": "Client disconnected"}, 507: {"description": "Hub storage full"}})
-async def upload_resource(title: str = Query(..., description="Display title"),
+async def upload_resource(title: str = Query(..., description="Display title"),  # noqa: PLR0913
                           type: str = Query(..., description="Resource type"),
                           subject: str = Query("General", description="Subject"),
                           grade: str = Query("General", description="Grade level"),

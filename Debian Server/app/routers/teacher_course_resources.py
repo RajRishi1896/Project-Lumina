@@ -8,11 +8,10 @@ import asyncio
 import sqlite3
 import shutil
 import zipfile
-import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
-from app.database import UPLOAD_DIR, DB_PATH, gen_composite_uid
+from app.database import DB_PATH, gen_composite_uid
 from app.audit import audit, Action
 from app.async_db import db_fetch, db_fetch_one
 from app.dependencies import verify_teacher
@@ -77,7 +76,7 @@ async def _stage_zip(file: UploadFile):
     return tmp_dir, archive_path
 
 
-def _extract_into_course(conn_sql, zf, course_id, next_pos,
+def _extract_into_course(conn_sql, zf, course_id, next_pos,  # noqa: PLR0913
                          res_topic_map=None, old_to_new_topic=None):
     """Extract quiz_*.json, assets/, and resources/ ZIP entries into a course.
 
@@ -147,7 +146,7 @@ def _extract_into_course(conn_sql, zf, course_id, next_pos,
              description="Uploads a single resource file to a course. Accepts multipart form data with an optional title and topic assignment.",
              response_model=dict,
              responses={200: {"description": "Uploaded course_resources row"}, 400: {"description": "Disallowed file type"}, 404: {"description": "Course not found"}})
-async def upload_course_resource(
+async def upload_course_resource(  # noqa: PLR0913
     course_id: str,
     resource_type: str = Query(..., description="Resource type"),
     title: str = Query("", description="Display title"),

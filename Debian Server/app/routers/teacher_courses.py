@@ -1,9 +1,8 @@
 """Teacher course management: CRUD, publishing, and shared helpers."""
 import os
 import asyncio
-import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, Query
 from app.database import UPLOAD_DIR, gen_composite_uid
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run

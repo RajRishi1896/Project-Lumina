@@ -88,7 +88,7 @@ async def update_topic(course_id: str, topic_id: str, data: dict, teacher_user: 
                description="Deletes a topic, optionally transferring or hard-deleting its resources.",
                response_model=dict,
                responses={200: {"description": "Topic deleted"}, 404: {"description": "Topic or transfer target not found"}})
-async def delete_topic(course_id: str, topic_id: str,
+async def delete_topic(course_id: str, topic_id: str,  # noqa: PLR0913
                        transfer_to: Optional[str] = Query(None, description="Transfer resources to this topic before deleting"),
                        delete_resources: bool = Query(False, description="Delete all resources in this topic"),
                        teacher_user: str = Depends(verify_teacher), request: Request = None):

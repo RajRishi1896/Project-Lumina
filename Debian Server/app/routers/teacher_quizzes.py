@@ -3,7 +3,6 @@ import os
 import uuid
 import json
 import asyncio
-import logging
 from fastapi import APIRouter, Depends, HTTPException
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch_one

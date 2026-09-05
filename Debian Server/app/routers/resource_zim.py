@@ -101,7 +101,7 @@ async def upload_zim(file: UploadFile = File(...), title: str = Form(""), teache
         await asyncio.to_thread(shutil.rmtree, tmp_dir, True)
 
 
-def _process_zim_archive(archive_path: str, filename: str, teacher_user: str, tmp_dir: str, title: str = "", original_name: str = ""):
+def _process_zim_archive(archive_path: str, filename: str, teacher_user: str, tmp_dir: str, title: str = "", original_name: str = ""):  # noqa: PLR0913
     """Index ZIM archive in DB. No HTML extraction."""
     try:
         return _process_with_libzim(archive_path, filename, teacher_user, title, original_name)

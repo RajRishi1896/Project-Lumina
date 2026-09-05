@@ -198,4 +198,4 @@ if __name__ == "__main__":
                        {"q1": {"answer": "1"}}, 0) is True
     assert _is_correct({"id": "q2", "type": "multi_select", "correct_answers": ["a", "b"]},
                        {"q2": {"multi_answers": ["b", "a"]}}, 1) is True
-    print("quiz_grading self-check OK")
+    print("quiz_grading self-check OK")  # noqa: T201

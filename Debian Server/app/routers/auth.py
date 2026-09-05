@@ -5,7 +5,7 @@ import sqlite3
 
 import asyncio
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, Form, status
+from fastapi import APIRouter, HTTPException, Request, Response, Form, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from app.async_db import db_exec, db_fetch_one, db_run
 from app.audit import audit, Action

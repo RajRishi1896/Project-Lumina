@@ -3,7 +3,6 @@
 Covers: deck creation/cards, student submit, teacher approve/reject workflow,
 role enforcement (student cannot approve), deck ownership, and validation.
 """
-import json
 import uuid
 
 from app.async_db import db_exec

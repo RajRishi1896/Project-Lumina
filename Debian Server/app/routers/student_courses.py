@@ -58,7 +58,7 @@ async def get_similar_courses(student_id: str = Depends(verify_student)):
             description="Returns paginated course catalog with optional filters for subject, grade, language, and search.",
             tags=["Courses"],
             responses={401: {"description": "Unauthorized"}})
-async def list_courses(
+async def list_courses(  # noqa: PLR0913
     subject: Optional[str] = Query(None, description="Filter by subject"),
     grade: Optional[int] = Query(None, description="Filter by grade"),
     language: Optional[str] = Query(None, description="Filter by language (ISO 639-1)"),

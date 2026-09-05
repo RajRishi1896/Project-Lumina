@@ -54,7 +54,7 @@ def _catalog_item_dict(r: tuple, mtime: float) -> dict:
             summary="List all resources (alias)", tags=["Resources"],
             description="Alias of GET /resources for the Flutter client catalog sync.",
             responses={401: {"description": "Unauthorized"}})
-async def list_resources(
+async def list_resources(  # noqa: PLR0913
     _: str = Depends(verify_user),
     subject: Optional[str] = Query(None, description="Filter by subject"),
     grade: Optional[int] = Query(None, description="Filter by grade"),

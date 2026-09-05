@@ -18,7 +18,7 @@ router = APIRouter()
             description="Returns the most recent admin action log entries. Supports filtering by action, user, severity, success, date range, and request ID. Admin-only.",
             tags=["Admin"],
             responses={401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
-async def admin_log(
+async def admin_log(  # noqa: PLR0913
     limit: int = Query(default=50, ge=1, le=500),
     action: Optional[str] = Query(default=None),
     user: Optional[str] = Query(default=None),

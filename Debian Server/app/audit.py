@@ -132,7 +132,7 @@ class Severity:
 
 # === Core logging function ===
 
-async def audit(
+async def audit(  # noqa: PLR0913
     action: str,
     username: str = "",
     *,
