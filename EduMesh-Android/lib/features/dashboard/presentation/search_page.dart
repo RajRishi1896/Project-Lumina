@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
-import 'dart:convert';
 import 'dart:io';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
@@ -17,12 +16,15 @@ import '../../../core/services/activity_tracker.dart';
 import '../../../shared/services/download_queue.dart';
 import '../../../shared/services/connectivity_service.dart';
 import '../../../shared/services/zim_sync_service.dart';
+import '../../../shared/services/zim_download_helper.dart';
 import '../../../core/services/catalog_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../shared/widgets/resource_thumbnail.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
-import 'resource_detail_page.dart';
 import 'kiwix_view.dart';
+import '../../../shared/widgets/pdf_viewer_page.dart';
+import '../../../shared/widgets/video_player_page.dart';
+import 'quiz_player_page.dart';
 import '../../../core/services/recent_resources.dart';
 
 /// A page for browsing, searching, and filtering all available resources.
@@ -246,29 +248,34 @@ class _SearchPageState extends State<SearchPage> {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
     try {
+      // Try new file-based save first (assets as separate files).
+      final savedPath = await ZimDownloadHelper.findSavedArticle(articleId);
+      if (savedPath != null) {
+        if (!mounted) return;
+        unawaited(RecentResources.record(articleId, title, 'kiwix'));
+        unawaited(Navigator.push(context, luminaRoute(
+          builder: (_) => KiwixView(filePath: savedPath, title: title),
+        )));
+        return;
+      }
+      // Legacy: single-file fallback.
       String? html;
-      // Try reading from local file first (offline support)
       try {
         final dir = await getApplicationDocumentsDirectory();
         final file = File('${dir.path}/zim_${articleId.replaceAll('/', '_')}.html');
-        if (await file.exists()) {
-          html = await file.readAsString();
-        }
+        if (await file.exists()) html = await file.readAsString();
       } catch (_) {}
-      // Fall back to SharedPreferences cache
       if (html == null) {
         try {
           final prefs = await SharedPreferences.getInstance();
           html = prefs.getString('zim_page_$articleId');
         } catch (_) {}
       }
-      // Fetch from server if not cached locally
       if (html == null) {
         final response = await ApiClient.get('/zim/page', queryParameters: {
           'article_id': articleId,
         }).timeout(const Duration(seconds: 8));
-        final pageData = response.data;
-        html = pageData?['html']?.toString() ?? '';
+        html = response.data?['html']?.toString() ?? '';
       }
       if (!mounted) return;
       if (html.isNotEmpty) {
@@ -289,53 +296,11 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> _downloadArticle({
     required String articleId,
     required String archiveId,
+    String title = '',
   }) async {
     try {
-      final res = await ApiClient.get('/zim/page', queryParameters: {
-        'article_id': articleId,
-      }).timeout(const Duration(seconds: 10));
-      var html = res.data['html'] as String? ?? '';
-      if (html.isEmpty) return;
-
-      // Inline all asset references as data URIs for full offline support.
-      // Group 1 must span the FULL url incl. optional &h=: a truncated url
-      // leaves '&h=...' tails in data URIs and cross-corrupts same-prefix paths.
-      final assetPattern = RegExp(r"""(/zim/asset\?archive_id=[^"'&]+&path=([^"'&]+)(?:&h=[^"'&]+)?)""");
-      const assetBasePath = '/zim/asset';
-      final matches = assetPattern.allMatches(html).toList();
-      // ponytail: fetch assets concurrently (5 at a time) instead of sequentially.
-      // A page with 20 images goes from 20 serial calls to ~4 batches.
-      const concurrency = 5;
-      for (var i = 0; i < matches.length; i += concurrency) {
-        final batch = matches.sublist(i, (i + concurrency).clamp(0, matches.length));
-        await Future.wait(batch.map((m) async {
-          final fullUrl = m.group(1)!;
-          final assetPath = Uri.decodeComponent(m.group(2)!);
-          try {
-            final assetResp = await ApiClient.get(assetBasePath, queryParameters: {
-              'archive_id': archiveId,
-              'path': assetPath,
-            }).timeout(const Duration(seconds: 5));
-            if (assetResp.data is List<int>) {
-              final bytes = assetResp.data as List<int>;
-              final mime = _guessMime(assetPath);
-              final b64 = base64Encode(bytes);
-              final dataUri = 'data:$mime;base64,$b64';
-              html = html.replaceAll(fullUrl, dataUri);
-            }
-          } catch (_) {
-            // Asset fetch failed: leave URL as-is, WebView may still load it online.
-          }
-        }));
-      }
-
-      // Save self-contained HTML to disk (the prefs mirror write was removed:
-      // raw HTML blobs do not belong in SharedPreferences).
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/zim_${articleId.replaceAll('/', '_')}.html');
-      await file.writeAsString(html);
-
-      await ZimSyncService.instance.markDownloaded(articleId);
+      await ZimDownloadHelper.saveArticle(articleId: articleId, archiveId: archiveId);
+      await ZimSyncService.instance.markDownloaded(articleId, title: title);
       if (mounted) setState(() {});
     } catch (e) {
       if (mounted) {
@@ -345,28 +310,14 @@ class _SearchPageState extends State<SearchPage> {
           action: SnackBarAction(label: l10n.buttonRetry, onPressed: () => _downloadArticle(
             articleId: articleId,
             archiveId: archiveId,
+            title: title,
           )),
         ));
       }
     }
   }
 
-  String _guessMime(String path) {
-    final ext = path.split('.').last.toLowerCase();
-    const mimeMap = {
-      'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
-      'gif': 'image/gif', 'svg': 'image/svg+xml', 'webp': 'image/webp',
-      'css': 'text/css', 'js': 'application/javascript',
-      'woff': 'font/woff', 'woff2': 'font/woff2', 'ttf': 'font/ttf',
-      'mp4': 'video/mp4', 'webm': 'video/webm',
-    };
-    return mimeMap[ext] ?? 'application/octet-stream';
-  }
-
   Widget _buildDownloadButton(ResourceModel original, ColorScheme cs) {
-    // Quizzes live in the DB, not behind /files: a download control would
-    // always fail and leave a permanently pending item.
-    if (original.type == ResourceType.quiz) return const SizedBox.shrink();
     final resourceId = original.id.toString();
     final isDownloaded = _downloadedIds.contains(resourceId);
     final isDownloading = _downloadingIds.contains(resourceId);
@@ -398,8 +349,19 @@ class _SearchPageState extends State<SearchPage> {
           : () async {
         final messenger = ScaffoldMessenger.of(context);
         final l10n = AppLocalizations.of(context)!;
+
+        if (original.type == ResourceType.quiz) {
+          _toggleQuizDownload(original, resourceId, messenger, l10n);
+          return;
+        }
+
         if (isDownloaded) {
           await DownloadService().deleteDownload(resourceId);
+          if (original.type == ResourceType.kiwix) {
+            var zimId = original.id;
+            if (zimId.startsWith('zim_')) zimId = zimId.substring(4);
+            ZimSyncService.instance.unmarkDownloaded(zimId);
+          }
           if (mounted) {
             setState(() => _downloadedIds.remove(resourceId));
           }
@@ -467,6 +429,50 @@ class _SearchPageState extends State<SearchPage> {
         }
       },
     );
+  }
+
+  Future<void> _toggleQuizDownload(
+    ResourceModel quiz, String resourceId,
+    ScaffoldMessengerState messenger, AppLocalizations l10n,
+  ) async {
+    if (_downloadedIds.contains(resourceId)) {
+      final cacheKey = '${quiz.id}_${quiz.id}';
+      await DBHelper().removeCachedQuiz(cacheKey);
+      await DBHelper().removeDownload(resourceId);
+      if (mounted) setState(() => _downloadedIds.remove(resourceId));
+      messenger.showSnackBar(SnackBar(
+        content: Text(l10n.snackbarDownloadRemoved),
+        duration: const Duration(milliseconds: 600),
+      ));
+      return;
+    }
+
+    setState(() => _downloadingIds.add(resourceId));
+    try {
+      final resp = await ApiClient.get('/api/quiz-resource/$resourceId')
+          .timeout(const Duration(seconds: 10));
+      if (resp.statusCode == 200 && resp.data is Map) {
+        final cacheKey = '${quiz.id}_${quiz.id}';
+        await DBHelper().cacheQuiz(cacheKey, Map<String, dynamic>.from(resp.data));
+        await DBHelper().recordQuizDownload(resourceId, quiz.title, quiz.subject, quiz.grade);
+        if (mounted) {
+          setState(() {
+            _downloadingIds.remove(resourceId);
+            _downloadedIds.add(resourceId);
+          });
+        }
+        messenger.showSnackBar(SnackBar(
+          content: Text(l10n.snackbarDownloadComplete),
+          duration: const Duration(seconds: 2),
+        ));
+      } else {
+        if (mounted) setState(() => _downloadingIds.remove(resourceId));
+        messenger.showSnackBar(SnackBar(content: Text(l10n.snackbarDownloadFailed)));
+      }
+    } catch (_) {
+      if (mounted) setState(() => _downloadingIds.remove(resourceId));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.snackbarDownloadFailed)));
+    }
   }
 
 
@@ -1034,21 +1040,27 @@ class _SearchPageState extends State<SearchPage> {
                             ));
                             return;
                           }
-                          Navigator.push(
-                            context,
-                            luminaRoute(
-                              builder: (_) => ResourceDetailPage(
-                                title: item['title'] as String? ?? '',
-                                subject: original.subject,
-                                grade: original.grade,
-                                resourceType: original.type.name,
-                                isInitiallySaved:
-                                    _savedStatuses[original.id] ?? false,
-                                resourceId: original.id.toString(),
-                                resource: original as ResourceModel?,
-                              ),
-                            ),
-                          );
+                          unawaited(RecentResources.record(original.id.toString(), original.title, original.type.name));
+                          unawaited(ActivityTracker().logAction('view', resourceId: original.id.toString(), metadata: original.title));
+                          if (original.type == ResourceType.quiz) {
+                            Navigator.push(context, luminaRoute(
+                              builder: (_) => QuizPlayerPage.fromResource(original),
+                            ));
+                          } else if (original.type == ResourceType.videos) {
+                            final url = original.pdfUrl?.isNotEmpty == true
+                                ? original.pdfUrl!
+                                : '${ApiClient.fileBaseUrl}/files/${original.id}';
+                            Navigator.push(context, luminaRoute(
+                              builder: (_) => VideoPlayerPage(title: original.title, videoUrl: url, subject: original.subject),
+                            ));
+                          } else {
+                            final url = original.pdfUrl?.isNotEmpty == true
+                                ? original.pdfUrl!
+                                : '${ApiClient.fileBaseUrl}/files/${original.id}';
+                            Navigator.push(context, luminaRoute(
+                              builder: (_) => PdfViewerPage(title: original.title, pdfUrl: url, subject: original.subject),
+                            ));
+                          }
                         },
                       );
                     },
@@ -1150,6 +1162,7 @@ class _SearchPageState extends State<SearchPage> {
                   : () => _downloadArticle(
                         articleId: zimArticle.articleId,
                         archiveId: zimArticle.archiveId,
+                        title: zimArticle.title,
                       ),
             ),
           Icon(Icons.chevron_right, color: cs.onSurfaceVariant),

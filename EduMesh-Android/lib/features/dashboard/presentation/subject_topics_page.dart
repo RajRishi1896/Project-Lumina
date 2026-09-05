@@ -12,6 +12,7 @@ import 'package:edumesh_android/core/utils/file_utils.dart';
 import 'package:edumesh_android/shared/services/connectivity_service.dart';
 import 'package:edumesh_android/shared/services/download_queue.dart';
 import 'package:edumesh_android/shared/services/download_service.dart';
+import 'package:edumesh_android/shared/services/zim_sync_service.dart';
 import 'package:edumesh_android/shared/widgets/resource_thumbnail.dart';
 import 'package:edumesh_android/shared/widgets/video_player_page.dart';
 import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
@@ -232,6 +233,11 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
       onPressed: () async {
         if (isDownloaded) {
           await DownloadService().deleteDownload(resourceId);
+          if (item.type == ResourceType.kiwix) {
+            var zimId = item.id.toString();
+            if (zimId.startsWith('zim_')) zimId = zimId.substring(4);
+            ZimSyncService.instance.unmarkDownloaded(zimId);
+          }
           if (mounted) setState(() => _downloadedIds.remove(resourceId));
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(

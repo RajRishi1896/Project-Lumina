@@ -104,8 +104,16 @@ class ZimSyncService {
   }
 
   /// Marks an article as downloaded in the local DB and in-memory set.
-  Future<void> markDownloaded(String articleId) async {
-    await DBHelper().markZimArticleDownloaded(articleId);
+  Future<void> markDownloaded(String articleId, {String title = ''}) async {
+    await DBHelper().markZimArticleDownloaded(articleId, title: title);
     _downloadedIds.add(articleId);
+  }
+
+  /// Removes an article from the in-memory downloaded set.
+  ///
+  /// Call after deleting a ZIM article's files/DB record so the browse
+  /// UI stops showing it as downloaded.
+  void unmarkDownloaded(String articleId) {
+    _downloadedIds.remove(articleId);
   }
 }

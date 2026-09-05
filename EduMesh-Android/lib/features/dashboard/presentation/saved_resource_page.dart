@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'dart:io';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
@@ -11,6 +11,8 @@ import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'package:edumesh_android/core/utils/file_utils.dart';
 import 'package:edumesh_android/shared/services/download_service.dart';
 import 'package:edumesh_android/shared/services/download_queue.dart';
+import 'package:edumesh_android/shared/services/zim_sync_service.dart';
+import 'package:edumesh_android/shared/services/zim_download_helper.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/shared/widgets/pdf_viewer_page.dart';
@@ -22,6 +24,70 @@ import 'course_player_page.dart';
 import 'quiz_player_page.dart';
 import 'kiwix_view.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
+
+void _showDownloadQueue(BuildContext context) {
+  final cs = Theme.of(context).colorScheme;
+  final tt = Theme.of(context).textTheme;
+  final l10n = AppLocalizations.of(context)!;
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16.r))),
+    builder: (_) => DraggableScrollableSheet(
+      initialChildSize: 0.5, minChildSize: 0.25, maxChildSize: 0.85,
+      expand: false,
+      builder: (context, scrollController) {
+        return ListenableBuilder(
+          listenable: DownloadQueue(),
+          builder: (context, _) {
+            final queue = DownloadQueue();
+            final ids = queue.queuedIds.toList();
+            final active = queue.active;
+            return Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+                  child: Row(children: [
+                    Expanded(child: Text(l10n.downloadQueueTitle,
+                      style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700))),
+                    if (ids.isNotEmpty)
+                      TextButton(onPressed: () { queue.clear(); Navigator.pop(context); },
+                        child: Text(l10n.downloadQueueClearAll, style: TextStyle(color: cs.error))),
+                  ]),
+                ),
+                if (ids.isEmpty)
+                  Expanded(child: Center(child: Text(l10n.downloadQueueEmpty,
+                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant))))
+                else
+                  Expanded(child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: ids.length,
+                    itemBuilder: (_, i) {
+                      final id = ids[i];
+                      final isActive = id == active;
+                      return ListTile(
+                        leading: isActive
+                          ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.w))
+                          : Icon(Icons.hourglass_empty_rounded, color: cs.onSurfaceVariant),
+                        title: Text(id, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: tt.bodyMedium),
+                        subtitle: isActive ? Text(l10n.downloadQueueDownloading,
+                          style: tt.bodySmall?.copyWith(color: cs.primary)) : null,
+                        trailing: IconButton(
+                          icon: Icon(Icons.close, size: 18, color: cs.onSurfaceVariant),
+                          onPressed: () => queue.cancel(id),
+                        ),
+                      );
+                    },
+                  )),
+              ],
+            );
+          },
+        );
+      },
+    ),
+  );
+}
 
 /// A page that displays the user's bookmarked resources, organised into
 /// tabs for each resource type plus enrolled courses.
@@ -39,6 +105,7 @@ class SavedResourcesPage extends StatelessWidget {
 
     return DefaultTabController(
       length: 8,
+      animationDuration: LuminaTransitions.globalEnabled ? kTabScrollDuration : Duration.zero,
       child: Scaffold(
         backgroundColor: cs.surface,
         appBar: AppBar(
@@ -49,6 +116,22 @@ class SavedResourcesPage extends StatelessWidget {
             l10n.savedResourcesTitle,
             style: tt.titleMedium?.copyWith(fontSize: 16.sp, color: cs.onSurface),
           ),
+          actions: [
+            ListenableBuilder(
+              listenable: DownloadQueue(),
+              builder: (context, _) {
+                final count = DownloadQueue().queuedIds.length;
+                return IconButton(
+                  onPressed: () => _showDownloadQueue(context),
+                  icon: Badge(
+                    isLabelVisible: count > 0,
+                    label: Text('$count', style: TextStyle(fontSize: 10.sp, color: Colors.white)),
+                    child: Icon(Icons.download_rounded, color: cs.onSurfaceVariant),
+                  ),
+                );
+              },
+            ),
+          ],
           bottom: TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.start,
@@ -188,9 +271,15 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       }
 
       final all = merged.values.toList();
-      final items = widget.type != null
-          ? all.where((r) => r.type == widget.type!).toList()
-          : all;
+      // In the "All" tab, exclude individual resources that belong to a
+      // course (they are shown in the Courses tab as course cards).
+      List<ResourceModel> items;
+      if (widget.type == null) {
+        final courseResourceIds = await db.getCourseResourceIds();
+        items = all.where((r) => !courseResourceIds.contains(r.id)).toList();
+      } else {
+        items = all.where((r) => r.type == widget.type!).toList();
+      }
       final ids = await db.getDownloadedIds();
       final removedIds = downloadRows
           .where((r) => (r['server_removed'] as num? ?? 0) == 1)
@@ -226,6 +315,39 @@ class _SavedListByTypeState extends State<_SavedListByType> {
     }
   }
 
+  Future<void> _downloadZimArticle(String articleId, {String title = ''}) async {
+    try {
+      // Look up archive_id from local DB, or fetch from server.
+      String archiveId = '';
+      final db = DBHelper();
+      final rows = await db.database;
+      final zimRows = await rows.query('zim_articles_local',
+          columns: ['archive_id'], where: 'article_id = ?', whereArgs: [articleId]);
+      if (zimRows.isNotEmpty) {
+        archiveId = zimRows.first['archive_id'] as String? ?? '';
+      }
+      if (archiveId.isEmpty) {
+        final resp = await ApiClient.get('/zim/articles', queryParameters: {
+          'limit': '1', 'offset': '0',
+        }).timeout(const Duration(seconds: 8));
+        final articles = (resp.data['articles'] as List?) ?? [];
+        for (final a in articles) {
+          if (a['article_id'] == articleId) {
+            archiveId = (a['archive_id'] ?? '').toString();
+            break;
+          }
+        }
+      }
+      if (archiveId.isEmpty) return;
+
+      await ZimDownloadHelper.saveArticle(articleId: articleId, archiveId: archiveId);
+      await ZimSyncService.instance.markDownloaded(articleId, title: title);
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('SavedPage: ZIM download failed: $e');
+    }
+  }
+
   Future<void> _openItem(ResourceModel item) async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
@@ -253,7 +375,15 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       if (articleId.startsWith('zim_')) {
         articleId = articleId.substring(4);
       }
-      // Same fallback order as browse_page: local file -> legacy prefs -> network.
+      // New file-based save first, then legacy single-file, prefs, network.
+      final savedPath = await ZimDownloadHelper.findSavedArticle(articleId);
+      if (savedPath != null) {
+        if (!mounted) return;
+        unawaited(Navigator.push(context, luminaRoute(
+          builder: (_) => KiwixView(filePath: savedPath, title: item.title, subject: item.subject),
+        )));
+        return;
+      }
       String? html;
       try {
         final dir = await getApplicationDocumentsDirectory();
@@ -392,6 +522,11 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                         ));
                       } else if (isSavedDownloaded) {
                         await downloadService.deleteDownload(resourceId);
+                        if (item.type == ResourceType.kiwix) {
+                          var zimId = item.id;
+                          if (zimId.startsWith('zim_')) zimId = zimId.substring(4);
+                          ZimSyncService.instance.unmarkDownloaded(zimId);
+                        }
                         if (mounted) {
                           setState(() => _downloadedIds.remove(resourceId));
                         }
@@ -400,18 +535,23 @@ class _SavedListByTypeState extends State<_SavedListByType> {
                           duration: const Duration(milliseconds: 600),
                         ));
                       } else {
-                        final url = item.pdfUrl ?? '/files/$resourceId';
-                        final ext = switch (item.type) {
-                          ResourceType.videos => '.mp4',
-                          ResourceType.kiwix => '.html',
-                          _ => '.pdf',
-                        };
-                        final fileName = '${item.title}$ext';
-                        await DownloadQueue().enqueue(resourceId, url, fileName,
-                          title: item.title, subject: item.subject,
-                          grade: item.grade, type: item.type.name,
-                        );
-                        if (mounted) setState(() => _pendingIds.add(resourceId));
+                        if (item.type == ResourceType.kiwix) {
+                          String articleId = item.id;
+                          if (articleId.startsWith('zim_')) articleId = articleId.substring(4);
+                          await _downloadZimArticle(articleId, title: item.title);
+                        } else {
+                          final url = item.pdfUrl ?? '/files/$resourceId';
+                          final ext = switch (item.type) {
+                            ResourceType.videos => '.mp4',
+                            _ => '.pdf',
+                          };
+                          final fileName = '${item.title}$ext';
+                          await DownloadQueue().enqueue(resourceId, url, fileName,
+                            title: item.title, subject: item.subject,
+                            grade: item.grade, type: item.type.name,
+                          );
+                          if (mounted) setState(() => _pendingIds.add(resourceId));
+                        }
                       }
                     },
                   ),

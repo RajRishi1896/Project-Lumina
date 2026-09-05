@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
-import 'dart:convert';
 import 'dart:io';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
@@ -18,6 +17,7 @@ import 'kiwix_view.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
 import 'package:edumesh_android/shared/services/zim_sync_service.dart';
+import 'package:edumesh_android/shared/services/zim_download_helper.dart';
 import 'package:edumesh_android/core/models/zim_article_model.dart';
 import 'package:edumesh_android/core/services/recent_resources.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,12 +36,17 @@ class BrowsePageState extends State<BrowsePage> with SingleTickerProviderStateMi
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 3, vsync: this,
+        animationDuration: LuminaTransitions.globalEnabled ? kTabScrollDuration : Duration.zero);
   }
 
   /// Switch to a specific tab. 0=Courses, 1=Resources, 2=Wiki.
   void switchTab(int index) {
-    _tabController.animateTo(index);
+    if (LuminaTransitions.globalEnabled) {
+      _tabController.animateTo(index);
+    } else {
+      _tabController.index = index;
+    }
   }
 
   @override
@@ -515,6 +520,7 @@ class _WikiTabState extends State<_WikiTab> {
   String _query = '';
   bool _hasMore = false;
   int _requestId = 0;
+  String? _downloadingId;
 
   @override
   void initState() {
@@ -596,6 +602,15 @@ class _WikiTabState extends State<_WikiTab> {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
     try {
+      // Try new file-based save first, then legacy single-file, then prefs, then network.
+      final savedPath = await ZimDownloadHelper.findSavedArticle(article.articleId);
+      if (savedPath != null) {
+        if (!mounted) return;
+        unawaited(RecentResources.record(article.articleId, article.title, 'kiwix'));
+        unawaited(Navigator.push(context, luminaRoute(builder: (_) =>
+            KiwixView(filePath: savedPath, title: article.title))));
+        return;
+      }
       String? html;
       try {
         final dir = await getApplicationDocumentsDirectory();
@@ -612,13 +627,12 @@ class _WikiTabState extends State<_WikiTab> {
         final resp = await ApiClient.get('/zim/page', queryParameters: {'article_id': article.articleId})
             .timeout(const Duration(seconds: 8));
         html = resp.data?['html']?.toString() ?? '';
-        // ponytail: legacy zim_page_ prefs entries are still read above (search_page
-        // writes them) but no longer written here: prefs loads eagerly on 1GB devices.
       }
       if (!mounted) return;
       if (html.isNotEmpty) {
         unawaited(RecentResources.record(article.articleId, article.title, 'kiwix'));
-        unawaited(Navigator.push(context, luminaRoute(builder: (_) => KiwixView(initialHtml: html, title: article.title, baseUrl: ApiClient.baseUrl))));
+        unawaited(Navigator.push(context, luminaRoute(builder: (_) =>
+            KiwixView(initialHtml: html, title: article.title, baseUrl: ApiClient.baseUrl))));
       } else {
         messenger.showSnackBar(SnackBar(content: Text(l10n.zimArticleNotFound)));
       }
@@ -628,44 +642,18 @@ class _WikiTabState extends State<_WikiTab> {
   }
 
   Future<void> _downloadArticle(ZimArticle article) async {
+    if (_downloadingId != null) return;
+    if (mounted) setState(() => _downloadingId = article.articleId);
     try {
-      final res = await ApiClient.get('/zim/page', queryParameters: {'article_id': article.articleId})
-          .timeout(const Duration(seconds: 10));
-      var html = res.data['html'] as String? ?? '';
-      if (html.isEmpty) return;
-      // Group 1 must span the FULL url incl. optional &h=: a truncated url
-      // leaves '&h=...' tails in data URIs and cross-corrupts same-prefix paths.
-      final assetPattern = RegExp(r"""(/zim/asset\?archive_id=[^"'&]+&path=([^"'&]+)(?:&h=[^"'&]+)?)""");
-      final matches = assetPattern.allMatches(html).toList();
-      const concurrency = 5;
-      for (var i = 0; i < matches.length; i += concurrency) {
-        final batch = matches.sublist(i, (i + concurrency).clamp(0, matches.length));
-        await Future.wait(batch.map((m) async {
-          final fullUrl = m.group(1)!;
-          final assetPath = Uri.decodeComponent(m.group(2)!);
-          try {
-            final assetResp = await ApiClient.get('/zim/asset', queryParameters: {
-              'archive_id': article.archiveId, 'path': assetPath,
-            }).timeout(const Duration(seconds: 5));
-            if (assetResp.data is List<int>) {
-              final b64 = base64Encode(assetResp.data as List<int>);
-              final ext = assetPath.split('.').last.toLowerCase();
-              const mimeMap = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
-                'gif': 'image/gif', 'svg': 'image/svg+xml', 'css': 'text/css', 'js': 'application/javascript'};
-              final mime = mimeMap[ext] ?? 'application/octet-stream';
-              html = html.replaceAll(fullUrl, 'data:$mime;base64,$b64');
-            }
-          } catch (_) {}
-        }));
-      }
-      final dir = await getApplicationDocumentsDirectory();
-      // Same sanitization the readers use: slashed ids make writeAsString throw.
-      final file = File('${dir.path}/zim_${article.articleId.replaceAll('/', '_')}.html');
-      await file.writeAsString(html);
-      await ZimSyncService.instance.markDownloaded(article.articleId);
-      if (mounted) setState(() {});
+      await ZimDownloadHelper.saveArticle(
+        articleId: article.articleId,
+        archiveId: article.archiveId,
+      );
+      await ZimSyncService.instance.markDownloaded(article.articleId, title: article.title);
+      if (mounted) setState(() => _downloadingId = null);
     } catch (e) {
       if (mounted) {
+        setState(() => _downloadingId = null);
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(l10n.snackbarDownloadFailed),
@@ -782,10 +770,13 @@ class _WikiTabState extends State<_WikiTab> {
                                   style: tt.bodyLarge?.copyWith(color: cs.onSurface))),
                               ]),
                               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                                IconButton(
-                                  icon: Icon(isDownloaded ? Icons.check_circle : Icons.download_outlined,
-                                    color: isDownloaded ? LuminaColors.successGreen : cs.primary),
-                                  onPressed: isDownloaded ? null : () => _downloadArticle(article)),
+                                if (_downloadingId == article.articleId)
+                                  SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.w))
+                                else
+                                  IconButton(
+                                    icon: Icon(isDownloaded ? Icons.check_circle : Icons.download_outlined,
+                                      color: isDownloaded ? LuminaColors.successGreen : cs.primary),
+                                    onPressed: isDownloaded ? null : () => _downloadArticle(article)),
                                 Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
                               ]),
                               onTap: () => _openArticle(article),

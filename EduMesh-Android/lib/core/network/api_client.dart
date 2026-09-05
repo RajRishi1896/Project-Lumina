@@ -304,6 +304,17 @@ class ApiClient {
     return _dio.get<T>(path, queryParameters: queryParameters, cancelToken: cancelToken);
   }
 
+  /// Sends a GET request returning raw bytes (for images, PDFs, etc.).
+  /// The response [data] is [Uint8List] regardless of Content-Type.
+  static Future<Response<Uint8List>> getBinary(String path, {Map<String, dynamic>? queryParameters, CancelToken? cancelToken}) async {
+    await _ensureInitialized();
+    return _dio.get<Uint8List>(path,
+      queryParameters: queryParameters,
+      cancelToken: cancelToken,
+      options: Options(responseType: ResponseType.bytes),
+    );
+  }
+
   /// Sends a POST request to the given [path] with optional [data] and [queryParameters].
   /// Resolves the server base URL first via [_ensureInitialized].
   static Future<Response<T>> post<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {

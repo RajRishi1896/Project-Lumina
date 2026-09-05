@@ -8,14 +8,20 @@ import '../../../core/network/api_client.dart';
 
 /// A full-screen WebView wrapper for displaying Kiwix / ZIM content.
 ///
-/// Accepts either an [initialUrl] to load remotely or [initialHtml] to render
-/// inline. At least one must be provided.
+/// Accepts either an [initialUrl], [initialHtml], or a [filePath] to load.
+/// At least one must be provided. [filePath] is preferred for saved articles
+/// because the WebView resolves relative asset paths from the file's directory.
 class KiwixView extends StatefulWidget {
   /// A remote URL to load in the WebView.
   final String? initialUrl;
 
   /// An HTML string to render directly in the WebView.
   final String? initialHtml;
+
+  /// A local file path to load in the WebView.
+  /// When set, relative asset paths in the HTML resolve from the file's
+  /// directory — no base64 inlining needed.
+  final String? filePath;
 
   /// An optional title shown in the app bar.
   final String? title;
@@ -31,11 +37,12 @@ class KiwixView extends StatefulWidget {
     super.key,
     this.initialUrl,
     this.initialHtml,
+    this.filePath,
     this.title,
     this.baseUrl,
     this.subject,
-  }) : assert(initialUrl != null || initialHtml != null,
-            'Either initialUrl or initialHtml must be provided');
+  }) : assert(initialUrl != null || initialHtml != null || filePath != null,
+            'One of initialUrl, initialHtml, or filePath must be provided');
 
   /// Creates the state for the [KiwixView].
   @override
@@ -75,7 +82,9 @@ class _KiwixViewState extends State<KiwixView> {
         ),
       );
 
-    if (widget.initialHtml != null) {
+    if (widget.filePath != null) {
+      _controller.loadFile(widget.filePath!);
+    } else if (widget.initialHtml != null) {
       final base = widget.baseUrl ?? ApiClient.baseUrl;
       _controller.loadHtmlString(widget.initialHtml!, baseUrl: base);
     } else if (widget.initialUrl != null) {
