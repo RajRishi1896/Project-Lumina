@@ -44,6 +44,7 @@ class ZimDownloadHelper {
   }) async {
     final res = await ApiClient.get('/zim/page', queryParameters: {
       'article_id': articleId,
+      'archive_id': archiveId,
     }).timeout(const Duration(seconds: 10));
     var html = res.data['html'] as String? ?? '';
     if (html.isEmpty) throw Exception('Empty article HTML');

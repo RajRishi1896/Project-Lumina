@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/db_helper.dart';
 import '../../../core/services/activity_tracker.dart';
+import '../../../core/services/catalog_service.dart';
 import '../../../shared/services/download_queue.dart';
 import '../../../shared/widgets/mini_player_controller.dart';
 
@@ -113,6 +114,8 @@ class AuthService {
       if (refreshToken != null) await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
       if (persistentKey != null) await _secureStorage.write(key: _persistentKeyKey, value: persistentKey);
 
+      await DBHelper().switchProfile(hubGeneratedId);
+      CatalogService.resetSyncCooldown();
       return null;
     } catch (e) {
       if (e is DioException && e.response != null) {
@@ -167,6 +170,8 @@ class AuthService {
             if (grade != null && grade.isNotEmpty) await _secureStorage.write(key: _gradeKey, value: grade);
             ApiClient.setAuth(token);
             await _rememberUser(username, scholarId, token: token, refreshToken: refreshToken, persistentKey: persistentKey, displayName: name, grade: grade);
+            await DBHelper().switchProfile(scholarId);
+            CatalogService.resetSyncCooldown();
             return resetReq ? 'reset_required' : 'ok';
           }
         }
@@ -193,6 +198,8 @@ class AuthService {
         ApiClient.setAuth(storedToken);
         await _secureStorage.write(key: _sessionTokenKey, value: storedToken);
         await _saveSession(userId, username);
+        await DBHelper().switchProfile(userId);
+        CatalogService.resetSyncCooldown();
         return 'local_only';
       }
 
@@ -292,6 +299,8 @@ class AuthService {
     // outgoing student's pending state BEFORE activating the target so it
     // can never flush under the new profile's token.
     await _purgeActiveProfileData();
+    await DBHelper().switchProfile(userId);
+    CatalogService.resetSyncCooldown();
 
     await _secureStorage.write(key: _userIdKey, value: userId);
     await _secureStorage.write(key: _usernameKey, value: profile['username'].toString());

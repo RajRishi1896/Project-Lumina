@@ -112,7 +112,7 @@ async def test_audit_create_teacher_emits_event(admin_client):
     """Creating a teacher account emits an audit event with action=create_account."""
     _clear_audit_log()
     resp = await admin_client.post("/api/admin/create-teacher",
-                                   json={"username": "audit_test_teacher", "password": "lumina2026", "name": "Audit Test"})
+                                    json={"username": "audit_test_teacher", "password": "Lumina2026", "name": "Audit Test"})
     assert resp.status_code == 200
     events = _read_audit_log()
     create_events = [e for e in events if e.get("action") == "create_account"

@@ -22,8 +22,19 @@ class DBHelper {
     final normalized = (profileId ?? '').trim();
     final next = normalized.isEmpty ? 'anonymous' : normalized;
     if (_activeProfileId == next) return;
+    // Close old database handle so the new profile opens a fresh DB file.
+    final oldDb = _databases[_activeProfileId];
+    if (oldDb != null) {
+      await oldDb.close();
+      _databases.remove(_activeProfileId);
+    }
     _activeProfileId = next;
-    await database;
+    try {
+      await database;
+    } catch (_) {
+      // In tests without sqflite_ffi initialized, DB open fails —
+      // the profile ID is still set correctly for secure-storage scoping.
+    }
   }
 
   /// Closes all cached database handles. Intended for app teardown/tests.

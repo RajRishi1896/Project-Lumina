@@ -77,6 +77,9 @@ async def stream_file(filename: str, request: Request):
         HTTPException 404: If the file does not exist.
         HTTPException 416: If the Range header is invalid.
     """
+    # Block serving quiz files (they contain answer keys)
+    if 'quiz_' in filename and filename.endswith('.json'):
+        raise HTTPException(status_code=403, detail="Access denied.")
     if ".." in filename or filename.startswith("/"):
         raise HTTPException(status_code=400, detail="Invalid filename")  # i18n: user-facing error message
     file_path = os.path.normpath(os.path.join(UPLOAD_DIR, filename))

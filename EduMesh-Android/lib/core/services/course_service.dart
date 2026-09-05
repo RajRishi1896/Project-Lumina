@@ -233,15 +233,25 @@ class CourseService extends ChangeNotifier {
     return response;
   }
 
-  /// Submits a standalone quiz attempt via [MutationQueue] for offline support.
+  /// Submits a standalone quiz attempt via [MutationQueue] for offline support,
+  /// then persists locally.
   ///
   /// Returns the server response when graded online, or null when queued.
   Future<dynamic> submitStandaloneQuiz(String resourceId, Map<String, dynamic> attempt) async {
-    return MutationQueue().enqueue(
+    final response = await MutationQueue().enqueue(
       '/api/quiz-resource/$resourceId/submit',
       method: 'POST',
       body: attempt,
     );
+    if (response is Map) {
+      final graded = Map<String, dynamic>.from(attempt);
+      graded['score'] = response['score'] ?? attempt['score'];
+      graded['passed'] = response['passed'] ?? attempt['passed'];
+      await _saveQuizAttemptLocally(graded);
+    } else {
+      await _saveQuizAttemptLocally(attempt);
+    }
+    return response;
   }
 
   /// Updates the best score for a standalone quiz via [MutationQueue] for offline support.

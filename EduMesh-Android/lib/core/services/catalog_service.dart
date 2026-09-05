@@ -19,6 +19,13 @@ class CatalogService {
   static DateTime? _lastSimilarSync;
   static const _syncCooldown = Duration(minutes: 5);
 
+  /// Resets the sync cooldown so the next profile's catalog is fetched
+  /// immediately instead of being blocked by the previous profile's timestamp.
+  static void resetSyncCooldown() {
+    _lastCatalogSync = null;
+    _lastSimilarSync = null;
+  }
+
   /// True once 5 minutes have passed since the last sync, so dashboard loads
   /// and connectivity changes don't re-hit the hub on every event.
   bool get _catalogStale =>

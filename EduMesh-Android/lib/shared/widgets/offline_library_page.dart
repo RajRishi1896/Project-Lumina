@@ -12,6 +12,8 @@ import '../../core/models/resource_model.dart';
 import '../../core/storage/db_helper.dart';
 import '../../core/utils/file_utils.dart';
 import '../../shared/services/download_service.dart';
+import '../../shared/services/zim_download_helper.dart';
+import '../../shared/services/zim_sync_service.dart';
 import '../../features/dashboard/presentation/kiwix_view.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/recent_resources.dart';
@@ -76,7 +78,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
     if (mounted) setState(() { _items = withSizes; _loading = false; });
   }
 
-  Future<void> _delete(String resourceId, String title) async {
+  Future<void> _delete(String resourceId, String title, Map<String, dynamic> item) async {
     final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
@@ -91,24 +93,24 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
       ),
     );
     if (confirmed == true) {
-      final isZim = resourceId.startsWith('zim_');
+      final isZim = item['is_zim'] == true;
       if (isZim) {
-        final articleId = resourceId.substring(4);
-        final db = await DBHelper().database;
-        await db.update('zim_articles_local', {'is_downloaded': 0},
-            where: 'article_id = ?', whereArgs: [articleId]);
-        // Best-effort cleanup of the cached HTML file and pref entry so the
-        // delete does not leave orphans on disk; never block the UI.
-        try {
-          final dir = await getApplicationDocumentsDirectory();
-          final file =
-              File('${dir.path}/zim_${articleId.replaceAll('/', '_')}.html');
-          if (await file.exists()) await file.delete();
-        } catch (_) {}
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.remove('zim_page_$articleId');
-        } catch (_) {}
+        final articleId = (item['article_id'] as String?) ?? '';
+        if (articleId.isNotEmpty) {
+          // Delete the article directory from disk.
+          await ZimDownloadHelper.deleteArticle(articleId);
+          // Reset the download flag in the local DB.
+          final db = await DBHelper().database;
+          await db.update('zim_articles_local', {'is_downloaded': 0},
+              where: 'article_id = ?', whereArgs: [articleId]);
+          // Update the in-memory set so the browse UI stops showing it as downloaded.
+          ZimSyncService.instance.unmarkDownloaded(articleId);
+          // Remove cached page preference.
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove('zim_page_$articleId');
+          } catch (_) {}
+        }
       } else {
         await DownloadService().deleteDownload(resourceId);
       }
@@ -217,7 +219,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                             ),
                           IconButton(
                             icon: Icon(Icons.delete_outline, color: cs.error),
-                            onPressed: () => _delete(resourceId, title),
+                            onPressed: () => _delete(resourceId, title, item),
                             tooltip: l10n.tooltipDeleteDownload(title),
                           ),
                         ]),

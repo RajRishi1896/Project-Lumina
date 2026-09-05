@@ -398,8 +398,16 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       }
       if (html == null || html.isEmpty) {
         try {
+          String archiveId = '';
+          final db = DBHelper();
+          final zimRows = await (await db.database).query('zim_articles_local',
+              columns: ['archive_id'], where: 'article_id = ?', whereArgs: [articleId]);
+          if (zimRows.isNotEmpty) {
+            archiveId = zimRows.first['archive_id'] as String? ?? '';
+          }
           final response = await ApiClient.get('/zim/page', queryParameters: {
             'article_id': articleId,
+            if (archiveId.isNotEmpty) 'archive_id': archiveId,
           }).timeout(const Duration(seconds: 8));
           html = response.data?['html']?.toString();
         } catch (_) {}

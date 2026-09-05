@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.models import TeacherCreate, AdminStudentCreate, StatusResponse, AdminSummary, AdminCreateResponse
-from app.dependencies import hash_password, verify_admin
+from app.dependencies import hash_password, validate_password_strength, verify_admin
 
 router = APIRouter()
 
@@ -110,6 +110,9 @@ async def _create_user(data: TeacherCreate, admin_user: str, role: str, default_
     display_name = data.name or data.username
     dept = data.department or default_dept
     user_id = f"LUMINA_01-T{uuid.uuid4().hex}"
+    valid, msg = validate_password_strength(data.password)
+    if not valid:
+        raise HTTPException(status_code=400, detail=msg)
     hashed_pwd = await asyncio.to_thread(hash_password, data.password)
     # Race-safe: users.username is the PRIMARY KEY, so a concurrent
     # create with the same username loses the INSERT and gets a 400.
@@ -173,6 +176,10 @@ async def create_student(data: AdminStudentCreate, admin_user: str = Depends(ver
     display_name = data.name or data.username
     scholar_id = f"LUMINA_01-{uuid.uuid4().hex}"
     pwd = data.password or secrets.token_urlsafe(12)
+    if data.password:
+        valid, msg = validate_password_strength(data.password)
+        if not valid:
+            raise HTTPException(status_code=400, detail=msg)
     hashed_pwd = await asyncio.to_thread(hash_password, pwd)
     # Race-safe: scholars.username has a UNIQUE index, so a concurrent
     # create with the same username loses the INSERT and gets a 400.

@@ -70,6 +70,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
   bool _previewsUnavailable = false;
   bool _previewLoading = false;
   bool _inPiP = false;
+  bool _lifecyclePushed = false;
 
   /// Position in seconds, updated by the tick listener. Only drives the
   /// lightweight position text and progress bar — no full-overlay rebuild.
@@ -127,6 +128,25 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
       setState(() => _inPiP = inPiP);
       if (!inPiP) {
         _startHideTimer();
+        // Exiting PiP — if the app is in foreground, push system UI to
+        // restore orientations and chrome (didChangeAppLifecycleState
+        // may not fire if the transition is fast).
+        if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed && !_lifecyclePushed) {
+          LuminaSystemUi.push(
+            orientations: _isFullscreen
+                ? const [
+                    DeviceOrientation.landscapeLeft,
+                    DeviceOrientation.landscapeRight,
+                  ]
+                : [
+                    DeviceOrientation.portraitUp,
+                    DeviceOrientation.landscapeLeft,
+                    DeviceOrientation.landscapeRight,
+                  ],
+            mode: SystemUiMode.edgeToEdge,
+          );
+          _lifecyclePushed = true;
+        }
       }
     };
     pip.onAction = (action) {
@@ -156,19 +176,22 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     if (_disposed) return;
     if (state == AppLifecycleState.resumed && !_inPiP) {
       // Returned from background (not PiP). Restore system UI.
-      LuminaSystemUi.push(
-        orientations: _isFullscreen
-            ? const [
-                DeviceOrientation.landscapeLeft,
-                DeviceOrientation.landscapeRight,
-              ]
-            : [
-                DeviceOrientation.portraitUp,
-                DeviceOrientation.landscapeLeft,
-                DeviceOrientation.landscapeRight,
-              ],
-        mode: SystemUiMode.edgeToEdge,
-      );
+      if (!_lifecyclePushed) {
+        LuminaSystemUi.push(
+          orientations: _isFullscreen
+              ? const [
+                  DeviceOrientation.landscapeLeft,
+                  DeviceOrientation.landscapeRight,
+                ]
+              : [
+                  DeviceOrientation.portraitUp,
+                  DeviceOrientation.landscapeLeft,
+                  DeviceOrientation.landscapeRight,
+                ],
+          mode: SystemUiMode.edgeToEdge,
+        );
+        _lifecyclePushed = true;
+      }
     }
   }
 
@@ -483,6 +506,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     while (_uiPushes > 0) {
       LuminaSystemUi.restore();
       _uiPushes--;
+    }
+    if (_lifecyclePushed) {
+      LuminaSystemUi.restore();
+      _lifecyclePushed = false;
     }
     if (_controller != null) {
       _controller!.removeListener(_onTick);

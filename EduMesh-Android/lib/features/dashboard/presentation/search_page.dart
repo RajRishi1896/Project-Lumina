@@ -244,7 +244,7 @@ class _SearchPageState extends State<SearchPage> {
     } catch (_) {}
   }
 
-  Future<void> _openArticle(String articleId, String title) async {
+  Future<void> _openArticle(String articleId, String title, {String? archiveId}) async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
     try {
@@ -274,6 +274,7 @@ class _SearchPageState extends State<SearchPage> {
       if (html == null) {
         final response = await ApiClient.get('/zim/page', queryParameters: {
           'article_id': articleId,
+          if (archiveId != null) 'archive_id': archiveId,
         }).timeout(const Duration(seconds: 8));
         html = response.data?['html']?.toString() ?? '';
       }
@@ -1116,7 +1117,8 @@ class _SearchPageState extends State<SearchPage> {
               child: Icon(Icons.article, color: cs.primary),
             ),
       onTap: () {
-        _openArticle(item['articleId'] as String, item['title'] as String);
+        _openArticle(item['articleId'] as String, item['title'] as String,
+            archiveId: (item['zimArticle'] as ZimArticle?)?.archiveId);
       },
       title: Row(
         children: [

@@ -624,8 +624,10 @@ class _WikiTabState extends State<_WikiTab> {
         } catch (_) {}
       }
       if (html == null) {
-        final resp = await ApiClient.get('/zim/page', queryParameters: {'article_id': article.articleId})
-            .timeout(const Duration(seconds: 8));
+        final resp = await ApiClient.get('/zim/page', queryParameters: {
+          'article_id': article.articleId,
+          'archive_id': article.archiveId,
+        }).timeout(const Duration(seconds: 8));
         html = resp.data?['html']?.toString() ?? '';
       }
       if (!mounted) return;

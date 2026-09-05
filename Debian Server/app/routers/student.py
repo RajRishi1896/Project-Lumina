@@ -9,7 +9,7 @@ import logging
 from app.database import PROFILE_ICONS_DIR
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.models import StudyTimeSync, SubjectTimeSync, StudentChangePasswordRequest, StatusResponse, StudentAnalyticsResponse, IconUploadResponse, StudentProfileResponse, BookmarkSync, QuizBestScoreResponse, QuizBestScoreUpdate
-from app.dependencies import verify_student, hash_password, verify_password, validate_password_strength, invalidate_tokens_for_user
+from app.dependencies import verify_student, verify_user, hash_password, verify_password, validate_password_strength, invalidate_tokens_for_user
 from app.audit import audit, Action
 
 router = APIRouter()
@@ -183,7 +183,7 @@ async def upload_profile_icon(data: dict, student_id: str = Depends(verify_stude
 
 
 @router.get("/student/profile/icon/{scholar_id}", summary="Get profile icon", description="Returns the profile icon image file for the given scholar ID. Searches for PNG, JPG, JPEG, GIF, and WebP extensions.", tags=["Profile"], responses={200: {"description": "Profile icon image file"}, 404: {"description": "No profile icon found for the given scholar"}})
-async def get_profile_icon(scholar_id: str):
+async def get_profile_icon(scholar_id: str, user: str = Depends(verify_user)):
     """Get a student's profile icon image.
 
     Args:

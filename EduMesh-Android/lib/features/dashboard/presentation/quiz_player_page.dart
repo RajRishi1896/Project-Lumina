@@ -102,6 +102,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   final Map<int, Set<int>> _multiSelected = {};
   late final String _startedAt;
   int _totalTimeSeconds = 0;
+  bool _isPaused = false;
   late final AppLifecycleListener _lifecycleListener;
   final TextEditingController _fillController = TextEditingController();
   double _bestScore = 0.0;
@@ -117,8 +118,9 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     _startedAt = DateTime.now().toIso8601String();
     MiniPlayerController().setQuizActive(true);
     _lifecycleListener = AppLifecycleListener(
-      onPause: _onAppBackgrounded,
-      onDetach: _onAppBackgrounded,
+      onPause: _onAppPaused,
+      onDetach: _onAppDetached,
+      onResume: _onAppResumed,
     );
     _loadQuiz();
   }
@@ -133,7 +135,33 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     );
   }
 
-  void _onAppBackgrounded() {
+  void _onAppPaused() {
+    if (_submitted || _isPaused) return;
+    if (_timer != null && _secondsRemaining > 0 && _quiz!.timeLimitMinutes > 0) {
+      _timer!.cancel();
+      _isPaused = true;
+    }
+  }
+
+  void _onAppResumed() {
+    if (!_isPaused || _submitted) return;
+    _isPaused = false;
+    if (_secondsRemaining > 0 && _quiz!.timeLimitMinutes > 0) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+        if (!mounted) {
+          t.cancel();
+          return;
+        }
+        setState(() => _secondsRemaining--);
+        if (_secondsRemaining <= 0) {
+          t.cancel();
+          _submitQuiz(autoSubmit: true);
+        }
+      });
+    }
+  }
+
+  void _onAppDetached() {
     if (!_submitted) _submitQuiz(autoSubmit: true);
   }
 
