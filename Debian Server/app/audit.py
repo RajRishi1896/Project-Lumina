@@ -19,6 +19,7 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Optional
 
+AUDIT_LOG_PATH = os.environ.get("LUMINA_AUDIT_LOG_PATH", "data/admin_actions.log")
 _DB_PATH = None  # lazy import to avoid circular import at module load
 _RETENTION_CACHE: Optional[str] = None  # cached retention value, avoids DB open per event
 _RETENTION_CACHE_TS: float = 0  # last cache refresh timestamp
@@ -267,7 +268,7 @@ def _write_audit_line(event: dict):
     log_line = f"{json_line}\n"
 
     try:
-        with open("data/admin_actions.log", "a") as f:
+        with open(AUDIT_LOG_PATH, "a") as f:
             f.write(log_line)
     except Exception as e:
         logging.error(f"Could not write audit log: {e}")
@@ -307,7 +308,7 @@ def _prune_logs_now(retention=None):
         delta = _RETENTION_DELTAS.get(retention, 2592000)
         cutoff = datetime.now().timestamp() - delta
         kept_lines = []
-        log_path = "data/admin_actions.log"
+        log_path = AUDIT_LOG_PATH
         if os.path.exists(log_path):
             original_count = 0
             with open(log_path, "r") as f:
