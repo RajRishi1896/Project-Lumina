@@ -69,9 +69,11 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
   _PreviewSheet? _preview;
   bool _previewsUnavailable = false;
   bool _previewLoading = false;
-  int _tickSecond = -1;
-  bool _tickPlaying = false;
   bool _inPiP = false;
+
+  /// Position in seconds, updated by the tick listener. Only drives the
+  /// lightweight position text and progress bar — no full-overlay rebuild.
+  final ValueNotifier<int> _posSeconds = ValueNotifier(0);
 
   bool get _isLocal {
     final u = widget.videoUrl;
@@ -210,16 +212,13 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     }
   }
 
+  /// Tick listener: updates only the lightweight position notifier.
+  /// No full-overlay rebuild — the ValueListenableBuilder on _posSeconds
+  /// and the progress bar handle their own targeted rebuilds.
   void _onTick() {
-    if (_disposed || !mounted || _controller == null) return;
+    if (_disposed || _controller == null) return;
     final v = _controller!.value;
-    // ponytail: rebuild only on visible changes (second-granular position,
-    // play state); raw notifications fire far more often than the UI needs.
-    final second = v.position.inSeconds;
-    if (second == _tickSecond && v.isPlaying == _tickPlaying) return;
-    _tickSecond = second;
-    _tickPlaying = v.isPlaying;
-    setState(() {});
+    _posSeconds.value = v.position.inSeconds;
   }
 
   void _togglePlay() {
@@ -235,7 +234,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
 
   void _startHideTimer() {
     _hideTimer?.cancel();
-    setState(() => _showControls = true);
+    if (!_showControls) setState(() => _showControls = true);
     _hideTimer = Timer(const Duration(seconds: 3), () {
       if (mounted && (_controller?.value.isPlaying ?? false)) {
         setState(() => _showControls = false);
@@ -343,27 +342,33 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     final tt = Theme.of(context).textTheme;
     final selected = await showModalBottomSheet<double>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: cs.surfaceContainerHighest,
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Text(
-                l10n.videoPlaybackSpeed,
-                style: tt.titleMedium?.copyWith(color: cs.onSurface),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.5,
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Text(
+                  l10n.videoPlaybackSpeed,
+                  style: tt.titleMedium?.copyWith(color: cs.onSurface),
+                ),
               ),
-            ),
-            for (final speed in _speedOptions)
-              ListTile(
-                title: Text(_speedLabel(l10n, speed)),
-                trailing: speed == _playbackSpeed
-                    ? Icon(Icons.check, color: cs.primary)
-                    : null,
-                onTap: () => Navigator.of(ctx).pop(speed),
-              ),
-          ],
+              for (final speed in _speedOptions)
+                ListTile(
+                  title: Text(_speedLabel(l10n, speed)),
+                  trailing: speed == _playbackSpeed
+                      ? Icon(Icons.check, color: cs.primary)
+                      : null,
+                  onTap: () => Navigator.of(ctx).pop(speed),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -469,6 +474,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     PiPHelper().onAction = null;
     _hideTimer?.cancel();
     _feedbackTimer?.cancel();
+    _posSeconds.dispose();
     ActivityTracker().endStudySession();
     WakelockPlus.disable();
     // Unwind every claim this page pushed (entry + fullscreen); the app
@@ -496,20 +502,22 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
         if (!didPop) _closePlayer();
       },
       child: Scaffold(
-          backgroundColor: cs.surfaceContainerHighest,
-          appBar: _showControls && !_isFullscreen && !_inPiP
-              ? AppBar(
-                  leading: IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: _closePlayer,
-                    tooltip: l10n.tooltipBackToResource,
-                  ),
-                  title: Text(widget.title),
-                  backgroundColor: cs.surfaceContainerHighest,
-                  foregroundColor: cs.onSurface,
-                )
-              : null,
-          body: _buildBody(l10n, cs),
+        backgroundColor: cs.surfaceContainerHighest,
+        // AppBar is ALWAYS present so the back button always works.
+        // In fullscreen/PiP mode it hides; otherwise it's always reachable.
+        appBar: !_isFullscreen && !_inPiP
+            ? AppBar(
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: _closePlayer,
+                  tooltip: l10n.tooltipBackToResource,
+                ),
+                title: Text(widget.title),
+                backgroundColor: cs.surfaceContainerHighest,
+                foregroundColor: cs.onSurface,
+              )
+            : null,
+        body: _buildBody(l10n, cs),
       ),
     );
   }
@@ -540,63 +548,71 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
       );
     }
 
-    if (!_initialized || _controller == null) {
+    if (_controller == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // Single GestureDetector: double-tap for seek, horizontal drag for
+    // scrub, single tap to show/hide controls.
     return GestureDetector(
       onTap: _startHideTimer,
-      child: GestureDetector(
-        onDoubleTapDown: _onDoubleTapDown,
-        onHorizontalDragStart: _onHorizontalDragStart,
-        onHorizontalDragUpdate: _onHorizontalDragUpdate,
-        onHorizontalDragEnd: _onHorizontalDragEnd,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Center(
-              child: AspectRatio(
-                aspectRatio: _controller!.value.aspectRatio,
-                child: VideoPlayer(_controller!),
-              ),
+      onDoubleTapDown: _onDoubleTapDown,
+      onHorizontalDragStart: _onHorizontalDragStart,
+      onHorizontalDragUpdate: _onHorizontalDragUpdate,
+      onHorizontalDragEnd: _onHorizontalDragEnd,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Video surface — always visible once controller exists.
+          Center(
+            child: AspectRatio(
+              aspectRatio: _controller!.value.aspectRatio,
+              child: VideoPlayer(_controller!),
             ),
-            if (_seekFeedback != null && !_inPiP) _buildSeekFeedback(),
-            if (_showControls && !_inPiP) _buildOverlay(l10n, cs),
-            if (!_showControls || _inPiP)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: _buildProgressBar(),
-              ),
-          ],
-        ),
+          ),
+          // Loading overlay: shown while controller is still initializing.
+          if (!_initialized)
+            Container(
+              color: cs.surfaceContainerHighest,
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          if (_seekFeedback != null && !_inPiP) _buildSeekFeedback(),
+          if (_showControls && !_inPiP) _buildOverlay(l10n, cs),
+          if ((!_showControls || _inPiP) && _initialized)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildProgressBar(),
+            ),
+        ],
       ),
     );
   }
 
   Widget _buildOverlay(AppLocalizations l10n, ColorScheme cs) {
     final v = _controller!.value;
-    final pos = v.position;
     final dur = v.duration;
     final tt = Theme.of(context).textTheme;
 
     return AnimatedOpacity(
       opacity: _showControls ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 200),
-      child: Container(
+      child: ColoredBox(
         // Solid theme token as the video-control scrim: never alpha-on-text.
         color: cs.surfaceContainerHighest,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Spacer(),
+            // Play/pause + seek buttons — rebuilds via ValueListenableBuilder
+            // so only the play/pause icon flips, not the whole overlay.
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
                   onPressed: () {
-                    final newPos = pos - const Duration(seconds: 10);
+                    final newPos = v.position - const Duration(seconds: 10);
                     _controller!.seekTo(
                         newPos.isNegative ? Duration.zero : newPos);
                     _startHideTimer();
@@ -605,19 +621,25 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
                   tooltip: l10n.tooltipRewind10,
                 ),
                 const SizedBox(width: AppSpacing.xl),
-                IconButton(
-                  onPressed: _togglePlay,
-                  icon: Icon(
-                    v.isPlaying ? Icons.pause_circle : Icons.play_circle,
-                    color: cs.onSurface,
-                    size: 64,
-                  ),
-                  tooltip: l10n.semanticsTogglePlay,
+                ValueListenableBuilder<int>(
+                  valueListenable: _posSeconds,
+                  builder: (_, __, ___) {
+                    final playing = _controller?.value.isPlaying ?? false;
+                    return IconButton(
+                      onPressed: _togglePlay,
+                      icon: Icon(
+                        playing ? Icons.pause_circle : Icons.play_circle,
+                        color: cs.onSurface,
+                        size: 64,
+                      ),
+                      tooltip: l10n.semanticsTogglePlay,
+                    );
+                  },
                 ),
                 const SizedBox(width: AppSpacing.xl),
                 IconButton(
                   onPressed: () {
-                    final newPos = pos + const Duration(seconds: 10);
+                    final newPos = v.position + const Duration(seconds: 10);
                     if (newPos < dur) _controller!.seekTo(newPos);
                     _startHideTimer();
                   },
@@ -633,8 +655,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
                   horizontal: AppSpacing.md, vertical: AppSpacing.xs),
               child: Row(
                 children: [
-                  Text(_fmt(pos),
-                      style: tt.bodySmall?.copyWith(color: cs.onSurface)),
+                  // Position text: rebuilds via ValueListenableBuilder only.
+                  ValueListenableBuilder<int>(
+                    valueListenable: _posSeconds,
+                    builder: (_, sec, __) => Text(
+                      _fmt(Duration(seconds: sec)),
+                      style: tt.bodySmall?.copyWith(color: cs.onSurface),
+                    ),
+                  ),
                   const Spacer(),
                   Tooltip(
                     message: l10n.videoPlaybackSpeed,
@@ -696,23 +724,29 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Slider(
-            value: v.position.inMilliseconds
-                .toDouble()
-                .clamp(0.0, dur.inMilliseconds.toDouble()),
-            max: dur.inMilliseconds.toDouble(),
-            onChangeStart: (val) {
-              setState(() => _previewDragging = true);
-              if (_preview == null && !_previewsUnavailable) {
-                unawaited(_loadPreviewSheet());
-              }
-            },
-            onChanged: (val) {
-              _controller!.seekTo(Duration(milliseconds: val.toInt()));
-              _startHideTimer();
-            },
-            onChangeEnd: (val) {
-              setState(() => _previewDragging = false);
+          ValueListenableBuilder<int>(
+            valueListenable: _posSeconds,
+            builder: (_, __, ___) {
+              final posMs = _controller!.value.position.inMilliseconds
+                  .toDouble()
+                  .clamp(0.0, dur.inMilliseconds.toDouble());
+              return Slider(
+                value: posMs,
+                max: dur.inMilliseconds.toDouble(),
+                onChangeStart: (val) {
+                  setState(() => _previewDragging = true);
+                  if (_preview == null && !_previewsUnavailable) {
+                    unawaited(_loadPreviewSheet());
+                  }
+                },
+                onChanged: (val) {
+                  _controller!.seekTo(Duration(milliseconds: val.toInt()));
+                  _startHideTimer();
+                },
+                onChangeEnd: (val) {
+                  setState(() => _previewDragging = false);
+                },
+              );
             },
           ),
           if (_preview != null && _previewDragging)
@@ -723,7 +757,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
               child: IgnorePointer(
                 child: Center(
                   child: _buildPreviewBubble(
-                    v.position.inMilliseconds.toDouble(),
+                    _controller!.value.position.inMilliseconds.toDouble(),
                     _preview!,
                   ),
                 ),
