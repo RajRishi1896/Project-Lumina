@@ -1,5 +1,7 @@
 """Password management routes: change, force-change, and admin reset."""
 import asyncio
+import logging
+import secrets
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.async_db import db_exec, db_fetch_one
 from app.models import StatusResponse
@@ -90,13 +92,14 @@ async def force_reset_teacher_password(username: str, admin_user: str = Depends(
     """
     if username == "admin":
         raise HTTPException(status_code=400, detail="Cannot reset the default admin password. Use the Settings page to re-enable the default admin account.")  # i18n: user-facing error message
-    hashed = await asyncio.to_thread(hash_password, "lumina2026")
+    generated_pwd = secrets.token_urlsafe(12)
+    hashed = await asyncio.to_thread(hash_password, generated_pwd)
     try:
         await db_exec("UPDATE users SET hashed_password = ?, reset_required = 1 WHERE username = ?", (hashed, username))
         await invalidate_tokens_for_user(username)
         await audit(action=Action.RESET_PASSWORD, username=admin_user, resource_type="account",
                     resource_id=username, target_user=username)
-        return {"status": "success"}
+        return {"status": "success", "temporary_password": generated_pwd}
     except Exception as e:
         logging.error(f"force_reset_teacher_password: {e}")
         raise HTTPException(status_code=400, detail="Failed to reset password")  # i18n: user-facing error message

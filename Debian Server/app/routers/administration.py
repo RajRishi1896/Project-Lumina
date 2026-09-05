@@ -2,6 +2,7 @@
 import sqlite3
 import uuid
 import asyncio
+import secrets
 from fastapi import APIRouter, Depends, HTTPException
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
@@ -48,11 +49,12 @@ async def enable_default_admin(admin_user: str = Depends(verify_admin)):
     Returns:
         Status dict indicating success.
     """
-    hashed = await asyncio.to_thread(hash_password, "lumina2026")
+    generated_pwd = secrets.token_urlsafe(12)
+    hashed = await asyncio.to_thread(hash_password, generated_pwd)
     await db_exec("UPDATE users SET hashed_password = ? WHERE username = 'admin'", (hashed,))
     await audit(action=Action.CHANGE_SETTINGS, username=admin_user, resource_type="account",
                 resource_id="admin", resource_name="default admin", context={"enabled": True})
-    return {"status": "success"}
+    return {"status": "success", "temporary_password": generated_pwd}
 
 
 @router.get("/teacher/default-admin-status", response_model=dict,
@@ -170,7 +172,7 @@ async def create_student(data: AdminStudentCreate, admin_user: str = Depends(ver
     """
     display_name = data.name or data.username
     scholar_id = f"LUMINA_01-{uuid.uuid4().hex}"
-    pwd = data.password or "lumina2026"
+    pwd = data.password or secrets.token_urlsafe(12)
     hashed_pwd = await asyncio.to_thread(hash_password, pwd)
     # Race-safe: scholars.username has a UNIQUE index, so a concurrent
     # create with the same username loses the INSERT and gets a 400.
@@ -184,4 +186,7 @@ async def create_student(data: AdminStudentCreate, admin_user: str = Depends(ver
     await audit(action=Action.CREATE_ACCOUNT, username=admin_user, resource_type="account",
                 resource_id=data.username, resource_name=display_name,
                 target_user=data.username, context={"role": "student"})
-    return {"status": "success", "username": data.username, "name": display_name, "scholar_id": scholar_id}
+    resp = {"status": "success", "username": data.username, "name": display_name, "scholar_id": scholar_id}
+    if not data.password:
+        resp["temporary_password"] = pwd
+    return resp

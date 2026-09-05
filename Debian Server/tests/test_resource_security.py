@@ -46,42 +46,40 @@ async def _make_resource(owner, title="A's book"):
     return rid
 
 
-async def test_any_teacher_can_edit_and_delete_others_resource(client, admin_client):
-    """Any teacher may edit or soft-delete any resource."""
+async def test_teacher_ownership_enforced_on_edit_and_delete(client, admin_client):
+    """Teachers can only edit/delete their own resources; admins can manage all."""
     teacher_a, token_a = await _make_teacher("teacher.a")
     _, token_b = await _make_teacher("teacher.b")
     rid = await _make_resource(teacher_a)
 
-    # Any authenticated teacher may edit any resource (no ownership check).
+    # Teacher B cannot edit teacher A's resource (ownership enforced).
     resp = await client.put(f"/teacher/resources/{rid}",
                             json={"title": "Edited by B"}, headers=_auth(token_b))
-    assert resp.status_code == 200, resp.text
+    assert resp.status_code == 403, resp.text
 
-    # Delete moves the resource to the recycle bin (soft delete).
+    # Teacher B cannot delete teacher A's resource either.
     resp = await client.delete(f"/teacher/resources/{rid}", headers=_auth(token_b))
+    assert resp.status_code == 403, resp.text
+
+    # Owner can edit and delete their own resource.
+    resp = await client.put(f"/teacher/resources/{rid}",
+                            json={"title": "Owner edit"}, headers=_auth(token_a))
+    assert resp.status_code == 200, resp.text
+    resp = await client.delete(f"/teacher/resources/{rid}", headers=_auth(token_a))
     assert resp.status_code == 200, resp.text
     assert resp.json()["action"] == "recycled"
 
     row = await db_fetch_one("SELECT title, status FROM resources WHERE id = ?", (rid,))
-    assert row and row["title"] == "Edited by B"
+    assert row and row["title"] == "Owner edit"
     assert row["status"] == "deleted"
 
     # Deleted resources stay out of the catalog until the 30-day purge.
-    resp = await client.get("/api/catalog", headers=_auth(token_b))
+    resp = await client.get("/api/catalog", headers=_auth(token_a))
     assert all(item["id"] != rid for item in resp.json()), resp.text
 
-    # Admin may delete any teacher's resource too.
+    # Admin may delete any teacher's resource.
     rid2 = await _make_resource(teacher_a, "Second")
     resp = await admin_client.delete(f"/teacher/resources/{rid2}")
-    assert resp.status_code == 200, resp.text
-    assert resp.json()["action"] == "recycled"
-
-    # Owner can still edit and delete their own resource.
-    rid3 = await _make_resource(teacher_a, "Third")
-    resp = await client.put(f"/teacher/resources/{rid3}",
-                            json={"title": "Owner edit"}, headers=_auth(token_a))
-    assert resp.status_code == 200, resp.text
-    resp = await client.delete(f"/teacher/resources/{rid3}", headers=_auth(token_a))
     assert resp.status_code == 200, resp.text
     assert resp.json()["action"] == "recycled"
 

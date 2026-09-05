@@ -57,9 +57,12 @@ def event_loop():
 async def setup_db():
     """Initialise the test database and ensure the default admin role."""
     from app.database import init_db
-    await asyncio.to_thread(init_db)
+    from app.dependencies import hash_password
     from app.async_db import db_exec
+    await asyncio.to_thread(init_db)
+    hashed = await asyncio.to_thread(hash_password, "lumina2026")
     await db_exec('UPDATE users SET role = ? WHERE username = ?', ('admin', 'admin'))
+    await db_exec('UPDATE users SET hashed_password = ? WHERE username = ?', (hashed, 'admin'))
     yield
 
 

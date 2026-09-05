@@ -10,12 +10,12 @@ class ScholarReg(BaseModel):
     """Student registration request payload."""
     username: str = Field(..., min_length=1, max_length=100, description="Unique username for the scholar.", json_schema_extra={"example": "student42"})
     name: Optional[str] = Field(default=None, max_length=100, description="Display name for the scholar. Defaults to username if empty.", json_schema_extra={"example": "Alice"})
-    password: Optional[str] = Field(default="lumina2026", min_length=8, max_length=128, description="Account password. Defaults to a known fallback.", json_schema_extra={"example": "lumina2026"})
+    password: Optional[str] = Field(default=None, min_length=8, max_length=128, description="Account password. Generated if omitted.", json_schema_extra={"example": "changeme123"})
     grade: Optional[str] = Field(default=None, max_length=50, description="Grade assignment. Defaults to '0' (General) if not provided.", json_schema_extra={"example": "0"})
 class AdminStudentCreate(BaseModel):
     """Admin-initiated student account creation payload."""
     username: str = Field(..., min_length=1, max_length=100, description="Unique username for the student.", json_schema_extra={"example": "student_new"})
-    password: Optional[str] = Field(default="lumina2026", min_length=8, max_length=128, description="Account password. Defaults to a known fallback.", json_schema_extra={"example": "lumina2026"})
+    password: Optional[str] = Field(default=None, min_length=8, max_length=128, description="Account password. Generated if omitted.", json_schema_extra={"example": "changeme123"})
     name: Optional[str] = Field(default=None, max_length=100, description="Display name for the student.", json_schema_extra={"example": "Bob"})
     grade: Optional[str] = Field(default=None, max_length=50, description="Grade or class assignment.", json_schema_extra={"example": "Grade 10"})
 class StudentLoginRequest(BaseModel):

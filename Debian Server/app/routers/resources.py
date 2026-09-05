@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from app.database import UPLOAD_DIR, gen_composite_uid
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch_one, db_run
-from app.dependencies import verify_teacher
+from app.dependencies import verify_teacher, can_manage_resource
 from app.models import UploadResponse, DeleteResourceResponse
 from app.routers.resource_catalog import invalidate_catalog_cache
 from app.routers.teacher_courses import _write_chunked
@@ -138,9 +138,11 @@ async def update_resource(resource_id: str, data: dict, teacher_user: str = Depe
     fields = {k: v for k, v in data.items() if k in allowed and v is not None}
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update.")  # i18n: user-facing error message
-    row = await db_fetch_one("SELECT id FROM resources WHERE id = ?", (resource_id,))
+    row = await db_fetch_one("SELECT id, uploaded_by FROM resources WHERE id = ?", (resource_id,))
     if not row:
         raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
+    if not await can_manage_resource(teacher_user, row["uploaded_by"]):
+        raise HTTPException(status_code=403, detail="You can only edit your own resources.")  # i18n: user-facing auth error
     if "subject" in fields:
         subj = await db_fetch_one("SELECT name FROM subjects WHERE name = ?", (fields["subject"],))
         if not subj:
@@ -183,6 +185,12 @@ async def delete_resource(resource_id: str, teacher_user: str = Depends(verify_t
         HTTPException: 404 if resource not found, 400 on failure.
     """
     try:
+        owner_row = await db_fetch_one("SELECT uploaded_by FROM resources WHERE id = ?", (resource_id,))
+        if not owner_row:
+            raise HTTPException(status_code=404, detail="Resource not found.")  # i18n: user-facing error message
+        if not await can_manage_resource(teacher_user, owner_row["uploaded_by"]):
+            raise HTTPException(status_code=403, detail="You can only delete your own resources.")  # i18n: user-facing auth error
+
         def _recycle(conn):
             """Mark the resource deleted with a timestamp; returns its title or None."""
             row = conn.execute("SELECT title FROM resources WHERE id = ?", (resource_id,)).fetchone()

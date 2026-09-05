@@ -1,5 +1,6 @@
 """Database initialization and constants for Lumina EduMesh Hub."""
 import os
+import secrets
 import sqlite3
 import uuid
 import logging
@@ -308,9 +309,17 @@ def init_db():
             logging.warning(f"FTS5 startup rebuild failed: {e}")
 
     try:
-        default_pwd = hash_password("lumina2026")
+        default_pwd = secrets.token_urlsafe(12)
+        hashed_pwd = hash_password(default_pwd)
         admin_id = f"LUMINA_01-T{uuid.uuid4().hex}"
-        c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, 'admin')", ("admin", default_pwd, "Administrator", "System", admin_id))
+        c.execute("INSERT INTO users (username, hashed_password, name, department, scholar_id, role) VALUES (?, ?, ?, ?, ?, 'admin')", ("admin", hashed_pwd, "Administrator", "System", admin_id))
+        try:
+            os.makedirs("data", exist_ok=True)
+            with open("data/admin_bootstrap.txt", "w") as f:
+                f.write(default_pwd)
+        except OSError as e:
+            logging.error(f"Could not write admin bootstrap password file: {e}")
+        logging.info("Admin bootstrap password written to: data/admin_bootstrap.txt")
         logging.info("=" * 50)
         logging.info("  DEFAULT ADMIN ACCOUNT CREATED")
         logging.info("  Change the password immediately via Dashboard > Settings")
