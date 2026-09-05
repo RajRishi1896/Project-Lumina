@@ -781,62 +781,67 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
           }
         });
 
-    return options.asMap().entries.map((entry) {
-      final idx = entry.key;
-      final opt = entry.value;
-      final selected = multi
-          ? (_multiSelected[_currentIndex] ?? const <int>{}).contains(idx)
-          : selectedIdx == idx;
-      return Column(
-        children: [
-          InkWell(
-            onTap: () => select(idx),
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: AppSpacing.touchTarget,
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm.w,
-                  vertical: AppSpacing.xs.h,
-                ),
-                child: Row(
-                  children: [
-                    multi
-                        ? Checkbox(
-                            value: selected,
-                            onChanged: (_) => select(idx),
-                            activeColor: cs.primary,
-                            visualDensity: VisualDensity.compact,
-                          )
-                        : Radio<int>(
-                            value: idx,
-                            groupValue: selectedIdx,
-                            onChanged: (_) => select(idx),
-                            activeColor: cs.primary,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                    SizedBox(width: AppSpacing.sm.w),
-                    Expanded(
-                      child: Text(
-                        opt,
-                        style: tt.bodyMedium?.copyWith(
-                          fontSize: 14.sp,
-                          color: cs.onSurface,
-                        ),
-                      ),
+    return [RadioGroup<int>(
+      groupValue: selectedIdx,
+      onChanged: (val) {
+        if (val != null) select(val);
+      },
+      child: Column(
+        children: options.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final opt = entry.value;
+          final selected = multi
+              ? (_multiSelected[_currentIndex] ?? const <int>{}).contains(idx)
+              : selectedIdx == idx;
+          return Column(
+            children: [
+              InkWell(
+                onTap: () => select(idx),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: AppSpacing.touchTarget,
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm.w,
+                      vertical: AppSpacing.xs.h,
                     ),
-                  ],
+                    child: Row(
+                      children: [
+                        multi
+                            ? Checkbox(
+                                value: selected,
+                                onChanged: (_) => select(idx),
+                                activeColor: cs.primary,
+                                visualDensity: VisualDensity.compact,
+                              )
+                            : Radio<int>(
+                                value: idx,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                        SizedBox(width: AppSpacing.sm.w),
+                        Expanded(
+                          child: Text(
+                            opt,
+                            style: tt.bodyMedium?.copyWith(
+                              fontSize: 14.sp,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          if (idx < options.length - 1)
-            Divider(height: 1, color: cs.outlineVariant),
-        ],
-      );
-    }).toList();
+              if (idx < options.length - 1)
+                Divider(height: 1, color: cs.outlineVariant),
+            ],
+          );
+        }).toList(),
+      ),
+    )];
   }
 
   List<Widget> _buildOptions(QuizQuestion q, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
