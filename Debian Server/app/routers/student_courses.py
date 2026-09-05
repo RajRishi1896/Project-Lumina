@@ -343,6 +343,16 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
 
     # Security: the answer key must never reach the client; grading is
     # re-done server-side on submit from this same on-disk file.
+    # We include a stripped _answer_key (question_id -> correct answer only)
+    # so the client can grade locally when offline. The full question data
+    # is never sent.
+    quiz_inner["_answer_key"] = {
+        q.get("id", f"q-{i}"): {
+            k: v for k, v in q.items()
+            if k in ("correct_answer", "correct_answers")
+        }
+        for i, q in enumerate(quiz_inner.get("questions", []))
+    }
     quiz_inner["questions"] = strip_answer_keys(quiz_inner.get("questions", []))
 
     return quiz_data

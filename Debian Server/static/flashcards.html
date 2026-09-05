@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
-    <link rel="stylesheet" href="/static/css/lumina.css?v=19">
+    <link rel="stylesheet" href="/static/css/lumina.css?v=24">
 </head>
 <body>
     <a href="#app-content" class="skip-link" data-i18n="skip_to_content">Skip to main content</a>
@@ -20,6 +20,10 @@
         <div id="app-content">
             <!-- Section 1: Deck List -->
             <div id="deckListSection">
+                <a href="/static/manage-content" class="back-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    <span data-i18n="courses.back">Back</span>
+                </a>
                 <div class="page-header flex flex-wrap gap-4 justify-between items-start">
                     <div>
                         <h1 data-i18n="flashcards.deck_management">Flashcard decks</h1>
@@ -46,7 +50,7 @@
                             </tr>
                         </thead>
                         <tbody id="deckTable">
-                            <tr><td colspan="4" class="empty-state" data-i18n="flashcards.no_decks">No decks yet.</td></tr>
+                            <tr><td colspan="4" class="empty-state" style="text-align:center;width:100%;" data-i18n="flashcards.no_decks">No decks yet.</td></tr>
                         </tbody>
                     </table>
                     </div>
@@ -67,7 +71,7 @@
                             </tr>
                         </thead>
                         <tbody id="submissionTable">
-                            <tr><td colspan="5" class="empty-state" data-i18n="flashcards.no_submissions">No student submissions yet.</td></tr>
+                            <tr><td colspan="5" class="empty-state" style="text-align:center;width:100%;" data-i18n="flashcards.no_submissions">No student submissions yet.</td></tr>
                         </tbody>
                     </table>
                     </div>
@@ -208,7 +212,7 @@
         function renderDecks() {
             var tbody = document.getElementById('deckTable');
             if (!decks.length) {
-                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">' + __('flashcards.no_decks') + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state" style="text-align:center;width:100%;">' + __('flashcards.no_decks') + '</td></tr>';
                 return;
             }
             tbody.innerHTML = decks.map(function(d) {
@@ -250,7 +254,7 @@
         function renderSubmissions(list) {
             var tbody = document.getElementById('submissionTable');
             if (!list.length) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">' + __('flashcards.no_submissions') + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state" style="text-align:center;width:100%;">' + __('flashcards.no_submissions') + '</td></tr>';
                 return;
             }
             tbody.innerHTML = list.map(function(s) {

@@ -166,6 +166,14 @@ async def get_quiz_resource(resource_id: str, user: str = Depends(verify_user)):
 
     # Security: the answer key must never reach the client; grading is
     # re-done server-side on submit from this same on-disk file.
+    # Include stripped _answer_key for offline grading (question_id -> correct answer only).
+    quiz_inner["_answer_key"] = {
+        q.get("id", f"q-{i}"): {
+            k: v for k, v in q.items()
+            if k in ("correct_answer", "correct_answers")
+        }
+        for i, q in enumerate(quiz_inner.get("questions", []))
+    }
     quiz_inner["questions"] = strip_answer_keys(quiz_inner.get("questions", []))
 
     return quiz_data

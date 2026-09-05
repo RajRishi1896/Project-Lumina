@@ -107,7 +107,7 @@ async def get_stats():
                 pct = int(round(sum(caps) / len(caps)))
             else:
                 return None, False
-            charging = any(s in ("Charging", "Full") for s in statuses)
+            charging = any(s in ("Charging", "Full", "Not charging") for s in statuses)
             return max(0, min(100, pct)), charging
         battery_percent, battery_charging = await asyncio.to_thread(_read_battery)
     except Exception:

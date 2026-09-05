@@ -279,7 +279,6 @@ function initLangPicker() {
     themeBtn.addEventListener('click', function() { toggleTheme(); updateThemeIcon(); });
     themeBtn.addEventListener('mouseenter', function(){ themeBtn.style.background = 'var(--outline)'; });
     themeBtn.addEventListener('mouseleave', function(){ themeBtn.style.background = 'var(--bg-surface)'; });
-    wrap.appendChild(themeBtn);
 
     const btn = document.createElement('button');
     btn.id = 'langPickerBtn';
@@ -295,6 +294,7 @@ function initLangPicker() {
     btn.addEventListener('click', function(e) { e.stopPropagation(); toggleLangPicker(); });
 
     wrap.appendChild(btn);
+    wrap.appendChild(themeBtn);
     document.body.appendChild(wrap);
 
     const overlay = document.createElement('div');
