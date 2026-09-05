@@ -5,6 +5,7 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Response, Query
+import app.audit as audit_module
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch_one
 from app.models import AuditLogResponse, SettingsResponse, StatusResponse
@@ -50,7 +51,7 @@ async def admin_log(  # noqa: PLR0913
         def _read_log():
             """Read the log file from newest to oldest, applying all filters."""
             try:
-                with open("data/admin_actions.log", "r") as f:
+                with open(audit_module.AUDIT_LOG_PATH, "r") as f:
                     lines = f.readlines()
                 result = []
                 for line in reversed(lines):
@@ -169,7 +170,7 @@ async def download_admin_logs(duration: str = "all", admin_user: str = Depends(v
     Returns:
         Plain-text Response with log content and Content-Disposition header.
     """
-    if not await asyncio.to_thread(os.path.exists, "data/admin_actions.log"):
+    if not await asyncio.to_thread(os.path.exists, audit_module.AUDIT_LOG_PATH):
         return Response(content="No logs found.", media_type="text/plain")  # i18n: user-facing message (download)
 
     ALLOWED_DURATIONS = {"24h", "7d", "30d", "3m", "6m", "all"}
@@ -187,7 +188,7 @@ async def download_admin_logs(duration: str = "all", admin_user: str = Depends(v
         """Read and filter admin audit log by duration cutoff. Runs in worker thread."""
         try:
             result = []
-            with open("data/admin_actions.log", "r") as f:
+            with open(audit_module.AUDIT_LOG_PATH, "r") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -215,6 +216,5 @@ async def download_admin_logs(duration: str = "all", admin_user: str = Depends(v
         media_type="text/plain",
         headers={"Content-Disposition": f"attachment; filename=admin_logs_{duration}.txt"}
     )
-
 
 
