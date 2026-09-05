@@ -195,6 +195,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
             style: tt.titleLarge?.copyWith(color: cs.onSurface)),
         content: SizedBox(
           width: double.maxFinite,
+          height: MediaQuery.sizeOf(context).height * 0.5,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -221,8 +222,10 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                     onPressed: () {
                       final p = int.tryParse(controller.text);
                       if (p != null && p >= 1 && p <= _totalPages) {
-                        _pdfController.animateToPage(pageNumber: p);
                         Navigator.pop(ctx);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _pdfController.animateToPage(pageNumber: p);
+                        });
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -253,8 +256,10 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                         onTap: () {
-                          _pdfController.animateToPage(pageNumber: p);
                           Navigator.pop(ctx);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _pdfController.animateToPage(pageNumber: p);
+                          });
                         },
                         child: Center(
                           child: Text(

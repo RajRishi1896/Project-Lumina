@@ -244,9 +244,11 @@ class _DashboardPageState extends State<DashboardPage> {
           final raw = (response.data as List)
               .whereType<Map<String, dynamic>>()
               .toList();
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('cached_subjects', jsonEncode(raw));
-          if (mounted) setState(() => _subjects = raw);
+          if (raw.isNotEmpty) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('cached_subjects', jsonEncode(raw));
+            if (mounted) setState(() => _subjects = raw);
+          }
         }
       }).catchError((_) {}));
 
@@ -327,12 +329,14 @@ class _DashboardPageState extends State<DashboardPage> {
             width: 28.sp,
             height: 28.sp,
           ),
-          SizedBox(width: AppSpacing.md.w),
-          Expanded(
-            child: Text(l10n.appTitle,
-                maxLines: 2, overflow: TextOverflow.ellipsis,
-                style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
-          ),
+          if (MediaQuery.sizeOf(context).width >= 360) ...[
+            SizedBox(width: AppSpacing.md.w),
+            Expanded(
+              child: Text(l10n.appTitle,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
+            ),
+          ],
           SizedBox(width: AppSpacing.sm.w),
           _buildServerStatusBadge(),
           SizedBox(width: AppSpacing.sm.w),

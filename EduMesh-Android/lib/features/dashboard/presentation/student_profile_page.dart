@@ -18,7 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 import '../../../core/services/course_service.dart';
 import 'course_player_page.dart';
-import 'study_report_page.dart';
+
 import '../../auth/presentation/profile_picker_page.dart';
 
 final _whitespaceRE = RegExp(r'\s+');
@@ -312,25 +312,23 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
                           // ponytail: builder defers offscreen sections on 1GB devices.
-                          child: ListView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
-                      itemCount: 14,
-                      itemBuilder: (_, i) => switch (i) {
-                        0 => _buildProfileCard(cs),
-                        1 => SizedBox(height: AppSpacing.sm.h),
-                        2 => _buildSwitchProfileTile(cs),
-                        3 => SizedBox(height: AppSpacing.xl.h),
-                        4 => _buildStatsRow(cs),
-                        5 => SizedBox(height: AppSpacing.md.h),
-                        6 => _buildStudyReportEntry(cs),
-                        7 => SizedBox(height: AppSpacing.xxl.h),
-                        8 => _buildMyCoursesSection(cs),
-                        9 => SizedBox(height: AppSpacing.xxl.h),
-                        10 => _buildSubjectBreakdown(cs),
-                        11 => SizedBox(height: AppSpacing.xxl.h),
-                        12 => _buildRecentActivity(cs),
-                        _ => SizedBox(height: AppSpacing.xxl.h),
-                      },
+                      child: ListView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
+                  itemCount: 12,
+                  itemBuilder: (_, i) => switch (i) {
+                    0 => _buildProfileCard(cs),
+                    1 => SizedBox(height: AppSpacing.sm.h),
+                    2 => _buildSwitchProfileTile(cs),
+                    3 => SizedBox(height: AppSpacing.xl.h),
+                    4 => _buildStatsRow(cs),
+                    5 => SizedBox(height: AppSpacing.xxl.h),
+                    6 => _buildMyCoursesSection(cs),
+                    7 => SizedBox(height: AppSpacing.xxl.h),
+                    8 => _buildSubjectBreakdown(cs),
+                    9 => SizedBox(height: AppSpacing.xxl.h),
+                    10 => _buildRecentActivity(cs),
+                    _ => SizedBox(height: AppSpacing.xxl.h),
+                  },
                           ),
                         ),
                       ),
@@ -737,62 +735,37 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         padding: EdgeInsets.all(AppSpacing.lg.w),
         child: Column(
           children: [
-            _statRow(cs, l10n.statCardToday, '$_studyMinutesToday${l10n.suffixMinutes}', l10n.statCardThisWeek, _studyMinutesThisWeek < 60 ? '$_studyMinutesThisWeek${l10n.suffixMinutes}' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}${l10n.suffixHours}'),
+            _statRow(cs, l10n.statCardToday, '$_studyMinutesToday${l10n.suffixMinutes}', Icons.today_outlined, l10n.statCardThisWeek, _studyMinutesThisWeek < 60 ? '$_studyMinutesThisWeek${l10n.suffixMinutes}' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}${l10n.suffixHours}', Icons.date_range_outlined),
             SizedBox(height: AppSpacing.md.h),
-            _statRow(cs, l10n.profileCoursesCompleted, '$_coursesCompleted', l10n.statCardStreak, '$_streakDays${l10n.suffixDays}'),
+            _statRow(cs, l10n.profileCoursesCompleted, '$_coursesCompleted', Icons.school_outlined, l10n.statCardStreak, '$_streakDays${l10n.suffixDays}', Icons.local_fire_department_outlined),
           ],
         ),
       ),
     );
   }
 
-  Widget _statRow(ColorScheme cs, String label1, String value1, String label2, String value2) {
+  Widget _statRow(ColorScheme cs, String label1, String value1, IconData icon1, String label2, String value2, IconData icon2) {
     final tt = Theme.of(context).textTheme;
     return Row(
       children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value1, style: tt.titleLarge?.copyWith(color: cs.onSurface)),
-          Text(label1, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+        Expanded(child: Row(children: [
+          Icon(icon1, size: 20.sp, color: cs.primary),
+          SizedBox(width: AppSpacing.sm.w),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(value1, style: tt.titleLarge?.copyWith(color: cs.onSurface)),
+            Text(label1, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          ])),
         ])),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value2, style: tt.titleLarge?.copyWith(color: cs.onSurface)),
-          Text(label2, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+        SizedBox(width: AppSpacing.md.w),
+        Expanded(child: Row(children: [
+          Icon(icon2, size: 20.sp, color: cs.secondary),
+          SizedBox(width: AppSpacing.sm.w),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(value2, style: tt.titleLarge?.copyWith(color: cs.onSurface)),
+            Text(label2, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          ])),
         ])),
       ],
-    );
-  }
-
-  /// Entry tile into the parent-facing local study report.
-  Widget _buildStudyReportEntry(ColorScheme cs) {
-    final tt = Theme.of(context).textTheme;
-    final l10n = AppLocalizations.of(context)!;
-    return Semantics(
-      button: true,
-      label: l10n.studyReportOpen,
-      child: GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          luminaRoute(builder: (_) => const StudyReportPage()),
-        ),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.lg.h),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.insights_rounded, color: cs.primary, size: 22.sp),
-              SizedBox(width: AppSpacing.md.w),
-              Expanded(
-                child: Text(l10n.studyReportOpen,
-                    style: tt.titleSmall?.copyWith(color: cs.onSurface)),
-              ),
-              Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

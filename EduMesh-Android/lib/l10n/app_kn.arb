@@ -125,6 +125,10 @@
   "snackbarDownloadRemoved": "ಡೌನ್‌ಲೋಡ್ ತೆಗೆದುಹಾಕಲಾಗಿದೆ",
   "snackbarRemovedFromSaved": "ಉಳಿಸಿದವುಗಳಿಂದ ತೆಗೆದುಹಾಕಲಾಗಿದೆ",
   "snackbarAddedToSaved": "ಉಳಿಸಿದವುಗಳಿಗೆ ಸೇರಿಸಲಾಗಿದೆ",
+  "downloadQueueTitle": "ಡೌನ್‌ಲೋಡ್ ಕ್ಯೂ",
+  "downloadQueueEmpty": "ಕ್ಯೂನಲ್ಲಿ ಡೌನ್‌ಲೋಡ್‌ಗಳಿಲ್ಲ",
+  "downloadQueueClearAll": "ಎಲ್ಲಾ ತೆರವುಗೊಳಿಸಿ",
+  "downloadQueueDownloading": "ಈಗ ಡೌನ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ",
   "removedFromServerBadge": "ಸರ್ವರ್ನಿಂದ ತೆಗೆದುಹಾಕಲಾಗಿದೆ",
   "@removedFromServerBadge": {
     "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."
@@ -322,6 +326,8 @@
   "quizScoreFraction": "{correct}/{total}",
   "quizExplanation": "ವಿವರಣೆ: {text}",
   "quizBackToCourse": "ಕೋರ್ಸ್‌ಗೆ ಹಿಂತಿರುಗಿ",
+  "quizQuitTitle": "ಕ್ವಿಜ್ ಬಿಟ್ಟುಬಿಡುವುದೇ?",
+  "quizQuitConfirm": "ನಿಮ್ಮ ಪ್ರಗತಿಯನ್ನು ಹಾಗೆಯೇ ಸಲ್ಲಿಸಲಾಗುತ್ತದೆ. ನೀವು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಬಹುದು.",
   "quizResultsPendingTitle": "ಉತ್ತರಗಳು ಉಳಿಸಲ್ಪಟ್ಟವು",
   "quizResultsPendingBody": "ನಿಮ್ಮ ಉತ್ತರಗಳು ಉಳಿಸಲಾಗಿವೆ. ಹಬ್ ಜೊತೆ ಸಂಪರ್ಕಿಸಿದಾಗ ನಿಮ್ಮ ಅಂಕ ತೋರಿಸಲಾಗುತ್ತದೆ.",
   "profileCoursesCompleted": "ಕೋರ್ಸ್‌ಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ",
@@ -676,6 +682,18 @@
   },
   "@snackbarAddedToSaved": {
     "description": "SnackBar confirming a resource was added to saved/bookmarked"
+  },
+  "@downloadQueueTitle": {
+    "description": "Title of the download queue bottom sheet"
+  },
+  "@downloadQueueEmpty": {
+    "description": "Empty state message when the download queue has no items"
+  },
+  "@downloadQueueClearAll": {
+    "description": "Button to clear all pending downloads from the queue"
+  },
+  "@downloadQueueDownloading": {
+    "description": "Subtitle for the item currently being downloaded"
   },
   "@snackbarNotDownloaded": {
     "description": "SnackBar when user taps an undownloaded resource while offline",

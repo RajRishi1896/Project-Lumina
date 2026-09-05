@@ -127,7 +127,10 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       if (mounted) {
         setState(() {
           _localPaths = pathMap;
-          _isDownloaded = _resources.every((r) => dlIds.contains(r.id));
+          // Mark as downloaded when ALL resources have local files, OR when
+          // the course has existing progress (user already opened it before).
+          _isDownloaded = _resources.every((r) => dlIds.contains(r.id))
+              || (_currentPosition > 0 && _localPaths.isNotEmpty);
         });
       }
     } catch (e) {
@@ -212,19 +215,19 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       if (!mounted) return;
       unawaited(RecentResources.record(resource.id, resource.title, resource.resourceType.name));
       if (resource.resourceType == CourseType.video) {
-        unawaited(Navigator.push(
-          context,
-          luminaRoute(
-            builder: (_) => VideoPlayerPage(title: resource.title, videoUrl: url, subject: widget.course.subject),
-          ),
-        ).then((_) => _markCompleted(resource.id)));
-      } else {
-        unawaited(Navigator.push(
-          context,
-          luminaRoute(
-            builder: (_) => PdfViewerPage(title: resource.title, pdfUrl: url, subject: widget.course.subject),
-          ),
-        ).then((_) => _markCompleted(resource.id)));
+      unawaited(Navigator.push(
+        context,
+        luminaRoute(
+          builder: (_) => VideoPlayerPage(title: resource.title, videoUrl: url, subject: widget.course.subject),
+        ),
+      ).then((_) { if (mounted) _markCompleted(resource.id); }));
+    } else {
+      unawaited(Navigator.push(
+        context,
+        luminaRoute(
+          builder: (_) => PdfViewerPage(title: resource.title, pdfUrl: url, subject: widget.course.subject),
+        ),
+      ).then((_) { if (mounted) _markCompleted(resource.id); }));
       }
     });
   }

@@ -65,7 +65,11 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
     setState(() => _loading = true);
     final rows = await DBHelper().getDownloadedResources();
     final zimRows = await DBHelper().getDownloadedZimArticles();
-    final List<Map<String, dynamic>> allRows = [...rows, ...zimRows];
+    // Filter out individual course resources — they are shown as course
+    // cards via the Saved Resources > Courses tab.
+    final courseRids = await DBHelper().getCourseResourceIds();
+    final filteredRows = rows.where((r) => !courseRids.contains(r['resource_id']?.toString() ?? '')).toList();
+    final List<Map<String, dynamic>> allRows = [...filteredRows, ...zimRows];
     // File-size lookups are batched into one background-isolate compute pass
     // so the UI isolate never performs per-file I/O and build stays pure.
     final withSizes = await compute(_attachSizes, allRows);

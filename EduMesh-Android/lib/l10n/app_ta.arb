@@ -131,6 +131,10 @@
   "snackbarDownloadRemoved": "டவுன்லோட் நீக்கப்பட்டது",
   "snackbarRemovedFromSaved": "சேமிக்கப்பட்டவற்றிலிருந்து நீக்கப்பட்டது",
   "snackbarAddedToSaved": "சேமிக்கப்பட்டவற்றில் சேர்க்கப்பட்டது",
+  "downloadQueueTitle": "பதிவிறக்க வரிசை",
+  "downloadQueueEmpty": "வரிசையில் பதிவிறக்கங்கள் இல்லை",
+  "downloadQueueClearAll": "அனைத்தையும் நீக்கு",
+  "downloadQueueDownloading": "இப்போது பதிவிறக்கம் ஆகிறது",
   "removedFromServerBadge": "சர்வரில் இருந்து நீக்கப்பட்டது",
   "@removedFromServerBadge": {
     "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."
@@ -328,6 +332,8 @@
   "quizScoreFraction": "{correct}/{total}",
   "quizExplanation": "விளக்கம்: {text}",
   "quizBackToCourse": "பாடநெறிக்குத் திரும்பு",
+  "quizQuitTitle": "வினாடி வினாவை விட்டுவிடவா?",
+  "quizQuitConfirm": "உங்கள் முன்னேற்றம் உள்ளது போலவே சமர்ப்பிக்கப்படும். பின்னர் மீண்டும் முயற்சிக்கலாம்.",
   "quizResultsPendingTitle": "பதில்கள் சேமிக்கப்பட்டன",
   "quizResultsPendingBody": "உங்கள் பதில்கள் சேமிக்கப்பட்டுள்ளன. ஹப்புடன் இணைக்கும்போது உங்கள் மதிப்பெண் காட்டப்படும்.",
   "profileCoursesCompleted": "பாடநெறிகள் முடிக்கப்பட்டன",

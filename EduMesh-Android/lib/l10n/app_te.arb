@@ -131,6 +131,10 @@
   "snackbarDownloadRemoved": "డౌన్‌లోడ్ తీసివేయబడింది",
   "snackbarRemovedFromSaved": "సేవ్ చేసిన వాటి నుండి తీసివేయబడింది",
   "snackbarAddedToSaved": "సేవ్ చేసిన వాటిలో చేర్చబడింది",
+  "downloadQueueTitle": "డౌన్‌లోడ్ క్యూ",
+  "downloadQueueEmpty": "క్యూలో డౌన్‌లోడ్‌లు లేవు",
+  "downloadQueueClearAll": "అన్నీ క్లియర్ చేయండి",
+  "downloadQueueDownloading": "ఇప్పుడు డౌన్‌లోడ్ అవుతోంది",
   "removedFromServerBadge": "సర్వర్ నుండి తీసివేయబడింది",
   "@removedFromServerBadge": {
     "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."
@@ -328,6 +332,8 @@
   "quizScoreFraction": "{correct}/{total}",
   "quizExplanation": "వివరణ: {text}",
   "quizBackToCourse": "కోర్సుకు తిరిగి",
+  "quizQuitTitle": "క్విజ్ వదిలివేయాలా?",
+  "quizQuitConfirm": "మీ పురోగతి ఉన్నది విధంగానే సమర్పించబడుతుంది. మీరు తర్వాత మళ్ళీ ప్రయత్నించవచ్చు.",
   "quizResultsPendingTitle": "సమాధానాలు సేవ్ చేయబడ్డాయి",
   "quizResultsPendingBody": "మీ సమాధానాలు సేవ్ చేయబడ్డాయి. హబ్ కనెక్ట్ అయినప్పుడు మీ స్కోర్ చూపబడుతుంది.",
   "profileCoursesCompleted": "కోర్సులు పూర్తయ్యాయి",

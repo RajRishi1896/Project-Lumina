@@ -125,6 +125,10 @@
   "snackbarDownloadRemoved": "डाउनलोड हटाया गया",
   "snackbarRemovedFromSaved": "सहेजे गए से हटाया गया",
   "snackbarAddedToSaved": "सहेजे गए में जोड़ा गया",
+  "downloadQueueTitle": "डाउनलोड कतार",
+  "downloadQueueEmpty": "कतार में कोई डाउनलोड नहीं",
+  "downloadQueueClearAll": "सभी साफ़ करें",
+  "downloadQueueDownloading": "अभी डाउनलोड हो रहा है",
   "removedFromServerBadge": "सर्वर से हटाया गया",
   "@removedFromServerBadge": {
     "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."
@@ -322,6 +326,8 @@
   "quizScoreFraction": "{correct}/{total}",
   "quizExplanation": "व्याख्या: {text}",
   "quizBackToCourse": "कोर्स पर वापस",
+  "quizQuitTitle": "क्विज़ छोड़ें?",
+  "quizQuitConfirm": "आपकी प्रगति जैसी है वैसी जमा हो जाएगी। आप बाद में फिर से कोशिश कर सकते हैं।",
   "quizResultsPendingTitle": "उत्तर सहेजे गए",
   "quizResultsPendingBody": "आपके उत्तर सहेज लिए गए हैं। हब से जुड़ने पर आपका स्कोर दिखाई देगा।",
   "profileCoursesCompleted": "कोर्स पूर्ण",
@@ -676,6 +682,18 @@
   },
   "@snackbarAddedToSaved": {
     "description": "SnackBar confirming a resource was added to saved/bookmarked"
+  },
+  "@downloadQueueTitle": {
+    "description": "Title of the download queue bottom sheet"
+  },
+  "@downloadQueueEmpty": {
+    "description": "Empty state message when the download queue has no items"
+  },
+  "@downloadQueueClearAll": {
+    "description": "Button to clear all pending downloads from the queue"
+  },
+  "@downloadQueueDownloading": {
+    "description": "Subtitle for the item currently being downloaded"
   },
   "@snackbarNotDownloaded": {
     "description": "SnackBar when user taps an undownloaded resource while offline",

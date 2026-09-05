@@ -125,6 +125,10 @@
   "snackbarDownloadRemoved": "Téléchargement supprimé",
   "snackbarRemovedFromSaved": "Retiré des enregistrements",
   "snackbarAddedToSaved": "Ajouté aux enregistrements",
+  "downloadQueueTitle": "File de téléchargement",
+  "downloadQueueEmpty": "Aucun téléchargement en attente",
+  "downloadQueueClearAll": "Tout effacer",
+  "downloadQueueDownloading": "Téléchargement en cours",
   "removedFromServerBadge": "Retiré du serveur",
   "@removedFromServerBadge": {
     "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."
@@ -322,6 +326,8 @@
   "quizScoreFraction": "{correct}/{total}",
   "quizExplanation": "Explication : {text}",
   "quizBackToCourse": "Retour au cours",
+  "quizQuitTitle": "Quitter le quiz ?",
+  "quizQuitConfirm": "Votre progression sera soumise telle quelle. Vous pourrez repasser le quiz plus tard.",
   "quizResultsPendingTitle": "Réponses enregistrées",
   "quizResultsPendingBody": "Vos réponses sont enregistrées. Votre score apparaîtra quand vous serez reconnecté au hub.",
   "profileCoursesCompleted": "Cours terminés",
@@ -676,6 +682,18 @@
   },
   "@snackbarAddedToSaved": {
     "description": "SnackBar confirming a resource was added to saved/bookmarked"
+  },
+  "@downloadQueueTitle": {
+    "description": "Title of the download queue bottom sheet"
+  },
+  "@downloadQueueEmpty": {
+    "description": "Empty state message when the download queue has no items"
+  },
+  "@downloadQueueClearAll": {
+    "description": "Button to clear all pending downloads from the queue"
+  },
+  "@downloadQueueDownloading": {
+    "description": "Subtitle for the item currently being downloaded"
   },
   "@snackbarNotDownloaded": {
     "description": "SnackBar when user taps an undownloaded resource while offline",
