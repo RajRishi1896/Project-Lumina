@@ -20,6 +20,14 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pytest
           python -m compileall -q app
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.x"
+          channel: stable
       - name: Validate Flutter
         working-directory: EduMesh-Android
         run: |
