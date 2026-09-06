@@ -69,17 +69,8 @@ coverage/
 **/UI-Inspo/
 
 # === AI Agent Artifacts ===
-AGENTS.md
-COMPLIANCE_TRACKER.md
-IMPLEMENTATION_PLAN.md
-**/Agent System Prompt.md
-**/walkthrough.md
-**/task.md
-**/Implementation Plan.md
-**/Implementation Plan*/
-Markdown files/
-docs/*
-LMS Docs/
+*.md
+!README.md
 
 # === Ocode plugins ===
 hooks/

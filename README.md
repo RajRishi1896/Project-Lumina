@@ -154,7 +154,7 @@ Client: the Flutter app mirrors catalog and progress state in its own local SQLi
 
 ## Performance Data
 
-Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frames, single-resource query ≤ 50 ms, release APK ≤ 25 MB) are tracked in `AGENTS.md`. The 250-concurrent-student concurrency target is a design figure validated only at small scale. A repeatable benchmark harness is not in scope for the PoC.
+Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frames, single-resource query ≤ 50 ms, release APK ≤ 25 MB). The 250-concurrent-student concurrency target is a design figure validated only at small scale. A repeatable benchmark harness is not in scope for the PoC.
 
 ---
 
@@ -252,16 +252,9 @@ This is a proof of concept. It is done.
 | Phone-to-phone sharing (ShareServer) | Shipped |
 | Profile isolation and security hardening | Shipped |
 
-The authoritative shipped tracker is [`feature-roadmap.md`](Markdown%20files/feature-roadmap.md).
-
 ---
 
 ## Documentation
-
-- [`docs/`](docs/): ADRs, ZIM search redesign notes, and the i18n debt tracker.
-- [`feature-roadmap.md`](Markdown%20files/feature-roadmap.md): authoritative shipped/cut/open tracker.
-
-Other working documents (engineering contract, design system, implementation details) live in the repo but are intentionally untracked; ask a maintainer for pointers.
 
 ---
 
