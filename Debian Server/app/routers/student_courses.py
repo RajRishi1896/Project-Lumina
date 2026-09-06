@@ -341,18 +341,8 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
         if "image" not in q and "image_data" in q:
             q["image"] = q.pop("image_data")
 
-    # Security: the answer key must never reach the client; grading is
-    # re-done server-side on submit from this same on-disk file.
-    # We include a stripped _answer_key (question_id -> correct answer only)
-    # so the client can grade locally when offline. The full question data
-    # is never sent.
-    quiz_inner["_answer_key"] = {
-        q.get("id", f"q-{i}"): {
-            k: v for k, v in q.items()
-            if k in ("correct_answer", "correct_answers")
-        }
-        for i, q in enumerate(quiz_inner.get("questions", []))
-    }
+    # Security: the answer key must never reach the client before submission.
+    # Grading is re-done server-side on submit from this same on-disk file.
     quiz_inner["questions"] = strip_answer_keys(quiz_inner.get("questions", []))
 
     return quiz_data
@@ -400,8 +390,10 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
         raise HTTPException(status_code=404, detail="Quiz not found.")  # i18n: user-facing error message
     score, passed, threshold, results = grade_quiz_detailed(quiz, data.answers_json)
 
+    # Idempotent insert: ON CONFLICT do nothing so concurrent duplicate
+    # attempts don't produce a 500; the SELECT below returns the existing row.
     await db_exec(
-        """INSERT INTO quiz_attempts (id, student_id, course_id, resource_id, attempt_number, score, passed, answers_json, started_at, submitted_at, time_taken_seconds, quiz_version, threshold_at_submission)
+        """INSERT OR IGNORE INTO quiz_attempts (id, student_id, course_id, resource_id, attempt_number, score, passed, answers_json, started_at, submitted_at, time_taken_seconds, quiz_version, threshold_at_submission)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (data.attempt_id, student_id, course_id, resource_id, data.attempt_number,
          score, passed, data.answers_json, data.started_at,
@@ -411,6 +403,15 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
     row = await db_fetch_one("SELECT * FROM quiz_attempts WHERE id = ?", (data.attempt_id,))
     response = dict(row)
     response["results"] = results
+    # Return the answer key ONLY after grading — never before submission.
+    quiz_inner = quiz.get("quiz", quiz)
+    response["_answer_key"] = {
+        q.get("id", f"q-{i}"): {
+            k: v for k, v in q.items()
+            if k in ("correct_answer", "correct_answers")
+        }
+        for i, q in enumerate(quiz_inner.get("questions", []))
+    }
     return response
 
 
