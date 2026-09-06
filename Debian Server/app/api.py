@@ -269,6 +269,7 @@ from app.routers.teacher_topics import router as teacher_topics_router
 from app.routers.teacher_similar import router as teacher_similar_router
 from app.routers.teacher_flashcards import router as teacher_flashcards_router
 from app.routers.teacher_quiz_resources import router as teacher_quiz_resources_router
+from app.routers.resource_topics import router as resource_topics_router
 from app.routers.student_courses import router as student_courses_router
 from zim_handler import router as zim_router
 
@@ -294,6 +295,7 @@ app.include_router(teacher_similar_router)
 app.include_router(teacher_flashcards_router)
 app.include_router(student_courses_router)
 app.include_router(teacher_quiz_resources_router)
+app.include_router(resource_topics_router)
 app.include_router(zim_router, prefix="/zim")
 
 # Static file mounts (must be after routes)
