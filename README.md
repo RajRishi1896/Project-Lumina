@@ -252,15 +252,7 @@ This is a proof of concept. It is done.
 | Phone-to-phone sharing (ShareServer) | Shipped |
 | Profile isolation and security hardening | Shipped |
 
-The following were explicitly cut from scope. They are not defects; they are not next steps:
-
-- 250-student concurrency load test (design target, not validated at scale)
-- `task_queue.py` + `thumb_worker.py` background workers
-- `encryption.py` (`EncryptedAPIRoute` for sensitive aggregates)
-- Pre-primary to Grade 13 expansion
-- Multi-week field deployment testing
-
-The authoritative shipped/cut/open tracker is [`feature-roadmap.md`](Markdown%20files/feature-roadmap.md).
+The authoritative shipped tracker is [`feature-roadmap.md`](Markdown%20files/feature-roadmap.md).
 
 ---
 
