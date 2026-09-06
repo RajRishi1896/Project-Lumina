@@ -41,6 +41,7 @@ def _conn():
         conn.execute("PRAGMA busy_timeout=5000")
         conn.execute("PRAGMA cache_size=-8000")
         conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA foreign_keys=ON")
         _local.conn = conn
     return conn
 

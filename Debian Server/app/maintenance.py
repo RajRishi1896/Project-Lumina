@@ -13,8 +13,9 @@ async def purge_recycled_resources(days: int = 30) -> dict:
 
     Removes the physical file and thumbnail (tolerant of missing files),
     deletes scholar_downloads / student_bookmarks rows, removes ZIM archive
-    rows for kiwix resources, then deletes the resource row, all in a
-    single transaction. All file I/O runs in the thread pool.
+    rows for kiwix resources (using zim_path for the physical file), then
+    deletes the resource row, all in a single transaction. All file I/O
+    runs in the thread pool.
     """
     def _select(conn):
         """Return resource rows deleted more than ``days`` days ago."""
@@ -27,14 +28,34 @@ async def purge_recycled_resources(days: int = 30) -> dict:
     if not rows:
         return {"purged_count": 0}
 
+    # Collect ZIM paths before cleanup so we can delete the actual .zim files
+    def _collect_zim_paths(conn):
+        """Return {resource_filename: zim_path} for kiwix resources."""
+        zim_map = {}
+        for rid, fname, rtype in rows:
+            if rtype == 'kiwix' and fname:
+                zim_row = conn.execute("SELECT id, zim_path FROM zim_archives WHERE filename = ?", (fname,)).fetchone()
+                if zim_row:
+                    zim_map[fname] = zim_row[1]  # zim_path
+        return zim_map
+
+    zim_paths = await db_run(_collect_zim_paths)
+
     def _remove_files():
-        """Delete resource files and thumbnails from disk, tolerating misses."""
+        """Delete resource files, thumbnails, and ZIM archives from disk, tolerating misses."""
         for rid, fname, _rtype in rows:
             if fname:
                 try:
                     os.remove(os.path.join(UPLOAD_DIR, fname))
                 except OSError:
                     pass
+                # Also remove ZIM archive by its actual stored path
+                zim_path = zim_paths.get(fname)
+                if zim_path:
+                    try:
+                        os.remove(zim_path)
+                    except OSError:
+                        pass
             try:
                 os.remove(os.path.join(THUMBNAILS_DIR, f"{rid}.png"))
             except OSError:

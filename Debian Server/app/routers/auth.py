@@ -58,6 +58,9 @@ def _secure_cookie(request) -> bool:
 async def _consume_one_time(table: str, field: str, value):
     """Atomically validate and mark used a one-time token row.
 
+    Uses a single UPDATE...WHERE used=0 so only one concurrent consumer
+    can win; the loser sees zero affected rows and gets a 401.
+
     Args:
         table: Token table name (``refresh_tokens`` or ``persistent_keys``).
         field: Column holding the token value.
@@ -73,18 +76,30 @@ async def _consume_one_time(table: str, field: str, value):
 
     def _consume(conn):
         """Validate and one-time-use the token; returns (username, role)."""
+        # Single atomic check-and-mark: only one concurrent consumer wins.
+        cur = conn.execute(
+            f"UPDATE {table} SET used = 1 WHERE {field} = ? AND used = 0",
+            (value,),
+        )
+        if cur.rowcount == 0:
+            # Either doesn't exist, already used, or expired. Check which.
+            row = conn.execute(
+                f"SELECT username, role, used, expires_at FROM {table} WHERE {field} = ?",
+                (value,),
+            ).fetchone()
+            if not row:
+                raise HTTPException(status_code=401, detail=f"Invalid {label}")  # i18n: user-facing error message
+            if row[2]:
+                raise HTTPException(status_code=401, detail=f"{label.capitalize()} already used")  # i18n: user-facing error message
+            if row[3] and datetime.fromisoformat(row[3]).replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+                raise HTTPException(status_code=401, detail=f"{label.capitalize()} expired")  # i18n: user-facing error message
+            # Edge case: used=0 but rowcount=0 shouldn't happen, but guard anyway
+            raise HTTPException(status_code=401, detail=f"Invalid {label}")  # i18n: user-facing error message
+        conn.commit()
         row = conn.execute(
-            f"SELECT username, role, used, expires_at FROM {table} WHERE {field} = ?",
+            f"SELECT username, role FROM {table} WHERE {field} = ?",
             (value,),
         ).fetchone()
-        if not row:
-            raise HTTPException(status_code=401, detail=f"Invalid {label}")  # i18n: user-facing error message
-        if row[2]:
-            raise HTTPException(status_code=401, detail=f"{label.capitalize()} already used")  # i18n: user-facing error message
-        if row[3] and datetime.fromisoformat(row[3]).replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
-            raise HTTPException(status_code=401, detail=f"{label.capitalize()} expired")  # i18n: user-facing error message
-        conn.execute(f"UPDATE {table} SET used = 1 WHERE {field} = ?", (value,))
-        conn.commit()
         return row[0], row[1]
 
     return await db_run(_consume)
@@ -272,7 +287,7 @@ async def logout(request: Request, response: Response):
         row = await db_fetch_one("SELECT username FROM sessions WHERE token = ?", (token,))
         if row:
             await invalidate_tokens_for_user(row["username"])
-    response.delete_cookie(key="lumina_session", path="/")
+    response.delete_cookie(key="lumina_session", path="/", httponly=True, samesite="lax")
     return RedirectResponse(url="/welcome")
 
 

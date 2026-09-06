@@ -61,7 +61,7 @@ async def _write_chunked(dest_path: str, file: UploadFile, max_size: int) -> int
     """Write an uploaded file to disk in 64KB chunks with a size limit.
 
     Buffers up to 4MB in memory before flushing to disk to reduce I/O
-    cycles on low-end hardware.
+    cycles on low-end hardware. Cleans up the partial file on size rejection.
 
     Args:
         dest_path: Destination file path on disk.
@@ -83,19 +83,34 @@ async def _write_chunked(dest_path: str, file: UploadFile, max_size: int) -> int
         with open(dest_path, "ab") as f:
             f.write(data)
 
-    while True:
-        chunk = await file.read(chunk_size)
-        if not chunk:
-            break
-        chunk_buffer += chunk
-        total_size += len(chunk)
-        if total_size > max_size:
-            raise HTTPException(status_code=400, detail=f"File exceeds {max_size // (1024 * 1024)} MB limit.")  # i18n: user-facing error message
-        if len(chunk_buffer) >= 4 * 1024 * 1024:
+    try:
+        while True:
+            chunk = await file.read(chunk_size)
+            if not chunk:
+                break
+            chunk_buffer += chunk
+            total_size += len(chunk)
+            if total_size > max_size:
+                # Clean up partial file before raising
+                try:
+                    os.remove(dest_path)
+                except OSError:
+                    pass
+                raise HTTPException(status_code=400, detail=f"File exceeds {max_size // (1024 * 1024)} MB limit.")  # i18n: user-facing error message
+            if len(chunk_buffer) >= 4 * 1024 * 1024:
+                await asyncio.to_thread(_flush, chunk_buffer)
+                chunk_buffer = b""
+        if chunk_buffer:
             await asyncio.to_thread(_flush, chunk_buffer)
-            chunk_buffer = b""
-    if chunk_buffer:
-        await asyncio.to_thread(_flush, chunk_buffer)
+    except HTTPException:
+        raise
+    except Exception:
+        # Clean up on any unexpected error
+        try:
+            os.remove(dest_path)
+        except OSError:
+            pass
+        raise
     await file.close()
 
     return total_size

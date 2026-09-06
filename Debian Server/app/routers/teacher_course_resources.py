@@ -59,19 +59,23 @@ async def _stage_zip(file: UploadFile):
     chunk_size = 64 * 1024
     total_size = 0
     buf = []
-    while True:
-        chunk = await file.read(chunk_size)
-        if not chunk:
-            break
-        buf.append(chunk)
-        total_size += len(chunk)
-        if total_size > 500 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="ZIP exceeds 500 MB limit.")  # i18n: user-facing error message
-        if len(buf) >= 64:
+    try:
+        while True:
+            chunk = await file.read(chunk_size)
+            if not chunk:
+                break
+            buf.append(chunk)
+            total_size += len(chunk)
+            if total_size > 500 * 1024 * 1024:
+                raise HTTPException(status_code=400, detail="ZIP exceeds 500 MB limit.")  # i18n: user-facing error message
+            if len(buf) >= 64:
+                await asyncio.to_thread(_flush, b"".join(buf))
+                buf = []
+        if buf:
             await asyncio.to_thread(_flush, b"".join(buf))
-            buf = []
-    if buf:
-        await asyncio.to_thread(_flush, b"".join(buf))
+    except HTTPException:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise
     await file.close()
     return tmp_dir, archive_path
 

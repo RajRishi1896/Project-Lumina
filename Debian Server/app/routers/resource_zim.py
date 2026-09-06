@@ -111,15 +111,20 @@ def _process_zim_archive(archive_path: str, filename: str, teacher_user: str, tm
 
 
 def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, title: str = "", original_name: str = ""):
-    """Index a ZIM archive: register in DB, index article titles."""
+    """Index a ZIM archive: register in DB, index article titles.
+
+    The archive is moved to its permanent location ONLY after DB commit
+    succeeds, so a failed registration leaves the file in tmp_dir for cleanup.
+    """
     import libzim
 
     archive_id = f"ZIM-{uuid.uuid4().hex[:12]}"
     file_size = os.path.getsize(archive_path)
     zim_stored_path = os.path.join(UPLOAD_DIR, f"{archive_id}.zim")
-    shutil.move(archive_path, zim_stored_path)
+    # Do NOT move yet: if DB registration fails, tmp_dir cleanup handles it.
+    # Move happens after successful commit below.
 
-    archive = libzim.Archive(zim_stored_path)
+    archive = libzim.Archive(archive_path)
 
     archive_title = getattr(archive, 'title', None) or os.path.splitext(filename)[0]
     archive_lang = getattr(archive, 'language', 'en') or 'en'
@@ -206,6 +211,9 @@ def _process_with_libzim(archive_path: str, filename: str, teacher_user: str, ti
              original_name or filename, teacher_user, datetime.utcnow().isoformat()))
 
         conn.commit()
+
+        # Move archive to permanent location ONLY after DB commit succeeds.
+        shutil.move(archive_path, zim_stored_path)
 
         from app.routers.resources import invalidate_catalog_cache
         invalidate_catalog_cache()

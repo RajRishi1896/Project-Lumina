@@ -26,10 +26,10 @@ async def disable_default_admin(admin_user: str = Depends(verify_admin)):
         HTTPException 400: If no other teacher profiles exist.
     """
     def _disable_admin(conn):
-        """Disable the default admin only if another teacher profile exists."""
-        count = conn.execute("SELECT count(*) FROM users WHERE username != 'admin'").fetchone()[0]
+        """Disable the default admin only if another admin account exists."""
+        count = conn.execute("SELECT count(*) FROM users WHERE username != 'admin' AND role = 'admin'").fetchone()[0]
         if count == 0:
-            raise HTTPException(status_code=400, detail="Cannot disable default admin: No teacher profiles exist.")  # i18n: user-facing error message
+            raise HTTPException(status_code=400, detail="Cannot disable default admin: No other admin accounts exist. Create another admin first.")  # i18n: user-facing error message
         conn.execute("UPDATE users SET hashed_password = 'DISABLED' WHERE username = 'admin'")
         conn.commit()
     await db_run(_disable_admin)

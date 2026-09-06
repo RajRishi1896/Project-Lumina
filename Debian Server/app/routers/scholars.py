@@ -90,9 +90,28 @@ async def teacher_delete_student(scholar_id: str, request: Request = None, admin
             conn.execute("DELETE FROM weekly_study WHERE scholar_id = ?", (scholar_id,))
             conn.execute("DELETE FROM study_sessions WHERE scholar_id = ?", (scholar_id,))
             conn.execute("DELETE FROM course_progress WHERE student_id = ?", (scholar_id,))
+            conn.execute("DELETE FROM student_bookmarks WHERE scholar_id = ?", (scholar_id,))
+            conn.execute("DELETE FROM quiz_attempts WHERE student_id = ?", (scholar_id,))
+            conn.execute("DELETE FROM quiz_best_scores WHERE scholar_id = ?", (scholar_id,))
+            conn.execute("DELETE FROM flashcard_submissions WHERE student_id = ?", (scholar_id,))
+            # Decrement enrollment counts for courses this student was enrolled in
+            enrolled_courses = conn.execute("SELECT course_id FROM course_progress WHERE student_id = ?", (scholar_id,)).fetchall()
+            for (cid,) in enrolled_courses:
+                conn.execute("UPDATE courses SET enrollment_count = MAX(0, enrollment_count - 1) WHERE id = ?", (cid,))
+            conn.execute("DELETE FROM course_progress WHERE student_id = ?", (scholar_id,))
             conn.execute("UPDATE users SET scholar_id = NULL WHERE scholar_id = ?", (scholar_id,))
             conn.commit()
         await db_run(_delete_scholar)
+        # Remove profile icon files from disk
+        import os
+        from app.database import PROFILE_ICONS_DIR
+        for ext in ('png', 'jpg', 'jpeg', 'webp'):
+            icon_path = os.path.join(PROFILE_ICONS_DIR, f"{scholar_id}.{ext}")
+            try:
+                if os.path.exists(icon_path):
+                    os.remove(icon_path)
+            except OSError:
+                pass
         await audit(action=Action.DELETE_ACCOUNT, username=admin_user, resource_type="account",
                     resource_id=scholar_id, target_user=scholar_id)
         return {"status": "success"}

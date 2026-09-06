@@ -95,6 +95,9 @@ async def force_reset_teacher_password(username: str, admin_user: str = Depends(
     generated_pwd = secrets.token_urlsafe(12)
     hashed = await asyncio.to_thread(hash_password, generated_pwd)
     try:
+        row = await db_fetch_one("SELECT username FROM users WHERE username = ?", (username,))
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found.")  # i18n: user-facing error message
         await db_exec("UPDATE users SET hashed_password = ?, reset_required = 1 WHERE username = ?", (hashed, username))
         await invalidate_tokens_for_user(username)
         await audit(action=Action.RESET_PASSWORD, username=admin_user, resource_type="account",

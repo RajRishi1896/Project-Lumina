@@ -58,8 +58,9 @@ class SubjectTimeSync(BaseModel):
 # ── Response Models ──────────────────────────────────────────────────────────
 
 class StatusResponse(BaseModel):
-    """Generic status response."""
+    """Generic status response, optionally carrying a generated temporary password."""
     status: str = Field(..., description="Status indicator, typically 'ok' or 'pong'.", json_schema_extra={"example": "ok"})
+    temporary_password: Optional[str] = Field(default=None, description="Generated temporary password (only present when a password was auto-generated).", json_schema_extra={"example": "aB3xK9mP2qR5"})
 class TokenResponse(BaseModel):
     """Session token response with associated credentials."""
     token: str = Field(..., description="Session token.", json_schema_extra={"example": "abc123"})

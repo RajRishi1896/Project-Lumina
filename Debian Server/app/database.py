@@ -21,7 +21,7 @@ def gen_uid(prefix: str) -> str:
 
 
 def gen_composite_uid(conn, grade: int, subject: str, prefix: str) -> str:
-    """Generate a composite UID like GRD-xxxx-SUBJ-xxxx-8hex.
+    """Generate a composite UID like CRS-GRD-xxxx-SUBJ-xxxx-8hex.
 
     Args:
         conn: SQLite connection.
@@ -39,7 +39,7 @@ def gen_composite_uid(conn, grade: int, subject: str, prefix: str) -> str:
     row = conn.execute("SELECT id FROM subjects WHERE name = ?", (subject or "General",)).fetchone()
     if row:
         subject_uid = row[0]
-    return f"{grade_uid}-{subject_uid}-{uuid.uuid4().hex[:8]}"
+    return f"{prefix}-{grade_uid}-{subject_uid}-{uuid.uuid4().hex[:8]}"
 
 
 def init_db():
@@ -179,9 +179,7 @@ def init_db():
       submitted_at TEXT DEFAULT (datetime('now')),
       time_taken_seconds INTEGER DEFAULT 0,
       quiz_version INTEGER DEFAULT 1,
-      threshold_at_submission REAL DEFAULT 0.0,
-      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-      FOREIGN KEY (resource_id) REFERENCES course_resources(id) ON DELETE CASCADE
+      threshold_at_submission REAL DEFAULT 0.0
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS similar_courses (
       course_id TEXT NOT NULL,
