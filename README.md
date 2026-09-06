@@ -40,13 +40,13 @@ A repurposed laptop runs a WiFi hotspot, a FastAPI content server, and a captive
 
 ## Overview
 
-Project Lumina is a first-year college project: an offline-first learning platform for schools where broadband, stable power, and student-owned devices cannot be assumed. One low-cost server laptop hosts all content and services. Android phones on a local hotspot consume the content through a Flutter app that remains fully usable when the hub is unreachable.
+Project Lumina is a proof of concept: an offline-first learning platform for schools where broadband, stable power, and student-owned devices cannot be assumed. One low-cost server laptop hosts all content and services. Android phones on a local hotspot consume the content through a Flutter app that remains fully usable when the hub is unreachable. The PoC is complete and shipped.
 
 Two independent codebases form the system: a Flutter Android client (`EduMesh-Android/`, 66 Dart files) and a FastAPI server (`Debian Server/`, 22 router modules plus a ZIM handler). They share no code, no dependencies, and no toolchain. They communicate over plain HTTP on the local network, with the laptop acting as gateway at the static address `10.42.0.1`.
 
-**Why it exists.** Existing LMS platforms assume always-on broadband and one device per student. The environment this targets provides neither. The project instead assumes nothing: no internet, one laptop for an entire school, content delivered by USB stick, and progress synchronized in the brief window a phone is near the hub.
+**Why it exists.** Existing LMS platforms assume always-on broadband and one device per student. The environment this target provides neither. The project instead assumes nothing: no internet, one laptop for an entire school, content delivered by USB stick, and progress synchronized in the brief window a phone is near the hub. The PoC proved the architecture works; it is not a product roadmap.
 
-**Current maturity.** The system is feature-complete for single-classroom and school-lab deployment. It passes a 64-test pytest suite, `dart analyze` at 0 errors and 0 warnings, and has run end-to-end on emulators and development hardware. What remains unvalidated: a load test at the stated 250-concurrent-student target, and a sustained multi-week field deployment on the production hub laptop. The concurrency figures below are design targets validated only at small scale.
+**Current maturity.** This is a proof of concept that shipped. The system is feature-complete for single-classroom and school-lab deployment. It passes a 64-test pytest suite and a 56-test Flutter suite, `dart analyze` at 0 errors and 0 warnings, and has run end-to-end on emulators and development hardware. The 250-concurrent-student concurrency target is a design figure validated only at small scale; a repeatable benchmark harness is not in scope. What exists works. What doesn't exist was never needed for the PoC.
 
 ---
 
@@ -154,7 +154,7 @@ Client: the Flutter app mirrors catalog and progress state in its own local SQLi
 
 ## Performance Data
 
-Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frames, single-resource query ≤ 50 ms, release APK ≤ 25 MB) and the regression rules around them are tracked in `AGENTS.md`. Measured figures are intentionally not published here: the 250-concurrent-student concurrency target has not been load-tested at scale, and development-hardware numbers would imply more certainty than exists. A repeatable benchmark harness is not yet in the repo.
+Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frames, single-resource query ≤ 50 ms, release APK ≤ 25 MB) are tracked in `AGENTS.md`. The 250-concurrent-student concurrency target is a design figure validated only at small scale. A repeatable benchmark harness is not in scope for the PoC.
 
 ---
 
@@ -164,7 +164,7 @@ Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frame
 
 **500-article ZIM search cap.** Kiwix archives hold hundreds of thousands of articles; loading them all would OOM a 1 GB phone. Capping search at 500 results guarantees the app never crashes on query, at the cost of requiring multiple queries for deep research across large archives.
 
-**Test coverage vs. offline reliability.** Development time went to offline reliability (mutation queue, download atomicity, Keystore recovery) rather than test volume. The server suite is 64 tests across 7 files; the Flutter suite is 56 tests across 7 files (scheduler, flip card, animation system, profile flows, profile switcher, course model, smoke): enough to make refactoring safe, not exhaustive. This was the correct order for v1; the suite is the planned growth area.
+**Test coverage vs. offline reliability.** Development time went to offline reliability (mutation queue, download atomicity, Keystore recovery) rather than test volume. The server suite is 64 tests across 7 files; the Flutter suite is 56 tests across 7 files (scheduler, flip card, animation system, profile flows, profile switcher, course model, smoke): enough to make refactoring safe, not exhaustive. This was the correct trade-off for a PoC.
 
 **`.part` rename on FAT32.** The download rename is not atomic on FAT32/exFAT, the filesystems on most cheap SD cards. The `.part` convention still prevents corrupted files from masquerading as complete, and a crash mid-rename leaves at most one orphaned file. Writing to a temp directory and moving has the same fundamental limitation on these filesystems.
 
@@ -241,6 +241,8 @@ cd "Debian Server" && pytest         # 64 tests
 
 ## Roadmap
 
+This is a proof of concept. It is done.
+
 | Area | Status |
 |---|---|
 | Student app core (browse, download, view, offline) | Shipped |
@@ -248,11 +250,15 @@ cd "Debian Server" && pytest         # 64 tests
 | Teacher/admin web dashboard, 6-language i18n | Shipped |
 | ZIM/Kiwix offline article browsing | Shipped |
 | Phone-to-phone sharing (ShareServer) | Shipped |
-| 250-student concurrency load test | Open (design target, untested at scale) |
-| Grade-level expansion (pre-primary to Grade 13) | Open |
-| `task_queue.py` + `thumb_worker.py` background workers | Planned |
-| `encryption.py` (`EncryptedAPIRoute` for sensitive aggregates) | Planned |
-| Sustained multi-week field deployment | Open |
+| Profile isolation and security hardening | Shipped |
+
+The following were explicitly cut from scope. They are not defects; they are not next steps:
+
+- 250-student concurrency load test (design target, not validated at scale)
+- `task_queue.py` + `thumb_worker.py` background workers
+- `encryption.py` (`EncryptedAPIRoute` for sensitive aggregates)
+- Pre-primary to Grade 13 expansion
+- Multi-week field deployment testing
 
 The authoritative shipped/cut/open tracker is [`feature-roadmap.md`](Markdown%20files/feature-roadmap.md).
 
@@ -271,7 +277,7 @@ Other working documents (engineering contract, design system, implementation det
 
 College project submission. Rishi Raj set the architecture and technical direction, and wrote the FastAPI server, the full web dashboard, and the deployment tooling. Felice George wrote the Flutter mobile dashboard and led UI/UX and accessibility work. The offline-first data layer (catalog cache, mutation/download queues, connectivity) is joint work with Rishi Raj as primary author.
 
-Before touching code, read [`AGENTS.md`](AGENTS.md) in full. It defines the conventions that make the two parallel projects (Flutter app + FastAPI server) safe to work on simultaneously: the commit message convention (Conventional Commits), the parallel-subagent execution rule, and the audit gates PRs must pass (`dart analyze lib/` at 0 errors/0 warnings, pytest green, ARB/JSON key parity across all 6 languages).
+This proof of concept is complete. The codebase is stable and functional as shipped. No further development is planned.
 
 ---
 
