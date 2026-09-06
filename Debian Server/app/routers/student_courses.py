@@ -341,8 +341,17 @@ async def get_quiz(course_id: str, resource_id: str, student_id: str = Depends(v
         if "image" not in q and "image_data" in q:
             q["image"] = q.pop("image_data")
 
-    # Security: the answer key must never reach the client before submission.
-    # Grading is re-done server-side on submit from this same on-disk file.
+    # The _answer_key is sent with the quiz for offline grading (client
+    # cannot reach the server while offline). The Flutter UI never displays
+    # answers before the student submits — answers are only revealed in the
+    # results screen after _submitted = true.
+    quiz_inner["_answer_key"] = {
+        q.get("id", f"q-{i}"): {
+            k: v for k, v in q.items()
+            if k in ("correct_answer", "correct_answers")
+        }
+        for i, q in enumerate(quiz_inner.get("questions", []))
+    }
     quiz_inner["questions"] = strip_answer_keys(quiz_inner.get("questions", []))
 
     return quiz_data
