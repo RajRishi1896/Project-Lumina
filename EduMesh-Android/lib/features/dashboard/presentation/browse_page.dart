@@ -12,6 +12,7 @@ import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'package:edumesh_android/shared/services/connectivity_service.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'course_player_page.dart';
+import 'saved_resource_page.dart';
 import 'search_page.dart';
 import 'kiwix_view.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
@@ -524,12 +525,37 @@ class _WikiTabState extends State<_WikiTab> {
   bool _hasMore = false;
   int _requestId = 0;
   String? _downloadingId;
+  Set<String> _bookmarkedIds = {};
 
   @override
   void initState() {
     super.initState();
     ZimSyncService.instance.loadDownloadedIds();
+    unawaited(_loadBookmarkedIds());
     _fetchFirstPage();
+  }
+
+  Future<void> _loadBookmarkedIds() async {
+    try {
+      final ids = await DBHelper().getBookmarkedIds();
+      if (mounted) setState(() => _bookmarkedIds = ids);
+    } catch (_) {}
+  }
+
+  Future<void> _toggleBookmark(ZimArticle article) async {
+    try {
+      final db = DBHelper();
+      if (_bookmarkedIds.contains(article.articleId)) {
+        await db.removeBookmark(article.articleId);
+        if (mounted) setState(() => _bookmarkedIds.remove(article.articleId));
+      } else {
+        await db.upsertBookmark(
+            article.articleId, article.title, '', '', 'kiwix');
+        if (mounted) setState(() => _bookmarkedIds.add(article.articleId));
+      }
+      // Sync the Saved tab highlight: its lists only reload on this signal.
+      SavedResourcesPage.refreshNotifier.value++;
+    } catch (_) {}
   }
 
   bool get isOffline => !ConnectivityService().isOnline;
@@ -627,10 +653,14 @@ class _WikiTabState extends State<_WikiTab> {
         } catch (_) {}
       }
       if (html == null) {
-        final resp = await ApiClient.get('/zim/page', queryParameters: {
-          'article_id': article.articleId,
-          'archive_id': article.archiveId,
-        }).timeout(const Duration(seconds: 8));
+        if (!mounted) return;
+        final resp = await fetchWithLoading(
+          context,
+          ApiClient.get('/zim/page', queryParameters: {
+            'article_id': article.articleId,
+            'archive_id': article.archiveId,
+          }).timeout(const Duration(seconds: 8)),
+        );
         html = resp.data?['html']?.toString() ?? '';
       }
       if (!mounted) return;
@@ -775,6 +805,17 @@ class _WikiTabState extends State<_WikiTab> {
                                   style: tt.bodyLarge?.copyWith(color: cs.onSurface))),
                               ]),
                               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                                IconButton(
+                                  icon: Icon(
+                                    _bookmarkedIds.contains(article.articleId)
+                                        ? Icons.bookmark
+                                        : Icons.bookmark_border,
+                                    color: _bookmarkedIds.contains(article.articleId)
+                                        ? cs.primary
+                                        : cs.onSurfaceVariant,
+                                  ),
+                                  onPressed: () => _toggleBookmark(article),
+                                ),
                                 if (_downloadingId == article.articleId)
                                   SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.w))
                                 else

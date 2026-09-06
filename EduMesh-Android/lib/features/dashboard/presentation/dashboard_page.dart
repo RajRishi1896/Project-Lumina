@@ -14,8 +14,10 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/network/api_client.dart';
 import '../../../shared/services/connectivity_service.dart';
 import '../../../core/storage/db_helper.dart';
+import '../../../core/services/catalog_service.dart';
 import '../../../core/services/flashcard_service.dart';
 import '../../../shared/widgets/lumina_settings_sheet.dart';
+import '../../../shared/widgets/offline_library_page.dart';
 import '../../auth/data/auth_service.dart';
 import '../../auth/presentation/profile_picker_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
@@ -265,6 +267,16 @@ class _DashboardPageState extends State<DashboardPage> {
           final s = r['subject'] as String? ?? '';
           if (s.isNotEmpty) subjectsSet.add(s);
         }
+        // Fresh profiles have no bookmarks/downloads yet: fall back to the
+        // local catalog so subjects still show offline on first run.
+        if (subjectsSet.isEmpty) {
+          try {
+            final catalog = await CatalogService().getCatalog();
+            for (final c in catalog) {
+              if (c.subject.isNotEmpty) subjectsSet.add(c.subject);
+            }
+          } catch (_) {}
+        }
         final local = subjectsSet.map((s) => {'name': s}).toList();
         if (mounted && local.isNotEmpty) {
           setState(() {
@@ -505,8 +517,11 @@ class _DashboardPageState extends State<DashboardPage> {
     final id = r['id'] ?? '';
     if (id.isEmpty) return;
     try {
-      final resp = await ApiClient.get('/zim/page', queryParameters: {'article_id': id})
-          .timeout(const Duration(seconds: 8));
+      final resp = await fetchWithLoading(
+        context,
+        ApiClient.get('/zim/page', queryParameters: {'article_id': id})
+            .timeout(const Duration(seconds: 8)),
+      );
       final html = resp.data?['html']?.toString();
       if (!mounted || html == null || html.isEmpty) return;
       unawaited(Navigator.push(context, luminaRoute(
@@ -673,10 +688,23 @@ class _DashboardPageState extends State<DashboardPage> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l10n.sectionLocalStorage, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
+    return GestureDetector(
+      onTap: () => Navigator.push(context,
+          luminaRoute(builder: (_) => const OfflineLibraryPage())),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(l10n.sectionLocalStorage,
+                    style: tt.titleLarge?.copyWith(
+                        fontWeight: AppSpacing.weightDisplay,
+                        color: cs.onSurface)),
+              ),
+              Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+            ],
+          ),
         SizedBox(height: AppSpacing.md.h),
         Card(
           child: Padding(
@@ -695,8 +723,9 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
         ),
+        ),
+        ],
       ),
-    ],
     );
   }
 

@@ -12,6 +12,7 @@ import '../../core/models/resource_model.dart';
 import '../../core/storage/db_helper.dart';
 import '../../core/utils/file_utils.dart';
 import '../../shared/services/download_service.dart';
+import '../../shared/services/download_queue.dart';
 import '../../shared/services/zim_download_helper.dart';
 import '../../shared/services/zim_sync_service.dart';
 import '../../features/dashboard/presentation/kiwix_view.dart';
@@ -137,26 +138,30 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
         foregroundColor: cs.onSurface,
         backgroundColor: cs.surface,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _items.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.download_outlined, size: 64.sp, color: cs.onSurfaceVariant),
-                      SizedBox(height: AppSpacing.lg.h),
-                      Text(l10n.emptyOfflineLibraryMessage, style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
-                    ],
-                  ),
-                )
-              : Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
-                    child: ListView.builder(
-                  padding: EdgeInsets.all(AppSpacing.lg.w),
-                  itemCount: _items.length,
-                  itemBuilder: (context, index) {
+      body: Column(
+        children: [
+          _buildQueueSection(context, cs, tt, l10n),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _items.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.download_outlined, size: 64.sp, color: cs.onSurfaceVariant),
+                            SizedBox(height: AppSpacing.lg.h),
+                            Text(l10n.emptyOfflineLibraryMessage, style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
+                          ],
+                        ),
+                      )
+                    : Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+                          child: ListView.builder(
+                        padding: EdgeInsets.all(AppSpacing.lg.w),
+                        itemCount: _items.length,
+                        itemBuilder: (context, index) {
                     final item = _items[index];
                     final title = item['title'] as String? ?? '';
                     final subject = item['subject'] as String? ?? '';
@@ -230,6 +235,78 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                     ),
                   ),
                 ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Active + queued downloads with cancel actions. Hidden when idle so the
+  /// downloaded list owns the screen; rebuilds only on queue changes.
+  Widget _buildQueueSection(
+      BuildContext context, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    return ListenableBuilder(
+      listenable: DownloadQueue(),
+      builder: (context, _) {
+        final queue = DownloadQueue();
+        final ids = queue.queuedIds.toList();
+        if (ids.isEmpty) return const SizedBox.shrink();
+        final active = queue.active;
+        return Container(
+          padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest,
+            border: Border(bottom: BorderSide(color: cs.outlineVariant)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(l10n.downloadQueueTitle,
+                        style: tt.titleSmall
+                            ?.copyWith(color: cs.onSurface)),
+                  ),
+                  TextButton(
+                    onPressed: () => queue.clear(),
+                    child: Text(l10n.downloadQueueClearAll,
+                        style: tt.bodyMedium?.copyWith(color: cs.error)),
+                  ),
+                ],
+              ),
+              for (final id in ids)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: id == active
+                      ? SizedBox(
+                          width: AppSpacing.xxl.w,
+                          height: AppSpacing.xxl.w,
+                          child: const CircularProgressIndicator(
+                              strokeWidth: 2))
+                      : Icon(Icons.hourglass_empty_rounded,
+                          color: cs.onSurfaceVariant),
+                  title: Text(id,
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: tt.bodyMedium),
+                  subtitle: id == active
+                      ? Text(l10n.downloadQueueDownloading,
+                          style: tt.bodySmall
+                              ?.copyWith(color: cs.primary))
+                      : null,
+                  trailing: IconButton(
+                    icon: Icon(Icons.close,
+                        size: 18, color: cs.onSurfaceVariant),
+                    onPressed: () => queue.cancel(id),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
