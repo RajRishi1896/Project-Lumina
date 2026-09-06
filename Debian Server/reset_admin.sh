@@ -1,10 +1,9 @@
 #!/bin/bash
-# Purpose: Emergency admin password reset. Generates a new random password,
-#          hashes it with bcrypt, updates the database, and saves the
-#          plaintext to data/admin_bootstrap.txt.
+# Purpose: Emergency admin password reset. Resets to default password,
+#          hashes it with bcrypt, and updates the database.
 # Usage:   sudo ./reset_admin.sh
 # Args:    None
-# Idempotent: Yes, always generates a new random password regardless of the
+# Idempotent: Yes, always resets to the default password regardless of the
 #             current state.
 set -e
 
@@ -15,12 +14,11 @@ cd "$(dirname "$0")"
 
 ./venv/bin/python3 -c '
 import sqlite3
-import secrets
 import bcrypt
 
-new_pwd = secrets.token_urlsafe(12)
+default_pwd = "lumina2026"
 print("Generating secure hash...")
-hashed = bcrypt.hashpw(new_pwd.encode(), bcrypt.gensalt()).decode()
+hashed = bcrypt.hashpw(default_pwd.encode(), bcrypt.gensalt()).decode()
 
 try:
     print("Connecting to Hub Database...")
@@ -30,14 +28,8 @@ try:
     conn.commit()
     conn.close()
 
-    import os
-    os.makedirs("data", exist_ok=True)
-    with open("data/admin_bootstrap.txt", "w") as f:
-        f.write(new_pwd)
-
     print(f"\n[SUCCESS] Admin password has been reset.")
-    print(f"  New password: {new_pwd}")
-    print(f"  Saved to:     data/admin_bootstrap.txt")
+    print(f"  Password: {default_pwd}")
     print("You can now log into the Dashboard.")
 except Exception as e:
     print(f"\n[ERROR] Could not reset password. {e}")

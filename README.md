@@ -46,7 +46,7 @@ Two independent codebases form the system: a Flutter Android client (`EduMesh-An
 
 **Why it exists.** Existing LMS platforms assume always-on broadband and one device per student. The environment this targets provides neither. The project instead assumes nothing: no internet, one laptop for an entire school, content delivered by USB stick, and progress synchronized in the brief window a phone is near the hub.
 
-**Current maturity.** The system is feature-complete for single-classroom and school-lab deployment. It passes a 38-test pytest suite, `dart analyze` at 0 errors and 0 warnings, and has run end-to-end on emulators and development hardware. What remains unvalidated: a load test at the stated 250-concurrent-student target, and a sustained multi-week field deployment on the production hub laptop. The concurrency figures below are design targets validated only at small scale.
+**Current maturity.** The system is feature-complete for single-classroom and school-lab deployment. It passes a 64-test pytest suite, `dart analyze` at 0 errors and 0 warnings, and has run end-to-end on emulators and development hardware. What remains unvalidated: a load test at the stated 250-concurrent-student target, and a sustained multi-week field deployment on the production hub laptop. The concurrency figures below are design targets validated only at small scale.
 
 ---
 
@@ -82,6 +82,8 @@ Two independent codebases form the system: a Flutter Android client (`EduMesh-An
 - **Download queue.** `DownloadQueue` processes one file at a time with exponential backoff (`3 * (1 << retryCount)`: 3, 6, 12, 24, 48 seconds). Files download to a `.part` name and rename on completion, so a partial download never surfaces as a finished file. Pending downloads persist to the `pending_downloads` table and resume on reconnect.
 - **Mutation queue.** `MutationQueue` persists profile updates and activity events when the hub is unreachable and replays them in order on reconnect, dropping only after three retries. All student-state mutations route through this queue; project convention forbids direct fire-and-forget calls.
 - **Connectivity monitor.** Hybrid detection: `connectivity_plus` platform events for instant notification, plus a 30-second HTTP `/ping` heartbeat with a 4-second timeout. Reconnect flushes pending downloads, mutations, and the catalog cache.
+- **Profile isolation.** Each profile gets its own SQLite file (`lumina_{userId}.db`). Switching profiles closes the old DB handle and opens the new one. No cross-profile data leakage.
+- **Offline quiz grading.** Server sends answer keys with quiz data for offline grading. Quiz attempts persist locally and sync to server on reconnect. Timer pauses on app background instead of auto-submitting.
 
 **Content experience**
 
@@ -118,6 +120,7 @@ Operational details:
 - **Content standards.** Uploads validate against a controlled subject taxonomy and grades 1 to 13 (0 reserved for pre-primary, 13 for bridging and exam prep), require source and license metadata, and reject duplicates on `title + subject + grade + language + resource_type` with a `409` response plus an explicit `force_upload` override.
 - **Audit logging.** Admin actions and resource status transitions append to `data/admin_actions.log` with UTC timestamps and acting user IDs; retention is configurable.
 - **No external dependencies.** The server starts and serves every endpoint with no internet connection; `setup_hub.sh` provisioning is idempotent and completes offline after the initial package pass.
+- **Security hardening.** Admin password randomly generated on first boot. Teachers can only edit/delete their own resources (admin override via `can_manage_resource()`). CORS tightened to specific methods and headers. GZip compression on JSON responses >500 bytes (skips Range requests for streaming). Password strength validation enforced on all new accounts. Profile icon uploads require authentication.
 
 ### Web dashboard
 
@@ -161,11 +164,9 @@ Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frame
 
 **500-article ZIM search cap.** Kiwix archives hold hundreds of thousands of articles; loading them all would OOM a 1 GB phone. Capping search at 500 results guarantees the app never crashes on query, at the cost of requiring multiple queries for deep research across large archives.
 
-**Test coverage vs. offline reliability.** Development time went to offline reliability (mutation queue, download atomicity, Keystore recovery) rather than test volume. The server suite is 38 tests across 5 files (API, flashcards, quiz integrity, resource security); the Flutter suite is 46 tests across 7 files (scheduler, flip card, animation system, profile flows, smoke): enough to make refactoring safe, not exhaustive. This was the correct order for v1; the suite is the planned growth area.
+**Test coverage vs. offline reliability.** Development time went to offline reliability (mutation queue, download atomicity, Keystore recovery) rather than test volume. The server suite is 64 tests across 7 files; the Flutter suite is 56 tests across 7 files (scheduler, flip card, animation system, profile flows, profile switcher, course model, smoke): enough to make refactoring safe, not exhaustive. This was the correct order for v1; the suite is the planned growth area.
 
 **`.part` rename on FAT32.** The download rename is not atomic on FAT32/exFAT, the filesystems on most cheap SD cards. The `.part` convention still prevents corrupted files from masquerading as complete, and a crash mid-rename leaves at most one orphaned file. Writing to a temp directory and moving has the same fundamental limitation on these filesystems.
-
-**Federation removed.** Hub-to-hub peer federation (mDNS discovery, hourly peer sync, a `/peer/*` API) shipped in 2026-08 and was pulled after review concluded that single-node architecture was the honest scope for the target hardware. Phone-to-phone sharing (ShareServer) remains. The recorded lesson: peer sync added failure modes without a demonstrated classroom need.
 
 ---
 
@@ -231,9 +232,9 @@ sudo systemctl restart lumina-hub.service
 
 ```bash
 dart analyze lib/                    # Must be 0 errors, 0 warnings
-flutter test                         # Smoke test
+flutter test                         # 56 tests
 flutter gen-l10n                     # Regenerate localizations after ARB changes
-cd "Debian Server" && pytest         # 38 tests
+cd "Debian Server" && pytest         # 64 tests
 ```
 
 ---
@@ -247,7 +248,6 @@ cd "Debian Server" && pytest         # 38 tests
 | Teacher/admin web dashboard, 6-language i18n | Shipped |
 | ZIM/Kiwix offline article browsing | Shipped |
 | Phone-to-phone sharing (ShareServer) | Shipped |
-| Hub-to-hub federation | Removed (2026-08); not planned to return |
 | 250-student concurrency load test | Open (design target, untested at scale) |
 | Grade-level expansion (pre-primary to Grade 13) | Open |
 | `task_queue.py` + `thumb_worker.py` background workers | Planned |

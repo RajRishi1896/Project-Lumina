@@ -12,12 +12,7 @@ echo "============================================================"
 echo ""
 echo "   Server:    http://$IP:8000"
 echo "   Hotspot:   Lumina Hub"
-if [ -f data/admin_bootstrap.txt ]; then
-    ADMIN_PWD=$(cat data/admin_bootstrap.txt)
-    echo "   Admin Password: $ADMIN_PWD"
-else
-    echo "   Admin Password: (run setup_hub.sh first)"
-fi
+echo "   Password:  lumina2026"
 echo ""
 echo "   Scan QR to connect to WiFi:"
 echo ""
