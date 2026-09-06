@@ -130,9 +130,12 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
     } else if (item.type == ResourceType.kiwix) {
       String? html;
       try {
-        final response = await ApiClient.get('/zim/page', queryParameters: {
-          'article_id': item.id,
-        }).timeout(const Duration(seconds: 8));
+        final response = await fetchWithLoading(
+          context,
+          ApiClient.get('/zim/page', queryParameters: {
+            'article_id': item.id,
+          }).timeout(const Duration(seconds: 8)),
+        );
         html = response.data?['html']?.toString();
       } catch (_) {}
       if (!mounted) return;

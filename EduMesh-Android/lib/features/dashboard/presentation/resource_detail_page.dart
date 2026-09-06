@@ -578,9 +578,13 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                   }
                                   if (html == null) {
                                     try {
-                                      final response = await ApiClient.get('/zim/page', queryParameters: {
-                                        'article_id': item.id,
-                                      }).timeout(const Duration(seconds: 8));
+                                      if (!context.mounted) return;
+                                      final response = await fetchWithLoading(
+                                        context,
+                                        ApiClient.get('/zim/page', queryParameters: {
+                                          'article_id': item.id,
+                                        }).timeout(const Duration(seconds: 8)),
+                                      );
                                       html = response.data?['html']?.toString();
                                     } catch (_) {}
                                   }
@@ -630,7 +634,11 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
                                         final dlPath = '${tempDir.path}/update_${item.id}_${DateTime.now().millisecondsSinceEpoch}.tmp';
                                         try {
                                           await ApiClient.ensureInitialized();
-                                          await ApiClient.dio.download(url, dlPath);
+                                          if (!context.mounted) return;
+                                          await fetchWithLoading(
+                                            context,
+                                            ApiClient.dio.download(url, dlPath),
+                                          );
                                           final oldPath = match.first['local_path'] as String?;
                                           final newPath = oldPath ?? dlPath;
                                           if (oldPath != null) {

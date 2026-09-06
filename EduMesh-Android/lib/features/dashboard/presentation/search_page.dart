@@ -272,10 +272,14 @@ class _SearchPageState extends State<SearchPage> {
         } catch (_) {}
       }
       if (html == null) {
-        final response = await ApiClient.get('/zim/page', queryParameters: {
-          'article_id': articleId,
-          if (archiveId != null) 'archive_id': archiveId,
-        }).timeout(const Duration(seconds: 8));
+        if (!mounted) return;
+        final response = await fetchWithLoading(
+          context,
+          ApiClient.get('/zim/page', queryParameters: {
+            'article_id': articleId,
+            if (archiveId != null) 'archive_id': archiveId,
+          }).timeout(const Duration(seconds: 8)),
+        );
         html = response.data?['html']?.toString() ?? '';
       }
       if (!mounted) return;

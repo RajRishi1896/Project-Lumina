@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../providers/animation_prefs.dart';
@@ -57,6 +59,34 @@ PageRoute<T> luminaRoute<T>({
       );
     },
   );
+}
+
+/// Shows a non-dismissible loading spinner while [future] completes, then
+/// hides it and returns (or rethrows) its result.
+///
+/// Wrap network fetches that run between a tap and pushing a viewer (Kiwix
+/// article fetch, PDF staleness re-download) so the tap gets visible
+/// feedback within 300ms. Only wrap the network call itself: cache hits
+/// stay instant with no spinner flash.
+Future<T> fetchWithLoading<T>(BuildContext context, Future<T> future) async {
+  // showGeneralDialog uses the root navigator by default; pop the same one.
+  final nav = Navigator.of(context, rootNavigator: true);
+  unawaited(showGeneralDialog(
+    context: context,
+    barrierColor: Colors.transparent,
+    transitionDuration: Duration.zero,
+    pageBuilder: (_, __, ___) => const PopScope(
+      canPop: false,
+      child: Center(child: CircularProgressIndicator()),
+    ),
+  ));
+  try {
+    return await future;
+  } finally {
+    try {
+      nav.pop();
+    } catch (_) {}
+  }
 }
 
 /// Shows a dialog with a lightweight fade+scale when animations are on and

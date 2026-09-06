@@ -373,6 +373,12 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                   if (mounted) setState(() => _docError = true);
                 },
               ),
+            // Loading overlay until the first page renders.
+            if (!_loaded && !_docError)
+              Container(
+                color: cs.surfaceContainerHighest,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
             if (_controlsVisible && !_docError) ...[
               if (_totalPages > 1)
                 Positioned(
