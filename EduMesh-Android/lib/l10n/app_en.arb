@@ -880,11 +880,11 @@
   "@appIconLightSubtitle": {
     "description": "Subtitle for the light app icon toggle"
   },
-  "storageOfflineLibraryTitle": "Storage & Offline Library",
+  "storageOfflineLibraryTitle": "Downloads",
   "@storageOfflineLibraryTitle": {
-    "description": "ListTile title navigating to the offline library page"
+    "description": "ListTile title navigating to the Downloads page (queued + downloaded files)"
   },
-  "storageOfflineLibrarySubtitle": "Manage downloaded content",
+  "storageOfflineLibrarySubtitle": "Queued and downloaded files",
   "@storageOfflineLibrarySubtitle": {
     "description": "ListTile subtitle describing the storage/offline library action"
   },
@@ -912,9 +912,9 @@
   "@settingsAccountSubtitleOffline": {
     "description": "ListTile subtitle when the Hub is unreachable, prompting connection"
   },
-  "offlineLibraryAppBarTitle": "Offline Library",
+  "offlineLibraryAppBarTitle": "Downloads",
   "@offlineLibraryAppBarTitle": {
-    "description": "AppBar title for the offline library page"
+    "description": "AppBar title for the Downloads page (queued + downloaded files)"
   },
   "emptyOfflineLibraryMessage": "No downloaded resources",
   "@emptyOfflineLibraryMessage": {
@@ -1832,6 +1832,10 @@
   "profileSwitchFailed": "Could not switch profile",
   "@profileSwitchFailed": {
     "description": "Snackbar shown when switching to a profile fails"
+  },
+  "profileIconUploadFailed": "Could not update profile picture. Try again.",
+  "@profileIconUploadFailed": {
+    "description": "Snackbar shown when the profile picture upload or save fails"
   },
   "semanticsProfileSwitcher": "Switch student profile",
   "@semanticsProfileSwitcher": {

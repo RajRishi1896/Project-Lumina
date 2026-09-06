@@ -224,15 +224,15 @@
   "appIconLightLabel": "लाइट ऐप आइकन",
   "appIconDarkSubtitle": "डार्क लॉन्चर आइकन का उपयोग करें",
   "appIconLightSubtitle": "लाइट लॉन्चर आइकन का उपयोग करें",
-  "storageOfflineLibraryTitle": "भंडारण और ऑफ़लाइन लाइब्रेरी",
-  "storageOfflineLibrarySubtitle": "डाउनलोड की गई सामग्री प्रबंधित करें",
+  "storageOfflineLibraryTitle": "Downloads",
+  "storageOfflineLibrarySubtitle": "कतार और डाउनलोड की गई फ़ाइलें",
   "networkSettingsTitle": "नेटवर्क सेटिंग्स",
   "networkSettingsSubtitle": "हब कनेक्टिविटी कॉन्फ़िगर करें",
   "logOutButtonLabel": "लॉग आउट",
   "settingsAccountTitle": "खाता सेटिंग्स",
   "settingsAccountSubtitleOnline": "अपना पासवर्ड बदलें",
   "settingsAccountSubtitleOffline": "खाता प्रबंधन के लिए हब से जुड़ें",
-  "offlineLibraryAppBarTitle": "ऑफ़लाइन लाइब्रेरी",
+  "offlineLibraryAppBarTitle": "Downloads",
   "emptyOfflineLibraryMessage": "कोई डाउनलोड किया गया संसाधन नहीं",
   "deleteDownloadDialogTitle": "डाउनलोड हटाएं",
   "deleteDownloadConfirmation": "ऑफ़लाइन स्टोरेज से \"{title}\" हटाएं?",
@@ -1797,6 +1797,7 @@
   "@profileSwitchFailed": {
     "description": "Snackbar shown when switching to a profile fails"
   },
+  "profileIconUploadFailed": "प्रोफ़ाइल फ़ोटो अपडेट नहीं हो सकी. फिर से कोशिश करें.",
   "semanticsProfileSwitcher": "छात्र प्रोफ़ाइल बदलें",
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"

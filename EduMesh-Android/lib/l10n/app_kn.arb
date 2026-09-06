@@ -224,15 +224,15 @@
   "appIconLightLabel": "ಲೈಟ್ ಅಪ್ಲಿಕೇಶನ್ ಐಕಾನ್",
   "appIconDarkSubtitle": "ಡಾರ್ಕ್ ಲಾಂಚರ್ ಐಕಾನ್ ಬಳಸಿ",
   "appIconLightSubtitle": "ಲೈಟ್ ಲಾಂಚರ್ ಐಕಾನ್ ಬಳಸಿ",
-  "storageOfflineLibraryTitle": "ಸಂಗ್ರಹ ಮತ್ತು ಆಫ್‌ಲೈನ್ ಗ್ರಂಥಾಲಯ",
-  "storageOfflineLibrarySubtitle": "ಡೌನ್‌ಲೋಡ್ ಮಾಡಿದ ವಿಷಯವನ್ನು ನಿರ್ವಹಿಸಿ",
+  "storageOfflineLibraryTitle": "Downloads",
+  "storageOfflineLibrarySubtitle": "ಸರತಿ ಮತ್ತು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿದ ಫೈಲ್‌ಗಳು",
   "networkSettingsTitle": "ನೆಟ್‌ವರ್ಕ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
   "networkSettingsSubtitle": "ಹಬ್ ಸಂಪರ್ಕವನ್ನು ಕಾನ್ಫಿಗರ್ ಮಾಡಿ",
   "logOutButtonLabel": "ಲಾಗ್ ಔಟ್",
   "settingsAccountTitle": "ಖಾತೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
   "settingsAccountSubtitleOnline": "ನಿಮ್ಮ ಪಾಸ್‌ವರ್ಡ್ ಬದಲಾಯಿಸಿ",
   "settingsAccountSubtitleOffline": "ಖಾತೆ ನಿರ್ವಹಣೆಗಾಗಿ ಹಬ್‌ಗೆ ಸಂಪರ್ಕಿಸಿ",
-  "offlineLibraryAppBarTitle": "ಆಫ್‌ಲೈನ್ ಗ್ರಂಥಾಲಯ",
+  "offlineLibraryAppBarTitle": "Downloads",
   "emptyOfflineLibraryMessage": "ಯಾವುದೇ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿದ ಸಂಪನ್ಮೂಲಗಳಿಲ್ಲ",
   "deleteDownloadDialogTitle": "ಡೌನ್‌ಲೋಡ್ ಅಳಿಸಿ",
   "deleteDownloadConfirmation": "ಆಫ್‌ಲೈನ್ ಸಂಗ್ರಹದಿಂದ \"{title}\" ಅಳಿಸಬೇಕೆ?",
@@ -1797,6 +1797,7 @@
   "@profileSwitchFailed": {
     "description": "Snackbar shown when switching to a profile fails"
   },
+  "profileIconUploadFailed": "ಪ್ರೊಫೈಲ್ ಫೋಟೋ ನವೀಕರಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "semanticsProfileSwitcher": "ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಬದಲಿಸಿ",
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"

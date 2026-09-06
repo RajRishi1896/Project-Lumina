@@ -224,15 +224,15 @@
   "appIconLightLabel": "Icône claire",
   "appIconDarkSubtitle": "Utiliser l'icône sombre",
   "appIconLightSubtitle": "Utiliser l'icône claire",
-  "storageOfflineLibraryTitle": "Stockage et bibliothèque hors ligne",
-  "storageOfflineLibrarySubtitle": "Gérer le contenu téléchargé",
+  "storageOfflineLibraryTitle": "Downloads",
+  "storageOfflineLibrarySubtitle": "File d'attente et fichiers téléchargés",
   "networkSettingsTitle": "Paramètres réseau",
   "networkSettingsSubtitle": "Configurer la connectivité du Hub",
   "logOutButtonLabel": "Déconnexion",
   "settingsAccountTitle": "Paramètres du compte",
   "settingsAccountSubtitleOnline": "Modifier votre mot de passe",
   "settingsAccountSubtitleOffline": "Connectez-vous au Hub pour gérer le compte",
-  "offlineLibraryAppBarTitle": "Bibliothèque hors ligne",
+  "offlineLibraryAppBarTitle": "Downloads",
   "emptyOfflineLibraryMessage": "Aucune ressource téléchargée",
   "deleteDownloadDialogTitle": "Supprimer le téléchargement",
   "deleteDownloadConfirmation": "Supprimer \"{title}\" du stockage hors ligne ?",
@@ -1797,6 +1797,7 @@
   "@profileSwitchFailed": {
     "description": "Snackbar shown when switching to a profile fails"
   },
+  "profileIconUploadFailed": "Impossible de mettre à jour la photo de profil. Réessayez.",
   "semanticsProfileSwitcher": "Changer de profil étudiant",
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"

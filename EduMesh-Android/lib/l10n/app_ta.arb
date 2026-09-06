@@ -230,15 +230,15 @@
   "appIconLightLabel": "ஒளிர் ஆப் ஐகான்",
   "appIconDarkSubtitle": "இருண்ட லாஞ்சர் ஐகானைப் பயன்படுத்து",
   "appIconLightSubtitle": "ஒளிர் லாஞ்சர் ஐகானைப் பயன்படுத்து",
-  "storageOfflineLibraryTitle": "சேமிப்பகம் & ஆஃப்லைன் நூலகம்",
-  "storageOfflineLibrarySubtitle": "டவுன்லோட் செய்யப்பட்ட உள்ளடக்கத்தை நிர்வகி",
+  "storageOfflineLibraryTitle": "Downloads",
+  "storageOfflineLibrarySubtitle": "வரிசை மற்றும் பதிவிறக்கிய கோப்புகள்",
   "networkSettingsTitle": "நெட்வொர்க் அமைப்புகள்",
   "networkSettingsSubtitle": "ஹப் இணைப்பை கட்டமை",
   "logOutButtonLabel": "வெளியேறு",
   "settingsAccountTitle": "கணக்கு அமைப்புகள்",
   "settingsAccountSubtitleOnline": "உங்கள் கடவுச்சொல்லை மாற்றுங்கள்",
   "settingsAccountSubtitleOffline": "கணக்கை நிர்வகிக்க ஹப்புடன் இணையுங்கள்",
-  "offlineLibraryAppBarTitle": "ஆஃப்லைன் நூலகம்",
+  "offlineLibraryAppBarTitle": "Downloads",
   "emptyOfflineLibraryMessage": "டவுன்லோட் செய்யப்பட்ட வளங்கள் இல்லை",
   "deleteDownloadDialogTitle": "டவுன்லோடை நீக்கு",
   "deleteDownloadConfirmation": "ஆஃப்லைன் சேமிப்பகத்திலிருந்து \"{title}\" ஐ நீக்கவா?",
@@ -798,6 +798,7 @@
   "@profileSwitchFailed": {
     "description": "Snackbar shown when switching to a profile fails"
   },
+  "profileIconUploadFailed": "சுயவிவரப் படத்தைப் புதுப்பிக்க முடியவில்லை. மீண்டும் முயல்க.",
   "semanticsProfileSwitcher": "மாணவர் சுயவிவரத்தை மாற்று",
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"

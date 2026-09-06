@@ -230,15 +230,15 @@
   "appIconLightLabel": "లైట్ యాప్ ఐకాన్",
   "appIconDarkSubtitle": "డార్క్ లాంచర్ ఐకాన్ ఉపయోగించండి",
   "appIconLightSubtitle": "లైట్ లాంచర్ ఐకాన్ ఉపయోగించండి",
-  "storageOfflineLibraryTitle": "స్టోరేజ్ & ఆఫ్‌లైన్ లైబ్రరీ",
-  "storageOfflineLibrarySubtitle": "డౌన్‌లోడ్ చేసిన కంటెంట్‌ను నిర్వహించండి",
+  "storageOfflineLibraryTitle": "Downloads",
+  "storageOfflineLibrarySubtitle": "క్యూ మరియు డౌన్‌లోడ్ చేసిన ఫైళ్లు",
   "networkSettingsTitle": "నెట్‌వర్క్ సెట్టింగ్‌లు",
   "networkSettingsSubtitle": "హబ్ కనెక్టివిటీని కాన్ఫిగర్ చేయండి",
   "logOutButtonLabel": "లాగ్ అవుట్",
   "settingsAccountTitle": "ఖాతా సెట్టింగ్‌లు",
   "settingsAccountSubtitleOnline": "మీ పాస్‌వర్డ్ మార్చండి",
   "settingsAccountSubtitleOffline": "ఖాతాను నిర్వహించడానికి హబ్‌తో కనెక్ట్ అవ్వండి",
-  "offlineLibraryAppBarTitle": "ఆఫ్‌లైన్ లైబ్రరీ",
+  "offlineLibraryAppBarTitle": "Downloads",
   "emptyOfflineLibraryMessage": "డౌన్‌లోడ్ చేసిన వనరులు లేవు",
   "deleteDownloadDialogTitle": "డౌన్‌లోడ్ తీసివేయండి",
   "deleteDownloadConfirmation": "ఆఫ్‌లైన్ స్టోరేజ్ నుండి \"{title}\" ను తీసివేయాలా?",
@@ -798,6 +798,7 @@
   "@profileSwitchFailed": {
     "description": "Snackbar shown when switching to a profile fails"
   },
+  "profileIconUploadFailed": "ప్రొఫైల్ ఫోటోను అప్‌డేట్ చేయలేకపోయాం. మళ్లీ ప్రయత్నించండి.",
   "semanticsProfileSwitcher": "విద్యార్థి ప్రొఫైల్‌ను మార్చండి",
   "@semanticsProfileSwitcher": {
     "description": "Accessibility label for the dashboard profile avatar chip that opens the profile picker"

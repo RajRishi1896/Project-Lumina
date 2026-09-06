@@ -114,8 +114,28 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       final iconFile = File(await _iconPath(id));
       if (await iconFile.exists()) {
         if (mounted) setState(() => _profileImage = iconFile);
+      } else {
+        // No local icon: fetch the server copy (uploaded from another
+        // device/session) and cache it for offline display.
+        unawaited(_fetchServerIcon(id));
       }
     }
+  }
+
+  /// Downloads the server-side profile icon and caches it locally.
+  /// Silent on failure: the initials avatar remains.
+  Future<void> _fetchServerIcon(String scholarId) async {
+    try {
+      final resp = await ApiClient.getBinary('/student/profile/icon/$scholarId')
+          .timeout(const Duration(seconds: 8));
+      final bytes = resp.data;
+      if (bytes == null || bytes.isEmpty) return;
+      await _saveIconLocally(scholarId, bytes);
+      final iconFile = File(await _iconPath(scholarId));
+      if (mounted && await iconFile.exists()) {
+        setState(() => _profileImage = iconFile);
+      }
+    } catch (_) {}
   }
 
   /// Fetches analytics and profile data from the server.
@@ -389,11 +409,15 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     try {
       final bytes = await picked.readAsBytes();
       final b64 = base64Encode(bytes);
-      final ext = picked.path.split('.').last;
+      // Normalize the extension to what the server validates (magic bytes
+      // must match ext): jpeg->jpg, anything unknown falls back to the
+      // actual bytes below via png default only when the magic matches.
+      var ext = picked.path.split('.').last.toLowerCase();
+      if (ext == 'jpeg') ext = 'jpg';
+      if (!const {'png', 'jpg', 'gif', 'webp'}.contains(ext)) ext = 'png';
       final scholarId = await AuthService().getUniqueUserId();
       if (scholarId == null) {
-        if (mounted) setState(() => _uploadingIcon = false);
-        return;
+        throw StateError('no scholar id');
       }
       await ApiClient.post('/student/profile/icon', data: {
         'image_data': b64,
@@ -408,7 +432,12 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _uploadingIcon = false);
+      if (mounted) {
+        setState(() => _uploadingIcon = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppLocalizations.of(context)!.profileIconUploadFailed),
+        ));
+      }
     }
   }
 
