@@ -1,6 +1,5 @@
 """Database initialization and constants for Lumina EduMesh Hub."""
 import os
-import secrets
 import sqlite3
 import uuid
 import logging
