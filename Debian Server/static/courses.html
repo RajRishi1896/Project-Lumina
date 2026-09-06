@@ -422,26 +422,26 @@
     <script src="/static/js/lumina.js?v=15"></script>
     <!-- Section: Inline Scripts: course CRUD, editor, quiz builder -->
     <script>
-        var courses = [];
-        var subjects = [];
-        var currentCourseId = null;
-        var similarCourses = [];
-        var courseResources = [];
-        var linkedCourseIds = [];
-        var similarSearchTimeout = null;
-        var _coursePage = 1, _courseFiltered = [], _coursePerPage = 20;
+        let courses = [];
+        let subjects = [];
+        let currentCourseId = null;
+        const similarCourses = [];
+        let courseResources = [];
+        let linkedCourseIds = [];
+        let similarSearchTimeout = null;
+        let _coursePage = 1, _courseFiltered = [], _coursePerPage = 20;
 
         // Quiz state
-        var quizQuestions = [];
-        var editingQuestionIndex = -1;
+        let quizQuestions = [];
+        let editingQuestionIndex = -1;
 
         // Chapter/Topic state
-        var courseTopics = [];
-        var editingTopicId = null;
+        let courseTopics = [];
+        let editingTopicId = null;
 
         // Pagination handlers: move the course page window and re-render.
         function coursePrevPage() { if (_coursePage > 1) { _coursePage--; renderCourses(); } }
-        function courseNextPage() { var tp = Math.ceil(_courseFiltered.length / _coursePerPage); if (_coursePage < tp) { _coursePage++; renderCourses(); } }
+        function courseNextPage() { const tp = Math.ceil(_courseFiltered.length / _coursePerPage); if (_coursePage < tp) { _coursePage++; renderCourses(); } }
         function courseChangePerPage(val) { _coursePerPage = parseInt(val, 10) || 20; _coursePage = 1; renderCourses(); }
 
         /** Load course list from server */
@@ -458,9 +458,9 @@
 
         /** Filter courses and render current page */
         function renderCourses() {
-            var filterSubject = document.getElementById('courseFilterSubject').value;
-            var filterGrade = document.getElementById('courseFilterGrade').value;
-            var searchVal = (document.getElementById('courseSearch').value || '').toLowerCase().trim();
+            const filterSubject = document.getElementById('courseFilterSubject').value;
+            const filterGrade = document.getElementById('courseFilterGrade').value;
+            const searchVal = (document.getElementById('courseSearch').value || '').toLowerCase().trim();
             _courseFiltered = courses;
             if (filterSubject !== 'ALL') _courseFiltered = _courseFiltered.filter(function(c) { return c.subject === filterSubject; });
             if (filterGrade !== 'ALL') _courseFiltered = _courseFiltered.filter(function(c) { return String(c.grade) === filterGrade; });
@@ -471,21 +471,21 @@
 
         /** Render current page of filtered courses */
         function renderCoursePage() {
-            var tbody = document.getElementById('courseTable');
+            const tbody = document.getElementById('courseTable');
             if (!tbody) return;
-            var data = _courseFiltered;
-            var totalPages = Math.max(1, Math.ceil(data.length / _coursePerPage));
+            const data = _courseFiltered;
+            const totalPages = Math.max(1, Math.ceil(data.length / _coursePerPage));
             if (_coursePage > totalPages) _coursePage = totalPages;
-            var start = (_coursePage - 1) * _coursePerPage;
-            var pageItems = data.slice(start, start + _coursePerPage);
+            const start = (_coursePage - 1) * _coursePerPage;
+            const pageItems = data.slice(start, start + _coursePerPage);
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="empty-state">' + __('courses.empty') + '</td></tr>';
             } else {
                 tbody.innerHTML = pageItems.map(function(c) {
-                    var statusHtml = c.published === 1
+                    let statusHtml = c.published === 1
                         ? '<span style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(56,161,105,0.1);color:var(--success);padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:700;">' + __('courses.status_published') + '</span>'
                         : '<span style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(239,68,68,0.08);color:var(--text-muted);padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:700;">' + __('courses.status_draft') + '</span>';
-                    var resourceCount = c.resource_count || 0;
+                    const resourceCount = c.resource_count || 0;
                     return '<tr data-course-id="' + c.id + '">' +
                         '<td data-label="' + __('courses.th_title') + '"><strong>' + esc(c.title) + '</strong></td>' +
                         '<td data-label="' + __('courses.th_subject') + '">' + esc(c.subject || __('courses.general_subject')) + '</td>' +
@@ -511,27 +511,27 @@
                     fetch('/grades', { credentials: 'include' })
                 ]);
                 subjects = await subRes.json();
-                var grades = await gradeRes.json();
-                var select = document.getElementById('courseSubject');
-                var filter = document.getElementById('courseFilterSubject');
-                var optsHtml = '<option value="" data-i18n="courses.editor_subject_select">Select subject...</option>' +
+                const grades = await gradeRes.json();
+                const select = document.getElementById('courseSubject');
+                const filter = document.getElementById('courseFilterSubject');
+                const optsHtml = '<option value="" data-i18n="courses.editor_subject_select">Select subject...</option>' +
                     subjects.map(function(s) { return '<option value="' + esc(s.name) + '">' + esc(s.name) + '</option>'; }).join('');
                 if (select) select.innerHTML = optsHtml;
                 if (filter) {
                     filter.innerHTML = '<option value="ALL">' + __('courses.filter_all') + '</option>' +
                         subjects.map(function(s) { return '<option value="' + esc(s.name) + '">' + esc(s.name) + '</option>'; }).join('');
                 }
-                var gradeOpts = '<option value="ALL" data-i18n="courses.filter_all">All</option>';
-                var gopts = '';
+                let gradeOpts = '<option value="ALL" data-i18n="courses.filter_all">All</option>';
+                let gopts = '';
                 grades.forEach(function(g) {
-                    var n = g.name;
-                    var num = parseInt(n.replace(/\D/g, '')) || 0;
+                    const n = g.name;
+                    const num = parseInt(n.replace(/\D/g, '')) || 0;
                     gradeOpts += '<option value="' + esc(n) + '">' + esc(n) + '</option>';
                     gopts += '<option value="' + num + '">' + esc(n) + '</option>';
                 });
-                var gradeFilter = document.getElementById('courseFilterGrade');
+                const gradeFilter = document.getElementById('courseFilterGrade');
                 if (gradeFilter) gradeFilter.innerHTML = gradeOpts;
-                var gradeSelect = document.getElementById('courseGrade');
+                const gradeSelect = document.getElementById('courseGrade');
                 if (gradeSelect) gradeSelect.innerHTML = gopts;
             } catch (e) {
                 console.error('Could not load subjects/grades', e);
@@ -546,14 +546,14 @@
             document.getElementById('editorTitle').textContent = courseId ? __('courses.editor_edit') : __('courses.editor_new');
             if (courseId) {
                 try {
-                    var res = await fetch('/api/teacher/courses/' + courseId, { credentials: 'include' });
+                    const res = await fetch('/api/teacher/courses/' + courseId, { credentials: 'include' });
                     if (res.ok) {
-                        var detail = await res.json();
+                        const detail = await res.json();
                         populateEditor(detail);
                         return;
                     }
                 } catch (e) {}
-                var course = courses.find(function(c) { return c.id === courseId; });
+                const course = courses.find(function(c) { return c.id === courseId; });
                 if (course) populateEditor(course);
             } else {
                 resetEditor();
@@ -580,7 +580,7 @@
             renderCourseResources();
             renderTopics();
             if (course.cover_url) {
-                var cp = document.getElementById('coverPreview');
+                const cp = document.getElementById('coverPreview');
                 cp.innerHTML = '<img src="' + esc(course.cover_url) + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
                 document.getElementById('btn-removeCover').style.display = '';
             }
@@ -616,14 +616,14 @@
 
         /** Render linked course chips */
         function renderLinkedCourses() {
-            var container = document.getElementById('linkedCourses');
+            const container = document.getElementById('linkedCourses');
             if (!linkedCourseIds.length) {
                 container.innerHTML = '<span style="font-size:0.8rem;color:var(--text-muted);">' + __('courses.similar_empty') + '</span>';
                 return;
             }
             container.innerHTML = linkedCourseIds.map(function(id) {
-                var c = courses.find(function(co) { return co.id === id; });
-                var name = c ? esc(c.title) : '#' + id;
+                const c = courses.find(function(co) { return co.id === id; });
+                const name = c ? esc(c.title) : '#' + id;
                 return '<span style="display:inline-flex;align-items:center;gap:0.35rem;background:var(--surface);border:1px solid var(--outline);border-radius:6px;padding:0.3rem 0.6rem;font-size:0.8rem;font-weight:700;">' +
                     esc(name) +
                     '<button class="js-remove-similar" data-course-id="' + id + '" style="background:none;border:none;cursor:pointer;color:var(--danger);padding:0;font-size:1rem;line-height:1;display:flex;">&times;</button>' +
@@ -633,14 +633,14 @@
 
         /** Render chapters/topics list */
         function renderTopics() {
-            var container = document.getElementById('chapterList');
+            const container = document.getElementById('chapterList');
             if (!container) return;
             if (!courseTopics.length) {
                 container.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding:0.75rem;" data-i18n="courses.chapters_empty">No chapters yet. Add chapters to organize resources.</p>';
                 return;
             }
             container.innerHTML = courseTopics.map(function(t) {
-                var resCount = courseResources.filter(function(r) { return r.topic_id === t.id; }).length;
+                const resCount = courseResources.filter(function(r) { return r.topic_id === t.id; }).length;
                 return '<div class="chapter-item" data-topic-id="' + t.id + '" style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.35rem;background:var(--surface);">' +
                     '<div style="display:flex;align-items:center;gap:0.5rem;flex:1;">' +
                     '<span style="cursor:grab;color:var(--text-muted);font-size:0.9rem;">&#9776;</span>' +
@@ -656,11 +656,11 @@
 
         /** Show chapter create/edit form */
         function showChapterForm(topicId) {
-            var form = document.getElementById('chapterForm');
-            var titleInput = document.getElementById('chapterTitle');
+            const form = document.getElementById('chapterForm');
+            const titleInput = document.getElementById('chapterTitle');
             form.classList.remove('hidden');
             if (topicId) {
-                var t = courseTopics.find(function(x) { return x.id === topicId; });
+                const t = courseTopics.find(function(x) { return x.id === topicId; });
                 titleInput.value = t ? t.title : '';
                 editingTopicId = topicId;
             } else {
@@ -679,9 +679,9 @@
         /** Save chapter (create or update) */
         async function saveChapter() {
             if (!currentCourseId) { showAlert(__('courses.notif.save_course_first'), true); return; }
-            var title = document.getElementById('chapterTitle').value.trim();
+            const title = document.getElementById('chapterTitle').value.trim();
             if (!title) { showAlert(__('courses.chapter_title_required'), true); return; }
-            var url, method;
+            let url, method;
             if (editingTopicId) {
                 url = '/api/teacher/courses/' + currentCourseId + '/topics/' + editingTopicId;
                 method = 'PUT';
@@ -690,12 +690,12 @@
                 method = 'POST';
             }
             try {
-                var res = await fetch(url, { method: method, credentials: 'include', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({title: title}) });
+                const res = await fetch(url, { method: method, credentials: 'include', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({title: title}) });
                 if (res.ok) {
                     hideChapterForm();
                     await loadTopics();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    const err = await res.json().catch(function() { return {}; });
                     showAlert(err.detail || __('courses.chapter_save_failed'), true);
                 }
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
@@ -703,24 +703,24 @@
 
         /** Delete chapter */
         async function deleteChapter(topicId) {
-            var others = courseTopics.filter(function(t) { return t.id !== topicId; });
-            var count = courseResources.filter(function(r) { return r.topic_id === topicId; }).length;
-            var xferHtml = '';
+            const others = courseTopics.filter(function(t) { return t.id !== topicId; });
+            const count = courseResources.filter(function(r) { return r.topic_id === topicId; }).length;
+            let xferHtml = '';
             if (others.length > 0 && count > 0) {
-                var opts = others.map(function(t) {
+                const opts = others.map(function(t) {
                     return '<option value="' + esc(t.id) + '">' + esc(t.title) + '</option>';
                 }).join('');
                 xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin:0.5rem 0 0.75rem;">'
                     + '<select id="chapterXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--bg-input);color:var(--on-surface);font-size:0.875rem;">'
                     + '<option value="">' + __('content.topic_transfer.select_topic') + '</option>' + opts + '</select></div>';
             }
-            var message = __('courses.chapter_delete_body') + (count > 0 ? '\n' + __('content.topics.resource_count', {count: count}) : '');
-            var confirmed = await showConfirm(__('courses.chapter_delete_title'), message, true, __('courses.chapter_delete_btn'), xferHtml,
+            const message = __('courses.chapter_delete_body') + (count > 0 ? '\n' + __('content.topics.resource_count', {count: count}) : '');
+            const confirmed = await showConfirm(__('courses.chapter_delete_title'), message, true, __('courses.chapter_delete_btn'), xferHtml,
                 others.length > 0 && count > 0 ? { label: __('danger.transfer.transfer_and_delete'), value: 'transfer' } : null);
             if (!confirmed) return;
-            var transferTo = '';
+            let transferTo = '';
             if (confirmed === 'transfer') {
-                var targetEl = document.querySelector('#confirmModalText #chapterXferTarget');
+                const targetEl = document.querySelector('#confirmModalText #chapterXferTarget');
                 if (!targetEl || !targetEl.value) {
                     showNotification('chapterNotif', __('danger.transfer.select_target'), true);
                     return;
@@ -728,12 +728,12 @@
                 transferTo = targetEl.value;
             }
             try {
-                var url = '/api/teacher/courses/' + currentCourseId + '/topics/' + topicId;
+                let url = '/api/teacher/courses/' + currentCourseId + '/topics/' + topicId;
                 if (transferTo) url += '?transfer_to=' + encodeURIComponent(transferTo);
                 else url += '?delete_resources=true';
-                var res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+                const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
-                    var data = await res.json().catch(function() { return {}; });
+                    const data = await res.json().catch(function() { return {}; });
                     if (transferTo) {
                         showAlert(data.message || __('danger.transfer.done', {name: '', target: data.transferred_to || ''}), false);
                     }
@@ -748,7 +748,7 @@
         async function loadTopics() {
             if (!currentCourseId) return;
             try {
-                var res = await fetch('/api/teacher/courses/' + currentCourseId + '/topics', { credentials: 'include' });
+                const res = await fetch('/api/teacher/courses/' + currentCourseId + '/topics', { credentials: 'include' });
                 if (res.ok) { courseTopics = await res.json(); renderTopics(); }
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }
@@ -757,12 +757,12 @@
         async function assignResourceTopic(resourceId, topicId) {
             if (!currentCourseId) return;
             try {
-                var res = await fetch('/api/teacher/courses/' + currentCourseId + '/resources/' + resourceId + '/topic', {
+                const res = await fetch('/api/teacher/courses/' + currentCourseId + '/resources/' + resourceId + '/topic', {
                     method: 'PUT', credentials: 'include', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({topic_id: topicId})
                 });
                 if (res.ok) {
-                    var r = courseResources.find(function(x) { return x.id === resourceId; });
+                    const r = courseResources.find(function(x) { return x.id === resourceId; });
                     if (r) r.topic_id = topicId;
                     renderTopics();
                 }
@@ -771,18 +771,18 @@
 
         /** Render course resource table */
         function renderCourseResources() {
-            var tbody = document.getElementById('courseResourceTable');
+            const tbody = document.getElementById('courseResourceTable');
             if (!courseResources.length) {
                 tbody.innerHTML = '<tr><td colspan="6" class="empty-state">' + __('courses.resources_empty') + '</td></tr>';
                 return;
             }
             tbody.innerHTML = courseResources.map(function(r, i) {
-                var typeIcon = '';
+                let typeIcon = '';
                 if (r.resource_type === 'quiz') typeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
                 else if (r.resource_type === 'video') typeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect width="15" height="14" x="1" y="5" rx="2" ry="2"/></svg>';
                 else typeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>';
-                var sizeStr = r.file_size ? formatFileSize(r.file_size) : '-';
-                var topicOpts = '<option value="">--</option>' + courseTopics.map(function(t) {
+                const sizeStr = r.file_size ? formatFileSize(r.file_size) : '-';
+                const topicOpts = '<option value="">--</option>' + courseTopics.map(function(t) {
                     return '<option value="' + t.id + '"' + (r.topic_id === t.id ? ' selected' : '') + '>' + esc(t.title) + '</option>';
                 }).join('');
                 return '<tr draggable="true" data-resource-index="' + i + '">' +
@@ -796,8 +796,8 @@
                     '</td></tr>';
             }).join('');
             // Drag-and-drop events
-            var rows = tbody.querySelectorAll('tr[draggable]');
-            for (var idx = 0; idx < rows.length; idx++) {
+            const rows = tbody.querySelectorAll('tr[draggable]');
+            for (let idx = 0; idx < rows.length; idx++) {
                 rows[idx].addEventListener('dragstart', handleDragStart);
                 rows[idx].addEventListener('dragover', handleDragOver);
                 rows[idx].addEventListener('drop', handleDrop);
@@ -808,7 +808,7 @@
         // Drag-and-drop reorder helpers for the course resource table.
         // The dragged row index is stashed in dragSrcIndex on dragstart,
         // consumed on drop, and cleared on dragend.
-        var dragSrcIndex = null;
+        let dragSrcIndex = null;
         function handleDragStart(e) {
             dragSrcIndex = parseInt(e.target.closest('tr').dataset.resourceIndex);
             e.dataTransfer.effectAllowed = 'move';
@@ -819,9 +819,9 @@
         }
         function handleDrop(e) {
             e.preventDefault();
-            var targetIndex = parseInt(e.target.closest('tr').dataset.resourceIndex);
+            const targetIndex = parseInt(e.target.closest('tr').dataset.resourceIndex);
             if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
-                var item = courseResources.splice(dragSrcIndex, 1)[0];
+                const item = courseResources.splice(dragSrcIndex, 1)[0];
                 courseResources.splice(targetIndex, 0, item);
                 renderCourseResources();
             }
@@ -832,9 +832,9 @@
         /** Format file size */
         function formatFileSize(bytes) {
             if (!bytes) return '-';
-            var units = ['B', 'KB', 'MB', 'GB'];
-            var i = 0;
-            var size = bytes;
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let i = 0;
+            let size = bytes;
             while (size >= 1024 && i < units.length - 1) { size /= 1024; i++; }
             return size.toFixed(1) + ' ' + units[i];
         }
@@ -842,14 +842,14 @@
         /** Debounced similar course search */
         function onSimilarSearch() {
             clearTimeout(similarSearchTimeout);
-            var q = document.getElementById('similarSearch').value.trim();
+            const q = document.getElementById('similarSearch').value.trim();
             if (!q) { document.getElementById('similarDropdown').classList.add('hidden'); return; }
             similarSearchTimeout = setTimeout(function() {
                 fetch('/api/teacher/courses/suggest-similar?q=' + encodeURIComponent(q), { credentials: 'include' })
                     .then(function(r) { return r.ok ? r.json() : []; })
                     .then(function(data) {
-                        var dd = document.getElementById('similarDropdown');
-                        var filtered = data.filter(function(c) { return c.id !== currentCourseId && linkedCourseIds.indexOf(c.id) === -1; });
+                        const dd = document.getElementById('similarDropdown');
+                        const filtered = data.filter(function(c) { return c.id !== currentCourseId && linkedCourseIds.indexOf(c.id) === -1; });
                         if (!filtered.length) {
                             dd.classList.add('hidden');
                             return;
@@ -865,10 +865,10 @@
 
         /** Soft-delete a course */
         async function deleteCourse(id, title) {
-            var confirmed = await showConfirm(__('courses.confirm_delete_title'), __('courses.confirm_delete_body', {title: title}), true, __('courses.confirm_delete_btn'));
+            const confirmed = await showConfirm(__('courses.confirm_delete_title'), __('courses.confirm_delete_body', {title: title}), true, __('courses.confirm_delete_btn'));
             if (!confirmed) return;
             try {
-                var res = await fetch('/api/teacher/courses/' + id, { method: 'DELETE', credentials: 'include' });
+                const res = await fetch('/api/teacher/courses/' + id, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
                     showAlert(__('courses.notif.deleted'), false);
                     loadCourses();
@@ -914,14 +914,14 @@
          * shows the localised empty-state message.
          */
         function renderQuizQuestions() {
-            var container = document.getElementById('quizQuestionList');
+            const container = document.getElementById('quizQuestionList');
             if (!quizQuestions.length) {
                 container.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);text-align:center;padding:1rem;">' + __('courses.quiz_questions_empty') + '</p>';
                 return;
             }
             container.innerHTML = quizQuestions.map(function(q, i) {
-                var typeLabel = __('courses.quiz_q_type_' + q.type);
-                var preview = (q.text || '').substring(0, 60) + ((q.text || '').length > 60 ? '...' : '');
+                const typeLabel = __('courses.quiz_q_type_' + q.type);
+                const preview = (q.text || '').substring(0, 60) + ((q.text || '').length > 60 ? '...' : '');
                 return '<div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.5rem;background:var(--surface);" draggable="true" data-qindex="' + i + '">' +
                     '<span style="cursor:grab;color:var(--text-muted);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></span>' +
                     '<span style="font-size:0.75rem;font-weight:700;background:var(--outline);padding:0.15rem 0.4rem;border-radius:4px;">' + esc(typeLabel) + '</span>' +
@@ -943,7 +943,7 @@
             document.getElementById('questionEditor').classList.remove('hidden');
             document.getElementById('questionEditorTitle').textContent = index >= 0 ? __('courses.quiz_edit_question') : __('courses.quiz_new_question');
             if (index >= 0 && quizQuestions[index]) {
-                var q = quizQuestions[index];
+                const q = quizQuestions[index];
                 document.getElementById('qType').value = q.type;
                 document.getElementById('qText').value = q.text || '';
                 document.getElementById('qExplanation').value = q.explanation || '';
@@ -989,7 +989,7 @@
          * editor for the fill-blanks input and pre-fill True/False options.
          */
         function onQuestionTypeChange() {
-            var type = document.getElementById('qType').value;
+            const type = document.getElementById('qType').value;
             document.getElementById('qOptionsContainer').classList.toggle('hidden', type === 'fill_blanks');
             document.getElementById('qFillContainer').classList.toggle('hidden', type !== 'fill_blanks');
             if (type === 'fill_blanks') {
@@ -1009,14 +1009,14 @@
          * @param {string} type - Question type: 'mcq' | 'tf' | 'multi' | 'fill_blanks'
          */
         function renderOptions(opts, correct, type) {
-            var container = document.getElementById('qOptionsList');
-            var isMulti = type === 'multi';
+            const container = document.getElementById('qOptionsList');
+            const isMulti = type === 'multi';
             container.innerHTML = opts.map(function(opt, i) {
-                var checked = false;
+                let checked = false;
                 if (type === 'tf') {
                     checked = (i === correct && correct !== '') || opt === correct;
                 } else if (isMulti) {
-                    var corr = correct || [];
+                    const corr = correct || [];
                     checked = corr.indexOf ? corr.indexOf(opt) !== -1 : false;
                 } else {
                     checked = i === correct;
@@ -1039,39 +1039,39 @@
          * replace the question in quizQuestions at editingQuestionIndex.
          */
         function saveQuestion() {
-            var type = document.getElementById('qType').value;
-            var text = document.getElementById('qText').value.trim();
-            var explanation = document.getElementById('qExplanation').value.trim();
+            const type = document.getElementById('qType').value;
+            const text = document.getElementById('qText').value.trim();
+            const explanation = document.getElementById('qExplanation').value.trim();
             if (!text) { showAlert(__('courses.notif.question_text_required'), true); return; }
 
-            var correct_answer, options;
+            let correct_answer, options;
             if (type === 'fill_blanks') {
                 correct_answer = document.getElementById('qFillAnswer').value.trim();
                 if (!correct_answer) { showAlert(__('courses.notif.answer_required'), true); return; }
                 options = null;
             } else {
-                var optInputs = document.querySelectorAll('.q-opt-text');
+                const optInputs = document.querySelectorAll('.q-opt-text');
                 options = Array.from(optInputs).map(function(inp) { return inp.value.trim(); }).filter(function(v) { return v; });
                 if (options.length < 2) { showAlert(__('courses.notif.options_required'), true); return; }
-                var checkedInputs = document.querySelectorAll('.q-correct-opt:checked');
+                const checkedInputs = document.querySelectorAll('.q-correct-opt:checked');
                 if (!checkedInputs.length) { showAlert(__('courses.notif.correct_required'), true); return; }
-                var allOptInputs = Array.from(document.querySelectorAll('.q-opt-text'));
+                const allOptInputs = Array.from(document.querySelectorAll('.q-opt-text'));
                 if (type === 'multi') {
                     correct_answer = Array.from(checkedInputs).map(function(cb) {
-                        var idx = allOptInputs.indexOf(cb.closest('div').querySelector('.q-opt-text'));
+                        const idx = allOptInputs.indexOf(cb.closest('div').querySelector('.q-opt-text'));
                         return options[idx];
                     }).filter(function(v) { return v !== undefined; });
                 } else {
-                    var idx = allOptInputs.indexOf(checkedInputs[0].closest('div').querySelector('.q-opt-text'));
+                    const idx = allOptInputs.indexOf(checkedInputs[0].closest('div').querySelector('.q-opt-text'));
                     correct_answer = idx;
                 }
             }
 
             // Image
-            var img = document.getElementById('qImagePreviewImg');
-            var image_data = img && img.src && img.src.startsWith('data:') ? img.src : null;
+            const img = document.getElementById('qImagePreviewImg');
+            const image_data = img && img.src && img.src.startsWith('data:') ? img.src : null;
 
-            var question = { type: type, text: text, options: options, correct_answer: correct_answer, explanation: explanation, image_data: image_data };
+            const question = { type: type, text: text, options: options, correct_answer: correct_answer, explanation: explanation, image_data: image_data };
 
             if (editingQuestionIndex >= 0 && editingQuestionIndex < quizQuestions.length) {
                 quizQuestions[editingQuestionIndex] = question;
@@ -1092,7 +1092,7 @@
 
         /** Show the live character count of the question text input. */
         function updateQTextCount() {
-            var el = document.getElementById('qTextCount');
+            const el = document.getElementById('qTextCount');
             if (el) el.textContent = document.getElementById('qText').value.length;
         }
 
@@ -1101,13 +1101,13 @@
          * disabled inputs) into the quiz preview modal and show it.
          */
         function previewQuiz() {
-            var title = document.getElementById('quizTitle').value.trim() || __('courses.quiz_untitled');
+            const title = document.getElementById('quizTitle').value.trim() || __('courses.quiz_untitled');
             document.getElementById('previewQuizTitle').textContent = title;
-            var html = '<div style="margin-bottom:1rem;font-size:0.85rem;color:var(--text-muted);">' +
+            let html = '<div style="margin-bottom:1rem;font-size:0.85rem;color:var(--text-muted);">' +
                 __('courses.preview_meta', {count: quizQuestions.length, time: document.getElementById('quizTimeLimit').value, threshold: document.getElementById('quizThreshold').value}) +
                 '</div>';
             quizQuestions.forEach(function(q, i) {
-                var typeLabel = __('courses.quiz_q_type_' + q.type);
+                const typeLabel = __('courses.quiz_q_type_' + q.type);
                 html += '<div style="padding:1rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.75rem;background:var(--surface);">' +
                     '<div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);margin-bottom:0.25rem;">' + __('courses.preview_question_num', {n: i + 1}) + ' <span style="background:var(--outline);padding:0.1rem 0.35rem;border-radius:4px;">' + esc(typeLabel) + '</span></div>' +
                     '<div style="font-weight:700;margin-bottom:0.5rem;">' + esc(q.text) + '</div>';
@@ -1141,7 +1141,7 @@
          * @returns {Promise<void>}
          */
         async function saveQuiz() {
-            var title = document.getElementById('quizTitle').value.trim();
+            const title = document.getElementById('quizTitle').value.trim();
             if (!title) { showAlert(__('courses.notif.quiz_title_required'), true); return; }
             if (!quizQuestions.length) { showAlert(__('courses.notif.quiz_questions_required'), true); return; }
             if (!currentCourseId) {
@@ -1149,7 +1149,7 @@
                 if (!currentCourseId) { showAlert(__('courses.notif.save_course_first'), true); return; }
             }
 
-            var payload = {
+            const payload = {
                 title: title,
                 type: 'quiz',
                 time_limit_minutes: document.getElementById('quizTimeLimit').value === 'custom'
@@ -1173,7 +1173,7 @@
                     showAlert(__('courses.notif.quiz_saved'), false);
                     closeQuizBuilder();
                     return r.json().then(function(data) {
-                        var existing = courseResources.findIndex(function(res) { return res.id === data.id; });
+                        const existing = courseResources.findIndex(function(res) { return res.id === data.id; });
                         if (existing >= 0) {
                             courseResources[existing] = data;
                         } else {
@@ -1195,8 +1195,8 @@
          */
         function exportCourseQuiz() {
             if (quizQuestions.length === 0) { showAlert(__('courses.quiz.export_empty'), true); return; }
-            var title = document.getElementById('quizTitle').value.trim() || 'quiz';
-            var payload = {
+            const title = document.getElementById('quizTitle').value.trim() || 'quiz';
+            const payload = {
                 title: title,
                 time_limit_minutes: document.getElementById('quizTimeLimit').value === 'custom'
                     ? parseInt(document.getElementById('quizTimeLimitCustom').value) || 0
@@ -1208,16 +1208,16 @@
                 shuffle: document.getElementById('quizShuffle').value,
                 questions: quizQuestions
             };
-            var json = JSON.stringify(payload, null, 2);
-            var filename = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
+            const json = JSON.stringify(payload, null, 2);
+            const filename = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
             if (window.showSaveFilePicker) {
                 window.showSaveFilePicker({ suggestedName: filename, types: [{ description: __('courses.quiz_file_description'), accept: { 'application/json': ['.json'] } }] })
                     .then(function(handle) { return handle.createWritable(); })
                     .then(function(writable) { return writable.write(json).then(function() { return writable.close(); }); })
                     .catch(function(e) { if (e.name !== 'AbortError') showAlert(__('courses.quiz.save_failed', {message: e.message}), true); });
             } else {
-                var blob = new Blob([json], { type: 'application/json' });
-                var a = document.createElement('a');
+                const blob = new Blob([json], { type: 'application/json' });
+                const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
                 a.download = filename;
                 a.click();
@@ -1234,27 +1234,27 @@
          * for values outside the preset lists), and re-renders.
          */
         function handleCourseQuizImport(e) {
-            var file = e.target.files[0];
+            const file = e.target.files[0];
             if (!file) return;
-            var reader = new FileReader();
+            const reader = new FileReader();
             reader.onload = function(ev) {
                 try {
-                    var data = JSON.parse(ev.target.result);
+                    const data = JSON.parse(ev.target.result);
                     if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
                         return showAlert(__('courses.quiz.import_invalid'), true);
                     }
                     quizQuestions = data.questions;
                     if (data.title) document.getElementById('quizTitle').value = data.title;
                     if (data.time_limit_minutes != null) {
-                        var tl = document.getElementById('quizTimeLimit');
-                        var tlVals = Array.from(tl.options).map(function(o) { return o.value; });
+                        const tl = document.getElementById('quizTimeLimit');
+                        const tlVals = Array.from(tl.options).map(function(o) { return o.value; });
                         if (tlVals.indexOf(String(data.time_limit_minutes)) !== -1) tl.value = data.time_limit_minutes;
                         else { tl.value = 'custom'; document.getElementById('quizTimeLimitCustom').style.display = ''; document.getElementById('quizTimeLimitCustom').value = data.time_limit_minutes; }
                     }
                     if (data.pass_threshold != null) document.getElementById('quizThreshold').value = data.pass_threshold;
                     if (data.max_attempts != null) {
-                        var ma = document.getElementById('quizMaxAttempts');
-                        var maVals = Array.from(ma.options).map(function(o) { return o.value; });
+                        const ma = document.getElementById('quizMaxAttempts');
+                        const maVals = Array.from(ma.options).map(function(o) { return o.value; });
                         if (maVals.indexOf(String(data.max_attempts)) !== -1) ma.value = data.max_attempts;
                         else { ma.value = 'custom'; document.getElementById('quizMaxAttemptsCustom').style.display = ''; document.getElementById('quizMaxAttemptsCustom').value = data.max_attempts; }
                     }
@@ -1276,15 +1276,15 @@
          * The file object rides along as _file for the upload in importCourseZip.
          */
         function addResourceFile() {
-            var input = document.createElement('input');
+            const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.pdf,.mp4,.webm,.png,.jpg,.jpeg,.gif,.doc,.docx,.pptx,.xlsx,.zip';
             input.onchange = function() {
-                var file = input.files[0];
+                const file = input.files[0];
                 if (!file) return;
-                var title = file.name.replace(/\.[^/.]+$/, '');
-                var ext = file.name.split('.').pop().toLowerCase();
-                var type = 'document';
+                const title = file.name.replace(/\.[^/.]+$/, '');
+                const ext = file.name.split('.').pop().toLowerCase();
+                let type = 'document';
                 if (['mp4', 'webm'].indexOf(ext) !== -1) type = 'video';
                 else if (['png', 'jpg', 'jpeg', 'gif'].indexOf(ext) !== -1) type = 'image';
                 else if (['zip'].indexOf(ext) !== -1) type = 'archive';
@@ -1297,11 +1297,11 @@
         // ── Cover image ──
         /** Show a data-URL preview of the chosen cover image and the remove button. */
         function onCoverChange() {
-            var file = document.getElementById('coverInput').files[0];
+            const file = document.getElementById('coverInput').files[0];
             if (!file) return;
-            var reader = new FileReader();
+            const reader = new FileReader();
             reader.onload = function(e) {
-                var cp = document.getElementById('coverPreview');
+                const cp = document.getElementById('coverPreview');
                 cp.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
                 document.getElementById('btn-removeCover').style.display = '';
             };
@@ -1322,9 +1322,9 @@
          * @param {string} [status] - 'draft' or 'published'; defaults to 'draft'
          */
         function saveCourse(status) {
-            var title = document.getElementById('courseTitle').value.trim();
+            const title = document.getElementById('courseTitle').value.trim();
             if (!title) { showAlert(__('courses.notif.title_required'), true); return; }
-            var payload = {
+            const payload = {
                 title: title,
                 description: document.getElementById('courseDescription').value.trim(),
                 subject: document.getElementById('courseSubject').value,
@@ -1334,11 +1334,11 @@
                 similar_course_ids: linkedCourseIds,
                 resources: courseResources.map(function(r) { return { title: r.title, type: r.type, file_name: r.file_name, file_size: r.file_size }; })
             };
-            var coverImg = document.getElementById('coverPreview').querySelector('img');
+            const coverImg = document.getElementById('coverPreview').querySelector('img');
             if (coverImg && coverImg.src.startsWith('data:')) payload.cover_image = coverImg.src;
 
-            var method = currentCourseId ? 'PUT' : 'POST';
-            var url = currentCourseId ? '/api/teacher/courses/' + currentCourseId : '/api/teacher/courses';
+            const method = currentCourseId ? 'PUT' : 'POST';
+            const url = currentCourseId ? '/api/teacher/courses/' + currentCourseId : '/api/teacher/courses';
 
             fetch(url, {
                 method: method,
@@ -1369,9 +1369,9 @@
          */
         function saveCourseAsync(status) {
             return new Promise(function(resolve) {
-                var title = document.getElementById('courseTitle').value.trim();
+                const title = document.getElementById('courseTitle').value.trim();
                 if (!title) { showAlert(__('courses.notif.title_required'), true); resolve(); return; }
-                var payload = {
+                const payload = {
                     title: title,
                     description: document.getElementById('courseDescription').value.trim(),
                     subject: document.getElementById('courseSubject').value,
@@ -1381,10 +1381,10 @@
                     similar_course_ids: linkedCourseIds,
                     resources: courseResources.map(function(r) { return { title: r.title, type: r.type, file_name: r.file_name, file_size: r.file_size }; })
                 };
-                var coverImg = document.getElementById('coverPreview').querySelector('img');
+                const coverImg = document.getElementById('coverPreview').querySelector('img');
                 if (coverImg && coverImg.src.startsWith('data:')) payload.cover_image = coverImg.src;
-                var method = currentCourseId ? 'PUT' : 'POST';
-                var url = currentCourseId ? '/api/teacher/courses/' + currentCourseId : '/api/teacher/courses';
+                const method = currentCourseId ? 'PUT' : 'POST';
+                const url = currentCourseId ? '/api/teacher/courses/' + currentCourseId : '/api/teacher/courses';
                 fetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
@@ -1404,9 +1404,9 @@
                 await saveCourse('draft');
                 if (!currentCourseId) return;
             } else {
-                var title = document.getElementById('courseTitle').value.trim();
+                const title = document.getElementById('courseTitle').value.trim();
                 if (!title) { showAlert(__('courses.notif.title_required'), true); return; }
-                var payload = {
+                const payload = {
                     title: title,
                     description: document.getElementById('courseDescription').value.trim(),
                     subject: document.getElementById('courseSubject').value,
@@ -1415,9 +1415,9 @@
                     similar_course_ids: linkedCourseIds,
                     resources: courseResources.map(function(r) { return { title: r.title, type: r.type, file_name: r.file_name, file_size: r.file_size }; })
                 };
-                var coverImg = document.getElementById('coverPreview').querySelector('img');
+                const coverImg = document.getElementById('coverPreview').querySelector('img');
                 if (coverImg && coverImg.src.startsWith('data:')) payload.cover_image = coverImg.src;
-                var r = await fetch('/api/teacher/courses/' + currentCourseId, {
+                let r = await fetch('/api/teacher/courses/' + currentCourseId, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
@@ -1425,7 +1425,7 @@
                 }).catch(function() { return null; });
                 if (!r || !r.ok) { showAlert(__('courses.notif.save_failed'), true); return; }
             }
-            var pubRes = await fetch('/api/teacher/courses/' + currentCourseId + '/publish', {
+            const pubRes = await fetch('/api/teacher/courses/' + currentCourseId + '/publish', {
                 method: 'POST',
                 credentials: 'include'
             }).catch(function() { return null; });
@@ -1442,26 +1442,26 @@
          * the progress bar can track upload bytes, then reload the list.
          */
         function importCourseZip() {
-            var input = document.getElementById('importZipInput');
-            var file = input.files[0];
+            const input = document.getElementById('importZipInput');
+            const file = input.files[0];
             if (!file) return;
 
-            var formData = new FormData();
+            const formData = new FormData();
             formData.append('file', file);
 
-            var progressDiv = document.getElementById('zipImportProgress');
-            var progressBar = document.getElementById('zipImportProgressBar');
-            var progressPct = document.getElementById('zipImportProgressPct');
+            const progressDiv = document.getElementById('zipImportProgress');
+            const progressBar = document.getElementById('zipImportProgressBar');
+            const progressPct = document.getElementById('zipImportProgressPct');
 
             if (progressDiv) { progressDiv.style.display = 'block'; progressBar.style.width = '0%'; progressPct.textContent = '0%'; }
 
-            var xhr = new XMLHttpRequest();
+            const xhr = new XMLHttpRequest();
             xhr.open('POST', '/api/teacher/courses/import', true);
             xhr.withCredentials = true;
 
             xhr.upload.onprogress = function(e) {
                 if (e.lengthComputable && progressBar && progressPct) {
-                    var pct = Math.round((e.loaded / e.total) * 100);
+                    const pct = Math.round((e.loaded / e.total) * 100);
                     progressBar.style.width = pct + '%';
                     progressPct.textContent = pct + '%';
                 }
@@ -1473,8 +1473,8 @@
                     input.value = '';
                     loadCourses();
                 } else {
-                    var errText;
-                    try { var errJson = JSON.parse(xhr.responseText); errText = errJson.detail || __('courses.notif.import_failed'); }
+                    let errText;
+                    try { const errJson = JSON.parse(xhr.responseText); errText = errJson.detail || __('courses.notif.import_failed'); }
                     catch(ex) { errText = __('courses.notif.import_failed'); }
                     showAlert(errText, true);
                 }
@@ -1497,7 +1497,7 @@
          * button/input listener for the course editor. Registered as the
          * SPA 'courses' page init via registerPageCleanup.
          */
-        var _initCourses = function() {
+        const _initCourses = function() {
             loadTranslations(currentLang);
 
             document.getElementById('btn-coursePrevPage')?.addEventListener('click', coursePrevPage);
@@ -1544,10 +1544,10 @@
             document.getElementById('qType')?.addEventListener('change', onQuestionTypeChange);
             document.getElementById('qText')?.addEventListener('input', updateQTextCount);
             document.getElementById('btn-addOption')?.addEventListener('click', function() {
-                var container = document.getElementById('qOptionsList');
-                var type = document.getElementById('qType').value;
-                var i = container.children.length;
-                var div = document.createElement('div');
+                const container = document.getElementById('qOptionsList');
+                const type = document.getElementById('qType').value;
+                const i = container.children.length;
+                const div = document.createElement('div');
                 div.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;';
                 div.innerHTML =
                     '<span style="cursor:grab;color:var(--text-muted);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></span>' +
@@ -1575,9 +1575,9 @@
 
             // Quiz question image
             document.getElementById('qImage')?.addEventListener('change', function() {
-                var file = this.files[0];
+                const file = this.files[0];
                 if (!file) return;
-                var reader = new FileReader();
+                const reader = new FileReader();
                 reader.onload = function(e) {
                     document.getElementById('qImagePreviewImg').src = e.target.result;
                     document.getElementById('qImagePreview').style.display = '';
@@ -1593,15 +1593,15 @@
             // Filters
             document.getElementById('courseFilterSubject')?.addEventListener('change', renderCourses);
             document.getElementById('courseFilterGrade')?.addEventListener('change', renderCourses);
-            var cs = document.getElementById('courseSearch');
+            const cs = document.getElementById('courseSearch');
             if (cs) {
-                var _courseSearchTimer = null;
+                let _courseSearchTimer = null;
                 cs.addEventListener('input', function() { clearTimeout(_courseSearchTimer); _courseSearchTimer = setTimeout(renderCourses, 200); });
             }
 
             // Event delegation: course actions
             document.getElementById('courseTable')?.addEventListener('click', function(e) {
-                var btn;
+                let btn;
                 btn = e.target.closest('.js-edit-course');
                 if (btn) { openEditor(btn.dataset.courseId); return; }
                 btn = e.target.closest('.js-delete-course');
@@ -1612,9 +1612,9 @@
 
             // Event delegation: linked courses remove
             document.getElementById('linkedCourses')?.addEventListener('click', function(e) {
-                var btn = e.target.closest('.js-remove-similar');
+                const btn = e.target.closest('.js-remove-similar');
                 if (btn) {
-                    var id = btn.dataset.courseId;
+                    const id = btn.dataset.courseId;
                     linkedCourseIds = linkedCourseIds.filter(function(cid) { return cid !== id; });
                     renderLinkedCourses();
                 }
@@ -1622,9 +1622,9 @@
 
             // Event delegation: similar dropdown selection
             document.getElementById('similarDropdown')?.addEventListener('click', function(e) {
-                var opt = e.target.closest('.js-similar-option');
+                const opt = e.target.closest('.js-similar-option');
                 if (opt) {
-                    var id = opt.dataset.courseId;
+                    const id = opt.dataset.courseId;
                     if (linkedCourseIds.indexOf(id) === -1) linkedCourseIds.push(id);
                     renderLinkedCourses();
                     document.getElementById('similarSearch').value = '';
@@ -1634,9 +1634,9 @@
 
             // Event delegation: resource removal
             document.getElementById('courseResourceTable')?.addEventListener('click', function(e) {
-                var btn = e.target.closest('.js-remove-resource');
+                const btn = e.target.closest('.js-remove-resource');
                 if (btn) {
-                    var idx = parseInt(btn.dataset.resourceIndex);
+                    const idx = parseInt(btn.dataset.resourceIndex);
                     courseResources.splice(idx, 1);
                     renderCourseResources();
                 }
@@ -1644,7 +1644,7 @@
 
             // Event delegation: resource topic assignment
             document.getElementById('courseResourceTable')?.addEventListener('change', function(e) {
-                var sel = e.target.closest('.js-assign-topic');
+                const sel = e.target.closest('.js-assign-topic');
                 if (sel) {
                     assignResourceTopic(sel.dataset.resourceId, sel.value);
                 }
@@ -1652,15 +1652,15 @@
 
             // Event delegation: chapter edit/delete
             document.getElementById('chapterList')?.addEventListener('click', function(e) {
-                var editBtn = e.target.closest('.js-edit-chapter');
+                const editBtn = e.target.closest('.js-edit-chapter');
                 if (editBtn) { showChapterForm(editBtn.dataset.topicId); return; }
-                var delBtn = e.target.closest('.js-delete-chapter');
+                const delBtn = e.target.closest('.js-delete-chapter');
                 if (delBtn) { deleteChapter(delBtn.dataset.topicId); return; }
             });
 
             // Event delegation: quiz question list
             document.getElementById('quizQuestionList')?.addEventListener('click', function(e) {
-                var btn;
+                let btn;
                 btn = e.target.closest('.js-edit-question');
                 if (btn) { openQuestionEditor(parseInt(btn.dataset.qindex)); return; }
                 btn = e.target.closest('.js-delete-question');
@@ -1669,15 +1669,15 @@
 
             // Event delegation: option removal in question editor
             document.getElementById('qOptionsList')?.addEventListener('click', function(e) {
-                var btn = e.target.closest('.js-remove-option');
+                const btn = e.target.closest('.js-remove-option');
                 if (btn) {
                     btn.closest('div').remove();
-                    var type = document.getElementById('qType').value;
-                    var isMulti = type === 'multi';
+                    const type = document.getElementById('qType').value;
+                    const isMulti = type === 'multi';
                     Array.from(document.getElementById('qOptionsList').children).forEach(function(div, i) {
-                        var inp = div.querySelector('.q-correct-opt');
+                        const inp = div.querySelector('.q-correct-opt');
                         if (inp) { inp.dataset.optindex = i; inp.type = isMulti ? 'checkbox' : 'radio'; }
-                        var txt = div.querySelector('.q-opt-text');
+                        const txt = div.querySelector('.q-opt-text');
                         if (txt) txt.dataset.optindex = i;
                     });
                 }

@@ -53,10 +53,10 @@
     <!-- Section: Scripts - shared JS + dashboard init -->
     <script src="/static/js/lumina.js?v=15"></script>
     <script>
-        var _uptimeEl = document.getElementById('infoUptime');
-        var _statUptimeEl = document.getElementById('statUptime');
-        var _uptimeBase = 0; // Date.now() when server uptime was captured
-        var _uptimeServerSecs = 0; // server-reported seconds at capture time
+        const _uptimeEl = document.getElementById('infoUptime');
+        const _statUptimeEl = document.getElementById('statUptime');
+        let _uptimeBase = 0; // Date.now() when server uptime was captured
+        let _uptimeServerSecs = 0; // server-reported seconds at capture time
 
         document.getElementById('infoHost').textContent = window.location.hostname;
 
@@ -140,7 +140,7 @@
          */
         function _renderUptime() {
             if (!_uptimeBase) return;
-            var secs = _uptimeServerSecs + Math.floor((Date.now() - _uptimeBase) / 1000);
+            const secs = _uptimeServerSecs + Math.floor((Date.now() - _uptimeBase) / 1000);
             _uptimeEl.textContent = _formatUptime(secs);
             _statUptimeEl.textContent = _formatUptimeShort(secs);
         }

@@ -167,12 +167,12 @@
 
     <script src="/static/js/lumina.js?v=15"></script>
     <script>
-        var deckCards = [];
-        var editingDeckId = null;
-        var approvingSubmissionId = null;
-        var rejectingSubmissionId = null;
-        var decks = [];
-        var topics = [];
+        let deckCards = [];
+        let editingDeckId = null;
+        let approvingSubmissionId = null;
+        let rejectingSubmissionId = null;
+        let decks = [];
+        let topics = [];
 
         /** Load teacher resource topics into the module-level `topics` array. */
         function loadTopics() {
@@ -187,21 +187,21 @@
          * @returns {string} HTML string
          */
         function topicOptions(selectedId) {
-            var opts = '<option value="">--</option>';
+            let opts = '<option value="">--</option>';
             topics.forEach(function(t) { opts += '<option value="' + esc(t.id) + '"' + (t.id === selectedId ? ' selected' : '') + '>' + esc(t.name) + '</option>'; });
             return opts;
         }
 
         /** Resolve a topic id to its display name ('' if unknown). */
         function topicName(id) {
-            var t = topics.find(function(x) { return x.id === id; });
+            const t = topics.find(function(x) { return x.id === id; });
             return t ? t.name : '';
         }
 
         /** Fetch the teacher's flashcard decks and render them into the table. */
         async function loadDecks() {
             try {
-                var res = await fetch('/api/teacher/flashcards/decks', { credentials: 'include' });
+                const res = await fetch('/api/teacher/flashcards/decks', { credentials: 'include' });
                 if (!res.ok) return showAlert(__('content.notif.load_failed'), true);
                 decks = await res.json();
                 renderDecks();
@@ -210,7 +210,7 @@
 
         /** Render the decks array into #deckTable, with edit/delete buttons per row. */
         function renderDecks() {
-            var tbody = document.getElementById('deckTable');
+            const tbody = document.getElementById('deckTable');
             if (!decks.length) {
                 tbody.innerHTML = '<tr><td colspan="4" class="empty-state" style="text-align:center;width:100%;">' + __('flashcards.no_decks') + '</td></tr>';
                 return;
@@ -230,7 +230,7 @@
         /** Fetch student flashcard submissions and render them into the table. */
         async function loadSubmissions() {
             try {
-                var res = await fetch('/api/teacher/flashcards/submissions', { credentials: 'include' });
+                const res = await fetch('/api/teacher/flashcards/submissions', { credentials: 'include' });
                 if (!res.ok) return;
                 renderSubmissions(await res.json());
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
@@ -252,18 +252,18 @@
          * @param {Array} list - Submission objects from the server
          */
         function renderSubmissions(list) {
-            var tbody = document.getElementById('submissionTable');
+            const tbody = document.getElementById('submissionTable');
             if (!list.length) {
                 tbody.innerHTML = '<tr><td colspan="5" class="empty-state" style="text-align:center;width:100%;">' + __('flashcards.no_submissions') + '</td></tr>';
                 return;
             }
             tbody.innerHTML = list.map(function(s) {
-                var act = '';
+                let act = '';
                 if (s.status === 'pending') {
                     act = '<button class="btn btn-outline js-approve-sub" data-sub-id="' + esc(s.id) + '" style="padding:0.4rem 0.75rem;font-size:0.75rem;">' + __('flashcards.approve') + '</button> ' +
                         '<button class="btn btn-outline js-reject-sub" data-sub-id="' + esc(s.id) + '" style="padding:0.4rem 0.75rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);margin-left:0.5rem;">' + __('flashcards.reject') + '</button>';
                 }
-                var reason = s.reason ? ' <small style="color:var(--text-muted);display:block;">' + esc(s.reason) + '</small>' : '';
+                const reason = s.reason ? ' <small style="color:var(--text-muted);display:block;">' + esc(s.reason) + '</small>' : '';
                 return '<tr data-sub-id="' + esc(s.id) + '">' +
                     '<td data-i18n-data-label="flashcards.submission_author">' + esc(s.student_name || s.student_id) + reason + '</td>' +
                     '<td data-label="' + __('flashcards.deck_title') + '"><strong>' + esc(s.title) + '</strong>' + ' <small style="color:var(--text-muted);">' + __('flashcards.card_count', {count: s.card_count}) + '</small></td>' +
@@ -296,7 +296,7 @@
 
         /** Render the editable front/back input rows for deckCards into #cardsList. */
         function renderCards() {
-            var list = document.getElementById('cardsList');
+            const list = document.getElementById('cardsList');
             if (!deckCards.length) { list.innerHTML = ''; return; }
             list.innerHTML = deckCards.map(function(c, i) {
                 return '<div class="js-card-row" data-i="' + i + '" style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.5rem;background:var(--surface);">' +
@@ -321,27 +321,26 @@
          * cards. Reloads the deck list on success.
          */
         async function saveDeck() {
-            var title = document.getElementById('deckTitle').value.trim();
+            const title = document.getElementById('deckTitle').value.trim();
             if (!title) { showAlert(__('flashcards.deck_title'), true); return; }
-            var topic_id = document.getElementById('deckTopic').value;
-            var cards = [];
-            var rows = document.querySelectorAll('#cardsList .js-card-row');
-            for (var i = 0; i < rows.length; i++) {
+            const topic_id = document.getElementById('deckTopic').value;
+            const cards = [];
+            const rows = document.querySelectorAll('#cardsList .js-card-row');
+            for (let i = 0; i < rows.length; i++) {
                 cards.push({front: rows[i].querySelector('.card-front').value, back: rows[i].querySelector('.card-back').value});
             }
             try {
-                var headers = { 'Content-Type': 'application/json' };
-                var body;
+                const headers = { 'Content-Type': 'application/json' };
                 if (editingDeckId) {
-                    var r = await fetch('/api/teacher/flashcards/decks/' + editingDeckId, { method: 'PUT', headers: headers, body: JSON.stringify({title: title, topic_id: topic_id}), credentials: 'include' });
+                    const r = await fetch('/api/teacher/flashcards/decks/' + editingDeckId, { method: 'PUT', headers: headers, body: JSON.stringify({title: title, topic_id: topic_id}), credentials: 'include' });
                     if (!r.ok) return showError(r);
-                    var rc = await fetch('/api/teacher/flashcards/decks/' + editingDeckId + '/cards', { method: 'PUT', headers: headers, body: JSON.stringify({cards: cards}), credentials: 'include' });
+                    const rc = await fetch('/api/teacher/flashcards/decks/' + editingDeckId + '/cards', { method: 'PUT', headers: headers, body: JSON.stringify({cards: cards}), credentials: 'include' });
                     if (!rc.ok) return showError(rc);
                 } else {
-                    var rr = await fetch('/api/teacher/flashcards/decks', { method: 'POST', headers: headers, body: JSON.stringify({title: title, topic_id: topic_id}), credentials: 'include' });
+                    const rr = await fetch('/api/teacher/flashcards/decks', { method: 'POST', headers: headers, body: JSON.stringify({title: title, topic_id: topic_id}), credentials: 'include' });
                     if (!rr.ok) return showError(rr);
-                    var created = await rr.json();
-                    var rc2 = await fetch('/api/teacher/flashcards/decks/' + created.id + '/cards', { method: 'PUT', headers: headers, body: JSON.stringify({cards: cards}), credentials: 'include' });
+                    const created = await rr.json();
+                    const rc2 = await fetch('/api/teacher/flashcards/decks/' + created.id + '/cards', { method: 'PUT', headers: headers, body: JSON.stringify({cards: cards}), credentials: 'include' });
                     if (!rc2.ok) return showError(rc2);
                 }
                 showAlert(__('courses.notif.saved'), false);
@@ -355,7 +354,7 @@
          * @param {Response} r - Failed fetch response
          */
         async function showError(r) {
-            var err = await r.json().catch(function() { return {}; });
+            const err = await r.json().catch(function() { return {}; });
             showAlert(err.detail || __('courses.notif.save_failed'), true);
         }
 
@@ -365,10 +364,10 @@
          * @param {string} title - Deck title (for the confirmation message)
          */
         async function deleteDeck(id, title) {
-            var confirmed = await showConfirm(__('flashcards.delete_deck'), __('flashcards.confirm_delete_deck'), true, __('settings.confirm.ok_btn'));
+            const confirmed = await showConfirm(__('flashcards.delete_deck'), __('flashcards.confirm_delete_deck'), true, __('settings.confirm.ok_btn'));
             if (!confirmed) return;
             try {
-                var res = await fetch('/api/teacher/flashcards/decks/' + id, { method: 'DELETE', credentials: 'include' });
+                const res = await fetch('/api/teacher/flashcards/decks/' + id, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) { showAlert(__('courses.notif.deleted'), false); loadDecks(); }
                 else showAlert(__('courses.notif.delete_failed'), true);
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
@@ -387,9 +386,9 @@
         /** POST the approve action for the pending submission with the chosen topic. */
         async function confirmApprove() {
             if (!approvingSubmissionId) return;
-            var topic_id = document.getElementById('approveTopic').value;
+            const topic_id = document.getElementById('approveTopic').value;
             try {
-                var res = await fetch('/api/teacher/flashcards/submissions/' + approvingSubmissionId + '/approve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({topic_id: topic_id}), credentials: 'include' });
+                const res = await fetch('/api/teacher/flashcards/submissions/' + approvingSubmissionId + '/approve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({topic_id: topic_id}), credentials: 'include' });
                 if (res.ok) { showAlert(__('courses.notif.saved'), false); approvingSubmissionId = null; document.getElementById('approveModal').classList.add('hidden'); loadDecks(); loadSubmissions(); }
                 else showError(res);
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
@@ -408,9 +407,9 @@
         /** POST the reject action for the pending submission with the optional reason. */
         async function confirmReject() {
             if (!rejectingSubmissionId) return;
-            var reason = document.getElementById('rejectReason').value.trim();
+            const reason = document.getElementById('rejectReason').value.trim();
             try {
-                var res = await fetch('/api/teacher/flashcards/submissions/' + rejectingSubmissionId + '/reject', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({reason: reason}), credentials: 'include' });
+                const res = await fetch('/api/teacher/flashcards/submissions/' + rejectingSubmissionId + '/reject', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({reason: reason}), credentials: 'include' });
                 if (res.ok) { showAlert(__('courses.notif.saved'), false); rejectingSubmissionId = null; document.getElementById('rejectModal').classList.add('hidden'); loadSubmissions(); }
                 else showError(res);
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
@@ -420,7 +419,7 @@
          * Page init (registered in _pageInitRegistry): loads topics, decks,
          * submissions, and the session, then wires the modal and table buttons.
          */
-        var _initFlashcards = function() {
+        const _initFlashcards = function() {
             loadTopics();
             loadDecks();
             loadSubmissions();
@@ -440,26 +439,26 @@
             document.getElementById('btn-confirmReject')?.addEventListener('click', confirmReject);
 
             document.getElementById('deckTable')?.addEventListener('click', function(e) {
-                var btn = e.target.closest('.js-edit-deck') || e.target.closest('.js-delete-deck');
+                const btn = e.target.closest('.js-edit-deck') || e.target.closest('.js-delete-deck');
                 if (!btn) return;
-                var id = btn.getAttribute('data-deck-id');
-                var deck = decks.find(function(d) { return d.id === id; });
+                const id = btn.getAttribute('data-deck-id');
+                const deck = decks.find(function(d) { return d.id === id; });
                 if (btn.classList.contains('js-edit-deck')) openDeckEditor(deck);
                 else deleteDeck(id, deck ? deck.title : '');
             });
 
             document.getElementById('submissionTable')?.addEventListener('click', function(e) {
-                var btn = e.target.closest('.js-approve-sub') || e.target.closest('.js-reject-sub');
+                const btn = e.target.closest('.js-approve-sub') || e.target.closest('.js-reject-sub');
                 if (!btn) return;
-                var id = btn.getAttribute('data-sub-id');
+                const id = btn.getAttribute('data-sub-id');
                 if (btn.classList.contains('js-approve-sub')) openApproveModal(id);
                 else openRejectModal(id);
             });
 
             document.getElementById('cardsList')?.addEventListener('click', function(e) {
-                var btn = e.target.closest('.js-remove-card');
+                const btn = e.target.closest('.js-remove-card');
                 if (!btn) return;
-                var i = parseInt(btn.getAttribute('data-i'), 10);
+                const i = parseInt(btn.getAttribute('data-i'), 10);
                 if (i >= 0) { deckCards.splice(i, 1); renderCards(); }
             });
         };

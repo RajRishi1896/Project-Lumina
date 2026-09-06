@@ -19,10 +19,10 @@ function esc(str) {
  * @returns {Function} Debounced function
  */
 function debounce(fn, delay) {
-    var timer;
+    let timer;
     return function() {
         clearTimeout(timer);
-        var ctx = this, args = arguments;
+        const ctx = this, args = arguments;
         timer = setTimeout(function() { fn.apply(ctx, args); }, delay);
     };
 }
@@ -34,7 +34,7 @@ function debounce(fn, delay) {
  */
 function timeAgo(iso) {
     if (!iso) return __('students.never');
-    var diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
     if (diff < 60) return __('students.just_now');
     if (diff < 3600) return __('students.minutes_ago', {n: Math.floor(diff / 60)});
     if (diff < 86400) return __('students.hours_ago', {n: Math.floor(diff / 3600)});
@@ -50,7 +50,7 @@ function timeAgo(iso) {
  * @returns {string} SVG markup
  */
 function getSymbolSvg(symbol) {
-    var svgs = {
+    const svgs = {
         calculator: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8.01" y1="10" y2="10"/><line x1="12" x2="12.01" y1="10" y2="10"/><line x1="16" x2="16.01" y1="10" y2="10"/><line x1="8" x2="8.01" y1="14" y2="14"/><line x1="12" x2="12.01" y1="14" y2="14"/><line x1="16" x2="16.01" y1="14" y2="14"/><line x1="8" x2="8.01" y1="18" y2="18"/><line x1="12" x2="16" y1="18" y2="18"/></svg>',
         atom: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(30 12 12)"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(90 12 12)"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(150 12 12)"/></svg>',
         globe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
@@ -75,10 +75,10 @@ function getSymbolSvg(symbol) {
  * @returns {void}
  */
 function updatePagination(key, page, totalPages, total) {
-    var el = document.getElementById(key + 'Pagination');
-    var pageInfo = document.getElementById(key + 'PageInfo');
-    var prevBtn = document.getElementById('btn-' + key + 'PrevPage');
-    var nextBtn = document.getElementById('btn-' + key + 'NextPage');
+    const el = document.getElementById(key + 'Pagination');
+    const pageInfo = document.getElementById(key + 'PageInfo');
+    const prevBtn = document.getElementById('btn-' + key + 'PrevPage');
+    const nextBtn = document.getElementById('btn-' + key + 'NextPage');
     if (el) el.style.display = total > 0 ? 'flex' : 'none';
     if (pageInfo) pageInfo.textContent = __('settings.page_of', {current: page, total: totalPages});
     if (prevBtn) { prevBtn.disabled = page <= 1; prevBtn.style.opacity = page <= 1 ? '0.4' : '1'; }
@@ -172,7 +172,7 @@ function applyLanguage() {
                 el.setAttribute('content', translated);
             } else if (el.children.length > 0) {
                 // Has child elements (e.g. SVG icons): find and update the trailing text node
-                var last = el.lastChild;
+                const last = el.lastChild;
                 if (last && last.nodeType === 3) {
                     last.textContent = ' ' + translated;
                 } else {
@@ -436,7 +436,7 @@ function showNotification(notifId, msg, isError) {
  * @returns {void}
  */
 function renderUserInfo(username, role) {
-    var el = document.getElementById('userInfo');
+    const el = document.getElementById('userInfo');
     if (!el || !role) return;
     el.innerHTML = '<div style="font-weight: 800; font-size: 1.2rem; color: #fff; letter-spacing: -0.015em;">' + esc(__('role_badge_' + role)) + '</div>';
 }
@@ -449,11 +449,11 @@ function renderUserInfo(username, role) {
  * @returns {Object} Object with activate(), deactivate() methods
  */
 function createFocusTrap(modal, triggerEl) {
-    var focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-    var focusableElements = [];
-    var firstFocusable = null;
-    var lastFocusable = null;
-    var keydownHandler = null;
+    const focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    let focusableElements = [];
+    let firstFocusable = null;
+    let lastFocusable = null;
+    let keydownHandler = null;
 
     function updateFocusableElements() {
         focusableElements = Array.prototype.slice.call(modal.querySelectorAll(focusableSelectors))
@@ -518,13 +518,13 @@ function createFocusTrap(modal, triggerEl) {
 function showConfirm(title, message, isDanger, confirmText, body, secondary) {
     if (isDanger === undefined) isDanger = true;
     return new Promise(function(resolve) {
-        var modal = document.getElementById('globalConfirmModal');
-        var titleEl = document.getElementById('confirmModalTitle');
-        var textEl = document.getElementById('confirmModalText');
-        var confirmBtn = document.getElementById('confirmConfirmBtn');
-        var cancelBtn = document.getElementById('confirmCancelBtn');
-        var secondaryBtn = document.getElementById('confirmSecondaryBtn');
-        var iconEl = document.getElementById('confirmModalIcon');
+        const modal = document.getElementById('globalConfirmModal');
+        const titleEl = document.getElementById('confirmModalTitle');
+        const textEl = document.getElementById('confirmModalText');
+        const confirmBtn = document.getElementById('confirmConfirmBtn');
+        const cancelBtn = document.getElementById('confirmCancelBtn');
+        const secondaryBtn = document.getElementById('confirmSecondaryBtn');
+        const iconEl = document.getElementById('confirmModalIcon');
         if (!modal || !titleEl || !textEl || !confirmBtn || !cancelBtn || !secondaryBtn) { resolve(false); return; }
         titleEl.innerText = title;
         if (body) {
@@ -558,16 +558,16 @@ function showConfirm(title, message, isDanger, confirmText, body, secondary) {
         }
 
         // Capture the element that triggered the modal for focus restoration
-        var triggerEl = document.activeElement;
+        const triggerEl = document.activeElement;
 
         modal.classList.remove('hidden');
 
-        var focusTrap = createFocusTrap(modal, triggerEl);
+        const focusTrap = createFocusTrap(modal, triggerEl);
         focusTrap.activate();
 
-        var _confirmHandler = function() { cleanup(true); };
-        var _cancelHandler = function() { cleanup(false); };
-        var _secondaryHandler = function() { cleanup(secondary ? secondary.value : false); };
+        const _confirmHandler = function() { cleanup(true); };
+        const _cancelHandler = function() { cleanup(false); };
+        const _secondaryHandler = function() { cleanup(secondary ? secondary.value : false); };
         confirmBtn.addEventListener('click', _confirmHandler);
         cancelBtn.addEventListener('click', _cancelHandler);
         secondaryBtn.addEventListener('click', _secondaryHandler);
@@ -663,15 +663,15 @@ async function loadWhoAmI() {
  */
 async function checkSelfResetRequired() {
     try {
-        var res = await fetch('/teacher/me', { credentials: 'same-origin' });
+        const res = await fetch('/teacher/me', { credentials: 'same-origin' });
         if (res.ok) {
-            var me = await res.json();
+            const me = await res.json();
             loggedInUser = me.username;
             if (me.reset_required === 1) {
-                var resetModal = document.getElementById('forceResetModal');
+                const resetModal = document.getElementById('forceResetModal');
                 resetModal.classList.remove('hidden');
                 // Activate focus trap for accessibility
-                var focusTrap = createFocusTrap(resetModal, null);
+                const focusTrap = createFocusTrap(resetModal, null);
                 focusTrap.activate();
                 // Store for cleanup on submit
                 resetModal._focusTrap = focusTrap;
@@ -687,8 +687,8 @@ async function checkSelfResetRequired() {
  * sends POST to /teacher/force-change-password. Reloads page on success.
  */
 async function submitForcePasswordReset() {
-    var newPwd = document.getElementById('forceNewPwd').value;
-    var confirmPwd = document.getElementById('forceConfirmPwd').value;
+    const newPwd = document.getElementById('forceNewPwd').value;
+    const confirmPwd = document.getElementById('forceConfirmPwd').value;
     if (!newPwd || !confirmPwd) {
         return showNotification('forceResetNotif', __('content.notif.pwd_fields_required'), true);
     }
@@ -696,7 +696,7 @@ async function submitForcePasswordReset() {
         return showNotification('forceResetNotif', __('content.notif.pwd_mismatch'), true);
     }
     try {
-        var res = await fetch('/teacher/force-change-password', {
+        const res = await fetch('/teacher/force-change-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: loggedInUser || 'admin', new_password: newPwd })
@@ -705,7 +705,7 @@ async function submitForcePasswordReset() {
             showNotification('forceResetNotif', __('content.notif.pwd_updated'), false);
             setTimeout(function() { location.reload(); }, 1500);
         } else {
-            var err = await res.json();
+            const err = await res.json();
             showNotification('forceResetNotif', err.detail || __('content.notif.pwd_update_failed'), true);
         }
     } catch (e) {
@@ -747,14 +747,14 @@ const PAGE_INIT_MAP = {
  * @returns {void}
  */
 function highlightNav() {
-    var key = NAV_MAP[location.pathname.replace(/\/+$/, '')] || '';
-    var suffix = (key === 'settings' && location.pathname === '/static/manage-settings') ? 'account' : key;
+    const key = NAV_MAP[location.pathname.replace(/\/+$/, '')] || '';
+    const suffix = (key === 'settings' && location.pathname === '/static/manage-settings') ? 'account' : key;
     if (!suffix) return;
     document.querySelectorAll('.nav-item').forEach(function(el) { el.classList.remove('active'); });
     document.querySelectorAll('.bottom-nav-item').forEach(function(el) { el.classList.remove('active'); });
-    var navEl = document.getElementById('nav-' + suffix);
+    const navEl = document.getElementById('nav-' + suffix);
     if (navEl) navEl.classList.add('active');
-    var bottomEl = document.getElementById('bottom-nav-' + suffix);
+    const bottomEl = document.getElementById('bottom-nav-' + suffix);
     if (bottomEl) bottomEl.classList.add('active');
 }
 
@@ -765,8 +765,8 @@ function highlightNav() {
  */
 function renderLayout() {
     if (document.getElementById('welcome-content')) return;
-    var aside = document.querySelector('aside');
-    var bottomNav = document.getElementById('bottomNav');
+    const aside = document.querySelector('aside');
+    let bottomNav = document.getElementById('bottomNav');
     if (!aside) return;
     aside.setAttribute('role', 'navigation');
     aside.setAttribute('data-i18n-aria-label', 'nav.main_navigation');
@@ -780,34 +780,34 @@ function renderLayout() {
     bottomNav.setAttribute('role', 'navigation');
     bottomNav.setAttribute('data-i18n-aria-label', 'nav.bottom_navigation');
 
-    var key = NAV_MAP[location.pathname.replace(/\/+$/, '')] || '';
+    const key = NAV_MAP[location.pathname.replace(/\/+$/, '')] || '';
 
     // If sidebar already has nav items, re-highlight (no flash)
-    var existingNav = aside.querySelector('nav');
+    const existingNav = aside.querySelector('nav');
     if (existingNav && existingNav.children.length > 0) {
         highlightNav();
         return;
     }
 
     // First render: build full sidebar
-    var cacheKey = (userRole || '') + ':' + key;
+    const cacheKey = (userRole || '') + ':' + key;
     renderLayout._last = cacheKey;
-    var useAccount = key === 'settings' && location.pathname === '/static/manage-settings';
+    const useAccount = key === 'settings' && location.pathname === '/static/manage-settings';
 
     function idFor(k) { return k === 'settings' ? 'account' : k; }
 
     /* All nav-item SVGs (inline, one per entry) */
-    var HOME_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
-    var FILE_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>';
-    var LOCK_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
-    var COURSES_SVG='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
-    var USERS_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
-    var HELP_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>';
-    var DANGER_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="danger-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>';
-    var LOGOUT_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>';
-    var GEAR_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+    const HOME_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+    const FILE_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    const LOCK_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+    const COURSES_SVG='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+    const USERS_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+    const HELP_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>';
+    const DANGER_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="danger-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>';
+    const LOGOUT_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>';
+    const GEAR_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 
-    var navList = [
+    const navList = [
         { k:'home',      href:'/static/index',               svg:HOME_SVG,      sideLabel:'Home',           botLabel:'Home' },
         { k:'content',   href:'/static/manage-content',      svg:FILE_SVG,      sideLabel:'Content Manager',botLabel:'Content' },
         { k:'courses',   href:'/static/courses',             svg:COURSES_SVG,   sideLabel:'Courses',        botLabel:'Courses' },
@@ -819,12 +819,12 @@ function renderLayout() {
         navList.push({ k:'danger',   href:'/static/manage-danger',       svg:DANGER_SVG, sideLabel:'Danger Zone',    botLabel:'Danger' });
     }
 
-    var sbNav = '', btmNav = '';
-    for (var i = 0; i < navList.length; i++) {
-        var n = navList[i];
-        var active = n.k === key;
-        var id = idFor(n.k);
-        var danger = n.k === 'danger' ? ' danger' : '';
+    let sbNav = '', btmNav = '';
+    for (let i = 0; i < navList.length; i++) {
+        const n = navList[i];
+        const active = n.k === key;
+        const id = idFor(n.k);
+        const danger = n.k === 'danger' ? ' danger' : '';
         sbNav += '<a href="' + n.href + '" class="nav-item' + (active ? ' active' : '') + danger + '" id="nav-' + id + '">' + n.svg + '<span data-i18n="sidebar.' + n.k + '">' + n.sideLabel + '</span></a>\n            ';
         btmNav += '<a href="' + n.href + '" class="bottom-nav-item' + (active ? ' active' : '') + danger + '" id="bottom-nav-' + id + '">' + n.svg + '<span data-i18n="sidebar.' + n.k + '">' + n.botLabel + '</span></a>\n        ';
     }
@@ -838,13 +838,18 @@ function renderLayout() {
         '<div class="sidebar-divider"></div>' +
         '<nav>\n            ' + sbNav + '</nav>' +
         '<div class="nav-spacer"></div>' +
-        '<a href="/logout" class="nav-logout" onclick="sessionStorage.clear()">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
+        '<a href="/logout" class="nav-logout">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
 
-    btmNav += '<a href="/logout" class="bottom-nav-item" id="bottom-nav-logout" onclick="sessionStorage.clear()">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
+    btmNav += '<a href="/logout" class="bottom-nav-item" id="bottom-nav-logout">' + LOGOUT_SVG + '<span data-i18n="sidebar.logout">Log out</span></a>';
     bottomNav.innerHTML = btmNav;
+    // Event delegation: clear sessionStorage on any logout link click
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a[href="/logout"]');
+        if (link) sessionStorage.clear();
+    });
     updateNavHeight();
 
-    var savedScroll = parseInt(sessionStorage.getItem('bottomNavScroll') || '0', 10);
+    const savedScroll = parseInt(sessionStorage.getItem('bottomNavScroll') || '0', 10);
     setTimeout(function () { bottomNav.scrollLeft = savedScroll; }, 0);
     bottomNav.addEventListener('scroll', function () {
         sessionStorage.setItem('bottomNavScroll', String(bottomNav.scrollLeft));
@@ -858,7 +863,7 @@ function renderLayout() {
  * @returns {void}
  */
 function updateNavHeight() {
-    var n = document.getElementById('bottomNav');
+    const n = document.getElementById('bottomNav');
     if (!n || getComputedStyle(n).display === 'none') return;
     document.documentElement.style.setProperty('--nav-h', Math.ceil(n.getBoundingClientRect().height) + 'px');
 }
@@ -871,7 +876,7 @@ window.addEventListener('resize', updateNavHeight, { passive: true });
 function renderModals() {
     if (document.getElementById('globalConfirmModal')) return;
 
-    var confirmModal = document.createElement('div');
+    const confirmModal = document.createElement('div');
     confirmModal.id = 'globalConfirmModal';
     confirmModal.className = 'hidden popup';
     confirmModal.setAttribute('role', 'dialog');
@@ -888,7 +893,7 @@ function renderModals() {
         '<button id="confirmCancelBtn" class="btn btn-outline" data-i18n="settings.confirm.cancel_btn" style="border-color: var(--outline); color: var(--on-surface); background: transparent; padding: 0.625rem 1.25rem;">Cancel</button>' +
         '<button id="confirmConfirmBtn" class="btn" data-i18n="settings.confirm.ok_btn" style="background: var(--danger); color: #fff; padding: 0.625rem 1.25rem;">Confirm</button></div></div>';
 
-    var resetModal = document.createElement('div');
+    const resetModal = document.createElement('div');
     resetModal.id = 'forceResetModal';
     resetModal.className = 'hidden popup';
     resetModal.setAttribute('role', 'dialog');
@@ -920,13 +925,13 @@ function renderModals() {
 
     // Delegated eye-toggle for password fields
     document.addEventListener('click', function(e) {
-        var btn = e.target.closest('.pwd-toggle');
+        const btn = e.target.closest('.pwd-toggle');
         if (!btn) return;
-        var inp = document.getElementById(btn.dataset.target);
+        const inp = document.getElementById(btn.dataset.target);
         if (!inp) return;
-        var svg = btn.querySelector('svg');
-        var eyeOpen = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-        var eyeOff = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+        const svg = btn.querySelector('svg');
+        const eyeOpen = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+        const eyeOff = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
         if (inp.type === 'password') {
             inp.type = 'text';
             svg.innerHTML = eyeOff;
@@ -937,14 +942,14 @@ function renderModals() {
     });
 
     document.addEventListener('languageChanged', function() {
-        var titleEl = document.getElementById('confirmModalTitle');
-        var textEl = document.getElementById('confirmModalText');
-        var cancelBtn = document.getElementById('confirmCancelBtn');
-        var confirmBtn = document.getElementById('confirmConfirmBtn');
+        const titleEl = document.getElementById('confirmModalTitle');
+        const textEl = document.getElementById('confirmModalText');
+        const cancelBtn = document.getElementById('confirmCancelBtn');
+        const confirmBtn = document.getElementById('confirmConfirmBtn');
         if (cancelBtn) cancelBtn.textContent = __('settings.confirm.cancel_btn');
         if (confirmBtn) confirmBtn.textContent = __('settings.confirm.ok_btn');
-        var resetTitle = document.getElementById('forceResetModalTitle');
-        var resetBtn = document.getElementById('btn-submitForcePasswordReset');
+        const resetTitle = document.getElementById('forceResetModalTitle');
+        const resetBtn = document.getElementById('btn-submitForcePasswordReset');
         if (resetTitle) resetTitle.textContent = __('settings.modal.reset_title');
         if (resetBtn) resetBtn.textContent = __('settings.modal.update_btn');
     });
@@ -1079,11 +1084,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /* Intercept sidebar and bottom-nav nav clicks for SPA */
 document.addEventListener('click', function(e) {
-    var link = e.target.closest('a');
+    const link = e.target.closest('a');
     if (!link) return;
-    var href = link.getAttribute('href');
+    const href = link.getAttribute('href');
     if (!href || href.startsWith('http') || href.startsWith('//') || href.startsWith('#') || href.startsWith('/logout') || link.hasAttribute('download')) return;
-    var isNav = href.startsWith('/static/');
+    const isNav = href.startsWith('/static/');
     if (isNav) {
         e.preventDefault();
         navigateTo(href);

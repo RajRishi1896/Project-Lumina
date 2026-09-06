@@ -78,8 +78,8 @@
     <script src="/static/js/lumina.js?v=15"></script>
     <!-- Section: Inline Scripts: student list logic, filtering, rendering -->
     <script>
-        var allStudents = [];
-        var allGrades = [];
+        let allStudents = [];
+        let allGrades = [];
 
         /** Filters the global allStudents array by grade, name/ID search, then re-renders. */
         function applyFilters() {
@@ -94,18 +94,18 @@
                 return s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query) || (s.username || '').toLowerCase().includes(query);
             });
             if (grade === 'at_risk') {
-                var atRiskDays = parseInt(document.getElementById('atRiskDays').value, 10) || 3;
+                const atRiskDays = parseInt(document.getElementById('atRiskDays').value, 10) || 3;
                 filtered = filtered.filter(function(s) {
-                    var days = s.last_active ? (now - new Date(s.last_active).getTime()) / 86400000 : Infinity;
+                    const days = s.last_active ? (now - new Date(s.last_active).getTime()) / 86400000 : Infinity;
                     return days > atRiskDays;
                 });
                 filtered.sort(function(a, b) {
-                    var aDays = a.last_active ? (now - new Date(a.last_active).getTime()) / 86400000 : Infinity;
-                    var bDays = b.last_active ? (now - new Date(b.last_active).getTime()) / 86400000 : Infinity;
+                    const aDays = a.last_active ? (now - new Date(a.last_active).getTime()) / 86400000 : Infinity;
+                    const bDays = b.last_active ? (now - new Date(b.last_active).getTime()) / 86400000 : Infinity;
                     return bDays - aDays;
                 });
             } else {
-            var sortBy = document.getElementById('sortSelect').value;
+            const sortBy = document.getElementById('sortSelect').value;
             filtered.sort(function(a, b) {
                 switch (sortBy) {
                     case 'name_asc': return a.name.localeCompare(b.name);
@@ -138,13 +138,13 @@
                 fetch(url, {credentials: 'include'}).then(function(r) { return r.ok ? r.json() : null; }),
                 fetch('/grades', {credentials: 'include'}).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; })
             ]).then(function(results) {
-                var data = results[0];
-                var gradeList = results[1] || [];
+                const data = results[0];
+                const gradeList = results[1] || [];
                 if (!data) { container.innerHTML = '<div class="empty-state" style="color: var(--danger);">' + __('students_failed_load') + '</div>'; return; }
 
-                var gradeNameMap = {};
+                const gradeNameMap = {};
                 gradeList.forEach(function(g) {
-                    var num = (g.name || '').replace(/\D/g, '');
+                    const num = (g.name || '').replace(/\D/g, '');
                     if (num) gradeNameMap[num] = g.name;
                 });
 
@@ -171,7 +171,7 @@
                 });
                 allGrades.sort(function(a, b) { return parseInt(a) - parseInt(b); });
                 gradeFilter.innerHTML = '<option value="">' + __('students.all_grades') + '</option>' + allGrades.map(function(g) {
-                    var label = gradeNameMap[g] || (__('students.class_prefix') + g);
+                    const label = gradeNameMap[g] || (__('students.class_prefix') + g);
                     return '<option value="' + esc(g) + '">' + esc(label) + '</option>';
                 }).join('') + '<option value="at_risk">' + __('students.sort_at_risk') + '</option>';
                 renderStudents(allStudents);
@@ -186,7 +186,7 @@
          */
         function renderStudents(list) {
             const container = document.getElementById('studentContainer');
-            var atRiskDays = parseInt(document.getElementById('atRiskDays').value, 10) || 3;
+            const atRiskDays = parseInt(document.getElementById('atRiskDays').value, 10) || 3;
             const now = Date.now();
             if (list.length === 0) {
                 container.innerHTML = '<div class="empty-state">' + __('students_none_registered') + '</div>';
@@ -194,13 +194,13 @@
             }
             container.innerHTML = list.map(function(s) {
                 const detailUrl = 'student-detail?id=' + encodeURIComponent(s.id) + '&name=' + encodeURIComponent(s.name) + '&grade=' + encodeURIComponent(s.gradeName) + '&avatar=' + encodeURIComponent(s.avatar) + '&last=' + encodeURIComponent(s.last_active || '');
-                var daysSinceActive = s.last_active ? (now - new Date(s.last_active).getTime()) / 86400000 : null;
-                var atRisk = daysSinceActive !== null && daysSinceActive > atRiskDays;
-                var atRiskBadge = atRisk ? '<span class="at-risk-icon" title="' + __('students.at_risk_tooltip').replace('{n}', Math.floor(daysSinceActive)) + '"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></span>' : '';
-                var atRiskClass = atRisk ? ' at-risk' : '';
-                var totalMins = s.week_minutes || 0;
-                var wh;
-                if (totalMins >= 60) { var h = Math.floor(totalMins / 60), m = totalMins % 60; wh = h + __('students_hours_abbr') + (m > 0 ? ' ' + m + __('students_minutes_abbr') : ''); }
+                const daysSinceActive = s.last_active ? (now - new Date(s.last_active).getTime()) / 86400000 : null;
+                const atRisk = daysSinceActive !== null && daysSinceActive > atRiskDays;
+                const atRiskBadge = atRisk ? '<span class="at-risk-icon" title="' + __('students.at_risk_tooltip').replace('{n}', Math.floor(daysSinceActive)) + '"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></span>' : '';
+                const atRiskClass = atRisk ? ' at-risk' : '';
+                const totalMins = s.week_minutes || 0;
+                let wh;
+                if (totalMins >= 60) { const h = Math.floor(totalMins / 60), m = totalMins % 60; wh = h + __('students_hours_abbr') + (m > 0 ? ' ' + m + __('students_minutes_abbr') : ''); }
                 else if (totalMins > 0) { wh = totalMins + __('students_minutes_abbr'); }
                 else { wh = '--'; }
                 const st = s.streak || 0;
@@ -231,13 +231,13 @@
          * Debounced wrapper for applyFilters (200ms) so the student list only
          * re-renders after the user stops typing in the search box.
          */
-        var debouncedApplyFilters = debounce(applyFilters, 200);
+        const debouncedApplyFilters = debounce(applyFilters, 200);
 
         /**
          * Page init (registered in _pageInitRegistry): loads students, then
          * wires up search/sort/grade filter controls and the student card links.
          */
-        var _initStudents = function() {
+        const _initStudents = function() {
             loadStudents();
             loadWhoAmI();
             document.getElementById('btn-loadStudents')?.addEventListener('click', loadStudents);

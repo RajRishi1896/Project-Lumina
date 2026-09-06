@@ -88,10 +88,10 @@
         function renderSgGuide() {
             if (typeof __ !== 'function') return;
             try {
-                var ids = ['sgApp','sgBrowse','sgDownload','sgFlash','sgQuiz','sgProfile','sgTips'];
-                var keys = ['sg.app_body','sg.browse_body','sg.download_body','sg.flash_body','sg.quiz_body','sg.profile_body','sg.tips_body'];
-                for (var i = 0; i < ids.length; i++) {
-                    var el = document.getElementById(ids[i]);
+                const ids = ['sgApp','sgBrowse','sgDownload','sgFlash','sgQuiz','sgProfile','sgTips'];
+                const keys = ['sg.app_body','sg.browse_body','sg.download_body','sg.flash_body','sg.quiz_body','sg.profile_body','sg.tips_body'];
+                for (let i = 0; i < ids.length; i++) {
+                    const el = document.getElementById(ids[i]);
                     if (el) el.innerHTML = __(keys[i]);
                 }
             } catch(e) { console.error('renderSgGuide error:', e); }

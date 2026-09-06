@@ -226,11 +226,11 @@
          */
         async function fetchStats() {
             try {
-                var res = await fetch('/stats');
-                var data = await res.json();
+                const res = await fetch('/stats');
+                const data = await res.json();
 
-                var sFill = document.getElementById('storageFill');
-                var sText = document.getElementById('storageText');
+                const sFill = document.getElementById('storageFill');
+                const sText = document.getElementById('storageText');
                 if (sText) {
                     try { sText.innerText = __('welcome.storage.used_pct', { pct: data.storage_used_gb || Math.round(data.storage_percent) }); }
                     catch(_) { sText.innerText = Math.round(data.storage_percent) + '% used'; }
@@ -240,10 +240,10 @@
                     sFill.style.background = getMeterColor(data.storage_percent, false);
                 }
 
-                var bFill = document.getElementById('batteryFill');
-                var bText = document.getElementById('batteryText');
+                const bFill = document.getElementById('batteryFill');
+                const bText = document.getElementById('batteryText');
                 if (bText && data.battery_percent != null) {
-                    var battLabel = data.battery_charging ? __('battery.charging') : __('battery.on_battery');
+                    const battLabel = data.battery_charging ? __('battery.charging') : __('battery.on_battery');
                     try { bText.innerText = __('welcome.battery.percent', { percent: data.battery_percent }) + ' ' + battLabel; }
                     catch(_) { bText.innerText = data.battery_percent + '% ' + battLabel; }
                 }
@@ -252,38 +252,38 @@
                     bFill.style.background = getMeterColor(data.battery_percent, true);
                 }
                 if (bText && data.battery_percent == null) {
-                    var _battMeter = bText.closest('.meter');
+                    const _battMeter = bText.closest('.meter');
                     if (_battMeter) _battMeter.style.display = 'none';
                 }
                 // Quick stats
-                var el;
+                let el;
                 el = document.getElementById('statStudents'); if (el) el.textContent = data.scholars != null ? data.scholars : '-';
                 el = document.getElementById('statResources'); if (el) el.textContent = data.resources != null ? data.resources : '-';
                 el = document.getElementById('statSubjects'); if (el) el.textContent = data.subjects != null ? data.subjects : '-';
                 if (data.uptime && data.uptime !== '0s' && data.uptime !== 'N/A') {
                     startUptimeTicker(data.uptime);
                 } else {
-                    var el = document.getElementById('statUptime');
+                    const el = document.getElementById('statUptime');
                     if (el) el.textContent = __('index.uptime_na');
                 }
             } catch (e) {
-                var sTextEl = document.getElementById('storageText');
-                var bTextEl = document.getElementById('batteryText');
+                const sTextEl = document.getElementById('storageText');
+                const bTextEl = document.getElementById('batteryText');
                 if (sTextEl) sTextEl.innerText = __('welcome.unavailable');
                 if (bTextEl) bTextEl.innerText = __('welcome.unavailable');
             }
         }
 
-        var _uptimeSeconds = 0;
-        var _uptimeInterval = null;
+        let _uptimeSeconds = 0;
+        let _uptimeInterval = null;
 
         /** Parse server uptime string into seconds, then tick every second locally. */
         function startUptimeTicker(uptimeStr) {
             if (_uptimeInterval) clearInterval(_uptimeInterval);
             _uptimeSeconds = 0;
-            var parts = uptimeStr.match(/(\d+)h|(\d+)m|(\d+)s/g) || [];
-            for (var i = 0; i < parts.length; i++) {
-                var n = parseInt(parts[i]);
+            const parts = uptimeStr.match(/(\d+)h|(\d+)m|(\d+)s/g) || [];
+            for (let i = 0; i < parts.length; i++) {
+                const n = parseInt(parts[i]);
                 if (parts[i].indexOf('h') !== -1) _uptimeSeconds += n * 3600;
                 else if (parts[i].indexOf('m') !== -1) _uptimeSeconds += n * 60;
                 else if (parts[i].indexOf('s') !== -1) _uptimeSeconds += n;
@@ -300,10 +300,10 @@
          * hours+minutes when ≥1h and minutes+seconds otherwise.
          */
         function renderUptime() {
-            var h = Math.floor(_uptimeSeconds / 3600);
-            var m = Math.floor((_uptimeSeconds % 3600) / 60);
-            var s = _uptimeSeconds % 60;
-            var el = document.getElementById('statUptime');
+            const h = Math.floor(_uptimeSeconds / 3600);
+            const m = Math.floor((_uptimeSeconds % 3600) / 60);
+            const s = _uptimeSeconds % 60;
+            const el = document.getElementById('statUptime');
             if (!el) return;
             if (h > 0) el.textContent = h + 'h ' + m + 'm';
             else el.textContent = m + 'm ' + s + 's';
@@ -431,7 +431,7 @@
         /* ── Language Selection ───────────────────────────────────────── */
 
         /** @type {Array<{code:string, name:string, native:string}>} Welcome page language options (hardcoded, translations load from lang/*.json) */
-        var WELCOME_LANGS = [
+        const WELCOME_LANGS = [
             { code:'en', name:'English', native:'English' },
             { code:'hi', name:'Hindi', native:'हिन्दी' },
             { code:'kn', name:'Kannada', native:'ಕನ್ನಡ' },
@@ -439,7 +439,7 @@
             { code:'ta', name:'Tamil', native:'தமிழ்' },
             { code:'te', name:'Telugu', native:'తెలుగు' },
         ];
-        var welcomeLang = localStorage.getItem('lumina-lang') || 'en';
+        let welcomeLang = localStorage.getItem('lumina-lang') || 'en';
 
         /**
          * Render the language dropdown list, filtered by search query.
@@ -466,19 +466,19 @@
         function populateGuide() {
             if (typeof __ !== 'function') return;
             try {
-                var gs = document.getElementById('guideGettingStarted');
+                const gs = document.getElementById('guideGettingStarted');
                 if (gs) gs.innerHTML = __('welcome.guide.getting_started_body');
-                var ua = document.getElementById('guideUsingApp');
+                const ua = document.getElementById('guideUsingApp');
                 if (ua) ua.innerHTML = __('welcome.guide.using_app_body');
-                var dl = document.getElementById('guideDownloadOffline');
+                const dl = document.getElementById('guideDownloadOffline');
                 if (dl) dl.innerHTML = __('welcome.guide.download_offline_body');
-                var tp = document.getElementById('guideTrackingPrivacy');
+                const tp = document.getElementById('guideTrackingPrivacy');
                 if (tp) tp.innerHTML = __('welcome.guide.tracking_privacy_body');
-                var tr = document.getElementById('guideTroubleshooting');
+                const tr = document.getElementById('guideTroubleshooting');
                 if (tr) tr.innerHTML = __('welcome.guide.troubleshooting_body');
-                var ft = document.getElementById('guideForTeachers');
+                const ft = document.getElementById('guideForTeachers');
                 if (ft) ft.innerHTML = __('welcome.guide.for_teachers_body');
-                var ag = document.getElementById('appguideBody');
+                const ag = document.getElementById('appguideBody');
                 if (ag) ag.innerHTML = __('welcome.appguide_body');
             } catch(e) { console.error('populateGuide error:', e); }
         }
@@ -493,8 +493,8 @@
             currentLang = code;
             localStorage.setItem('lumina-lang', code);
             document.documentElement.setAttribute('lang', code);
-            var label = document.getElementById('welcomeLangLabel');
-            var langObj = WELCOME_LANGS.find(function(l){ return l.code === code; });
+            const label = document.getElementById('welcomeLangLabel');
+            const langObj = WELCOME_LANGS.find(function(l){ return l.code === code; });
             if (label && langObj) label.textContent = langObj.native;
             closeWelcomeLang();
             populateGuide();
@@ -527,7 +527,7 @@
         });
 
         // Wrap the global setLanguage so guide sections re-render via populateGuide
-        var _origSetLanguage = window.setLanguage;
+        const _origSetLanguage = window.setLanguage;
         window.setLanguage = async function(code) {
             if (code === currentLang) return;
             await _origSetLanguage(code);
@@ -535,25 +535,25 @@
         };
 
         document.addEventListener('DOMContentLoaded', function() {
-            var saved = localStorage.getItem('lumina-lang');
+            const saved = localStorage.getItem('lumina-lang');
             if (saved) { welcomeLang = saved; currentLang = saved; document.documentElement.setAttribute('lang', saved); }
-            var label = document.getElementById('welcomeLangLabel');
-            var langObj = WELCOME_LANGS.find(function(l){ return l.code === welcomeLang; });
+            const label = document.getElementById('welcomeLangLabel');
+            const langObj = WELCOME_LANGS.find(function(l){ return l.code === welcomeLang; });
             if (label && langObj) label.textContent = langObj.native;
 
             // Register event listeners FIRST: never let populateGuide block them
-            var searchEl = document.getElementById('welcomeLangSearch');
+            const searchEl = document.getElementById('welcomeLangSearch');
             if (searchEl) searchEl.addEventListener('input', debounce(function(){ renderWelcomeLangList(this.value); }, 200));
-            var listEl = document.getElementById('welcomeLangList');
+            const listEl = document.getElementById('welcomeLangList');
             if (listEl) listEl.addEventListener('click', function(e) { e.stopPropagation(); });
-            var toggleLangBtn = document.getElementById('btn-toggleWelcomeLang');
+            const toggleLangBtn = document.getElementById('btn-toggleWelcomeLang');
             if (toggleLangBtn) toggleLangBtn.addEventListener('click', toggleWelcomeLang);
-            var toggleThemeBtn = document.getElementById('btn-toggleTheme');
+            const toggleThemeBtn = document.getElementById('btn-toggleTheme');
             if (toggleThemeBtn) toggleThemeBtn.addEventListener('click', toggleTheme);
-            var togglePwdBtn = document.getElementById('btn-togglePassword');
+            const togglePwdBtn = document.getElementById('btn-togglePassword');
             if (togglePwdBtn) togglePwdBtn.addEventListener('click', togglePasswordVisibility);
             if (listEl) listEl.addEventListener('click', function(e) {
-                var opt = e.target.closest('.welcome-lang-option');
+                const opt = e.target.closest('.welcome-lang-option');
                 if (opt) { setWelcomeLang(opt.dataset.lang); }
             });
 
@@ -588,8 +588,8 @@
         // Clear login inputs on page load to prevent browser autofill interference
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
-                var userField = document.getElementById('username');
-                var passField = document.getElementById('password');
+                const userField = document.getElementById('username');
+                const passField = document.getElementById('password');
                 if (userField) userField.value = '';
                 if (passField) passField.value = '';
             }, 50);

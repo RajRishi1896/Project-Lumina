@@ -383,40 +383,40 @@
 
     <script src="/static/js/lumina.js?v=15"></script>
     <script>
-        var activeDangerScholars = [];
-        var activeDangerTeachers = [];
-        var activeDangerAdmins = [];
-        var activeGrades = [];
-        var activeDangerSubjects = [];
+        let activeDangerScholars = [];
+        let activeDangerTeachers = [];
+        let activeDangerAdmins = [];
+        let activeGrades = [];
+        let activeDangerSubjects = [];
 
-        var _dangerPerPage = 20;
-        var _studentPage = 1, _studentFiltered = [];
-        var _teacherPage = 1, _teacherFiltered = [];
-        var _adminPage = 1, _adminFiltered = [];
-        var _gradePage = 1, _gradeFiltered = [];
-        var _subjectPage = 1, _subjectFiltered = [];
+        let _dangerPerPage = 20;
+        let _studentPage = 1, _studentFiltered = [];
+        let _teacherPage = 1, _teacherFiltered = [];
+        let _adminPage = 1, _adminFiltered = [];
+        let _gradePage = 1, _gradeFiltered = [];
+        let _subjectPage = 1, _subjectFiltered = [];
 
         // Pagination handlers: move the danger-zone table page windows and re-render.
         function studentPrevPage() { if (_studentPage > 1) { _studentPage--; renderStudentPage(); } }
-        function studentNextPage() { var tp = Math.ceil(_studentFiltered.length / _dangerPerPage); if (_studentPage < tp) { _studentPage++; renderStudentPage(); } }
+        function studentNextPage() { let tp = Math.ceil(_studentFiltered.length / _dangerPerPage); if (_studentPage < tp) { _studentPage++; renderStudentPage(); } }
         function studentChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _studentPage = 1; renderStudentPage(); }
         function adminPrevPage() { if (_adminPage > 1) { _adminPage--; renderAdminPage(); } }
-        function adminNextPage() { var tp = Math.ceil(_adminFiltered.length / _dangerPerPage); if (_adminPage < tp) { _adminPage++; renderAdminPage(); } }
+        function adminNextPage() { let tp = Math.ceil(_adminFiltered.length / _dangerPerPage); if (_adminPage < tp) { _adminPage++; renderAdminPage(); } }
         function adminChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _adminPage = 1; renderAdminPage(); }
         function teacherPrevPage() { if (_teacherPage > 1) { _teacherPage--; renderTeacherPage(); } }
-        function teacherNextPage() { var tp = Math.ceil(_teacherFiltered.length / _dangerPerPage); if (_teacherPage < tp) { _teacherPage++; renderTeacherPage(); } }
+        function teacherNextPage() { let tp = Math.ceil(_teacherFiltered.length / _dangerPerPage); if (_teacherPage < tp) { _teacherPage++; renderTeacherPage(); } }
         function teacherChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _teacherPage = 1; renderTeacherPage(); }
         function gradePrevPage() { if (_gradePage > 1) { _gradePage--; renderGradePage(); } }
-        function gradeNextPage() { var tp = Math.ceil(_gradeFiltered.length / _dangerPerPage); if (_gradePage < tp) { _gradePage++; renderGradePage(); } }
+        function gradeNextPage() { let tp = Math.ceil(_gradeFiltered.length / _dangerPerPage); if (_gradePage < tp) { _gradePage++; renderGradePage(); } }
         function gradeChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _gradePage = 1; renderGradePage(); }
         function subjectPrevPage() { if (_subjectPage > 1) { _subjectPage--; renderSubjectPage(); } }
-        function subjectNextPage() { var tp = Math.ceil(_subjectFiltered.length / _dangerPerPage); if (_subjectPage < tp) { _subjectPage++; renderSubjectPage(); } }
+        function subjectNextPage() { let tp = Math.ceil(_subjectFiltered.length / _dangerPerPage); if (_subjectPage < tp) { _subjectPage++; renderSubjectPage(); } }
         function subjectChangePerPage(val) { _dangerPerPage = parseInt(val, 10) || 20; _subjectPage = 1; renderSubjectPage(); }
 
         /** Fetches all admin accounts from the server and populates the admin danger table. */
         async function loadAdminProfiles() {
             try {
-                var res = await fetch('/api/admin/admins');
+                let res = await fetch('/api/admin/admins');
                 activeDangerAdmins = await res.json();
                 filterDangerAdmins();
             } catch (e) { console.error(e); }
@@ -425,13 +425,13 @@
         /** Loads all danger zone data: scholars, teachers, admins, grades, and subjects. */
         async function loadDangerZone() {
             try {
-                var res = await fetch('/teacher/scholars');
+                let res = await fetch('/teacher/scholars');
                 activeDangerScholars = await res.json();
                 filterDangerStudents();
             } catch (e) { console.error(e); }
 
             try {
-                var res = await fetch('/teachers');
+                let res = await fetch('/teachers');
                 activeDangerTeachers = await res.json();
                 filterDangerTeachers();
             } catch (e) { console.error(e); }
@@ -444,7 +444,7 @@
         /** Fetches all grades from the server and renders the grade danger table. */
         async function loadGrades() {
             try {
-                var res = await fetch('/grades', { credentials: 'include' });
+                let res = await fetch('/grades', { credentials: 'include' });
                 activeGrades = await res.json();
                 filterGrades();
                 populateDangerSubjectClassDropdown();
@@ -453,9 +453,9 @@
 
         /** Filters the grade table by search query and re-renders. */
         function filterGrades() {
-            var query = (document.getElementById('dangerGradeSearch').value || '').toLowerCase().trim();
+            const query = (document.getElementById('dangerGradeSearch').value || '').toLowerCase().trim();
             _gradeFiltered = activeGrades.filter(function(g) {
-                var name = (g.name || g).toLowerCase();
+                const name = (g.name || g).toLowerCase();
                 return !query || name.includes(query);
             });
             _gradePage = 1;
@@ -464,18 +464,18 @@
 
         /** Renders the current page of filtered grades with edit/delete buttons. */
         function renderGradePage() {
-            var tbody = document.getElementById('gradeDangerTable');
+            const tbody = document.getElementById('gradeDangerTable');
             if (!tbody) return;
-            var data = _gradeFiltered;
-            var totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
+            const data = _gradeFiltered;
+            const totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
             if (_gradePage > totalPages) _gradePage = totalPages;
-            var start = (_gradePage - 1) * _dangerPerPage;
-            var pageItems = data.slice(start, start + _dangerPerPage);
+            const start = (_gradePage - 1) * _dangerPerPage;
+            const pageItems = data.slice(start, start + _dangerPerPage);
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="2" class="empty-state" style="text-align:center;">' + (document.getElementById('dangerGradeSearch').value ? __('danger.no_matching_grades') : __('danger.empty_grades')) + '</td></tr>';
             } else {
                 tbody.innerHTML = pageItems.map(function(g) {
-                    var name = g.name || g;
+                    const name = g.name || g;
                     return '<tr>' +
                         '<td data-label="' + __('danger.table_grade_name') + '"><strong>' + esc(name) + '</strong></td>' +
                         '<td data-label="' + __('danger.table_action') + '" style="text-align: left; display:flex; gap:0.5rem;">' +
@@ -490,13 +490,13 @@
 
         /** Creates a new grade via POST to /grades after validating the name. */
         async function addGrade() {
-            var name = document.getElementById('modalGradeName').value.trim();
+            const name = document.getElementById('modalGradeName').value.trim();
             if (!name) {
                 showNotification('addGradeNotif', __('danger.error.grade_name_required'), true);
                 return;
             }
             try {
-                var res = await fetch('/grades', {
+                let res = await fetch('/grades', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: name }),
@@ -506,7 +506,7 @@
                     document.getElementById('addGradeModal').classList.add('hidden');
                     loadGrades();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    let err = await res.json().catch(function() { return {}; });
                     showNotification('addGradeNotif', err.detail || __('danger.error.grade_create_failed'), true);
                 }
             } catch (e) {
@@ -525,14 +525,14 @@
 
         /** Saves the grade rename via PUT /grades/{name}. */
         async function saveGrade() {
-            var originalName = document.getElementById('editGradeOriginalName').value;
-            var newName = document.getElementById('editGradeName').value.trim();
+            const originalName = document.getElementById('editGradeOriginalName').value;
+            const newName = document.getElementById('editGradeName').value.trim();
             if (!newName) {
                 showNotification('editGradeNotif', __('danger.error.grade_name_required'), true);
                 return;
             }
             try {
-                var res = await fetch('/grades/' + encodeURIComponent(originalName), {
+                let res = await fetch('/grades/' + encodeURIComponent(originalName), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ new_name: newName }),
@@ -542,7 +542,7 @@
                     document.getElementById('editGradeModal').classList.add('hidden');
                     loadGrades();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    let err = await res.json().catch(function() { return {}; });
                     showNotification('editGradeNotif', err.detail || __('danger.error.grade_rename_failed'), true);
                 }
             } catch (e) {
@@ -555,20 +555,20 @@
          * @param {string} name - The grade name to delete.
          */
         async function deleteGrade(name) {
-            var others = activeGrades.filter(function(g) { return (g.name || g) !== name; });
-            var xferHtml = '';
+            const others = activeGrades.filter(function(g) { return (g.name || g) !== name; });
+            let xferHtml = '';
             if (others.length > 0) {
-                var opts = others.map(function(g) { var n = g.name || g; return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+                const opts = others.map(function(g) { const n = g.name || g; return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
                 xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin:0.5rem 0 0.75rem;">'
                     + '<select id="gradeXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--surface);color:var(--on-surface);font-size:0.875rem;">'
                     + '<option value="">' + __('danger.transfer.select_grade') + '</option>' + opts + '</select></div>';
             }
-            var confirmed = await showConfirm(__('danger.confirm.delete_grade_title'), __('danger.confirm.delete_grade', {name: name}), true, __('danger.confirm.delete_btn'), xferHtml,
+            const confirmed = await showConfirm(__('danger.confirm.delete_grade_title'), __('danger.confirm.delete_grade', {name: name}), true, __('danger.confirm.delete_btn'), xferHtml,
                 others.length > 0 ? { label: __('danger.transfer.transfer_and_delete'), value: 'transfer' } : null);
             if (!confirmed) return;
-            var result = '__delete__';
+            let result = '__delete__';
             if (confirmed === 'transfer') {
-                var targetEl = document.querySelector('#confirmModalText #gradeXferTarget');
+                const targetEl = document.querySelector('#confirmModalText #gradeXferTarget');
                 if (!targetEl || !targetEl.value) {
                     showNotification('gradeDangerNotif', __('danger.transfer.select_target'), true);
                     return;
@@ -576,14 +576,14 @@
                 result = targetEl.value;
             }
             try {
-                var url = '/grades/' + encodeURIComponent(name);
+                let url = '/grades/' + encodeURIComponent(name);
                 if (result !== '__delete__') url += '?transfer_to=' + encodeURIComponent(result);
-                var res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+                let res = await fetch(url, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
                     showNotification('gradeDangerNotif', result === '__delete__' ? __('danger.notif.grade_deleted', {name: name}) : __('danger.transfer.done', {name: name, target: result}), false);
                     loadGrades();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    let err = await res.json().catch(function() { return {}; });
                     showNotification('gradeDangerNotif', err.detail || __('danger.error.grade_delete_failed'), true);
                 }
             } catch (e) {
@@ -600,15 +600,15 @@
          */
         function initSymbolDropdown(defaultVal, prefix) {
             prefix = prefix || '';
-            var symbols = ['calculator','atom','globe','book','laptop','microscope','compass','code','folder'];
-            var labels = {calculator:__('danger.symbol.calculator'),atom:__('danger.symbol.atom'),globe:__('danger.symbol.globe'),book:__('danger.symbol.book'),laptop:__('danger.symbol.laptop'),microscope:__('danger.symbol.microscope'),compass:__('danger.symbol.compass'),code:__('danger.symbol.code'),folder:__('danger.symbol.folder')};
-            var list = document.getElementById(prefix + 'SymbolDropdownList');
-            var hidden = document.getElementById(prefix + 'SubjectSymbol');
-            var preview = document.getElementById(prefix + 'SymbolSelectedPreview');
+            const symbols = ['calculator','atom','globe','book','laptop','microscope','compass','code','folder'];
+            const labels = {calculator:__('danger.symbol.calculator'),atom:__('danger.symbol.atom'),globe:__('danger.symbol.globe'),book:__('danger.symbol.book'),laptop:__('danger.symbol.laptop'),microscope:__('danger.symbol.microscope'),compass:__('danger.symbol.compass'),code:__('danger.symbol.code'),folder:__('danger.symbol.folder')};
+            const list = document.getElementById(prefix + 'SymbolDropdownList');
+            let hidden = document.getElementById(prefix + 'SubjectSymbol');
+            const preview = document.getElementById(prefix + 'SymbolSelectedPreview');
             if (!list || !hidden || !preview) return;
             list.innerHTML = '';
             symbols.forEach(function(s) {
-                var div = document.createElement('div');
+                const div = document.createElement('div');
                 div.style.cssText = 'display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.85rem;cursor:pointer;font-size:0.9rem;color:var(--on-surface);';
                 div.onmouseenter = function() { div.style.background = 'var(--surface-container-highest)'; };
                 div.onmouseleave = function() { div.style.background = 'transparent'; };
@@ -623,12 +623,12 @@
             });
             hidden.value = defaultVal || 'folder';
             preview.innerHTML = getSymbolSvg(hidden.value) + '<span>' + labels[hidden.value] + '</span>';
-            var selected = document.getElementById(prefix + 'SymbolDropdownSelected');
+            const selected = document.getElementById(prefix + 'SymbolDropdownSelected');
             if (selected) {
                 selected.onclick = function() { list.style.display = list.style.display === 'none' ? 'block' : 'none'; };
             }
             document.addEventListener('click', function(e) {
-                var wrap = document.getElementById(prefix + 'SymbolDropdownWrap');
+                const wrap = document.getElementById(prefix + 'SymbolDropdownWrap');
                 if (wrap && !wrap.contains(e.target)) list.style.display = 'none';
             });
         }
@@ -636,7 +636,7 @@
         /** Fetches all subjects from the server and renders the subject danger table. */
         async function loadDangerSubjects() {
             try {
-                var res = await fetch('/subjects', { credentials: 'include' });
+                let res = await fetch('/subjects', { credentials: 'include' });
                 activeDangerSubjects = await res.json();
                 filterDangerSubjects();
             } catch (e) { console.error(e); }
@@ -644,14 +644,14 @@
 
         /** Refresh the class options in all three subject class dropdowns from activeGrades. */
         function populateDangerSubjectClassDropdown() {
-            var grades = activeGrades.map(function(g) { return g.name || g; });
+            let grades = activeGrades.map(function(g) { return g.name || g; });
             ['dangerSubjectClass', 'modalSubjectClass', 'editSubjectClass'].forEach(function(id) {
-                var sel = document.getElementById(id);
+                const sel = document.getElementById(id);
                 if (!sel) return;
-                var existing = sel.querySelectorAll('option:not(:first-child)');
+                const existing = sel.querySelectorAll('option:not(:first-child)');
                 existing.forEach(function(o) { o.remove(); });
                 grades.forEach(function(name) {
-                    var opt = document.createElement('option');
+                    const opt = document.createElement('option');
                     opt.value = name;
                     opt.textContent = name;
                     sel.appendChild(opt);
@@ -661,7 +661,7 @@
 
         /** Filters the subject table by search query and re-renders. */
         function filterDangerSubjects() {
-            var query = (document.getElementById('dangerSubjectSearch').value || '').toLowerCase().trim();
+            const query = (document.getElementById('dangerSubjectSearch').value || '').toLowerCase().trim();
             _subjectFiltered = activeDangerSubjects.filter(function(s) {
                 return !query || (s.name || '').toLowerCase().includes(query);
             });
@@ -671,18 +671,18 @@
 
         /** Renders the current page of filtered subjects with edit/delete buttons. */
         function renderSubjectPage() {
-            var tbody = document.getElementById('subjectDangerTable');
+            const tbody = document.getElementById('subjectDangerTable');
             if (!tbody) return;
-            var data = _subjectFiltered;
-            var totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
+            const data = _subjectFiltered;
+            const totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
             if (_subjectPage > totalPages) _subjectPage = totalPages;
-            var start = (_subjectPage - 1) * _dangerPerPage;
-            var pageItems = data.slice(start, start + _dangerPerPage);
+            const start = (_subjectPage - 1) * _dangerPerPage;
+            const pageItems = data.slice(start, start + _dangerPerPage);
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="empty-state" style="text-align:center;">' + __('danger.no_subjects_found') + '</td></tr>';
             } else {
                 tbody.innerHTML = pageItems.map(function(s) {
-                    var svg = getSymbolSvg(s.symbol || 'folder');
+                    const svg = getSymbolSvg(s.symbol || 'folder');
                     return '<tr>' +
                         '<td data-label="' + __('danger.table_subject_name') + '"><strong>' + esc(s.name) + '</strong></td>' +
                         '<td data-label="' + __('danger.table_class') + '">' + esc(s.class_name || __('danger.subject_class_all')) + '</td>' +
@@ -699,12 +699,12 @@
 
         /** Creates a new subject via POST to /teacher/subjects with name, symbol, and class. */
         async function addDangerSubject() {
-            var name = document.getElementById('modalSubjectName').value.trim();
-            var symbol = document.getElementById('SubjectSymbol').value;
-            var className = document.getElementById('modalSubjectClass').value;
+            const name = document.getElementById('modalSubjectName').value.trim();
+            const symbol = document.getElementById('SubjectSymbol').value;
+            const className = document.getElementById('modalSubjectClass').value;
             if (!name) { showNotification('addSubjectNotif', __('danger.error.subject_name_required'), true); return; }
             try {
-                var res = await fetch('/teacher/subjects', {
+                let res = await fetch('/teacher/subjects', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -714,7 +714,7 @@
                     document.getElementById('addSubjectModal').classList.add('hidden');
                     loadDangerSubjects();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    let err = await res.json().catch(function() { return {}; });
                     showNotification('addSubjectNotif', err.detail || __('danger.notif.subject_add_failed'), true);
                 }
             } catch (e) {
@@ -735,13 +735,13 @@
 
         /** Saves the subject edit via PUT /teacher/subjects/{id}. */
         async function saveSubject() {
-            var id = document.getElementById('editSubjectId').value;
-            var name = document.getElementById('editSubjectName').value.trim();
-            var symbol = document.getElementById('editSubjectSymbol').value;
-            var className = document.getElementById('editSubjectClass').value;
+            const id = document.getElementById('editSubjectId').value;
+            const name = document.getElementById('editSubjectName').value.trim();
+            const symbol = document.getElementById('editSubjectSymbol').value;
+            const className = document.getElementById('editSubjectClass').value;
             if (!name) { showNotification('editSubjectNotif', __('danger.error.subject_name_required'), true); return; }
             try {
-                var res = await fetch('/teacher/subjects/' + encodeURIComponent(id), {
+                let res = await fetch('/teacher/subjects/' + encodeURIComponent(id), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -751,7 +751,7 @@
                     document.getElementById('editSubjectModal').classList.add('hidden');
                     loadDangerSubjects();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    let err = await res.json().catch(function() { return {}; });
                     showNotification('editSubjectNotif', err.detail || __('danger.notif.subject_update_failed'), true);
                 }
             } catch (e) {
@@ -765,20 +765,20 @@
          * @param {string} name - The subject name for the confirmation dialog.
          */
         async function deleteDangerSubject(id, name) {
-            var others = activeDangerSubjects.filter(function(s) { return s.id !== id; });
-            var xferHtml = '';
+            const others = activeDangerSubjects.filter(function(s) { return s.id !== id; });
+            let xferHtml = '';
             if (others.length > 0) {
-                var opts = others.map(function(s) { return '<option value="' + esc(s.name) + '">' + esc(s.name) + '</option>'; }).join('');
+                const opts = others.map(function(s) { return '<option value="' + esc(s.name) + '">' + esc(s.name) + '</option>'; }).join('');
                 xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin:0.5rem 0 0.75rem;">'
                     + '<select id="subjectXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--surface);color:var(--on-surface);font-size:0.875rem;">'
                     + '<option value="">' + __('danger.transfer.select_subject') + '</option>' + opts + '</select></div>';
             }
-            var confirmed = await showConfirm(__('danger.confirm.delete_subject_title'), __('danger.confirm.delete_subject', {name: name}), true, __('danger.confirm.delete_subject_btn'), xferHtml,
+            const confirmed = await showConfirm(__('danger.confirm.delete_subject_title'), __('danger.confirm.delete_subject', {name: name}), true, __('danger.confirm.delete_subject_btn'), xferHtml,
                 others.length > 0 ? { label: __('danger.transfer.transfer_and_delete'), value: 'transfer' } : null);
             if (!confirmed) return;
-            var result = '__delete__';
+            let result = '__delete__';
             if (confirmed === 'transfer') {
-                var targetEl = document.querySelector('#confirmModalText #subjectXferTarget');
+                const targetEl = document.querySelector('#confirmModalText #subjectXferTarget');
                 if (!targetEl || !targetEl.value) {
                     showNotification('subjectDangerNotif', __('danger.transfer.select_target'), true);
                     return;
@@ -786,14 +786,14 @@
                 result = targetEl.value;
             }
             try {
-                var url = '/teacher/subjects/' + encodeURIComponent(id);
+                let url = '/teacher/subjects/' + encodeURIComponent(id);
                 if (result !== '__delete__') url += '?transfer_to=' + encodeURIComponent(result);
-                var res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+                let res = await fetch(url, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
                     showNotification('subjectDangerNotif', result === '__delete__' ? __('danger.notif.subject_deleted') : __('danger.transfer.done_subject', {name: name, target: result}), false);
                     loadDangerSubjects();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    let err = await res.json().catch(function() { return {}; });
                     showNotification('subjectDangerNotif', err.detail || __('danger.notif.subject_delete_failed'), true);
                 }
             } catch (e) {
@@ -803,7 +803,7 @@
 
         /** Filters the student table by name/scholar-id/username search and re-renders. */
         function filterDangerStudents() {
-            var query = (document.getElementById('studentDangerSearch').value || '').toLowerCase().trim();
+            const query = (document.getElementById('studentDangerSearch').value || '').toLowerCase().trim();
             _studentFiltered = activeDangerScholars.filter(function(s) {
                 return s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query) || (s.username || '').toLowerCase().includes(query);
             });
@@ -813,13 +813,13 @@
 
         /** Renders the current page of filtered students with reset/delete buttons. */
         function renderStudentPage() {
-            var tbody = document.getElementById('studentDangerTable');
+            const tbody = document.getElementById('studentDangerTable');
             if (!tbody) return;
-            var data = _studentFiltered;
-            var totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
+            const data = _studentFiltered;
+            const totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
             if (_studentPage > totalPages) _studentPage = totalPages;
-            var start = (_studentPage - 1) * _dangerPerPage;
-            var pageItems = data.slice(start, start + _dangerPerPage);
+            const start = (_studentPage - 1) * _dangerPerPage;
+            const pageItems = data.slice(start, start + _dangerPerPage);
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="empty-state" style="text-align:center;">' + __('danger.no_matching_students') + '</td></tr>';
             } else {
@@ -843,7 +843,7 @@
 
         /** Filters the teacher table by username/name/department search and re-renders. */
         function filterDangerTeachers() {
-            var query = (document.getElementById('teacherDangerSearch').value || '').toLowerCase().trim();
+            const query = (document.getElementById('teacherDangerSearch').value || '').toLowerCase().trim();
             _teacherFiltered = activeDangerTeachers.filter(function(t) {
                 return t.username.toLowerCase().includes(query) ||
                     t.name.toLowerCase().includes(query) ||
@@ -855,13 +855,13 @@
 
         /** Renders the current page of filtered teachers with reset/delete buttons. */
         function renderTeacherPage() {
-            var tbody = document.getElementById('teacherDangerTable');
+            const tbody = document.getElementById('teacherDangerTable');
             if (!tbody) return;
-            var data = _teacherFiltered;
-            var totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
+            const data = _teacherFiltered;
+            const totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
             if (_teacherPage > totalPages) _teacherPage = totalPages;
-            var start = (_teacherPage - 1) * _dangerPerPage;
-            var pageItems = data.slice(start, start + _dangerPerPage);
+            const start = (_teacherPage - 1) * _dangerPerPage;
+            const pageItems = data.slice(start, start + _dangerPerPage);
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="text-align:center;">' + __('danger.no_matching_teachers') + '</td></tr>';
             } else {
@@ -884,7 +884,7 @@
 
         /** Filters the admin table by username/name/department/scholar-id search and re-renders. */
         function filterDangerAdmins() {
-            var query = (document.getElementById('adminDangerSearch').value || '').toLowerCase().trim();
+            const query = (document.getElementById('adminDangerSearch').value || '').toLowerCase().trim();
             _adminFiltered = activeDangerAdmins.filter(function(a) {
                 return a.username.toLowerCase().includes(query) ||
                     a.name.toLowerCase().includes(query) ||
@@ -900,13 +900,13 @@
          * buttons; the default 'admin' account gets a placeholder instead.
          */
         function renderAdminPage() {
-            var tbody = document.getElementById('adminDangerTable');
+            const tbody = document.getElementById('adminDangerTable');
             if (!tbody) return;
-            var data = _adminFiltered;
-            var totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
+            const data = _adminFiltered;
+            const totalPages = Math.max(1, Math.ceil(data.length / _dangerPerPage));
             if (_adminPage > totalPages) _adminPage = totalPages;
-            var start = (_adminPage - 1) * _dangerPerPage;
-            var pageItems = data.slice(start, start + _dangerPerPage);
+            const start = (_adminPage - 1) * _dangerPerPage;
+            const pageItems = data.slice(start, start + _dangerPerPage);
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="text-align:center;">' + __('danger.no_matching_admins') + '</td></tr>';
             } else {
@@ -935,10 +935,10 @@
          * @param {string} name - The student's display name for the confirmation dialog.
          */
         async function resetStudentPassword(id, name) {
-            var confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_student', {name: name}), false, __('danger.confirm.ok_btn'));
+            const confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_student', {name: name}), false, __('danger.confirm.ok_btn'));
             if (!confirmed) return;
             try {
-                var res = await fetch('/teacher/scholars/reset-password/' + id, { method: 'POST' });
+                let res = await fetch('/teacher/scholars/reset-password/' + id, { method: 'POST' });
                 if (res.ok) {
                     showNotification('studentDangerNotif', __('danger.notif.student_pwd_reset', {name: name}), false);
                     loadDangerZone();
@@ -956,10 +956,10 @@
          * @param {string} name - The student's display name for the confirmation dialog.
          */
         async function deleteStudentAccount(id, name) {
-            var confirmed = await showConfirm(__('danger.confirm.delete_student_title'), __('danger.confirm.delete_student', {name: name}), true, __('danger.confirm.delete_btn'));
+            const confirmed = await showConfirm(__('danger.confirm.delete_student_title'), __('danger.confirm.delete_student', {name: name}), true, __('danger.confirm.delete_btn'));
             if (!confirmed) return;
             try {
-                var res = await fetch('/teacher/scholars/' + id, { method: 'DELETE' });
+                let res = await fetch('/teacher/scholars/' + id, { method: 'DELETE' });
                 if (res.ok) {
                     showNotification('studentDangerNotif', __('danger.notif.student_deleted', {name: name}), false);
                     loadDangerZone();
@@ -976,15 +976,15 @@
          * @param {string} username - The teacher's username
          */
         async function resetTeacherPassword(username) {
-            var confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_teacher', {username: username}), false, __('danger.confirm.ok_btn'));
+            const confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_teacher', {username: username}), false, __('danger.confirm.ok_btn'));
             if (!confirmed) return;
             try {
-                var res = await fetch('/teacher/reset-password/' + username, { method: 'POST' });
+                let res = await fetch('/teacher/reset-password/' + username, { method: 'POST' });
                 if (res.ok) {
                     showNotification('teacherDangerNotif', __('danger.notif.teacher_pwd_reset', {username: username}), false);
                     loadDangerZone();
                 } else {
-                    var err = await res.json();
+                    let err = await res.json();
                     showNotification('teacherDangerNotif', err.detail || __('danger.notif.teacher_pwd_reset_failed'), true);
                 }
             } catch (e) {
@@ -997,10 +997,10 @@
          * @param {string} username - The teacher's username.
          */
         async function deleteTeacherProfile(username) {
-            var confirmed = await showConfirm(__('danger.confirm.delete_teacher_title'), __('danger.confirm.delete_teacher', {username: username}), true, __('danger.confirm.delete_btn'));
+            const confirmed = await showConfirm(__('danger.confirm.delete_teacher_title'), __('danger.confirm.delete_teacher', {username: username}), true, __('danger.confirm.delete_btn'));
             if (!confirmed) return;
             try {
-                var res = await fetch('/teacher/profiles/' + username, { method: 'DELETE' });
+                let res = await fetch('/teacher/profiles/' + username, { method: 'DELETE' });
                 if (res.ok) {
                     loadDangerZone();
                 } else {
@@ -1016,15 +1016,15 @@
          * @param {string} username - The admin's username
          */
         async function resetAdminPassword(username) {
-            var confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_admin', {username: username}), false, __('danger.confirm.ok_btn'));
+            const confirmed = await showConfirm(__('danger.confirm.force_reset_title'), __('danger.confirm.force_reset_admin', {username: username}), false, __('danger.confirm.ok_btn'));
             if (!confirmed) return;
             try {
-                var res = await fetch('/teacher/reset-password/' + username, { method: 'POST' });
+                let res = await fetch('/teacher/reset-password/' + username, { method: 'POST' });
                 if (res.ok) {
                     showNotification('adminDangerNotif', __('danger.notif.admin_pwd_reset', {username: username}), false);
                     loadDangerZone();
                 } else {
-                    var err = await res.json();
+                    let err = await res.json();
                     showNotification('adminDangerNotif', err.detail || __('danger.notif.admin_pwd_reset_failed'), true);
                 }
             } catch (e) {
@@ -1037,10 +1037,10 @@
          * @param {string} username - The admin's username.
          */
         async function deleteAdminProfile(username) {
-            var confirmed = await showConfirm(__('danger.confirm.delete_admin_title'), __('danger.confirm.delete_admin', {username: username}), true, __('danger.confirm.delete_btn'));
+            const confirmed = await showConfirm(__('danger.confirm.delete_admin_title'), __('danger.confirm.delete_admin', {username: username}), true, __('danger.confirm.delete_btn'));
             if (!confirmed) return;
             try {
-                var res = await fetch('/teacher/profiles/' + username, { method: 'DELETE' });
+                let res = await fetch('/teacher/profiles/' + username, { method: 'DELETE' });
                 if (res.ok) {
                     loadDangerZone();
                 } else {
@@ -1056,11 +1056,11 @@
          * Validates that name, username, and password are provided.
          */
         async function dangerAddTeacherProfile() {
-            var name = document.getElementById('modalTeacherName').value.trim();
-            var department = document.getElementById('modalTeacherDept').value.trim();
-            var username = document.getElementById('modalTeacherUsername').value.trim();
-            var password = document.getElementById('modalTeacherPwd').value;
-            var notif = document.getElementById('createModalNotif');
+            const name = document.getElementById('modalTeacherName').value.trim();
+            const department = document.getElementById('modalTeacherDept').value.trim();
+            const username = document.getElementById('modalTeacherUsername').value.trim();
+            const password = document.getElementById('modalTeacherPwd').value;
+            const notif = document.getElementById('createModalNotif');
             if (!name || !username || !password) {
                 notif.style.display = 'block';
                 notif.style.background = 'rgba(239,68,68,0.1)';
@@ -1069,7 +1069,7 @@
                 return;
             }
             try {
-                var res = await fetch('/api/admin/create-teacher', {
+                let res = await fetch('/api/admin/create-teacher', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: username, password: password, name: name, department: department })
@@ -1078,8 +1078,8 @@
                     closeCreateModal();
                     loadDangerZone();
                 } else {
-                    var msg = __('danger.error.create_teacher_failed');
-                    try { var err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    let msg = __('danger.error.create_teacher_failed');
+                    try { let err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
                     notif.style.display = 'block';
                     notif.style.background = 'rgba(239,68,68,0.1)';
                     notif.style.color = 'var(--danger)';
@@ -1098,11 +1098,11 @@
          * Validates that name, username, and password are provided.
          */
         async function dangerCreateAdmin() {
-            var name = document.getElementById('modalAdminName').value.trim();
-            var department = document.getElementById('modalAdminDept').value.trim();
-            var username = document.getElementById('modalAdminUsername').value.trim();
-            var password = document.getElementById('modalAdminPwd').value;
-            var notif = document.getElementById('createModalNotif');
+            const name = document.getElementById('modalAdminName').value.trim();
+            const department = document.getElementById('modalAdminDept').value.trim();
+            const username = document.getElementById('modalAdminUsername').value.trim();
+            const password = document.getElementById('modalAdminPwd').value;
+            const notif = document.getElementById('createModalNotif');
             if (!name || !username || !password) {
                 notif.style.display = 'block';
                 notif.style.background = 'rgba(239,68,68,0.1)';
@@ -1111,7 +1111,7 @@
                 return;
             }
             try {
-                var res = await fetch('/api/admin/create', {
+                let res = await fetch('/api/admin/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: username, password: password, name: name, department: department })
@@ -1121,8 +1121,8 @@
                     showNotification('adminDangerNotif', __('danger.notif.admin_created', {username: username}), false);
                     loadDangerZone();
                 } else {
-                    var msg = __('danger.error.create_admin_failed');
-                    try { var err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    let msg = __('danger.error.create_admin_failed');
+                    try { let err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
                     notif.style.display = 'block';
                     notif.style.background = 'rgba(239,68,68,0.1)';
                     notif.style.color = 'var(--danger)';
@@ -1167,11 +1167,11 @@
          * Defaults password to 'lumina2026' if none provided.
          */
         async function dangerCreateStudent() {
-            var name = document.getElementById('modalStudentName').value.trim();
-            var username = document.getElementById('modalStudentUsername').value.trim();
-            var grade = document.getElementById('modalStudentGrade').value;
-            var password = document.getElementById('modalStudentPwd').value;
-            var notif = document.getElementById('createModalNotif');
+            const name = document.getElementById('modalStudentName').value.trim();
+            const username = document.getElementById('modalStudentUsername').value.trim();
+            const grade = document.getElementById('modalStudentGrade').value;
+            const password = document.getElementById('modalStudentPwd').value;
+            const notif = document.getElementById('createModalNotif');
             if (!name || !username) {
                 notif.style.display = 'block';
                 notif.style.background = 'rgba(239,68,68,0.1)';
@@ -1180,7 +1180,7 @@
                 return;
             }
             try {
-                var res = await fetch('/api/admin/create-student', {
+                let res = await fetch('/api/admin/create-student', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: username, password: password || 'lumina2026', name: name, grade: grade || undefined })
@@ -1190,8 +1190,8 @@
                     showNotification('studentDangerNotif', __('danger.notif.student_created', {name: name}), false);
                     loadDangerZone();
                 } else {
-                    var msg = __('danger.error.create_student_failed');
-                    try { var err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    let msg = __('danger.error.create_student_failed');
+                    try { let err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
                     notif.style.display = 'block';
                     notif.style.background = 'rgba(239,68,68,0.1)';
                     notif.style.color = 'var(--danger)';
@@ -1208,12 +1208,12 @@
         /** Opens the create-account modal pre-filled with student fields and grade dropdown. */
         async function openCreateStudentModal() {
             document.getElementById('createModalTitle').textContent = __('danger.modal.create_student_title');
-            var gradeOpts = '<option value="">\u2014</option>';
+            let gradeOpts = '<option value="">\u2014</option>';
             try {
-                var gRes = await fetch('/grades', { credentials: 'include' });
-                var grades = await gRes.json();
+                let gRes = await fetch('/grades', { credentials: 'include' });
+                let grades = await gRes.json();
                 grades.forEach(function(g) {
-                    var n = g.name || g;
+                    const n = g.name || g;
                     gradeOpts += '<option value="' + esc(n) + '">' + esc(n) + '</option>';
                 });
             } catch (e) {}
@@ -1273,9 +1273,9 @@
 
         // Swaps the confirm-button handler when the create modal changes
         // between student/teacher/admin modes, removing the previous one.
-        var _currentCreateHandler = null;
+        let _currentCreateHandler = null;
         function _setCreateModalConfirmHandler(handler) {
-            var btn = document.getElementById('createModalConfirmBtn');
+            const btn = document.getElementById('createModalConfirmBtn');
             if (!btn) return;
             if (_currentCreateHandler) {
                 btn.removeEventListener('click', _currentCreateHandler);
@@ -1288,16 +1288,16 @@
 
         // Debounced search wrappers: 200ms wait prevents a filter call
         // on every keystroke (see AGENTS.md web search-input rule).
-        var debouncedFilterDangerStudents = debounce(filterDangerStudents, 200);
-        var debouncedFilterDangerTeachers = debounce(filterDangerTeachers, 200);
-        var debouncedFilterDangerAdmins = debounce(filterDangerAdmins, 200);
+        const debouncedFilterDangerStudents = debounce(filterDangerStudents, 200);
+        const debouncedFilterDangerTeachers = debounce(filterDangerTeachers, 200);
+        const debouncedFilterDangerAdmins = debounce(filterDangerAdmins, 200);
 
         /**
          * Page bootstrap: load current user and danger-zone data, then wire
          * pagination, search inputs, and the action buttons on every table.
          * Registered as the SPA 'danger' page init via registerPageCleanup.
          */
-        var _initDanger = function() {
+        const _initDanger = function() {
             document.getElementById('btn-studentPrevPage')?.addEventListener('click', studentPrevPage);
             document.getElementById('btn-studentNextPage')?.addEventListener('click', studentNextPage);
             document.getElementById('studentPerPageSelect')?.addEventListener('change', function() { studentChangePerPage(this.value); });
@@ -1332,33 +1332,33 @@
                 document.getElementById('addGradeModal').classList.add('hidden');
             });
 
-            var gradeSearch = document.getElementById('dangerGradeSearch');
+            const gradeSearch = document.getElementById('dangerGradeSearch');
             if (gradeSearch) {
                 gradeSearch.addEventListener('input', debounce(filterGrades, 200));
             }
 
-            var studentSearch = document.getElementById('studentDangerSearch');
+            const studentSearch = document.getElementById('studentDangerSearch');
             if (studentSearch) {
                 studentSearch.addEventListener('input', debouncedFilterDangerStudents);
             }
-            var adminSearch = document.getElementById('adminDangerSearch');
+            const adminSearch = document.getElementById('adminDangerSearch');
             if (adminSearch) {
                 adminSearch.addEventListener('input', debouncedFilterDangerAdmins);
             }
-            var teacherSearch = document.getElementById('teacherDangerSearch');
+            const teacherSearch = document.getElementById('teacherDangerSearch');
             if (teacherSearch) {
                 teacherSearch.addEventListener('input', debouncedFilterDangerTeachers);
             }
 
-            var subjectSearch = document.getElementById('dangerSubjectSearch');
+            const subjectSearch = document.getElementById('dangerSubjectSearch');
             if (subjectSearch) {
                 subjectSearch.addEventListener('input', debounce(filterDangerSubjects, 200));
             }
 
-            var studentTable = document.getElementById('studentDangerTable');
+            const studentTable = document.getElementById('studentDangerTable');
             if (studentTable) {
                 studentTable.addEventListener('click', function(e) {
-                    var btn = e.target.closest('.js-danger-reset-student');
+                    const btn = e.target.closest('.js-danger-reset-student');
                     if (btn) {
                         resetStudentPassword(btn.dataset.studentId, btn.dataset.studentName);
                         return;
@@ -1370,10 +1370,10 @@
                 });
             }
 
-            var teacherTable = document.getElementById('teacherDangerTable');
+            const teacherTable = document.getElementById('teacherDangerTable');
             if (teacherTable) {
                 teacherTable.addEventListener('click', function(e) {
-                    var btn = e.target.closest('.js-danger-reset-teacher');
+                    const btn = e.target.closest('.js-danger-reset-teacher');
                     if (btn) {
                         resetTeacherPassword(btn.dataset.teacherUsername);
                         return;
@@ -1385,10 +1385,10 @@
                 });
             }
 
-            var adminTable = document.getElementById('adminDangerTable');
+            const adminTable = document.getElementById('adminDangerTable');
             if (adminTable) {
                 adminTable.addEventListener('click', function(e) {
-                    var btn = e.target.closest('.js-danger-reset-admin');
+                    const btn = e.target.closest('.js-danger-reset-admin');
                     if (btn) {
                         resetAdminPassword(btn.dataset.adminUsername);
                         return;
@@ -1400,10 +1400,10 @@
                 });
             }
 
-            var gradeTable = document.getElementById('gradeDangerTable');
+            const gradeTable = document.getElementById('gradeDangerTable');
             if (gradeTable) {
                 gradeTable.addEventListener('click', function(e) {
-                    var btn = e.target.closest('.js-danger-delete-grade');
+                    const btn = e.target.closest('.js-danger-delete-grade');
                     if (btn) {
                         deleteGrade(btn.dataset.gradeName);
                         return;
@@ -1424,7 +1424,7 @@
                 el.addEventListener('click', saveGrade);
             });
 
-            var btnAddSubject = document.getElementById('btn-addDangerSubject');
+            const btnAddSubject = document.getElementById('btn-addDangerSubject');
             if (btnAddSubject) {
                 btnAddSubject.addEventListener('click', function() {
                     document.getElementById('modalSubjectName').value = '';
@@ -1436,22 +1436,22 @@
                 });
             }
 
-            var btnConfirmAdd = document.getElementById('btn-confirmAddSubject');
+            const btnConfirmAdd = document.getElementById('btn-confirmAddSubject');
             if (btnConfirmAdd) {
                 btnConfirmAdd.addEventListener('click', addDangerSubject);
             }
 
-            var btnCloseSubjectModal = document.getElementById('btn-closeSubjectModal');
+            const btnCloseSubjectModal = document.getElementById('btn-closeSubjectModal');
             if (btnCloseSubjectModal) {
                 btnCloseSubjectModal.addEventListener('click', function() {
                     document.getElementById('addSubjectModal').classList.add('hidden');
                 });
             }
 
-            var subjectTable = document.getElementById('subjectDangerTable');
+            const subjectTable = document.getElementById('subjectDangerTable');
             if (subjectTable) {
                 subjectTable.addEventListener('click', function(e) {
-                    var btn = e.target.closest('.js-danger-delete-subject');
+                    const btn = e.target.closest('.js-danger-delete-subject');
                     if (btn) {
                         deleteDangerSubject(btn.dataset.subjectId, btn.dataset.subjectName);
                         return;

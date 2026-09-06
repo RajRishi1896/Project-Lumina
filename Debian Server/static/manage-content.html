@@ -430,12 +430,12 @@
     <script src="/static/js/lumina.js?v=15"></script>
     <!-- Section: Inline Scripts: resource CRUD, upload handler, topics -->
     <script>
-        var typeLabels = { khan: 'VIDEO', video: 'VIDEO', videos: 'VIDEO', kiwix: 'ZIM', textbook: 'TEXTBOOK', pyq: 'PYQ', pastPaper: 'PYQ', notes: 'NOTES', quiz: 'QUIZ' };
-        var allResources = [];
-        var allSubjects = [];
-        var allTopics = [];
-        var _resourcePage = 1, _resourceFiltered = [], _perPage = 20;
-        var _topicPage = 1, _topicFiltered = [];
+        const typeLabels = { khan: 'VIDEO', video: 'VIDEO', videos: 'VIDEO', kiwix: 'ZIM', textbook: 'TEXTBOOK', pyq: 'PYQ', pastPaper: 'PYQ', notes: 'NOTES', quiz: 'QUIZ' };
+        let allResources = [];
+        let allSubjects = [];
+        let allTopics = [];
+        let _resourcePage = 1, _resourceFiltered = [], _perPage = 20;
+        let _topicPage = 1, _topicFiltered = [];
 
         /** Fetches subjects and grades from the server, populates subject select, filter, grade dropdown, and manage table. */
         async function loadSubjects() {
@@ -446,25 +446,25 @@
                 ]);
                 allSubjects = await subRes.json();
 
-                var optionsHtml = allSubjects.map(function(s) {
-                    var display = s.class_name ? s.name + ' (' + s.class_name + ')' : s.name;
+                const optionsHtml = allSubjects.map(function(s) {
+                    const display = s.class_name ? s.name + ' (' + s.class_name + ')' : s.name;
                     return '<option value="' + esc(s.name) + '">' + esc(display) + '</option>';
                 }).join('');
-                var subjectSelect = document.getElementById('subjectSelect');
-                var filterSubject = document.getElementById('filterSubject');
+                const subjectSelect = document.getElementById('subjectSelect');
+                const filterSubject = document.getElementById('filterSubject');
                 if (subjectSelect) subjectSelect.innerHTML = '<option value="General">' + __('content.upload_option_general') + '</option>' + optionsHtml;
                 if (filterSubject) filterSubject.innerHTML = '<option value="ALL">' + __('content.all_subjects') + '</option>' + optionsHtml;
-                var topicFilterSubject = document.getElementById('topicFilterSubject');
+                const topicFilterSubject = document.getElementById('topicFilterSubject');
                 if (topicFilterSubject) topicFilterSubject.innerHTML = '<option value="ALL">' + __('content.all_subjects_label') + '</option>' + optionsHtml;
 
                 loadTopicsForSubject();
 
-                var allGrades = await gradeRes.json();
-                var gradeHtml = '<option value="General">' + __('content.upload_option_general_grade') + '</option>';
+                const allGrades = await gradeRes.json();
+                let gradeHtml = '<option value="General">' + __('content.upload_option_general_grade') + '</option>';
                 allGrades.forEach(function(g) {
                     gradeHtml += '<option value="' + esc(g.name) + '">' + esc(g.name) + '</option>';
                 });
-                var gradeSelect = document.getElementById('gradeSelect');
+                const gradeSelect = document.getElementById('gradeSelect');
                 if (gradeSelect) gradeSelect.innerHTML = gradeHtml;
             } catch (e) {
                 console.error("Could not load subjects", e);
@@ -474,7 +474,7 @@
         /** Fetches resources from the server and triggers the resource table render. */
         async function loadResources() {
             try {
-                var res = await fetch('/resources?include_kiwix=true', { credentials: 'include' });
+                const res = await fetch('/resources?include_kiwix=true', { credentials: 'include' });
                 if (!res.ok) {
                     document.getElementById('resourceTable').innerHTML = '<tr><td colspan="6" class="empty-state">' + __('content.load_resources_http_error', {status: res.status}) + '</td></tr>';
                     return;
@@ -489,8 +489,8 @@
 
         /** Filters the resource table by subject and search query, resets to page 1, then re-renders. */
         function filterResources() {
-            var filterVal = document.getElementById('filterSubject').value;
-            var searchVal = (document.getElementById('resourceSearch') ? document.getElementById('resourceSearch').value : '').toLowerCase().trim();
+            const filterVal = document.getElementById('filterSubject').value;
+            const searchVal = (document.getElementById('resourceSearch') ? document.getElementById('resourceSearch').value : '').toLowerCase().trim();
             _resourceFiltered = allResources;
             if (filterVal !== 'ALL') {
                 _resourceFiltered = _resourceFiltered.filter(function(r) { return r.subject === filterVal; });
@@ -508,18 +508,18 @@
 
         /** Renders the current page of filtered resources into the table body. */
         function renderResourcePage() {
-            var tbody = document.getElementById('resourceTable');
+            const tbody = document.getElementById('resourceTable');
             if (!tbody) return;
-            var data = _resourceFiltered;
-            var totalPages = Math.max(1, Math.ceil(data.length / _perPage));
+            const data = _resourceFiltered;
+            const totalPages = Math.max(1, Math.ceil(data.length / _perPage));
             if (_resourcePage > totalPages) _resourcePage = totalPages;
-            var start = (_resourcePage - 1) * _perPage;
-            var pageItems = data.slice(start, start + _perPage);
+            const start = (_resourcePage - 1) * _perPage;
+            const pageItems = data.slice(start, start + _perPage);
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="empty-state">' + __('content.library_no_resources') + '</td></tr>';
             } else {
                 tbody.innerHTML = pageItems.map(function(r) {
-                    var badgeClass = 'type-default';
+                    let badgeClass = 'type-default';
                     if (r.type === 'textbook') badgeClass = 'type-textbook';
                     else if (r.type === 'video' || r.type === 'videos') badgeClass = 'type-videos';
                     else if (r.type === 'pyq' || r.type === 'pastPaper') badgeClass = 'type-pyq';
@@ -527,16 +527,16 @@
                     else if (r.type === 'notes') badgeClass = 'type-notes';
                     else if (r.type === 'quiz') badgeClass = 'type-quiz';
 
-                    var subj = null;
-                    for (var i = 0; i < allSubjects.length; i++) {
+                    let subj = null;
+                    for (let i = 0; i < allSubjects.length; i++) {
                         if (allSubjects[i].name === r.subject) { subj = allSubjects[i]; break; }
                     }
-                    var symbolSvg = getSymbolSvg(subj ? subj.symbol : 'folder');
+                    const symbolSvg = getSymbolSvg(subj ? subj.symbol : 'folder');
 
-                    var _url = r.pdfUrl || r.url || '';
+                    let _url = r.pdfUrl || r.url || '';
                     if (!_url.startsWith('/') && !_url.startsWith('http')) _url = '/files/' + encodeURIComponent(_url);
-                    var dl = r.downloads || 0;
-                    var topicLabel = r.topic_name || '';
+                    const dl = r.downloads || 0;
+                    const topicLabel = r.topic_name || '';
                     return '<tr>' +
                         '<td data-label="' + __('content.library_th_title') + '"><strong>' + esc(r.title) + '</strong></td>' +
                         '<td data-label="' + __('content.library_th_subject') + '"><div style="display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface); padding: 0.2rem 0.6rem; border: 1px solid var(--outline); border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--teal);">' + symbolSvg + ' ' + esc(r.subject || 'General') + '</div></td>' +
@@ -577,27 +577,27 @@
          * /teacher/upload with type/subject/grade/topic query params.
          */
         function upload() {
-            var file = document.getElementById('file').files[0];
-            var title = document.getElementById('title').value;
-            var type = document.getElementById('type').value;
-            var subject = document.getElementById('subjectSelect').value;
-            var grade = document.getElementById('gradeSelect').value;
-            var topicId = document.getElementById('topicSelect')?.value || '';
+            const file = document.getElementById('file').files[0];
+            const title = document.getElementById('title').value;
+            const type = document.getElementById('type').value;
+            const subject = document.getElementById('subjectSelect').value;
+            const grade = document.getElementById('gradeSelect').value;
+            const topicId = document.getElementById('topicSelect')?.value || '';
             if (!file || !title) return showAlert(__('content.notif.title_required'), true);
 
-            var btn = document.getElementById('btn-upload');
-            var progressDiv = document.getElementById('uploadProgress');
-            var progressBar = document.getElementById('uploadProgressBar');
-            var progressPct = document.getElementById('uploadProgressPct');
+            const btn = document.getElementById('btn-upload');
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('uploadProgressBar');
+            const progressPct = document.getElementById('uploadProgressPct');
 
             if (btn) btn.disabled = true;
             if (progressDiv) { progressDiv.style.display = 'block'; progressBar.style.width = '0%'; progressPct.textContent = '0%'; }
 
-            var formData = new FormData();
+            const formData = new FormData();
             formData.append('file', file);
             formData.append('title', title);
 
-            var url;
+            let url;
             if (type === 'kiwix') {
                 url = '/teacher/upload-zim';
             } else {
@@ -605,14 +605,14 @@
                 if (topicId) url += '&topic_id=' + encodeURIComponent(topicId);
             }
 
-            var xhr = new XMLHttpRequest();
+            const xhr = new XMLHttpRequest();
             _activeUploadXhr = xhr;
             xhr.open('POST', url, true);
             xhr.withCredentials = true;
 
             xhr.upload.onprogress = function(e) {
                 if (e.lengthComputable && progressBar && progressPct) {
-                    var pct = Math.round((e.loaded / e.total) * 100);
+                    const pct = Math.round((e.loaded / e.total) * 100);
                     progressBar.style.width = pct + '%';
                     progressPct.textContent = pct + '%';
                 }
@@ -624,8 +624,8 @@
                     showAlert(__('content.notif.upload_ok'), false);
                     loadResources();
                 } else {
-                    var errText;
-                    try { var errJson = JSON.parse(xhr.responseText); errText = errJson.detail || __('content.notif.upload_failed'); }
+                    let errText;
+                    try { const errJson = JSON.parse(xhr.responseText); errText = errJson.detail || __('content.notif.upload_failed'); }
                     catch(ex) { errText = __('content.notif.upload_failed'); }
                     showAlert(errText, true);
                 }
@@ -646,10 +646,10 @@
 
         /** Deletes a resource by ID after user confirmation. */
         async function deleteResource(id, title) {
-            var confirmed = await showConfirm(__('content.notif.delete_title'), __('content.notif.delete_confirm', {title: title}), true, __('content.confirm_delete_btn'));
+            const confirmed = await showConfirm(__('content.notif.delete_title'), __('content.notif.delete_confirm', {title: title}), true, __('content.confirm_delete_btn'));
             if (!confirmed) return;
             try {
-                var res = await fetch('/teacher/resources/' + id, { method: 'DELETE', credentials: 'include' });
+                const res = await fetch('/teacher/resources/' + id, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
                     showAlert(__('content.notif.delete_ok', {title: title}), false);
                     loadResources();
@@ -662,26 +662,26 @@
         }
 
         // --- Topic management (for upload modal subject?topic flow) ---
-        var activeResourceTopics = [];
+        let activeResourceTopics = [];
 
         /**
          * Fetches topics for the currently selected subject and populates the topic dropdown.
          * Clears the dropdown if subject is empty.
          */
         async function loadTopicsForSubject() {
-            var subject = document.getElementById('subjectSelect')?.value || '';
-            var topicSelect = document.getElementById('topicSelect');
+            const subject = document.getElementById('subjectSelect')?.value || '';
+            const topicSelect = document.getElementById('topicSelect');
             if (!topicSelect) return;
             if (!subject) {
                 topicSelect.innerHTML = '<option value="">' + __('content.topics_general_no_topic') + '</option>';
                 return;
             }
             try {
-                var res = await fetch('/teacher/resource-topics?subject=' + encodeURIComponent(subject), { credentials: 'include' });
+                const res = await fetch('/teacher/resource-topics?subject=' + encodeURIComponent(subject), { credentials: 'include' });
                 activeResourceTopics = await res.json();
                 topicSelect.innerHTML = '<option value="">' + __('content.topics_general_no_topic') + '</option>';
                 activeResourceTopics.forEach(function(t) {
-                    var opt = document.createElement('option');
+                    const opt = document.createElement('option');
                     opt.value = t.id;
                     opt.textContent = t.name;
                     topicSelect.appendChild(opt);
@@ -697,7 +697,7 @@
         /** Fetches all resource topics from the server and triggers the topic table render. */
         async function loadAllTopics() {
             try {
-                var res = await fetch('/teacher/resource-topics', { credentials: 'include' });
+                const res = await fetch('/teacher/resource-topics', { credentials: 'include' });
                 allTopics = await res.json();
                 filterTopics();
             } catch (e) {
@@ -708,8 +708,8 @@
 
         /** Filters the topic table by subject dropdown and search query, then re-renders. */
         function filterTopics() {
-            var subjectFilter = (document.getElementById('topicFilterSubject')?.value || 'ALL');
-            var query = (document.getElementById('topicSearch')?.value || '').toLowerCase().trim();
+            const subjectFilter = (document.getElementById('topicFilterSubject')?.value || 'ALL');
+            const query = (document.getElementById('topicSearch')?.value || '').toLowerCase().trim();
             _topicFiltered = allTopics.filter(function(t) {
                 if (subjectFilter !== 'ALL' && t.subject !== subjectFilter) return false;
                 return !query || (t.name || '').toLowerCase().includes(query) || (t.subject || '').toLowerCase().includes(query);
@@ -720,14 +720,14 @@
 
         /** Renders the current page of filtered topics into the table body. */
         function renderTopicPage() {
-            var tbody = document.getElementById('topicTable');
+            const tbody = document.getElementById('topicTable');
             if (!tbody) return;
-            var query = (document.getElementById('topicSearch')?.value || '').toLowerCase().trim();
-            var data = _topicFiltered;
-            var totalPages = Math.max(1, Math.ceil(data.length / _perPage));
+            const query = (document.getElementById('topicSearch')?.value || '').toLowerCase().trim();
+            const data = _topicFiltered;
+            const totalPages = Math.max(1, Math.ceil(data.length / _perPage));
             if (_topicPage > totalPages) _topicPage = totalPages;
-            var start = (_topicPage - 1) * _perPage;
-            var pageItems = data.slice(start, start + _perPage);
+            const start = (_topicPage - 1) * _perPage;
+            const pageItems = data.slice(start, start + _perPage);
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="3" class="empty-state" style="text-align:center;">' + (query ? __('content.topics.no_match') : __('content.topics_empty')) + '</td></tr>';
             } else {
@@ -747,10 +747,10 @@
 
         /** Opens the add-topic modal with the subject dropdown populated from allSubjects. */
         function openAddTopicModal() {
-            var select = document.getElementById('modalTopicSubject');
+            const select = document.getElementById('modalTopicSubject');
             select.innerHTML = '<option value="">' + __('content.topics.select_subject') + '</option>';
             allSubjects.forEach(function(s) {
-                var opt = document.createElement('option');
+                const opt = document.createElement('option');
                 opt.value = s.name;
                 opt.textContent = s.class_name ? s.name + ' (' + s.class_name + ')' : s.name;
                 select.appendChild(opt);
@@ -768,8 +768,8 @@
 
         /** Validates and submits a new topic via POST to /teacher/resource-topics. */
         async function confirmAddTopic() {
-            var subject = document.getElementById('modalTopicSubject').value;
-            var name = document.getElementById('modalTopicName').value.trim();
+            const subject = document.getElementById('modalTopicSubject').value;
+            const name = document.getElementById('modalTopicName').value.trim();
             if (!subject) {
                 showNotification('addTopicNotif', __('content.notif.select_subject'), true);
                 return;
@@ -779,7 +779,7 @@
                 return;
             }
             try {
-                var res = await fetch('/teacher/resource-topics', {
+                const res = await fetch('/teacher/resource-topics', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -789,7 +789,7 @@
                     closeAddTopicModal();
                     loadAllTopics();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    const err = await res.json().catch(function() { return {}; });
                     showNotification('addTopicNotif', err.detail || __('content.notif.topic_create_failed'), true);
                 }
             } catch (e) {
@@ -804,25 +804,25 @@
          * @param {string} name - The topic name for the confirmation dialog.
          */
         async function deleteTopic(id, name) {
-            var topic = allTopics.find(function(t) { return t.id === id; }) || {};
-            var subject = topic.subject || '';
-            var others = allTopics.filter(function(t) { return t.id !== id && t.subject === subject; });
-            var count = allResources.filter(function(r) { return r.topic_id === id; }).length;
-            var xferHtml = '';
+            const topic = allTopics.find(function(t) { return t.id === id; }) || {};
+            const subject = topic.subject || '';
+            const others = allTopics.filter(function(t) { return t.id !== id && t.subject === subject; });
+            const count = allResources.filter(function(r) { return r.topic_id === id; }).length;
+            let xferHtml = '';
             if (others.length > 0) {
-                var opts = others.map(function(t) {
+                const opts = others.map(function(t) {
                     return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>';
                 }).join('');
                 xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin:0.5rem 0 0.75rem;">'
                     + '<select id="topicXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--surface);color:var(--on-surface);font-size:0.875rem;">'
                     + '<option value="">' + __('content.topic_transfer.select_topic') + '</option>' + opts + '</select></div>';
             }
-            var confirmed = await showConfirm(__('content.topics_delete_title'), __('content.topics_delete_confirm', {name: name}), true, __('content.confirm_delete_btn'), xferHtml,
+            const confirmed = await showConfirm(__('content.topics_delete_title'), __('content.topics_delete_confirm', {name: name}), true, __('content.confirm_delete_btn'), xferHtml,
                 others.length > 0 ? { label: __('danger.transfer.transfer_and_delete'), value: 'transfer' } : null);
             if (!confirmed) return;
-            var transferTo = '';
+            let transferTo = '';
             if (confirmed === 'transfer') {
-                var targetEl = document.querySelector('#confirmModalText #topicXferTarget');
+                const targetEl = document.querySelector('#confirmModalText #topicXferTarget');
                 if (!targetEl || !targetEl.value) {
                     showNotification('topicNotif', __('danger.transfer.select_target'), true);
                     return;
@@ -830,12 +830,12 @@
                 transferTo = targetEl.value;
             }
             try {
-                var url = '/teacher/resource-topics/' + encodeURIComponent(id);
+                let url = '/teacher/resource-topics/' + encodeURIComponent(id);
                 if (transferTo) url += '?transfer_to=' + encodeURIComponent(transferTo);
                 else url += '?delete_resources=true';
-                var res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+                const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
-                    var data = await res.json().catch(function() { return {}; });
+                    const data = await res.json().catch(function() { return {}; });
                     if (transferTo) {
                         showNotification('topicNotif', data.message || __('danger.transfer.done', {name: name, target: data.transferred_to || ''}), false);
                     } else {
@@ -844,7 +844,7 @@
                     loadAllTopics();
                     loadResources();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    const err = await res.json().catch(function() { return {}; });
                     showNotification('topicNotif', err.detail || __('content.notif.topic_delete_failed'), true);
                 }
             } catch (e) {
@@ -866,27 +866,27 @@
             document.getElementById('editResType').value = type;
             document.getElementById('editResNotif').style.display = 'none';
             document.getElementById('editResourceModal').dataset.currentTopic = topicName;
-            var quizBtnWrap = document.getElementById('editResQuizBtnWrap');
+            const quizBtnWrap = document.getElementById('editResQuizBtnWrap');
             if (quizBtnWrap) quizBtnWrap.style.display = type === 'quiz' ? '' : 'none';
-            var quizIdInput = document.getElementById('editResQuizId');
+            const quizIdInput = document.getElementById('editResQuizId');
             if (quizIdInput) quizIdInput.value = '';
-            var sel = document.getElementById('editResSubject');
+            const sel = document.getElementById('editResSubject');
             sel.innerHTML = '<option value="General">' + __('content.upload_option_general') + '</option>';
             allSubjects.forEach(function(s) {
-                var display = s.class_name ? s.name + ' (' + s.class_name + ')' : s.name;
-                var opt = document.createElement('option');
+                const display = s.class_name ? s.name + ' (' + s.class_name + ')' : s.name;
+                const opt = document.createElement('option');
                 opt.value = s.name;
                 opt.textContent = display;
                 sel.appendChild(opt);
             });
             sel.value = subject;
-            var gradeSel = document.getElementById('editResGrade');
-            var allGrades = [];
+            const gradeSel = document.getElementById('editResGrade');
+            let allGrades = [];
             fetch('/grades', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(grades) {
                 allGrades = grades;
                 gradeSel.innerHTML = '<option value="General">' + __('content.upload_option_general_grade') + '</option>';
                 allGrades.forEach(function(g) {
-                    var opt = document.createElement('option');
+                    const opt = document.createElement('option');
                     opt.value = g.name;
                     opt.textContent = g.name;
                     gradeSel.appendChild(opt);
@@ -899,24 +899,24 @@
 
         /** Fetches topics for the edit-modal subject dropdown and pre-selects the current topic. */
         async function loadEditTopicsForSubject() {
-            var subject = document.getElementById('editResSubject').value;
-            var topicSelect = document.getElementById('editResTopic');
+            const subject = document.getElementById('editResSubject').value;
+            const topicSelect = document.getElementById('editResTopic');
             if (!subject) {
                 topicSelect.innerHTML = '<option value="">' + __('content.upload_option_general_topic') + '</option>';
                 return;
             }
             try {
-                var res = await fetch('/teacher/resource-topics?subject=' + encodeURIComponent(subject), { credentials: 'include' });
-                var topics = await res.json();
+                const res = await fetch('/teacher/resource-topics?subject=' + encodeURIComponent(subject), { credentials: 'include' });
+                const topics = await res.json();
                 topicSelect.innerHTML = '<option value="">' + __('content.topics_general_no_topic') + '</option>';
                 topics.forEach(function(t) {
-                    var opt = document.createElement('option');
+                    const opt = document.createElement('option');
                     opt.value = t.id;
                     opt.textContent = t.name;
                     topicSelect.appendChild(opt);
                 });
-                var currentTopicName = document.getElementById('editResourceModal').dataset.currentTopic || '';
-                for (var i = 0; i < topicSelect.options.length; i++) {
+                const currentTopicName = document.getElementById('editResourceModal').dataset.currentTopic || '';
+                for (let i = 0; i < topicSelect.options.length; i++) {
                     if (topicSelect.options[i].textContent === currentTopicName) {
                         topicSelect.selectedIndex = i;
                         break;
@@ -929,15 +929,15 @@
 
         /** Saves edited resource metadata via PUT to /teacher/resources/:id. */
         async function saveResourceEdit() {
-            var id = document.getElementById('editResId').value;
-            var title = document.getElementById('editResTitle').value.trim();
-            var subject = document.getElementById('editResSubject').value;
-            var type = document.getElementById('editResType').value;
-            var topicId = document.getElementById('editResTopic').value || null;
-            var grade = document.getElementById('editResGrade').value;
+            const id = document.getElementById('editResId').value;
+            const title = document.getElementById('editResTitle').value.trim();
+            const subject = document.getElementById('editResSubject').value;
+            const type = document.getElementById('editResType').value;
+            const topicId = document.getElementById('editResTopic').value || null;
+            const grade = document.getElementById('editResGrade').value;
             if (!title) return showAlert(__('content.notif.edit_title_required'), true);
             try {
-                var res = await fetch('/teacher/resources/' + id, {
+                const res = await fetch('/teacher/resources/' + id, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -948,7 +948,7 @@
                     showAlert(__('content.notif.resource_updated'), false);
                     loadResources();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    const err = await res.json().catch(function() { return {}; });
                     showAlert(err.detail || __('content.notif.resource_update_failed'), true);
                 }
             } catch (e) {
@@ -971,11 +971,11 @@
 
         /** Saves edited topic name via PUT to /teacher/resource-topics/:id. */
         async function saveTopicEdit() {
-            var id = document.getElementById('editTopicId').value;
-            var name = document.getElementById('editTopicName').value.trim();
+            const id = document.getElementById('editTopicId').value;
+            const name = document.getElementById('editTopicName').value.trim();
             if (!name) return showNotification('editTopicNotif', __('content.notif.topic_name_required'), true);
             try {
-                var res = await fetch('/teacher/resource-topics/' + id, {
+                const res = await fetch('/teacher/resource-topics/' + id, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -985,7 +985,7 @@
                     document.getElementById('editTopicModal').classList.add('hidden');
                     loadAllTopics();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    const err = await res.json().catch(function() { return {}; });
                     showNotification('editTopicNotif', err.detail || __('content.notif.topic_update_failed'), true);
                 }
             } catch (e) {
@@ -997,23 +997,23 @@
 
         // Pagination handlers: move the resource/topic page window and re-render.
         function resourcePrevPage() { if (_resourcePage > 1) { _resourcePage--; renderResourcePage(); } }
-        function resourceNextPage() { var tp = Math.ceil(_resourceFiltered.length / _perPage); if (_resourcePage < tp) { _resourcePage++; renderResourcePage(); } }
+        function resourceNextPage() { const tp = Math.ceil(_resourceFiltered.length / _perPage); if (_resourcePage < tp) { _resourcePage++; renderResourcePage(); } }
         function resourceChangePerPage(val) { _perPage = parseInt(val, 10) || 20; _resourcePage = 1; renderResourcePage(); }
         function topicPrevPage() { if (_topicPage > 1) { _topicPage--; renderTopicPage(); } }
-        function topicNextPage() { var tp = Math.ceil(_topicFiltered.length / _perPage); if (_topicPage < tp) { _topicPage++; renderTopicPage(); } }
+        function topicNextPage() { const tp = Math.ceil(_topicFiltered.length / _perPage); if (_topicPage < tp) { _topicPage++; renderTopicPage(); } }
         function topicChangePerPage(val) { _perPage = parseInt(val, 10) || 20; _topicPage = 1; renderTopicPage(); }
 
         // --- Quiz builder (standalone resource quiz) ---
-        var _activeUploadXhr = null;
-        var _quizQuestions = [];
-        var _editingQuestionIdx = -1;
+        let _activeUploadXhr = null;
+        let _quizQuestions = [];
+        let _editingQuestionIdx = -1;
 
         /** Loads quiz data from the server and populates the quiz builder for editing. */
         async function openQuizBuilderForEdit(quizId) {
             try {
-                var res = await fetch('/api/quiz-resource/' + quizId, { credentials: 'include' });
+                const res = await fetch('/api/quiz-resource/' + quizId, { credentials: 'include' });
                 if (!res.ok) return showAlert(__('content.quiz.create_failed'), true);
-                var data = await res.json();
+                let data = await res.json();
                 data = data.quiz || data;
                 document.getElementById('quizTitle').value = data.title || '';
                 if (data.time_limit_minutes != null) document.getElementById('quizTimeLimit').value = data.time_limit_minutes;
@@ -1039,14 +1039,14 @@
 
         /** Toggles form field availability based on the selected resource type. */
         function onTypeChange() {
-            var type = document.getElementById('type').value;
-            var fileWrap = document.getElementById('fileInputWrap');
-            var quizWrap = document.getElementById('quizCreateWrap');
-            var topicRow = document.getElementById('topicSelect')?.closest('div[style*="grid-column"]') || document.getElementById('topicSelect')?.parentElement;
-            var grade = document.getElementById('gradeSelect');
-            var sub = document.getElementById('subjectSelect');
-            var gradeParent = grade?.closest('div');
-            var subParent = sub?.closest('div');
+            const type = document.getElementById('type').value;
+            const fileWrap = document.getElementById('fileInputWrap');
+            const quizWrap = document.getElementById('quizCreateWrap');
+            const topicRow = document.getElementById('topicSelect')?.closest('div[style*="grid-column"]') || document.getElementById('topicSelect')?.parentElement;
+            const grade = document.getElementById('gradeSelect');
+            const sub = document.getElementById('subjectSelect');
+            const gradeParent = grade?.closest('div');
+            const subParent = sub?.closest('div');
 
             if (type === 'quiz') {
                 fileWrap.style.display = 'none';
@@ -1058,7 +1058,7 @@
 
             if (topicRow) topicRow.style.display = (type === 'kiwix' || type === 'quiz') ? 'none' : '';
 
-            var disableGradeSub = (type === 'kiwix' || type === 'quiz');
+            const disableGradeSub = (type === 'kiwix' || type === 'quiz');
             grade.disabled = disableGradeSub;
             if (gradeParent) gradeParent.style.opacity = disableGradeSub ? '0.5' : '';
             sub.disabled = disableGradeSub;
@@ -1076,7 +1076,7 @@
         function openQuizBuilderModal() {
             _quizQuestions = [];
             _editingQuestionIdx = -1;
-            var quizIdInput = document.getElementById('editResQuizId');
+            const quizIdInput = document.getElementById('editResQuizId');
             if (quizIdInput) quizIdInput.value = '';
             document.getElementById('quizTitle').value = document.getElementById('title').value || '';
             document.getElementById('quizTimeLimit').value = 10;
@@ -1095,15 +1095,15 @@
 
         /** Renders the list of quiz questions with edit/delete buttons. */
         function renderQuizQuestions() {
-            var el = document.getElementById('quizQuestionList');
+            const el = document.getElementById('quizQuestionList');
             if (!el) return;
             if (_quizQuestions.length === 0) {
                 el.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);text-align:center;padding:1rem;">' + __('content.quiz.questions_empty') + '</p>';
                 return;
             }
             el.innerHTML = _quizQuestions.map(function(q, i) {
-                var typeLabel = q.type === 'mcq' ? 'MCQ' : q.type === 'tf' ? 'T/F' : q.type === 'multi' ? 'Multi' : 'Fill';
-                var preview = (q.text || '').substring(0, 60) + ((q.text || '').length > 60 ? '...' : '');
+                const typeLabel = q.type === 'mcq' ? 'MCQ' : q.type === 'tf' ? 'T/F' : q.type === 'multi' ? 'Multi' : 'Fill';
+                const preview = (q.text || '').substring(0, 60) + ((q.text || '').length > 60 ? '...' : '');
                 return '<div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.5rem;background:var(--surface);">' +
                     '<span style="font-size:0.75rem;font-weight:700;background:var(--outline);padding:0.15rem 0.4rem;border-radius:4px;">' + esc(typeLabel) + '</span>' +
                     '<span style="flex:1;font-size:0.85rem;">' + esc(preview) + '</span>' +
@@ -1122,7 +1122,7 @@
             document.getElementById('questionEditor').style.display = '';
             document.getElementById('questionEditorTitle').textContent = index >= 0 ? __('content.quiz.edit_question') : __('content.quiz.new_question');
             if (index >= 0 && _quizQuestions[index]) {
-                var q = _quizQuestions[index];
+                const q = _quizQuestions[index];
                 document.getElementById('qType').value = q.type;
                 document.getElementById('qText').value = q.text || '';
                 document.getElementById('qExplanation').value = q.explanation || '';
@@ -1150,7 +1150,7 @@
 
         /** Toggles option editor vs fill-in-the-blanks input based on the selected question type. */
         function onQTypeChange() {
-            var t = document.getElementById('qType').value;
+            const t = document.getElementById('qType').value;
             document.getElementById('qOptionsContainer').style.display = t === 'fill_blanks' ? 'none' : '';
             document.getElementById('qFillContainer').style.display = t !== 'fill_blanks' ? 'none' : '';
             if (t === 'fill_blanks') document.getElementById('qOptionsList').innerHTML = '';
@@ -1165,12 +1165,12 @@
          * @param {string} type - Question type (mcq, tf, multi, fill_blanks).
          */
         function renderQOptions(opts, correct, type) {
-            var list = document.getElementById('qOptionsList');
-            var isMulti = type === 'multi';
+            const list = document.getElementById('qOptionsList');
+            const isMulti = type === 'multi';
             list.innerHTML = opts.map(function(o, i) {
-                var checked = false;
+                let checked = false;
                 if (type === 'tf') checked = (i === correct) || o === correct;
-                else if (isMulti) { var c = correct || []; checked = Array.isArray(c) && c.indexOf(o) !== -1; }
+                else if (isMulti) { const c = correct || []; checked = Array.isArray(c) && c.indexOf(o) !== -1; }
                 else checked = i === correct;
                 return '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">' +
                     (isMulti
@@ -1186,38 +1186,38 @@
 
         /** Validates and saves the current question to _quizQuestions, then re-renders the list. */
         function saveQuestion() {
-            var type = document.getElementById('qType').value;
-            var text = document.getElementById('qText').value.trim();
-            var explanation = document.getElementById('qExplanation').value.trim();
+            const type = document.getElementById('qType').value;
+            const text = document.getElementById('qText').value.trim();
+            const explanation = document.getElementById('qExplanation').value.trim();
             if (!text) return showAlert(__('content.quiz.q_text_required'), true);
-            var correct_answer, options;
+            let correct_answer, options;
             if (type === 'fill_blanks') {
                 correct_answer = document.getElementById('qFillAnswer').value.trim();
                 if (!correct_answer) return showAlert(__('content.quiz.answer_required'), true);
                 options = null;
             } else if (type === 'tf') {
                 options = ['True', 'False'];
-                var checkedRadio = document.querySelector('.q-correct-opt:checked');
+                const checkedRadio = document.querySelector('.q-correct-opt:checked');
                 if (!checkedRadio) return showAlert(__('content.quiz.correct_required'), true);
                 correct_answer = parseInt(checkedRadio.dataset.optindex, 10);
             } else {
-                var optInputs = document.querySelectorAll('.q-opt-text');
+                const optInputs = document.querySelectorAll('.q-opt-text');
                 options = Array.from(optInputs).map(function(inp) { return inp.value.trim(); }).filter(function(v) { return v; });
                 if (options.length < 2) return showAlert(__('content.quiz.options_required'), true);
-                var checkedInputs = document.querySelectorAll('.q-correct-opt:checked');
+                const checkedInputs = document.querySelectorAll('.q-correct-opt:checked');
                 if (!checkedInputs.length) return showAlert(__('content.quiz.correct_required'), true);
-                var allOptInputs = Array.from(document.querySelectorAll('.q-opt-text'));
+                const allOptInputs = Array.from(document.querySelectorAll('.q-opt-text'));
                 if (type === 'multi') {
                     correct_answer = Array.from(checkedInputs).map(function(cb) {
-                        var idx = allOptInputs.indexOf(cb.closest('div').querySelector('.q-opt-text'));
+                        const idx = allOptInputs.indexOf(cb.closest('div').querySelector('.q-opt-text'));
                         return options[idx];
                     }).filter(function(v) { return v !== undefined; });
                 } else {
-                    var idx = allOptInputs.indexOf(checkedInputs[0].closest('div').querySelector('.q-opt-text'));
+                    const idx = allOptInputs.indexOf(checkedInputs[0].closest('div').querySelector('.q-opt-text'));
                     correct_answer = idx;
                 }
             }
-            var q = { type: type, text: text, options: options, correct_answer: correct_answer, explanation: explanation };
+            const q = { type: type, text: text, options: options, correct_answer: correct_answer, explanation: explanation };
             if (_editingQuestionIdx >= 0) _quizQuestions[_editingQuestionIdx] = q;
             else _quizQuestions.push(q);
             closeQuestionEditor();
@@ -1233,24 +1233,24 @@
         /** Exports the quiz as a JSON file download. */
         function exportQuiz() {
             if (_quizQuestions.length === 0) { showAlert(__('content.quiz.export_empty'), true); return; }
-            var title = document.getElementById('quizTitle').value.trim() || 'quiz';
-            var payload = {
+            const title = document.getElementById('quizTitle').value.trim() || 'quiz';
+            const payload = {
                 title: title,
                 time_limit_minutes: parseInt(document.getElementById('quizTimeLimit').value) || 0,
                 pass_threshold: parseInt(document.getElementById('quizThreshold').value) || 60,
                 shuffle_mode: document.getElementById('quizShuffleMode').value,
                 questions: _quizQuestions
             };
-            var json = JSON.stringify(payload, null, 2);
-            var filename = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
+            const json = JSON.stringify(payload, null, 2);
+            const filename = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
             if (window.showSaveFilePicker) {
                 window.showSaveFilePicker({ suggestedName: filename, types: [{ description: 'Quiz file', accept: { 'application/json': ['.json'] } }] })
                     .then(function(handle) { return handle.createWritable(); })
                     .then(function(writable) { return writable.write(json).then(function() { return writable.close(); }); })
                     .catch(function(e) { if (e.name !== 'AbortError') showAlert(__('content.quiz.save_failed', {message: e.message}), true); });
             } else {
-                var blob = new Blob([json], { type: 'application/json' });
-                var a = document.createElement('a');
+                const blob = new Blob([json], { type: 'application/json' });
+                const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
                 a.download = filename;
                 a.click();
@@ -1267,12 +1267,12 @@
          * @param {Event} e - The file input change event.
          */
         function handleQuizImport(e) {
-            var file = e.target.files[0];
+            const file = e.target.files[0];
             if (!file) return;
-            var reader = new FileReader();
+            const reader = new FileReader();
             reader.onload = function(ev) {
                 try {
-                    var data = JSON.parse(ev.target.result);
+                    const data = JSON.parse(ev.target.result);
                     if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
                         return showAlert(__('content.quiz.import_invalid'), true);
                     }
@@ -1295,16 +1295,16 @@
 
         /** Saves the standalone quiz as a resource via POST to /api/teacher/quiz-resource. */
         async function saveStandaloneQuiz() {
-            var title = document.getElementById('quizTitle').value.trim() || document.getElementById('title').value.trim();
+            const title = document.getElementById('quizTitle').value.trim() || document.getElementById('title').value.trim();
             if (!title) return showAlert(__('content.quiz.title_required'), true);
             if (_quizQuestions.length === 0) return showAlert(__('content.quiz.add_questions'), true);
-            var subject = document.getElementById('subjectSelect').value;
-            var grade = document.getElementById('gradeSelect').value;
-            var topicId = document.getElementById('topicSelect')?.value || '';
-            var mappedQuestions = _quizQuestions.map(function(q) {
+            const subject = document.getElementById('subjectSelect').value;
+            const grade = document.getElementById('gradeSelect').value;
+            const topicId = document.getElementById('topicSelect')?.value || '';
+            const mappedQuestions = _quizQuestions.map(function(q) {
                 return { id: q.id || ('q-' + Date.now() + '-' + Math.random().toString(36).substr(2,5)), type: q.type, question: q.text, options: q.options, correct_answer: q.correct_answer, explanation: q.explanation };
             });
-            var payload = {
+            const payload = {
                 title: title,
                 subject: subject,
                 grade: grade,
@@ -1318,14 +1318,14 @@
                 shuffle_mode: document.getElementById('quizShuffleMode').value,
                 questions: mappedQuestions
             };
-            var btn = document.getElementById('btn-upload');
+            const btn = document.getElementById('btn-upload');
             if (btn) btn.disabled = true;
             try {
-                var url = '/api/teacher/quiz-resource';
-                var method = 'POST';
-                var editQuizId = document.getElementById('editResQuizId')?.value;
+                let url = '/api/teacher/quiz-resource';
+                let method = 'POST';
+                const editQuizId = document.getElementById('editResQuizId')?.value;
                 if (editQuizId) { url = '/api/teacher/quiz-resource/' + editQuizId; method = 'PUT'; }
-                var res = await fetch(url, {
+                const res = await fetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1337,7 +1337,7 @@
                     showAlert(__('content.quiz.quiz_created'), false);
                     loadResources();
                 } else {
-                    var err = await res.json().catch(function() { return {}; });
+                    const err = await res.json().catch(function() { return {}; });
                     showAlert(err.detail || __('content.quiz.create_failed'), true);
                 }
             } catch (e) {
@@ -1353,7 +1353,7 @@
          * upload modal, quiz builder, filters, tables, and edit modals.
          * Registered as the SPA 'content' page init via registerPageCleanup.
          */
-        var _initContent = function() {
+        const _initContent = function() {
             document.getElementById('btn-resourcePrevPage')?.addEventListener('click', resourcePrevPage);
             document.getElementById('btn-resourceNextPage')?.addEventListener('click', resourceNextPage);
             document.getElementById('resourcePerPageSelect')?.addEventListener('change', function() { resourceChangePerPage(this.value); });
@@ -1383,7 +1383,7 @@
             });
 
             document.getElementById('subjectSelect')?.addEventListener('change', function() {
-                var type = document.getElementById('type')?.value;
+                const type = document.getElementById('type')?.value;
                 if (type !== 'kiwix' && type !== 'quiz') loadTopicsForSubject();
             });
 
@@ -1397,11 +1397,11 @@
             document.getElementById('qType')?.addEventListener('change', onQTypeChange);
             document.getElementById('qText')?.addEventListener('input', function() { document.getElementById('qTextCount').textContent = this.value.length; });
             document.getElementById('btn-addOption')?.addEventListener('click', function() {
-                var container = document.getElementById('qOptionsList');
-                var i = container.children.length;
-                var div = document.createElement('div');
+                const container = document.getElementById('qOptionsList');
+                const i = container.children.length;
+                const div = document.createElement('div');
                 div.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;';
-                var type = document.getElementById('qType').value;
+                const type = document.getElementById('qType').value;
                 div.innerHTML =
                     (type === 'multi'
                         ? '<input type="checkbox" class="q-correct-opt" data-optindex="' + i + '">'
@@ -1410,27 +1410,27 @@
                     '<button class="btn btn-outline js-remove-option" data-optindex="' + i + '" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">&times;</button>';
                 container.appendChild(div);
             });
-            var qOptList = document.getElementById('qOptionsList');
+            const qOptList = document.getElementById('qOptionsList');
             if (qOptList) {
                 qOptList.addEventListener('click', function(e) {
                     if (e.target.closest('.js-remove-option')) {
                         e.target.closest('.js-remove-option').parentElement.remove();
-                        var type = document.getElementById('qType').value;
-                        var isMulti = type === 'multi';
+                        const type = document.getElementById('qType').value;
+                        const isMulti = type === 'multi';
                         Array.from(qOptList.children).forEach(function(div, i) {
-                            var inp = div.querySelector('.q-correct-opt');
+                            const inp = div.querySelector('.q-correct-opt');
                             if (inp) { inp.dataset.optindex = i; inp.type = isMulti ? 'checkbox' : 'radio'; }
-                            var txt = div.querySelector('.q-opt-text');
+                            const txt = div.querySelector('.q-opt-text');
                             if (txt) txt.dataset.optindex = i;
                         });
                     }
                 });
             }
-            var qListEl = document.getElementById('quizQuestionList');
+            const qListEl = document.getElementById('quizQuestionList');
             if (qListEl) {
                 qListEl.addEventListener('click', function(e) {
-                    var editBtn = e.target.closest('.js-edit-question');
-                    var delBtn = e.target.closest('.js-delete-question');
+                    const editBtn = e.target.closest('.js-edit-question');
+                    const delBtn = e.target.closest('.js-delete-question');
                     if (editBtn) openQuestionEditor(parseInt(editBtn.dataset.qindex));
                     if (delBtn) deleteQuestion(parseInt(delBtn.dataset.qindex));
                 });
@@ -1447,9 +1447,9 @@
             document.getElementById('filterSubject')?.addEventListener('change', filterResources);
             document.getElementById('filterGrade')?.addEventListener('change', filterResources);
             document.getElementById('filterLang')?.addEventListener('change', filterResources);
-            var resourceSearch = document.getElementById('resourceSearch');
+            const resourceSearch = document.getElementById('resourceSearch');
             if (resourceSearch) {
-                var resourceSearchDebounce = null;
+                let resourceSearchDebounce = null;
                 resourceSearch.addEventListener('input', function() {
                     clearTimeout(resourceSearchDebounce);
                     resourceSearchDebounce = setTimeout(filterResources, 200);
@@ -1457,10 +1457,10 @@
             }
 
             // Resource table delete
-            var resourceTable = document.getElementById('resourceTable');
+            const resourceTable = document.getElementById('resourceTable');
             if (resourceTable) {
                 resourceTable.addEventListener('click', function(e) {
-                    var btn = e.target.closest('.js-delete-resource');
+                    const btn = e.target.closest('.js-delete-resource');
                     if (btn) deleteResource(btn.dataset.resourceId, btn.dataset.resourceTitle);
                 });
             }
@@ -1470,27 +1470,27 @@
             document.getElementById('btn-closeTopicModal')?.addEventListener('click', closeAddTopicModal);
             document.getElementById('btn-confirmAddTopic')?.addEventListener('click', confirmAddTopic);
 
-            var topicSearch = document.getElementById('topicSearch');
+            const topicSearch = document.getElementById('topicSearch');
             if (topicSearch) {
-                var topicSearchDebounce = null;
+                let topicSearchDebounce = null;
                 topicSearch.addEventListener('input', function() {
                     clearTimeout(topicSearchDebounce);
                     topicSearchDebounce = setTimeout(filterTopics, 200);
                 });
             }
-            var topicFilterEl = document.getElementById('topicFilterSubject');
+            const topicFilterEl = document.getElementById('topicFilterSubject');
             if (topicFilterEl) topicFilterEl.addEventListener('change', filterTopics);
 
-            var topicTable = document.getElementById('topicTable');
+            const topicTable = document.getElementById('topicTable');
             if (topicTable) {
                 topicTable.addEventListener('click', function(e) {
-                    var btn = e.target.closest('.js-delete-topic');
+                    const btn = e.target.closest('.js-delete-topic');
                     if (btn) deleteTopic(btn.dataset.topicId, btn.dataset.topicName);
                 });
             }
 
-            document.getElementById('resourceTable')?.addEventListener('click', function(e) { if (e.target.closest('.js-edit-resource')) { var btn = e.target.closest('.js-edit-resource'); openEditResource(btn.dataset.resourceId, btn.dataset.resourceTitle, btn.dataset.resourceSubject, btn.dataset.resourceType, btn.dataset.resourceTopic, btn.dataset.resourceGrade); } });
-            document.getElementById('topicTable')?.addEventListener('click', function(e) { if (e.target.closest('.js-edit-topic')) { var btn = e.target.closest('.js-edit-topic'); openEditTopic(btn.dataset.topicId, btn.dataset.topicName); } });
+            document.getElementById('resourceTable')?.addEventListener('click', function(e) { if (e.target.closest('.js-edit-resource')) { const btn = e.target.closest('.js-edit-resource'); openEditResource(btn.dataset.resourceId, btn.dataset.resourceTitle, btn.dataset.resourceSubject, btn.dataset.resourceType, btn.dataset.resourceTopic, btn.dataset.resourceGrade); } });
+            document.getElementById('topicTable')?.addEventListener('click', function(e) { if (e.target.closest('.js-edit-topic')) { const btn = e.target.closest('.js-edit-topic'); openEditTopic(btn.dataset.topicId, btn.dataset.topicName); } });
             document.getElementById('btn-saveEditResource')?.addEventListener('click', saveResourceEdit);
             document.getElementById('btn-closeEditResource')?.addEventListener('click', function() { document.getElementById('editResourceModal').classList.add('hidden'); });
             document.getElementById('btn-saveEditTopic')?.addEventListener('click', saveTopicEdit);
@@ -1499,11 +1499,11 @@
 
             // Edit modal: grade onchange filters subject dropdown (same logic as upload modal)
             document.getElementById('editResGrade')?.addEventListener('change', function() {
-                var grade = this.value;
-                var sel = document.getElementById('editResSubject');
+                const grade = this.value;
+                const sel = document.getElementById('editResSubject');
                 if (!sel) return;
-                var prev = sel.value;
-                var html = '<option value="General">' + __('content.upload_option_general') + '</option>';
+                const prev = sel.value;
+                let html = '<option value="General">' + __('content.upload_option_general') + '</option>';
                 html += allSubjects.filter(function(s) {
                     return !s.class_name || s.class_name === grade || s.class_name === 'All Classes';
                 }).map(function(s) {
@@ -1517,11 +1517,11 @@
 
             // Issue 1: grade onchange filters subject dropdown
             document.getElementById('gradeSelect')?.addEventListener('change', function() {
-                var grade = this.value;
-                var subjectSelect = document.getElementById('subjectSelect');
+                const grade = this.value;
+                const subjectSelect = document.getElementById('subjectSelect');
                 if (!subjectSelect) return;
-                var prev = subjectSelect.value;
-                var html = '<option value="General">' + __('content.upload_option_general') + '</option>';
+                const prev = subjectSelect.value;
+                let html = '<option value="General">' + __('content.upload_option_general') + '</option>';
                 html += allSubjects.filter(function(s) {
                     return !s.class_name || s.class_name === grade || s.class_name === 'All Classes';
                 }).map(function(s) {
@@ -1535,8 +1535,8 @@
 
             // Issue 7: edit quiz from edit resource modal
             document.getElementById('btn-editResQuiz')?.addEventListener('click', function() {
-                var resId = document.getElementById('editResId').value;
-                var quizId = document.getElementById('editResQuizId').value;
+                const resId = document.getElementById('editResId').value;
+                const quizId = document.getElementById('editResQuizId').value;
                 if (quizId) openQuizBuilderForEdit(quizId);
                 else if (resId) openQuizBuilderForEdit(resId);
             });

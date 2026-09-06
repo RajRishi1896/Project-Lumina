@@ -285,14 +285,14 @@
     <!-- Section: Inline Scripts: all page logic merged here -->
     <script>
 
-        var debouncedFilterAdminLogs = null;
-        var _adminLogsAll = [];
-        var _adminLogsFiltered = [];
-        var _adminLogsPage = 1;
-        var _adminLogInterval = null;
-        var _adminLogsPerPage = 25;
+        let debouncedFilterAdminLogs = null;
+        let _adminLogsAll = [];
+        let _adminLogsFiltered = [];
+        let _adminLogsPage = 1;
+        let _adminLogInterval = null;
+        let _adminLogsPerPage = 25;
 
-        var SEVERITY_COLORS = {
+        const SEVERITY_COLORS = {
             info: 'var(--teal)',
             notice: 'var(--primary)',
             warning: 'var(--saffron)',
@@ -300,7 +300,7 @@
             critical: 'var(--danger)'
         };
 
-        var ACTION_LABELS = {
+        const ACTION_LABELS = {
             login: 'Login', logout: 'Logout', login_failed: 'Login Failed',
             token_refresh: 'Token Refresh', force_logout: 'Force Logout',
             create_account: 'Create Account', delete_account: 'Delete Account',
@@ -333,7 +333,7 @@
         function _formatTimestamp(ts) {
             if (!ts) return '';
             try {
-                var d = new Date(ts.replace('Z', '+00:00'));
+                const d = new Date(ts.replace('Z', '+00:00'));
                 return d.toLocaleString();
             } catch (e) { return ts; }
         }
@@ -344,7 +344,7 @@
          * @returns {string} HTML span
          */
         function _renderSeverityBadge(severity) {
-            var color = SEVERITY_COLORS[severity] || 'var(--text-muted)';
+            const color = SEVERITY_COLORS[severity] || 'var(--text-muted)';
             return '<span style="display:inline-block;padding:0.1rem 0.45rem;border-radius:9999px;font-size:0.7rem;font-weight:700;background:' + color + '20;color:' + color + ';text-transform:capitalize;white-space:nowrap;">' + esc(severity || 'info') + '</span>';
         }
 
@@ -368,32 +368,32 @@
          * @returns {string} HTML string of two <tr> rows
          */
         function _renderExpandableRow(event, index) {
-            var detailId = 'logDetail_' + index;
-            var rid = event.request_id || (event.ctx && event.ctx.request_id) || '';
-            var details = [];
-            if (event.user) details.push('<div><strong>User:</strong> ' + esc(event.user) + (event.role ? ' (' + esc(event.role) + ')' : '') + '</div>');
-            if (event.target) details.push('<div><strong>Target:</strong> ' + esc(event.target) + '</div>');
+            const detailId = 'logDetail_' + index;
+            const rid = event.request_id || (event.ctx && event.ctx.request_id) || '';
+            const details = [];
+            if (event.user) details.push('<div><strong>' + __('settings.log.user') + ':</strong> ' + esc(event.user) + (event.role ? ' (' + esc(event.role) + ')' : '') + '</div>');
+            if (event.target) details.push('<div><strong>' + __('settings.log.target') + ':</strong> ' + esc(event.target) + '</div>');
             if (event.resource_type || event.resource_id || event.resource_name) {
-                var resParts = [event.resource_type, event.resource_name, event.resource_id].filter(Boolean).join(' ');
-                details.push('<div><strong>Resource:</strong> ' + esc(resParts) + '</div>');
+                const resParts = [event.resource_type, event.resource_name, event.resource_id].filter(Boolean).join(' ');
+                details.push('<div><strong>' + __('settings.log.resource') + ':</strong> ' + esc(resParts) + '</div>');
             }
-            if (event.ip) details.push('<div><strong>IP:</strong> ' + esc(event.ip) + '</div>');
-            if (event.method) details.push('<div><strong>Method:</strong> ' + esc(event.method) + '</div>');
-            if (event.endpoint) details.push('<div><strong>Endpoint:</strong> ' + esc(event.endpoint) + '</div>');
-            if (event.status) details.push('<div><strong>Status:</strong> ' + event.status + '</div>');
-            if (event.error) details.push('<div><strong>Error:</strong> <span style="color:var(--danger)">' + esc(event.error) + '</span></div>');
-            if (rid) details.push('<div><strong>Request ID:</strong> <code style="font-size:0.75rem;background:var(--surface-container);padding:0.15rem 0.35rem;border-radius:3px;cursor:pointer;" onclick="navigator.clipboard.writeText(\'' + esc(rid) + '\')" title="Click to copy">' + esc(rid) + '</code></div>');
+            if (event.ip) details.push('<div><strong>' + __('settings.log.ip') + ':</strong> ' + esc(event.ip) + '</div>');
+            if (event.method) details.push('<div><strong>' + __('settings.log.method') + ':</strong> ' + esc(event.method) + '</div>');
+            if (event.endpoint) details.push('<div><strong>' + __('settings.log.endpoint') + ':</strong> ' + esc(event.endpoint) + '</div>');
+            if (event.status) details.push('<div><strong>' + __('settings.log.status') + ':</strong> ' + event.status + '</div>');
+            if (event.error) details.push('<div><strong>' + __('settings.log.error') + ':</strong> <span style="color:var(--danger)">' + esc(event.error) + '</span></div>');
+            if (rid) details.push('<div><strong>' + __('settings.log.request_id') + ':</strong> <code style="font-size:0.75rem;background:var(--surface-container);padding:0.15rem 0.35rem;border-radius:3px;cursor:pointer;" data-copy-rid="' + esc(rid) + '" title="' + __('settings.log.click_to_copy') + '">' + esc(rid) + '</code></div>');
             if (event.changes && typeof event.changes === 'object') {
-                details.push('<div><strong>Changes:</strong> <pre style="margin:0.25rem 0 0;padding:0.5rem;background:var(--surface-container);border-radius:4px;font-size:0.75rem;overflow-x:auto;">' + esc(JSON.stringify(event.changes, null, 2)) + '</pre></div>');
+                details.push('<div><strong>' + __('settings.log.changes') + ':</strong> <pre style="margin:0.25rem 0 0;padding:0.5rem;background:var(--surface-container);border-radius:4px;font-size:0.75rem;overflow-x:auto;">' + esc(JSON.stringify(event.changes, null, 2)) + '</pre></div>');
             }
             if (event.ctx && Object.keys(event.ctx).length > 0 && Object.keys(event.ctx).some(function(k) { return k !== 'request_id'; })) {
-                var filteredCtx = Object.assign({}, event.ctx);
+                const filteredCtx = Object.assign({}, event.ctx);
                 delete filteredCtx.request_id;
                 if (Object.keys(filteredCtx).length > 0) {
-                    details.push('<div><strong>Context:</strong> <pre style="margin:0.25rem 0 0;padding:0.5rem;background:var(--surface-container);border-radius:4px;font-size:0.75rem;overflow-x:auto;">' + esc(JSON.stringify(filteredCtx, null, 2)) + '</pre></div>');
+                    details.push('<div><strong>' + __('settings.log.context') + ':</strong> <pre style="margin:0.25rem 0 0;padding:0.5rem;background:var(--surface-container);border-radius:4px;font-size:0.75rem;overflow-x:auto;">' + esc(JSON.stringify(filteredCtx, null, 2)) + '</pre></div>');
                 }
             }
-            return '<tr style="cursor:pointer;" onclick="document.getElementById(\'' + detailId + '\').style.display=document.getElementById(\'' + detailId + '\').style.display===\'none\'?\'table-row\':\'none\'">' +
+            return '<tr style="cursor:pointer;" data-toggle-detail="' + detailId + '">' +
                 '<td data-label="' + __('settings.timestamp') + '" style="padding:0.45rem 0.6rem;font-size:0.78rem;color:var(--text-muted);white-space:nowrap;">' + _formatTimestamp(event.ts) + '</td>' +
                 '<td data-label="' + __('settings.severity') + '" style="padding:0.45rem 0.6rem;">' + _renderSeverityBadge(event.severity) + '</td>' +
                 '<td data-label="' + __('settings.action') + '" style="padding:0.45rem 0.6rem;font-size:0.82rem;font-weight:600;text-align:center;">' + esc(ACTION_LABELS[event.action] || event.summary || event.action || '-') + '</td>' +
@@ -408,17 +408,17 @@
 
         /** Render the current page of filtered logs into the table and pagination controls. */
         function _renderAdminLogsPage() {
-            var tbody = document.getElementById('adminLogTable');
-            var pagination = document.getElementById('adminLogPagination');
-            var pageInfo = document.getElementById('adminLogPageInfo');
-            var prevBtn = document.getElementById('btn-adminLogsPrevPage');
-            var nextBtn = document.getElementById('btn-adminLogsNextPage');
+            const tbody = document.getElementById('adminLogTable');
+            const pagination = document.getElementById('adminLogPagination');
+            const pageInfo = document.getElementById('adminLogPageInfo');
+            const prevBtn = document.getElementById('btn-adminLogsPrevPage');
+            const nextBtn = document.getElementById('btn-adminLogsNextPage');
             if (!tbody) return;
-            var data = _adminLogsFiltered;
-            var totalPages = Math.max(1, Math.ceil(data.length / _adminLogsPerPage));
+            const data = _adminLogsFiltered;
+            const totalPages = Math.max(1, Math.ceil(data.length / _adminLogsPerPage));
             if (_adminLogsPage > totalPages) _adminLogsPage = totalPages;
-            var start = (_adminLogsPage - 1) * _adminLogsPerPage;
-            var pageItems = data.slice(start, start + _adminLogsPerPage);
+            const start = (_adminLogsPage - 1) * _adminLogsPerPage;
+            const pageItems = data.slice(start, start + _adminLogsPerPage);
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="empty-state">' + __('settings.no_matching_logs') + '</td></tr>';
                 if (pagination) pagination.style.display = 'none';
@@ -426,14 +426,14 @@
             }
             tbody.innerHTML = pageItems.map(function(item, i) { return _renderExpandableRow(item, start + i); }).join('');
             if (pagination) pagination.style.display = 'flex';
-            if (pageInfo) pageInfo.textContent = 'Page ' + _adminLogsPage + ' of ' + totalPages;
+            if (pageInfo) pageInfo.textContent = __('settings.page_of', {current: _adminLogsPage, total: totalPages});
             if (prevBtn) { prevBtn.disabled = _adminLogsPage <= 1; prevBtn.style.opacity = _adminLogsPage <= 1 ? '0.4' : '1'; }
             if (nextBtn) { nextBtn.disabled = _adminLogsPage >= totalPages; nextBtn.style.opacity = _adminLogsPage >= totalPages ? '0.4' : '1'; }
         }
 
         // Pagination handlers: move the log page window and re-render.
         function adminLogsPrevPage() { if (_adminLogsPage > 1) { _adminLogsPage--; _renderAdminLogsPage(); } }
-        function adminLogsNextPage() { var totalPages = Math.ceil(_adminLogsFiltered.length / _adminLogsPerPage); if (_adminLogsPage < totalPages) { _adminLogsPage++; _renderAdminLogsPage(); } }
+        function adminLogsNextPage() { const totalPages = Math.ceil(_adminLogsFiltered.length / _adminLogsPerPage); if (_adminLogsPage < totalPages) { _adminLogsPage++; _renderAdminLogsPage(); } }
         function adminLogsChangePerPage(val) { _adminLogsPerPage = parseInt(val, 10) || 25; _adminLogsPage = 1; _renderAdminLogsPage(); }
 
         /**
@@ -441,10 +441,10 @@
          * text, then reset to page 1 and re-render.
          */
         function _applyLogFilters() {
-            var search = (document.getElementById('adminLogSearch').value || '').toLowerCase().trim();
-            var sev = document.getElementById('adminLogSeverityFilter').value;
-            var success = document.getElementById('adminLogSuccessFilter').value;
-            var user = (document.getElementById('adminLogUserFilter').value || '').toLowerCase().trim();
+            const search = (document.getElementById('adminLogSearch').value || '').toLowerCase().trim();
+            const sev = document.getElementById('adminLogSeverityFilter').value;
+            const success = document.getElementById('adminLogSuccessFilter').value;
+            const user = (document.getElementById('adminLogUserFilter').value || '').toLowerCase().trim();
 
             _adminLogsFiltered = _adminLogsAll.filter(function(item) {
                 if (sev && item.severity !== sev) return false;
@@ -452,7 +452,7 @@
                 if (success === 'false' && item.success !== false) return false;
                 if (user && !(item.user || '').toLowerCase().includes(user)) return false;
                 if (search) {
-                    var haystack = [item.action, item.user, item.target, item.resource_name, item.error, item.ip, item.endpoint, item.request_id || ''].join(' ').toLowerCase();
+                    const haystack = [item.action, item.user, item.target, item.resource_name, item.error, item.ip, item.endpoint, item.request_id || ''].join(' ').toLowerCase();
                     if (!haystack.includes(search)) return false;
                 }
                 return true;
@@ -463,13 +463,13 @@
 
         /** Render removable chips summarizing the active log filters. */
         function _renderFilterChips() {
-            var chipsEl = document.getElementById('adminLogChips');
+            const chipsEl = document.getElementById('adminLogChips');
             if (!chipsEl) return;
-            var chips = [];
-            var sev = document.getElementById('adminLogSeverityFilter').value;
-            var success = document.getElementById('adminLogSuccessFilter').value;
-            var user = document.getElementById('adminLogUserFilter').value.trim();
-            var search = document.getElementById('adminLogSearch').value.trim();
+            const chips = [];
+            const sev = document.getElementById('adminLogSeverityFilter').value;
+            const success = document.getElementById('adminLogSuccessFilter').value;
+            const user = document.getElementById('adminLogUserFilter').value.trim();
+            const search = document.getElementById('adminLogSearch').value.trim();
             if (sev) chips.push({ label: __('settings.chip_severity') + sev, clear: function() { document.getElementById('adminLogSeverityFilter').value = ''; } });
             if (success) chips.push({ label: success === 'true' ? __('settings.chip_success_only') : __('settings.chip_failed_only'), clear: function() { document.getElementById('adminLogSuccessFilter').value = ''; } });
             if (user) chips.push({ label: __('settings.chip_user') + user, clear: function() { document.getElementById('adminLogUserFilter').value = ''; } });
@@ -479,7 +479,7 @@
             chipsEl.innerHTML = chips.map(function(c, i) {
                 return '<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.5rem;border-radius:9999px;font-size:0.75rem;background:var(--primary-container);color:var(--on-primary-container);font-weight:600;">' +
                     esc(c.label) +
-                    '<button onclick="_clearLogChip(' + i + ')" style="background:none;border:none;color:inherit;cursor:pointer;padding:0;line-height:1;font-size:1rem;">&times;</button></span>';
+                    '<button data-clear-chip="' + i + '" style="background:none;border:none;color:inherit;cursor:pointer;padding:0;line-height:1;font-size:1rem;">&times;</button></span>';
             }).join('');
             window._logChipClearFns = chips.map(function(c) { return c.clear; });
         }
@@ -498,12 +498,12 @@
 
         /** Fetch up to 200 recent admin log events and apply the active filters. */
         async function loadAdminLogs() {
-            var tbody = document.getElementById('adminLogTable');
+            const tbody = document.getElementById('adminLogTable');
             if (!tbody) return;
             try {
-                var res = await fetch('/admin/log?limit=200&_=' + Date.now());
+                const res = await fetch('/admin/log?limit=200&_=' + Date.now());
                 if (!res.ok) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">' + __('settings.error.load_logs') + '</td></tr>'; return; }
-                var data = await res.json();
+                const data = await res.json();
                 _adminLogsAll = data.log || [];
                 _applyLogFilters();
             } catch (e) {
@@ -516,14 +516,14 @@
          * the log/retention loads and a 15s log auto-refresh interval.
          */
         function updateUIForRole() {
-            var logRetentionCard = document.getElementById('logRetentionCard');
-            var adminLogCard = document.getElementById('adminLogCard');
-            var downloadLogsCard = document.getElementById('downloadLogsCard');
-            var defaultAdminCard = document.getElementById('defaultAdminCard');
-            var wifiBandCard = document.getElementById('wifiBandCard');
-            var rebootCard = document.getElementById('rebootCard');
-            var usernameEl = document.getElementById('settingsUsername');
-            var roleEl = document.getElementById('settingsUserRole');
+            const logRetentionCard = document.getElementById('logRetentionCard');
+            const adminLogCard = document.getElementById('adminLogCard');
+            const downloadLogsCard = document.getElementById('downloadLogsCard');
+            const defaultAdminCard = document.getElementById('defaultAdminCard');
+            const wifiBandCard = document.getElementById('wifiBandCard');
+            const rebootCard = document.getElementById('rebootCard');
+            const usernameEl = document.getElementById('settingsUsername');
+            const roleEl = document.getElementById('settingsUserRole');
             if (usernameEl) usernameEl.textContent = loggedInUser;
             if (roleEl) roleEl.textContent = userRole;
             if (userRole === 'admin') {
@@ -552,10 +552,10 @@
         /** Loads the current log retention setting. */
         async function loadRetentionSetting() {
             try {
-                var res = await fetch('/api/admin/settings');
+                const res = await fetch('/api/admin/settings');
                 if (res.ok) {
-                    var data = await res.json();
-                    var sel = document.getElementById('logRetentionSelect');
+                    const data = await res.json();
+                    const sel = document.getElementById('logRetentionSelect');
                     if (sel) sel.value = data.log_retention;
                 }
             } catch (e) { console.error("Error loading log retention policy", e); }
@@ -567,7 +567,7 @@
          */
         async function saveRetentionPolicy(policy) {
             try {
-                var res = await fetch('/api/admin/settings', {
+                const res = await fetch('/api/admin/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ policy: policy })
@@ -576,7 +576,7 @@
                     showNotification('retentionNotif', __('settings.success.retention_updated', {policy: policy}), false);
                     loadAdminLogs();
                 } else {
-                    var err = await res.json();
+                    let err = await res.json();
                     showNotification('retentionNotif', err.detail || __('settings.error.retention_update_failed'), true);
                 }
             } catch (e) {
@@ -589,15 +589,15 @@
         /** Loads the current default admin account status. */
         async function loadDefaultAdminStatus() {
             try {
-                var res = await fetch('/teacher/default-admin-status');
+                const res = await fetch('/teacher/default-admin-status');
                 if (!res.ok) return;
-                var data = await res.json();
-                var statusEl = document.getElementById('defaultAdminStatus');
-                var disableBtn = document.getElementById('btn-disableDefaultAdmin');
-                var enableBtn = document.getElementById('btn-enableDefaultAdmin');
-                var selfWarning = document.getElementById('defaultAdminSelfWarning');
-                var riskWarning = document.getElementById('defaultAdminRiskWarning');
-                var isSelf = loggedInUser === 'admin';
+                const data = await res.json();
+                const statusEl = document.getElementById('defaultAdminStatus');
+                const disableBtn = document.getElementById('btn-disableDefaultAdmin');
+                const enableBtn = document.getElementById('btn-enableDefaultAdmin');
+                const selfWarning = document.getElementById('defaultAdminSelfWarning');
+                const riskWarning = document.getElementById('defaultAdminRiskWarning');
+                const isSelf = loggedInUser === 'admin';
                 if (data.enabled) {
                     if (statusEl) { statusEl.textContent = __('settings.status_enabled'); statusEl.style.color = 'var(--success)'; }
                     if (isSelf) {
@@ -623,41 +623,41 @@
 
         /** Confirm with the admin, then disable the built-in default admin account. */
         async function disableDefaultAdmin() {
-            var confirmed = await showConfirm(__('settings.confirm.disable_admin_title'), __('settings.confirm.disable_admin_body'), true, __('settings.confirm.disable_admin_btn'));
+            const confirmed = await showConfirm(__('settings.confirm.disable_admin_title'), __('settings.confirm.disable_admin_body'), true, __('settings.confirm.disable_admin_btn'));
             if (!confirmed) return;
             try {
-                var res = await fetch('/teacher/disable-default-admin', { method: 'POST' });
+                const res = await fetch('/teacher/disable-default-admin', { method: 'POST' });
                 if (res.ok) { showNotification('defaultAdminNotif', __('settings.notif.admin_disabled'), false); loadDefaultAdminStatus(); }
-                else { var err = await res.json(); showNotification('defaultAdminNotif', err.detail || __('settings.notif.disable_failed'), true); }
+                else { let err = await res.json(); showNotification('defaultAdminNotif', err.detail || __('settings.notif.disable_failed'), true); }
             } catch (e) { showNotification('defaultAdminNotif', __('settings.connection_error'), true); }
         }
 
         /** Confirm with the admin, then re-enable the built-in default admin account. */
         async function enableDefaultAdmin() {
-            var confirmed = await showConfirm(__('settings.confirm.enable_admin_title'), __('settings.confirm.enable_admin_body'), true, __('settings.confirm.enable_admin_btn'));
+            const confirmed = await showConfirm(__('settings.confirm.enable_admin_title'), __('settings.confirm.enable_admin_body'), true, __('settings.confirm.enable_admin_btn'));
             if (!confirmed) return;
             try {
-                var res = await fetch('/teacher/enable-default-admin', { method: 'POST' });
+                const res = await fetch('/teacher/enable-default-admin', { method: 'POST' });
                 if (res.ok) { showNotification('defaultAdminNotif', __('settings.notif.admin_enabled'), false); loadDefaultAdminStatus(); }
-                else { var err = await res.json(); showNotification('defaultAdminNotif', err.detail || __('settings.notif.enable_failed'), true); }
+                else { let err = await res.json(); showNotification('defaultAdminNotif', err.detail || __('settings.notif.enable_failed'), true); }
             } catch (e) { showNotification('defaultAdminNotif', __('settings.connection_error'), true); }
         }
 
         /** Loads the current WiFi band and capabilities. */
         async function loadWifiBand() {
             try {
-                var res = await fetch('/system/wifi-band', {credentials: 'include'});
+                const res = await fetch('/system/wifi-band', {credentials: 'include'});
                 if (res.ok) {
-                    var data = await res.json();
-                    var el = document.getElementById('wifiBandCurrent');
+                    const data = await res.json();
+                    const el = document.getElementById('wifiBandCurrent');
                     if (el) el.textContent = data.label;
-                    var btn5 = document.getElementById('btn-wifi5ghz');
-                    var btn2 = document.getElementById('btn-wifi2ghz');
-                    var supported = data.supported || ['bg'];
+                    const btn5 = document.getElementById('btn-wifi5ghz');
+                    const btn2 = document.getElementById('btn-wifi2ghz');
+                    const supported = data.supported || ['bg'];
                     if (btn5) btn5.disabled = supported.indexOf('a') === -1;
                     if (btn2) btn2.disabled = supported.indexOf('bg') === -1;
                     if (supported.length <= 1) {
-                        var note = document.getElementById('wifiBandNote');
+                        const note = document.getElementById('wifiBandNote');
                         if (note) note.style.display = 'block';
                     }
                 }
@@ -669,12 +669,12 @@
          * @param {string} band - 'a' for 5 GHz or 'bg' for 2.4 GHz
          */
         async function switchWifiBand(band) {
-            var label = band === 'a' ? '5 GHz' : '2.4 GHz';
-            var confirmed = await showConfirm(__('settings.wifi_band_switch_title'), __('settings.wifi_band_switch_confirm', {band: label}), false, label);
+            const label = band === 'a' ? '5 GHz' : '2.4 GHz';
+            const confirmed = await showConfirm(__('settings.wifi_band_switch_title'), __('settings.wifi_band_switch_confirm', {band: label}), false, label);
             if (!confirmed) return;
             showNotification('wifiBandNotif', __('settings.wifi_band_switching'), false);
             try {
-                var res = await fetch('/system/wifi-band', {
+                const res = await fetch('/system/wifi-band', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {'Content-Type': 'application/json'},
@@ -684,7 +684,7 @@
                     showNotification('wifiBandNotif', __('settings.wifi_band_rebooting', {band: label}), false);
                     setTimeout(function() { window.location.reload(); }, 65000);
                 } else {
-                    var err = await res.json();
+                    let err = await res.json();
                     showNotification('wifiBandNotif', err.detail || __('settings.wifi_band_switch_failed'), true);
                 }
             } catch (e) {
@@ -695,16 +695,16 @@
 
         /** Reboots the server after confirmation. */
         async function rebootServer() {
-            var confirmed = await showConfirm(__('settings.reboot_confirm_title'), __('settings.reboot_confirm_body'), true, __('settings.reboot_btn'));
+            const confirmed = await showConfirm(__('settings.reboot_confirm_title'), __('settings.reboot_confirm_body'), true, __('settings.reboot_btn'));
             if (!confirmed) return;
             showNotification('rebootNotif', __('settings.rebooting'), false);
             try {
-                var res = await fetch('/system/reboot', {method: 'POST', credentials: 'include'});
+                const res = await fetch('/system/reboot', {method: 'POST', credentials: 'include'});
                 if (res.ok) {
                     showNotification('rebootNotif', __('settings.reboot_started'), false);
                     setTimeout(function() { window.location.reload(); }, 65000);
                 } else {
-                    var err = await res.json();
+                    let err = await res.json();
                     showNotification('rebootNotif', err.detail || __('settings.reboot_failed'), true);
                 }
             } catch (e) {
@@ -720,9 +720,9 @@
          * @param {string} btnId - DOM id of the toggle button (aria-label updated)
          */
         function togglePasswordVisibility(inputId, eyeIconId, btnId) {
-            var pwdInput = document.getElementById(inputId);
-            var eyeIcon = document.getElementById(eyeIconId);
-            var toggleBtn = document.getElementById(btnId);
+            const pwdInput = document.getElementById(inputId);
+            const eyeIcon = document.getElementById(eyeIconId);
+            const toggleBtn = document.getElementById(btnId);
             if (pwdInput.type === 'password') {
                 pwdInput.type = 'text';
                 toggleBtn.setAttribute('aria-label', __('security.aria.hide_password'));
@@ -739,15 +739,15 @@
          * dashboard on success (fresh session starts on the next page load).
          */
         async function changePassword() {
-            var oldPwd = document.getElementById('oldPwd').value;
-            var newPwd = document.getElementById('newPwd').value;
+            const oldPwd = document.getElementById('oldPwd').value;
+            const newPwd = document.getElementById('newPwd').value;
             if (!oldPwd || !newPwd) return showNotification('securityNotif', __('security.error.both_fields'), true);
             if (newPwd.length < 8) return showNotification('securityNotif', __('security.error.password_length'), true);
             if (!/[A-Z]/.test(newPwd)) return showNotification('securityNotif', __('security.error.uppercase'), true);
             if (!/[a-z]/.test(newPwd)) return showNotification('securityNotif', __('security.error.lowercase'), true);
             if (!/\d/.test(newPwd)) return showNotification('securityNotif', __('security.error.digit'), true);
             try {
-                var res = await fetch('/teacher/change-password', {
+                const res = await fetch('/teacher/change-password', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ old_password: oldPwd, new_password: newPwd })
                 });
@@ -755,13 +755,13 @@
                     showNotification('securityNotif', __('security.success.password_updated'), false);
                     setTimeout(function() { location.href = '/'; }, 1500);
                 } else {
-                    var msg = __('security.error.current_password');
-                    try { var err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    let msg = __('security.error.current_password');
+                    try { let err = await res.json(); if (err.detail) msg = err.detail; } catch (_) {}
                     showNotification('securityNotif', msg, true);
                 }
             } catch (e) {
-                var msg2 = __('security.error.connection');
-                try { var err2 = await e.json?.(); if (err2?.detail) msg2 = err2.detail; } catch (_) {}
+                let msg2 = __('security.error.connection');
+                try { let err2 = await e.json?.(); if (err2?.detail) msg2 = err2.detail; } catch (_) {}
                 showNotification('securityNotif', msg2, true);
             }
         }
@@ -769,9 +769,9 @@
         /** Loads the current user's profile. */
         async function loadMyProfile() {
             try {
-                var res = await fetch('/teacher/me');
+                const res = await fetch('/teacher/me');
                 if (res.ok) {
-                    var me = await res.json();
+                    const me = await res.json();
                     document.getElementById('profileName').value = me.name || '';
                     document.getElementById('profileDepartment').value = me.department || '';
                     if (me.username === 'admin') {
@@ -797,28 +797,28 @@
          * form when the built-in 'admin' user is editing (it is read-only).
          */
         async function saveMyProfile() {
-            var name = document.getElementById('profileName').value.trim();
-            var department = document.getElementById('profileDepartment').value.trim();
+            const name = document.getElementById('profileName').value.trim();
+            const department = document.getElementById('profileDepartment').value.trim();
             if (!name) return showNotification('profileNotif', __('security.error.name_empty'), true);
             if (!department) return showNotification('profileNotif', __('security.error.dept_empty'), true);
             try {
-                var nameRes = await fetch('/teacher/profile/name', {
+                const nameRes = await fetch('/teacher/profile/name', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: name })
                 });
                 if (!nameRes.ok) {
-                    var msg = __('security.error.update_name');
-                    try { var err = await nameRes.json(); if (err.detail) msg = err.detail; } catch (_) {}
+                    let msg = __('security.error.update_name');
+                    try { let err = await nameRes.json(); if (err.detail) msg = err.detail; } catch (_) {}
                     return showNotification('profileNotif', msg, true);
                 }
-                var deptRes = await fetch('/teacher/profile/department', {
+                const deptRes = await fetch('/teacher/profile/department', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ department: department })
                 });
                 if (deptRes.ok) { showNotification('profileNotif', __('security.success.profile_updated'), false); }
                 else {
-                    var msg2 = __('security.error.update_dept');
-                    try { var err2 = await deptRes.json(); if (err2.detail) msg2 = err2.detail; } catch (_) {}
+                    let msg2 = __('security.error.update_dept');
+                    try { let err2 = await deptRes.json(); if (err2.detail) msg2 = err2.detail; } catch (_) {}
                     showNotification('profileNotif', msg2, true);
                 }
             } catch (e) { showNotification('profileNotif', __('security.error.connection'), true); }
@@ -828,7 +828,7 @@
          * Page init (registered in _pageInitRegistry): loads the session and
          * profile, then wires every button, filter, and poller on the page.
          */
-        var _initSettings = function() {
+        const _initSettings = function() {
             debouncedFilterAdminLogs = debounce(function() { _applyLogFilters(); _renderFilterChips(); }, 200);
 
             loadWhoAmI().then(function() {
@@ -844,12 +844,12 @@
             document.getElementById('btn-saveMyProfile')?.addEventListener('click', saveMyProfile);
             document.getElementById('btn-loadAdminLogs')?.addEventListener('click', loadAdminLogs);
             document.getElementById('btn-downloadLogs')?.addEventListener('click', function() {
-                var dur = document.getElementById('downloadDurationSelect')?.value || 'all';
+                const dur = document.getElementById('downloadDurationSelect')?.value || 'all';
                 window.open('/api/admin/logs/download?duration=' + encodeURIComponent(dur));
             });
             document.getElementById('logRetentionSelect')?.addEventListener('change', function() { saveRetentionPolicy(this.value); });
             document.getElementById('adminLogPerPageSelect')?.addEventListener('change', function() { adminLogsChangePerPage(this.value); });
-            var adminLogSearch = document.getElementById('adminLogSearch');
+            const adminLogSearch = document.getElementById('adminLogSearch');
             if (adminLogSearch) adminLogSearch.addEventListener('input', debouncedFilterAdminLogs);
             document.getElementById('adminLogSeverityFilter')?.addEventListener('change', function() { _applyLogFilters(); _renderFilterChips(); });
             document.getElementById('adminLogSuccessFilter')?.addEventListener('change', function() { _applyLogFilters(); _renderFilterChips(); });
@@ -862,6 +862,19 @@
             document.getElementById('btn-wifi2ghz')?.addEventListener('click', function() { switchWifiBand('bg'); });
             document.getElementById('btn-reboot')?.addEventListener('click', rebootServer);
             document.addEventListener('languageChanged', function() { _renderAdminLogsPage(); });
+            // Event delegation for dynamically generated admin log elements
+            document.addEventListener('click', function(e) {
+                const copyEl = e.target.closest('[data-copy-rid]');
+                if (copyEl) { navigator.clipboard.writeText(copyEl.dataset.copyRid); return; }
+                const toggleEl = e.target.closest('[data-toggle-detail]');
+                if (toggleEl) {
+                    const row = document.getElementById(toggleEl.dataset.toggleDetail);
+                    if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+                    return;
+                }
+                const chipEl = e.target.closest('[data-clear-chip]');
+                if (chipEl) { _clearLogChip(parseInt(chipEl.dataset.clearChip, 10)); }
+            });
         };
         (window._pageInitRegistry = window._pageInitRegistry || {}).settings = _initSettings;
     </script>
