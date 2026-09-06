@@ -289,7 +289,7 @@ class CourseService extends ChangeNotifier {
         final restoredRows = await db.query('course_progress',
           where: 'student_id = ?', whereArgs: [studentId]);
         if (restoredRows.isNotEmpty) {
-          return loadEnrolledCourses(); // recurse with now-populated DB
+          return await loadEnrolledCourses(); // recurse with now-populated DB
         }
       }
 

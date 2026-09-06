@@ -494,7 +494,7 @@ class AuthService {
     final gen = _sessionGeneration;
     try {
       final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
-      if (refreshToken == null || refreshToken.isEmpty) return renewSession();
+      if (refreshToken == null || refreshToken.isEmpty) return await renewSession();
       final response = await ApiClient.post('/student/refresh-token', data: {
         'refresh_token': refreshToken,
       });
@@ -517,9 +517,9 @@ class AuthService {
           return true;
         }
       }
-      return renewSession();
+      return await renewSession();
     } catch (_) {
-      return renewSession();
+      return await renewSession();
     }
   }
 
