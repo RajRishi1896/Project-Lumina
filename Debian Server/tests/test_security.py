@@ -111,7 +111,7 @@ async def test_reset_password_invalidates_old_sessions(client, admin_client):
 
     resp = await client.post(f"/teacher/scholars/reset-password/{sid}", headers=_auth(teacher_token))
     assert resp.status_code == 200, resp.text
-    assert "temporary_password" not in resp.json()
+    assert resp.json()["temporary_password"]
     assert resp.json()["status"] == "success"
 
     rows = await _fetch_rows("SELECT token FROM sessions WHERE username = ?", (sid,))

@@ -54,7 +54,5 @@ jobs:
           flutter-version: "3.x"
           channel: stable
       - run: flutter pub get
-      # Analyzer errors remain fatal. New lint warnings introduced by newer
-      # Flutter/Dart releases are still printed but do not block tests.
-      - run: dart analyze lib/ --no-fatal-warnings
+      - run: dart analyze lib/
       - run: flutter test
