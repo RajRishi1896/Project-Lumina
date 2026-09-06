@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/db_helper.dart';
+import '../../../core/utils/profile_scoped_prefs.dart';
 import '../../../core/services/activity_tracker.dart';
 import '../../../core/services/catalog_service.dart';
 import '../../../shared/services/download_queue.dart';
@@ -106,6 +107,7 @@ class AuthService {
       
       await _secureStorage.write(key: _userIdKey, value: hubGeneratedId);
       await _secureStorage.write(key: _usernameKey, value: username);
+      await ProfileScopedPrefs.setUserId(hubGeneratedId);
       if (token != null) {
         await _secureStorage.write(key: _sessionTokenKey, value: token);
         ApiClient.setAuth(token);
@@ -160,6 +162,7 @@ class AuthService {
             await _secureStorage.write(key: _sessionTokenKey, value: token);
             await _secureStorage.write(key: _userIdKey, value: scholarId);
             await _secureStorage.write(key: _usernameKey, value: username);
+            await ProfileScopedPrefs.setUserId(scholarId);
             final refreshToken = respData['refresh_token']?.toString();
             final persistentKey = respData['persistent_key']?.toString();
             if (refreshToken != null && refreshToken.isNotEmpty) await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
@@ -304,6 +307,7 @@ class AuthService {
 
     await _secureStorage.write(key: _userIdKey, value: userId);
     await _secureStorage.write(key: _usernameKey, value: profile['username'].toString());
+    await ProfileScopedPrefs.setUserId(userId);
     final token = profile['token']?.toString() ?? '';
     final fields = <String, String>{
       _sessionTokenKey: token,
@@ -355,6 +359,7 @@ class AuthService {
         await _secureStorage.delete(key: key);
       } catch (_) {}
     }
+    await ProfileScopedPrefs.clearUserId();
     ApiClient.clearAuth();
   }
 
@@ -449,6 +454,7 @@ class AuthService {
   Future<void> _saveSession(String id, String username) async {
     await _secureStorage.write(key: _userIdKey, value: id);
     await _secureStorage.write(key: _usernameKey, value: username);
+    await ProfileScopedPrefs.setUserId(id);
   }
 
   /// Consecutive [_getUsers] failures; 2 in a row means the users-list entry

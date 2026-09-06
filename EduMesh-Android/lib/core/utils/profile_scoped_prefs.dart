@@ -1,13 +1,31 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../features/auth/data/auth_service.dart';
 
 /// Prefixes SharedPreferences keys with the current user ID so each
 /// profile gets its own namespace. Falls back to unprefixed keys
 /// when no user is logged in (e.g., during initial setup).
+///
+/// The user ID is read from SharedPreferences (not secure storage) to
+/// avoid platform-channel hangs in the test runner.
 class ProfileScopedPrefs {
+  static const _userIdPrefKey = 'profile_scope_user_id';
+
   static Future<String> _prefix() async {
-    final userId = await AuthService().getUniqueUserId();
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString(_userIdPrefKey);
     return userId != null ? '${userId}_' : '';
+  }
+
+  /// Stores the user ID used for key prefixing. Call this after login
+  /// so subsequent reads scope to the correct profile.
+  static Future<void> setUserId(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userIdPrefKey, userId);
+  }
+
+  /// Clears the scoped user ID. Call this on logout.
+  static Future<void> clearUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userIdPrefKey);
   }
 
   static Future<bool> getBool(String key) async {
