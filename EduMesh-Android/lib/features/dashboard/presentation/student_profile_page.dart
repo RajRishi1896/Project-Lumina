@@ -75,7 +75,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   /// so it survives app restarts and is available offline.
   Future<String> _iconPath(String scholarId) async {
     final dir = await getApplicationDocumentsDirectory();
-    return '${dir.path}/profile_icons/${scholarId}_icon.png';
+    // Sanitize scholarId to prevent path traversal
+    final safeId = scholarId.replaceAll(RegExp(r'[/\\.]'), '_');
+    return '${dir.path}/profile_icons/${safeId}_icon.png';
   }
 
   /// Persists profile icon bytes to local storage.

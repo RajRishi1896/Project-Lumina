@@ -52,7 +52,7 @@ void _showDownloadQueue(BuildContext context) {
                       style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700))),
                     if (ids.isNotEmpty)
                       TextButton(onPressed: () { queue.clear(); Navigator.pop(context); },
-                        child: Text(l10n.downloadQueueClearAll, style: TextStyle(color: cs.error))),
+                        child: Text(l10n.downloadQueueClearAll, style: tt.bodyMedium?.copyWith(color: cs.error))),
                   ]),
                 ),
                 if (ids.isEmpty)
@@ -67,7 +67,7 @@ void _showDownloadQueue(BuildContext context) {
                       final isActive = id == active;
                       return ListTile(
                         leading: isActive
-                          ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.w))
+                          ? SizedBox(width: AppSpacing.xxl.w, height: AppSpacing.xxl.w, child: CircularProgressIndicator(strokeWidth: 2.w))
                           : Icon(Icons.hourglass_empty_rounded, color: cs.onSurfaceVariant),
                         title: Text(id, maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: tt.bodyMedium),
@@ -97,6 +97,9 @@ class SavedResourcesPage extends StatelessWidget {
 
   const SavedResourcesPage({super.key});
 
+  static const _tabLabelStyle = TextStyle(fontSize: 14, fontWeight: FontWeight.w700);
+  static const _tabUnselectedStyle = TextStyle(fontSize: 14);
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -125,7 +128,7 @@ class SavedResourcesPage extends StatelessWidget {
                   onPressed: () => _showDownloadQueue(context),
                   icon: Badge(
                     isLabelVisible: count > 0,
-                    label: Text('$count', style: TextStyle(fontSize: 10.sp, color: Colors.white)),
+                    label: Text('$count', style: TextStyle(fontSize: AppSpacing.xs.sp, color: cs.onPrimary)),
                     child: Icon(Icons.download_rounded, color: cs.onSurfaceVariant),
                   ),
                 );
@@ -139,8 +142,8 @@ class SavedResourcesPage extends StatelessWidget {
             unselectedLabelColor: cs.onSurfaceVariant,
             indicatorColor: cs.primary,
             indicatorWeight: 3.0,
-            labelStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
-            unselectedLabelStyle: TextStyle(fontSize: 14.sp),
+            labelStyle: _tabLabelStyle,
+            unselectedLabelStyle: _tabUnselectedStyle,
             tabs: [
               Tab(text: l10n.tabAll),
               Tab(text: l10n.tabTextbooks),

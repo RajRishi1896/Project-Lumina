@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/profile_scoped_prefs.dart';
 
 /// Global user preference for UI animations (settings toggle).
 ///
@@ -25,8 +25,7 @@ class AnimationPrefs extends ChangeNotifier {
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
-    final prefs = await SharedPreferences.getInstance();
-    _enabled = prefs.getBool(prefKey) ?? false;
+    _enabled = await ProfileScopedPrefs.getBool(prefKey);
     notifyListeners();
   }
 
@@ -35,8 +34,7 @@ class AnimationPrefs extends ChangeNotifier {
     if (_enabled == value) return;
     _enabled = value;
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(prefKey, value);
+    await ProfileScopedPrefs.setBool(prefKey, value);
   }
 
   /// Test hook: resets the singleton so the next [load] re-reads storage.

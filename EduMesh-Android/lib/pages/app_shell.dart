@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
+import 'package:edumesh_android/core/services/activity_tracker.dart';
 import 'package:edumesh_android/features/dashboard/presentation/dashboard_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/saved_resource_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/student_profile_page.dart';
@@ -21,7 +22,7 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   int _index = 0;
   DateTime? _lastBackPress;
   final _browseKey = GlobalKey<BrowsePageState>();
@@ -58,9 +59,21 @@ class _AppShellState extends State<AppShell>
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tabFade.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    ActivityTracker().onLifecycleChange(state);
   }
 
   @override

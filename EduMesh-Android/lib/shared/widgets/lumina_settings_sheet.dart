@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:app_settings/app_settings.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/providers/animation_prefs.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/password_strength.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/utils/profile_scoped_prefs.dart';
 import '../../../shared/services/connectivity_service.dart';
 import '../../../shared/services/share_server.dart';
 import '../../../features/auth/data/auth_service.dart';
@@ -259,8 +259,7 @@ class _ShareToggleTileState extends State<_ShareToggleTile> {
       subtitle: Text(l10n.shareSettingsDescription),
       value: _enabled,
       onChanged: (val) async {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool(ShareServer.enabledPrefKey, val);
+        await ProfileScopedPrefs.setBool(ShareServer.enabledPrefKey, val);
         // start() is idempotent and swallows its own bind errors, so
         // tapping ON again after a failure retries cleanly.
         if (val) {

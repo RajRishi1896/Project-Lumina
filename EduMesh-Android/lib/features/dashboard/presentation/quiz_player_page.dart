@@ -305,6 +305,8 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     _submitted = true;
     _showResults = true;
 
+    // Local grading is only a fallback for offline when no answer key exists.
+    // Server regrades everything; local score is overwritten by server response.
     int correct = 0;
     for (int i = 0; i < _questions.length; i++) {
       final q = _questions[i];
@@ -312,7 +314,6 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       if (isCorrect) correct++;
       _correctAnswers[i] = isCorrect;
     }
-
     _score = _questions.isNotEmpty ? correct / _questions.length : 0;
     _passed = _score >= (_quiz?.passThreshold ?? 0.5);
 

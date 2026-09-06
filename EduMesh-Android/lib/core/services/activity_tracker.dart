@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
 import '../../shared/services/connectivity_service.dart';
@@ -38,6 +38,17 @@ class ActivityTracker {
   /// recorded under another student's profile.
   void resetSessionState() {
     _studyStartTime = null;
+  }
+
+  /// Handle app lifecycle changes. Ends study session when app goes to
+  /// background or is inactive, so time spent in PiP or with screen off
+  /// is accounted for.
+  void onLifecycleChange(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (_studyStartTime != null) {
+        unawaited(endStudySession());
+      }
+    }
   }
 
   /// Record the start of a focused study session.

@@ -46,6 +46,8 @@ class _FlashcardStudyPageState extends State<FlashcardStudyPage>
 
   /// Architect-approved flip animation, scoped to the study card:
   /// 160 ms Y-rotation, easeOut, center-aligned, conservative perspective.
+  /// ponytail: lives here (not flashcard_flip_card.dart) because the study
+  /// page drives flip timing for SM-2 grade buttons and card transitions.
   late final AnimationController _flipController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 160),

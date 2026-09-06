@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/profile_scoped_prefs.dart';
 
 /// The list of [Locale]s the app supports for translation lookups.
 const List<Locale> appSupportedLocales = [
@@ -34,8 +34,7 @@ class LocaleNotifier extends Notifier<Locale> {
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
-    final prefs = await SharedPreferences.getInstance();
-    final code = prefs.getString(_prefKey);
+    final code = await ProfileScopedPrefs.getString(_prefKey);
     if (code != null && appSupportedLocales.any((l) => l.languageCode == code)) {
       state = Locale(code);
     }
@@ -45,7 +44,7 @@ class LocaleNotifier extends Notifier<Locale> {
   void setLocale(String code) {
     if (code.isEmpty) return;
     state = Locale(code);
-    SharedPreferences.getInstance().then((prefs) => prefs.setString(_prefKey, code));
+    ProfileScopedPrefs.setString(_prefKey, code);
   }
 
   @override

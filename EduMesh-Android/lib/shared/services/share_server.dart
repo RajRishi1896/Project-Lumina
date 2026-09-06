@@ -4,10 +4,10 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/models/resource_model.dart';
 import '../../core/storage/db_helper.dart';
+import '../../core/utils/profile_scoped_prefs.dart';
 import '../../features/auth/data/auth_service.dart';
 import 'download_service.dart';
 
@@ -433,8 +433,7 @@ class ShareServer {
 
   Future<bool> _isEnabled() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(enabledPrefKey) ?? false;
+      return await ProfileScopedPrefs.getBool(enabledPrefKey);
     } catch (_) {
       return false;
     }

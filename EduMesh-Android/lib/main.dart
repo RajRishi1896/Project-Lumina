@@ -57,6 +57,10 @@ void main() async {
       final prefs = await SharedPreferences.getInstance();
       await setAppIcon(prefs.getBool('dark_app_icon') ?? false);
     } catch (_) {}
+    // Clean orphaned .part files older than 24h
+    try {
+      await DownloadService.cleanStaleParts(const Duration(hours: 24));
+    } catch (_) {}
   });
 
   final authService = AuthService();

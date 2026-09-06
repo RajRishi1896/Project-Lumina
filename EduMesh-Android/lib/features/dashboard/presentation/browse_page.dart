@@ -33,6 +33,9 @@ class BrowsePage extends StatefulWidget {
 class BrowsePageState extends State<BrowsePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  static const _tabLabelStyle = TextStyle(fontSize: 14, fontWeight: FontWeight.w700);
+  static const _tabUnselectedStyle = TextStyle(fontSize: 14);
+
   @override
   void initState() {
     super.initState();
@@ -79,8 +82,8 @@ class BrowsePageState extends State<BrowsePage> with SingleTickerProviderStateMi
           unselectedLabelColor: cs.onSurfaceVariant,
           indicatorColor: cs.primary,
           indicatorWeight: 3.0,
-          labelStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
-          unselectedLabelStyle: TextStyle(fontSize: 14.sp),
+          labelStyle: _tabLabelStyle,
+          unselectedLabelStyle: _tabUnselectedStyle,
           tabs: [
             Tab(text: l10n.browseTabCourses),
             Tab(text: l10n.browseTabResources),

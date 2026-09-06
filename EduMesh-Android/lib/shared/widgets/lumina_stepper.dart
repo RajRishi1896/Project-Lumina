@@ -61,7 +61,7 @@ class LuminaStepper extends StatelessWidget {
                 steps[stepIndex],
                 textAlign: TextAlign.center,
                 style: tt.labelSmall?.copyWith(
-                  fontSize: 10.sp,
+                  fontSize: AppSpacing.xs.sp,
                   fontWeight: isActive ? AppSpacing.weightStrong : AppSpacing.weightBody,
                   color: isActive ? cs.primary : cs.onSurfaceVariant,
                   height: 1.2,
