@@ -52,6 +52,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   bool _initialized = false;
+  bool _firstFrame = false;
   String? _error;
   bool _showControls = true;
   Timer? _hideTimer;
@@ -238,10 +239,16 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
   /// Tick listener: updates only the lightweight position notifier.
   /// No full-overlay rebuild — the ValueListenableBuilder on _posSeconds
   /// and the progress bar handle their own targeted rebuilds.
+  /// Also latches _firstFrame once playback visibly advances so the loading
+  /// overlay stays up until video (not just audio) is rendering.
   void _onTick() {
     if (_disposed || _controller == null) return;
     final v = _controller!.value;
     _posSeconds.value = v.position.inSeconds;
+    if (!_firstFrame && _initialized && v.position.inMilliseconds > 0) {
+      _firstFrame = true;
+      if (mounted) setState(() {});
+    }
   }
 
   void _togglePlay() {
@@ -473,9 +480,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
 
   /// Enters OS-level Picture-in-Picture mode. The video keeps playing in a
   /// system floating window while the user navigates the app.
+  /// Does NOT set _exitRequested: the page stays alive behind PiP and the
+  /// back button must keep working (setting it dead-locked _closePlayer).
   void _minimize() {
     if (_exitRequested || !_initialized || _controller == null) return;
-    _exitRequested = true;
     PiPHelper().enterPiP(isPlaying: _controller!.value.isPlaying);
   }
 
@@ -483,6 +491,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     setState(() {
       _error = null;
       _initialized = false;
+      _firstFrame = false;
     });
     _controller?.dispose();
     _controller = null;
@@ -579,6 +588,11 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
       return const Center(child: CircularProgressIndicator());
     }
 
+    // In OS PiP the system window shows the video; this page shows the
+    // placeholder with a return button (l10n keys already exist).
+    if (_inPiP) return _buildPiPPlaceholder(l10n, cs);
+
+    final aspect = _controller!.value.aspectRatio;
     // Single GestureDetector: double-tap for seek, horizontal drag for
     // scrub, single tap to show/hide controls.
     return GestureDetector(
@@ -593,12 +607,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
           // Video surface — always visible once controller exists.
           Center(
             child: AspectRatio(
-              aspectRatio: _controller!.value.aspectRatio,
+              aspectRatio: aspect == 0 ? 16 / 9 : aspect,
               child: VideoPlayer(_controller!),
             ),
           ),
-          // Loading overlay: shown while controller is still initializing.
-          if (!_initialized)
+          // Loading overlay: stays up until the first video frame renders,
+          // not just until initialize() resolves (audio starts before the
+          // decoder produces frames on low-end phones).
+          if (!_initialized || !_firstFrame)
             Container(
               color: cs.surfaceContainerHighest,
               child: const Center(child: CircularProgressIndicator()),
@@ -613,6 +629,31 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
               child: _buildProgressBar(),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPiPPlaceholder(AppLocalizations l10n, ColorScheme cs) {
+    final tt = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.section),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.picture_in_picture_alt,
+                size: 48, color: cs.onSurfaceVariant),
+            const SizedBox(height: AppSpacing.md),
+            Text(l10n.videoPlayingInPiP,
+                style: tt.bodyLarge?.copyWith(color: cs.onSurface),
+                textAlign: TextAlign.center),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton(
+              onPressed: () => PiPHelper().exitPiP(),
+              child: Text(l10n.buttonReturnToVideo),
+            ),
+          ],
+        ),
       ),
     );
   }
