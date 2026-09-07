@@ -277,11 +277,27 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                   ),
                 ],
               ),
+              if (queue.isPaused)
+                Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.xs.h),
+                  child: Row(
+                    children: [
+                      Icon(Icons.pause_circle_outline,
+                          size: 16, color: cs.onSurfaceVariant),
+                      SizedBox(width: AppSpacing.xs.w),
+                      Expanded(
+                        child: Text(l10n.downloadQueuePaused,
+                            style: tt.bodySmall?.copyWith(
+                                color: cs.onSurfaceVariant)),
+                      ),
+                    ],
+                  ),
+                ),
               for (final id in ids)
                 ListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  leading: id == active
+                  leading: id == active && !queue.isPaused
                       ? SizedBox(
                           width: AppSpacing.xxl.w,
                           height: AppSpacing.xxl.w,
@@ -292,7 +308,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                   title: Text(id,
                       maxLines: 1, overflow: TextOverflow.ellipsis,
                       style: tt.bodyMedium),
-                  subtitle: id == active
+                  subtitle: id == active && !queue.isPaused
                       ? Text(l10n.downloadQueueDownloading,
                           style: tt.bodySmall
                               ?.copyWith(color: cs.primary))

@@ -135,6 +135,7 @@
   "downloadQueueEmpty": "క్యూలో డౌన్‌లోడ్‌లు లేవు",
   "downloadQueueClearAll": "అన్నీ క్లియర్ చేయండి",
   "downloadQueueDownloading": "ఇప్పుడు డౌన్‌లోడ్ అవుతోంది",
+  "downloadQueuePaused": "పాజ్ చేయబడింది — హబ్ తిరిగి రాగానే కొనసాగుతుంది",
   "removedFromServerBadge": "సర్వర్ నుండి తీసివేయబడింది",
   "@removedFromServerBadge": {
     "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."

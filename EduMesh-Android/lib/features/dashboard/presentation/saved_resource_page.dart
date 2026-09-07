@@ -59,12 +59,32 @@ void _showDownloadQueue(BuildContext context) {
                   Expanded(child: Center(child: Text(l10n.downloadQueueEmpty,
                     style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant))))
                 else
-                  Expanded(child: ListView.builder(
+                  Expanded(child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (queue.isPaused)
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg.w),
+                          child: Row(
+                            children: [
+                              Icon(Icons.pause_circle_outline,
+                                  size: 16, color: cs.onSurfaceVariant),
+                              SizedBox(width: AppSpacing.xs.w),
+                              Expanded(
+                                child: Text(l10n.downloadQueuePaused,
+                                    style: tt.bodySmall?.copyWith(
+                                        color: cs.onSurfaceVariant)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Expanded(child: ListView.builder(
                     controller: scrollController,
                     itemCount: ids.length,
                     itemBuilder: (_, i) {
                       final id = ids[i];
-                      final isActive = id == active;
+                      final isActive = id == active && !queue.isPaused;
                       return ListTile(
                         leading: isActive
                           ? SizedBox(width: AppSpacing.xxl.w, height: AppSpacing.xxl.w, child: CircularProgressIndicator(strokeWidth: 2.w))
@@ -79,6 +99,8 @@ void _showDownloadQueue(BuildContext context) {
                         ),
                       );
                     },
+                  )),
+                    ],
                   )),
               ],
             );

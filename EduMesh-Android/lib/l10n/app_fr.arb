@@ -129,6 +129,7 @@
   "downloadQueueEmpty": "Aucun téléchargement en attente",
   "downloadQueueClearAll": "Tout effacer",
   "downloadQueueDownloading": "Téléchargement en cours",
+  "downloadQueuePaused": "En pause — reprendra au retour du hub",
   "removedFromServerBadge": "Retiré du serveur",
   "@removedFromServerBadge": {
     "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."

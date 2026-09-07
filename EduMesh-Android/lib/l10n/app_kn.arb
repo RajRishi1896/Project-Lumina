@@ -129,6 +129,7 @@
   "downloadQueueEmpty": "ಕ್ಯೂನಲ್ಲಿ ಡೌನ್‌ಲೋಡ್‌ಗಳಿಲ್ಲ",
   "downloadQueueClearAll": "ಎಲ್ಲಾ ತೆರವುಗೊಳಿಸಿ",
   "downloadQueueDownloading": "ಈಗ ಡೌನ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ",
+  "downloadQueuePaused": "ವಿರಾಮ — ಹಬ್ ಮರಳಿದಾಗ ಮುಂದುವರಿಯುತ್ತದೆ",
   "removedFromServerBadge": "ಸರ್ವರ್ನಿಂದ ತೆಗೆದುಹಾಕಲಾಗಿದೆ",
   "@removedFromServerBadge": {
     "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."

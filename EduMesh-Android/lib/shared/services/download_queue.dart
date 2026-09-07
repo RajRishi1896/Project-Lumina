@@ -46,6 +46,13 @@ class DownloadQueue extends ChangeNotifier {
   final List<_QueuedDownload> _queue = [];
   bool _processing = false;
 
+  /// True when the queue halted because the hub went unreachable
+  /// mid-download. Retries are preserved; the loop restarts on reconnect.
+  bool _paused = false;
+
+  /// Whether the queue is paused waiting for the hub to come back.
+  bool get isPaused => _paused;
+
   Set<String> get queuedIds => _queue.map((d) => d.resourceId).toSet();
 
   /// Drops every queued download.
@@ -57,6 +64,7 @@ class DownloadQueue extends ChangeNotifier {
   void clear() {
     _queue.clear();
     _processing = false;
+    _paused = false;
     // Best-effort cleanup: logout/profile switch must not leak the CPU
     // wakelock or leave the foreground service running between profiles.
     WakelockPlus.disable().ignore();
@@ -77,6 +85,14 @@ class DownloadQueue extends ChangeNotifier {
       try { await WakelockPlus.disable(); } catch (_) {}
       unawaited(_stopBackgroundServiceIfIdle());
     }
+  }
+
+  /// Restarts the loop after a pause (reconnect). No-op unless paused
+  /// with work remaining. Needed because [enqueue] dedupes tasks already
+  /// in memory, so a paused head would otherwise never resume.
+  void resumeIfPaused() {
+    if (!_paused || _processing || _queue.isEmpty) return;
+    unawaited(_processNext());
   }
 
   /// The resource ID currently being downloaded, or `null` if idle.
@@ -125,6 +141,7 @@ class DownloadQueue extends ChangeNotifier {
   Future<void> _processNext() async {
     if (_processing) return;
     _processing = true;
+    _paused = false;
     final service = FlutterBackgroundService();
     try { await WakelockPlus.enable(); } catch (_) {}
     try {
@@ -168,6 +185,15 @@ class DownloadQueue extends ChangeNotifier {
       } catch (e) {
         _lastErrorIsPermanent = _isPermanentFailure(e);
         path = null;
+        // Hub went away mid-download: pause instead of burning retries.
+        // The task stays queued (and persisted) and resumes from its
+        // .part offset on reconnect via Range. Permanent failures and
+        // reachable-hub errors keep the existing retry/drop path below.
+        if (!_lastErrorIsPermanent && await _hubUnreachable()) {
+          _paused = true;
+          notifyListeners();
+          break;
+        }
       }
       if (path != null) {
         try { await DBHelper().removePendingDownload(task.resourceId); } catch (_) {}
@@ -214,6 +240,17 @@ class DownloadQueue extends ChangeNotifier {
   }
 
   bool _lastErrorIsPermanent = false;
+
+  /// Whether the hub is currently unreachable (short ping, not the
+  /// possibly-stale cached connectivity flag, which can lag ~30s).
+  Future<bool> _hubUnreachable() async {
+    try {
+      return !await ConnectivityService()
+          .ping(timeout: const Duration(seconds: 3));
+    } catch (_) {
+      return true;
+    }
+  }
 
   final Stopwatch _progressThrottle = Stopwatch()..start();
 

@@ -110,6 +110,9 @@ class ConnectivityService extends ChangeNotifier {
         } catch (_) {}
       }
     }
+    // A hub outage pauses the loop with the head task still in memory;
+    // enqueue dedupes it, so restart explicitly to resume from .part.
+    DownloadQueue().resumeIfPaused();
     try {
       await MutationQueue().flush();
     } catch (_) {}

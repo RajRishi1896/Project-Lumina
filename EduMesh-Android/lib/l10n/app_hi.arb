@@ -129,6 +129,7 @@
   "downloadQueueEmpty": "कतार में कोई डाउनलोड नहीं",
   "downloadQueueClearAll": "सभी साफ़ करें",
   "downloadQueueDownloading": "अभी डाउनलोड हो रहा है",
+  "downloadQueuePaused": "रुका हुआ — हब वापस आने पर फिर शुरू होगा",
   "removedFromServerBadge": "सर्वर से हटाया गया",
   "@removedFromServerBadge": {
     "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."

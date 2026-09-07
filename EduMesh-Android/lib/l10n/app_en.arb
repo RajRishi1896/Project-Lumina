@@ -487,6 +487,10 @@
   "@downloadQueueDownloading": {
     "description": "Subtitle for the item currently being downloaded"
   },
+  "downloadQueuePaused": "Paused — resumes when the hub is back",
+  "@downloadQueuePaused": {
+    "description": "Queue subtitle shown when downloads halted because the hub went unreachable"
+  },
   "removedFromServerBadge": "Removed from server",
   "@removedFromServerBadge": {
     "description": "Small badge on a downloaded resource card in the offline library and saved-resources lists. Shown when the resource was deleted from the hub; the local file still works but cannot be downloaded again."
