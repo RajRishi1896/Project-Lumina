@@ -11,6 +11,7 @@ class PiPHelper {
   bool _supported = false;
   bool _inPiP = false;
   bool _listening = false;
+  Future<void>? _initializing;
 
   /// Whether PiP mode is currently active.
   bool get isInPiP => _inPiP;
@@ -25,7 +26,24 @@ class PiPHelper {
   void Function(String action)? onAction;
 
   /// Initialize: check support and start listening for mode changes.
+  ///
+  /// Initialization is shared so a user can tap PiP immediately after the
+  /// player opens without racing the capability check.
   Future<void> init() async {
+    if (_initializing != null) {
+      await _initializing;
+      return;
+    }
+    final future = _initialize();
+    _initializing = future;
+    try {
+      await future;
+    } finally {
+      _initializing = null;
+    }
+  }
+
+  Future<void> _initialize() async {
     try {
       _supported = await _channel.invokeMethod<bool>('isSupported') ?? false;
     } catch (_) {
@@ -56,6 +74,7 @@ class PiPHelper {
     int height = 9,
     bool isPlaying = true,
   }) async {
+    await init();
     if (!_supported) return false;
     try {
       final result = await _channel.invokeMethod<bool>(
@@ -74,6 +93,7 @@ class PiPHelper {
     int height = 9,
     bool isPlaying = true,
   }) async {
+    await init();
     if (!_supported) return;
     try {
       await _channel.invokeMethod(
@@ -83,8 +103,10 @@ class PiPHelper {
     } catch (_) {}
   }
 
-  /// Exit PiP mode (e.g. when the user taps to expand).
+  /// Exit PiP mode. Android leaves PiP through the normal system expansion
+  /// flow; this channel remains as a compatibility hook for the platform.
   Future<void> exitPiP() async {
+    await init();
     if (!_supported) return;
     try {
       await _channel.invokeMethod('exitPiP');
