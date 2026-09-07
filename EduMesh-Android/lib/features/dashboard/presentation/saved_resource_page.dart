@@ -207,10 +207,9 @@ class _SavedListByTypeState extends State<_SavedListByType> {
     try {
       final db = DBHelper();
       final bookmarkRows = await db.getBookmarkedResources();
-      final downloadRows = await db.getDownloadedResources();
-      final zimRows = await db.getDownloadedZimArticles();
 
-      // Merge bookmarks + downloads + ZIM articles, dedup by resource_id.
+      // Saved = bookmarks only. Downloads live in the Downloads page;
+      // downloading never implies saving and vice versa.
       final Map<String, ResourceModel> merged = {};
 
       for (final r in bookmarkRows) {
@@ -223,30 +222,6 @@ class _SavedListByTypeState extends State<_SavedListByType> {
           grade: r['grade'] as String? ?? '',
           type: parseResourceType(r['type'] as String? ?? ''),
           pdfUrl: r['pdf_url'] as String?,
-        );
-      }
-
-      for (final r in downloadRows) {
-        final id = r['resource_id'] as String? ?? '';
-        if (id.isEmpty || merged.containsKey(id)) continue;
-        merged[id] = ResourceModel(
-          id: id,
-          title: r['title'] as String? ?? '',
-          subject: r['subject'] as String? ?? '',
-          grade: r['grade'] as String? ?? '',
-          type: parseResourceType(r['type'] as String? ?? ''),
-        );
-      }
-
-      for (final r in zimRows) {
-        final id = r['resource_id'] as String? ?? '';
-        if (id.isEmpty || merged.containsKey(id)) continue;
-        merged[id] = ResourceModel(
-          id: id,
-          title: r['title'] as String? ?? '',
-          subject: r['subject'] as String? ?? '',
-          grade: '',
-          type: ResourceType.kiwix,
         );
       }
 
@@ -284,6 +259,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
         items = all.where((r) => r.type == widget.type!).toList();
       }
       final ids = await db.getDownloadedIds();
+      final downloadRows = await db.getDownloadedResources();
       final removedIds = downloadRows
           .where((r) => (r['server_removed'] as num? ?? 0) == 1)
           .map((r) => r['resource_id'] as String? ?? '')
