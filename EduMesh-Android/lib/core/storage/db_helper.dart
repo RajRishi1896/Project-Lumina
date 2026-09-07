@@ -383,12 +383,11 @@ class DBHelper {
 
   Future<Set<String>> getDownloadedZimArticleIds() async {
     final db = await database;
-    final rows = await db.query('zim_articles_local', columns: ['article_id', 'archive_id'], where: 'is_downloaded = 1');
-    return rows.map((r) {
-      final archive = (r['archive_id'] ?? '').toString();
-      final article = (r['article_id'] ?? '').toString();
-      return archive.isEmpty ? article : '$archive::$article';
-    }).toSet();
+    final rows = await db.query('zim_articles_local', columns: ['article_id'], where: 'is_downloaded = 1');
+    // Plain article IDs only: every UI lookup compares plain articleId.
+    // (An older revision returned 'archive::article' composites here, which
+    // silently broke every contains() check after a restart.)
+    return rows.map((r) => (r['article_id'] ?? '').toString()).where((id) => id.isNotEmpty).toSet();
   }
 
   Future<List<Map<String, dynamic>>> getDownloadedZimArticles() async {

@@ -25,7 +25,11 @@ class ZimSearchResult {
 ///
 /// Uses `/zim/search` for ranked search and `/zim/articles` for alphabetical
 /// browsing. Local SQLite only tracks downloaded articles for offline access.
-class ZimSyncService {
+///
+/// A [ChangeNotifier]: [markDownloaded], [unmarkDownloaded] and
+/// [loadDownloadedIds] notify so download badges flip without an app
+/// restart or a manual setState at the call site.
+class ZimSyncService extends ChangeNotifier {
   static final ZimSyncService instance = ZimSyncService._();
   ZimSyncService._();
 
@@ -98,6 +102,7 @@ class ZimSyncService {
   Future<void> loadDownloadedIds() async {
     try {
       _downloadedIds = await DBHelper().getDownloadedZimArticleIds();
+      notifyListeners();
     } catch (e) {
       debugPrint('ZimSyncService: load downloaded IDs failed: $e');
     }
@@ -106,7 +111,7 @@ class ZimSyncService {
   /// Marks an article as downloaded in the local DB and in-memory set.
   Future<void> markDownloaded(String articleId, {String title = ''}) async {
     await DBHelper().markZimArticleDownloaded(articleId, title: title);
-    _downloadedIds.add(articleId);
+    if (_downloadedIds.add(articleId)) notifyListeners();
   }
 
   /// Removes an article from the in-memory downloaded set.
@@ -114,6 +119,6 @@ class ZimSyncService {
   /// Call after deleting a ZIM article's files/DB record so the browse
   /// UI stops showing it as downloaded.
   void unmarkDownloaded(String articleId) {
-    _downloadedIds.remove(articleId);
+    if (_downloadedIds.remove(articleId)) notifyListeners();
   }
 }

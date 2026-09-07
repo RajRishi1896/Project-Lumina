@@ -141,6 +141,7 @@ class _CoursesTabState extends State<_CoursesTab> {
 
   Future<void> _loadData() async {
     _loading = true;
+    _error = null;
     if (mounted) setState(() {});
     try {
       _grade = await AuthService().getGradeOrDefault();
@@ -816,13 +817,36 @@ class _WikiTabState extends State<_WikiTab> {
                                   ),
                                   onPressed: () => _toggleBookmark(article),
                                 ),
-                                if (_downloadingId == article.articleId)
-                                  SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.w))
-                                else
-                                  IconButton(
-                                    icon: Icon(isDownloaded ? Icons.check_circle : Icons.download_outlined,
-                                      color: isDownloaded ? LuminaColors.successGreen : cs.primary),
-                                    onPressed: isDownloaded ? null : () => _downloadArticle(article)),
+                                // Reactive to ZimSyncService: downloads finished
+                                // on another screen flip this badge with no
+                                // restart and no local setState.
+                                ListenableBuilder(
+                                  listenable: ZimSyncService.instance,
+                                  builder: (ctx, _) {
+                                    final dl = ZimSyncService
+                                        .instance.downloadedIds
+                                        .contains(article.articleId);
+                                    if (_downloadingId == article.articleId) {
+                                      return SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2.w));
+                                    }
+                                    return IconButton(
+                                      icon: Icon(
+                                          dl
+                                              ? Icons.check_circle
+                                              : Icons.download_outlined,
+                                          color: dl
+                                              ? LuminaColors.successGreen
+                                              : cs.primary),
+                                      onPressed: dl
+                                          ? null
+                                          : () => _downloadArticle(article),
+                                    );
+                                  },
+                                ),
                                 Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
                               ]),
                               onTap: () => _openArticle(article),

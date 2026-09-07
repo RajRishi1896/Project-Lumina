@@ -1154,22 +1154,25 @@ class _SearchPageState extends State<SearchPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (zimArticle != null)
-            IconButton(
-              icon: Icon(
-                ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
-                    ? Icons.check_circle
-                    : Icons.download_outlined,
-                color: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
-                    ? LuminaColors.successGreen
-                    : cs.primary,
-              ),
-              onPressed: ZimSyncService.instance.downloadedIds.contains(zimArticle.articleId)
-                  ? null
-                  : () => _downloadArticle(
-                        articleId: zimArticle.articleId,
-                        archiveId: zimArticle.archiveId,
-                        title: zimArticle.title,
-                      ),
+            ListenableBuilder(
+              listenable: ZimSyncService.instance,
+              builder: (ctx, _) {
+                final dl = ZimSyncService.instance.downloadedIds
+                    .contains(zimArticle.articleId);
+                return IconButton(
+                  icon: Icon(
+                    dl ? Icons.check_circle : Icons.download_outlined,
+                    color: dl ? LuminaColors.successGreen : cs.primary,
+                  ),
+                  onPressed: dl
+                      ? null
+                      : () => _downloadArticle(
+                            articleId: zimArticle.articleId,
+                            archiveId: zimArticle.archiveId,
+                            title: zimArticle.title,
+                          ),
+                );
+              },
             ),
           Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
         ],
