@@ -53,8 +53,8 @@ async def sync_subject_time(data: SubjectTimeSync, student_id: str = Depends(ver
         """Swap the student's subject-minute rows for the synced list in one transaction."""
         c = conn.cursor()
         c.execute("DELETE FROM subject_minutes WHERE scholar_id = ?", (student_id,))
-        c.executemany("INSERT INTO subject_minutes (scholar_id, subject_name, minutes) VALUES (?, ?, ?)",
-                      [(student_id, subj.name, subj.minutes) for subj in data.subjects])
+        c.executemany("INSERT INTO subject_minutes (scholar_id, subject_name, minutes, seconds) VALUES (?, ?, ?, ?)",
+                      [(student_id, subj.name, subj.minutes, subj.seconds or subj.minutes * 60) for subj in data.subjects])
         conn.commit()
     await db_run(_replace_subject_minutes)
     return {"status": "ok"}
@@ -82,10 +82,11 @@ async def get_analytics(student_id: str = Depends(verify_student)):
     week_secs = row[0] if row else 0
     streak = row[1] if row else 0
     saved = row[2] if row else 0
-    subject_rows = await db_fetch("SELECT subject_name, minutes FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC", (student_id,))
-    subjects = [{"name": row[0], "minutes": row[1]} for row in subject_rows]
+    subject_rows = await db_fetch("SELECT subject_name, minutes, COALESCE(seconds, minutes * 60) FROM subject_minutes WHERE scholar_id = ? ORDER BY minutes DESC", (student_id,))
+    subjects = [{"name": row[0], "minutes": row[1], "seconds": row[2]} for row in subject_rows]
     return {
         "study_minutes_this_week": week_secs // 60,
+        "study_seconds_this_week": week_secs,
         "streak_days": streak,
         "resources_saved": saved,
         "subjects": subjects,

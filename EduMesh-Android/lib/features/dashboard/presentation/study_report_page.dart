@@ -26,7 +26,7 @@ class StudyReportPage extends StatefulWidget {
 }
 
 class _StudyReportPageState extends State<StudyReportPage> {
-  final List<({String subject, int minutes})> _subjectMinutes = [];
+  final List<({String subject, int seconds})> _subjectMinutes = [];
   final List<Map<String, dynamic>> _downloads = [];
   final List<({String title, double percent})> _scores = [];
   final List<Map<String, dynamic>> _recent = [];
@@ -63,9 +63,8 @@ class _StudyReportPageState extends State<StudyReportPage> {
         }
         final subject = (meta?['subject'] as String?)?.trim() ?? '';
         final seconds = (meta?['duration_seconds'] as num?)?.toInt() ?? 0;
-        // Same thresholds the old SQL query applied: non-empty subject,
-        // session of at least 30 seconds.
-        if (subject.isEmpty || seconds < 30) continue;
+        // Every positive session counts: sub-minute opens render as Ns.
+        if (subject.isEmpty || seconds <= 0) continue;
         final key = subject.toLowerCase();
         secondsBySubject[key] = (secondsBySubject[key] ?? 0) + seconds;
         displayNames.putIfAbsent(key, () => subject);
@@ -76,7 +75,7 @@ class _StudyReportPageState extends State<StudyReportPage> {
         ..clear()
         ..addAll(subjects.map((e) => (
               subject: displayNames[e.key] ?? e.key,
-              minutes: (e.value / 60).round(),
+              seconds: e.value,
             )));
 
       final downloaded = await DBHelper().getDownloadedResources();
@@ -295,6 +294,15 @@ class _StudyReportPageState extends State<StudyReportPage> {
     );
   }
 
+  /// Formats study time at presentation time: 30s, 30m, 2h.
+  String _formatStudyDuration(int totalSeconds, AppLocalizations l10n) {
+    if (totalSeconds < 60) return '$totalSeconds${l10n.suffixSeconds}';
+    if (totalSeconds < 3600) {
+      return '${(totalSeconds / 60).round()}${l10n.suffixMinutes}';
+    }
+    return '${(totalSeconds / 3600).round()}${l10n.suffixHours}';
+  }
+
   Widget _buildSubjectList() {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
@@ -315,7 +323,7 @@ class _StudyReportPageState extends State<StudyReportPage> {
             style: tt.bodySmall?.copyWith(color: cs.onSurface),
           ),
           trailing: Text(
-            '${entry.minutes}${l10n.studyReportMin}',
+            _formatStudyDuration(entry.seconds, l10n),
             style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           ),
         );

@@ -52,6 +52,7 @@ class SubjectTimeItem(BaseModel):
     """Per-subject study time entry."""
     name: str = Field(..., min_length=1, max_length=100, description="Subject name.", json_schema_extra={"example": "Mathematics"})
     minutes: int = Field(..., ge=0, le=10080, description="Study minutes spent on this subject.", json_schema_extra={"example": 45})
+    seconds: int = Field(default=0, ge=0, le=604800, description="Study seconds spent on this subject (precise value; minutes is kept for backward compatibility).", json_schema_extra={"example": 2700})
 class SubjectTimeSync(BaseModel):
     """Bulk per-subject study time sync payload."""
     subjects: list[SubjectTimeItem] = Field(default_factory=list, description="List of per-subject time entries.", json_schema_extra={"example": [{"name": "Mathematics", "minutes": 45}]})
@@ -107,9 +108,10 @@ class SubjectResponse(BaseModel):
 class StudentAnalyticsResponse(BaseModel):
     """Student analytics from the student's own perspective."""
     study_minutes_this_week: int = Field(..., description="Total study minutes this week.", json_schema_extra={"example": 120})
+    study_seconds_this_week: int = Field(default=0, description="Total study seconds this week (precise value).", json_schema_extra={"example": 7250})
     streak_days: int = Field(..., description="Consecutive study days.", json_schema_extra={"example": 5})
     resources_saved: int = Field(..., description="Number of saved resources.", json_schema_extra={"example": 3})
-    subjects: list = Field(default_factory=list, description="Per-subject study minute breakdown.", json_schema_extra={"example": [{"name": "Mathematics", "minutes": 120}]})
+    subjects: list = Field(default_factory=list, description="Per-subject study breakdown with minutes and seconds.", json_schema_extra={"example": [{"name": "Mathematics", "minutes": 120, "seconds": 7250}]})
     quiz_scores: list = Field(default_factory=list, description="Quiz best scores list.", json_schema_extra={"example": [{"title": "Math Quiz", "best_score": 0.85, "attempts_count": 3}]})
 class IconUploadResponse(BaseModel):
     """Profile icon upload result."""

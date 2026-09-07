@@ -126,6 +126,28 @@ class ActivityTracker {
     return _decodeLocalEvents(prefs.getString(_localEventsKey));
   }
 
+  /// Study seconds logged locally today (device midnight boundary).
+  ///
+  /// The server only tracks weekly totals, so "today" is computed from
+  /// local study_session events. Returns 0 when there are none.
+  Future<int> studySecondsToday() async {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    var total = 0;
+    for (final event in await getLocalEvents()) {
+      if (event['action'] != 'study_session') continue;
+      final ts = DateTime.tryParse(event['timestamp'] as String? ?? '');
+      if (ts == null || ts.isBefore(startOfDay)) continue;
+      final meta = event['metadata'] as String?;
+      if (meta == null) continue;
+      try {
+        final decoded = jsonDecode(meta);
+        total += (decoded['duration_seconds'] as num?)?.toInt() ?? 0;
+      } catch (_) {}
+    }
+    return total;
+  }
+
   /// Get the recorded activity history for the current session.
   Future<List<Map<String, dynamic>>> getActivityHistory({int limit = 25}) async {
     final prefs = await _getPrefs();
@@ -276,6 +298,7 @@ class ActivityTracker {
       final subjects = subjectMinutes.entries.map((e) => {
         'name': e.key,
         'minutes': (e.value / 60).round().clamp(0, 10080),
+        'seconds': e.value.clamp(0, 604800),
       }).toList();
       try {
         await ApiClient.post('/student/sync-subject-time', data: {'subjects': subjects});

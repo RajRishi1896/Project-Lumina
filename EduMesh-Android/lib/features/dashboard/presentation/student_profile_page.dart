@@ -44,11 +44,11 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   String _username = '';
   String _studentId = '';
   String _grade = '';
-  int _studyMinutesToday = 0;
-  int _studyMinutesThisWeek = 0;
+  int _studySecondsToday = 0;
+  int _studySecondsThisWeek = 0;
   int _streakDays = 0;
   int _coursesCompleted = 0;
-  List<({String name, int minutes, Color color})> _subjectBreakdown = [];
+  List<({String name, int seconds, Color color})> _subjectBreakdown = [];
   List<Map<String, dynamic>> _activityHistory = [];
   static const _subjectColors = [
     LuminaColors.academicTeal,
@@ -153,17 +153,26 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       // still runs to cover the online-with-no-events and offline paths.
       final analytics = await _tracker.getAnalytics();
       final history = await _tracker.getActivityHistory(limit: 50);
+      // The server tracks weekly totals only: today comes from local events.
+      final todaySecs = await _tracker.studySecondsToday();
       if (mounted) {
         setState(() {
-          _studyMinutesToday = ((analytics['study_minutes_today'] ?? 0) as num).toInt();
-          _studyMinutesThisWeek = ((analytics['study_minutes_this_week'] ?? 0) as num).toInt();
+          _studySecondsToday = todaySecs;
+          final weekSecs = analytics['study_seconds_this_week'] as num?;
+          _studySecondsThisWeek = weekSecs?.toInt() ??
+              (((analytics['study_minutes_this_week'] ?? 0) as num).toInt() *
+                  60);
           _streakDays = ((analytics['streak_days'] ?? 0) as num).toInt();
           final subjects = analytics['subjects'] as List<dynamic>? ?? [];
-          _subjectBreakdown = subjects.map((s) => (
-            name: s['name']?.toString() ?? '',
-            minutes: ((s['minutes'] ?? 0) as num).toInt(),
-            color: _colorForSubject(s['name']?.toString() ?? ''),
-          )).toList();
+          _subjectBreakdown = subjects.map((s) {
+            final secs = s['seconds'] as num? ??
+                (((s['minutes'] as num?)?.toInt() ?? 0) * 60);
+            return (
+              name: s['name']?.toString() ?? '',
+              seconds: secs.toInt(),
+              color: _colorForSubject(s['name']?.toString() ?? ''),
+            );
+          }).toList();
           _activityHistory = history.where((a) => (a['action'] as String?) != 'study_session').toList();
           _loading = false;
         });
@@ -218,6 +227,16 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       }
     } catch (_) { } }
 
+  /// Formats study time at presentation time: 30s, 30m, 2h.
+  /// Precision lives in seconds end-to-end; never round during aggregation.
+  String _formatStudyDuration(int totalSeconds, AppLocalizations l10n) {
+    if (totalSeconds < 60) return '$totalSeconds${l10n.suffixSeconds}';
+    if (totalSeconds < 3600) {
+      return '${(totalSeconds / 60).round()}${l10n.suffixMinutes}';
+    }
+    return '${(totalSeconds / 3600).round()}${l10n.suffixHours}';
+  }
+
   String _getInitials(String name, AppLocalizations l10n) {
     if (name.trim().isEmpty) return l10n.initialsFallback;
     final parts = name.trim().split(_whitespaceRE);
@@ -252,18 +271,18 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     return l10n.activityTitleFallback(verb);
   }
 
-  /// Renders a study-session event as `Studied <subject> · <N> min`,
-  /// or `Studied · <N> min` when the session has no subject.
+  /// Renders a study-session event as `Studied <subject> · <30s|30m|2h>`,
+  /// or `Studied · <duration>` when the session has no subject.
   String _formatStudySessionTitle(Map<String, dynamic> activity, AppLocalizations l10n) {
     String subject = '';
-    int minutes = 0;
+    int seconds = 0;
     final meta = activity['metadata']?.toString() ?? '';
     if (meta.startsWith('{')) {
       try {
         final decoded = jsonDecode(meta);
         if (decoded is Map<String, dynamic>) {
           subject = decoded['subject']?.toString() ?? '';
-          minutes = (((decoded['duration_seconds'] as num?) ?? 0) / 60).round();
+          seconds = (decoded['duration_seconds'] as num?)?.toInt() ?? 0;
         }
       } catch (_) {}
     }
@@ -272,7 +291,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         ? '${studied[0].toUpperCase()}${studied.substring(1)}'
         : studied;
     final label = subject.isEmpty ? verb : '$verb $subject';
-    return '$label · $minutes${l10n.studyReportMin}';
+    return '$label · ${_formatStudyDuration(seconds, l10n)}';
   }
 
   String _formatRelativeTime(dynamic timestamp, AppLocalizations l10n) {
@@ -766,7 +785,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         padding: EdgeInsets.all(AppSpacing.lg.w),
         child: Column(
           children: [
-            _statRow(cs, l10n.statCardToday, '$_studyMinutesToday${l10n.suffixMinutes}', Icons.today_outlined, l10n.statCardThisWeek, _studyMinutesThisWeek < 60 ? '$_studyMinutesThisWeek${l10n.suffixMinutes}' : '${(_studyMinutesThisWeek / 60).toStringAsFixed(1)}${l10n.suffixHours}', Icons.date_range_outlined),
+            _statRow(cs, l10n.statCardToday, _formatStudyDuration(_studySecondsToday, l10n), Icons.today_outlined, l10n.statCardThisWeek, _formatStudyDuration(_studySecondsThisWeek, l10n), Icons.date_range_outlined),
             SizedBox(height: AppSpacing.md.h),
             _statRow(cs, l10n.profileCoursesCompleted, '$_coursesCompleted', Icons.school_outlined, l10n.statCardStreak, '$_streakDays${l10n.suffixDays}', Icons.local_fire_department_outlined),
           ],
@@ -889,7 +908,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   Widget _buildSubjectBreakdown(ColorScheme cs) {
     final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
-    final total = _subjectBreakdown.fold(0, (sum, s) => sum + s.minutes);
+    final total = _subjectBreakdown.fold(0, (sum, s) => sum + s.seconds);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -925,9 +944,9 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 ...List.generate(_subjectBreakdown.length, (i) {
                 final sub = _subjectBreakdown[i];
                 final pct = total > 0
-                    ? sub.minutes / total
+                    ? sub.seconds / total
                     : 0.0;
-                final hours = '${(sub.minutes / 60).toStringAsFixed(1)}${l10n.suffixHours}';
+                final duration = _formatStudyDuration(sub.seconds, l10n);
                 return Padding(
                   padding: EdgeInsets.only(bottom: i < _subjectBreakdown.length - 1 ? 14.h : 0),
                   child: Column(
@@ -939,7 +958,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                                 style: tt.titleSmall?.copyWith(
                                     color: cs.onSurface)),
                           ),
-                          Text(hours,
+                          Text(duration,
                               style: tt.bodySmall?.copyWith(
                                   color: cs.onSurfaceVariant)),
                           SizedBox(width: AppSpacing.sm.w),
