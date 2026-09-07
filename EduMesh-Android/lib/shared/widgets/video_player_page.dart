@@ -54,6 +54,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
   bool _initialized = false;
   bool _firstFrame = false;
   String? _error;
+  // Generation token: bumped on close/retry/dispose so an in-flight
+  // _initPlayer that finishes late can neither revive playback nor leak
+  // its controller (the audio-after-back bug).
+  int _initGen = 0;
   bool _showControls = true;
   Timer? _hideTimer;
   bool _disposed = false;
@@ -110,6 +114,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
       _controller = widget.existingController;
       _initialized = true;
       _ownsController = false;
+      // An adopted controller already rendered frames elsewhere unless it
+      // never advanced past zero.
+      _firstFrame =
+          widget.existingController!.value.position.inMilliseconds > 0;
       _controller!.addListener(_onTick);
     } else {
       _ownsController = true;
@@ -197,37 +205,53 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
   }
 
   Future<void> _initPlayer({bool retry = false}) async {
+    final myGen = _initGen;
     final l10n = AppLocalizations.of(context)!;
+    VideoPlayerController? controller;
     try {
       if (_isLocal) {
         final file = File(widget.videoUrl);
         if (!await file.exists()) {
-          if (mounted) setState(() => _error = l10n.videoLocalFileNotFound);
+          if (mounted && myGen == _initGen) {
+            setState(() => _error = l10n.videoLocalFileNotFound);
+          }
           return;
         }
-        _controller = VideoPlayerController.file(file);
+        controller = VideoPlayerController.file(file);
       } else {
         String url = widget.videoUrl;
         if (url.startsWith('/')) {
           await ApiClient.ensureInitialized();
           url = '${ApiClient.baseUrl}$url';
         }
-        _controller = VideoPlayerController.networkUrl(Uri.parse(url));
+        controller = VideoPlayerController.networkUrl(Uri.parse(url));
       }
-      await _controller!.initialize();
-      // State.dispose() ran mid-initialize and owns cleanup: disposing again
-      // here trips the controller's dispose assert.
-      if (_disposed) return;
+      await controller.initialize();
+      // Close/retry/dispose ran mid-initialize: drop the orphan instead of
+      // adopting it (adopting revived audio after back navigation).
+      if (_disposed || myGen != _initGen) {
+        try {
+          await controller.dispose();
+        } catch (_) {}
+        return;
+      }
+      _controller = controller;
+      controller = null;
       _controller!.addListener(_onTick);
       if (mounted) {
         setState(() => _initialized = true);
+        // Autoplay is required to produce frames, but the loading overlay
+        // stays up until the first frame actually renders (see _onTick).
         unawaited(_controller!.play());
         _startHideTimer();
       }
     } catch (e) {
+      try {
+        await controller?.dispose();
+      } catch (_) {}
+      if (_disposed || myGen != _initGen) return;
       if (!retry && mounted) {
-        _controller?.removeListener(_onTick);
-        unawaited(_controller?.dispose());
+        _initGen++;
         _controller = null;
         await _initPlayer(retry: true);
       } else if (mounted) {
@@ -461,39 +485,77 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     }
   }
 
-  /// Closes the player entirely: pops the page and, when this page adopted
-  /// the mini-player's controller, ends that session so no orphaned audio
-  /// keeps playing. When in PiP, exits PiP first.
+  /// Closes the player deterministically: timers cancelled, playback
+  /// paused, listener detached, and the owned controller disposed
+  /// synchronously so no audio can survive navigation. When this page
+  /// adopted the mini-player's controller, that session ends instead.
+  /// When in PiP, exits PiP first.
   void _closePlayer() {
     if (_exitRequested) return;
     _exitRequested = true;
+    _initGen++;
+    _hideTimer?.cancel();
+    _feedbackTimer?.cancel();
     if (PiPHelper().isInPiP) {
       PiPHelper().exitPiP();
     }
-    final mini = MiniPlayerController();
-    if (!_ownsController && identical(mini.videoController, _controller)) {
-      mini.stop();
-    }
+    final c = _controller;
     _controller = null;
-    Navigator.of(context).pop();
+    if (c != null) {
+      try {
+        c.pause();
+      } catch (_) {}
+      try {
+        c.removeListener(_onTick);
+      } catch (_) {}
+      final mini = MiniPlayerController();
+      if (!_ownsController && identical(mini.videoController, c)) {
+        mini.stop();
+      } else if (_ownsController) {
+        try {
+          c.dispose();
+        } catch (_) {}
+      }
+    }
+    if (mounted) Navigator.of(context).pop();
   }
 
   /// Enters OS-level Picture-in-Picture mode. The video keeps playing in a
   /// system floating window while the user navigates the app.
   /// Does NOT set _exitRequested: the page stays alive behind PiP and the
   /// back button must keep working (setting it dead-locked _closePlayer).
-  void _minimize() {
+  /// If the OS refuses PiP, falls back to the in-app mini-player so the
+  /// button always visibly does something.
+  Future<void> _minimize() async {
     if (_exitRequested || !_initialized || _controller == null) return;
-    PiPHelper().enterPiP(isPlaying: _controller!.value.isPlaying);
+    final c = _controller!;
+    final ok = await PiPHelper()
+        .enterPiP(isPlaying: c.value.isPlaying)
+        .catchError((_) => false);
+    if (ok || !mounted) return;
+    try {
+      c.removeListener(_onTick);
+    } catch (_) {}
+    MiniPlayerController()
+        .start(widget.title, widget.videoUrl, c, subject: widget.subject);
+    _ownsController = false;
+    _controller = null;
+    Navigator.of(context).pop();
   }
 
   void _retry() {
+    _initGen++;
     setState(() {
       _error = null;
       _initialized = false;
       _firstFrame = false;
     });
-    _controller?.dispose();
+    try {
+      _controller?.removeListener(_onTick);
+    } catch (_) {}
+    try {
+      _controller?.dispose();
+    } catch (_) {}
     _controller = null;
     _initPlayer();
   }
@@ -501,6 +563,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
   @override
   void dispose() {
     _disposed = true;
+    _initGen++;
     WidgetsBinding.instance.removeObserver(this);
     PiPHelper().onModeChanged = null;
     PiPHelper().onAction = null;
@@ -521,8 +584,14 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
       _lifecyclePushed = false;
     }
     if (_controller != null) {
-      _controller!.removeListener(_onTick);
-      if (_ownsController) _controller!.dispose();
+      try {
+        _controller!.removeListener(_onTick);
+      } catch (_) {}
+      if (_ownsController) {
+        try {
+          _controller!.dispose();
+        } catch (_) {}
+      }
     }
     super.dispose();
   }
@@ -584,7 +653,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
       );
     }
 
-    if (_controller == null) {
+    // No surface until initialized: building VideoPlayer on an
+    // uninitialized controller shows a black texture while audio can
+    // already play. Spinner until then.
+    if (_controller == null || !_initialized) {
       return const Center(child: CircularProgressIndicator());
     }
 
