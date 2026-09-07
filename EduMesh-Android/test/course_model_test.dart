@@ -69,8 +69,7 @@ void main() {
     });
   });
 
-  group('FlashcardDeck.subject default', () {
-    test('constructor defaults subject to empty string', () {
+  group('FlashcardDeck.subject default', () {    test('constructor defaults subject to empty string', () {
       const deck = FlashcardDeck(
         id: 'deck-1',
         title: 'Biology basics',
@@ -99,6 +98,41 @@ void main() {
       expect(subjectFromRow({'subject': 'History'}), 'History');
       expect(subjectFromRow({}), ''); // pre-migration row without the column
       expect(subjectFromRow({'subject': null}), '');
+    });
+  });
+
+  group('resolveAnswerOption (server index-key mapping)', () {
+    const options = ['Paris', 'London', 'Berlin'];
+
+    test('int index resolves against original option order', () {
+      expect(resolveAnswerOption(options, 0), 'Paris');
+      expect(resolveAnswerOption(options, 2), 'Berlin');
+    });
+
+    test('out-of-range and empty-option indexes yield null', () {
+      expect(resolveAnswerOption(options, 5), isNull);
+      expect(resolveAnswerOption(options, -1), isNull);
+      expect(resolveAnswerOption(const [], 0), isNull);
+    });
+
+    test('text and null values pass through', () {
+      expect(resolveAnswerOption(options, 'London'), 'London');
+      expect(resolveAnswerOption(options, null), isNull);
+    });
+
+    test('stripped server question + raw _answer_key grades correctly', () {
+      // Server strips correct_answer from questions and ships the raw key
+      // separately; the player injects it before shuffling.
+      final q = QuizQuestion.fromJson(const {
+        'id': 'q-0',
+        'type': 'mcq',
+        'question': 'Capital of France?',
+        'options': ['Paris', 'London', 'Berlin'],
+      });
+      expect(q.correctAnswer, isNull); // stripped: no key in question
+      final injected =
+          resolveAnswerOption(q.options, 0); // raw key {correct_answer: 0}
+      expect(injected, 'Paris');
     });
   });
 }

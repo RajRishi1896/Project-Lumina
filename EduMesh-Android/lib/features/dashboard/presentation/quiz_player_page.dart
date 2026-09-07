@@ -188,9 +188,12 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   /// [answerKey] is the offline grading map from `_answer_key` in the quiz JSON.
   void _applyQuiz(Quiz quiz, {Map<String, dynamic>? answerKey}) {
     final questions = List<QuizQuestion>.from(quiz.questions);
-    _applyShuffle(quiz, questions);
     if (answerKey != null) _answerKey = answerKey;
+    // Inject BEFORE shuffling: the key stores option indexes against the
+    // original order (server canonical form). Injecting after the shuffle
+    // mapped every index to the wrong option and broke all local grading.
     _injectAnswerKey(questions);
+    _applyShuffle(quiz, questions);
     if (!mounted) return;
     setState(() {
       _quiz = quiz;
@@ -203,18 +206,28 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   }
 
   /// Injects the offline answer key into questions so `_isAnswerCorrect`
-  /// works without a server response. Called during quiz load.
+  /// works without a server response. Called during quiz load, before any
+  /// shuffling. The key stores option indexes (server canonical form) or
+  /// raw text; indexes resolve against the question's original options,
+  /// mirroring [QuizQuestion.fromJson].
   void _injectAnswerKey(List<QuizQuestion> questions) {
     if (_answerKey.isEmpty) return;
     for (int i = 0; i < questions.length; i++) {
       final q = questions[i];
       final key = _answerKey[q.id];
       if (key is! Map) continue;
-      final correctAnswer = key['correct_answer']?.toString();
-      final rawCorrect = key['correct_answers'];
-      final correctAnswers = rawCorrect is List
-          ? rawCorrect.map((e) => e.toString()).toList()
-          : q.correctAnswers;
+      final correctAnswer =
+          resolveAnswerOption(q.options, key['correct_answer']) ??
+              q.correctAnswer;
+      final rawMulti = key['correct_answers'];
+      List<String>? correctAnswers;
+      if (rawMulti is List) {
+        correctAnswers = rawMulti
+            .map((e) => resolveAnswerOption(q.options, e) ?? e.toString())
+            .toList();
+      } else {
+        correctAnswers = q.correctAnswers;
+      }
       questions[i] = QuizQuestion(
         id: q.id,
         type: q.type,
@@ -1111,7 +1124,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
               style: tt.bodyMedium?.copyWith(color: cs.onSurface),
             )
           else if (q.type == QuizQuestionType.fillBlanks)
-            _buildFillBlanksResult(q, userAnswer, cs, tt)
+            _buildFillBlanksResult(q, userAnswer, cs, tt, l10n)
           else if (q.type == QuizQuestionType.multiSelect)
             _buildMultiResult(q, userMulti, cs, tt, index)
           else
@@ -1258,7 +1271,11 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   }
 
   Widget _buildFillBlanksResult(
-      QuizQuestion q, String? userAnswer, ColorScheme cs, TextTheme tt) {
+      QuizQuestion q,
+      String? userAnswer,
+      ColorScheme cs,
+      TextTheme tt,
+      AppLocalizations l10n) {
     final correct = _isAnswerCorrect(
       _questions.indexOf(q),
       q,
@@ -1275,7 +1292,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Your answer: ${userAnswer ?? '-'}',
+            l10n.quizYourAnswer(userAnswer ?? '-'),
             style: tt.bodyMedium?.copyWith(
               fontSize: 14.sp,
               color: cs.onSurface,
@@ -1283,7 +1300,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
           ),
           if (!correct && q.correctAnswer != null)
             Text(
-              'Correct: ${q.correctAnswer}',
+              l10n.quizCorrectAnswer(q.correctAnswer ?? ''),
               style: tt.bodyMedium?.copyWith(
                 fontSize: 14.sp,
                 fontWeight: AppSpacing.weightStrong,

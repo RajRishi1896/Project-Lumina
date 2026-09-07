@@ -742,6 +742,10 @@
   "@suffixMinutes": {
     "description": "Minutes suffix appended to numeric values in stat cards"
   },
+  "suffixSeconds": "s",
+  "@suffixSeconds": {
+    "description": "Seconds suffix appended to sub-minute study durations"
+  },
   "suffixHours": "h",
   "@suffixHours": {
     "description": "Hours suffix appended to numeric values in stat cards and subject breakdown"
@@ -1333,6 +1337,26 @@
       "text": {
         "type": "String",
         "example": "The Earth revolves around the Sun"
+      }
+    }
+  },
+  "quizYourAnswer": "Your answer: {answer}",
+  "@quizYourAnswer": {
+    "description": "Fill-in-the-blanks result row showing the student's answer",
+    "placeholders": {
+      "answer": {
+        "type": "String",
+        "example": "Photosynthesis"
+      }
+    }
+  },
+  "quizCorrectAnswer": "Correct answer: {answer}",
+  "@quizCorrectAnswer": {
+    "description": "Fill-in-the-blanks result row revealing the correct answer",
+    "placeholders": {
+      "answer": {
+        "type": "String",
+        "example": "Photosynthesis"
       }
     }
   },

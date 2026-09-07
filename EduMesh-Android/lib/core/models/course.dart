@@ -38,6 +38,22 @@ QuizQuestionType parseQuizQuestionType(String s) {
   }
 }
 
+/// Resolves a server answer-key value to option text.
+///
+/// Quiz files store correct answers as option indexes (int) against the
+/// original option order; indexes resolve here, anything else falls back
+/// to its string form. Out-of-range indexes yield null so callers fall
+/// back to any previously parsed value. Shared by [QuizQuestion.fromJson]
+/// and the quiz player's offline key injection (which must run before
+/// option shuffling, or indexes map to the wrong options).
+String? resolveAnswerOption(List<String> options, dynamic raw) {
+  if (raw is int) {
+    if (options.isEmpty) return null;
+    return (raw >= 0 && raw < options.length) ? options[raw] : null;
+  }
+  return raw?.toString();
+}
+
 /// A single quiz question with its options and correct answer(s).
 class QuizQuestion {
   final String id;
@@ -82,24 +98,14 @@ class QuizQuestion {
             ?.map((e) => e.toString())
             .toList() ??
         [];
-    String? correctAnswer;
-    final rawCorrect = json['correct_answer'];
-    if (rawCorrect is int && options.isNotEmpty) {
-      correctAnswer = (rawCorrect >= 0 && rawCorrect < options.length)
-          ? options[rawCorrect]
-          : null;
-    } else if (rawCorrect is String) {
-      correctAnswer = rawCorrect;
-    }
+    String? correctAnswer =
+        resolveAnswerOption(options, json['correct_answer']);
     List<String>? correctAnswers;
     final rawMulti = json['correct_answers'] ?? json['correct_answer'];
     if (rawMulti is List) {
-      correctAnswers = rawMulti.map((e) {
-        if (e is int && options.isNotEmpty) {
-          return (e >= 0 && e < options.length) ? options[e] : e.toString();
-        }
-        return e.toString();
-      }).toList();
+      correctAnswers = rawMulti
+          .map((e) => resolveAnswerOption(options, e) ?? e.toString())
+          .toList();
     }
     return QuizQuestion(
       id: json['id']?.toString() ?? '',
