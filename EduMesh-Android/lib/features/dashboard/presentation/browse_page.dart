@@ -132,11 +132,24 @@ class _CoursesTabState extends State<_CoursesTab> {
     super.initState();
     _loadData();
     CourseService().addListener(_onCourseServiceChanged);
+    ConnectivityService().addListener(_onConnectivityChanged);
   }
 
   void _onCourseServiceChanged() {
     if (!mounted) return;
     setState(() { _enrolledCourses = CourseService().enrolledCourses; });
+  }
+
+  void _onConnectivityChanged() {
+    if (!mounted) return;
+    // An offline open skips the fetch and an empty cache stays empty;
+    // reload once when the hub comes back instead of waiting for retry.
+    if (ConnectivityService().isOnline &&
+        _allCourses.isEmpty &&
+        _enrolledCourses.isEmpty &&
+        !_loading) {
+      unawaited(_loadData());
+    }
   }
 
   Future<void> _loadData() async {
@@ -182,6 +195,7 @@ class _CoursesTabState extends State<_CoursesTab> {
     _searchController.dispose();
     _searchDebounce?.cancel();
     CourseService().removeListener(_onCourseServiceChanged);
+    ConnectivityService().removeListener(_onConnectivityChanged);
     super.dispose();
   }
 
