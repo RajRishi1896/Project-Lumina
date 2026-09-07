@@ -13,6 +13,7 @@ import '../../../core/constants/lumina_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/network/api_client.dart';
 import '../../../shared/services/connectivity_service.dart';
+import '../../../shared/services/download_queue.dart';
 import '../../../core/storage/db_helper.dart';
 import '../../../core/services/catalog_service.dart';
 import '../../../core/services/flashcard_service.dart';
@@ -57,6 +58,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   List<Map<String, dynamic>> _subjects = [];
   bool _subjectsLoading = true;
+  bool _subjectsSyncAttempted = false;
 
   List<Map<String, String>> _recentResources = [];
 
@@ -84,9 +86,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
   void _onConnectivityChanged() {
     if (!mounted) return;
+    final nowOnline = ConnectivityService().isOnline;
+    final reconnected = nowOnline && !_isConnected;
     setState(() {
-      _isConnected = ConnectivityService().isOnline;
+      _isConnected = nowOnline;
     });
+    // Subjects may have been empty offline: reload once the hub is back.
+    if (reconnected && _subjects.isEmpty) unawaited(_loadSubjects());
   }
 
   /// Loads the active student's name for the profile avatar chip.
@@ -277,6 +283,21 @@ class _DashboardPageState extends State<DashboardPage> {
             }
           } catch (_) {}
         }
+        // Still nothing and the hub is reachable: the catalog itself may
+        // never have synced (e.g. installed while offline). Force one sync
+        // and re-read, once per dashboard lifetime.
+        if (subjectsSet.isEmpty &&
+            !_subjectsSyncAttempted &&
+            ConnectivityService().isOnline) {
+          _subjectsSyncAttempted = true;
+          try {
+            await CatalogService().syncCatalog(force: true);
+            final catalog = await CatalogService().getCatalog();
+            for (final c in catalog) {
+              if (c.subject.isNotEmpty) subjectsSet.add(c.subject);
+            }
+          } catch (_) {}
+        }
         final local = subjectsSet.map((s) => {'name': s}).toList();
         if (mounted && local.isNotEmpty) {
           setState(() {
@@ -305,7 +326,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   // ponytail: builder defers offscreen sections on 1GB devices.
                   child: ListView.builder(
                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
-                itemCount: 9,
+                itemCount: 10,
                 itemBuilder: (_, i) => switch (i) {
                   0 => _buildSearchBar(context),
                   1 => _buildFlashcardsEntry(context),
@@ -315,6 +336,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   5 => _buildCategories(context),
                   6 => SizedBox(height: AppSpacing.xxl.h),
                   7 => _buildStorageSection(context),
+                  8 => _buildDownloadsEntry(context),
                   _ => SizedBox(height: AppSpacing.xxl.h),
                 },
                   ),
@@ -343,10 +365,27 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           if (MediaQuery.sizeOf(context).width >= 360) ...[
             SizedBox(width: AppSpacing.md.w),
+            // Fit-aware title: rendered only when the full string fits the
+            // remaining row width. Never truncated with an ellipsis.
             Expanded(
-              child: Text(l10n.appTitle,
-                  maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.primary)),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final style = tt.titleLarge?.copyWith(
+                      fontWeight: AppSpacing.weightDisplay,
+                      color: cs.primary);
+                  final tp = TextPainter(
+                    text: TextSpan(text: l10n.appTitle, style: style),
+                    maxLines: 1,
+                    textDirection: Directionality.of(context),
+                  )..layout(maxWidth: constraints.maxWidth);
+                  final fits = !tp.didExceedMaxLines;
+                  tp.dispose();
+                  if (!fits) return const SizedBox.shrink();
+                  return Text(l10n.appTitle,
+                      maxLines: 1, overflow: TextOverflow.visible,
+                      style: style);
+                },
+              ),
             ),
           ],
           SizedBox(width: AppSpacing.sm.w),
@@ -498,6 +537,78 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                 SizedBox(width: AppSpacing.sm.w),
                 Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Dedicated Downloads entry at the bottom of the dashboard: queued and
+  /// downloaded files with a live queue subtitle. Tapping opens Downloads.
+  Widget _buildDownloadsEntry(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: EdgeInsets.only(top: AppSpacing.lg.h),
+      child: Semantics(
+        button: true,
+        label: l10n.offlineLibraryAppBarTitle,
+        child: GestureDetector(
+          onTap: () => Navigator.push(context,
+              luminaRoute(builder: (_) => const OfflineLibraryPage())),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
+              border: Border.all(color: cs.outlineVariant),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40.w,
+                  height: 40.w,
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.download_rounded,
+                      color: cs.primary, size: 22.sp),
+                ),
+                SizedBox(width: AppSpacing.md.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.offlineLibraryAppBarTitle,
+                          style: tt.titleSmall?.copyWith(
+                              color: cs.onSurface,
+                              fontWeight: AppSpacing.weightStrong)),
+                      ListenableBuilder(
+                        listenable: DownloadQueue(),
+                        builder: (context, _) {
+                          final queue = DownloadQueue();
+                          final active = queue.active;
+                          final n = queue.queuedIds.length;
+                          final subtitle = active != null
+                              ? l10n.downloadQueueDownloading
+                              : n > 0
+                                  ? l10n.downloadQueueTitle
+                                  : l10n.storageOfflineLibrarySubtitle;
+                          return Text(subtitle,
+                              style: tt.bodySmall?.copyWith(
+                                  color: cs.onSurfaceVariant));
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded,
+                    color: cs.onSurfaceVariant),
               ],
             ),
           ),

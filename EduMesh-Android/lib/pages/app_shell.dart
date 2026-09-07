@@ -1,6 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
+import 'package:flutter/services.dart';import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:edumesh_android/core/services/activity_tracker.dart';
 import 'package:edumesh_android/features/dashboard/presentation/dashboard_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/saved_resource_page.dart';
@@ -25,6 +26,7 @@ class _AppShellState extends State<AppShell>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   int _index = 0;
   DateTime? _lastBackPress;
+  Timer? _backResetTimer;
   final _browseKey = GlobalKey<BrowsePageState>();
 
   /// Subtle fade when switching tabs; skipped entirely when animations are
@@ -67,6 +69,7 @@ class _AppShellState extends State<AppShell>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _backResetTimer?.cancel();
     _tabFade.dispose();
     super.dispose();
   }
@@ -82,7 +85,11 @@ class _AppShellState extends State<AppShell>
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
+        // Second press inside the window exits; the expiry timer below
+        // guarantees a stale first press can never exit minutes later.
         if (_lastBackPress != null && DateTime.now().difference(_lastBackPress!) < const Duration(seconds: 2)) {
+          _backResetTimer?.cancel();
+          _lastBackPress = null;
           SystemNavigator.pop();
           return;
         }
@@ -98,6 +105,16 @@ class _AppShellState extends State<AppShell>
             action: SnackBarAction(label: l10n.exitButtonLabel, onPressed: () => SystemNavigator.pop()),
           ),
         );
+        // State machine, not SnackBar timing: after 2s the first press is
+        // forgotten and any visible toast is hidden, so it can never linger
+        // and a late second press can never exit.
+        _backResetTimer?.cancel();
+        _backResetTimer = Timer(const Duration(seconds: 2), () {
+          _lastBackPress = null;
+          try {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          } catch (_) {}
+        });
       },
       child: Scaffold(
         body: Stack(
