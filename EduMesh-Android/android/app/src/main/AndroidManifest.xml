@@ -10,6 +10,9 @@
             android:name="id.flutter.flutter_background_service.BackgroundService"
             android:foregroundServiceType="dataSync"
             tools:replace="android:foregroundServiceType" />
+        <receiver
+            android:name=".PipActionReceiver"
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

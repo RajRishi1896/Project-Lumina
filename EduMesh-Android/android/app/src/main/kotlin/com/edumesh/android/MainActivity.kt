@@ -3,11 +3,9 @@ package com.edumesh.android
 import android.app.PendingIntent
 import android.app.PictureInPictureParams
 import android.app.RemoteAction
-import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.drawable.Icon
 import android.net.wifi.WifiManager
@@ -19,6 +17,7 @@ import android.util.Rational
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.lang.ref.WeakReference
 
 class MainActivity : FlutterActivity() {
     private val STORAGE_CHANNEL = "com.edumesh.android/storage"
@@ -26,41 +25,37 @@ class MainActivity : FlutterActivity() {
     private val PIP_CHANNEL = "com.edumesh.android/pip"
     private var pipMethodChannel: MethodChannel? = null
 
-    private val PIP_ACTION = "com.edumesh.android.PIP_ACTION"
     private val PIP_REQUEST_PLAY_PAUSE = 0
     private val PIP_REQUEST_FORWARD = 1
 
-    private var pipActionReceiver: BroadcastReceiver? = null
-
     private var multicastLock: WifiManager.MulticastLock? = null
+
+    companion object {
+        private var activeInstance: WeakReference<MainActivity>? = null
+
+        internal fun dispatchPipAction(action: String) {
+            activeInstance?.get()?.pipMethodChannel?.invokeMethod("onPiPAction", action)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        activeInstance = WeakReference(this)
+
         val wifi = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val lock = wifi.createMulticastLock("edumesh_mdns")
         lock.setReferenceCounted(true)
         lock.acquire()
         multicastLock = lock
-
-        pipActionReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val action = intent.getStringExtra("action") ?: return
-                pipMethodChannel?.invokeMethod("onPiPAction", action)
-            }
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(pipActionReceiver, IntentFilter(PIP_ACTION), Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(pipActionReceiver, IntentFilter(PIP_ACTION))
-        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         multicastLock?.let { if (it.isHeld) it.release() }
         multicastLock = null
-        pipActionReceiver?.let { unregisterReceiver(it) }
-        pipActionReceiver = null
+        if (activeInstance?.get() === this) {
+            activeInstance = null
+        }
         pipMethodChannel = null
     }
 
@@ -74,8 +69,10 @@ class MainActivity : FlutterActivity() {
             this,
             if (isPlaying) R.drawable.ic_pip_pause else R.drawable.ic_pip_play
         )
-        val playPauseIntent = Intent(PIP_ACTION)
-            .setPackage(packageName)
+        // These intents must target a real manifest receiver. A context-registered
+        // receiver cannot be addressed explicitly by PendingIntent, and Android
+        // recommends explicit components for PendingIntent.getBroadcast().
+        val playPauseIntent = Intent(this, PipActionReceiver::class.java)
             .putExtra("action", "play_pause")
         val playPauseAction = RemoteAction(
             playPauseIcon,
@@ -87,8 +84,7 @@ class MainActivity : FlutterActivity() {
             )
         )
 
-        val forwardIntent = Intent(PIP_ACTION)
-            .setPackage(packageName)
+        val forwardIntent = Intent(this, PipActionReceiver::class.java)
             .putExtra("action", "forward")
         val forwardAction = RemoteAction(
             Icon.createWithResource(this, R.drawable.ic_pip_forward),
