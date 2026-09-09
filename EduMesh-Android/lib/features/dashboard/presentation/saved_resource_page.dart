@@ -150,7 +150,7 @@ class SavedResourcesPage extends StatelessWidget {
                   onPressed: () => _showDownloadQueue(context),
                   icon: Badge(
                     isLabelVisible: count > 0,
-                    label: Text('$count', style: TextStyle(fontSize: AppSpacing.xs.sp, color: cs.onPrimary)),
+                    label: Text('$count', style: TextStyle(fontSize: 10.sp, color: cs.onPrimary)),
                     child: Icon(Icons.download_rounded, color: cs.onSurfaceVariant),
                   ),
                 );

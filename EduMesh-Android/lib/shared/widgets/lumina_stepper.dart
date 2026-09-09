@@ -60,8 +60,10 @@ class LuminaStepper extends StatelessWidget {
               Text(
                 steps[stepIndex],
                 textAlign: TextAlign.center,
+                // No fontSize override: inherit labelSmall (11px). A spacing
+                // constant (AppSpacing.xs = 4) was used here before, shrinking
+                // step labels to an unreadable 4sp.
                 style: tt.labelSmall?.copyWith(
-                  fontSize: AppSpacing.xs.sp,
                   fontWeight: isActive ? AppSpacing.weightStrong : AppSpacing.weightBody,
                   color: isActive ? cs.primary : cs.onSurfaceVariant,
                   height: 1.2,
