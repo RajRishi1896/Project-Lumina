@@ -15,6 +15,8 @@ import 'package:edumesh_android/features/auth/data/auth_service.dart';
 import 'package:edumesh_android/shared/widgets/mini_player_controller.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
+import 'package:dio/dio.dart';
+import 'package:edumesh_android/features/auth/presentation/profile_picker_page.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
 
 /// A full-screen locked-down quiz player with 4 question types
@@ -94,6 +96,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   bool _showResults = false;
   bool _loading = true;
   bool _loadFailed = false;
+  bool _authFailed = false;
   final Map<int, bool> _correctAnswers = {};
   // Selection identity is the tapped option INDEX, not its text: two options
   // with identical text must stay independently selectable.
@@ -268,6 +271,25 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
         final quizData = resp.data as Map<String, dynamic>;
         await DBHelper().cacheQuiz(cacheKey, quizData);
         _applyQuiz(Quiz.fromJson(quizData), answerKey: quizData['_answer_key'] != null ? Map<String, dynamic>.from(quizData['_answer_key']) : null);
+        return;
+      }
+      // Logged out (or session dead): show a login prompt, not a generic
+      // load error. Skips the cache: it may belong to another profile.
+      if (resp.statusCode == 401 && mounted) {
+        setState(() {
+          _authFailed = true;
+          _loadFailed = true;
+          _loading = false;
+        });
+        return;
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401 && mounted) {
+        setState(() {
+          _authFailed = true;
+          _loadFailed = true;
+          _loading = false;
+        });
         return;
       }
     } catch (_) {}
@@ -569,11 +591,28 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
               children: [
                 Icon(Icons.error_outline, size: 48.sp, color: cs.error),
                 SizedBox(height: AppSpacing.md.h),
-                Text(l10n.quizLoadingError, style: tt.bodyLarge),
+                Text(
+                    _authFailed
+                        ? l10n.quizSessionExpired
+                        : l10n.quizLoadingError,
+                    style: tt.bodyLarge,
+                    textAlign: TextAlign.center),
                 SizedBox(height: AppSpacing.lg.h),
                 FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(l10n.buttonCancel),
+                  onPressed: () async {
+                    if (_authFailed) {
+                      await AuthService().logout();
+                      if (context.mounted) {
+                        unawaited(routeAfterLogout(
+                            Navigator.of(context)));
+                      }
+                      return;
+                    }
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(_authFailed
+                      ? l10n.quizLoginAgain
+                      : l10n.buttonCancel),
                 ),
               ],
             ),

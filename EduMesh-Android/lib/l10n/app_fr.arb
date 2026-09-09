@@ -332,6 +332,8 @@
   "quizBackToCourse": "Retour au cours",
   "quizQuitTitle": "Quitter le quiz ?",
   "quizQuitConfirm": "Votre progression sera soumise telle quelle. Vous pourrez repasser le quiz plus tard.",
+  "quizSessionExpired": "Session expirée. Reconnectez-vous pour ouvrir ce quiz.",
+  "quizLoginAgain": "Se reconnecter",
   "profileCoursesCompleted": "Cours terminés",
   "profileMyCourses": "Mes Cours",
   "profileTapToResume": "Appuyez pour reprendre",
@@ -1744,14 +1746,6 @@
   "buttonMinimizeVideo": "Réduire la vidéo",
   "@buttonMinimizeVideo": {
     "description": "Tooltip for the picture-in-picture minimize button in the video player controls bar, next to the fullscreen button. User shrinks the playing video into the floating mini-player overlay while it keeps playing. Max 16 characters in English; allow up to 24 in translations."
-  },
-  "videoPlayingInPiP": "Lecture en picture-in-picture",
-  "@videoPlayingInPiP": {
-    "description": "Placeholder text shown on the video player page while the video is playing in the OS-level Picture-in-Picture floating window."
-  },
-  "buttonReturnToVideo": "Retour à la vidéo",
-  "@buttonReturnToVideo": {
-    "description": "Button label on the PiP placeholder screen. Tapping exits PiP mode and restores the full video player page."
   },
   "videoPlaybackSpeed": "Vitesse de lecture",
   "@videoPlaybackSpeed": {

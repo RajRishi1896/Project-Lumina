@@ -338,6 +338,8 @@
   "quizBackToCourse": "కోర్సుకు తిరిగి",
   "quizQuitTitle": "క్విజ్ వదిలివేయాలా?",
   "quizQuitConfirm": "మీ పురోగతి ఉన్నది విధంగానే సమర్పించబడుతుంది. మీరు తర్వాత మళ్ళీ ప్రయత్నించవచ్చు.",
+  "quizSessionExpired": "సెషన్ గడువు ముగిసింది. ఈ క్విజ్‌ను తెరవడానికి మళ్లీ లాగిన్ చేయండి.",
+  "quizLoginAgain": "మళ్లీ లాగిన్ చేయండి",
   "profileCoursesCompleted": "కోర్సులు పూర్తయ్యాయి",
   "profileMyCourses": "నా కోర్సులు",
   "profileTapToResume": "కొనసాగించడానికి ట్యాప్ చేయండి",
@@ -745,14 +747,6 @@
   "buttonMinimizeVideo": "వీడియో చిన్నదిగా చేయండి",
   "@buttonMinimizeVideo": {
     "description": "Tooltip for the picture-in-picture minimize button in the video player controls bar, next to the fullscreen button. User shrinks the playing video into the floating mini-player overlay while it keeps playing. Max 16 characters in English; allow up to 24 in translations."
-  },
-  "videoPlayingInPiP": "పిక్చర్-ఇన్-పిక్చర్ లో ప్లే అవుతోంది",
-  "@videoPlayingInPiP": {
-    "description": "Placeholder text shown on the video player page while the video is playing in the OS-level Picture-in-Picture floating window."
-  },
-  "buttonReturnToVideo": "వీడియోకు తిరిగి వెళ్ళండి",
-  "@buttonReturnToVideo": {
-    "description": "Button label on the PiP placeholder screen. Tapping exits PiP mode and restores the full video player page."
   },
   "videoPlaybackSpeed": "ప్లేబ్యాక్ వేగం",
   "@videoPlaybackSpeed": {

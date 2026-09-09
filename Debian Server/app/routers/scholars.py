@@ -1,7 +1,6 @@
 """Scholar management routes: list, reset password, delete."""
 import asyncio
 import logging
-import secrets
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.dependencies import hash_password, verify_teacher, verify_admin, invalidate_tokens_for_user
@@ -9,6 +8,16 @@ from app.models import StatusResponse, ScholarListItem
 from app.audit import audit, Action
 
 router = APIRouter()
+
+# Fixed default a force-reset scholar logs in with. The account is marked
+# reset_required, so the student must choose their own password immediately
+# on next login: the window where a known password works is one login.
+# Matches the documented "resets to the default" contract and the hub's
+# default admin/hotspot credential. SECURITY NOTE: anyone who knows a reset
+# just happened can log in as that student until they complete the forced
+# change; acceptable on a single-classroom offline hub, never expose this
+# endpoint beyond the teacher role (verify_teacher enforced below).
+DEFAULT_RESET_PASSWORD = "lumina2026"
 
 
 @router.get("/teacher/scholars", response_model=list[ScholarListItem],
@@ -43,8 +52,7 @@ async def teacher_reset_student_password(scholar_id: str, request: Request = Non
     row = await db_fetch_one("SELECT id, username FROM scholars WHERE id = ?", (scholar_id,))
     if not row:
         raise HTTPException(status_code=404, detail="Scholar not found.")  # i18n: user-facing error message
-    generated_pwd = secrets.token_urlsafe(12)
-    hashed = await asyncio.to_thread(hash_password, generated_pwd)
+    hashed = await asyncio.to_thread(hash_password, DEFAULT_RESET_PASSWORD)
     try:
         await db_exec(
             "UPDATE scholars SET hashed_password = ?, reset_required = 1 WHERE id = ?",
@@ -54,7 +62,7 @@ async def teacher_reset_student_password(scholar_id: str, request: Request = Non
         await invalidate_tokens_for_user(row["id"])
         await audit(action=Action.RESET_PASSWORD, username=teacher_user, resource_type="account",
                     resource_id=scholar_id, target_user=scholar_id)
-        return {"status": "success", "temporary_password": generated_pwd}
+        return {"status": "success", "temporary_password": DEFAULT_RESET_PASSWORD}
     except Exception as e:
         logging.error(f"teacher_reset_student_password: {e}")
         raise HTTPException(status_code=400, detail="Failed to reset password")  # i18n: user-facing error message

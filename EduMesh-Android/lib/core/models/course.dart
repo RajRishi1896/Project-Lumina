@@ -40,16 +40,28 @@ QuizQuestionType parseQuizQuestionType(String s) {
 
 /// Resolves a server answer-key value to option text.
 ///
-/// Quiz files store correct answers as option indexes (int) against the
-/// original option order; indexes resolve here, anything else falls back
-/// to its string form. Out-of-range indexes yield null so callers fall
-/// back to any previously parsed value. Shared by [QuizQuestion.fromJson]
-/// and the quiz player's offline key injection (which must run before
-/// option shuffling, or indexes map to the wrong options).
+/// Quiz files store correct answers as option indexes (int), while the web
+/// form may stringify them ("0"). A numeric string that exactly matches an
+/// option is treated as literal text; otherwise a valid index resolves
+/// positionally. This keeps `correct_answer: "1"` with options `["1", "2"]`
+/// literal while `correct_answer: "0"` with `["Correct", "Wrong"]` maps to
+/// `"Correct"` — mirroring the server grader. Out-of-range indexes yield
+/// null so callers fall back to any previously parsed value. Shared by
+/// [QuizQuestion.fromJson] and the quiz player's offline key injection
+/// (which must run before option shuffling, or indexes map wrongly).
 String? resolveAnswerOption(List<String> options, dynamic raw) {
   if (raw is int) {
     if (options.isEmpty) return null;
     return (raw >= 0 && raw < options.length) ? options[raw] : null;
+  }
+  if (raw is String) {
+    if (options.contains(raw)) return raw;
+    final idx = int.tryParse(raw.trim());
+    if (idx != null) {
+      if (options.isEmpty) return null;
+      return (idx >= 0 && idx < options.length) ? options[idx] : null;
+    }
+    return raw;
   }
   return raw?.toString();
 }

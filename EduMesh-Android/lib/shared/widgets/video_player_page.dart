@@ -672,9 +672,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
       return const Center(child: CircularProgressIndicator());
     }
 
-    // In OS PiP the system window shows the video; this page shows the
-    // placeholder with a return button (l10n keys already exist).
-    if (_inPiP) return _buildPiPPlaceholder(l10n, cs);
+    // NOTE: no placeholder UI while in OS PiP. The system PiP window
+    // renders this page's activity surface, so the VideoPlayer must stay
+    // mounted for the floating window to show video instead of a static
+    // message. AppBar/controls stay hidden via _inPiP below.
 
     final aspect = _controller!.value.aspectRatio;
     // Single GestureDetector: double-tap for seek, horizontal drag for
@@ -713,31 +714,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
               child: _buildProgressBar(),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPiPPlaceholder(AppLocalizations l10n, ColorScheme cs) {
-    final tt = Theme.of(context).textTheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.section),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.picture_in_picture_alt,
-                size: 48, color: cs.onSurfaceVariant),
-            const SizedBox(height: AppSpacing.md),
-            Text(l10n.videoPlayingInPiP,
-                style: tt.bodyLarge?.copyWith(color: cs.onSurface),
-                textAlign: TextAlign.center),
-            const SizedBox(height: AppSpacing.lg),
-            FilledButton(
-              onPressed: () => PiPHelper().exitPiP(),
-              child: Text(l10n.buttonReturnToVideo),
-            ),
-          ],
-        ),
       ),
     );
   }

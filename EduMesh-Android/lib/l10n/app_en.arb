@@ -1376,6 +1376,14 @@
   "@quizQuitConfirm": {
     "description": "Body text in the quit-quiz confirmation dialog. Tells the student their current answers will be submitted"
   },
+  "quizSessionExpired": "Session expired. Log in again to open this quiz.",
+  "@quizSessionExpired": {
+    "description": "Error shown when a quiz fails to load because the session is dead (HTTP 401)"
+  },
+  "quizLoginAgain": "Log in again",
+  "@quizLoginAgain": {
+    "description": "Button on the expired-session quiz error screen; logs out and routes to login"
+  },
   "profileCoursesCompleted": "Courses Completed",
   "@profileCoursesCompleted": {
     "description": "Stat card label for count of completed courses on the profile page"
@@ -1798,14 +1806,6 @@
   "buttonMinimizeVideo": "Minimize video",
   "@buttonMinimizeVideo": {
     "description": "Tooltip for the picture-in-picture minimize button in the video player controls bar, next to the fullscreen button. User shrinks the playing video into the floating mini-player overlay while it keeps playing. Max 16 characters in English; allow up to 24 in translations."
-  },
-  "videoPlayingInPiP": "Playing in picture-in-picture",
-  "@videoPlayingInPiP": {
-    "description": "Placeholder text shown on the video player page while the video is playing in the OS-level Picture-in-Picture floating window. The Flutter page is blank except for this message and a 'return' button."
-  },
-  "buttonReturnToVideo": "Return to video",
-  "@buttonReturnToVideo": {
-    "description": "Button label on the PiP placeholder screen. Tapping exits PiP mode and restores the full video player page. Max 20 characters in English; allow up to 30 in translations."
   },
   "videoPlaybackSpeed": "Playback speed",
   "@videoPlaybackSpeed": {

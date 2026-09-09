@@ -332,6 +332,8 @@
   "quizBackToCourse": "कोर्स पर वापस",
   "quizQuitTitle": "क्विज़ छोड़ें?",
   "quizQuitConfirm": "आपकी प्रगति जैसी है वैसी जमा हो जाएगी। आप बाद में फिर से कोशिश कर सकते हैं।",
+  "quizSessionExpired": "सत्र समाप्त हो गया। यह क्विज़ खोलने के लिए फिर से लॉग इन करें।",
+  "quizLoginAgain": "फिर से लॉग इन करें",
   "profileCoursesCompleted": "कोर्स पूर्ण",
   "profileMyCourses": "मेरे कोर्स",
   "profileTapToResume": "जारी रखने के लिए टैप करें",
@@ -1744,14 +1746,6 @@
   "buttonMinimizeVideo": "वीडियो छोटा करें",
   "@buttonMinimizeVideo": {
     "description": "Tooltip for the picture-in-picture minimize button in the video player controls bar, next to the fullscreen button. User shrinks the playing video into the floating mini-player overlay while it keeps playing. Max 16 characters in English; allow up to 24 in translations."
-  },
-  "videoPlayingInPiP": "पिक्चर-इन-पिक्चर में चल रहा है",
-  "@videoPlayingInPiP": {
-    "description": "Placeholder text shown on the video player page while the video is playing in the OS-level Picture-in-Picture floating window."
-  },
-  "buttonReturnToVideo": "वीडियो पर वापस जाएं",
-  "@buttonReturnToVideo": {
-    "description": "Button label on the PiP placeholder screen. Tapping exits PiP mode and restores the full video player page."
   },
   "videoPlaybackSpeed": "प्लेबैक गति",
   "@videoPlaybackSpeed": {

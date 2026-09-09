@@ -120,6 +120,13 @@ void main() {
       expect(resolveAnswerOption(options, null), isNull);
     });
 
+    test('numeric strings matching an option stay literal, else resolve by index', () {
+      // Web form stringifies indexes; option text itself may be numeric.
+      expect(resolveAnswerOption(['1', '2'], '1'), '1');
+      expect(resolveAnswerOption(options, '0'), 'Paris');
+      expect(resolveAnswerOption(options, '9'), isNull);
+    });
+
     test('stripped server question + raw _answer_key grades correctly', () {
       // Server strips correct_answer from questions and ships the raw key
       // separately; the player injects it before shuffling.

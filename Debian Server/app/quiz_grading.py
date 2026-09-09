@@ -138,6 +138,12 @@ def _correct_answers(q: dict) -> list:
 
     ``correct_answer``/``correct_answers`` are stored as option indexes (int)
     or literal strings; both resolve to the option text the client submits.
+    Numeric strings are ambiguous (the web form stringifies indexes, but an
+    option's text can itself be numeric): a value that exactly matches an
+    option is treated as literal text, otherwise a valid index resolves
+    positionally. This keeps ``correct_answer: "1"`` with options
+    ``["1", "2"]`` literal while ``correct_answer: "0"`` with options
+    ``["Correct", "Wrong"]`` resolves to ``"Correct"``.
     """
     options = q.get("options") or []
     raw = q.get("correct_answers")
@@ -146,16 +152,29 @@ def _correct_answers(q: dict) -> list:
     if raw is None:
         return []
     if isinstance(raw, list):
-        resolved = []
-        for item in raw:
-            if isinstance(item, int) and 0 <= item < len(options):
-                resolved.append(options[item])
-            else:
-                resolved.append(str(item))
-        return resolved
+        return [_resolve_answer(options, item) for item in raw]
+    return [_resolve_answer(options, raw)] if _resolve_answer(options, raw) is not None else []
+
+
+def _resolve_answer(options: list, raw):
+    """Resolve one answer-key value to option text, or None when empty."""
     if isinstance(raw, int):
-        return [options[raw]] if 0 <= raw < len(options) else [str(raw)]
-    return [str(raw)]
+        if 0 <= raw < len(options):
+            return options[raw]
+        return None
+    if isinstance(raw, str):
+        if raw in options:
+            return raw
+        try:
+            idx = int(raw.strip())
+        except (ValueError, TypeError):
+            return str(raw)
+        if 0 <= idx < len(options):
+            return options[idx]
+        return str(raw)
+    if raw is None:
+        return None
+    return str(raw)
 
 
 def _is_correct(q: dict, answers: dict, index: int) -> bool:
@@ -198,4 +217,12 @@ if __name__ == "__main__":
                        {"q1": {"answer": "1"}}, 0) is True
     assert _is_correct({"id": "q2", "type": "multi_select", "correct_answers": ["a", "b"]},
                        {"q2": {"multi_answers": ["b", "a"]}}, 1) is True
+    # Stringified indexes from the web form resolve positionally unless the
+    # literal text matches an option (production hub quiz shape).
+    assert _is_correct({"id": "q3", "type": "mcq", "correct_answer": "0",
+                        "options": ["Correct", "Wrong"]},
+                       {"q3": {"answer": "Correct"}}, 2) is True
+    assert _is_correct({"id": "q3", "type": "mcq", "correct_answer": "0",
+                        "options": ["Correct", "Wrong"]},
+                       {"q3": {"answer": "Wrong"}}, 2) is False
     print("quiz_grading self-check OK")  # noqa: T201
