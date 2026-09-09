@@ -26,7 +26,7 @@
 
         <!-- Section: Change Password: current password, new password, toggle visibility -->
         <div class="card">
-            <div class="card-title" data-i18n="security_change_password_title">Change Password</div>
+            <div class="card-title" data-i18n="security_change_password_title">Change Admin Password</div>
             <div id="securityNotif" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.3s ease;"></div>
             <div class="security-form">
                 <div class="form-group">
@@ -142,7 +142,7 @@
                     <option value="false" data-i18n="settings.results_failed">Failed</option>
                 </select>
                 <label for="adminLogUserFilter" class="sr-only" data-i18n="settings.user_filter_label">Filter by user</label>
-                <input type="text" id="adminLogUserFilter" placeholder="Filter by user..." data-i18n-placeholder="settings.user_filter_label" style="padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--bg-input); color: var(--on-surface); outline: none; width: 140px; min-height: 44px;">
+                <input type="text" id="adminLogUserFilter" placeholder="Filter by user" data-i18n-placeholder="settings.user_filter_label" style="padding: 0.4rem 0.5rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--bg-input); color: var(--on-surface); outline: none; width: 140px; min-height: 44px;">
             </div>
 
             <!-- Active filter chips -->
@@ -204,7 +204,7 @@
                         <option value="24h" data-i18n="settings.download_24h">Last 24 Hours</option>
                         <option value="7d" data-i18n="settings.download_7d">Last 7 Days</option>
                         <option value="30d" data-i18n="settings.download_30d">Last 30 Days</option>
-                        <option value="all" data-i18n="settings.download_all">All Logs (Entire History)</option>
+                        <option value="all" data-i18n="settings.download_all">All Logs</option>
                     </select>
                 </div>
                 <button id="btn-downloadLogs" class="btn btn-primary" style="padding: 0.65rem 1.25rem; font-size: 0.95rem;"><span data-i18n="settings.download_logs_btn">Download Logs (.txt)</span></button>

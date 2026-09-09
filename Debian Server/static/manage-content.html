@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="content.page_title">Lumina Hub | Content Manager</title>
+    <title data-i18n="content.page_title">Content Manager</title>
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
@@ -23,7 +23,7 @@
         <div id="contentTab">
             <div class="page-header">
                 <h1 data-i18n="content.page_title">Content Manager</h1>
-                <p data-i18n="content.page_description">Upload and manage educational resources for your students.</p>
+                <p data-i18n="content.page_description">Upload and manage educational resources.</p>
             </div>
 
             <!-- Section: Mesh Library: filterable resource table with search + upload button on same line -->
@@ -42,7 +42,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </span>
                         </div>
-                        <button id="btn-openUploadModal" class="btn btn-primary" style="white-space: nowrap;"><span data-i18n="content.upload_button">+ Upload Resource</span></button>
+                        <button id="btn-openUploadModal" class="btn btn-primary" style="white-space: nowrap;"><span data-i18n="content.upload_button">Upload</span></button>
                         <a id="btn-flashcards" class="btn btn-outline" href="/static/flashcards" style="white-space: nowrap;"><span data-i18n="sidebar.flashcards">Flashcards</span></a>
                     </div>
                 </div>
@@ -59,7 +59,7 @@
                         </tr>
                     </thead>
                     <tbody id="resourceTable">
-                        <tr><td colspan="6" class="empty-state" data-i18n="content.library_empty">No resources uploaded yet.</td></tr>
+                        <tr><td colspan="6" class="empty-state" data-i18n="content.library_empty">No resources found.</td></tr>
                     </tbody>
                 </table>
                 </div>
@@ -167,7 +167,7 @@
                         <select id="type" class="form-select">
                             <option value="textbook" data-i18n="content.upload_option_textbook">Textbook</option>
                             <option value="khan" data-i18n="content.upload_option_video">Video</option>
-                            <option value="pyq" data-i18n="content.upload_option_pyq">Previous Year Paper (PYQ)</option>
+                            <option value="pyq" data-i18n="content.upload_option_pyq">PYQ</option>
                             <option value="kiwix" data-i18n="content.upload_option_zim">ZIM Archive</option>
                             <option value="notes" data-i18n="content.upload_option_notes">Notes</option>
                             <option value="quiz" data-i18n="content.upload_option_quiz">Quiz</option>
@@ -262,8 +262,8 @@
                         <label class="form-label" data-i18n="courses.quiz_shuffle_label" for="quizShuffleMode">Shuffle</label>
                         <select id="quizShuffleMode" class="form-select">
                             <option value="none" data-i18n="courses.shuffle_none">None</option>
-                            <option value="questions" data-i18n="courses.shuffle_questions_only">Only Questions</option>
-                            <option value="options" data-i18n="courses.shuffle_options_only">Only Options</option>
+                            <option value="questions" data-i18n="courses.shuffle_questions_only">Questions only</option>
+                            <option value="options" data-i18n="courses.shuffle_options_only">Options only</option>
                             <option value="both" data-i18n="courses.shuffle_both">Both</option>
                         </select>
                     </div>
@@ -385,7 +385,7 @@
                         <select id="editResType" class="form-select">
                             <option value="textbook" data-i18n="content.upload_option_textbook">Textbook</option>
                             <option value="khan" data-i18n="content.upload_option_video">Video</option>
-                            <option value="pyq" data-i18n="content.upload_option_pyq">Previous Year Paper (PYQ)</option>
+                            <option value="pyq" data-i18n="content.upload_option_pyq">PYQ</option>
                             <option value="kiwix" data-i18n="content.upload_option_zim">ZIM Archive</option>
                             <option value="notes" data-i18n="content.upload_option_notes">Notes</option>
                             <option value="quiz" data-i18n="content.upload_option_quiz">Quiz</option>
