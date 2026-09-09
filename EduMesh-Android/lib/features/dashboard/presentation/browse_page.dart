@@ -162,6 +162,13 @@ class _CoursesTabState extends State<_CoursesTab> {
       _allCourses = await CourseService().getCachedCatalog();
       await CourseService().loadEnrolledCourses();
       _enrolledCourses = CourseService().enrolledCourses;
+      // fetchCatalog swallows failures internally: surface them instead of
+      // showing a silent empty list when both cache and enrollment are bare.
+      if (_allCourses.isEmpty &&
+          _enrolledCourses.isEmpty &&
+          CourseService().error != null) {
+        _error = CourseService().error;
+      }
       final db = await DBHelper().database;
       final similarRows = await db.query('similar_courses');
       final similarIds = similarRows.map((r) => (r['similar_course_id'] ?? '').toString()).toSet();
