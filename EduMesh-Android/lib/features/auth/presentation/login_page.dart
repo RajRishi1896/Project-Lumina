@@ -78,6 +78,10 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _handleAuth() async {
     if (!_isConnected) return; // Prevent action if offline
+    // Guard against rapid re-taps while a request is in flight: each tap
+    // fires a login POST, and a burst trips the server's 10/min rate limit
+    // (429), locking the user out for a minute.
+    if (_isLoading) return;
 
     if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
       setState(() => _errorMessage = AppLocalizations.of(context)!.errorFillAllFields);
