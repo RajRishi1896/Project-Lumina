@@ -32,7 +32,6 @@ A repurposed laptop runs a WiFi hotspot, a FastAPI content server, and a captive
 - [Tech Stack](#tech-stack)
 - [Setup and Deployment](#setup-and-deployment)
 - [Roadmap](#roadmap)
-- [Documentation](#documentation)
 - [Contributing and Credits](#contributing-and-credits)
 - [License](#license)
 
@@ -42,11 +41,11 @@ A repurposed laptop runs a WiFi hotspot, a FastAPI content server, and a captive
 
 Project Lumina is a proof of concept: an offline-first learning platform for schools where broadband, stable power, and student-owned devices cannot be assumed. One low-cost server laptop hosts all content and services. Android phones on a local hotspot consume the content through a Flutter app that remains fully usable when the hub is unreachable. The PoC is complete and shipped.
 
-Two independent codebases form the system: a Flutter Android client (`EduMesh-Android/`, 66 Dart files) and a FastAPI server (`Debian Server/`, 22 router modules plus a ZIM handler). They share no code, no dependencies, and no toolchain. They communicate over plain HTTP on the local network, with the laptop acting as gateway at the static address `10.42.0.1`.
+Two independent codebases form the system: a Flutter Android client (`EduMesh-Android/`, 66 hand-written Dart files plus generated localizations) and a FastAPI server (`Debian Server/`, 23 router modules plus a ZIM handler). They share no code, no dependencies, and no toolchain. They communicate over plain HTTP on the local network, with the laptop acting as gateway at the static address `10.42.0.1`.
 
 **Why it exists.** Existing LMS platforms assume always-on broadband and one device per student. The environment this target provides neither. The project instead assumes nothing: no internet, one laptop for an entire school, content delivered by USB stick, and progress synchronized in the brief window a phone is near the hub. The PoC proved the architecture works; it is not a product roadmap.
 
-**Current maturity.** This is a proof of concept that shipped. The system is feature-complete for single-classroom and school-lab deployment. It passes a 64-test pytest suite and a 56-test Flutter suite, `dart analyze` at 0 errors and 0 warnings, and has run end-to-end on emulators and development hardware. The 250-concurrent-student concurrency target is a design figure validated only at small scale; a repeatable benchmark harness is not in scope. What exists works. What doesn't exist was never needed for the PoC.
+**Current maturity.** This is a proof of concept that shipped. The system is feature-complete for single-classroom and school-lab deployment. It passes a 64-test pytest suite (8 files) and a 61-test Flutter suite (9 files), `dart analyze` at 0 errors and 0 warnings, and has run end-to-end on emulators and development hardware. The 250-concurrent-student concurrency target is a design figure validated only at small scale; a repeatable benchmark harness is not in scope. What exists works. What doesn't exist was never needed for the PoC.
 
 ---
 
@@ -89,10 +88,10 @@ Two independent codebases form the system: a Flutter Android client (`EduMesh-An
 
 - **Course browser and player.** Browse, enroll, and track progress through structured courses. Courses contain resources organized into ordered topics with teacher-authored quizzes.
 - **Flashcards.** SM-2 spaced-repetition decks with a dedicated library, deck details, editor, and tap-to-flip study mode; teachers create decks and review submissions on the web dashboard. Optional subtle animations ship behind a Settings toggle (off by default).
-- **Video with picture-in-picture.** `MiniPlayerController` is a process-wide singleton. Leaving full-screen playback continues in a mini overlay; closing it disposes both `VideoPlayerController` and `ChewieController`. Video streams via `/api/stream/` with HTTP Range support for seeking.
+- **Video with picture-in-picture.** `MiniPlayerController` is a process-wide singleton. Leaving full-screen playback continues in a mini overlay; closing it disposes the `VideoPlayerController`. Videos stream over HTTP with Range support for seeking; the server honors Range on media endpoints and never transcodes.
 - **PDF viewer.** `pdfx` with pinch-to-zoom and zoom buttons (0.25x steps). Page position persists to `SharedPreferences`; a 6-column page grid provides rapid navigation.
 - **ZIM article browser.** Kiwix archives are searchable server-side with a 1 to 500 article cap per query (a deliberate OOM guard for 1 GB phones). Articles render in-app; downloaded articles inline all assets as data URIs for fully offline rendering.
-- **Search recommendations.** An on-device scorer ranks resources locally: +3 for matching grade, +2 for a previously accessed subject, +1 for the most-viewed resource type; the top 6 surface as "Recommended for You".
+- **Search recommendations.** An on-device scorer ranks resources locally for the "Recommended for You" row.
 
 **Resilience**
 
@@ -103,7 +102,7 @@ Two independent codebases form the system: a Flutter Android client (`EduMesh-An
 
 **UX and accessibility**
 
-- 6 languages (English, Hindi, Kannada, French, Tamil, Telugu): 410 ARB keys with ICU plurals in Flutter, 728 JSON keys on web, identical key sets across all six files.
+- 6 languages (English, Hindi, Kannada, French, Tamil, Telugu): 416 ARB keys with ICU plurals in Flutter, 762 JSON keys on web, identical key sets across all six files.
 - All fonts bundled as `.ttf` (Noto Sans per script); `GoogleFonts` is a fallback only.
 - Every tappable element meets the 48x48px minimum touch target; icon-only buttons carry `Tooltip` or `Semantics` labels.
 - `PopScope` double-back-to-exit with a 2-second window (first press shows a SnackBar with an Exit button).
@@ -111,7 +110,7 @@ Two independent codebases form the system: a Flutter Android client (`EduMesh-An
 
 ### Hub server (FastAPI)
 
-22 focused router modules plus `zim_handler.py`, covering auth, student sync, teacher analytics, course management, content CRUD, media streaming, account management, passwords, audit logs, system health, and ZIM serving. The route-by-route reference is the OpenAPI spec at `/docs` when the server runs; module responsibilities are documented in docstrings under `Debian Server/app/routers/`.
+23 focused router modules plus `zim_handler.py`, covering auth, student sync, teacher analytics, course management, content CRUD, media streaming, account management, passwords, audit logs, system health, and ZIM serving. The route-by-route reference is the OpenAPI spec at `/docs` when the server runs; module responsibilities are documented in docstrings under `Debian Server/app/routers/`.
 
 Operational details:
 
@@ -120,7 +119,7 @@ Operational details:
 - **Content standards.** Uploads validate against a controlled subject taxonomy and grades 1 to 13 (0 reserved for pre-primary, 13 for bridging and exam prep), require source and license metadata, and reject duplicates on `title + subject + grade + language + resource_type` with a `409` response plus an explicit `force_upload` override.
 - **Audit logging.** Admin actions and resource status transitions append to `data/admin_actions.log` with UTC timestamps and acting user IDs; retention is configurable.
 - **No external dependencies.** The server starts and serves every endpoint with no internet connection; `setup_hub.sh` provisioning is idempotent and completes offline after the initial package pass.
-- **Security hardening.** Admin password randomly generated on first boot. Teachers can only edit/delete their own resources (admin override via `can_manage_resource()`). CORS tightened to specific methods and headers. GZip compression on JSON responses >500 bytes (skips Range requests for streaming). Password strength validation enforced on all new accounts. Profile icon uploads require authentication.
+- **Security hardening.** Admin password defaults to `lumina2026` on first boot (reset via `reset_admin.sh`). Teachers can only edit/delete their own resources (admin override via `can_manage_resource()`). CORS tightened to specific methods and headers. GZip compression on JSON responses >500 bytes (skips Range requests for streaming). Password strength validation enforced on all new accounts. Profile icon uploads require authentication.
 
 ### Web dashboard
 
@@ -134,7 +133,7 @@ Routes are grouped by prefix: student- and teacher-facing routes live under `/ap
 
 Notable endpoint behaviours:
 
-- **Streaming.** Video files are served through `/api/stream/` with HTTP Range support (206 Partial Content) so students can seek without full download. The server does not transcode; target phones decode in hardware.
+- **Streaming.** Media endpoints serve HTTP Range requests (206 Partial Content) so students can seek without full download. The server does not transcode; target phones decode in hardware.
 - **Auth.** JWT-style session tokens with the three-tier renewal described above; newly registered students are forced through a password change. Passwords are bcrypt-hashed server-side; the offline-only login path uses a separate local SHA-256 credential that never shares the server hash.
 - **ZIM serving.** HTML from `/zim/page` has asset paths rewritten to `/zim/asset` endpoints that read lazily from the `.zim` binary; article search is capped at 500 results. An hourly auto-cleaner prunes archives by LRU policy against `zim_cache_config.json`.
 
@@ -164,7 +163,7 @@ Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frame
 
 **500-article ZIM search cap.** Kiwix archives hold hundreds of thousands of articles; loading them all would OOM a 1 GB phone. Capping search at 500 results guarantees the app never crashes on query, at the cost of requiring multiple queries for deep research across large archives.
 
-**Test coverage vs. offline reliability.** Development time went to offline reliability (mutation queue, download atomicity, Keystore recovery) rather than test volume. The server suite is 64 tests across 7 files; the Flutter suite is 56 tests across 7 files (scheduler, flip card, animation system, profile flows, profile switcher, course model, smoke): enough to make refactoring safe, not exhaustive. This was the correct trade-off for a PoC.
+**Test coverage vs. offline reliability.** Development time went to offline reliability (mutation queue, download atomicity, Keystore recovery) rather than test volume. The server suite is 64 tests across 8 files; the Flutter suite is 61 tests across 9 files (scheduler, flip card, animation system, profile flows, profile switcher, course model, stepper, mini-player, smoke): enough to make refactoring safe, not exhaustive. This was the correct trade-off for a PoC.
 
 **`.part` rename on FAT32.** The download rename is not atomic on FAT32/exFAT, the filesystems on most cheap SD cards. The `.part` convention still prevents corrupted files from masquerading as complete, and a crash mid-rename leaves at most one orphaned file. Writing to a temp directory and moving has the same fundamental limitation on these filesystems.
 
@@ -186,8 +185,8 @@ Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frame
 | Video streaming | HTTP Range requests | 206 Partial Content for seek |
 | Captive portal | dnsmasq + NetworkManager | DNS hijack to hub welcome page |
 | Frontend | Vanilla HTML/CSS/JS | Teacher/admin dashboard (11 pages) |
-| i18n (Flutter) | ARB files + `flutter gen-l10n` | 6 languages, ICU plurals, 410 keys |
-| i18n (Web) | JSON lang files + `lumina.js` | 6 languages, 728 keys each |
+| i18n (Flutter) | ARB files + `flutter gen-l10n` | 6 languages, ICU plurals, 416 keys |
+| i18n (Web) | JSON lang files + `lumina.js` | 6 languages, 762 keys each |
 
 All 23 direct dependencies of the Flutter app are listed in `pubspec.yaml`; all server dependencies in `requirements.txt`. No CDN-served assets and no external APIs appear in the offline-critical path.
 
@@ -232,7 +231,7 @@ sudo systemctl restart lumina-hub.service
 
 ```bash
 dart analyze lib/                    # Must be 0 errors, 0 warnings
-flutter test                         # 56 tests
+flutter test                         # 61 tests
 flutter gen-l10n                     # Regenerate localizations after ARB changes
 cd "Debian Server" && pytest         # 64 tests
 ```
@@ -251,10 +250,6 @@ This is a proof of concept. It is done.
 | ZIM/Kiwix offline article browsing | Shipped |
 | Phone-to-phone sharing (ShareServer) | Shipped |
 | Profile isolation and security hardening | Shipped |
-
----
-
-## Documentation
 
 ---
 

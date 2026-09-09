@@ -32,29 +32,30 @@ own code only; dependency licenses are listed below.
 Flutter / Dart packages (EduMesh-Android/)
 --------------------------------------------------------------------------
 
-Package                     License             Copyright
--------------------------   -----------------   --------------------------------
-intl 0.20.2                 BSD-3-Clause        Copyright 2013, the Dart project authors
-flutter_screenutil 5.9.0    Apache-2.0          Copyright 2019 OpenFlutter
-dio 5.4.0                   MIT                 Copyright 2019 Awei
-path_provider 2.1.2         BSD-3-Clause        Copyright 2017 The Chromium Authors
-sqflite 2.3.0               BSD-2-Clause        Copyright 2019, tekartik
-path 1.9.0                  BSD-3-Clause        Copyright 2019, the Dart project authors
-shared_preferences 2.5.5    BSD-3-Clause        Copyright 2017 The Chromium Authors
-webview_flutter 4.4.2       BSD-3-Clause        Copyright 2013 The Chromium Authors
-video_player 2.8.2          BSD-3-Clause        Copyright 2019 The Chromium Authors
-pdfx 2.0.0                  BSD-3-Clause        Copyright 2019 ScerIO packages authors
-flutter_riverpod 3.3.1      MIT                 Copyright 2020 Remi Rousselet
-flutter_svg 2.3.0           MIT                 Copyright 2018 Dan Field
-flutter_secure_storage 10.2 BSD-3-Clause        Copyright 2017 Robert Boll
-app_settings 7.0.0          MIT                 Copyright 2019 Michael FCoder
-wakelock_plus 1.6.1         MIT                 Copyright 2021 creativecreatorormaybenot
-image_picker 1.1.2          BSD-3-Clause        Copyright 2018 The Chromium Authors
-flutter_local_notifications BSD-3-Clause        Copyright 2018 Michael Bauland
-connectivity_plus 6.0.3     BSD-3-Clause        Copyright 2017 The Chromium Authors
-multicast_dns 0.3.2         BSD-3-Clause        Copyright 2018 The Chromium Authors
-flutter_background_service  MIT                 Copyright 2021 BedirTapkn
-flutter_lints 6.0.0         Apache-2.0          Copyright 2013 The Chromium Authors
+Package                                      License             Copyright
+-------------------------------------------  -----------------   --------------------------------
+intl 0.20.2                                  BSD-3-Clause        Copyright 2013, the Dart project authors
+flutter_screenutil 5.9.3                     Apache-2.0          Copyright 2019 OpenFlutter
+dio 5.9.2                                    MIT                 Copyright 2019 Awei
+path_provider 2.1.5                          BSD-3-Clause        Copyright 2017 The Chromium Authors
+sqflite 2.4.2+1                               BSD-2-Clause        Copyright 2019, tekartik
+path 1.9.1                                   BSD-3-Clause        Copyright 2019, the Dart project authors
+shared_preferences 2.5.5                     BSD-3-Clause        Copyright 2017 The Chromium Authors
+webview_flutter 4.13.1                       BSD-3-Clause        Copyright 2013 The Chromium Authors
+video_player 2.11.1                          BSD-3-Clause        Copyright 2019 The Chromium Authors
+pdfx 2.9.2                                   BSD-3-Clause        Copyright 2019 ScerIO packages authors
+flutter_riverpod 3.3.1                       MIT                 Copyright 2020 Remi Rousselet
+flutter_svg 2.3.0                            MIT                 Copyright 2018 Dan Field
+flutter_secure_storage 10.3.1                BSD-3-Clause        Copyright 2017 Robert Boll
+app_settings 7.0.0                           MIT                 Copyright 2019 Michael FCoder
+wakelock_plus 1.6.1                          MIT                 Copyright 2021 creativecreatorormaybenot
+image_picker 1.2.2                           BSD-3-Clause        Copyright 2018 The Chromium Authors
+flutter_local_notifications 18.0.1           BSD-3-Clause        Copyright 2018 Michael Bauland
+connectivity_plus 6.1.5                      BSD-3-Clause        Copyright 2017 The Chromium Authors
+multicast_dns 0.3.3+1                        BSD-3-Clause        Copyright 2018 The Chromium Authors
+flutter_background_service 5.1.0             MIT                 Copyright 2021 BedirTapkn
+flutter_background_service_android 6.3.1     MIT                 Copyright 2021 BedirTapkn
+flutter_lints 6.0.0                          Apache-2.0          Copyright 2013 The Chromium Authors
 
 --------------------------------------------------------------------------
 Python packages (Debian Server/)

@@ -102,3 +102,16 @@ Debian Server/wipe_zim.py
 # Local agent-config backups (MCP/skill kit edits)
 opencode.json*.bak
 
+# === Root runtime dirs (empty today, but unignored; mirrors of Debian Server/ dirs) ===
+/data/
+/uploads/
+/thumbnails/
+/profile_icons/
+
+# === Build outputs / DB journals that must never be committed ===
+*.apk
+*.db
+*.db-shm
+*.db-wal
+node_modules/
+
