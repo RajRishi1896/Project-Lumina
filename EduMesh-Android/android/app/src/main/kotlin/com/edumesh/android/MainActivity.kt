@@ -32,7 +32,6 @@ class MainActivity : FlutterActivity() {
 
     private var pipActionReceiver: BroadcastReceiver? = null
 
-    // Held for the app's lifetime so mDNS multicast packets reach the app.
     private var multicastLock: WifiManager.MulticastLock? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,24 +74,28 @@ class MainActivity : FlutterActivity() {
             this,
             if (isPlaying) R.drawable.ic_pip_pause else R.drawable.ic_pip_play
         )
+        val playPauseIntent = Intent(PIP_ACTION)
+            .setPackage(packageName)
+            .putExtra("action", "play_pause")
         val playPauseAction = RemoteAction(
             playPauseIcon,
             if (isPlaying) "Pause" else "Play",
             if (isPlaying) "Pause video" else "Play video",
             PendingIntent.getBroadcast(
-                this, PIP_REQUEST_PLAY_PAUSE,
-                Intent(PIP_ACTION).putExtra("action", "play_pause"),
+                this, PIP_REQUEST_PLAY_PAUSE, playPauseIntent,
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
         )
 
+        val forwardIntent = Intent(PIP_ACTION)
+            .setPackage(packageName)
+            .putExtra("action", "forward")
         val forwardAction = RemoteAction(
             Icon.createWithResource(this, R.drawable.ic_pip_forward),
             "Forward 10s",
             "Forward 10 seconds",
             PendingIntent.getBroadcast(
-                this, PIP_REQUEST_FORWARD,
-                Intent(PIP_ACTION).putExtra("action", "forward"),
+                this, PIP_REQUEST_FORWARD, forwardIntent,
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
         )
@@ -111,7 +114,6 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // Picture-in-Picture channel
         pipMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PIP_CHANNEL)
         pipMethodChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
@@ -139,19 +141,12 @@ class MainActivity : FlutterActivity() {
                         result.success(false)
                     }
                 }
-                "exitPiP" -> {
-                    // PiP exits automatically when the user taps to expand.
-                    // No programmatic exit API exists on FlutterActivity.
-                    result.success(true)
-                }
-                "isSupported" -> {
-                    result.success(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                }
+                "exitPiP" -> result.success(true)
+                "isSupported" -> result.success(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 else -> result.notImplemented()
             }
         }
 
-        // Storage info channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, STORAGE_CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "getStorageInfo") {
                 val path = Environment.getDataDirectory()
@@ -159,22 +154,18 @@ class MainActivity : FlutterActivity() {
                 val blockSize = stat.blockSizeLong
                 val totalBlocks = stat.blockCountLong
                 val availableBlocks = stat.availableBlocksLong
-
                 val apkFile = java.io.File(applicationInfo.sourceDir)
                 val apkSize = if (apkFile.exists()) apkFile.length() else 0L
-
-                val storageInfo = mapOf(
+                result.success(mapOf(
                     "totalBytes" to totalBlocks * blockSize,
                     "availableBytes" to availableBlocks * blockSize,
                     "apkSize" to apkSize
-                )
-                result.success(storageInfo)
+                ))
             } else {
                 result.notImplemented()
             }
         }
 
-        // App icon switching channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ICON_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "setAppIcon" -> {
@@ -198,7 +189,6 @@ class MainActivity : FlutterActivity() {
         val pm = packageManager
         val main = ComponentName(this, "$packageName.MainActivity")
         val dark = ComponentName(this, "$packageName.MainActivityDark")
-
         if (useDark) {
             pm.setComponentEnabledSetting(main, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
             pm.setComponentEnabledSetting(dark, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
