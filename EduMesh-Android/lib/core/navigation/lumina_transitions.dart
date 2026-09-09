@@ -43,7 +43,34 @@ PageRoute<T> luminaRoute<T>({
     transitionDuration: animate ? LuminaTransitions.duration : Duration.zero,
     reverseTransitionDuration:
         animate ? LuminaTransitions.duration : Duration.zero,
-    pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+    pageBuilder: (context, animation, secondaryAnimation) {
+      final child = builder(context);
+      // VideoPlayerPage currently uses surfaceContainerHighest both as the
+      // page background and as an opaque full-screen controls/loading layer.
+      // That makes the actual VideoPlayer texture invisible while controls
+      // are shown, which is exactly the physical-device symptom: audio and
+      // position advance while the picture appears only when the controls
+      // auto-hide. Keep the route background intact but make that token a
+      // translucent scrim for video routes until the player separates these
+      // two visual roles.
+      if (child.runtimeType.toString() == 'VideoPlayerPage') {
+        final theme = Theme.of(context);
+        final scheme = theme.colorScheme.copyWith(
+          surfaceContainerHighest:
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.38),
+        );
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+          ),
+          child: Theme(
+            data: theme.copyWith(colorScheme: scheme),
+            child: child,
+          ),
+        );
+      }
+      return child;
+    },
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       if (!animate) return child;
       final curved = CurvedAnimation(parent: animation, curve: Curves.easeOut);
