@@ -118,13 +118,15 @@ Future<T> fetchWithLoading<T>(BuildContext context, Future<T> future) async {
 
 /// Shows a dialog with a lightweight fade+scale when animations are on and
 /// an instant appearance when off/reduced. Drop-in for `showDialog`: the
-/// [builder] content is wrapped in a [Dialog] exactly like the original.
+/// [builder] must return a [Dialog] subclass ([AlertDialog], [SimpleDialog])
+/// exactly as with `showDialog` — it is NOT wrapped again, so there is only
+/// ever one dialog inset/padding layer (double-wrapping ate 160dp of a
+/// 360dp phone and truncated input placeholders).
 Future<T?> showLuminaDialog<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool barrierDismissible = false,
   String? barrierLabel,
-  ShapeBorder? shape,
 }) {
   final animate = LuminaTransitions.enabled(context);
   return showGeneralDialog<T>(
@@ -134,8 +136,7 @@ Future<T?> showLuminaDialog<T>({
         MaterialLocalizations.of(context).modalBarrierDismissLabel,
     transitionDuration: animate ? LuminaTransitions.duration : Duration.zero,
     barrierColor: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.54),
-    pageBuilder: (context, animation, secondaryAnimation) =>
-        Dialog(shape: shape, child: builder(context)),
+    pageBuilder: (context, animation, secondaryAnimation) => builder(context),
     transitionBuilder: (context, animation, secondaryAnimation, child) {
       if (!animate) return child;
       final curved = CurvedAnimation(parent: animation, curve: Curves.easeOut);

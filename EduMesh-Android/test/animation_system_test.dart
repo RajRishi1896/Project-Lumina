@@ -140,6 +140,9 @@ void main() {
     await tester.pump();
     expect(find.text('dialog body'), findsOneWidget);
     expect((observer.pushed.last as PopupRoute).transitionDuration, Duration.zero);
+    // Single dialog layer: the builder's AlertDialog must not be wrapped
+    // in a second Dialog (double insetPadding ate 160dp on phones).
+    expect(find.byType(Dialog), findsOneWidget);
     Navigator.of(observer.navigator!.context).pop();
     await tester.pumpAndSettle();
 

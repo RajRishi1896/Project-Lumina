@@ -289,7 +289,6 @@ void _showChangePasswordDialog(BuildContext context) {
 
   showLuminaDialog(
     context: context,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
     builder: (ctx) {
       bool obscureOld = true;
       bool obscureNew = true;
@@ -302,6 +301,7 @@ void _showChangePasswordDialog(BuildContext context) {
             constraints: const BoxConstraints(maxWidth: 440),
             child: AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+              scrollable: true,
               title: Text(l10n.dialogChangePasswordTitle, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
