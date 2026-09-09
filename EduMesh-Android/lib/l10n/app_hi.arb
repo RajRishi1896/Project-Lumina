@@ -332,8 +332,6 @@
   "quizBackToCourse": "कोर्स पर वापस",
   "quizQuitTitle": "क्विज़ छोड़ें?",
   "quizQuitConfirm": "आपकी प्रगति जैसी है वैसी जमा हो जाएगी। आप बाद में फिर से कोशिश कर सकते हैं।",
-  "quizResultsPendingTitle": "उत्तर सहेजे गए",
-  "quizResultsPendingBody": "आपके उत्तर सहेज लिए गए हैं। हब से जुड़ने पर आपका स्कोर दिखाई देगा।",
   "profileCoursesCompleted": "कोर्स पूर्ण",
   "profileMyCourses": "मेरे कोर्स",
   "profileTapToResume": "जारी रखने के लिए टैप करें",

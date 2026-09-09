@@ -332,8 +332,6 @@
   "quizBackToCourse": "Retour au cours",
   "quizQuitTitle": "Quitter le quiz ?",
   "quizQuitConfirm": "Votre progression sera soumise telle quelle. Vous pourrez repasser le quiz plus tard.",
-  "quizResultsPendingTitle": "Réponses enregistrées",
-  "quizResultsPendingBody": "Vos réponses sont enregistrées. Votre score apparaîtra quand vous serez reconnecté au hub.",
   "profileCoursesCompleted": "Cours terminés",
   "profileMyCourses": "Mes Cours",
   "profileTapToResume": "Appuyez pour reprendre",

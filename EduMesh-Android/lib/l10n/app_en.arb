@@ -1376,14 +1376,6 @@
   "@quizQuitConfirm": {
     "description": "Body text in the quit-quiz confirmation dialog. Tells the student their current answers will be submitted"
   },
-  "quizResultsPendingTitle": "Answers saved",
-  "@quizResultsPendingTitle": {
-    "description": "Neutral title on the quiz results screen when the attempt was queued offline and cannot be graded yet because the served quiz carries no answer key"
-  },
-  "quizResultsPendingBody": "Your answers are saved. Your score will appear when you connect to the hub.",
-  "@quizResultsPendingBody": {
-    "description": "Explanation under the pending title: answers are stored on the phone and the score will show once the hub grades the queued attempt"
-  },
   "profileCoursesCompleted": "Courses Completed",
   "@profileCoursesCompleted": {
     "description": "Stat card label for count of completed courses on the profile page"

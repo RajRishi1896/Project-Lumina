@@ -92,7 +92,6 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   bool _passed = false;
   double _score = 0.0;
   bool _showResults = false;
-  bool _pendingResults = false;
   bool _loading = true;
   bool _loadFailed = false;
   final Map<int, bool> _correctAnswers = {};
@@ -193,6 +192,20 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     // original order (server canonical form). Injecting after the shuffle
     // mapped every index to the wrong option and broke all local grading.
     _injectAnswerKey(questions);
+    // A quiz without answers cannot be corrected: fail loudly with retry
+    // instead of showing an ungradeable quiz. The server always ships
+    // _answer_key, so reaching here means corrupt or truncated data.
+    final hasAnswers = questions.any((q) =>
+        (q.correctAnswer != null && q.correctAnswer!.isNotEmpty) ||
+        (q.correctAnswers != null && q.correctAnswers!.isNotEmpty));
+    if (!hasAnswers) {
+      if (!mounted) return;
+      setState(() {
+        _loadFailed = true;
+        _loading = false;
+      });
+      return;
+    }
     _applyShuffle(quiz, questions);
     if (!mounted) return;
     setState(() {
@@ -375,47 +388,40 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       serverResponse = await CourseService()
           .submitQuiz(widget.course.id, widget.resource.id, attempt);
     }
-    final hasServerGrading = _applyServerResults(serverResponse);
-    // Offline submission of a stripped quiz: no server verdict and no local
-    // answer key, so any locally computed score would be a lie.
-    if (!hasServerGrading && _quizLacksAnswerKey()) {
-      _pendingResults = true;
-    }
+    _applyServerResults(serverResponse);
 
-    if (!_pendingResults) {
-      if (_score > _bestScore) {
-        if (_isStandalone) {
-          CourseService().updateStandaloneBestScore(widget.resourceModel!.id, _score, attemptId);
-          if (mounted) {
-            setState(() {
-              _bestScore = _score;
-              _totalAttempts++;
-            });
-          }
-        } else {
-          unawaited(MutationQueue().enqueue(
-            '/student/quiz-best-score/${widget.course.id}/${widget.resource.id}',
-            method: 'post',
-            body: {'score': _score, 'attempt_id': attemptId},
-          ));
-          if (mounted) {
-            setState(() {
-              _bestScore = _score;
-              _totalAttempts++;
-            });
-          }
+    if (_score > _bestScore) {
+      if (_isStandalone) {
+        CourseService().updateStandaloneBestScore(widget.resourceModel!.id, _score, attemptId);
+        if (mounted) {
+          setState(() {
+            _bestScore = _score;
+            _totalAttempts++;
+          });
         }
       } else {
+        unawaited(MutationQueue().enqueue(
+          '/student/quiz-best-score/${widget.course.id}/${widget.resource.id}',
+          method: 'post',
+          body: {'score': _score, 'attempt_id': attemptId},
+        ));
         if (mounted) {
-          setState(() => _totalAttempts++);
+          setState(() {
+            _bestScore = _score;
+            _totalAttempts++;
+          });
         }
       }
-
-      if (_passed && widget.onComplete != null) {
-        widget.onComplete!();
-      } else if (!_passed && widget.onFail != null) {
-        widget.onFail!();
+    } else {
+      if (mounted) {
+        setState(() => _totalAttempts++);
       }
+    }
+
+    if (_passed && widget.onComplete != null) {
+      widget.onComplete!();
+    } else if (!_passed && widget.onFail != null) {
+      widget.onFail!();
     }
 
     if (mounted) setState(() {});
@@ -481,11 +487,6 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     }
     return true;
   }
-
-  /// Whether no question in the loaded quiz carries an answer key.
-  bool _quizLacksAnswerKey() => _questions.every((q) =>
-      (q.correctAnswer == null || q.correctAnswer!.isEmpty) &&
-      (q.correctAnswers == null || q.correctAnswers!.isEmpty));
 
   bool _isAnswerCorrect(int index, QuizQuestion q) {
     switch (q.type) {
@@ -977,12 +978,8 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
   Widget _buildResultsScreen(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final correctCount = _correctAnswers.values.where((v) => v).length;
     final pct = (_score * 100).round();
-    final headerBg = _pendingResults
-        ? cs.surfaceContainerHighest
-        : (_passed ? cs.primaryContainer : cs.errorContainer);
-    final headerFg = _pendingResults
-        ? cs.onSurface
-        : (_passed ? cs.onPrimaryContainer : cs.onErrorContainer);
+    final headerBg = _passed ? cs.primaryContainer : cs.errorContainer;
+    final headerFg = _passed ? cs.onPrimaryContainer : cs.onErrorContainer;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -998,46 +995,35 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                 child: Column(
                   children: [
                     Text(
-                      _pendingResults
-                          ? l10n.quizResultsPendingTitle
-                          : (_passed ? l10n.quizPassed : l10n.quizFailed),
+                      _passed ? l10n.quizPassed : l10n.quizFailed,
                       style: tt.headlineSmall?.copyWith(
                         fontWeight: AppSpacing.weightDisplay,
                         color: headerFg,
                       ),
                     ),
-                    if (_pendingResults) ...[
-                      SizedBox(height: AppSpacing.sm.h),
-                      Text(
-                        l10n.quizResultsPendingBody,
-                        textAlign: TextAlign.center,
-                        style: tt.bodyMedium?.copyWith(color: headerFg),
+                    SizedBox(height: AppSpacing.sm.h),
+                    Text(
+                      l10n.quizScoreFraction(correctCount, _questions.length),
+                      style: tt.bodyLarge?.copyWith(
+                        fontWeight: AppSpacing.weightStrong,
+                        color: headerFg,
                       ),
-                    ] else ...[
-                      SizedBox(height: AppSpacing.sm.h),
+                    ),
+                    Text(
+                      '$pct%',
+                      style: tt.headlineMedium?.copyWith(
+                        fontWeight: AppSpacing.weightDisplay,
+                        color: headerFg,
+                      ),
+                    ),
+                    if (_totalAttempts > 1) ...[
+                      SizedBox(height: AppSpacing.xs.h),
                       Text(
-                        l10n.quizScoreFraction(correctCount, _questions.length),
-                        style: tt.bodyLarge?.copyWith(
-                          fontWeight: AppSpacing.weightStrong,
+                        'Attempt $_totalAttempts · Best: ${(_bestScore * 100).round()}%',
+                        style: tt.bodySmall?.copyWith(
                           color: headerFg,
                         ),
                       ),
-                      Text(
-                        '$pct%',
-                        style: tt.headlineMedium?.copyWith(
-                          fontWeight: AppSpacing.weightDisplay,
-                          color: headerFg,
-                        ),
-                      ),
-                      if (_totalAttempts > 1) ...[
-                        SizedBox(height: AppSpacing.xs.h),
-                        Text(
-                          'Attempt $_totalAttempts · Best: ${(_bestScore * 100).round()}%',
-                          style: tt.bodySmall?.copyWith(
-                            color: headerFg,
-                          ),
-                        ),
-                      ],
                     ],
                   ],
                 ),
@@ -1076,24 +1062,18 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
 
   Widget _buildResultItem(int index, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final q = _questions[index];
-    // Null while results are pending an online flush: no verdict to show.
-    final bool? correct =
-        _pendingResults ? null : (_correctAnswers[index] ?? false);
+    // Quizzes always load with their answer key, so every submitted
+    // question has a verdict. Missing entries mean unanswered.
+    final bool correct = _correctAnswers[index] ?? false;
     final userAnswer = _answers[index];
     final userMulti = _multiAnswers[index];
 
     return Container(
       decoration: BoxDecoration(
-        color: correct == true
-            ? cs.primaryContainer
-            : correct == false
-                ? cs.errorContainer
-                : cs.surfaceContainerHighest,
+        color: correct ? cs.primaryContainer : cs.errorContainer,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd.r),
         border: Border.all(
-          color: correct == null
-              ? cs.outlineVariant
-              : (correct ? cs.primary : cs.error),
+          color: correct ? cs.primary : cs.error,
           width: 1,
         ),
       ),
@@ -1104,14 +1084,8 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
           Row(
             children: [
               Icon(
-                correct == true
-                    ? Icons.check_circle
-                    : correct == false
-                        ? Icons.cancel
-                        : Icons.circle_outlined,
-                color: correct == null
-                    ? cs.onSurfaceVariant
-                    : (correct ? cs.primary : cs.error),
+                correct ? Icons.check_circle : Icons.cancel,
+                color: correct ? cs.primary : cs.error,
                 size: 20.sp,
               ),
               SizedBox(width: AppSpacing.sm.w),
@@ -1127,12 +1101,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
             ],
           ),
           SizedBox(height: AppSpacing.sm.h),
-          if (_pendingResults)
-            Text(
-              userAnswer ?? userMulti?.join(', ') ?? '-',
-              style: tt.bodyMedium?.copyWith(color: cs.onSurface),
-            )
-          else if (q.type == QuizQuestionType.fillBlanks)
+          if (q.type == QuizQuestionType.fillBlanks)
             _buildFillBlanksResult(q, userAnswer, cs, tt, l10n)
           else if (q.type == QuizQuestionType.multiSelect)
             _buildMultiResult(q, userMulti, cs, tt, index)
