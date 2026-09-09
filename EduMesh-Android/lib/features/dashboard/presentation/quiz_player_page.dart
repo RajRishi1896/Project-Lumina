@@ -677,6 +677,9 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
                         l10n.quizSubmit,
                         style: tt.labelLarge?.copyWith(
                           fontWeight: AppSpacing.weightStrong,
+                          // Explicit color: labelLarge defaults to onSurface
+                          // (near-black), which vanishes on the primary bg.
+                          color: cs.onPrimary,
                         ),
                       ),
                     ),
