@@ -330,6 +330,12 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
     _score = _questions.isNotEmpty ? correct / _questions.length : 0;
     _passed = _score >= (_quiz?.passThreshold ?? 0.5);
 
+    // Paint the results screen immediately with local verdicts: the server
+    // round-trip below can take seconds on a slow hub, during which the UI
+    // would otherwise sit dead on the quiz screen. Server grading merges
+    // over this via _applyServerResults + the final setState.
+    if (mounted) setState(() {});
+
     final answersJson = <String, dynamic>{};
     for (int i = 0; i < _questions.length; i++) {
       answersJson[i.toString()] = {

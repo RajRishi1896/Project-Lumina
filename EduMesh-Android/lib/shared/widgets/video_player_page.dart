@@ -296,6 +296,18 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     });
   }
 
+  /// Single-tap behavior, YouTube-style: toggles the whole control layer
+  /// (play/pause, ±10s, speed, PiP, fullscreen, progress). Tapping while
+  /// visible hides immediately instead of just restarting the timer.
+  void _toggleControls() {
+    if (_showControls) {
+      _hideTimer?.cancel();
+      setState(() => _showControls = false);
+    } else {
+      _startHideTimer();
+    }
+  }
+
   void _toggleFullscreen() {
     if (_controller == null) return;
     setState(() => _isFullscreen = !_isFullscreen);
@@ -666,9 +678,9 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
 
     final aspect = _controller!.value.aspectRatio;
     // Single GestureDetector: double-tap for seek, horizontal drag for
-    // scrub, single tap to show/hide controls.
+    // scrub, single tap toggles controls.
     return GestureDetector(
-      onTap: _startHideTimer,
+      onTap: _toggleControls,
       onDoubleTapDown: _onDoubleTapDown,
       onHorizontalDragStart: _onHorizontalDragStart,
       onHorizontalDragUpdate: _onHorizontalDragUpdate,
