@@ -121,7 +121,7 @@ async def test_quiz_resource_requires_auth_but_students_may_fetch(client, admin_
 
     created = await admin_client.post("/api/teacher/quiz-resource", json={
         "title": "Sec quiz",
-        "questions": [{"id": "q1", "type": "mcq", "question": "2+2?"}],
+        "questions": [{"id": "q1", "type": "mcq", "question": "2+2?", "options": ["3", "4"], "correct_answer": 1}],
     })
     assert created.status_code == 200, created.text
     quiz_id = created.json()["id"]
@@ -137,7 +137,7 @@ async def test_teacher_cannot_update_others_quiz(client, admin_client):
     """A teacher cannot update another teacher's quiz resource."""
     created = await admin_client.post("/api/teacher/quiz-resource", json={
         "title": "A quiz",
-        "questions": [{"id": "q1", "type": "mcq", "question": "2+2?"}],
+        "questions": [{"id": "q1", "type": "mcq", "question": "2+2?", "options": ["3", "4"], "correct_answer": 1}],
     })
     quiz_id = created.json()["id"]
 
