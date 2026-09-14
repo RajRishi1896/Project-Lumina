@@ -587,6 +587,9 @@ class _WikiTabState extends State<_WikiTab> {
       } else {
         await db.upsertBookmark(
             article.articleId, article.title, '', '', 'kiwix');
+        // Remember where this article lives so the Saved tab can download
+        // it offline later without guessing the archive.
+        await db.upsertZimArticleMeta(article.articleId, article.archiveId, article.title);
         if (mounted) setState(() => _bookmarkedIds.add(article.articleId));
       }
       // Sync the Saved tab highlight: its lists only reload on this signal.
@@ -667,6 +670,9 @@ class _WikiTabState extends State<_WikiTab> {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
     try {
+      // Remember where this article lives so the Saved tab can download
+      // it offline later without guessing the archive.
+      unawaited(DBHelper().upsertZimArticleMeta(article.articleId, article.archiveId, article.title));
       // Try new file-based save first, then legacy single-file, then prefs, then network.
       final savedPath = await ZimDownloadHelper.findSavedArticle(article.articleId);
       if (savedPath != null) {
@@ -720,7 +726,8 @@ class _WikiTabState extends State<_WikiTab> {
         articleId: article.articleId,
         archiveId: article.archiveId,
       );
-      await ZimSyncService.instance.markDownloaded(article.articleId, title: article.title);
+      await ZimSyncService.instance.markDownloaded(article.articleId,
+          title: article.title, archiveId: article.archiveId);
       if (mounted) setState(() => _downloadingId = null);
     } catch (e) {
       if (mounted) {

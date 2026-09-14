@@ -109,8 +109,8 @@ class ZimSyncService extends ChangeNotifier {
   }
 
   /// Marks an article as downloaded in the local DB and in-memory set.
-  Future<void> markDownloaded(String articleId, {String title = ''}) async {
-    await DBHelper().markZimArticleDownloaded(articleId, title: title);
+  Future<void> markDownloaded(String articleId, {String title = '', String archiveId = ''}) async {
+    await DBHelper().markZimArticleDownloaded(articleId, title: title, archiveId: archiveId);
     if (_downloadedIds.add(articleId)) notifyListeners();
   }
 

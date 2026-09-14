@@ -368,6 +368,33 @@ class DBHelper {
     }
   }
 
+  /// Records an article's archive/title mapping without marking it downloaded.
+  ///
+  /// Browse flows know the [archiveId] for every article they display, but
+  /// bookmarks and [markDownloaded] callers often don't. Persisting the
+  /// mapping on view/bookmark means the Saved tab can later resolve the
+  /// archive for an offline download. Never clears an existing
+  /// `is_downloaded = 1` flag.
+  Future<void> upsertZimArticleMeta(String articleId, String archiveId, String title) async {
+    if (articleId.isEmpty || archiveId.isEmpty) return;
+    final db = await database;
+    final existing = await db.query('zim_articles_local',
+        columns: ['is_downloaded'], where: 'article_id = ?', whereArgs: [articleId], limit: 1);
+    if (existing.isEmpty) {
+      await db.insert('zim_articles_local', {
+        'article_id': articleId,
+        'title': title,
+        'archive_id': archiveId,
+        'is_downloaded': 0,
+      });
+    } else {
+      await db.update('zim_articles_local', {
+        if (title.isNotEmpty) 'title': title,
+        'archive_id': archiveId,
+      }, where: 'article_id = ?', whereArgs: [articleId]);
+    }
+  }
+
   Future<void> recordQuizDownload(String resourceId, String title, String subject, String grade) async {
     final db = await database;
     await db.insert('downloads', {

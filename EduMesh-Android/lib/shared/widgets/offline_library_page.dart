@@ -208,6 +208,16 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                               onPressed: () async {
                                 final articleId = item['article_id'] as String? ?? '';
                                 if (articleId.isEmpty) return;
+                                // New file-based save first (matches
+                                // ZimDownloadHelper.saveArticle), then legacy.
+                                final savedPath = await ZimDownloadHelper.findSavedArticle(articleId);
+                                if (savedPath != null && context.mounted) {
+                                  unawaited(RecentResources.record(articleId, title, 'kiwix'));
+                                  unawaited(Navigator.push(context, luminaRoute(
+                                    builder: (_) => KiwixView(filePath: savedPath, title: title),
+                                  )));
+                                  return;
+                                }
                                 String? html;
                                 try {
                                   final dir = await getApplicationDocumentsDirectory();

@@ -320,7 +320,8 @@ class _SavedListByTypeState extends State<_SavedListByType> {
 
   Future<void> _downloadZimArticle(String articleId, {String title = ''}) async {
     try {
-      // Look up archive_id from local DB, or fetch from server.
+      // Look up archive_id from local DB (persisted by browse on view or
+      // bookmark), or resolve via server search as a fallback.
       String archiveId = '';
       final db = DBHelper();
       final rows = await db.database;
@@ -329,22 +330,24 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       if (zimRows.isNotEmpty) {
         archiveId = zimRows.first['archive_id'] as String? ?? '';
       }
-      if (archiveId.isEmpty) {
-        final resp = await ApiClient.get('/zim/articles', queryParameters: {
-          'limit': '1', 'offset': '0',
-        }).timeout(const Duration(seconds: 8));
-        final articles = (resp.data['articles'] as List?) ?? [];
-        for (final a in articles) {
-          if (a['article_id'] == articleId) {
-            archiveId = (a['archive_id'] ?? '').toString();
-            break;
+      if (archiveId.isEmpty && title.isNotEmpty) {
+        try {
+          final result = await ZimSyncService.instance
+              .searchOnServer(title, limit: 50)
+              .timeout(const Duration(seconds: 8));
+          for (final a in result.articles) {
+            if (a.articleId == articleId) {
+              archiveId = a.archiveId;
+              break;
+            }
           }
-        }
+        } catch (_) {}
       }
       if (archiveId.isEmpty) return;
 
       await ZimDownloadHelper.saveArticle(articleId: articleId, archiveId: archiveId);
-      await ZimSyncService.instance.markDownloaded(articleId, title: title);
+      await ZimSyncService.instance
+          .markDownloaded(articleId, title: title, archiveId: archiveId);
       if (mounted) setState(() {});
     } catch (e) {
       debugPrint('SavedPage: ZIM download failed: $e');
