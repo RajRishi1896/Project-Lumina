@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
+import 'package:flutter/services.dart';
+import 'package:edumesh_android/core/navigation/lumina_transitions.dart';
 import 'package:edumesh_android/core/services/activity_tracker.dart';
 import 'package:edumesh_android/features/dashboard/presentation/dashboard_page.dart';
 import 'package:edumesh_android/features/dashboard/presentation/saved_resource_page.dart';
@@ -12,7 +13,9 @@ import 'package:edumesh_android/shared/widgets/mini_player_widget.dart';
 ///
 /// Hosts the [DashboardPage], [BrowsePage], [SavedResourcesPage],
 /// and [StudentProfilePage] in an [IndexedStack].
-/// Pressing back twice within two seconds exits the app via [SystemNavigator.pop].
+/// Back at a root tab shows a short exit toast (so the app never looks
+/// frozen); a second press within 2 seconds exits via [SystemNavigator.pop].
+/// Pushed pages pop normally: this gate only fires when nothing else can.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -24,6 +27,11 @@ class _AppShellState extends State<AppShell>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   int _index = 0;
   final _browseKey = GlobalKey<BrowsePageState>();
+
+  /// Time of the last root back-press. A second press within the toast's
+  /// 2-second window exits; otherwise the toast just re-shows and expires
+  /// on its own. Plain timestamp, no timers to go stale.
+  DateTime? _lastBackPress;
 
   /// Subtle fade when switching tabs; skipped entirely when animations are
   /// off or reduced motion is on (the IndexedStack swap is already instant).
@@ -77,12 +85,19 @@ class _AppShellState extends State<AppShell>
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      // No double-press gate: a single back press only shows the toast;
-      // leaving happens exclusively through its Exit action. This keeps
-      // every flow (tabs, sheets, pushed pages) at an explicit step.
+      // Fires only at a root tab (pushed pages pop first and report
+      // didPop=true). First press shows a 2-second toast so the app never
+      // looks frozen; second press inside the window exits for real.
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
+        final now = DateTime.now();
+        if (_lastBackPress != null &&
+            now.difference(_lastBackPress!) < const Duration(seconds: 2)) {
+          SystemNavigator.pop();
+          return;
+        }
+        _lastBackPress = now;
         final messenger = ScaffoldMessenger.of(context);
         final l10n = AppLocalizations.of(context)!;
         messenger.clearSnackBars();
@@ -90,13 +105,14 @@ class _AppShellState extends State<AppShell>
           SnackBar(
             content: Text(l10n.doubleBackToExitMessage),
             behavior: SnackBarBehavior.floating,
+            // Expires on its own: never a permanent banner.
             duration: const Duration(seconds: 2),
             action: SnackBarAction(label: l10n.exitButtonLabel, onPressed: () => SystemNavigator.pop()),
           ),
         );
       },
       child: Scaffold(
-        body: Stack(
+      body: Stack(
           children: [
             FadeTransition(
               opacity: _tabFade,
