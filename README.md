@@ -41,11 +41,11 @@ A repurposed laptop runs a WiFi hotspot, a FastAPI content server, and a captive
 
 Project Lumina is a proof of concept: an offline-first learning platform for schools where broadband, stable power, and student-owned devices cannot be assumed. One low-cost server laptop hosts all content and services. Android phones on a local hotspot consume the content through a Flutter app that remains fully usable when the hub is unreachable. The PoC is complete and shipped.
 
-Two independent codebases form the system: a Flutter Android client (`EduMesh-Android/`, 66 hand-written Dart files plus generated localizations) and a FastAPI server (`Debian Server/`, 23 router modules plus a ZIM handler). They share no code, no dependencies, and no toolchain. They communicate over plain HTTP on the local network, with the laptop acting as gateway at the static address `10.42.0.1`.
+Two independent codebases form the system: a Flutter Android client (`EduMesh-Android/`, 73 hand-written Dart files plus generated localizations) and a FastAPI server (`Debian Server/`, 23 router modules plus a ZIM handler). They share no code, no dependencies, and no toolchain. They communicate over plain HTTP on the local network, with the laptop acting as gateway at the static address `10.42.0.1`.
 
 **Why it exists.** Existing LMS platforms assume always-on broadband and one device per student. The environment this target provides neither. The project instead assumes nothing: no internet, one laptop for an entire school, content delivered by USB stick, and progress synchronized in the brief window a phone is near the hub. The PoC proved the architecture works; it is not a product roadmap.
 
-**Current maturity.** This is a proof of concept that shipped. The system is feature-complete for single-classroom and school-lab deployment. It passes a 64-test pytest suite (8 files) and a 61-test Flutter suite (9 files), `dart analyze` at 0 errors and 0 warnings, and has run end-to-end on emulators and development hardware. The 250-concurrent-student concurrency target is a design figure validated only at small scale; a repeatable benchmark harness is not in scope. What exists works. What doesn't exist was never needed for the PoC.
+**Current maturity.** This is a proof of concept that shipped. The system is feature-complete for single-classroom and school-lab deployment. It passes a 64-test pytest suite (8 files) and a 62-test Flutter suite (9 files), `dart analyze` at 0 errors and 0 warnings, and has run end-to-end on emulators and development hardware. The 250-concurrent-student concurrency target is a design figure validated only at small scale; a repeatable benchmark harness is not in scope. What exists works. What doesn't exist was never needed for the PoC.
 
 ---
 
@@ -90,7 +90,7 @@ Two independent codebases form the system: a Flutter Android client (`EduMesh-An
 - **Flashcards.** SM-2 spaced-repetition decks with a dedicated library, deck details, editor, and tap-to-flip study mode; teachers create decks and review submissions on the web dashboard. Optional subtle animations ship behind a Settings toggle (off by default).
 - **Video with picture-in-picture.** `MiniPlayerController` is a process-wide singleton. Leaving full-screen playback continues in a mini overlay; closing it disposes the `VideoPlayerController`. Videos stream over HTTP with Range support for seeking; the server honors Range on media endpoints and never transcodes.
 - **PDF viewer.** `pdfx` with pinch-to-zoom and zoom buttons (0.25x steps). Page position persists to `SharedPreferences`; a 6-column page grid provides rapid navigation.
-- **ZIM article browser.** Kiwix archives are searchable server-side with a 1 to 500 article cap per query (a deliberate OOM guard for 1 GB phones). Articles render in-app; downloaded articles inline all assets as data URIs for fully offline rendering.
+- **ZIM article browser.** Kiwix archives are searchable server-side with a 1 to 500 article cap per query (a deliberate OOM guard for 1 GB phones). Articles render in-app; downloaded articles are saved as `index.html` plus separate asset files for fully offline rendering.
 - **Search recommendations.** An on-device scorer ranks resources locally for the "Recommended for You" row.
 
 **Resilience**
@@ -102,10 +102,10 @@ Two independent codebases form the system: a Flutter Android client (`EduMesh-An
 
 **UX and accessibility**
 
-- 6 languages (English, Hindi, Kannada, French, Tamil, Telugu): 416 ARB keys with ICU plurals in Flutter, 762 JSON keys on web, identical key sets across all six files.
+- 6 languages (English, Hindi, Kannada, French, Tamil, Telugu): 414 ARB keys with ICU plurals in Flutter, 763 JSON keys on web, identical key sets across all six files.
 - All fonts bundled as `.ttf` (Noto Sans per script); `GoogleFonts` is a fallback only.
 - Every tappable element meets the 48x48px minimum touch target; icon-only buttons carry `Tooltip` or `Semantics` labels.
-- `PopScope` double-back-to-exit with a 2-second window (first press shows a SnackBar with an Exit button).
+- `PopScope` double-back-to-exit with a 2-second window (first press shows an auto-expiring SnackBar with an Exit button; second press exits).
 - 4-tab bottom navigation (Dashboard, Browse, Saved, Profile), always visible.
 
 ### Hub server (FastAPI)
@@ -116,7 +116,7 @@ Operational details:
 
 - **Soft-delete lifecycle.** Deleting a resource sets `status = 'deleted'` plus `deleted_at` (30-day recycle bin); an hourly purge hard-deletes file and row. Deleted resources vanish from catalog and search but stay reachable by direct ID.
 - **Rate limiting.** Per-IP token bucket at 200 requests/minute (configurable), exempting localhost, static assets, `/ping`, and ZIM GETs; ZIM uploads are separately capped.
-- **Content standards.** Uploads validate against a controlled subject taxonomy and grades 1 to 13 (0 reserved for pre-primary, 13 for bridging and exam prep), require source and license metadata, and reject duplicates on `title + subject + grade + language + resource_type` with a `409` response plus an explicit `force_upload` override.
+- **Content standards.** Uploads validate against a controlled subject taxonomy and grades 1 to 13 (0 reserved for pre-primary, 13 for bridging and exam prep), require source and license metadata, and reject duplicates on `title + subject + grade + language + resource_type` with a `409` response plus an explicit `force_upload` override. Quiz creation requires every question to carry a correct answer (`correct_answer` or `correct_answers`); answerless quizzes are rejected with `400` because the app cannot load or grade them.
 - **Audit logging.** Admin actions and resource status transitions append to `data/admin_actions.log` with UTC timestamps and acting user IDs; retention is configurable.
 - **No external dependencies.** The server starts and serves every endpoint with no internet connection; `setup_hub.sh` provisioning is idempotent and completes offline after the initial package pass.
 - **Security hardening.** Admin password defaults to `lumina2026` on first boot (reset via `reset_admin.sh`). Teachers can only edit/delete their own resources (admin override via `can_manage_resource()`). CORS tightened to specific methods and headers. GZip compression on JSON responses >500 bytes (skips Range requests for streaming). Password strength validation enforced on all new accounts. Profile icon uploads require authentication.
@@ -135,7 +135,7 @@ Notable endpoint behaviours:
 
 - **Streaming.** Media endpoints serve HTTP Range requests (206 Partial Content) so students can seek without full download. The server does not transcode; target phones decode in hardware.
 - **Auth.** JWT-style session tokens with the three-tier renewal described above; newly registered students are forced through a password change. Passwords are bcrypt-hashed server-side; the offline-only login path uses a separate local SHA-256 credential that never shares the server hash.
-- **ZIM serving.** HTML from `/zim/page` has asset paths rewritten to `/zim/asset` endpoints that read lazily from the `.zim` binary; article search is capped at 500 results. An hourly auto-cleaner prunes archives by LRU policy against `zim_cache_config.json`.
+- **ZIM serving.** HTML from `/zim/page` has asset paths rewritten to `/zim/asset` endpoints that read lazily from the `.zim` binary; article search is capped at 500 results. ZIM storage is bounded by upload-time size limits (uploads refuse when under 2 GB free); a startup task re-indexes any archive missing its article rows.
 
 The full OpenAPI spec is served at `/docs` when the server is running; the route inventory changes too often to duplicate here.
 
@@ -185,8 +185,8 @@ Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frame
 | Video streaming | HTTP Range requests | 206 Partial Content for seek |
 | Captive portal | dnsmasq + NetworkManager | DNS hijack to hub welcome page |
 | Frontend | Vanilla HTML/CSS/JS | Teacher/admin dashboard (11 pages) |
-| i18n (Flutter) | ARB files + `flutter gen-l10n` | 6 languages, ICU plurals, 416 keys |
-| i18n (Web) | JSON lang files + `lumina.js` | 6 languages, 762 keys each |
+| i18n (Flutter) | ARB files + `flutter gen-l10n` | 6 languages, ICU plurals, 414 keys |
+| i18n (Web) | JSON lang files + `lumina.js` | 6 languages, 763 keys each |
 
 All 23 direct dependencies of the Flutter app are listed in `pubspec.yaml`; all server dependencies in `requirements.txt`. No CDN-served assets and no external APIs appear in the offline-critical path.
 
@@ -231,7 +231,7 @@ sudo systemctl restart lumina-hub.service
 
 ```bash
 dart analyze lib/                    # Must be 0 errors, 0 warnings
-flutter test                         # 61 tests
+flutter test                         # 62 tests
 flutter gen-l10n                     # Regenerate localizations after ARB changes
 cd "Debian Server" && pytest         # 64 tests
 ```
