@@ -171,6 +171,21 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       ? '/api/quiz-resource/${widget.resourceModel!.id}'
       : '/api/courses/${widget.course.id}/quiz/${widget.resource.id}';
 
+  /// Extracts the offline grading key from a quiz payload. The server nests
+  /// it inside `quiz._answer_key` (both standalone and course endpoints
+  /// return `{"quiz": {...}}`); the flat `json['_answer_key']` form is kept
+  /// for cached/legacy payloads that were stored unwrapped.
+  static Map<String, dynamic>? _extractAnswerKey(Map<String, dynamic> json) {
+    final flat = json['_answer_key'];
+    if (flat is Map) return Map<String, dynamic>.from(flat);
+    final inner = json['quiz'];
+    if (inner is Map) {
+      final nested = inner['_answer_key'];
+      if (nested is Map) return Map<String, dynamic>.from(nested);
+    }
+    return null;
+  }
+
   void _applyShuffle(Quiz quiz, List<QuizQuestion> questions) {
     final mode = quiz.shuffleMode;
     if (mode == 'questions' || mode == 'both') {
@@ -260,7 +275,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
 
   Future<void> _loadQuiz() async {
     if (widget.quizData != null) {
-      _applyQuiz(Quiz.fromJson(widget.quizData!), answerKey: widget.quizData!['_answer_key'] != null ? Map<String, dynamic>.from(widget.quizData!['_answer_key']) : null);
+      _applyQuiz(Quiz.fromJson(widget.quizData!), answerKey: _extractAnswerKey(widget.quizData!));
       return;
     }
 
@@ -270,7 +285,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       if (resp.statusCode == 200 && resp.data is Map) {
         final quizData = resp.data as Map<String, dynamic>;
         await DBHelper().cacheQuiz(cacheKey, quizData);
-        _applyQuiz(Quiz.fromJson(quizData), answerKey: quizData['_answer_key'] != null ? Map<String, dynamic>.from(quizData['_answer_key']) : null);
+        _applyQuiz(Quiz.fromJson(quizData), answerKey: _extractAnswerKey(quizData));
         return;
       }
       // Logged out (or session dead): show a login prompt, not a generic
@@ -296,7 +311,7 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
 
     final cached = await DBHelper().getCachedQuiz(cacheKey);
     if (cached != null) {
-      _applyQuiz(Quiz.fromJson(cached), answerKey: cached['_answer_key'] != null ? Map<String, dynamic>.from(cached['_answer_key']) : null);
+      _applyQuiz(Quiz.fromJson(cached), answerKey: _extractAnswerKey(cached));
       return;
     }
 
