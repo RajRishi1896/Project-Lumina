@@ -137,6 +137,8 @@ class SavedResourcesPage extends StatelessWidget {
           backgroundColor: cs.surface,
           foregroundColor: cs.onSurface,
           elevation: 0,
+          // Bottom-nav root tab: never show a back button here.
+          automaticallyImplyLeading: false,
           title: Text(
             l10n.savedResourcesTitle,
             style: tt.titleMedium?.copyWith(fontSize: 16.sp, color: cs.onSurface),

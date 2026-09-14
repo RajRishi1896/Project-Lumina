@@ -24,7 +24,7 @@
   "@bottomNavProfile": {
     "description": "Bottom navigation tab label for the student profile page"
   },
-  "doubleBackToExitMessage": "Press back again to exit",
+  "doubleBackToExitMessage": "Tap Exit to close the app",
   "@doubleBackToExitMessage": {
     "description": "SnackBar shown when user presses back once; instructs to press again to exit the app"
   },

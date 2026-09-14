@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
@@ -5,7 +8,6 @@ import '../../../core/constants/lumina_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/services/activity_tracker.dart';
 import '../../../core/network/api_client.dart';
-
 /// A full-screen WebView wrapper for displaying Kiwix / ZIM content.
 ///
 /// Accepts either an [initialUrl], [initialHtml], or a [filePath] to load.
@@ -54,6 +56,10 @@ class _KiwixViewState extends State<KiwixView> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  /// Set once the file:// load has been abandoned for the in-memory
+  /// fallback, so a second main-frame failure cannot loop forever.
+  bool _stringFallbackUsed = false;
+
   @override
   void initState() {
     super.initState();
@@ -63,16 +69,38 @@ class _KiwixViewState extends State<KiwixView> {
       ..setBackgroundColor(LuminaColors.surface)
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (_) => setState(() => _isLoading = true),
-          onPageFinished: (_) => setState(() {
-            _isLoading = false;
-            _errorMessage = null;
-          }),
+          onPageStarted: (_) {
+            if (!mounted) return;
+            setState(() {
+              _isLoading = true;
+              _errorMessage = null;
+            });
+          },
+          onPageFinished: (_) {
+            if (!mounted) return;
+            setState(() {
+              _isLoading = false;
+              _errorMessage = null;
+            });
+          },
           onWebResourceError: (error) {
             // Sub-frame failures (a blocked image, a stray script) must not
-            // replace the whole article with the error screen.
-            if (error.isForMainFrame != true) return;
+            // replace the whole article with the error screen. NOTE: check
+            // `== false`, not `!= true`: on some Android WebView versions
+            // isForMainFrame arrives null, and the old check silently
+            // swallowed real main-frame failures behind the naked system
+            // error page.
+            if (error.isForMainFrame == false) return;
             if (!mounted) return;
+            // The file this page was opened from may be unreadable through
+            // file:// on this device even though it exists on disk. Fall
+            // back once to rendering the bytes directly so the article
+            // still opens (relative asset links may degrade instead).
+            if (widget.filePath != null && !_stringFallbackUsed) {
+              _stringFallbackUsed = true;
+              unawaited(_loadFileAsString(widget.filePath!));
+              return;
+            }
             setState(() {
               _isLoading = false;
               _errorMessage = error.description;
@@ -82,13 +110,59 @@ class _KiwixViewState extends State<KiwixView> {
         ),
       );
 
+    _loadInitial();
+  }
+
+  /// Opens the initial source, verifying local files exist first so a
+  /// missing file shows our error UI instead of the system error page.
+  Future<void> _loadInitial() async {
     if (widget.filePath != null) {
-      _controller.loadFile(widget.filePath!);
+      try {
+        if (!await File(widget.filePath!).exists()) {
+          if (!mounted) return;
+          final l10n = AppLocalizations.of(context)!;
+          setState(() {
+            _isLoading = false;
+            _errorMessage = l10n.zimArticleNotFound;
+          });
+          return;
+        }
+      } catch (_) {
+        // Existence check itself failed: let loadFile try anyway; its
+        // error path handles failure with the fallback above.
+      }
+      unawaited(_controller.loadFile(widget.filePath!));
     } else if (widget.initialHtml != null) {
       final base = widget.baseUrl ?? ApiClient.baseUrl;
-      _controller.loadHtmlString(widget.initialHtml!, baseUrl: base);
+      unawaited(_controller.loadHtmlString(widget.initialHtml!, baseUrl: base));
     } else if (widget.initialUrl != null) {
-      _controller.loadRequest(Uri.parse(widget.initialUrl!));
+      unawaited(_controller.loadRequest(Uri.parse(widget.initialUrl!)));
+    }
+  }
+
+  /// Reads a saved article file and renders its bytes directly. Used once
+  /// when the file:// load of the same path fails on-device.
+  Future<void> _loadFileAsString(String path) async {
+    try {
+      final html = await File(path).readAsString();
+      if (!mounted || html.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage =
+                AppLocalizations.of(context)!.zimArticleNotFound;
+          });
+        }
+        return;
+      }
+      await _controller.loadHtmlString(html);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = AppLocalizations.of(context)!.zimArticleNotFound;
+        });
+      }
     }
   }
 
@@ -124,7 +198,14 @@ class _KiwixViewState extends State<KiwixView> {
           IconButton(
             tooltip: l10n.errorRetryButton,
             icon: const Icon(Icons.refresh, color: LuminaColors.primaryDeepBlue),
-            onPressed: () => _controller.reload(),
+            onPressed: () {
+              setState(() {
+                _errorMessage = null;
+                _isLoading = true;
+                _stringFallbackUsed = false;
+              });
+              unawaited(_loadInitial());
+            },
           ),
         ],
       ),
@@ -155,8 +236,9 @@ class _KiwixViewState extends State<KiwixView> {
                         setState(() {
                           _errorMessage = null;
                           _isLoading = true;
+                          _stringFallbackUsed = false;
                         });
-                        _controller.reload();
+                        unawaited(_loadInitial());
                       },
                       child: Text(l10n.errorRetryButton),
                     ),

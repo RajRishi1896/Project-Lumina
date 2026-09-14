@@ -509,13 +509,27 @@ class _CoursesTabState extends State<_CoursesTab> {
   Widget _buildAllCoursesList(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final courses = _filteredCourses;
     if (courses.isEmpty) {
+      // Offline with an empty cache renders the same list shape as a
+      // genuinely empty catalog: say so and offer retry instead of a
+      // dead-end message.
+      final offline = !ConnectivityService().isOnline;
       return Padding(
       padding: EdgeInsets.symmetric(vertical: AppSpacing.section.h),
       child: Center(child: Column(children: [
-        Icon(Icons.search_off, size: 40.sp, color: cs.onSurfaceVariant),
+        Icon(offline ? Icons.cloud_off_rounded : Icons.search_off,
+            size: 40.sp,
+            color: offline ? cs.onSurfaceVariant : cs.onSurfaceVariant),
         SizedBox(height: AppSpacing.md.h),
-        Text(_searchQuery.isNotEmpty ? l10n.browseNoMatchingCourses : l10n.browseNoCoursesAvailable,
-          style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
+        Text(
+            _searchQuery.isNotEmpty
+                ? l10n.browseNoMatchingCourses
+                : offline
+                    ? l10n.browseNotConnected
+                    : l10n.browseNoCoursesAvailable,
+            style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
+            textAlign: TextAlign.center),
+        SizedBox(height: AppSpacing.lg.h),
+        FilledButton(onPressed: _loadData, child: Text(l10n.errorRetryButton)),
       ])),
       );
     }
