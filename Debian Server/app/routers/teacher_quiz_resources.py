@@ -8,7 +8,7 @@ from app.dependencies import verify_teacher, verify_student, verify_user, can_ma
 from app.async_db import db_exec, db_fetch_one
 from app.database import UPLOAD_DIR
 from app.models import QuizBestScoreUpdate
-from app.quiz_grading import grade_quiz_detailed, load_quiz_file
+from app.quiz_grading import grade_quiz_detailed, load_quiz_file, find_missing_answer_keys
 from app.routers.student_courses import strip_answer_keys
 
 router = APIRouter()
@@ -30,6 +30,12 @@ async def create_quiz_resource(data: dict, teacher_user: str = Depends(verify_te
     for i, q in enumerate(questions):
         if not all(k in q for k in ("id", "type", "question")):
             raise HTTPException(status_code=400, detail=f"Question at index {i} is missing one of: id, type, question.")
+
+    # Ungradeable quizzes can never load in the app (it fails loudly on a
+    # missing answer key): reject them at creation, naming the offenders.
+    missing = find_missing_answer_keys(questions)
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Questions at indexes {missing} have no correct answer set.")
 
     resource_id = str(uuid.uuid4())
     title = data.get("title", "Quiz")
@@ -89,6 +95,10 @@ async def update_quiz_resource(resource_id: str, data: dict, teacher_user: str =
     for i, q in enumerate(questions):
         if not all(k in q for k in ("id", "type", "question")):
             raise HTTPException(status_code=400, detail=f"Question at index {i} is missing one of: id, type, question.")
+
+    missing = find_missing_answer_keys(questions)
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Questions at indexes {missing} have no correct answer set.")
 
     title = data.get("title", "Quiz")
     quiz = {

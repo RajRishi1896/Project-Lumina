@@ -98,6 +98,34 @@ def grade_quiz_detailed(quiz: dict, answers_json: str):
     return score, score >= threshold, threshold, results
 
 
+def find_missing_answer_keys(questions) -> list:
+    """Return indexes of questions with no usable answer key.
+
+    A question is gradeable when ``correct_answer`` is present and non-empty
+    (any type: int index, numeric string, or literal text) or
+    ``correct_answers`` is a non-empty list. Pure helper (no HTTP imports):
+    routers turn a non-empty result into a 400 response.
+
+    Args:
+        questions: Quiz question dicts as submitted for creation.
+
+    Returns:
+        List of question indexes missing an answer key (empty = all good).
+    """
+    missing = []
+    for i, q in enumerate(questions or []):
+        if not isinstance(q, dict):
+            missing.append(i)
+            continue
+        single = q.get("correct_answer")
+        multi = q.get("correct_answers")
+        has_single = single is not None and (not isinstance(single, str) or single.strip() != "")
+        has_multi = isinstance(multi, list) and len(multi) > 0
+        if not (has_single or has_multi):
+            missing.append(i)
+    return missing
+
+
 def _parse_answers(raw: str) -> dict:
     """Parse answers_json into {question_id_or_index: entry}.
 
@@ -225,4 +253,10 @@ if __name__ == "__main__":
     assert _is_correct({"id": "q3", "type": "mcq", "correct_answer": "0",
                         "options": ["Correct", "Wrong"]},
                        {"q3": {"answer": "Wrong"}}, 2) is False
+    assert find_missing_answer_keys([
+        {"id": "q1", "correct_answer": 0},
+        {"id": "q2", "correct_answers": ["a", "b"]},
+        {"id": "q3", "correct_answer": "  "},
+        {"id": "q4"},
+    ]) == [2, 3]
     print("quiz_grading self-check OK")  # noqa: T201

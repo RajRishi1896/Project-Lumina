@@ -8,6 +8,7 @@ from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch_one
 from app.dependencies import verify_teacher
 from app.models import CourseQuizCreate
+from app.quiz_grading import find_missing_answer_keys
 from app.routers.teacher_courses import COURSES_DIR, _ensure_course_exists
 
 router = APIRouter()
@@ -54,6 +55,12 @@ async def create_course_quiz(course_id: str, data: CourseQuizCreate, teacher_use
     for i, q in enumerate(questions):
         if not all(k in q for k in ("id", "type", "question")):
             raise HTTPException(status_code=400, detail=f"Question at index {i} is missing one of: id, type, question.")  # i18n: user-facing error message
+
+    # Ungradeable quizzes can never load in the app (it fails loudly on a
+    # missing answer key): reject them at creation, naming the offenders.
+    missing = find_missing_answer_keys(questions)
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Questions at indexes {missing} have no correct answer set.")
 
     resource_id = str(uuid.uuid4())
     title = data.title
@@ -115,6 +122,10 @@ async def save_course_quiz(course_id: str, resource_id: str, data: dict, teacher
     for i, q in enumerate(questions):
         if not all(k in q for k in ("id", "type", "question")):
             raise HTTPException(status_code=400, detail=f"Question at index {i} is missing one of: id, type, question.")  # i18n: user-facing error message
+
+    missing = find_missing_answer_keys(questions)
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Questions at indexes {missing} have no correct answer set.")
 
     quiz_dir = os.path.join(COURSES_DIR, course_id)
     os.makedirs(quiz_dir, exist_ok=True)
