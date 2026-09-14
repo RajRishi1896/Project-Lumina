@@ -1082,7 +1082,11 @@ body > nav, #welcome-content nav {
     thead { display: none; }
     tbody tr { display: block; margin-bottom: 1rem; border: 1px solid var(--outline); border-radius: var(--radius-sm); padding: 0.75rem; background: var(--bg-surface); overflow: hidden; }
     tbody td { display: flex; justify-content: space-between; align-items: baseline; padding: 0.4rem 0; border: none; overflow-wrap: break-word; word-break: break-word; }
-    tbody td:last-child { flex-wrap: wrap; gap: 0.25rem; }
+    /* Action cells keep label + buttons on ONE line: nowrap strip with
+    horizontal scroll instead of wrapping buttons across lines. Buttons
+    never shrink (stay tappable); the strip scrolls on narrow screens. */
+    tbody td:last-child { flex-wrap: nowrap; gap: 0.25rem; overflow-x: auto; scrollbar-width: thin; }
+    tbody td:last-child > .btn { flex-shrink: 0; }
     .table tbody td:before, tbody td:before { content: attr(data-label); display: block; font-weight: 700; color: var(--text-muted); font-size: 0.75rem; flex-shrink: 0; margin-right: 0.5rem; }
     #subjectDangerTable tr td:nth-child(3) { display: none; }
     #gradeDangerTable tr td, #subjectDangerTable tr td { padding: 0.25rem 0; }
