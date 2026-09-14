@@ -345,13 +345,29 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
     }
     final articleId = item['article_id'] as String? ?? '';
     if (articleId.isEmpty) return;
+    // New file-based save first (matches ZimDownloadHelper.saveArticle),
+    // then the legacy single-file and prefs formats.
+    final savedPath = await ZimDownloadHelper.findSavedArticle(articleId);
+    if (savedPath != null) {
+      if (!mounted) return;
+      unawaited(RecentResources.record(
+          articleId, item['title'] as String? ?? '', 'kiwix'));
+      unawaited(Navigator.push(
+          context,
+          luminaRoute(
+            builder: (_) => KiwixView(
+                filePath: savedPath,
+                title: item['title'] as String? ?? ''),
+          )));
+      return;
+    }
     String? html;
     try {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/zim_${articleId.replaceAll('/', '_')}.html');
       if (await file.exists()) html = await file.readAsString();
     } catch (_) {}
-    if (html == null || !context.mounted) return;
+    if (html == null || !mounted) return;
     unawaited(RecentResources.record(articleId, item['title'] as String? ?? '', 'kiwix'));
     unawaited(Navigator.push(context, luminaRoute(
       builder: (_) => KiwixView(initialHtml: html, title: item['title'] as String? ?? '', baseUrl: ApiClient.baseUrl),

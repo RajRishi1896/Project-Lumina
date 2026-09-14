@@ -799,23 +799,12 @@ class _DashboardPageState extends State<DashboardPage> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
-    return GestureDetector(
-      onTap: () => Navigator.push(context,
-          luminaRoute(builder: (_) => const OfflineLibraryPage())),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(l10n.sectionLocalStorage,
-                    style: tt.titleLarge?.copyWith(
-                        fontWeight: AppSpacing.weightDisplay,
-                        color: cs.onSurface)),
-              ),
-              Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
-            ],
-          ),
+    // NOTE: intentionally not tappable. Downloads has its own dedicated
+    // entry below; storage here is an informational summary only.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.sectionLocalStorage, style: tt.titleLarge?.copyWith(fontWeight: AppSpacing.weightDisplay, color: cs.onSurface)),
         SizedBox(height: AppSpacing.md.h),
         Card(
           child: Padding(
@@ -835,8 +824,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
         ),
-        ],
-      ),
+      ],
     );
   }
 
