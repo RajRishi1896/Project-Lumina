@@ -856,7 +856,10 @@
             if (!currentCourseId) return;
             try {
                 const res = await fetch('/api/teacher/courses/' + currentCourseId + '/topics', { credentials: 'include' });
-                if (res.ok) { courseTopics = await res.json(); renderTopics(); }
+                // ponytail: re-render the resource table too: its per-row
+                // chapter selects are built from courseTopics, otherwise a
+                // new chapter only appears after a full reload.
+                if (res.ok) { courseTopics = await res.json(); renderTopics(); renderCourseResources(); }
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }
 
