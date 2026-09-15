@@ -35,6 +35,33 @@ async def detect_wifi_caps():
         logging.warning(f"detect_wifi_caps failed, defaulting to [bg]: {e}")
         _wifi_caps = ["bg"]
 
+
+def _parse_nm_band(raw: str) -> str:
+    """Parse `nmcli -t -f 802-11-wireless.band` output to a band code.
+
+    Returns 'a' for 5 GHz, 'bg' for 2.4 GHz, or '' when the profile is
+    missing or the output is unrecognised (callers fall back to 'bg').
+    """
+    text = (raw or "").strip()
+    if text == "a" or text.endswith(":a"):
+        return "a"
+    if text == "bg" or text.endswith(":bg"):
+        return "bg"
+    return ""
+
+
+async def _read_nm_band() -> str:
+    """Read the live hotspot band via nmcli; '' when it cannot be told."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "nmcli", "-t", "-f", "802-11-wireless.band", "connection", "show", "LuminaHub",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=10)
+        return _parse_nm_band(stdout.decode())
+    except Exception as e:
+        logging.warning(f"_read_nm_band failed: {e}")
+        return ""
+
 @router.get("/stats", response_model=HubStatsResponse,
             summary="Get hub statistics",
             description="Returns scholar count, resource count, subject count, disk usage, battery percentage, and server uptime.",
@@ -162,72 +189,47 @@ async def get_wifi_band(admin_user: str = Depends(verify_admin)):
     Returns:
         Dict with band, label, and supported_bands list.
     """
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            "nmcli", "-t", "-f", "802-11-wireless.band", "connection", "show", "LuminaHub",
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-        stdout, _ = await proc.communicate()
-        band_raw = stdout.decode().strip()
-        band = band_raw.split(":")[-1] if ":" in band_raw else band_raw
-
-        supported = list(_wifi_caps) if _wifi_caps else ["bg"]
-
-        return {
-            "band": band or "bg",
-            "label": "5 GHz" if band == "a" else "2.4 GHz",
-            "supported": supported
-        }
-    except Exception as e:
-        logging.error(f"get_wifi_band: {e}")
-        return {"band": "bg", "label": "2.4 GHz", "supported": ["bg"]}
+    band = await _read_nm_band()
+    supported = list(_wifi_caps) if _wifi_caps else ["bg"]
+    return {
+        "band": band or "bg",
+        "label": "5 GHz" if band == "a" else "2.4 GHz",
+        "supported": supported
+    }
 
 
-@router.post("/system/wifi-band", response_model=StatusResponse,
+@router.post("/system/wifi-band", response_model=dict,
              summary="Switch WiFi band",
-             description="Switches the hotspot between 5GHz and 2.4GHz. The hotspot restarts and clients reconnect. Admin-only.",
+             description="Writes the band preference and reboots: start_hotspot.sh applies it at boot (with adapter fallback and channel-width forcing). Re-requesting the live band is a no-op without reboot. Admin-only.",
              tags=["System"],
-             responses={400: {"description": "Invalid band or switch failed"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
+             responses={400: {"description": "Invalid or unsupported band"}, 401: {"description": "Unauthorized"}, 403: {"description": "Forbidden"}})
 async def set_wifi_band(request: Request, admin_user: str = Depends(verify_admin)):
     """Switch the WiFi hotspot band.
 
     Body:
         {"band": "a"} for 5GHz or {"band": "bg"} for 2.4GHz.
 
+    The preference is applied by start_hotspot.sh at boot, which is the
+    single apply mechanism (it also handles adapter fallback and 80 MHz
+    forcing). A live nmcli restart is deliberately not attempted here:
+    it cannot do the width forcing and a failed bring-up would kill the
+    hotspot the admin is connected through.
+
     Returns:
-        Dict with status and the new band.
+        Dict with status, band, label, reboot flag, and message.
     """
     try:
         body = await request.json()
         band = body.get("band", "")
         if band not in ("a", "bg"):
             raise HTTPException(status_code=400, detail="Invalid band. Use 'a' for 5GHz or 'bg' for 2.4GHz.")
-        channel = "149" if band == "a" else "1"
-        wifi_if_proc = await asyncio.create_subprocess_exec(
-            "nmcli", "-t", "-f", "DEVICE,TYPE", "device",
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-        stdout, _ = await wifi_if_proc.communicate()
-        wifi_if = ""
-        for line in stdout.decode().strip().split("\n"):
-            parts = line.split(":")
-            if len(parts) == 2 and parts[1] == "wifi":
-                wifi_if = parts[0]
-                break
-        if not wifi_if:
-            raise HTTPException(status_code=400, detail="No WiFi interface found.")
-        cmds = [
-            ["nmcli", "connection", "modify", "LuminaHub", f"802-11-wireless.band", band],
-        ]
-        if channel:
-            cmds.append(["nmcli", "connection", "modify", "LuminaHub", "802-11-wireless.channel", channel])
-        cmds.extend([
-            ["nmcli", "device", "disconnect", wifi_if],
-            ["nmcli", "connection", "up", "LuminaHub"],
-        ])
-        for cmd in cmds:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-            await proc.communicate()
         label = "5 GHz" if band == "a" else "2.4 GHz"
+        supported = list(_wifi_caps) if _wifi_caps else ["bg"]
+        if band not in supported:
+            raise HTTPException(status_code=400, detail=f"This adapter does not support {label}.")
+        if await _read_nm_band() == band:
+            return {"status": "success", "band": band, "label": label,
+                    "reboot": False, "message": f"Already on {label}. No restart needed."}
 
         def _write_band_pref():
             try:
@@ -246,7 +248,8 @@ async def set_wifi_band(request: Request, admin_user: str = Depends(verify_admin
             2.0,
             lambda: asyncio.ensure_future(_do_reboot())
         )
-        return {"status": "success", "band": band, "label": label, "message": f"Switched to {label}. Server rebooting."}
+        return {"status": "success", "band": band, "label": label,
+                "reboot": True, "message": f"Switched to {label}. Server rebooting."}
     except HTTPException:
         raise
     except Exception as e:
