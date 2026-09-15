@@ -763,7 +763,7 @@
   "welcome.appguide_body": "<p>Nous avons créé un guide complet : navigation, téléchargement, cartes, quiz et plus.</p><p><a class=\"btn btn-primary\" href=\"/studentguide.html\">Ouvrir le guide étudiant</a></p>",
   "sg.page_title": "Student Guide | Lumina Hub",
   "sg.title": "Guide de l’étudiant",
-  "sg.app_body": "<p>Project Lumina is your offline learning app. It connects to your school’s Lumina Hub over Wi-Fi — no internet needed. Textbooks, videos, quizzes, and flashcards all live inside.</p>",
+  "sg.app_body": "<p>Project Lumina est votre application d’apprentissage hors ligne. Elle se connecte au Lumina Hub de votre école en Wi-Fi — pas besoin d’internet. Manuels, vidéos, quiz et flashcards sont tous inclus.</p>",
   "sg.browse_title": "Trouver des ressources",
   "sg.browse_body": "<ol class=\"steps\"><li>Ouvrez l’application. Votre <strong>tableau de bord</strong> affiche les matières et les ressources.</li><li>Appuyez sur une matière pour voir ses manuels, vidéos, notes et annales.</li><li>Utilisez <strong>Rechercher</strong> pour trouver n’importe quoi.</li></ol>",
   "sg.download_title": "Télécharger pour hors ligne",
