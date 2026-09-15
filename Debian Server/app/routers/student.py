@@ -264,19 +264,42 @@ async def get_student_profile(student_id: str = Depends(verify_student)):
     return {"name": row[0], "grade": row[1] or "", "scholar_id": row[2]}
 
 
-@router.post("/student/sync-bookmarks", response_model=StatusResponse, summary="Sync bookmarks", description="Replaces all server-side bookmarks with the provided list.", tags=["Sync"], responses={401: {"description": "Unauthorized"}})
+@router.post("/student/sync-bookmarks", response_model=StatusResponse, summary="Sync bookmarks", description="Replaces all server-side bookmarks with the provided list, then prunes rows that can never resolve again (deleted/missing resources, archived/missing courses). Draft courses are kept.", tags=["Sync"], responses={200: {"description": "Bookmarks synced successfully"}, 401: {"description": "Unauthorized"}})
 async def sync_bookmarks(data: BookmarkSync, student_id: str = Depends(verify_student)):
-    """Replace the student's server-side bookmarks with the synced list."""
+    """Replace the student's server-side bookmarks with the synced list.
+
+    Course saves (resource_type 'course') are stored opaquely with no
+    validation on write. After replacing, prune tombstoned rows: resource
+    bookmarks missing from resources or with status 'deleted', and course
+    bookmarks missing from courses or with published = -1. Draft courses
+    (published = 0) are kept since unpublish is reversible.
+    """
     def _replace(conn):
-        """Delete old bookmarks and insert the synced ones in one transaction."""
+        """Delete old bookmarks, insert the synced ones, then prune tombstones."""
         c = conn.cursor()
         c.execute("DELETE FROM student_bookmarks WHERE scholar_id = ?", (student_id,))
         if data.bookmarks:
             c.executemany("INSERT INTO student_bookmarks (scholar_id, resource_id, title, subject, grade, resource_type) VALUES (?, ?, ?, ?, ?, ?)",
                 [(student_id, b.resource_id, b.title, b.subject, b.grade, b.resource_type) for b in data.bookmarks])
+        c.execute("DELETE FROM student_bookmarks WHERE scholar_id = ? AND COALESCE(resource_type, '') != 'course' AND resource_id NOT IN (SELECT id FROM resources WHERE status != 'deleted')", (student_id,))
+        c.execute("DELETE FROM student_bookmarks WHERE scholar_id = ? AND resource_type = 'course' AND resource_id NOT IN (SELECT id FROM courses WHERE published != -1)", (student_id,))
         conn.commit()
     await db_run(_replace)
     return {"status": "ok"}
+
+
+@router.get("/student/bookmarks", response_model=BookmarkSync, summary="Get bookmarks", description="Returns the student's synced bookmarks, including course saves stored as resource_type 'course'.", tags=["Sync"], responses={200: {"description": "Bookmarks retrieved successfully"}, 401: {"description": "Unauthorized"}})
+async def get_bookmarks(student_id: str = Depends(verify_student)):
+    """Return the student's server-side bookmarks.
+
+    Args:
+        student_id: The authenticated student's ID, injected by the verify_student dependency.
+
+    Returns:
+        Dict with a bookmarks list of resource_id, title, subject, grade, and resource_type.
+    """
+    rows = await db_fetch("SELECT resource_id, title, subject, grade, resource_type FROM student_bookmarks WHERE scholar_id = ? ORDER BY saved_at", (student_id,))
+    return {"bookmarks": [{"resource_id": r[0], "title": r[1] or "", "subject": r[2] or "", "grade": r[3] or "", "resource_type": r[4] or ""} for r in rows]}
 
 
 @router.get("/student/quiz-best-score/{course_id}/{resource_id}", response_model=QuizBestScoreResponse, summary="Get best quiz score", description="Returns the student's best score, best attempt id, and total attempt count for a quiz.", tags=["Student"], responses={401: {"description": "Unauthorized"}})

@@ -296,10 +296,12 @@ async def delete_course(course_id: str, teacher_user: str = Depends(verify_teach
     """Soft-delete a course by setting published = -1.
 
     The course is archived, not removed from the database. Resources remain
-    on disk. Logs the action to the audit log.
+    on disk. Student bookmark rows saved as resource_type 'course' for this
+    course are removed immediately. Logs the action to the audit log.
     """
     row = await _ensure_course_exists(course_id)
     await db_exec("UPDATE courses SET published = -1, updated_at = datetime('now') WHERE id = ?", (course_id,))
+    await db_exec("DELETE FROM student_bookmarks WHERE resource_id = ? AND resource_type = 'course'", (course_id,))
     await audit(action=Action.DELETE_COURSE, username=teacher_user, resource_type="course",
                 resource_id=course_id, resource_name=row['title'])
     return {"status": "ok", "message": f"Course '{row['title']}' archived."}  # i18n: user-facing success message

@@ -152,6 +152,99 @@ async def test_teacher_cannot_update_others_quiz(client, admin_client):
     assert row and row["title"] == "A quiz"
 
 
+async def _make_course(title="BM course", published=0):
+    """Insert a course row; return its id."""
+    cid = f"CRS-{uuid.uuid4().hex[:12]}"
+    await db_exec(
+        "INSERT INTO courses (id, title, teacher_username, published) VALUES (?, ?, 'admin', ?)",
+        (cid, title, published))
+    return cid
+
+
+async def test_bookmark_roundtrip_push_get(client):
+    """POST sync-bookmarks then GET returns the same entries."""
+    rid = await _make_resource("admin", "BM book")
+    cid = await _make_course()
+    _, token = await _make_student("s.bmround")
+    payload = {"bookmarks": [
+        {"resource_id": rid, "title": "BM book", "subject": "General", "grade": "General", "resource_type": "textbook"},
+        {"resource_id": cid, "title": "BM course", "subject": "General", "grade": "5", "resource_type": "course"},
+    ]}
+    resp = await client.post("/student/sync-bookmarks", json=payload, headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    resp = await client.get("/student/bookmarks", headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    got = {b["resource_id"]: b for b in resp.json()["bookmarks"]}
+    assert got[rid]["title"] == "BM book"
+    assert got[rid]["resource_type"] == "textbook"
+    assert got[cid]["resource_type"] == "course"
+
+
+async def test_bookmark_get_requires_auth(client):
+    """GET /student/bookmarks without a session returns 401."""
+    resp = await client.get("/student/bookmarks")
+    assert resp.status_code == 401
+
+
+async def test_resource_soft_delete_removes_bookmarks(client, admin_client):
+    """Soft-deleting a resource removes its student_bookmarks rows."""
+    from app.async_db import db_fetch
+    rid = await _make_resource("admin", "Doomed book")
+    _, token = await _make_student("s.bmdel")
+    resp = await client.post("/student/sync-bookmarks", json={"bookmarks": [
+        {"resource_id": rid, "title": "Doomed book", "subject": "General", "grade": "General", "resource_type": "textbook"},
+    ]}, headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    resp = await admin_client.delete(f"/teacher/resources/{rid}")
+    assert resp.status_code == 200, resp.text
+    rows = await db_fetch("SELECT resource_id FROM student_bookmarks WHERE resource_id = ?", (rid,))
+    assert rows == []
+    resp = await client.get("/student/bookmarks", headers=_auth(token))
+    assert resp.status_code == 200
+    assert all(b["resource_id"] != rid for b in resp.json()["bookmarks"])
+
+
+async def test_course_soft_delete_removes_course_bookmarks(client, admin_client):
+    """Archiving a course removes resource_type='course' bookmarks for it."""
+    cid = await _make_course("Doomed course")
+    _, token = await _make_student("s.bmcourse")
+    resp = await client.post("/student/sync-bookmarks", json={"bookmarks": [
+        {"resource_id": cid, "title": "Doomed course", "subject": "General", "grade": "5", "resource_type": "course"},
+    ]}, headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    resp = await admin_client.delete(f"/api/teacher/courses/{cid}")
+    assert resp.status_code == 200, resp.text
+    resp = await client.get("/student/bookmarks", headers=_auth(token))
+    assert resp.status_code == 200
+    assert all(b["resource_id"] != cid for b in resp.json()["bookmarks"])
+
+
+async def test_sync_prunes_tombstones_but_keeps_drafts(client):
+    """Sync drops bookmarks for deleted/missing resources and archived/missing courses, keeps live + drafts."""
+    live = await _make_resource("admin", "Live book")
+    dead = await _make_resource("admin", "Dead book")
+    await db_exec("UPDATE resources SET status = 'deleted', deleted_at = datetime('now') WHERE id = ?", (dead,))
+    draft = await _make_course("Draft course", published=0)
+    archived = await _make_course("Archived course", published=-1)
+    ghost_res = f"RES-{uuid.uuid4().hex[:12]}"
+    ghost_course = f"CRS-{uuid.uuid4().hex[:12]}"
+    _, token = await _make_student("s.bmprune")
+    payload = {"bookmarks": [
+        {"resource_id": live, "title": "Live", "subject": "General", "grade": "General", "resource_type": "textbook"},
+        {"resource_id": dead, "title": "Dead", "subject": "General", "grade": "General", "resource_type": "textbook"},
+        {"resource_id": ghost_res, "title": "Ghost", "subject": "General", "grade": "General", "resource_type": "textbook"},
+        {"resource_id": draft, "title": "Draft", "subject": "General", "grade": "5", "resource_type": "course"},
+        {"resource_id": archived, "title": "Archived", "subject": "General", "grade": "5", "resource_type": "course"},
+        {"resource_id": ghost_course, "title": "Ghost course", "subject": "General", "grade": "5", "resource_type": "course"},
+    ]}
+    resp = await client.post("/student/sync-bookmarks", json=payload, headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    resp = await client.get("/student/bookmarks", headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    got = {b["resource_id"] for b in resp.json()["bookmarks"]}
+    assert got == {live, draft}, f"expected only live + draft bookmarks, got: {got}"
+
+
 async def test_course_export_available_to_any_teacher(client):
     """Any teacher may export any course (shared hub content)."""
     teacher_a, token_a = await _make_teacher("teacher.expA")

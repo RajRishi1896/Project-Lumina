@@ -176,7 +176,8 @@ async def delete_resource(resource_id: str, teacher_user: str = Depends(verify_t
 
     Sets status to ``deleted`` and records ``deleted_at``. The file, DB row,
     and related records stay untouched until the hourly purge hard-deletes
-    them after 30 days.
+    them after 30 days. Student bookmark rows for this resource are removed
+    immediately so restores stop offering a dead backup.
 
     Returns:
         Dict with status and action (``recycled``).
@@ -197,6 +198,7 @@ async def delete_resource(resource_id: str, teacher_user: str = Depends(verify_t
             if not row:
                 return None
             conn.execute("UPDATE resources SET status = 'deleted', deleted_at = datetime('now') WHERE id = ?", (resource_id,))
+            conn.execute("DELETE FROM student_bookmarks WHERE resource_id = ?", (resource_id,))
             conn.commit()
             return row[0]
 
