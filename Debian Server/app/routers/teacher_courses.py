@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, Query
 from app.database import UPLOAD_DIR, gen_composite_uid
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
+from app.course_cover import save_course_cover
 from app.dependencies import verify_teacher
 from app.models import CourseCreate
 
@@ -55,6 +56,13 @@ async def _ensure_course_exists(course_id: str):
     if not row:
         raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
     return row
+
+
+async def _require_course_resources(course_id: str):
+    """Raise 400 when the course has zero rows in course_resources."""
+    row = await db_fetch_one("SELECT COUNT(*) AS n FROM course_resources WHERE course_id = ?", (course_id,))
+    if not row or not row["n"]:
+        raise HTTPException(status_code=400, detail="Cannot publish a course with no resources. Add at least one resource first.")  # i18n: user-facing error message
 
 
 async def _write_chunked(dest_path: str, file: UploadFile, max_size: int) -> int:
@@ -143,7 +151,7 @@ async def suggest_similar_courses(q: str = Query("", description="Search query f
 
 @router.post("/api/teacher/courses",
              summary="Create a new course", tags=["Teacher Courses"],
-             description="Creates a new course with the given metadata. The course ID is a composite of grade and subject.",
+             description="Creates a new course with the given metadata. The course ID is a composite of grade and subject. Accepts an optional cover_image data-URL.",
              response_model=dict,
              responses={201: {"description": "Created course"}})
 async def create_course(data: CourseCreate, teacher_user: str = Depends(verify_teacher)):
@@ -171,6 +179,9 @@ async def create_course(data: CourseCreate, teacher_user: str = Depends(verify_t
         return course_id
 
     course_id = await db_run(_insert_course)
+    cover_rel = await save_course_cover(COURSES_DIR, course_id, data.cover_image)
+    if cover_rel is not None:
+        await db_exec("UPDATE courses SET cover_image = ? WHERE id = ?", (cover_rel, course_id))
     row = await db_fetch_one("SELECT * FROM courses WHERE id = ?", (course_id,))
     await audit(action=Action.CREATE_COURSE, username=teacher_user, resource_type="course",
                 resource_id=course_id, resource_name=data.title)
@@ -233,7 +244,7 @@ async def get_course_detail(course_id: str, teacher_user: str = Depends(verify_t
 @router.put("/api/teacher/courses/{course_id}",
             summary="Update course metadata",
             tags=["Teacher Courses"],
-            description="Updates course metadata (title, description, subject, grade, language). An optional `status` of 'draft' or 'published' also moves the course out of / into the published state.",
+            description="Updates course metadata (title, description, subject, grade, language, cover_image). An optional `status` of 'draft' or 'published' also moves the course out of / into the published state; publishing an empty course is rejected with 400.",
             response_model=dict,
             responses={200: {"description": "Updated course"}, 404: {"description": "Course not found"}})
 async def update_course(course_id: str, data: CourseCreate, teacher_user: str = Depends(verify_teacher)):
@@ -246,12 +257,17 @@ async def update_course(course_id: str, data: CourseCreate, teacher_user: str = 
     Verifies ownership before updating. Logs the change to the audit log.
     """
     await _ensure_course_exists(course_id)
+    if data.status == "published":
+        await _require_course_resources(course_id)
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     await db_exec(
         """UPDATE courses SET title = ?, description = ?, subject = ?, grade = ?, language = ?, updated_at = ?
            WHERE id = ?""",
         (data.title, data.description, data.subject, data.grade, data.language, now, course_id)
     )
+    cover_rel = await save_course_cover(COURSES_DIR, course_id, data.cover_image)
+    if cover_rel is not None:
+        await db_exec("UPDATE courses SET cover_image = ? WHERE id = ?", (cover_rel, course_id))
     if data.status in ("draft", "published"):
         new_val = 0 if data.status == "draft" else 1
         await db_exec(
@@ -300,6 +316,8 @@ async def toggle_publish(course_id: str, teacher_user: str = Depends(verify_teac
     """
     row = await _ensure_course_exists(course_id)
     new_val = 0 if row["published"] == 1 else 1
+    if new_val == 1:
+        await _require_course_resources(course_id)
     await db_exec("UPDATE courses SET published = ?, updated_at = datetime('now') WHERE id = ?", (new_val, course_id))
     action = Action.PUBLISH_COURSE if new_val == 1 else Action.UNPUBLISH_COURSE
     await audit(action=action, username=teacher_user, resource_type="course",

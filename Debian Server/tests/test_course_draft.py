@@ -5,10 +5,16 @@ import pytest
 @pytest.mark.asyncio
 async def test_put_status_draft_unpublishes(admin_client):
     """PUT with status='draft' flips published 1 -> 0; 'published' flips back."""
+    from app.async_db import db_exec
     r = await admin_client.post("/api/teacher/courses", json={
         "title": "Draft Test", "subject": "General", "grade": 5, "language": "en"})
     assert r.status_code == 200, r.text
     cid = r.json()["id"]
+
+    # Empty courses cannot be published: seed one resource first.
+    await db_exec(
+        "INSERT INTO course_resources (id, course_id, resource_type, title, position) VALUES (?, ?, 'textbook', 'Ch 1', 0)",
+        ("RES-draft-seed", cid))
 
     # Publish via toggle, then Save Draft must revert it
     r = await admin_client.post(f"/api/teacher/courses/{cid}/publish")

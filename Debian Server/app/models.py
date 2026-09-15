@@ -266,6 +266,7 @@ class CourseCreate(BaseModel):
     grade: int = Field(0, description="Grade level 0-13", ge=0, le=13, json_schema_extra={"example": 9})
     language: str = Field("en", description="ISO 639-1 code", json_schema_extra={"example": "en"})
     status: str = Field("", description="Optional publish state: 'draft' (0) or 'published' (1). Empty leaves it unchanged on update.", json_schema_extra={"example": "draft"})
+    cover_image: Optional[str] = Field(default=None, description="Optional cover image as a base64 data-URL (PNG, JPEG, or WebP, max 2MB). Empty string removes the cover. Omitted leaves it unchanged.", json_schema_extra={"example": "data:image/png;base64,iVBORw0KGgo="})
 class CourseQuizCreate(BaseModel):
     """Payload for creating or editing a course quiz."""
     model_config = ConfigDict(extra='ignore')
