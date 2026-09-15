@@ -419,10 +419,13 @@ class CourseService extends ChangeNotifier {
       title: (row['title'] ?? '').toString(),
       description: (row['description'] ?? '').toString(),
       subject: (row['subject'] ?? '').toString(),
-      grade: (row['grade'] as num?)?.toInt() ?? 0,
+      // ponytail: grade column is TEXT (default 'General'); rows restored
+      // from the server can hold strings, so parse like Course.fromJson
+      // instead of casting to num (which threw and emptied the catalog).
+      grade: num.tryParse(row['grade']?.toString() ?? '')?.toInt() ?? 0,
       language: (row['language'] ?? 'en').toString(),
       coverImage: (row['cover_image'] ?? '').toString(),
-      published: (row['published'] as num?)?.toInt() ?? 0,
+      published: num.tryParse(row['published']?.toString() ?? '')?.toInt() ?? 0,
       teacherUsername: (row['teacher_username'] ?? '').toString(),
       createdAt: (row['created_at'] ?? '').toString(),
       updatedAt: (row['updated_at'] ?? '').toString(),

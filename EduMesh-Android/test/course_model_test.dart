@@ -101,6 +101,48 @@ void main() {
     });
   });
 
+  group('Course row grade/published parsing (courses table cache)', () {
+    // Mirrors CourseService._rowToCourse's real deserialization expressions:
+    // the grade column is TEXT DEFAULT 'General', so restored rows can hold
+    // strings; a direct `as num?` cast threw and emptied the course catalog.
+    int gradeFromRow(Map<String, dynamic> row) =>
+        num.tryParse(row['grade']?.toString() ?? '')?.toInt() ?? 0;
+    int publishedFromRow(Map<String, dynamic> row) =>
+        num.tryParse(row['published']?.toString() ?? '')?.toInt() ?? 0;
+
+    test('TEXT grade falls back to 0 instead of throwing', () {
+      expect(gradeFromRow({'grade': 'General'}), 0);
+      expect(gradeFromRow({'grade': 'Grade 9'}), 0);
+      expect(gradeFromRow({}), 0);
+      expect(gradeFromRow({'grade': null}), 0);
+    });
+
+    test('int and numeric-string grades parse', () {
+      expect(gradeFromRow({'grade': 9}), 9);
+      expect(gradeFromRow({'grade': '9'}), 9);
+    });
+
+    test('published parses int, numeric string, and bool-ish values safely', () {
+      expect(publishedFromRow({'published': 1}), 1);
+      expect(publishedFromRow({'published': '1'}), 1);
+      expect(publishedFromRow({'published': 'true'}), 0);
+      expect(publishedFromRow({}), 0);
+    });
+
+    test('Course.fromJson maps TEXT grade to 0', () {
+      final c = Course.fromJson(const {
+        'id': 'c1',
+        'title': 'Fractions',
+        'subject': 'General',
+        'grade': 'General',
+        'language': 'en',
+        'published': 1,
+      });
+      expect(c.grade, 0);
+      expect(c.published, 1);
+    });
+  });
+
   group('resolveAnswerOption (server index-key mapping)', () {
     const options = ['Paris', 'London', 'Berlin'];
 
