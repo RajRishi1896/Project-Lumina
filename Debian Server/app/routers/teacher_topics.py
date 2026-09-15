@@ -4,11 +4,11 @@ from typing import Optional
 import asyncio
 import os
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from app.database import gen_uid
+from app.database import gen_uid, THUMBNAILS_DIR
 from app.async_db import db_exec, db_exec_many, db_fetch, db_fetch_one
 from app.course_meta import bump_course_version, normalize_unlock_mode
 from app.dependencies import verify_teacher
-from app.routers.teacher_courses import _ensure_course_exists
+from app.routers.teacher_courses import _ensure_course_exists, COURSES_DIR
 from app.audit import audit, Action
 
 router = APIRouter()
@@ -124,15 +124,31 @@ async def delete_topic(course_id: str, topic_id: str,  # noqa: PLR0913
         return {"status": "ok", "message": f"Topic deleted. Resources transferred to '{target['title']}'.",
                 "transferred_to": target["title"]}  # i18n: user-facing success message
     elif delete_resources:
-        resources = await db_fetch("SELECT id, filename FROM course_resources WHERE topic_id = ?", (topic_id,))
-        upload_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+        resources = await db_fetch(
+            "SELECT id, resource_type, filename FROM course_resources WHERE topic_id = ?", (topic_id,))
+        res_dir = os.path.join(COURSES_DIR, course_id, "resources")
 
         def _remove_files():
+            """Delete resource files, quiz JSON, and thumbnails for removed rows."""
             for r in resources:
-                fpath = os.path.join(upload_dir, r["filename"])
-                if r.get("filename") and os.path.exists(fpath):
+                if r["filename"]:
+                    fpath = os.path.join(res_dir, r["filename"])
+                    if os.path.exists(fpath):
+                        try:
+                            os.remove(fpath)
+                        except OSError:
+                            pass
+                if r["resource_type"] == "quiz":
+                    qpath = os.path.join(COURSES_DIR, course_id, f"quiz_{r['id']}.json")
+                    if os.path.exists(qpath):
+                        try:
+                            os.remove(qpath)
+                        except OSError:
+                            pass
+                tpath = os.path.join(THUMBNAILS_DIR, r["id"] + ".png")
+                if os.path.exists(tpath):
                     try:
-                        os.remove(fpath)
+                        os.remove(tpath)
                     except OSError:
                         pass
 

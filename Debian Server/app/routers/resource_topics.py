@@ -171,7 +171,7 @@ async def delete_resource_topic(topic_id: str,
             await db_exec(f"DELETE FROM resources WHERE id IN ({placeholders})", tuple(resource_ids))
         await db_exec("DELETE FROM resource_topics WHERE id = ?", (topic_id,))
         await audit(action=Action.DELETE_TOPIC, username=teacher_user, resource_type="topic",
-                    resource_id=topic_id, resources_deleted=len(resources))
+                    resource_id=topic_id, context={"deleted_resources": len(resources)})
         return {"status": "ok", "message": f"Topic and {len(resources)} resource(s) deleted."}  # i18n: user-facing success message
     else:
         await db_exec("UPDATE resources SET topic_id = '' WHERE topic_id = ?", (topic_id,))
