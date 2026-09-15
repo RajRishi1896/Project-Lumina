@@ -106,6 +106,8 @@ class ConnectivityService extends ChangeNotifier {
             grade: item['grade'] as String? ?? '',
             type: item['type'] as String? ?? '',
             mtime: (item['mtime'] as num?)?.toDouble() ?? 0,
+            groupId: item['group_id'] as String? ?? '',
+            groupTitle: item['group_title'] as String? ?? '',
           );
         } catch (_) {}
       }

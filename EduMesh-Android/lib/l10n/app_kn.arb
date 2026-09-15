@@ -304,6 +304,8 @@
   "browseCouldNotLoad": "ಕೋರ್ಸ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
   "browseProgressFormat": "{completed}/{total}",
   "coursePlayerLocked": "ಮೊದಲು ಹಿಂದಿನ ಸಂಪನ್ಮೂಲವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ",
+  "coursePlayerChapterLocked": "ಮೊದಲು ಹಿಂದಿನ ಅಧ್ಯಾಯವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ",
+  "coursePlayerUngroupedTitle": "ಇತರ ಸಂಪನ್ಮೂಲಗಳು",
   "coursePlayerDownloading": "ಕೋರ್ಸ್ ಡೌನ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
   "coursePlayerDownloadFailed": "ಡೌನ್‌ಲೋಡ್ ವಿಫಲವಾಗಿದೆ. ಸಂಗ್ರಹಣೆ ಸ್ಥಳವನ್ನು ಪರಿಶೀಲಿಸಿ.",
   "coursePlayerVideo": "ವಿಡಿಯೋ",
@@ -1251,6 +1253,12 @@
   "@coursePlayerLocked": {
     "description": "Tooltip shown when tapping a locked course resource"
   },
+  "@coursePlayerChapterLocked": {
+    "description": "SnackBar shown when tapping a course resource locked by an incomplete previous chapter"
+  },
+  "@coursePlayerUngroupedTitle": {
+    "description": "Section header in the course player for resources that belong to no chapter"
+  },
   "@coursePlayerDownloading": {
     "description": "Progress message shown during course download"
   },
@@ -1922,6 +1930,53 @@
   "tourBodyLanguage": "ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಯಾವಾಗ ಬೇಕಾದರೂ ಭಾಷೆ ಆಯ್ಕೆ ಮಾಡಿ.",
   "@tourBodyLanguage": {
     "description": "Body of the first-login tour language slide; allow 40-50% expansion",
+    "x_machine_translated": true
+  },
+  "browseDownloadCourse": "ಡೌನ್‌ಲೋಡ್",
+  "@browseDownloadCourse": {
+    "description": "Tooltip and accessible label of the download icon button on a browse course card. Tapping queues every file in the course for offline use. Verb-first, 1 word.",
+    "x_machine_translated": true
+  },
+  "courseDownloadEmpty": "ಈ ಕೋರ್ಸ್‌ನಲ್ಲಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಲು ಇನ್ನೂ ಯಾವುದೇ ಫೈಲ್ ಇಲ್ಲ.",
+  "@courseDownloadEmpty": {
+    "description": "SnackBar shown when the student taps Download on a course card whose detail holds zero downloadable resources. Plain language, max 15 words.",
+    "x_machine_translated": true
+  },
+  "unenrollButton": "ಕೋರ್ಸ್ ಬಿಡಿ",
+  "@unenrollButton": {
+    "description": "Menu item and confirm button that removes the student's enrollment in a course. Shown in the course player overflow menu and the leave-course dialog. Verb-first, max 3 words.",
+    "x_machine_translated": true
+  },
+  "unenrollDialogTitle": "ಈ ಕೋರ್ಸ್ ಬಿಡಬೇಕೇ?",
+  "@unenrollDialogTitle": {
+    "description": "Title of the confirmation dialog shown before unenrolling from a course",
+    "x_machine_translated": true
+  },
+  "unenrollDialogBody": "\"{title}\" ಬಿಡಬೇಕೇ? ನಿಮ್ಮ ಪ್ರಗತಿ ಈ ಫೋನ್‌ನಲ್ಲಿಯೇ ಇರುತ್ತದೆ. ನೀವು ನಂತರ ಮತ್ತೆ ಸೇರಬಹುದು.",
+  "@unenrollDialogBody": {
+    "description": "Body of the leave-course confirmation dialog. Tells the student what happens (enrollment removed), what is kept (local progress), and that rejoining is possible. {title} is the course name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Fractions"
+      }
+    },
+    "x_machine_translated": true
+  },
+  "unenrollSuccess": "ನೀವು \"{title}\" ಬಿಟ್ಟಿದ್ದೀರಿ.",
+  "@unenrollSuccess": {
+    "description": "SnackBar shown after a successful unenroll. {title} is the course name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Fractions"
+      }
+    },
+    "x_machine_translated": true
+  },
+  "unenrollFailed": "ಕೋರ್ಸ್ ಬಿಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "@unenrollFailed": {
+    "description": "SnackBar shown when clearing the local enrollment state fails (network errors are tolerated, so this means local storage failed)",
     "x_machine_translated": true
   }
 }

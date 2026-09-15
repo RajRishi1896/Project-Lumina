@@ -62,7 +62,7 @@ class DBHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    final db = await openDatabase(path, version: 17, onCreate: _createDB);
+    final db = await openDatabase(path, version: 18, onCreate: _createDB);
     try { await db.execute('CREATE INDEX IF NOT EXISTS idx_activity_subject ON activity(subject)'); } catch (_) {}
     try {
       final cutoff = DateTime.now().subtract(const Duration(days: 90)).toIso8601String().substring(0, 10);
@@ -108,7 +108,9 @@ class DBHelper {
       grade TEXT,
       type TEXT,
       mtime REAL DEFAULT 0,
-      added_at INTEGER
+      added_at INTEGER,
+      group_id TEXT DEFAULT '',
+      group_title TEXT DEFAULT ''
     )''');
     await db.execute('''CREATE TABLE IF NOT EXISTS pending_mutations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -145,7 +147,16 @@ class DBHelper {
       enrollment_count INTEGER DEFAULT 0,
       created_at TEXT DEFAULT '',
       updated_at TEXT DEFAULT '',
+      version INTEGER NOT NULL DEFAULT 1,
       synced_at INTEGER NOT NULL DEFAULT 0
+    )''');
+    await db.execute('''CREATE TABLE IF NOT EXISTS course_topics (
+      course_id TEXT NOT NULL,
+      id TEXT NOT NULL,
+      title TEXT DEFAULT '',
+      position INTEGER NOT NULL DEFAULT 0,
+      unlock_mode TEXT NOT NULL DEFAULT 'all',
+      PRIMARY KEY (course_id, id)
     )''');
     await db.execute('''CREATE TABLE IF NOT EXISTS course_resources (
       id TEXT PRIMARY KEY,
@@ -157,7 +168,10 @@ class DBHelper {
       file_size INTEGER DEFAULT 0,
       page_count INTEGER DEFAULT 0,
       duration_seconds INTEGER DEFAULT 0,
-      position INTEGER NOT NULL DEFAULT 0
+      position INTEGER NOT NULL DEFAULT 0,
+      topic_id TEXT NOT NULL DEFAULT '',
+      updated_at TEXT DEFAULT '',
+      quiz_version INTEGER NOT NULL DEFAULT 1
     )''');
     await db.execute('''CREATE TABLE IF NOT EXISTS course_progress (
       student_id TEXT NOT NULL,
@@ -207,6 +221,7 @@ class DBHelper {
     )''');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_activity_subject ON activity(subject)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_cr_course_id ON course_resources(course_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_ct_course_id ON course_topics(course_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_cp_student ON course_progress(student_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_qa_student ON quiz_attempts(student_id)');
     await db.execute('''CREATE TABLE IF NOT EXISTS flashcard_decks_local (
@@ -249,6 +264,7 @@ class DBHelper {
       await txn.delete('course_progress', where: 'course_id NOT IN (SELECT id FROM courses)');
       await txn.delete('quiz_attempts', where: 'course_id NOT IN (SELECT id FROM courses)');
       await txn.delete('course_resources', where: 'course_id NOT IN (SELECT id FROM courses)');
+      await txn.delete('course_topics', where: 'course_id NOT IN (SELECT id FROM courses)');
     });
   }
 
@@ -328,7 +344,7 @@ class DBHelper {
 
   Future<Set<String>> getRemovedDownloadIds() => _resourceIdSet('downloads', where: 'server_removed = 1');
 
-  Future<void> addPendingDownload(String resourceId, String url, String fileName, {String title = '', String subject = '', String grade = '', String type = '', double mtime = 0}) async {
+  Future<void> addPendingDownload(String resourceId, String url, String fileName, {String title = '', String subject = '', String grade = '', String type = '', double mtime = 0, String groupId = '', String groupTitle = ''}) async {
     final db = await database;
     await db.insert('pending_downloads', {
       'resource_id': resourceId,
@@ -340,6 +356,8 @@ class DBHelper {
       'type': type,
       'mtime': mtime,
       'added_at': DateTime.now().millisecondsSinceEpoch,
+      'group_id': groupId,
+      'group_title': groupTitle,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 

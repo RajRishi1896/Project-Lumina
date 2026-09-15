@@ -20,6 +20,10 @@ class _QueuedDownload {
   final String type;
   final double mtime;
 
+  /// Course-batch grouping: '' means ungrouped (legacy per-drain summary).
+  final String groupId;
+  final String groupTitle;
+
   /// Remaining retry attempts before the download is abandoned (max 5).
   int retries = 5;
 
@@ -29,7 +33,79 @@ class _QueuedDownload {
     this.grade = '',
     this.type = '',
     this.mtime = 0,
+    this.groupId = '',
+    this.groupTitle = '',
   });
+}
+
+/// Verdict for a finished download group: [complete] when every task
+/// succeeded, [failed] when at least one task failed.
+enum GroupVerdict { complete, failed }
+
+/// Pure per-group progress tracker behind [DownloadQueue]'s course-batch
+/// notifications: one verdict per group when its last task settles.
+///
+/// Totals grow via [add] while the group drains, so tasks enqueued mid-drain
+/// delay the verdict instead of being orphaned. No I/O, no notifications:
+/// the queue maps a returned verdict to [NotificationService].
+class DownloadGroupTracker {
+  final Map<String, _GroupProgress> _groups = {};
+
+  /// Number of groups with outstanding tasks.
+  int get pendingGroupCount => _groups.length;
+
+  /// Registers one more task in [groupId]. First non-empty title wins.
+  void add(String groupId, String title) {
+    final g = _groups.putIfAbsent(groupId, () => _GroupProgress(title));
+    g.total++;
+    if (g.title.isEmpty && title.isNotEmpty) g.title = title;
+  }
+
+  /// Records one settled task. Returns `(verdict, title)` exactly once, when
+  /// the group's last outstanding task settles; otherwise null.
+  (GroupVerdict, String)? settle(String groupId, {required bool success}) {
+    final g = _groups[groupId];
+    if (g == null) return null;
+    if (success) {
+      g.done++;
+    } else {
+      g.failed++;
+    }
+    if (g.done + g.failed >= g.total) {
+      _groups.remove(groupId);
+      return (g.failed > 0 ? GroupVerdict.failed : GroupVerdict.complete, g.title);
+    }
+    return null;
+  }
+
+  /// Drops one unsettled task (user cancel). Returns a verdict when the
+  /// remaining tasks have all settled, else null. A group left empty before
+  /// anything settled is removed silently: nothing to report.
+  (GroupVerdict, String)? discard(String groupId) {
+    final g = _groups[groupId];
+    if (g == null) return null;
+    g.total--;
+    if (g.total <= 0) {
+      _groups.remove(groupId);
+      return null;
+    }
+    if (g.done + g.failed >= g.total && g.done + g.failed > 0) {
+      _groups.remove(groupId);
+      return (g.failed > 0 ? GroupVerdict.failed : GroupVerdict.complete, g.title);
+    }
+    return null;
+  }
+
+  /// Drops all groups without verdicts (logout/profile switch).
+  void clear() => _groups.clear();
+}
+
+class _GroupProgress {
+  String title;
+  int total = 0;
+  int done = 0;
+  int failed = 0;
+  _GroupProgress(this.title);
 }
 
 /// Singleton queue that manages sequential file downloads with offline support.
@@ -46,6 +122,9 @@ class DownloadQueue extends ChangeNotifier {
   final List<_QueuedDownload> _queue = [];
   bool _processing = false;
 
+  /// In-memory progress of grouped (course-batch) downloads.
+  final DownloadGroupTracker _groups = DownloadGroupTracker();
+
   /// True when the queue halted because the hub went unreachable
   /// mid-download. Retries are preserved; the loop restarts on reconnect.
   bool _paused = false;
@@ -55,6 +134,11 @@ class DownloadQueue extends ChangeNotifier {
 
   Set<String> get queuedIds => _queue.map((d) => d.resourceId).toSet();
 
+  /// Display titles of the in-memory queued items, keyed by resource ID.
+  /// Empty when the caller enqueued without a title.
+  Map<String, String> get queuedTitles =>
+      {for (final d in _queue) d.resourceId: d.title};
+
   /// Drops every queued download.
   ///
   /// Called on logout/profile switch so one student's pending downloads never
@@ -63,6 +147,7 @@ class DownloadQueue extends ChangeNotifier {
   // needs a CancelToken threaded through DownloadService.
   void clear() {
     _queue.clear();
+    _groups.clear();
     _processing = false;
     _paused = false;
     // Best-effort cleanup: logout/profile switch must not leak the CPU
@@ -77,8 +162,19 @@ class DownloadQueue extends ChangeNotifier {
   /// If the item is currently being downloaded it will complete but not retry;
   /// pending items are removed from queue and DB.
   Future<void> cancel(String resourceId) async {
+    var groupId = '';
+    for (final d in _queue) {
+      if (d.resourceId == resourceId) {
+        groupId = d.groupId;
+        break;
+      }
+    }
     _queue.removeWhere((d) => d.resourceId == resourceId);
     await DBHelper().removePendingDownload(resourceId);
+    if (groupId.isNotEmpty) {
+      final verdict = _groups.discard(groupId);
+      if (verdict != null) _notifyGroupVerdict(verdict);
+    }
     notifyListeners();
     if (_queue.isEmpty) {
       _processing = false;
@@ -108,12 +204,20 @@ class DownloadQueue extends ChangeNotifier {
   /// on reconnect. Rows whose resource is already recorded as downloaded are
   /// dropped instead of being re-downloaded. Duplicate [resourceId] values are
   /// ignored.
+  ///
+  /// A non-empty [groupId] batches the task into a course download: grouped
+  /// tasks post no individual notification and instead contribute to one
+  /// group verdict ([NotificationService.showDownloadComplete] with
+  /// [groupTitle] when all succeed, `showDownloadFailed` otherwise) once the
+  /// group's last task settles. '' keeps the legacy ungrouped behavior.
   Future<void> enqueue(String resourceId, String url, String fileName, {
     String title = '',
     String subject = '',
     String grade = '',
     String type = '',
     double mtime = 0,
+    String groupId = '',
+    String groupTitle = '',
   }) async {
     if (_queue.any((d) => d.resourceId == resourceId)) return;
     final downloadedIds = await DBHelper().getDownloadedIds();
@@ -122,10 +226,13 @@ class DownloadQueue extends ChangeNotifier {
       return;
     }
     await DBHelper().addPendingDownload(resourceId, url, fileName,
-      title: title, subject: subject, grade: grade, type: type, mtime: mtime);
+      title: title, subject: subject, grade: grade, type: type, mtime: mtime,
+      groupId: groupId, groupTitle: groupTitle);
     if (ConnectivityService().isOnline) {
+      if (groupId.isNotEmpty) _groups.add(groupId, groupTitle);
       _queue.add(_QueuedDownload(resourceId, url, fileName,
-        title: title, subject: subject, grade: grade, type: type, mtime: mtime));
+        title: title, subject: subject, grade: grade, type: type, mtime: mtime,
+        groupId: groupId, groupTitle: groupTitle));
       notifyListeners();
       if (!_processing) unawaited(_processNext());
     } else {
@@ -153,6 +260,7 @@ class DownloadQueue extends ChangeNotifier {
 
     int completedCount = 0;
     int failedCount = 0;
+    int groupedCompleted = 0;
     String lastCompletedTitle = '';
 
     while (_queue.isNotEmpty) {
@@ -197,9 +305,15 @@ class DownloadQueue extends ChangeNotifier {
       }
       if (path != null) {
         try { await DBHelper().removePendingDownload(task.resourceId); } catch (_) {}
-        completedCount++;
-        lastCompletedTitle = task.title;
         _queue.removeAt(0);
+        if (task.groupId.isEmpty) {
+          completedCount++;
+          lastCompletedTitle = task.title;
+        } else {
+          groupedCompleted++;
+          final verdict = _groups.settle(task.groupId, success: true);
+          if (verdict != null) _notifyGroupVerdict(verdict);
+        }
       } else if (task.retries > 0 && !_lastErrorIsPermanent) {
         task.retries--;
         debugPrint('DownloadQueue: retrying ${task.resourceId} (${task.retries} attempts left)');
@@ -208,13 +322,19 @@ class DownloadQueue extends ChangeNotifier {
         continue; // same task stays at the head
       } else {
         try { await DBHelper().removePendingDownload(task.resourceId); } catch (_) {}
-        failedCount++;
         _queue.removeAt(0);
+        if (task.groupId.isEmpty) {
+          failedCount++;
+        } else {
+          final verdict = _groups.settle(task.groupId, success: false);
+          if (verdict != null) _notifyGroupVerdict(verdict);
+        }
       }
       notifyListeners();
     }
 
-    // Single summary notification instead of per-item.
+    // Single summary notification instead of per-item (ungrouped tasks only;
+    // grouped tasks already produced exactly one verdict notification each).
     if (completedCount > 0 || failedCount > 0) {
       final msg = completedCount == 1
           ? lastCompletedTitle
@@ -224,13 +344,20 @@ class DownloadQueue extends ChangeNotifier {
       if (msg.isNotEmpty) {
         unawaited(NotificationService().showDownloadComplete(msg).catchError((_) {}));
       }
-      if (completedCount > 0) {
-        final activityMeta = completedCount == 1 ? lastCompletedTitle : '$completedCount resources downloaded';
+      if (completedCount + groupedCompleted > 0) {
+        final totalCompleted = completedCount + groupedCompleted;
+        final activityMeta = completedCount == 1 && groupedCompleted == 0
+            ? lastCompletedTitle
+            : '$totalCompleted resources downloaded';
         unawaited(ActivityTracker().logAction('download', metadata: activityMeta).catchError((_) {}));
       }
       if (failedCount > 0) {
         unawaited(NotificationService().showDownloadFailed('$failedCount download${failedCount > 1 ? 's' : ''} failed').catchError((_) {}));
       }
+    } else if (groupedCompleted > 0) {
+      unawaited(ActivityTracker()
+          .logAction('download', metadata: '$groupedCompleted resources downloaded')
+          .catchError((_) {}));
     }
 
     try { await WakelockPlus.disable(); } catch (_) {}
@@ -240,6 +367,18 @@ class DownloadQueue extends ChangeNotifier {
   }
 
   bool _lastErrorIsPermanent = false;
+
+  /// Posts the single notification for a finished download group: complete
+  /// when every task succeeded, failed otherwise. Reuses the existing
+  /// per-download notification strings with the group (course) title.
+  void _notifyGroupVerdict((GroupVerdict, String) fired) {
+    final (verdict, title) = fired;
+    if (verdict == GroupVerdict.complete) {
+      unawaited(NotificationService().showDownloadComplete(title).catchError((_) {}));
+    } else {
+      unawaited(NotificationService().showDownloadFailed(title).catchError((_) {}));
+    }
+  }
 
   /// Whether the hub is currently unreachable (short ping, not the
   /// possibly-stale cached connectivity flag, which can lag ~30s).

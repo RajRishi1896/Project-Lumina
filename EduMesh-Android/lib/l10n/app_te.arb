@@ -310,6 +310,14 @@
   "browseCouldNotLoad": "కోర్సులను లోడ్ చేయలేకపోయింది",
   "browseProgressFormat": "{completed}/{total}",
   "coursePlayerLocked": "ముందుగా మునుపటి వనరును పూర్తి చేయండి",
+  "coursePlayerChapterLocked": "ముందుగా మునుపటి అధ్యాయాన్ని పూర్తి చేయండి",
+  "@coursePlayerChapterLocked": {
+    "description": "SnackBar shown when tapping a course resource locked by an incomplete previous chapter"
+  },
+  "coursePlayerUngroupedTitle": "ఇతర వనరులు",
+  "@coursePlayerUngroupedTitle": {
+    "description": "Section header in the course player for resources that belong to no chapter"
+  },
   "coursePlayerDownloading": "కోర్సు డౌన్‌లోడ్ అవుతోంది...",
   "coursePlayerDownloadFailed": "డౌన్‌లోడ్ విఫలమైంది. స్టోరేజ్ స్థలాన్ని చెక్ చేయండి.",
   "coursePlayerVideo": "వీడియో",
@@ -923,6 +931,53 @@
   "tourBodyLanguage": "సెట్టింగ్‌లలో ఎప్పుడైనా మీ భాషను ఎంచుకోండి.",
   "@tourBodyLanguage": {
     "description": "Body of the first-login tour language slide; allow 40-50% expansion",
+    "x_machine_translated": true
+  },
+  "browseDownloadCourse": "డౌన్‌లోడ్",
+  "@browseDownloadCourse": {
+    "description": "Tooltip and accessible label of the download icon button on a browse course card. Tapping queues every file in the course for offline use. Verb-first, 1 word.",
+    "x_machine_translated": true
+  },
+  "courseDownloadEmpty": "ఈ కోర్సులో డౌన్‌లోడ్ చేయడానికి ఇంకా ఫైళ్లు లేవు.",
+  "@courseDownloadEmpty": {
+    "description": "SnackBar shown when the student taps Download on a course card whose detail holds zero downloadable resources. Plain language, max 15 words.",
+    "x_machine_translated": true
+  },
+  "unenrollButton": "కోర్సు వదులు",
+  "@unenrollButton": {
+    "description": "Menu item and confirm button that removes the student's enrollment in a course. Shown in the course player overflow menu and the leave-course dialog. Verb-first, max 3 words.",
+    "x_machine_translated": true
+  },
+  "unenrollDialogTitle": "ఈ కోర్సును వదలాలా?",
+  "@unenrollDialogTitle": {
+    "description": "Title of the confirmation dialog shown before unenrolling from a course",
+    "x_machine_translated": true
+  },
+  "unenrollDialogBody": "\"{title}\"ను వదలాలా? మీ పురోగతి ఈ ఫోన్‌లోనే ఉంటుంది. తర్వాత మళ్లీ చేరవచ్చు.",
+  "@unenrollDialogBody": {
+    "description": "Body of the leave-course confirmation dialog. Tells the student what happens (enrollment removed), what is kept (local progress), and that rejoining is possible. {title} is the course name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Fractions"
+      }
+    },
+    "x_machine_translated": true
+  },
+  "unenrollSuccess": "మీరు \"{title}\"ను వదిలారు.",
+  "@unenrollSuccess": {
+    "description": "SnackBar shown after a successful unenroll. {title} is the course name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Fractions"
+      }
+    },
+    "x_machine_translated": true
+  },
+  "unenrollFailed": "కోర్సును వదలడం సాధ్యం కాలేదు. మళ్లీ ప్రయత్నించండి.",
+  "@unenrollFailed": {
+    "description": "SnackBar shown when clearing the local enrollment state fails (network errors are tolerated, so this means local storage failed)",
     "x_machine_translated": true
   }
 }

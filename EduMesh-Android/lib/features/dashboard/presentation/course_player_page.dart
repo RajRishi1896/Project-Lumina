@@ -32,7 +32,9 @@ class CoursePlayerPage extends StatefulWidget {
 
 class _CoursePlayerPageState extends State<CoursePlayerPage> {
   List<CourseResource> _resources = [];
+  List<CourseTopic> _topics = [];
   final Map<String, bool> _completed = {};
+  Set<String> _unlocked = {};
   int _currentPosition = 0;
   bool _isDownloaded = false;
   bool _isDownloading = false;
@@ -46,36 +48,66 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     _loadResources();
   }
 
-  /// Loads the course's resources: server detail first, local cache as
-  /// offline fallback, then refreshes progress against the loaded list.
+  /// Loads the course's detail: server first, local cache as offline
+  /// fallback, then refreshes progress against the loaded list. Topics and
+  /// resources come from the same payload so locks work fully offline.
   Future<void> _loadResources() async {
     // Show whatever the navigation path already carried while fetching.
     final initial = widget.course.resources;
     if (initial != null && initial.isNotEmpty) {
       if (mounted) {
-        setState(() => _resources = [...initial]..sort((a, b) => a.position.compareTo(b.position)));
+        setState(() {
+          _resources = [...initial]..sort((a, b) => a.position.compareTo(b.position));
+          _topics = [...?widget.course.topics]..sort((a, b) => a.position.compareTo(b.position));
+          _unlocked = computeUnlockedResourceIds(
+              topics: _topics, resources: _resources, completedIds: const {});
+        });
+      }
+    } else if (widget.course.topics != null && widget.course.topics!.isNotEmpty) {
+      if (mounted) {
+        setState(() => _topics = [...widget.course.topics!]..sort((a, b) => a.position.compareTo(b.position)));
       }
     }
     try {
       final detail = await CourseService().fetchCourseDetail(widget.course.id);
-      List<CourseResource> loaded;
+      List<CourseResource> loaded = const [];
+      List<CourseTopic> topics = const [];
       if (detail != null && detail['resources'] is List) {
         loaded = (detail['resources'] as List)
             .whereType<Map>()
             .map((e) => CourseResource.fromJson(Map<String, dynamic>.from(e)))
             .toList();
+        if (detail['topics'] is List) {
+          topics = (detail['topics'] as List)
+              .whereType<Map>()
+              .map((e) => CourseTopic.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+        }
       } else {
-        final db = await DBHelper().database;
-        final rows = await db.query('course_resources',
-            where: 'course_id = ?', whereArgs: [widget.course.id]);
-        loaded = rows.map(CourseResource.fromJson).toList();
+        final cached = await CourseService().getCachedCourseDetail(widget.course.id);
+        if (cached != null) {
+          if (cached['resources'] is List) {
+            loaded = (cached['resources'] as List)
+                .whereType<Map>()
+                .map((e) => CourseResource.fromJson(Map<String, dynamic>.from(e)))
+                .toList();
+          }
+          if (cached['topics'] is List) {
+            topics = (cached['topics'] as List)
+                .whereType<Map>()
+                .map((e) => CourseTopic.fromJson(Map<String, dynamic>.from(e)))
+                .toList();
+          }
+        }
       }
       loaded.sort((a, b) => a.position.compareTo(b.position));
+      topics.sort((a, b) => a.position.compareTo(b.position));
       if (!mounted) return;
       setState(() {
-        _resources = loaded;
+        if (loaded.isNotEmpty) _resources = loaded;
+        _topics = topics;
         _loadingResources = false;
-        _loadFailedResources = loaded.isEmpty;
+        _loadFailedResources = _resources.isEmpty;
       });
       await _loadProgress();
     } catch (e) {
@@ -112,6 +144,11 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
           if (r.position < _currentPosition) _completed[r.id] = true;
         }
       }
+      _unlocked = computeUnlockedResourceIds(
+        topics: _topics,
+        resources: _resources,
+        completedIds: _completed.entries.where((e) => e.value).map((e) => e.key).toSet(),
+      );
 
       final dlResources = await DBHelper().getDownloadedResources();
       final dlIds = dlResources.map((d) => d['resource_id']?.toString() ?? '').toSet();
@@ -133,19 +170,43 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
               || (_currentPosition > 0 && _localPaths.isNotEmpty);
         });
       }
+      // Keep total_resources equal to the live resource count so progress
+      // fractions (completed/total) stay meaningful after content updates.
+      try {
+        await db.update('course_progress', {'total_resources': _resources.length},
+            where: 'course_id = ? AND student_id = ?',
+            whereArgs: [widget.course.id, studentId]);
+      } catch (_) {}
     } catch (e) {
       debugPrint('CoursePlayerPage: _loadProgress failed; $e');
     }
   }
 
-  bool _isResourceUnlocked(int index) {
-    if (index == 0) return true;
-    final prev = _resources[index - 1];
-    return _completed[prev.id] == true;
+  bool _isResourceUnlocked(CourseResource r) => _unlocked.contains(r.id);
+
+  /// Whether [r]'s chapter is locked by an incomplete previous chapter
+  /// (as opposed to a sequential lock inside its own unlocked chapter).
+  /// Ungrouped resources are never chapter-locked.
+  bool _isChapterLocked(CourseResource r) {
+    if (r.topicId.isEmpty) return false;
+    final sorted = [..._topics]..sort((a, b) => a.position.compareTo(b.position));
+    final idx = sorted.indexWhere((t) => t.id == r.topicId);
+    if (idx <= 0) return false;
+    final done = _completed.entries.where((e) => e.value).map((e) => e.key).toSet();
+    for (var pj = 0; pj < idx; pj++) {
+      final prev = _resources.where((x) => x.topicId == sorted[pj].id);
+      if (prev.any((x) => !done.contains(x.id))) return true;
+    }
+    return false;
   }
 
   Future<void> _markCompleted(String resourceId) async {
     _completed[resourceId] = true;
+    _unlocked = computeUnlockedResourceIds(
+      topics: _topics,
+      resources: _resources,
+      completedIds: _completed.entries.where((e) => e.value).map((e) => e.key).toSet(),
+    );
     int newPos = _currentPosition;
     for (int i = 0; i < _resources.length; i++) {
       if (_completed[_resources[i].id] != true) {
@@ -154,14 +215,16 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       }
     }
     if (newPos >= _resources.length) newPos = _resources.length;
-    final allDone = _resources.isNotEmpty && _completed.values.where((v) => v).length == _resources.length;
+    final doneCount = _completed.values.where((v) => v).length;
+    final allDone = _resources.isNotEmpty && doneCount == _resources.length;
     _currentPosition = newPos;
     if (mounted) setState(() {});
     try {
       final db = await DBHelper().database;
       final studentId = (await AuthService().getUniqueUserId()) ?? '';
       await db.update('course_progress', {
-        'completed_count': _completed.values.where((v) => v).length,
+        'completed_count': doneCount,
+        'total_resources': _resources.length,
         'current_position': newPos,
         if (allDone) 'completed': 1,
       }, where: 'course_id = ? AND student_id = ?', whereArgs: [widget.course.id, studentId]);
@@ -171,7 +234,8 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
         method: 'put',
         body: {
           'current_position': newPos,
-          'completed_count': _completed.values.where((v) => v).length,
+          'completed_count': doneCount,
+          'total_resources': _resources.length,
           if (allDone) 'completed': true,
         },
       );
@@ -190,15 +254,21 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     return '$base/files/courses/${resource.courseId}/resources/${resource.filename ?? resource.id}';
   }
 
-  void _openResource(CourseResource resource, int index) {
+  void _openResource(CourseResource resource) {
     final l10n = AppLocalizations.of(context)!;
-    if (!_isResourceUnlocked(index)) {
+    if (!_isResourceUnlocked(resource)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.coursePlayerLocked)),
+        SnackBar(
+          content: Text(_isChapterLocked(resource)
+              ? l10n.coursePlayerChapterLocked
+              : l10n.coursePlayerLocked),
+        ),
       );
       return;
     }
     if (resource.isQuiz) {
+      // Quiz completes only on a server-graded pass: QuizPlayerPage calls
+      // onComplete solely when the graded verdict passed.
       unawaited(Navigator.push(
         context,
         luminaRoute(
@@ -215,19 +285,35 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       if (!mounted) return;
       unawaited(RecentResources.record(resource.id, resource.title, resource.resourceType.name));
       if (resource.resourceType == CourseType.video) {
-      unawaited(Navigator.push(
-        context,
-        luminaRoute(
-          builder: (_) => VideoPlayerPage(title: resource.title, videoUrl: url, subject: widget.course.subject),
-        ),
-      ).then((_) { if (mounted) _markCompleted(resource.id); }));
-    } else {
-      unawaited(Navigator.push(
-        context,
-        luminaRoute(
-          builder: (_) => PdfViewerPage(title: resource.title, pdfUrl: url, subject: widget.course.subject),
-        ),
-      ).then((_) { if (mounted) _markCompleted(resource.id); }));
+        // Video completes on the playback-ended event, not on close.
+        unawaited(Navigator.push(
+          context,
+          luminaRoute(
+            builder: (_) => VideoPlayerPage(
+              title: resource.title,
+              videoUrl: url,
+              subject: widget.course.subject,
+              onEnded: () => _markCompleted(resource.id),
+            ),
+          ),
+        ));
+      } else if (resource.resourceType == CourseType.textbook ||
+          resource.resourceType == CourseType.pastPaper) {
+        // PDF completes when the last page is reached.
+        unawaited(Navigator.push(
+          context,
+          luminaRoute(
+            builder: (_) => PdfViewerPage(
+              title: resource.title,
+              pdfUrl: url,
+              subject: widget.course.subject,
+              onLastPage: () => _markCompleted(resource.id),
+            ),
+          ),
+        ));
+      } else {
+        // Other types complete on open.
+        _markCompleted(resource.id);
       }
     });
   }
@@ -275,6 +361,35 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     }
   }
 
+  /// Confirms unenrollment in plain language, clears local enrollment state,
+  /// reloads the enrolled lists, and leaves the player on success.
+  Future<void> _confirmUnenroll() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showLuminaDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.unenrollDialogTitle),
+        content: Text(l10n.unenrollDialogBody(widget.course.title)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.buttonCancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.unenrollButton)),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await CourseService().unenroll(widget.course.id);
+    if (!mounted) return;
+    if (ok) {
+      await CourseService().loadEnrolledCourses();
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(l10n.unenrollSuccess(widget.course.title))));
+      Navigator.of(context).pop();
+    } else {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.unenrollFailed)));
+    }
+  }
+
   String _resourceTypeLabel(CourseResource r, AppLocalizations l10n) {
     switch (r.resourceType) {
       case CourseType.video: return l10n.coursePlayerVideo;
@@ -307,6 +422,23 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
         title: Text(widget.course.title),
         backgroundColor: cs.surface,
         foregroundColor: cs.onSurface,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: l10n.unenrollButton,
+            onSelected: (v) { if (v == 'unenroll') _confirmUnenroll(); },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'unenroll',
+                child: Row(children: [
+                  Icon(Icons.exit_to_app, color: cs.error),
+                  SizedBox(width: AppSpacing.sm.w),
+                  Text(l10n.unenrollButton),
+                ]),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -344,11 +476,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
                             ],
                           ),
                         )
-                  : ListView.builder(
-                      padding: EdgeInsets.all(AppSpacing.lg.w),
-                      itemCount: _resources.length,
-                      itemBuilder: (ctx, i) => _buildResourceItem(i, cs, tt, l10n),
-                    ),
+                  : _buildGroupedList(cs, tt, l10n),
               ),
             ),
           ),
@@ -378,11 +506,51 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     );
   }
 
-  Widget _buildResourceItem(int index, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
-    final r = _resources[index];
-    final unlocked = _isResourceUnlocked(index);
+  Widget _buildGroupedList(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    final sections = groupResourcesByTopic(_topics, _resources)
+        .where((s) => s.resources.isNotEmpty)
+        .toList();
+    final posById = <String, int>{for (var i = 0; i < _resources.length; i++) _resources[i].id: i};
+    final items = <({CourseTopic? topic, CourseResource? resource})>[];
+    for (final s in sections) {
+      items.add((topic: s.topic, resource: null));
+      for (final r in s.resources) {
+        items.add((topic: s.topic, resource: r));
+      }
+    }
+    return ListView.builder(
+      padding: EdgeInsets.all(AppSpacing.lg.w),
+      itemCount: items.length,
+      itemBuilder: (ctx, i) {
+        final item = items[i];
+        if (item.resource == null) return _buildSectionHeader(item.topic, cs, tt, l10n);
+        return Padding(
+          padding: EdgeInsets.only(bottom: AppSpacing.md.h),
+          child: _buildResourceItem(item.resource!, posById[item.resource!.id] ?? 0, cs, tt, l10n),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionHeader(CourseTopic? topic, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    return Padding(
+      padding: EdgeInsets.only(top: AppSpacing.md.h, bottom: AppSpacing.sm.h),
+      child: Text(
+        topic?.title ?? l10n.coursePlayerUngroupedTitle,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: tt.titleSmall?.copyWith(
+          fontWeight: AppSpacing.weightStrong,
+          color: cs.onSurface,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResourceItem(CourseResource r, int globalIndex, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    final unlocked = _isResourceUnlocked(r);
     final completed = _completed[r.id] == true;
-    final isCurrent = index == _currentPosition && !completed;
+    final isCurrent = globalIndex == _currentPosition && !completed;
 
     return ResourceCard(
       resourceId: r.id,
@@ -409,11 +577,15 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
           ? Icon(Icons.check_circle, color: LuminaColors.successGreen, size: 24.sp)
           : unlocked
               ? FilledButton(
-                  onPressed: () => _openResource(r, index),
+                  onPressed: () => _openResource(r),
                   child: Text(l10n.coursePlayerStart),
                 )
-              : Icon(Icons.lock, color: cs.onSurfaceVariant, size: 20.sp),
-      onTap: unlocked ? () => _openResource(r, index) : null,
+              : Icon(Icons.lock,
+                  color: cs.onSurfaceVariant,
+                  size: 20.sp,
+                  semanticLabel: l10n.coursePlayerLocked),
+      // Locked cards stay tappable so the tap can explain the lock.
+      onTap: () => _openResource(r),
     );
   }
 }

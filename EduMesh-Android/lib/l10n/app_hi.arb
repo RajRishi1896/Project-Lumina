@@ -304,6 +304,8 @@
   "browseCouldNotLoad": "कोर्स लोड नहीं हो सके",
   "browseProgressFormat": "{completed}/{total}",
   "coursePlayerLocked": "पहले पिछला संसाधन पूरा करें",
+  "coursePlayerChapterLocked": "पहले पिछला अध्याय पूरा करें",
+  "coursePlayerUngroupedTitle": "अन्य संसाधन",
   "coursePlayerDownloading": "कोर्स डाउनलोड हो रहा है...",
   "coursePlayerDownloadFailed": "डाउनलोड विफल। स्टोरेज स्थान जाँचें।",
   "coursePlayerVideo": "वीडियो",
@@ -1251,6 +1253,12 @@
   "@coursePlayerLocked": {
     "description": "Tooltip shown when tapping a locked course resource"
   },
+  "@coursePlayerChapterLocked": {
+    "description": "SnackBar shown when tapping a course resource locked by an incomplete previous chapter"
+  },
+  "@coursePlayerUngroupedTitle": {
+    "description": "Section header in the course player for resources that belong to no chapter"
+  },
   "@coursePlayerDownloading": {
     "description": "Progress message shown during course download"
   },
@@ -1922,6 +1930,53 @@
   "tourBodyLanguage": "सेटिंग्स में कभी भी अपनी भाषा चुनें।",
   "@tourBodyLanguage": {
     "description": "Body of the first-login tour language slide; allow 40-50% expansion",
+    "x_machine_translated": true
+  },
+  "browseDownloadCourse": "डाउनलोड",
+  "@browseDownloadCourse": {
+    "description": "Tooltip and accessible label of the download icon button on a browse course card. Tapping queues every file in the course for offline use. Verb-first, 1 word.",
+    "x_machine_translated": true
+  },
+  "courseDownloadEmpty": "इस कोर्स में अभी डाउनलोड करने के लिए कोई फ़ाइल नहीं है।",
+  "@courseDownloadEmpty": {
+    "description": "SnackBar shown when the student taps Download on a course card whose detail holds zero downloadable resources. Plain language, max 15 words.",
+    "x_machine_translated": true
+  },
+  "unenrollButton": "कोर्स छोड़ें",
+  "@unenrollButton": {
+    "description": "Menu item and confirm button that removes the student's enrollment in a course. Shown in the course player overflow menu and the leave-course dialog. Verb-first, max 3 words.",
+    "x_machine_translated": true
+  },
+  "unenrollDialogTitle": "यह कोर्स छोड़ें?",
+  "@unenrollDialogTitle": {
+    "description": "Title of the confirmation dialog shown before unenrolling from a course",
+    "x_machine_translated": true
+  },
+  "unenrollDialogBody": "\"{title}\" छोड़ें? आपकी प्रगति इस फ़ोन पर रहेगी। आप बाद में फिर से जुड़ सकते हैं।",
+  "@unenrollDialogBody": {
+    "description": "Body of the leave-course confirmation dialog. Tells the student what happens (enrollment removed), what is kept (local progress), and that rejoining is possible. {title} is the course name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Fractions"
+      }
+    },
+    "x_machine_translated": true
+  },
+  "unenrollSuccess": "आपने \"{title}\" छोड़ दिया।",
+  "@unenrollSuccess": {
+    "description": "SnackBar shown after a successful unenroll. {title} is the course name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Fractions"
+      }
+    },
+    "x_machine_translated": true
+  },
+  "unenrollFailed": "कोर्स नहीं छोड़ा जा सका। फिर से कोशिश करें।",
+  "@unenrollFailed": {
+    "description": "SnackBar shown when clearing the local enrollment state fails (network errors are tolerated, so this means local storage failed)",
     "x_machine_translated": true
   }
 }

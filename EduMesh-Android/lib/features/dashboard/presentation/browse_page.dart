@@ -126,6 +126,7 @@ class _CoursesTabState extends State<_CoursesTab> {
   bool get _hasActiveFilters => _filterGrade.isNotEmpty || _filterSubject.isNotEmpty;
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
+  final Set<String> _downloadingCourseIds = {};
 
   @override
   void initState() {
@@ -472,6 +473,7 @@ class _CoursesTabState extends State<_CoursesTab> {
 
   Widget _buildCourseCard(Course course, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final isEnrolled = _enrolledCourses.any((e) => e.course.id == course.id);
+    final isDownloading = _downloadingCourseIds.contains(course.id);
     return Card(child: InkWell(
       onTap: isEnrolled ? () => Navigator.push(context, luminaRoute(builder: (_) => CoursePlayerPage(course: course))) : null,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
@@ -493,17 +495,60 @@ class _CoursesTabState extends State<_CoursesTab> {
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, visualDensity: VisualDensity.compact, padding: EdgeInsets.zero),
           ]),
           SizedBox(height: AppSpacing.sm.h),
-          if (isEnrolled)
-            SizedBox(width: double.infinity, child: OutlinedButton(
-              onPressed: () => Navigator.push(context, luminaRoute(builder: (_) => CoursePlayerPage(course: course))),
-              child: Text(l10n.buttonContinue)))
-          else
-            SizedBox(width: double.infinity, child: FilledButton(
-              onPressed: () async { await CourseService().enroll(course.id); if (mounted) await _loadData(); },
-              child: Text(l10n.browseEnroll))),
+          Row(children: [
+            Expanded(
+              child: isEnrolled
+                ? OutlinedButton(
+                    onPressed: () => Navigator.push(context, luminaRoute(builder: (_) => CoursePlayerPage(course: course))),
+                    child: Text(l10n.buttonContinue))
+                : FilledButton(
+                    onPressed: () async { await CourseService().enroll(course.id); if (mounted) await _loadData(); },
+                    child: Text(l10n.browseEnroll))),
+            SizedBox(width: AppSpacing.sm.w),
+            if (isDownloading)
+              SizedBox(width: AppSpacing.touchTarget, height: AppSpacing.touchTarget,
+                child: Center(child: SizedBox(width: AppSpacing.xxl, height: AppSpacing.xxl,
+                  child: CircularProgressIndicator(strokeWidth: 2.w)))),
+            if (!isDownloading)
+              IconButton(
+                icon: const Icon(Icons.download_outlined),
+                color: cs.primary,
+                tooltip: l10n.browseDownloadCourse,
+                onPressed: () => _downloadCourse(course),
+              ),
+          ]),
         ],
       )),
     ));
+  }
+
+  /// Fetches [course]'s resources (server first, cache fallback) and enqueues
+  /// them all via [CourseService.downloadCourse], which keeps its storage guard.
+  Future<void> _downloadCourse(Course course) async {
+    if (_downloadingCourseIds.contains(course.id)) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _downloadingCourseIds.add(course.id));
+    try {
+      var detail = await CourseService().fetchCourseDetail(course.id);
+      detail ??= await CourseService().getCachedCourseDetail(course.id);
+      final raw = detail?['resources'];
+      final resources = raw is List
+          ? raw.whereType<Map>().map((e) => CourseResource.fromJson(Map<String, dynamic>.from(e))).toList()
+          : const <CourseResource>[];
+      if (!mounted) return;
+      if (resources.isEmpty) {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.courseDownloadEmpty)));
+        return;
+      }
+      final ok = await CourseService().downloadCourse(course.id, resources);
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(
+        content: Text(ok ? l10n.snackbarAddedToQueue : l10n.coursePlayerDownloadFailed),
+      ));
+    } finally {
+      if (mounted) setState(() => _downloadingCourseIds.remove(course.id));
+    }
   }
 
   Widget _buildAllCoursesList(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {

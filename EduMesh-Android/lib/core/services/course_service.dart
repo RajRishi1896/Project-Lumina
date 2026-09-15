@@ -68,6 +68,15 @@ class CourseService extends ChangeNotifier {
         return [];
       }
       final db = await DBHelper().database;
+      // ponytail: snapshot versions before overwrite so bumped courses can
+      // refresh their detail below without a second read.
+      final oldVersions = <String, int>{};
+      try {
+        final oldRows = await db.query('courses', columns: ['id', 'version']);
+        for (final r in oldRows) {
+          oldVersions[(r['id'] ?? '').toString()] = (r['version'] as num?)?.toInt() ?? 1;
+        }
+      } catch (_) {}
       if (courses.isEmpty) {
         // ponytail: an empty 200 is more likely a server glitch than a real
         // wipe; only honour it when the local table is already empty.
@@ -101,12 +110,26 @@ class CourseService extends ChangeNotifier {
             'teacher_username': c.teacherUsername ?? '',
             'created_at': c.createdAt ?? '',
             'updated_at': c.updatedAt ?? '',
+            'version': c.version,
             'synced_at': syncedAt,
           }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
       });
       // Purge progress/quiz/resource rows for courses that vanished server-side.
       await DBHelper().deleteOrphanedCourseData();
+      // Auto-update: a higher served version means changed content. Refresh
+      // the cached detail so stale quiz rows are dropped and changed
+      // downloads re-enqueued (handled inside fetchCourseDetail).
+      for (final c in courses) {
+        final old = oldVersions[c.id];
+        if (old != null && c.version > old) {
+          try {
+            await fetchCourseDetail(c.id);
+          } catch (e) {
+            debugPrint('CourseService: auto-refresh failed for ${c.id}; $e');
+          }
+        }
+      }
       _loading = false;
       _error = null;
       notifyListeners();
@@ -125,27 +148,7 @@ class CourseService extends ChangeNotifier {
       final resp = await ApiClient.get('/api/courses/$courseId');
       if (resp.statusCode == 200 && resp.data is Map) {
         final data = resp.data as Map<String, dynamic>;
-        final db = await DBHelper().database;
-        if (data['resources'] is List) {
-          await db.transaction((txn) async {
-            await txn.delete('course_resources', where: 'course_id = ?', whereArgs: [courseId]);
-            for (final r in data['resources'] as List) {
-              if (r is! Map) continue;
-              await txn.insert('course_resources', {
-                'id': (r['id'] ?? '').toString(),
-                'course_id': courseId,
-                'resource_type': (r['resource_type'] ?? 'textbook').toString(),
-                'title': (r['title'] ?? '').toString(),
-                'original_name': (r['original_name'] ?? '').toString(),
-                'filename': (r['filename'] ?? '').toString(),
-                'file_size': (r['file_size'] as num?)?.toInt() ?? 0,
-                'page_count': (r['page_count'] as num?)?.toInt() ?? 0,
-                'duration_seconds': (r['duration_seconds'] as num?)?.toInt() ?? 0,
-                'position': (r['position'] as num?)?.toInt() ?? 0,
-              }, conflictAlgorithm: ConflictAlgorithm.replace);
-            }
-          });
-        }
+        await _cacheCourseDetail(courseId, data);
         return data;
       }
       return null;
@@ -153,6 +156,181 @@ class CourseService extends ChangeNotifier {
       debugPrint('CourseService: fetchCourseDetail failed; $e');
       return null;
     }
+  }
+
+  /// Persists a course detail payload (version, topics, resources) and heals
+  /// stale local state: drops quiz_cache rows for bumped quizzes, re-enqueues
+  /// changed downloads, and keeps `total_resources` equal to the live count.
+  Future<void> _cacheCourseDetail(String courseId, Map<String, dynamic> data) async {
+    final db = await DBHelper().database;
+    final version = (data['version'] as num?)?.toInt() ?? 1;
+    final topicMaps = (data['topics'] is List)
+        ? (data['topics'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+        : const <Map<String, dynamic>>[];
+    final resourceMaps = (data['resources'] is List)
+        ? (data['resources'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+        : const <Map<String, dynamic>>[];
+    final oldResources = <String, Map<String, dynamic>>{};
+    try {
+      final rows = await db.query('course_resources',
+          columns: ['id', 'file_size', 'updated_at', 'quiz_version'],
+          where: 'course_id = ?', whereArgs: [courseId]);
+      for (final r in rows) {
+        oldResources[(r['id'] ?? '').toString()] = r;
+      }
+    } catch (_) {}
+    await db.transaction((txn) async {
+      await txn.update('courses', {
+        'version': version,
+        if (data['updated_at'] != null) 'updated_at': data['updated_at'].toString(),
+      }, where: 'id = ?', whereArgs: [courseId]);
+      await txn.delete('course_topics', where: 'course_id = ?', whereArgs: [courseId]);
+      for (final t in topicMaps) {
+        final rawMode = (t['unlock_mode']?.toString() ?? 'all').toLowerCase();
+        await txn.insert('course_topics', {
+          'course_id': courseId,
+          'id': (t['id'] ?? '').toString(),
+          'title': (t['title'] ?? '').toString(),
+          'position': (t['position'] as num?)?.toInt() ?? 0,
+          'unlock_mode': rawMode == 'sequential' ? 'sequential' : 'all',
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      await txn.delete('course_resources', where: 'course_id = ?', whereArgs: [courseId]);
+      for (final r in resourceMaps) {
+        await txn.insert('course_resources', {
+          'id': (r['id'] ?? '').toString(),
+          'course_id': courseId,
+          'resource_type': (r['resource_type'] ?? 'textbook').toString(),
+          'title': (r['title'] ?? '').toString(),
+          'original_name': (r['original_name'] ?? '').toString(),
+          'filename': (r['filename'] ?? '').toString(),
+          'file_size': (r['file_size'] as num?)?.toInt() ?? 0,
+          'page_count': (r['page_count'] as num?)?.toInt() ?? 0,
+          'duration_seconds': (r['duration_seconds'] as num?)?.toInt() ?? 0,
+          'position': (r['position'] as num?)?.toInt() ?? 0,
+          'topic_id': (r['topic_id'] ?? '').toString(),
+          'updated_at': (r['updated_at'] ?? '').toString(),
+          'quiz_version': (r['quiz_version'] as num?)?.toInt() ?? 1,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      // completed_count keeps its meaning (rows completed); total tracks live.
+      await txn.update('course_progress', {'total_resources': resourceMaps.length},
+          where: 'course_id = ?', whereArgs: [courseId]);
+    });
+    // Drop stale quiz payloads for bumped quizzes so the next open refetches.
+    for (final r in resourceMaps) {
+      final id = (r['id'] ?? '').toString();
+      if (id.isEmpty) continue;
+      final isQuiz = (r['resource_type']?.toString() ?? '').toLowerCase() == 'quiz';
+      if (!isQuiz) continue;
+      final oldQv = (oldResources[id]?['quiz_version'] as num?)?.toInt() ?? 1;
+      final newQv = (r['quiz_version'] as num?)?.toInt() ?? 1;
+      if (newQv > oldQv) {
+        try {
+          await DBHelper().removeCachedQuiz('${courseId}_$id');
+        } catch (_) {}
+      }
+    }
+    // Re-enqueue previously downloaded files whose bytes changed upstream.
+    final changedIds = <String>[];
+    for (final r in resourceMaps) {
+      final id = (r['id'] ?? '').toString();
+      final old = oldResources[id];
+      if (old == null || id.isEmpty) continue;
+      final sizeChanged = ((r['file_size'] as num?)?.toInt() ?? 0) != ((old['file_size'] as num?)?.toInt() ?? 0);
+      final oldUpdated = (old['updated_at'] ?? '').toString();
+      final newUpdated = (r['updated_at'] ?? '').toString();
+      final timeChanged = oldUpdated.isNotEmpty && newUpdated.isNotEmpty && oldUpdated != newUpdated;
+      if (sizeChanged || timeChanged) changedIds.add(id);
+    }
+    if (changedIds.isNotEmpty) {
+      final placeholders = List.filled(changedIds.length, '?').join(',');
+      List<Map<String, dynamic>> dlRows = const [];
+      try {
+        dlRows = await db.query('downloads',
+            columns: ['resource_id'], where: 'resource_id IN ($placeholders)', whereArgs: changedIds);
+      } catch (_) {}
+      final downloaded = dlRows.map((d) => (d['resource_id'] ?? '').toString()).toSet();
+      final byId = {for (final r in resourceMaps) (r['id'] ?? '').toString(): r};
+      final meta = await _courseMeta(courseId);
+      for (final id in downloaded) {
+        final r = byId[id];
+        if (r == null) continue;
+        try {
+          await db.delete('downloads', where: 'resource_id = ?', whereArgs: [id]);
+          final res = CourseResource.fromJson({...r, 'course_id': courseId});
+          final filename = res.filename ?? '';
+          final url = filename.contains('/')
+              ? '${ApiClient.baseUrl}/files/$filename'
+              : '${ApiClient.baseUrl}/files/courses/$courseId/resources/${filename.isEmpty ? id : filename}';
+          await DownloadQueue().enqueue(id, url, courseDownloadFileName(res),
+              title: res.title,
+              subject: meta.subject,
+              grade: meta.grade,
+              type: courseDownloadType(res.resourceType));
+        } catch (e) {
+          debugPrint('CourseService: re-enqueue failed for $id; $e');
+        }
+      }
+    }
+  }
+
+  /// Returns the locally cached course detail (version, topics, resources)
+  /// for offline use, or null when nothing is cached.
+  Future<Map<String, dynamic>?> getCachedCourseDetail(String courseId) async {
+    try {
+      final db = await DBHelper().database;
+      final courseRows =
+          await db.query('courses', where: 'id = ?', whereArgs: [courseId], limit: 1);
+      if (courseRows.isEmpty) return null;
+      final topicRows = await db.query('course_topics',
+          where: 'course_id = ?', whereArgs: [courseId], orderBy: 'position ASC');
+      final resRows = await db.query('course_resources',
+          where: 'course_id = ?', whereArgs: [courseId], orderBy: 'position ASC');
+      return {
+        ...courseRows.first,
+        'topics': topicRows
+            .map((t) => {
+                  'id': t['id'],
+                  'title': t['title'],
+                  'position': t['position'],
+                  'unlock_mode': t['unlock_mode'],
+                })
+            .toList(),
+        'resources': resRows,
+      };
+    } catch (e) {
+      debugPrint('CourseService: getCachedCourseDetail failed; $e');
+      return null;
+    }
+  }
+
+  /// Fetches a standalone quiz, refreshing the cache when the served
+  /// `quiz_version` meets or exceeds the cached one. Returns the served
+  /// payload when online, else the cached payload (or null).
+  Future<Map<String, dynamic>?> fetchStandaloneQuiz(String resourceId) async {
+    final cacheKey = '${resourceId}_$resourceId';
+    Map<String, dynamic>? cached;
+    try {
+      cached = await DBHelper().getCachedQuiz(cacheKey);
+    } catch (_) {}
+    try {
+      final resp = await ApiClient.get('/api/quiz-resource/$resourceId');
+      if (resp.statusCode == 200 && resp.data is Map) {
+        final served = resp.data as Map<String, dynamic>;
+        final servedVersion = quizVersionOf(served);
+        final cachedVersion = cached == null ? 0 : quizVersionOf(cached);
+        if (cached == null || servedVersion >= cachedVersion) {
+          try {
+            await DBHelper().cacheQuiz(cacheKey, served);
+          } catch (_) {}
+        }
+        return served;
+      }
+    } catch (e) {
+      debugPrint('CourseService: fetchStandaloneQuiz failed; $e');
+    }
+    return cached;
   }
 
   /// Enrolls the current student in [courseId] and creates a local progress record.
@@ -186,6 +364,7 @@ class CourseService extends ChangeNotifier {
   Future<bool> downloadCourse(String courseId, List<CourseResource> resources) async {
     final totalBytes = resources.fold<int>(0, (sum, r) => sum + r.fileSize);
     if (!await _hasEnoughStorage(totalBytes)) return false;
+    final meta = await _courseMeta(courseId);
     int succeeded = 0;
     for (final resource in resources) {
       final String url;
@@ -194,13 +373,17 @@ class CourseService extends ChangeNotifier {
       } else {
         url = '${ApiClient.baseUrl}/files/courses/${resource.courseId}/resources/${resource.filename ?? resource.id}';
       }
-      final ext = resource.filename != null ? '.${resource.filename!.split('.').last}' : '';
-      final fileName = '${resource.id}$ext';
-      try {
-        await DownloadQueue().enqueue(
-          resource.id, url, fileName,
-          title: resource.title,
-        );
+      final fileName = courseDownloadFileName(resource);
+        try {
+          await DownloadQueue().enqueue(
+            resource.id, url, fileName,
+            title: resource.title,
+            subject: meta.subject,
+            grade: meta.grade,
+            type: courseDownloadType(resource.resourceType),
+            groupId: courseId,
+            groupTitle: meta.title,
+          );
         succeeded++;
       } catch (e) {
         debugPrint('CourseService: downloadCourse failed for ${resource.id}; $e');
@@ -208,6 +391,59 @@ class CourseService extends ChangeNotifier {
     }
     notifyListeners();
     return succeeded == resources.length;
+  }
+
+  /// Removes the current student's enrollment in [courseId].
+  ///
+  /// Issues `DELETE /api/courses/{courseId}/enroll` but tolerates a 404 or an
+  /// unreachable hub: local state is cleared regardless. Drops the student's
+  /// `course_progress` row and the cached `course_resources` rows for the
+  /// course; quiz-attempt history and the shared `courses` catalog row stay.
+  Future<bool> unenroll(String courseId) async {
+    try {
+      await ApiClient.ensureInitialized();
+      await ApiClient.dio.delete('/api/courses/$courseId/enroll');
+    } catch (e) {
+      debugPrint('CourseService: unenroll server call failed (tolerated); $e');
+    }
+    try {
+      final db = await DBHelper().database;
+      final studentId = await _getStudentId();
+      await db.delete('course_progress',
+          where: 'student_id = ? AND course_id = ?',
+          whereArgs: [studentId, courseId]);
+      await db.delete('course_resources',
+          where: 'course_id = ?', whereArgs: [courseId]);
+      _enrolledCourses.removeWhere((e) => e.course.id == courseId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('CourseService: unenroll local clear failed; $e');
+      return false;
+    }
+  }
+
+  /// Subject/grade/title of [courseId] from the cached catalog for download rows.
+  /// Falls back to display-safe defaults when the course is not cached
+  /// (title falls back to [courseId] so group notifications never go blank).
+  Future<({String subject, String grade, String title})> _courseMeta(String courseId) async {
+    try {
+      final db = await DBHelper().database;
+      final rows = await db.query('courses',
+          columns: ['subject', 'grade', 'title'],
+          where: 'id = ?', whereArgs: [courseId], limit: 1);
+      if (rows.isNotEmpty) {
+        final subject = (rows.first['subject'] ?? '').toString();
+        final grade = (rows.first['grade'] ?? '').toString();
+        final title = (rows.first['title'] ?? '').toString();
+        return (
+          subject: subject.isEmpty ? 'General' : subject,
+          grade: grade.isEmpty ? 'General' : grade,
+          title: title.isEmpty ? courseId : title,
+        );
+      }
+    } catch (_) {}
+    return (subject: 'General', grade: 'General', title: courseId);
   }
 
   /// Submits a quiz attempt via [MutationQueue] for offline support, then
@@ -356,6 +592,7 @@ class CourseService extends ChangeNotifier {
             'enrollment_count': m['enrollment_count'] ?? 0,
             'created_at': m['created_at'] ?? '',
             'updated_at': m['updated_at'] ?? '',
+            'version': (m['version'] as num?)?.toInt() ?? 1,
             'synced_at': syncedAt,
           }, conflictAlgorithm: ConflictAlgorithm.replace);
           await txn.insert('course_progress', {
@@ -429,6 +666,7 @@ class CourseService extends ChangeNotifier {
       teacherUsername: (row['teacher_username'] ?? '').toString(),
       createdAt: (row['created_at'] ?? '').toString(),
       updatedAt: (row['updated_at'] ?? '').toString(),
+      version: (row['version'] as num?)?.toInt() ?? 1,
     );
   }
 }

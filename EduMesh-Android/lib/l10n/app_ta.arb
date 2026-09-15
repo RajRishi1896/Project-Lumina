@@ -310,6 +310,14 @@
   "browseCouldNotLoad": "பாடநெறிகளை ஏற்ற முடியவில்லை",
   "browseProgressFormat": "{completed}/{total}",
   "coursePlayerLocked": "முதலில் முந்தைய வளத்தை முடிக்கவும்",
+  "coursePlayerChapterLocked": "முதலில் முந்தைய அத்தியாயத்தை முடிக்கவும்",
+  "@coursePlayerChapterLocked": {
+    "description": "SnackBar shown when tapping a course resource locked by an incomplete previous chapter"
+  },
+  "coursePlayerUngroupedTitle": "பிற வளங்கள்",
+  "@coursePlayerUngroupedTitle": {
+    "description": "Section header in the course player for resources that belong to no chapter"
+  },
   "coursePlayerDownloading": "பாடநெறி டவுன்லோட் ஆகிறது...",
   "coursePlayerDownloadFailed": "டவுன்லோட் தோல்வி. சேமிப்பக இடத்தைச் சரிபார்க்கவும்.",
   "coursePlayerVideo": "வீடியோ",
@@ -923,6 +931,53 @@
   "tourBodyLanguage": "அமைப்புகளில் எப்போது வேண்டுமானாலும் மொழியைத் தேர்ந்தெடுக்கலாம்.",
   "@tourBodyLanguage": {
     "description": "Body of the first-login tour language slide; allow 40-50% expansion",
+    "x_machine_translated": true
+  },
+  "browseDownloadCourse": "டவுன்லோட்",
+  "@browseDownloadCourse": {
+    "description": "Tooltip and accessible label of the download icon button on a browse course card. Tapping queues every file in the course for offline use. Verb-first, 1 word.",
+    "x_machine_translated": true
+  },
+  "courseDownloadEmpty": "இந்த பாடநெறியில் டவுன்லோட் செய்ய இன்னும் கோப்புகள் இல்லை.",
+  "@courseDownloadEmpty": {
+    "description": "SnackBar shown when the student taps Download on a course card whose detail holds zero downloadable resources. Plain language, max 15 words.",
+    "x_machine_translated": true
+  },
+  "unenrollButton": "பாடநெறியிலிருந்து விலகு",
+  "@unenrollButton": {
+    "description": "Menu item and confirm button that removes the student's enrollment in a course. Shown in the course player overflow menu and the leave-course dialog. Verb-first, max 3 words.",
+    "x_machine_translated": true
+  },
+  "unenrollDialogTitle": "இந்த பாடநெறியிலிருந்து விலகவா?",
+  "@unenrollDialogTitle": {
+    "description": "Title of the confirmation dialog shown before unenrolling from a course",
+    "x_machine_translated": true
+  },
+  "unenrollDialogBody": "\"{title}\"-இலிருந்து விலகவா? உங்கள் முன்னேற்றம் இந்த போனில் இருக்கும். பிறகு மீண்டும் சேரலாம்.",
+  "@unenrollDialogBody": {
+    "description": "Body of the leave-course confirmation dialog. Tells the student what happens (enrollment removed), what is kept (local progress), and that rejoining is possible. {title} is the course name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Fractions"
+      }
+    },
+    "x_machine_translated": true
+  },
+  "unenrollSuccess": "நீங்கள் \"{title}\"-இலிருந்து விலகிவிட்டீர்கள்.",
+  "@unenrollSuccess": {
+    "description": "SnackBar shown after a successful unenroll. {title} is the course name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Fractions"
+      }
+    },
+    "x_machine_translated": true
+  },
+  "unenrollFailed": "பாடநெறியிலிருந்து விலக முடியவில்லை. மீண்டும் முயல்க.",
+  "@unenrollFailed": {
+    "description": "SnackBar shown when clearing the local enrollment state fails (network errors are tolerated, so this means local storage failed)",
     "x_machine_translated": true
   }
 }

@@ -68,11 +68,9 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
     setState(() => _loading = true);
     final rows = await DBHelper().getDownloadedResources();
     final zimRows = await DBHelper().getDownloadedZimArticles();
-    // Filter out individual course resources — they are shown as course
-    // cards via the Saved Resources > Courses tab.
-    final courseRids = await DBHelper().getCourseResourceIds();
-    final filteredRows = rows.where((r) => !courseRids.contains(r['resource_id']?.toString() ?? '')).toList();
-    final List<Map<String, dynamic>> allRows = [...filteredRows, ...zimRows];
+    // Course files keep their resource titles/subject/type (set at enqueue
+    // time), so they render here like any other download.
+    final List<Map<String, dynamic>> allRows = [...rows, ...zimRows];
     // File-size lookups are batched into one background-isolate compute pass
     // so the UI isolate never performs per-file I/O and build stays pure.
     final withSizes = await compute(_attachSizes, allRows);
@@ -260,6 +258,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
       builder: (context, _) {
         final queue = DownloadQueue();
         final ids = queue.queuedIds.toList();
+        final titles = queue.queuedTitles;
         if (ids.isEmpty) return const SizedBox.shrink();
         final active = queue.active;
         return Container(
@@ -315,7 +314,7 @@ class _OfflineLibraryPageState extends State<OfflineLibraryPage> {
                               strokeWidth: 2))
                       : Icon(Icons.hourglass_empty_rounded,
                           color: cs.onSurfaceVariant),
-                  title: Text(id,
+                  title: Text(titles[id]?.isNotEmpty == true ? titles[id]! : id,
                       maxLines: 1, overflow: TextOverflow.ellipsis,
                       style: tt.bodyMedium),
                   subtitle: id == active && !queue.isPaused

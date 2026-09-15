@@ -184,4 +184,39 @@ void main() {
       expect(injected, 'Paris');
     });
   });
+
+  group('courseDownloadFileName/courseDownloadType (offline naming seam)', () {
+    CourseResource res(String id, {String? filename}) => CourseResource(
+          id: id,
+          courseId: 'c1',
+          resourceType: CourseType.textbook,
+          title: id,
+          filename: filename,
+          fileSize: 0,
+          position: 0,
+        );
+
+    test('stable <id>.<ext> name for normal server filenames', () {
+      expect(courseDownloadFileName(res('r1', filename: 'a3f2e1b0.pdf')), 'r1.pdf');
+      expect(courseDownloadFileName(res('r2', filename: 'lecture-01.mp4')), 'r2.mp4');
+      expect(courseDownloadFileName(res('r3', filename: 'archive.tar.gz')), 'r3.gz');
+    });
+
+    test('extensionless resources queue as the bare id (no phantom ext)', () {
+      // Regression: the old inline `'.${filename.split('.').last}'` turned
+      // 'abc' into the file name 'r1.abc'.
+      expect(courseDownloadFileName(res('r1', filename: 'abc')), 'r1');
+      expect(courseDownloadFileName(res('r1')), 'r1');
+      expect(courseDownloadFileName(res('r1', filename: '')), 'r1');
+      expect(courseDownloadFileName(res('r1', filename: 'abc.')), 'r1');
+      expect(courseDownloadFileName(res('r1', filename: '.hidden')), 'r1');
+    });
+
+    test('type strings match ResourceType names so icons parse back', () {
+      expect(courseDownloadType(CourseType.textbook), 'textbook');
+      expect(courseDownloadType(CourseType.video), 'videos');
+      expect(courseDownloadType(CourseType.quiz), 'quiz');
+      expect(courseDownloadType(CourseType.pastPaper), 'pastPaper');
+    });
+  });
 }

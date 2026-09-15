@@ -30,11 +30,15 @@ class PdfViewerPage extends StatefulWidget {
   /// The subject associated with this resource, passed to activity tracking.
   final String? subject;
 
+  /// Called exactly once when the last page is reached.
+  final VoidCallback? onLastPage;
+
   const PdfViewerPage({
     super.key,
     required this.title,
     required this.pdfUrl,
     this.subject,
+    this.onLastPage,
   });
 
   @override
@@ -50,6 +54,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   bool _loaded = false;
   bool _docError = false;
   bool _disposed = false;
+  bool _lastPageFired = false;
   int? _pendingRestorePage;
   Timer? _savePositionDebounce;
 
@@ -170,6 +175,13 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           _savePosition(page);
         });
       }
+      // Exact completion signal: last page reached.
+      if (!_lastPageFired && _totalPages > 0 && _currentPage >= _totalPages) {
+        _lastPageFired = true;
+        try {
+          widget.onLastPage?.call();
+        } catch (_) {}
+      }
     }
   }
 
@@ -285,7 +297,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   /// Recreates the document future after a load failure so Retry gets a
   /// fresh attempt instead of replaying the same failed Future.
   void _retryLoad() {
-    setState(() {
+    _lastPageFired = false;    setState(() {
       _docError = false;
       _loaded = false;
       _currentPage = 1;

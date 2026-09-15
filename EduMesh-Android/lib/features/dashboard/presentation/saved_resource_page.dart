@@ -42,6 +42,7 @@ void _showDownloadQueue(BuildContext context) {
           builder: (context, _) {
             final queue = DownloadQueue();
             final ids = queue.queuedIds.toList();
+            final titles = queue.queuedTitles;
             final active = queue.active;
             return Column(
               children: [
@@ -89,7 +90,7 @@ void _showDownloadQueue(BuildContext context) {
                         leading: isActive
                           ? SizedBox(width: AppSpacing.xxl.w, height: AppSpacing.xxl.w, child: CircularProgressIndicator(strokeWidth: 2.w))
                           : Icon(Icons.hourglass_empty_rounded, color: cs.onSurfaceVariant),
-                        title: Text(id, maxLines: 1, overflow: TextOverflow.ellipsis,
+                        title: Text(titles[id]?.isNotEmpty == true ? titles[id]! : id, maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: tt.bodyMedium),
                         subtitle: isActive ? Text(l10n.downloadQueueDownloading,
                           style: tt.bodySmall?.copyWith(color: cs.primary)) : null,

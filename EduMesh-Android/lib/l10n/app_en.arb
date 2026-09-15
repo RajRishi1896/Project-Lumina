@@ -1226,6 +1226,14 @@
   "@coursePlayerLocked": {
     "description": "Tooltip shown when tapping a locked course resource"
   },
+  "coursePlayerChapterLocked": "Complete the previous chapter first",
+  "@coursePlayerChapterLocked": {
+    "description": "SnackBar shown when tapping a course resource locked by an incomplete previous chapter"
+  },
+  "coursePlayerUngroupedTitle": "Other resources",
+  "@coursePlayerUngroupedTitle": {
+    "description": "Section header in the course player for resources that belong to no chapter"
+  },
   "coursePlayerDownloading": "Downloading course...",
   "@coursePlayerDownloading": {
     "description": "Progress message shown during course download"
@@ -1962,5 +1970,45 @@
   "tourBodyLanguage": "Pick your language anytime in Settings.",
   "@tourBodyLanguage": {
     "description": "Body of the first-login tour language slide; allow 40-50% expansion"
+  },
+  "browseDownloadCourse": "Download",
+  "@browseDownloadCourse": {
+    "description": "Tooltip and accessible label of the download icon button on a browse course card. Tapping queues every file in the course for offline use. Verb-first, 1 word."
+  },
+  "courseDownloadEmpty": "This course has no files to download yet.",
+  "@courseDownloadEmpty": {
+    "description": "SnackBar shown when the student taps Download on a course card whose detail holds zero downloadable resources. Plain language, max 15 words."
+  },
+  "unenrollButton": "Leave course",
+  "@unenrollButton": {
+    "description": "Menu item and confirm button that removes the student's enrollment in a course. Shown in the course player overflow menu and the leave-course dialog. Verb-first, max 3 words."
+  },
+  "unenrollDialogTitle": "Leave this course?",
+  "@unenrollDialogTitle": {
+    "description": "Title of the confirmation dialog shown before unenrolling from a course"
+  },
+  "unenrollDialogBody": "Leave \"{title}\"? Your progress stays on this phone. You can join again later.",
+  "@unenrollDialogBody": {
+    "description": "Body of the leave-course confirmation dialog. Tells the student what happens (enrollment removed), what is kept (local progress), and that rejoining is possible. {title} is the course name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Fractions"
+      }
+    }
+  },
+  "unenrollSuccess": "You left \"{title}\".",
+  "@unenrollSuccess": {
+    "description": "SnackBar shown after a successful unenroll. {title} is the course name.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Fractions"
+      }
+    }
+  },
+  "unenrollFailed": "Could not leave the course. Try again.",
+  "@unenrollFailed": {
+    "description": "SnackBar shown when clearing the local enrollment state fails (network errors are tolerated, so this means local storage failed)"
   }
 }

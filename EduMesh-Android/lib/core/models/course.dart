@@ -188,6 +188,41 @@ class Quiz {
   }
 }
 
+/// A chapter within a course, used to group resources in the player.
+///
+/// [unlockMode] is `'all'` (every resource visible once the chapter unlocks)
+/// or `'sequential'` (resource `i` stays locked until resource `i-1`
+/// completes). Any other server value falls back to `'all'`.
+class CourseTopic {
+  final String id;
+
+  final String title;
+
+  final int position;
+
+  final String unlockMode;
+
+  const CourseTopic({
+    required this.id,
+    required this.title,
+    this.position = 0,
+    this.unlockMode = 'all',
+  });
+
+  /// Whether resources inside this chapter unlock one after another.
+  bool get isSequential => unlockMode == 'sequential';
+
+  factory CourseTopic.fromJson(Map<String, dynamic> json) {
+    final raw = (json['unlock_mode']?.toString() ?? 'all').toLowerCase();
+    return CourseTopic(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      position: (json['position'] as num?)?.toInt() ?? 0,
+      unlockMode: raw == 'sequential' ? 'sequential' : 'all',
+    );
+  }
+}
+
 /// A resource belonging to a course.
 class CourseResource {
   final String id;
@@ -216,6 +251,15 @@ class CourseResource {
 
   final int position;
 
+  /// The chapter this resource belongs to (`''` = ungrouped).
+  final String topicId;
+
+  /// ISO 8601 last-update timestamp from the server (null when unknown).
+  final String? updatedAt;
+
+  /// The quiz content version (1 for non-quiz resources).
+  final int quizVersion;
+
   const CourseResource({
     required this.id,
     required this.courseId,
@@ -227,6 +271,9 @@ class CourseResource {
     this.pageCount = 0,
     this.durationSeconds = 0,
     required this.position,
+    this.topicId = '',
+    this.updatedAt,
+    this.quizVersion = 1,
   });
 
   bool get isQuiz => resourceType == CourseType.quiz;
@@ -243,6 +290,9 @@ class CourseResource {
       pageCount: (json['page_count'] as num?)?.toInt() ?? 0,
       durationSeconds: (json['duration_seconds'] as num?)?.toInt() ?? 0,
       position: (json['position'] as num?)?.toInt() ?? 0,
+      topicId: json['topic_id']?.toString() ?? '',
+      updatedAt: json['updated_at'] as String?,
+      quizVersion: (json['quiz_version'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -300,6 +350,12 @@ class Course {
   /// The resources within this course (may be null if not loaded).
   final List<CourseResource>? resources;
 
+  /// The course content version from the server (defaults to 1).
+  final int version;
+
+  /// The chapters within this course (null when not loaded).
+  final List<CourseTopic>? topics;
+
   const Course({
     required this.id,
     required this.title,
@@ -313,6 +369,8 @@ class Course {
     this.createdAt,
     this.updatedAt,
     this.resources,
+    this.version = 1,
+    this.topics,
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
@@ -331,6 +389,134 @@ class Course {
       resources: (json['resources'] as List<dynamic>?)
           ?.map((e) => CourseResource.fromJson(e as Map<String, dynamic>))
           .toList(),
+      version: (json['version'] as num?)?.toInt() ?? 1,
+      topics: (json['topics'] as List<dynamic>?)
+          ?.whereType<Map>()
+          .map((e) => CourseTopic.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
     );
+  }
+}
+
+/// Computes which course resources are unlocked from [completedIds].
+///
+/// Pure function (no SQLite): chapters run in position order, ungrouped
+/// resources (empty or unknown `topicId`) are always unlocked, chapter N
+/// unlocks only when every resource in all previous chapters is complete,
+/// and inside `'sequential'` chapters resource `i` unlocks only when every
+/// earlier resource in the same chapter is complete. `'all'` chapters unlock
+/// everything once the chapter itself unlocks.
+Set<String> computeUnlockedResourceIds({
+  required List<CourseTopic> topics,
+  required List<CourseResource> resources,
+  required Set<String> completedIds,
+}) {
+  final sortedTopics = [...topics]..sort((a, b) => a.position.compareTo(b.position));
+  final knownIds = sortedTopics.map((t) => t.id).toSet();
+  final unlocked = <String>{
+    for (final r in resources)
+      if (r.topicId.isEmpty || !knownIds.contains(r.topicId)) r.id,
+  };
+  final byTopic = <String, List<CourseResource>>{};
+  for (final r in resources) {
+    if (r.topicId.isEmpty || !knownIds.contains(r.topicId)) continue;
+    (byTopic[r.topicId] ??= []).add(r);
+  }
+  for (final list in byTopic.values) {
+    list.sort((a, b) => a.position.compareTo(b.position));
+  }
+  for (var ti = 0; ti < sortedTopics.length; ti++) {
+    var chapterUnlocked = true;
+    for (var pj = 0; pj < ti; pj++) {
+      final prev = byTopic[sortedTopics[pj].id] ?? const <CourseResource>[];
+      if (prev.any((r) => !completedIds.contains(r.id))) {
+        chapterUnlocked = false;
+        break;
+      }
+    }
+    if (!chapterUnlocked) continue;
+    final topic = sortedTopics[ti];
+    final list = byTopic[topic.id] ?? const <CourseResource>[];
+    if (!topic.isSequential) {
+      unlocked.addAll(list.map((r) => r.id));
+      continue;
+    }
+    for (var ri = 0; ri < list.length; ri++) {
+      var prevDone = true;
+      for (var k = 0; k < ri; k++) {
+        if (!completedIds.contains(list[k].id)) {
+          prevDone = false;
+          break;
+        }
+      }
+      if (!prevDone) break;
+      unlocked.add(list[ri].id);
+    }
+  }
+  return unlocked;
+}
+
+/// Groups [resources] into chapter sections in position order, with the
+/// always-unlocked ungrouped section last (omitted when empty). Pure.
+List<({CourseTopic? topic, List<CourseResource> resources})> groupResourcesByTopic(
+  List<CourseTopic> topics,
+  List<CourseResource> resources,
+) {
+  final sortedTopics = [...topics]..sort((a, b) => a.position.compareTo(b.position));
+  final knownIds = sortedTopics.map((t) => t.id).toSet();
+  final sections = <({CourseTopic? topic, List<CourseResource> resources})>[];
+  for (final t in sortedTopics) {
+    final list = resources.where((r) => r.topicId == t.id).toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
+    sections.add((topic: t, resources: list));
+  }
+  final ungrouped = resources
+      .where((r) => r.topicId.isEmpty || !knownIds.contains(r.topicId))
+      .toList()
+    ..sort((a, b) => a.position.compareTo(b.position));
+  if (ungrouped.isNotEmpty) sections.add((topic: null, resources: ungrouped));
+  return sections;
+}
+
+/// Reads the quiz content version from a quiz payload (`quiz.quiz_version`
+/// or top-level `quiz_version`; defaults to 1). Pure.
+int quizVersionOf(Map<String, dynamic> quizJson) {
+  final data = quizJson['quiz'];
+  final map = data is Map<String, dynamic> ? data : quizJson;
+  return (map['quiz_version'] as num?)?.toInt() ?? 1;
+}
+
+/// Whether a cached quiz payload is stale against [servedVersion]. Pure.
+bool isQuizCacheStale({required Map<String, dynamic>? cachedQuiz, required int servedVersion}) {
+  if (cachedQuiz == null) return false;
+  return servedVersion > quizVersionOf(cachedQuiz);
+}
+
+/// File name used when queueing [resource] for offline download. Pure.
+///
+/// Stable `<id>.<ext>` so re-enqueues overwrite the same file instead of
+/// piling up copies. The extension comes from the server filename; resources
+/// without one (quizzes, extensionless uploads) queue as the bare id.
+String courseDownloadFileName(CourseResource resource) {
+  final raw = resource.filename ?? '';
+  final dot = raw.lastIndexOf('.');
+  final ext = (dot > 0 && dot < raw.length - 1) ? raw.substring(dot) : '';
+  return '${resource.id}$ext';
+}
+
+/// Catalog type string stored in the `downloads` table for [type]. Pure.
+///
+/// Matches [ResourceType] names so the offline library parses the icon back
+/// via `parseResourceType` (`video` maps to `videos`, the parsed name).
+String courseDownloadType(CourseType type) {
+  switch (type) {
+    case CourseType.video:
+      return 'videos';
+    case CourseType.quiz:
+      return 'quiz';
+    case CourseType.pastPaper:
+      return 'pastPaper';
+    case CourseType.textbook:
+      return 'textbook';
   }
 }

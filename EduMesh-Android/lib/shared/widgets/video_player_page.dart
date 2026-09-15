@@ -35,6 +35,9 @@ class VideoPlayerPage extends StatefulWidget {
   /// Whether the page opens directly in fullscreen (landscape) mode.
   final bool startInFullscreen;
 
+  /// Called exactly once when playback reaches the end of the video.
+  final VoidCallback? onEnded;
+
   const VideoPlayerPage({
     super.key,
     required this.title,
@@ -42,6 +45,7 @@ class VideoPlayerPage extends StatefulWidget {
     this.subject,
     this.existingController,
     this.startInFullscreen = false,
+    this.onEnded,
   });
 
   @override
@@ -76,6 +80,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
   bool _previewLoading = false;
   bool _inPiP = false;
   bool _lifecyclePushed = false;
+  bool _endedFired = false;
 
   /// Position in seconds, updated by the tick listener. Only drives the
   /// lightweight position text and progress bar — no full-overlay rebuild.
@@ -272,6 +277,13 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     if (!_firstFrame && _initialized && v.position.inMilliseconds > 0) {
       _firstFrame = true;
       if (mounted) setState(() {});
+    }
+    // Exact completion signal: playback ended (position reached duration).
+    if (!_endedFired && _initialized && v.duration.inMilliseconds > 0 && v.position >= v.duration) {
+      _endedFired = true;
+      try {
+        widget.onEnded?.call();
+      } catch (_) {}
     }
   }
 
@@ -557,6 +569,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
 
   void _retry() {
     _initGen++;
+    _endedFired = false;
     setState(() {
       _error = null;
       _initialized = false;
