@@ -335,9 +335,23 @@
                 </div>
 
                 <!-- Quiz Actions -->
-                <div class="modal-footer mt-6">
+                <div class="modal-footer mt-6" style="justify-content:space-between;">
+                    <button id="btn-previewQuizResource" class="btn btn-outline" data-i18n="courses.quiz_preview">Preview</button>
                     <button id="btn-saveQuizResource" class="btn btn-primary" data-i18n="content.quiz.save_quiz">Save Quiz</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Section: Standalone Quiz Preview Modal -->
+        <div id="quizPreviewModal" class="hidden popup modal-overlay" style="z-index:20002;">
+            <div class="modal" style="max-width:700px;width:95%;max-height:85vh;overflow-y:auto;">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 id="previewQuizTitle" class="modal-title" style="font-size:1.25rem;"></h3>
+                    <button id="btn-closePreviewResource" class="modal-close" aria-label="Close preview">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <div id="previewQuizContent"></div>
             </div>
         </div>
 
@@ -566,6 +580,9 @@
 
         /** Opens the upload resource modal. */
         function openUploadModal() {
+            _quizEditToken++;
+            const staleQuizId = document.getElementById('editResQuizId');
+            if (staleQuizId) staleQuizId.value = '';
             document.getElementById('title').value = '';
             document.getElementById('file').value = '';
             document.getElementById('type').value = 'textbook';
@@ -1019,13 +1036,55 @@
         let _activeUploadXhr = null;
         let _quizQuestions = [];
         let _editingQuestionIdx = -1;
+        // Token guarding the edit-loader race: every builder opener bumps
+        // it; the async edit fetch applies results only if unchanged.
+        let _quizEditToken = 0;
+
+        /**
+         * Fully reset the standalone quiz builder to a blank state: question
+         * list, title, time/threshold/attempts/shuffle selects, custom inputs
+         * (cleared + hidden), question-editor fields, and the edit-quiz id.
+         * Called by every new-quiz entry.
+         */
+        function resetStandaloneQuizBuilder() {
+            _quizQuestions = [];
+            _editingQuestionIdx = -1;
+            const quizIdInput = document.getElementById('editResQuizId');
+            if (quizIdInput) quizIdInput.value = '';
+            document.getElementById('quizTitle').value = document.getElementById('title').value || '';
+            document.getElementById('quizTimeLimit').value = '10';
+            document.getElementById('quizThreshold').value = 60;
+            document.getElementById('quizMaxAttempts').value = '3';
+            const maxCustom = document.getElementById('quizMaxAttemptsCustom');
+            if (maxCustom) { maxCustom.value = ''; maxCustom.style.display = 'none'; }
+            document.getElementById('quizShuffleMode').value = 'none';
+            const qType = document.getElementById('qType');
+            if (qType) qType.value = 'mcq';
+            const qText = document.getElementById('qText');
+            if (qText) qText.value = '';
+            const qCount = document.getElementById('qTextCount');
+            if (qCount) qCount.textContent = '0';
+            const qExpl = document.getElementById('qExplanation');
+            if (qExpl) qExpl.value = '';
+            const qFill = document.getElementById('qFillAnswer');
+            if (qFill) qFill.value = '';
+            const qOpts = document.getElementById('qOptionsList');
+            if (qOpts) qOpts.innerHTML = '';
+            const qImg = document.getElementById('qImage');
+            if (qImg) qImg.value = '';
+            renderQuizQuestions();
+            closeQuestionEditor();
+        }
 
         /** Loads quiz data from the server and populates the quiz builder for editing. */
         async function openQuizBuilderForEdit(quizId) {
+            const myToken = ++_quizEditToken;
             try {
                 const res = await fetch('/api/quiz-resource/' + quizId, { credentials: 'include' });
+                if (myToken !== _quizEditToken) return;
                 if (!res.ok) return showAlert(__('content.quiz.create_failed'), true);
                 let data = await res.json();
+                if (myToken !== _quizEditToken) return;
                 data = data.quiz || data;
                 document.getElementById('quizTitle').value = data.title || '';
                 if (data.time_limit_minutes != null) document.getElementById('quizTimeLimit').value = data.time_limit_minutes;
@@ -1090,15 +1149,10 @@
 
         /** Opens the standalone quiz builder modal with empty state. */
         function openQuizBuilderModal() {
+            _quizEditToken++;
+            resetStandaloneQuizBuilder();
             _quizQuestions = [];
-            _editingQuestionIdx = -1;
-            const quizIdInput = document.getElementById('editResQuizId');
-            if (quizIdInput) quizIdInput.value = '';
-            document.getElementById('quizTitle').value = document.getElementById('title').value || '';
-            document.getElementById('quizTimeLimit').value = 10;
-            document.getElementById('quizThreshold').value = 60;
-            document.getElementById('quizMaxAttempts').value = 3;
-            document.getElementById('quizMaxAttemptsCustom').style.display = 'none';
+            document.getElementById('quizShuffleMode').value = 'none';
             renderQuizQuestions();
             closeQuestionEditor();
             document.getElementById('quizBuilderModal').classList.remove('hidden');
@@ -1119,14 +1173,80 @@
             }
             el.innerHTML = _quizQuestions.map(function(q, i) {
                 const typeLabel = q.type === 'mcq' ? 'MCQ' : q.type === 'tf' ? 'T/F' : q.type === 'multi' ? 'Multi' : 'Fill';
-                const preview = (q.text || '').substring(0, 60) + ((q.text || '').length > 60 ? '...' : '');
-                return '<div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.5rem;background:var(--surface);">' +
+                const preview = (q.text || q.question || '').substring(0, 60) + ((q.text || q.question || '').length > 60 ? '...' : '');
+                const details = quizDetailsHtml(q);
+                return '<div style="padding:0.5rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.5rem;background:var(--surface);">' +
+                    '<div style="display:flex;align-items:center;gap:0.5rem;">' +
                     '<span style="font-size:0.75rem;font-weight:700;background:var(--outline);padding:0.15rem 0.4rem;border-radius:4px;">' + esc(typeLabel) + '</span>' +
                     '<span style="flex:1;font-size:0.85rem;">' + esc(preview) + '</span>' +
                     '<button class="btn btn-outline js-edit-question" data-qindex="' + i + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">' + __('courses.edit') + '</button>' +
                     '<button class="btn btn-outline js-delete-question" data-qindex="' + i + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">' + __('content.delete') + '</button>' +
-                    '</div>';
+                    '</div>' + details + '</div>';
             }).join('');
+        }
+
+        /**
+         * True when a staged question carries a usable answer key: any
+         * non-empty correct_answer (numbers including 0 count) or a
+         * non-empty correct_answers list. Mirrors the server helper.
+         */
+        function quizHasAnswer(q) {
+            const ca = q.correct_answer !== undefined ? q.correct_answer : q.correct_answers;
+            if (ca === null || ca === undefined) return false;
+            if (Array.isArray(ca)) return ca.length > 0;
+            if (typeof ca === 'string') return ca.trim() !== '';
+            return true;
+        }
+
+        /** Short Q-number + truncated-text label, same pattern as the server detail. */
+        function quizQuestionLabel(questions, i) {
+            const raw = (questions[i] && (questions[i].text || questions[i].question)) || '';
+            const text = String(raw).split(/\s+/).join(' ').trim();
+            const short = text.length > 60 ? text.substring(0, 57) + '...' : text;
+            return short ? 'Q' + (i + 1) + ' "' + short + '"' : 'Q' + (i + 1);
+        }
+
+        /** Localised missing-answer detail naming each offender, or '' when none. */
+        function missingQuizDetail(questions, key) {
+            const missing = [];
+            for (let i = 0; i < questions.length; i++) { if (!quizHasAnswer(questions[i])) missing.push(i); }
+            if (!missing.length) return '';
+            return __(key, {list: missing.map(function(i) { return quizQuestionLabel(questions, i); }).join(', ')});
+        }
+
+        /** Resolve a question's correct answer(s) to displayable option texts. */
+        function quizCorrectTexts(q) {
+            if (q.type === 'fill_blanks') return q.correct_answer ? [String(q.correct_answer)] : [];
+            if (!q.options) return [];
+            if (q.type === 'multi') return Array.isArray(q.correct_answer) ? q.correct_answer.map(String) : [];
+            const ca = q.correct_answer;
+            if (typeof ca === 'number' && q.options[ca] !== undefined) return [String(q.options[ca])];
+            if (typeof ca === 'string') {
+                if (q.options.indexOf(ca) !== -1) return [ca];
+                const idx = parseInt(ca, 10);
+                if (!isNaN(idx) && q.options[idx] !== undefined) return [String(q.options[idx])];
+                return [ca];
+            }
+            return [];
+        }
+
+        /** Details block under a question row: options with correct marked, explanation or '-'. */
+        function quizDetailsHtml(q) {
+            const correct = quizCorrectTexts(q);
+            let optsHtml;
+            if (q.type === 'fill_blanks' || !q.options) {
+                optsHtml = '<div style="font-size:0.8rem;">' + esc(correct[0] || '-') + '</div>';
+            } else {
+                optsHtml = '<ul style="margin:0.25rem 0 0;padding-left:1.1rem;font-size:0.8rem;">' + q.options.map(function(o) {
+                    const mark = correct.indexOf(String(o)) !== -1 ? ' ✓' : '';
+                    return '<li' + (mark ? ' style="font-weight:700;"' : '') + '>' + esc(o) + esc(mark) + '</li>';
+                }).join('') + '</ul>';
+            }
+            return '<div style="margin-top:0.4rem;padding-top:0.4rem;border-top:1px solid var(--outline);font-size:0.8rem;color:var(--text-secondary);">' +
+                '<div><strong>' + esc(__('courses.quiz_q_options_label')) + ':</strong></div>' + optsHtml +
+                '<div style="margin-top:0.25rem;"><strong>' + esc(__('content.quiz.correct_answer_label')) + ':</strong> ' + esc(correct.join(', ') || '-') + '</div>' +
+                '<div style="margin-top:0.25rem;"><strong>' + esc(__('courses.preview_explanation')) + ':</strong> ' + esc(q.explanation || '-') + '</div>' +
+                '</div>';
         }
 
         /**
@@ -1140,12 +1260,15 @@
             if (index >= 0 && _quizQuestions[index]) {
                 const q = _quizQuestions[index];
                 document.getElementById('qType').value = q.type;
-                document.getElementById('qText').value = q.text || '';
+                document.getElementById('qText').value = q.text || q.question || '';
                 document.getElementById('qExplanation').value = q.explanation || '';
-                document.getElementById('qFillAnswer').value = q.correct_answer || '';
-                document.getElementById('qTextCount').textContent = (q.text || '').length;
+                // ponytail: fill text only applies to fill_blanks; other types keep it blank (hidden).
+                document.getElementById('qFillAnswer').value = q.type === 'fill_blanks' ? (q.correct_answer || '') : '';
+                document.getElementById('qTextCount').textContent = (q.text || q.question || '').length;
                 onQTypeChange();
-                if (q.options) renderQOptions(q.options, q.correct_answer, q.type);
+                if (q.type === 'fill_blanks') {
+                    document.getElementById('qOptionsList').innerHTML = '';
+                } else if (q.options) renderQOptions(q.options, q.correct_answer, q.type);
                 else renderQOptions(['', '', '', ''], 0, q.type);
             } else {
                 document.getElementById('qType').value = 'mcq';
@@ -1185,9 +1308,10 @@
             const isMulti = type === 'multi';
             list.innerHTML = opts.map(function(o, i) {
                 let checked = false;
-                if (type === 'tf') checked = (i === correct) || o === correct;
-                else if (isMulti) { const c = correct || []; checked = Array.isArray(c) && c.indexOf(o) !== -1; }
-                else checked = i === correct;
+                // ponytail: mcq/tf store the option INDEX (number or numeric string); multi stores TEXTS.
+                if (type === 'tf') checked = (i === correct) || (String(i) === String(correct)) || o === correct;
+                else if (isMulti) { const c = correct || []; checked = Array.isArray(c) && (c.indexOf(o) !== -1 || c.indexOf(i) !== -1 || c.indexOf(String(i)) !== -1); }
+                else checked = (i === correct) || (String(i) === String(correct));
                 return '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">' +
                     (isMulti
                         ? '<input type="checkbox" class="q-correct-opt" data-optindex="' + i + '"' + (checked ? ' checked' : '') + '>'
@@ -1234,6 +1358,10 @@
                 }
             }
             const q = { type: type, text: text, options: options, correct_answer: correct_answer, explanation: explanation };
+            // ponytail: keep the loaded id/image across edits; the standalone save reuses them.
+            const prev = (_editingQuestionIdx >= 0 && _quizQuestions[_editingQuestionIdx]) || {};
+            if (prev.id) q.id = prev.id;
+            if (prev.image) q.image = prev.image;
             if (_editingQuestionIdx >= 0) _quizQuestions[_editingQuestionIdx] = q;
             else _quizQuestions.push(q);
             closeQuestionEditor();
@@ -1245,6 +1373,46 @@
          * @param {number} idx - Index of the question to remove.
          */
         function deleteQuestion(idx) { if (_editingQuestionIdx === idx) closeQuestionEditor(); _quizQuestions.splice(idx, 1); renderQuizQuestions(); }
+
+        /**
+         * Render a read-only preview of the standalone quiz (title, meta,
+         * questions with disabled inputs) into the preview modal and show it.
+         * Mirrors the courses.html previewQuiz approach.
+         */
+        function previewStandaloneQuiz() {
+            if (_quizQuestions.length === 0) { showAlert(__('content.quiz.preview_empty'), true); return; }
+            const title = document.getElementById('quizTitle').value.trim() || document.getElementById('title').value.trim() || __('courses.quiz_untitled');
+            document.getElementById('previewQuizTitle').textContent = title;
+            let html = '<div style="margin-bottom:1rem;font-size:0.85rem;color:var(--text-muted);">' +
+                __('courses.preview_meta', {count: _quizQuestions.length, time: document.getElementById('quizTimeLimit').value, threshold: document.getElementById('quizThreshold').value}) +
+                '</div>';
+            _quizQuestions.forEach(function(q, i) {
+                const typeLabel = q.type === 'fill_blanks' ? __('courses.quiz_q_type_fill') : __('courses.quiz_q_type_' + q.type);
+                html += '<div style="padding:1rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.75rem;background:var(--surface);">' +
+                    '<div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);margin-bottom:0.25rem;">' + __('courses.preview_question_num', {n: i + 1}) + ' <span style="background:var(--outline);padding:0.1rem 0.35rem;border-radius:4px;">' + esc(typeLabel) + '</span></div>' +
+                    '<div style="font-weight:700;margin-bottom:0.5rem;">' + esc(q.text) + '</div>';
+                if (q.options) {
+                    q.options.forEach(function(opt) {
+                        html += '<div style="padding:0.35rem 0.5rem;margin:0.25rem 0;border:1px solid var(--outline);border-radius:4px;font-size:0.85rem;">' +
+                            (q.type === 'multi'
+                                ? '<input type="checkbox" disabled style="margin-right:0.5rem;">'
+                                : '<input type="radio" disabled style="margin-right:0.5rem;">') +
+                            esc(opt) + '</div>';
+                    });
+                } else {
+                    html += '<div style="padding:0.5rem;border:1px dashed var(--outline);border-radius:4px;color:var(--text-muted);font-size:0.85rem;">' + __('courses.preview_fill_input') + '</div>';
+                }
+                if (q.explanation) html += '<div style="margin-top:0.5rem;font-size:0.8rem;font-style:italic;color:var(--text-muted);">' + esc(q.explanation) + '</div>';
+                html += '</div>';
+            });
+            document.getElementById('previewQuizContent').innerHTML = html;
+            document.getElementById('quizPreviewModal').classList.remove('hidden');
+        }
+
+        /** Hide the standalone quiz preview modal. */
+        function closeStandalonePreview() {
+            document.getElementById('quizPreviewModal').classList.add('hidden');
+        }
 
         /** Exports the quiz as a JSON file download. */
         function exportQuiz() {
@@ -1293,7 +1461,7 @@
                         return showAlert(__('content.quiz.import_invalid'), true);
                     }
                     _quizQuestions = data.questions.map(function(q) {
-                        return { id: q.id || null, type: q.type, text: q.question || q.text, options: q.options, correct_answer: q.correct_answer, explanation: q.explanation };
+                        return { id: q.id || null, type: q.type, text: q.question || q.text, options: q.options, correct_answer: q.correct_answer, explanation: q.explanation, image: q.image || q.image_data };
                     });
                     if (data.title) document.getElementById('quizTitle').value = data.title;
                     if (data.time_limit_minutes != null) document.getElementById('quizTimeLimit').value = data.time_limit_minutes;
@@ -1314,11 +1482,15 @@
             const title = document.getElementById('quizTitle').value.trim() || document.getElementById('title').value.trim();
             if (!title) return showAlert(__('content.quiz.title_required'), true);
             if (_quizQuestions.length === 0) return showAlert(__('content.quiz.add_questions'), true);
+            const missingDetail = missingQuizDetail(_quizQuestions, 'content.quiz.missing_answers');
+            if (missingDetail) return showAlert(missingDetail, true);
             const subject = document.getElementById('subjectSelect').value;
             const grade = document.getElementById('gradeSelect').value;
             const topicId = document.getElementById('topicSelect')?.value || '';
             const mappedQuestions = _quizQuestions.map(function(q) {
-                return { id: q.id || ('q-' + Date.now() + '-' + Math.random().toString(36).substr(2,5)), type: q.type, question: q.text, options: q.options, correct_answer: q.correct_answer, explanation: q.explanation };
+                const out = { id: q.id || ('q-' + Date.now() + '-' + Math.random().toString(36).substr(2,5)), type: q.type, question: q.text, options: q.options, correct_answer: q.correct_answer, explanation: q.explanation };
+                if (q.image) out.image = q.image;
+                return out;
             });
             const payload = {
                 title: title,
@@ -1348,6 +1520,8 @@
                     body: JSON.stringify(payload)
                 });
                 if (res.ok) {
+                    const clearedId = document.getElementById('editResQuizId');
+                    if (clearedId) clearedId.value = '';
                     closeQuizBuilderModal();
                     closeUploadModal();
                     showAlert(__('content.quiz.quiz_created'), false);
@@ -1455,6 +1629,8 @@
             document.getElementById('btn-importQuiz')?.addEventListener('click', importQuiz);
             document.getElementById('quizImportFile')?.addEventListener('change', handleQuizImport);
             document.getElementById('btn-saveQuizResource')?.addEventListener('click', saveStandaloneQuiz);
+            document.getElementById('btn-previewQuizResource')?.addEventListener('click', previewStandaloneQuiz);
+            document.getElementById('btn-closePreviewResource')?.addEventListener('click', closeStandalonePreview);
             document.getElementById('quizMaxAttempts')?.addEventListener('change', function() {
                 document.getElementById('quizMaxAttemptsCustom').style.display = this.value === 'custom' ? '' : 'none';
             });

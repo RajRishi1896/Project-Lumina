@@ -222,6 +222,13 @@
                             <button id="btn-cancelChapter" class="btn btn-outline btn-sm" data-i18n="courses.chapter_cancel">Cancel</button>
                         </div>
                     </div>
+                    <div class="form-group mb-0 mt-2" style="max-width:280px;">
+                        <label for="chapterUnlockMode" class="text-sm font-bold" data-i18n="courses.chapter_unlock_label">Unlock mode</label>
+                        <select id="chapterUnlockMode" class="form-select">
+                            <option value="all" data-i18n="courses.chapter_unlock_all">All resources at once</option>
+                            <option value="sequential" data-i18n="courses.chapter_unlock_sequential">One by one</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -272,6 +279,15 @@
                     <label class="form-label" for="addResFile" data-i18n="content.upload_label_file">File</label>
                     <input type="file" id="addResFile" accept=".pdf,.mp4,.webm,.png,.jpg,.jpeg,.gif,.doc,.docx,.pptx,.xlsx,.zip" class="form-input">
                     <div id="addResTypeGuess" class="text-xs text-muted mt-1" style="min-height:1rem;"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="addResType" data-i18n="courses.add_resource_type_label">Type</label>
+                    <select id="addResType" class="form-select">
+                        <option value="document" data-i18n="courses.add_resource_type_document">Document</option>
+                        <option value="video" data-i18n="courses.add_resource_type_video">Video</option>
+                        <option value="image" data-i18n="courses.add_resource_type_image">Image</option>
+                        <option value="archive" data-i18n="courses.add_resource_type_archive">Archive</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="addResChapter" data-i18n="content.upload_label_topic">Chapter / Topic</label>
@@ -343,6 +359,10 @@
                     <option value="options" data-i18n="courses.shuffle_options_only">Options only</option>
                     <option value="both" data-i18n="courses.shuffle_both">Both</option>
                 </select>
+            </div>
+            <div class="form-group mt-2">
+                <label for="quizChapter" data-i18n="courses.quiz_chapter_label">Chapter</label>
+                <select id="quizChapter" class="form-select"></select>
             </div>
 
             <!-- Question List -->
@@ -681,9 +701,9 @@
             }
             container.innerHTML = courseTopics.map(function(t) {
                 const resCount = courseResources.filter(function(r) { return r.topic_id === t.id; }).length;
-                return '<div class="chapter-item" data-topic-id="' + t.id + '" style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.35rem;background:var(--surface);">' +
+                return '<div class="chapter-item" draggable="true" data-topic-id="' + t.id + '" style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.35rem;background:var(--surface);">' +
                     '<div style="display:flex;align-items:center;gap:0.5rem;flex:1;">' +
-                    '<span style="cursor:grab;color:var(--text-muted);font-size:0.9rem;">&#9776;</span>' +
+                    '<span class="js-topic-drag" style="cursor:grab;color:var(--text-muted);font-size:0.9rem;">&#9776;</span>' +
                     '<strong style="font-size:0.85rem;">' + esc(t.title) + '</strong>' +
                     '<span style="font-size:0.75rem;color:var(--text-muted);">' + resCount + ' ' + __('courses.resources_label') + '</span>' +
                     '</div>' +
@@ -692,19 +712,65 @@
                     '<button class="btn btn-outline js-delete-chapter" data-topic-id="' + t.id + '" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">' + __('courses.remove') + '</button>' +
                     '</div></div>';
             }).join('');
+            const topicRows = container.querySelectorAll('.chapter-item[draggable]');
+            for (let ti = 0; ti < topicRows.length; ti++) {
+                topicRows[ti].addEventListener('dragstart', handleTopicDragStart);
+                topicRows[ti].addEventListener('dragover', handleTopicDragOver);
+                topicRows[ti].addEventListener('drop', handleTopicDrop);
+                topicRows[ti].addEventListener('dragend', handleTopicDragEnd);
+            }
         }
+
+        // Drag-and-drop reorder helpers for the chapter list. The dragged
+        // topic id is stashed on dragstart, consumed on drop, cleared on
+        // dragend; the new order persists via POST .../topics/reorder.
+        let dragTopicSrcId = null;
+        function handleTopicDragStart(e) {
+            const row = e.target.closest('.chapter-item');
+            dragTopicSrcId = row ? row.dataset.topicId : null;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        function handleTopicDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+        async function handleTopicDrop(e) {
+            e.preventDefault();
+            const row = e.target.closest('.chapter-item');
+            const targetId = row ? row.dataset.topicId : null;
+            if (!dragTopicSrcId || !targetId || dragTopicSrcId === targetId) { dragTopicSrcId = null; return; }
+            const from = courseTopics.findIndex(function(t) { return t.id === dragTopicSrcId; });
+            const to = courseTopics.findIndex(function(t) { return t.id === targetId; });
+            dragTopicSrcId = null;
+            if (from < 0 || to < 0) return;
+            const moved = courseTopics.splice(from, 1)[0];
+            courseTopics.splice(to, 0, moved);
+            renderTopics();
+            if (!currentCourseId) return;
+            try {
+                const res = await fetch('/api/teacher/courses/' + currentCourseId + '/topics/reorder', {
+                    method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({topic_ids: courseTopics.map(function(t) { return t.id; })})
+                });
+                if (!res.ok) { showAlert(__('courses.notif.save_failed'), true); await loadTopics(); }
+            } catch (err) { showAlert(__('courses.notif.connection_error'), true); await loadTopics(); }
+        }
+        function handleTopicDragEnd() { dragTopicSrcId = null; }
 
         /** Show chapter create/edit form */
         function showChapterForm(topicId) {
             const form = document.getElementById('chapterForm');
             const titleInput = document.getElementById('chapterTitle');
+            const unlockSel = document.getElementById('chapterUnlockMode');
             form.classList.remove('hidden');
             if (topicId) {
                 const t = courseTopics.find(function(x) { return x.id === topicId; });
                 titleInput.value = t ? t.title : '';
+                if (unlockSel) unlockSel.value = (t && t.unlock_mode) || 'all';
                 editingTopicId = topicId;
             } else {
                 titleInput.value = '';
+                if (unlockSel) unlockSel.value = 'all';
                 editingTopicId = null;
             }
             titleInput.focus();
@@ -721,6 +787,7 @@
             if (!currentCourseId) { showAlert(__('courses.notif.save_course_first'), true); return; }
             const title = document.getElementById('chapterTitle').value.trim();
             if (!title) { showAlert(__('courses.chapter_title_required'), true); return; }
+            const unlockMode = document.getElementById('chapterUnlockMode') ? document.getElementById('chapterUnlockMode').value || 'all' : 'all';
             let url, method;
             if (editingTopicId) {
                 url = '/api/teacher/courses/' + currentCourseId + '/topics/' + editingTopicId;
@@ -730,7 +797,7 @@
                 method = 'POST';
             }
             try {
-                const res = await fetch(url, { method: method, credentials: 'include', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({title: title}) });
+                const res = await fetch(url, { method: method, credentials: 'include', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({title: title, unlock_mode: unlockMode}) });
                 if (res.ok) {
                     hideChapterForm();
                     await loadTopics();
@@ -841,7 +908,7 @@
                     '<td style="cursor:grab;text-align:center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></td>' +
                     '<td data-label="' + __('courses.resource_th_title') + '">' + esc(r.title) + '</td>' +
                     '<td data-label="' + __('courses.resource_th_type') + '"><span style="display:inline-flex;align-items:center;gap:0.25rem;">' + typeIcon + ' ' + esc(rtype) + '</span></td>' +
-                    '<td data-label="' + __('courses.chapter_th_chapter') + '"><select class="js-assign-topic" data-resource-id="' + r.id + '" data-resource-index="' + i + '" style="font-size:0.75rem;padding:0.2rem;border:1px solid var(--outline);border-radius:4px;background:var(--surface);color:var(--on-surface);">' + topicOpts + '</select></td>' +
+                    '<td data-label="' + __('courses.chapter_th_chapter') + '"><select class="js-assign-topic" data-resource-id="' + r.id + '" data-resource-index="' + i + '" style="font-size:0.75rem;padding:0.2rem;min-width:9rem;border:1px solid var(--outline);border-radius:4px;background:var(--surface);color:var(--on-surface);">' + topicOpts + '</select></td>' +
                     '<td data-label="' + __('courses.resource_th_size') + '">' + sizeStr + '</td>' +
                     '<td data-label="' + __('courses.resource_th_actions') + '" style="text-align:right;">' +
                     '<button class="btn btn-outline js-remove-resource" data-resource-index="' + i + '" style="padding:0.3rem 0.5rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">' + __('courses.remove') + '</button>' +
@@ -869,13 +936,26 @@
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
         }
-        function handleDrop(e) {
+        async function handleDrop(e) {
             e.preventDefault();
-            const targetIndex = parseInt(e.target.closest('tr').dataset.resourceIndex);
-            if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+            const row = e.target.closest('tr');
+            const targetIndex = row ? parseInt(row.dataset.resourceIndex) : NaN;
+            if (dragSrcIndex !== null && !isNaN(targetIndex) && dragSrcIndex !== targetIndex) {
                 const item = courseResources.splice(dragSrcIndex, 1)[0];
                 courseResources.splice(targetIndex, 0, item);
                 renderCourseResources();
+                if (currentCourseId) {
+                    const orderedIds = courseResources.filter(function(r) { return r.id; }).map(function(r) { return r.id; });
+                    if (orderedIds.length > 1) {
+                        try {
+                            const res = await fetch('/api/teacher/courses/' + currentCourseId + '/topics/reorder-resources', {
+                                method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({resource_ids: orderedIds})
+                            });
+                            if (!res.ok) showAlert(__('courses.notif.save_failed'), true);
+                        } catch (err) { showAlert(__('courses.notif.connection_error'), true); }
+                    }
+                }
             }
             dragSrcIndex = null;
         }
@@ -939,20 +1019,64 @@
 
         // ── Quiz Builder ──
 
-        /** Open the quiz builder modal with a blank question list. */
-        function openQuizBuilder() {
-            document.getElementById('quizBuilderModal').classList.remove('hidden');
-            document.getElementById('quizTitle').value = '';
-            document.getElementById('quizTimeLimit').value = 10;
-            document.getElementById('quizThreshold').value = 60;
-            document.getElementById('quizMaxAttempts').value = 3;
-            document.getElementById('quizShuffle').checked = false;
-            document.getElementById('quizTimeLimitCustom').style.display = 'none';
-            document.getElementById('quizMaxAttemptsCustom').style.display = 'none';
+        /**
+         * Fully reset the course quiz builder to a blank state: question
+         * list, title, time/threshold/attempts/shuffle selects, custom inputs
+         * (cleared + hidden), chapter select, and question-editor fields
+         * (type/text/explanation/fill answer/image/options). Called by every
+         * new-quiz entry.
+         */
+        function resetCourseQuizBuilder() {
             quizQuestions = [];
             editingQuestionIndex = -1;
+            document.getElementById('quizTitle').value = '';
+            document.getElementById('quizTimeLimit').value = '10';
+            document.getElementById('quizThreshold').value = 60;
+            document.getElementById('quizMaxAttempts').value = '3';
+            const timeCustom = document.getElementById('quizTimeLimitCustom');
+            if (timeCustom) { timeCustom.value = ''; timeCustom.style.display = 'none'; }
+            const maxCustom = document.getElementById('quizMaxAttemptsCustom');
+            if (maxCustom) { maxCustom.value = ''; maxCustom.style.display = 'none'; }
+            document.getElementById('quizShuffle').value = 'none';
+            loadQuizChapters('');
+            const qType = document.getElementById('qType');
+            if (qType) qType.value = 'mcq';
+            const qText = document.getElementById('qText');
+            if (qText) qText.value = '';
+            updateQTextCount();
+            const qExpl = document.getElementById('qExplanation');
+            if (qExpl) qExpl.value = '';
+            const qFill = document.getElementById('qFillAnswer');
+            if (qFill) qFill.value = '';
+            const qImg = document.getElementById('qImage');
+            if (qImg) qImg.value = '';
+            const qPrev = document.getElementById('qImagePreview');
+            if (qPrev) qPrev.style.display = 'none';
+            const qPrevImg = document.getElementById('qImagePreviewImg');
+            if (qPrevImg) qPrevImg.src = '';
+            const qOpts = document.getElementById('qOptionsList');
+            if (qOpts) qOpts.innerHTML = '';
             renderQuizQuestions();
             closeQuestionEditor();
+        }
+
+        /** Fill the quiz chapter select from the loaded course topics, plus a no-chapter option. */
+        function loadQuizChapters(selectedId) {
+            const sel = document.getElementById('quizChapter');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">' + __('courses.add_resource_no_chapter') + '</option>' +
+                courseTopics.map(function(t) { return '<option value="' + t.id + '">' + esc(t.title) + '</option>'; }).join('');
+            sel.value = selectedId || '';
+        }
+
+        /** Open the quiz builder modal with a blank question list. */
+        function openQuizBuilder() {
+            resetCourseQuizBuilder();
+            quizQuestions = [];
+            document.getElementById('quizShuffle').value = 'none';
+            renderQuizQuestions();
+            closeQuestionEditor();
+            document.getElementById('quizBuilderModal').classList.remove('hidden');
         }
 
         /** Hide the quiz builder modal. */
@@ -962,8 +1086,8 @@
 
         /**
          * Render the quiz question list into the builder modal. Each row shows
-         * the type badge, text preview, and edit/delete buttons; empty list
-         * shows the localised empty-state message.
+         * the type badge, text preview, edit/delete buttons, and a details
+         * block with options, marked correct answer(s), and explanation.
          */
         function renderQuizQuestions() {
             const container = document.getElementById('quizQuestionList');
@@ -973,15 +1097,81 @@
             }
             container.innerHTML = quizQuestions.map(function(q, i) {
                 const typeLabel = __('courses.quiz_q_type_' + q.type);
-                const preview = (q.text || '').substring(0, 60) + ((q.text || '').length > 60 ? '...' : '');
-                return '<div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.5rem;background:var(--surface);" draggable="true" data-qindex="' + i + '">' +
+                const preview = (q.text || q.question || '').substring(0, 60) + ((q.text || q.question || '').length > 60 ? '...' : '');
+                const details = quizDetailsHtml(q);
+                return '<div style="padding:0.5rem;border:1px solid var(--outline);border-radius:6px;margin-bottom:0.5rem;background:var(--surface);" draggable="true" data-qindex="' + i + '">' +
+                    '<div style="display:flex;align-items:center;gap:0.5rem;">' +
                     '<span style="cursor:grab;color:var(--text-muted);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></span>' +
                     '<span style="font-size:0.75rem;font-weight:700;background:var(--outline);padding:0.15rem 0.4rem;border-radius:4px;">' + esc(typeLabel) + '</span>' +
                     '<span style="flex:1;font-size:0.85rem;">' + esc(preview) + '</span>' +
                     '<button class="btn btn-outline js-edit-question" data-qindex="' + i + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">' + __('courses.edit') + '</button>' +
                     '<button class="btn btn-outline js-delete-question" data-qindex="' + i + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">' + __('courses.delete') + '</button>' +
-                    '</div>';
+                    '</div>' + details + '</div>';
             }).join('');
+        }
+
+        /**
+         * True when a staged question carries a usable answer key: any
+         * non-empty correct_answer (numbers including 0 count) or a
+         * non-empty correct_answers list. Mirrors the server helper.
+         */
+        function quizHasAnswer(q) {
+            const ca = q.correct_answer !== undefined ? q.correct_answer : q.correct_answers;
+            if (ca === null || ca === undefined) return false;
+            if (Array.isArray(ca)) return ca.length > 0;
+            if (typeof ca === 'string') return ca.trim() !== '';
+            return true;
+        }
+
+        /** Short Q-number + truncated-text label, same pattern as the server detail. */
+        function quizQuestionLabel(questions, i) {
+            const raw = (questions[i] && (questions[i].text || questions[i].question)) || '';
+            const text = String(raw).split(/\s+/).join(' ').trim();
+            const short = text.length > 60 ? text.substring(0, 57) + '...' : text;
+            return short ? 'Q' + (i + 1) + ' "' + short + '"' : 'Q' + (i + 1);
+        }
+
+        /** Localised missing-answer detail naming each offender, or '' when none. */
+        function missingQuizDetail(questions, key) {
+            const missing = [];
+            for (let i = 0; i < questions.length; i++) { if (!quizHasAnswer(questions[i])) missing.push(i); }
+            if (!missing.length) return '';
+            return __(key, {list: missing.map(function(i) { return quizQuestionLabel(questions, i); }).join(', ')});
+        }
+
+        /** Resolve a question's correct answer(s) to displayable option texts. */
+        function quizCorrectTexts(q) {
+            if (q.type === 'fill_blanks') return q.correct_answer ? [String(q.correct_answer)] : [];
+            if (!q.options) return [];
+            if (q.type === 'multi') return Array.isArray(q.correct_answer) ? q.correct_answer.map(String) : [];
+            const ca = q.correct_answer;
+            if (typeof ca === 'number' && q.options[ca] !== undefined) return [String(q.options[ca])];
+            if (typeof ca === 'string') {
+                if (q.options.indexOf(ca) !== -1) return [ca];
+                const idx = parseInt(ca, 10);
+                if (!isNaN(idx) && q.options[idx] !== undefined) return [String(q.options[idx])];
+                return [ca];
+            }
+            return [];
+        }
+
+        /** Details block under a question row: options with correct marked, explanation or '-'. */
+        function quizDetailsHtml(q) {
+            const correct = quizCorrectTexts(q);
+            let optsHtml;
+            if (q.type === 'fill_blanks' || !q.options) {
+                optsHtml = '<div style="font-size:0.8rem;">' + esc(correct[0] || '-') + '</div>';
+            } else {
+                optsHtml = '<ul style="margin:0.25rem 0 0;padding-left:1.1rem;font-size:0.8rem;">' + q.options.map(function(o) {
+                    const mark = correct.indexOf(String(o)) !== -1 ? ' ✓' : '';
+                    return '<li' + (mark ? ' style="font-weight:700;"' : '') + '>' + esc(o) + esc(mark) + '</li>';
+                }).join('') + '</ul>';
+            }
+            return '<div style="margin-top:0.4rem;padding-top:0.4rem;border-top:1px solid var(--outline);font-size:0.8rem;color:var(--text-secondary);">' +
+                '<div><strong>' + esc(__('courses.quiz_q_options_label')) + ':</strong></div>' + optsHtml +
+                '<div style="margin-top:0.25rem;"><strong>' + esc(__('content.quiz.correct_answer_label')) + ':</strong> ' + esc(correct.join(', ') || '-') + '</div>' +
+                '<div style="margin-top:0.25rem;"><strong>' + esc(__('courses.preview_explanation')) + ':</strong> ' + esc(q.explanation || '-') + '</div>' +
+                '</div>';
         }
 
         /**
@@ -997,13 +1187,16 @@
             if (index >= 0 && quizQuestions[index]) {
                 const q = quizQuestions[index];
                 document.getElementById('qType').value = q.type;
-                document.getElementById('qText').value = q.text || '';
+                document.getElementById('qText').value = q.text || q.question || '';
                 document.getElementById('qExplanation').value = q.explanation || '';
-                document.getElementById('qFillAnswer').value = q.correct_answer || '';
+                // ponytail: fill text only applies to fill_blanks; other types keep it blank (hidden).
+                document.getElementById('qFillAnswer').value = q.type === 'fill_blanks' ? (q.correct_answer || '') : '';
                 updateQTextCount();
                 onQuestionTypeChange();
                 // Restore options
-                if (q.options) {
+                if (q.type === 'fill_blanks') {
+                    document.getElementById('qOptionsList').innerHTML = '';
+                } else if (q.options) {
                     renderOptions(q.options, q.correct_answer, q.type);
                 } else {
                     renderOptions([], '', q.type);
@@ -1065,13 +1258,14 @@
             const isMulti = type === 'multi';
             container.innerHTML = opts.map(function(opt, i) {
                 let checked = false;
+                // ponytail: mcq/tf store the option INDEX (number or numeric string); multi stores TEXTS.
                 if (type === 'tf') {
-                    checked = (i === correct && correct !== '') || opt === correct;
+                    checked = (i === correct && correct !== '') || (String(i) === String(correct) && correct !== '') || opt === correct;
                 } else if (isMulti) {
                     const corr = correct || [];
-                    checked = corr.indexOf ? corr.indexOf(opt) !== -1 : false;
+                    checked = Array.isArray(corr) && (corr.indexOf(opt) !== -1 || corr.indexOf(i) !== -1 || corr.indexOf(String(i)) !== -1);
                 } else {
-                    checked = i === correct;
+                    checked = (i === correct) || (String(i) === String(correct));
                 }
                 return '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">' +
                     '<span style="cursor:grab;color:var(--text-muted);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></span>' +
@@ -1101,6 +1295,12 @@
                 correct_answer = document.getElementById('qFillAnswer').value.trim();
                 if (!correct_answer) { showAlert(__('courses.notif.answer_required'), true); return; }
                 options = null;
+            } else if (type === 'tf') {
+                // ponytail: tf rows render as labels (no text inputs); mirror the standalone builder.
+                options = ['True', 'False'];
+                const checkedRadio = document.querySelector('.q-correct-opt:checked');
+                if (!checkedRadio) { showAlert(__('courses.notif.correct_required'), true); return; }
+                correct_answer = parseInt(checkedRadio.dataset.optindex, 10);
             } else {
                 const optInputs = document.querySelectorAll('.q-opt-text');
                 options = Array.from(optInputs).map(function(inp) { return inp.value.trim(); }).filter(function(v) { return v; });
@@ -1124,6 +1324,9 @@
             const image_data = img && img.src && img.src.startsWith('data:') ? img.src : null;
 
             const question = { type: type, text: text, options: options, correct_answer: correct_answer, explanation: explanation, image_data: image_data };
+            // ponytail: keep the loaded id across edits so imports stay stable.
+            const prevQ = (editingQuestionIndex >= 0 && quizQuestions[editingQuestionIndex]) || {};
+            if (prevQ.id) question.id = prevQ.id;
 
             if (editingQuestionIndex >= 0 && editingQuestionIndex < quizQuestions.length) {
                 quizQuestions[editingQuestionIndex] = question;
@@ -1196,6 +1399,8 @@
             const title = document.getElementById('quizTitle').value.trim();
             if (!title) { showAlert(__('courses.notif.quiz_title_required'), true); return; }
             if (!quizQuestions.length) { showAlert(__('courses.notif.quiz_questions_required'), true); return; }
+            const missingDetail = missingQuizDetail(quizQuestions, 'courses.quiz_missing_answers');
+            if (missingDetail) { showAlert(missingDetail, true); return; }
             if (!currentCourseId) {
                 await saveCourseAsync('draft');
                 if (!currentCourseId) { showAlert(__('courses.notif.save_course_first'), true); return; }
@@ -1204,6 +1409,7 @@
             const payload = {
                 title: title,
                 type: 'quiz',
+                topic_id: document.getElementById('quizChapter') ? document.getElementById('quizChapter').value || '' : '',
                 time_limit_minutes: document.getElementById('quizTimeLimit').value === 'custom'
                     ? parseInt(document.getElementById('quizTimeLimitCustom').value) || 0
                     : parseInt(document.getElementById('quizTimeLimit').value) || 0,
@@ -1353,6 +1559,8 @@
             document.getElementById('addResTitle').value = '';
             document.getElementById('addResFile').value = '';
             document.getElementById('addResTypeGuess').textContent = '';
+            const typeSel = document.getElementById('addResType');
+            if (typeSel) typeSel.value = 'document';
             loadAddResChapters();
             document.getElementById('addResourceModal').classList.remove('hidden');
         }
@@ -1370,20 +1578,27 @@
             if (!document.getElementById('addResTitle').value.trim()) {
                 document.getElementById('addResTitle').value = file.name.replace(/\.[^/.]+$/, '');
             }
-            guessEl.textContent = __('courses.add_resource_type_guess', {type: guessResourceType(file.name)});
+            // ponytail: extension guess stays the default Type selection; the label shows the translated bucket.
+            const guess = guessResourceType(file.name);
+            const typeSel = document.getElementById('addResType');
+            if (typeSel) typeSel.value = guess;
+            guessEl.textContent = __('courses.add_resource_type_guess', {type: __('courses.add_resource_type_' + guess)});
         }
 
         /**
          * Stage the chosen file client-side: push with its _file handle into
          * the resource table. The chapter choice rides along as topic_id and
          * applies through the existing per-row chapter assignment path.
+         * The Type select (defaulting to the extension guess) rides as type.
          */
         function confirmAddResource() {
             const file = document.getElementById('addResFile').files[0];
             if (!file) { showAlert(__('content.notif.title_required'), true); return; }
             const title = document.getElementById('addResTitle').value.trim() || file.name.replace(/\.[^/.]+$/, '');
             const topicId = document.getElementById('addResChapter').value || '';
-            courseResources.push({ title: title, type: guessResourceType(file.name), file_name: file.name, file_size: file.size, topic_id: topicId, _file: file });
+            const typeSel = document.getElementById('addResType');
+            const resType = (typeSel && typeSel.value) || guessResourceType(file.name);
+            courseResources.push({ title: title, type: resType, file_name: file.name, file_size: file.size, topic_id: topicId, _file: file });
             closeAddResourceModal();
             renderCourseResources();
         }
