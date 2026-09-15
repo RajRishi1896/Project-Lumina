@@ -143,6 +143,32 @@ void main() {
     });
   });
 
+  group('multiAnswerKey (web-builder singular-list shape)', () {
+    // The web builder stores multi answers as a list under SINGULAR
+    // correct_answer, and _answer_key echoes it. Reading only the plural
+    // key dropped the answers and graded perfect responses wrong.
+    test('reads the list from either key', () {
+      expect(multiAnswerKey(const {'correct_answers': ['a', 'b']}), ['a', 'b']);
+      expect(multiAnswerKey(const {'correct_answer': ['a', 'b']}), ['a', 'b']);
+    });
+
+    test('returns null when neither key holds a list', () {
+      expect(multiAnswerKey(const {}), isNull);
+      expect(multiAnswerKey(const {'correct_answer': 0}), isNull);
+      expect(multiAnswerKey(const {'correct_answer': 'Paris'}), isNull);
+    });
+
+    test('two correct answers selected both grade correct', () {
+      // Mirrors _isAnswerCorrect's multi branch with the injected key.
+      final key = multiAnswerKey(const {'correct_answer': ['Paris', 'London']})!
+          .map((e) => e.toString())
+          .toList();
+      final selected = ['Paris', 'London'];
+      expect(selected.length == key.length && selected.every(key.contains), isTrue);
+      expect((['Paris']).length == key.length, isFalse); // subset is not enough
+    });
+  });
+
   group('resolveAnswerOption (server index-key mapping)', () {
     const options = ['Paris', 'London', 'Berlin'];
 

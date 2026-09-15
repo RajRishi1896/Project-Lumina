@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:edumesh_android/core/models/course.dart';
+import 'package:edumesh_android/core/services/bookmark_sync.dart';
 import 'package:edumesh_android/core/services/course_service.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
@@ -127,6 +128,7 @@ class _CoursesTabState extends State<_CoursesTab> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
   final Set<String> _downloadingCourseIds = {};
+  Set<String> _savedCourseIds = {};
 
   @override
   void initState() {
@@ -134,6 +136,18 @@ class _CoursesTabState extends State<_CoursesTab> {
     _loadData();
     CourseService().addListener(_onCourseServiceChanged);
     ConnectivityService().addListener(_onConnectivityChanged);
+    SavedResourcesPage.refreshNotifier.addListener(_onSavedChanged);
+  }
+
+  Future<void> _onSavedChanged() async {
+    try {
+      final rows = await DBHelper().getBookmarkedResources();
+      if (!mounted) return;
+      setState(() => _savedCourseIds = {
+        for (final r in rows)
+          if ((r['type'] ?? '').toString() == 'course') (r['resource_id'] ?? '').toString(),
+      });
+    } catch (_) {}
   }
 
   void _onCourseServiceChanged() {
@@ -174,6 +188,13 @@ class _CoursesTabState extends State<_CoursesTab> {
       final similarRows = await db.query('similar_courses');
       final similarIds = similarRows.map((r) => (r['similar_course_id'] ?? '').toString()).toSet();
       _similarCourses = _allCourses.where((c) => similarIds.contains(c.id)).toList();
+      try {
+        final bookmarkRows = await DBHelper().getBookmarkedResources();
+        _savedCourseIds = {
+          for (final r in bookmarkRows)
+            if ((r['type'] ?? '').toString() == 'course') (r['resource_id'] ?? '').toString(),
+        };
+      } catch (_) {}
     } catch (e) { _error = e.toString(); }
     _loading = false;
     if (mounted) setState(() {});
@@ -204,6 +225,7 @@ class _CoursesTabState extends State<_CoursesTab> {
     _searchDebounce?.cancel();
     CourseService().removeListener(_onCourseServiceChanged);
     ConnectivityService().removeListener(_onConnectivityChanged);
+    SavedResourcesPage.refreshNotifier.removeListener(_onSavedChanged);
     super.dispose();
   }
 
@@ -464,7 +486,7 @@ class _CoursesTabState extends State<_CoursesTab> {
   }
 
   Widget _buildHorizontalList(List<Course> courses, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
-    return SizedBox(height: 280.h * MediaQuery.textScalerOf(context).scale(1), child: ListView.separated(
+    return SizedBox(height: 336.h * MediaQuery.textScalerOf(context).scale(1), child: ListView.separated(
       scrollDirection: Axis.horizontal, itemCount: courses.length,
       separatorBuilder: (_, __) => SizedBox(width: AppSpacing.md.w),
       itemBuilder: (ctx, i) => SizedBox(width: 200.w, child: _buildCourseCard(courses[i], cs, tt, l10n)),
@@ -474,6 +496,7 @@ class _CoursesTabState extends State<_CoursesTab> {
   Widget _buildCourseCard(Course course, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
     final isEnrolled = _enrolledCourses.any((e) => e.course.id == course.id);
     final isDownloading = _downloadingCourseIds.contains(course.id);
+    final isSaved = _savedCourseIds.contains(course.id);
     return Card(child: InkWell(
       onTap: isEnrolled ? () => Navigator.push(context, luminaRoute(builder: (_) => CoursePlayerPage(course: course))) : null,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm.r),
@@ -517,9 +540,50 @@ class _CoursesTabState extends State<_CoursesTab> {
                 onPressed: () => _downloadCourse(course),
               ),
           ]),
+          SizedBox(height: AppSpacing.xs.h),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border, size: 20.sp),
+              label: Text(isSaved ? l10n.courseUnsave : l10n.courseSave),
+              style: TextButton.styleFrom(
+                foregroundColor: isSaved ? cs.primary : cs.onSurfaceVariant,
+                minimumSize: const Size(AppSpacing.touchTarget, AppSpacing.touchTarget),
+                alignment: Alignment.centerLeft,
+              ),
+              onPressed: () => _toggleCourseSave(course),
+            ),
+          ),
         ],
       )),
     ));
+  }
+
+  /// Saves/unsaves [course] in the local `bookmarks` table as type `course`.
+  Future<void> _toggleCourseSave(Course course) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final db = DBHelper();
+      final saved = _savedCourseIds.contains(course.id);
+      if (saved) {
+        await db.removeBookmark(course.id);
+        if (mounted) setState(() => _savedCourseIds.remove(course.id));
+      } else {
+        await db.upsertBookmark(
+            course.id, course.title, course.subject, course.grade.toString(), 'course');
+        if (mounted) setState(() => _savedCourseIds.add(course.id));
+      }
+      SavedResourcesPage.refreshNotifier.value++;
+      unawaited(BookmarkSync.push());
+      if (mounted) {
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(SnackBar(
+          content: Text(saved ? l10n.snackbarRemovedFromSaved : l10n.snackbarAddedToSaved),
+          duration: const Duration(milliseconds: 600),
+        ));
+      }
+    } catch (_) {}
   }
 
   /// Fetches [course]'s resources (server first, cache fallback) and enqueues
@@ -639,6 +703,7 @@ class _WikiTabState extends State<_WikiTab> {
       }
       // Sync the Saved tab highlight: its lists only reload on this signal.
       SavedResourcesPage.refreshNotifier.value++;
+      unawaited(BookmarkSync.push());
     } catch (_) {}
   }
 

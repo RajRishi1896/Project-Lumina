@@ -6,6 +6,7 @@ import 'package:edumesh_android/core/constants/app_spacing.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
+import 'package:edumesh_android/core/services/bookmark_sync.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'package:edumesh_android/core/services/catalog_service.dart';
 import 'package:edumesh_android/core/utils/file_utils.dart';
@@ -296,22 +297,7 @@ class _SubjectTopicsPageState extends State<SubjectTopicsPage> {
     }
     final updated = await db.getBookmarkedIds();
     if (mounted) setState(() => _bookmarkedIds = updated);
-    unawaited(_syncBookmarksToServer());
-  }
-
-  static Future<void> _syncBookmarksToServer() async {
-    try {
-      final db = DBHelper();
-      final bookmarks = await db.getBookmarkedResources();
-      final items = bookmarks.map((b) => {
-        'resource_id': b['resource_id']?.toString() ?? '',
-        'title': b['title']?.toString() ?? '',
-        'subject': b['subject']?.toString() ?? '',
-        'grade': b['grade']?.toString() ?? '',
-        'resource_type': b['type']?.toString() ?? '',
-      }).toList();
-      await ApiClient.post('/student/sync-bookmarks', data: {'bookmarks': items});
-    } catch (_) {}
+    unawaited(BookmarkSync.push());
   }
 
   Widget _buildBody() {

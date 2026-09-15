@@ -2010,5 +2010,25 @@
   "unenrollFailed": "Could not leave the course. Try again.",
   "@unenrollFailed": {
     "description": "SnackBar shown when clearing the local enrollment state fails (network errors are tolerated, so this means local storage failed)"
+  },
+  "courseSave": "Save",
+  "@courseSave": {
+    "description": "Bookmark toggle on a browse course card and in the course player app bar when the course is not saved. Verb-first, 1 word."
+  },
+  "courseUnsave": "Unsave",
+  "@courseUnsave": {
+    "description": "Bookmark toggle when the course is already saved, and the Unsave button on deleted-saved tombstone cards. Verb-first, 1 word."
+  },
+  "savedCoursesSection": "Saved courses",
+  "@savedCoursesSection": {
+    "description": "Section header in the Saved page Courses tab listing bookmarked courses resolved through the cached catalog."
+  },
+  "savedDeletedMessage": "This was removed from the hub.",
+  "@savedDeletedMessage": {
+    "description": "Tombstone card message for a saved item deleted from the hub. Plain language, max 10 words."
+  },
+  "savedOpenFile": "Open",
+  "@savedOpenFile": {
+    "description": "Button on a deleted-saved tombstone card that opens the locally downloaded file. Verb-first, 1 word."
   }
 }

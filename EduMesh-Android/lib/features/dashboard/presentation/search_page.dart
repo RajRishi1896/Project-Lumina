@@ -13,6 +13,7 @@ import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'package:edumesh_android/core/utils/file_utils.dart';
 import 'package:edumesh_android/shared/services/download_service.dart';
 import '../../../core/services/activity_tracker.dart';
+import '../../../core/services/bookmark_sync.dart';
 import '../../../shared/services/download_queue.dart';
 import '../../../shared/services/connectivity_service.dart';
 import '../../../shared/services/zim_sync_service.dart';
@@ -213,6 +214,7 @@ class _SearchPageState extends State<SearchPage> {
       if (bookmarked.contains(id)) {
         await db.removeBookmark(id);
         unawaited(ActivityTracker().logAction('unsave', resourceId: id));
+        unawaited(BookmarkSync.push());
         return false;
       }
       await db.upsertBookmark(
@@ -224,6 +226,7 @@ class _SearchPageState extends State<SearchPage> {
         pdfUrl: resource.pdfUrl,
       );
       unawaited(ActivityTracker().logAction('save', resourceId: id));
+      unawaited(BookmarkSync.push());
       return true;
     } catch (e) {
       debugPrint('Error toggling bookmark: $e');

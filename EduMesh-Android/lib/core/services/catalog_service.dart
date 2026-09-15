@@ -30,6 +30,10 @@ class CatalogService {
   /// and connectivity changes don't re-hit the hub on every event.
   bool get _catalogStale =>
       _lastCatalogSync == null || DateTime.now().difference(_lastCatalogSync!) > _syncCooldown;
+
+  /// Whether the local catalog was synced within the cooldown window.
+  /// Saved tombstones only render on a fresh sync: never on stale cache.
+  bool get isFresh => !_catalogStale;
   bool get _similarStale =>
       _lastSimilarSync == null || DateTime.now().difference(_lastSimilarSync!) > _syncCooldown;
 

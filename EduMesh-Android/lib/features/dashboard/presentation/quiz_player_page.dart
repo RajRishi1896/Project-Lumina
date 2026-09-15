@@ -250,9 +250,9 @@ class _QuizPlayerPageState extends State<QuizPlayerPage> {
       final correctAnswer =
           resolveAnswerOption(q.options, key['correct_answer']) ??
               q.correctAnswer;
-      final rawMulti = key['correct_answers'];
+      final rawMulti = multiAnswerKey(key);
       List<String>? correctAnswers;
-      if (rawMulti is List) {
+      if (rawMulti != null) {
         correctAnswers = rawMulti
             .map((e) => resolveAnswerOption(q.options, e) ?? e.toString())
             .toList();

@@ -6,7 +6,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
+import 'package:edumesh_android/core/models/course.dart';
+import 'package:edumesh_android/core/services/bookmark_sync.dart';
+import 'package:edumesh_android/core/services/catalog_service.dart';
 import 'package:edumesh_android/core/services/course_service.dart';
+import 'package:edumesh_android/shared/services/connectivity_service.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'package:edumesh_android/core/utils/file_utils.dart';
 import 'package:edumesh_android/shared/services/download_service.dart';
@@ -211,6 +215,7 @@ class _SavedListByTypeState extends State<_SavedListByType> {
   List<ResourceModel> _savedItems = [];
   Set<String> _downloadedIds = {};
   Set<String> _removedIds = {};
+  Set<String> _tombstoneIds = {};
   final Set<String> _downloadingIds = {};
   final Set<String> _pendingIds = {};
   bool _loading = true;
@@ -240,6 +245,9 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       for (final r in bookmarkRows) {
         final id = r['resource_id'] as String? ?? '';
         if (id.isEmpty) continue;
+        // Course saves live in the Courses tab: never leak them into the
+        // resource lists (parseResourceType would default them to textbook).
+        if ((r['type'] as String? ?? '') == 'course') continue;
         merged[id] = ResourceModel(
           id: id,
           title: r['title'] as String? ?? '',
@@ -290,11 +298,36 @@ class _SavedListByTypeState extends State<_SavedListByType> {
           .map((r) => r['resource_id'] as String? ?? '')
           .where((id) => id.isNotEmpty)
           .toSet();
+      // Deleted-saved tombstones: online with a freshly synced catalog only.
+      // A bookmark absent from the catalog renders a tombstone card. ZIM and
+      // course rows never live in the catalog, so they are never flagged, and
+      // neither is anything while offline or on a stale cache.
+      Set<String> tombstones = {};
+      try {
+        if (ConnectivityService().isOnline && CatalogService().isFresh) {
+          final rawById = {
+            for (final r in bookmarkRows)
+              (r['resource_id'] as String? ?? ''): (r['type'] as String? ?? '').toString(),
+          };
+          final courseResourceIds = await db.getCourseResourceIds();
+          final candidates = items
+              .map((r) => r.id)
+              .where((id) =>
+                  BookmarkSync.isCatalogBacked(rawById[id] ?? '') &&
+                  !courseResourceIds.contains(id))
+              .toSet();
+          if (candidates.isNotEmpty) {
+            final entries = await db.getCatalogEntries(candidates);
+            tombstones = candidates.where((id) => !entries.containsKey(id)).toSet();
+          }
+        }
+      } catch (_) {}
       if (mounted) {
         setState(() {
           _savedItems = items;
           _downloadedIds = ids;
           _removedIds = removedIds;
+          _tombstoneIds = tombstones;
           _loading = false;
         });
       }
@@ -309,13 +342,30 @@ class _SavedListByTypeState extends State<_SavedListByType> {
       final bookmarked = await db.getBookmarkedIds();
       if (bookmarked.contains(id)) {
         await db.removeBookmark(id);
+        unawaited(BookmarkSync.push());
         return false;
       }
       await db.upsertBookmark(id, '', '', '', '');
+      unawaited(BookmarkSync.push());
       return true;
     } catch (e) {
       debugPrint('Error toggling bookmark: $e');
       return false;
+    }
+  }
+
+  /// Removes a tombstoned save locally and backs the removal up.
+  Future<void> _unsaveTombstone(String id) async {
+    try {
+      await DBHelper().removeBookmark(id);
+      unawaited(BookmarkSync.push());
+    } catch (_) {}
+    SavedResourcesPage.refreshNotifier.value++;
+    if (mounted) {
+      setState(() {
+        _savedItems.removeWhere((r) => r.id == id);
+        _tombstoneIds.remove(id);
+      });
     }
   }
 
@@ -438,6 +488,65 @@ class _SavedListByTypeState extends State<_SavedListByType> {
     }
   }
 
+  /// Tombstone card for a save deleted from the hub: plain-language message
+  /// plus Unsave, and Open when a local download of the file exists.
+  Widget _buildTombstoneCard(ResourceModel item, String displayTitle,
+      String resourceId, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    final hasDownload = _downloadedIds.contains(resourceId);
+    return Container(
+      margin: EdgeInsets.only(bottom: AppSpacing.md.h),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          ResourceThumbnail(resource: item, size: 48),
+          SizedBox(width: AppSpacing.md.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(displayTitle,
+                    style: tt.titleSmall?.copyWith(color: cs.onSurface),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
+                SizedBox(height: AppSpacing.xs.h),
+                Text(l10n.savedDeletedMessage,
+                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          SizedBox(width: AppSpacing.sm.w),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasDownload)
+                TextButton(
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(AppSpacing.touchTarget, AppSpacing.touchTarget),
+                  ),
+                  onPressed: () => _openItem(item),
+                  child: Text(l10n.savedOpenFile),
+                ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: cs.error,
+                  minimumSize: const Size(AppSpacing.touchTarget, AppSpacing.touchTarget),
+                ),
+                onPressed: () => _unsaveTombstone(resourceId),
+                child: Text(l10n.courseUnsave),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -458,7 +567,6 @@ class _SavedListByTypeState extends State<_SavedListByType> {
         ),
       );
     }
-
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
@@ -471,6 +579,9 @@ class _SavedListByTypeState extends State<_SavedListByType> {
         final resourceId = item.id.toString();
         // Bookmarks with unknown metadata (not in catalog either) still need a label.
         final displayTitle = item.title.trim().isNotEmpty ? item.title : l10n.savedResourcesTitle;
+        if (_tombstoneIds.contains(resourceId)) {
+          return _buildTombstoneCard(item, displayTitle, resourceId, cs, tt, l10n);
+        }
         final isSavedDownloaded = _downloadedIds.contains(resourceId);
         final isSavedDownloading = _downloadingIds.contains(resourceId);
         final isRemoved = _removedIds.contains(resourceId);
@@ -607,6 +718,10 @@ class _SavedCoursesTab extends StatefulWidget {
 
 class _SavedCoursesTabState extends State<_SavedCoursesTab> {
   bool _loading = true;
+  List<Course> _savedCourses = [];
+  List<Course> _unresolvedSaved = [];
+  Set<String> _tombstoneCourseIds = {};
+  Set<String> _enrolledIds = {};
 
   @override
   void initState() {
@@ -621,10 +736,113 @@ class _SavedCoursesTabState extends State<_SavedCoursesTab> {
     super.dispose();
   }
 
+  /// Minimal [Course] from a bookmark row for offline/stale display, when the
+  /// cached catalog has no entry. Titles come from the local row only.
+  Course _courseFromBookmark(Map<String, dynamic> r) {
+    final id = (r['resource_id'] ?? '').toString();
+    final title = (r['title'] ?? '').toString();
+    return Course(
+      id: id,
+      title: title.isNotEmpty ? title : id,
+      subject: (r['subject'] ?? '').toString(),
+      grade: int.tryParse((r['grade'] ?? '').toString()) ?? 0,
+      language: 'en',
+      published: 0,
+    );
+  }
+
   Future<void> _load() async {
     final svc = CourseService();
     await svc.loadEnrolledCourses();
-    if (mounted) setState(() => _loading = false);
+    final enrolled = svc.enrolledCourses;
+    List<Map<String, dynamic>> rows = const [];
+    try {
+      rows = await DBHelper().getBookmarkedResources();
+    } catch (_) {}
+    final savedRows =
+        rows.where((r) => (r['type'] ?? '').toString() == 'course').toList();
+    Map<String, Course> catalogById = {};
+    try {
+      final cached = await svc.getCachedCatalog();
+      catalogById = {for (final c in cached) c.id: c};
+    } catch (_) {}
+    // Course tombstones need a fresh catalog plus a confirming detail 404:
+    // never flag while offline or on a stale cache.
+    final fresh =
+        ConnectivityService().isOnline && CatalogService().isFresh;
+    final saved = <Course>[];
+    final unresolved = <Course>[];
+    final tombstones = <String>{};
+    for (final r in savedRows) {
+      final id = (r['resource_id'] ?? '').toString();
+      if (id.isEmpty) continue;
+      final hit = catalogById[id];
+      if (hit != null) {
+        saved.add(hit);
+        continue;
+      }
+      if (fresh) {
+        Map<String, dynamic>? detail;
+        try {
+          detail = await svc.fetchCourseDetail(id);
+        } catch (_) {}
+        if (detail == null) {
+          tombstones.add(id);
+          unresolved.add(_courseFromBookmark(r));
+          continue;
+        }
+        try {
+          saved.add(Course.fromJson(detail));
+          continue;
+        } catch (_) {}
+      }
+      unresolved.add(_courseFromBookmark(r));
+    }
+    if (mounted) {
+      setState(() {
+        _savedCourses = saved;
+        _unresolvedSaved = unresolved;
+        _tombstoneCourseIds = tombstones;
+        _enrolledIds = {for (final e in enrolled) e.course.id};
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _unsaveCourse(String id) async {
+    try {
+      await DBHelper().removeBookmark(id);
+      unawaited(BookmarkSync.push());
+    } catch (_) {}
+    SavedResourcesPage.refreshNotifier.value++;
+    if (mounted) {
+      setState(() {
+        _savedCourses.removeWhere((c) => c.id == id);
+        _unresolvedSaved.removeWhere((c) => c.id == id);
+        _tombstoneCourseIds.remove(id);
+      });
+    }
+  }
+
+  /// Enrolls in a saved-but-unenrolled course via the existing flow.
+  Future<void> _enrollSaved(Course course) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final ok = await CourseService().enroll(course.id);
+    if (!mounted) return;
+    if (ok) {
+      await _load();
+      SavedResourcesPage.refreshNotifier.value++;
+    } else {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.errorNoServerNoCache)));
+    }
+  }
+
+  void _openCourse(Course course) {
+    unawaited(Navigator.push(
+      context,
+      luminaRoute(builder: (_) => CoursePlayerPage(course: course)),
+    ));
   }
 
   @override
@@ -638,8 +856,9 @@ class _SavedCoursesTabState extends State<_SavedCoursesTab> {
     }
 
     final enrolled = CourseService().enrolledCourses;
+    final savedAll = [..._savedCourses, ..._unresolvedSaved];
 
-    if (enrolled.isEmpty) {
+    if (enrolled.isEmpty && savedAll.isEmpty) {
       return Center(
         child: Text(
           l10n.emptyStateAll,
@@ -651,75 +870,160 @@ class _SavedCoursesTabState extends State<_SavedCoursesTab> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
-        child: ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
-      itemCount: enrolled.length,
-      itemBuilder: (context, index) {
-        final entry = enrolled[index];
-        final course = entry.course;
-        final progress = entry.progress;
-        final completedCount = (progress?['completed_count'] as num?)?.toInt() ?? 0;
-        final totalResources = (progress?['total_resources'] as num?)?.toInt() ?? 0;
-        final isCompleted = (progress?['completed'] as num?)?.toInt() == 1;
-
-        return Container(
-          margin: EdgeInsets.only(bottom: AppSpacing.md.h),
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: cs.outlineVariant),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48.w,
-                height: 48.h,
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer,
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Icon(Icons.school, color: cs.primary, size: 24.sp),
+        child: ListView(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.sm.h),
+          children: [
+            for (final entry in enrolled)
+              _buildEnrolledCard(entry.course, entry.progress, cs, tt, l10n),
+            if (savedAll.isNotEmpty) ...[
+              Padding(
+                padding: EdgeInsets.only(top: AppSpacing.md.h, bottom: AppSpacing.sm.h),
+                child: Text(l10n.savedCoursesSection,
+                    style: tt.titleSmall?.copyWith(
+                        color: cs.onSurface, fontWeight: AppSpacing.weightStrong)),
               ),
-              SizedBox(width: AppSpacing.md.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(course.title,
-                        style: tt.titleSmall?.copyWith(color: cs.onSurface),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
-                    SizedBox(height: AppSpacing.xs.h),
-                    Text(l10n.resourceSubtitle(course.subject, course.grade.toString()),
-                        style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-                    if (totalResources > 0)
-                      Text(
-                        '$completedCount/$totalResources',
-                        style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                      ),
-                  ],
-                ),
-              ),
-              SizedBox(width: AppSpacing.sm.w),
-              FilledButton(
-                onPressed: () {
-                  unawaited(Navigator.push(
-                    context,
-                    luminaRoute(
-                      builder: (_) => CoursePlayerPage(course: course),
-                    ),
-                  ));
-                },
-                child: Text(isCompleted
-                    ? l10n.coursePlayerCompleted
-                    : l10n.coursePlayerStart),
-              ),
+              for (final course in savedAll) _buildSavedCard(course, cs, tt, l10n),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnrolledCard(Course course, Map<String, dynamic>? progress,
+      ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    final completedCount = (progress?['completed_count'] as num?)?.toInt() ?? 0;
+    final totalResources = (progress?['total_resources'] as num?)?.toInt() ?? 0;
+    final isCompleted = (progress?['completed'] as num?)?.toInt() == 1;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: AppSpacing.md.h),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48.w,
+            height: 48.h,
+            decoration: BoxDecoration(
+              color: cs.primaryContainer,
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Icon(Icons.school, color: cs.primary, size: 24.sp),
           ),
-        );
-      },
+          SizedBox(width: AppSpacing.md.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(course.title,
+                    style: tt.titleSmall?.copyWith(color: cs.onSurface),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
+                SizedBox(height: AppSpacing.xs.h),
+                Text(l10n.resourceSubtitle(course.subject, course.grade.toString()),
+                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                if (totalResources > 0)
+                  Text(
+                    '$completedCount/$totalResources',
+                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(width: AppSpacing.sm.w),
+          FilledButton(
+            onPressed: () => _openCourse(course),
+            child: Text(isCompleted
+                ? l10n.coursePlayerCompleted
+                : l10n.coursePlayerStart),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Saved-course card resolving a bookmarked id through the cached catalog.
+  /// Tap opens the player; unenrolled courses enroll via the existing flow.
+  /// Tombstoned rows show the deleted message plus Unsave (and Open when the
+  /// course is enrolled locally).
+  Widget _buildSavedCard(Course course, ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    final isTombstone = _tombstoneCourseIds.contains(course.id);
+    final isEnrolled = _enrolledIds.contains(course.id);
+    return GestureDetector(
+      onTap: (isTombstone && !isEnrolled) ? null : () => _openCourse(course),
+      child: Container(
+        margin: EdgeInsets.only(bottom: AppSpacing.md.h),
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: cs.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48.w,
+              height: 48.h,
+              decoration: BoxDecoration(
+                color: cs.primaryContainer,
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Icon(Icons.school, color: cs.primary, size: 24.sp),
+            ),
+            SizedBox(width: AppSpacing.md.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(course.title,
+                      style: tt.titleSmall?.copyWith(color: cs.onSurface),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                  SizedBox(height: AppSpacing.xs.h),
+                  Text(
+                      isTombstone
+                          ? l10n.savedDeletedMessage
+                          : l10n.resourceSubtitle(course.subject, course.grade.toString()),
+                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            SizedBox(width: AppSpacing.sm.w),
+            if (isTombstone) ...[
+              if (isEnrolled)
+                TextButton(
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(AppSpacing.touchTarget, AppSpacing.touchTarget),
+                  ),
+                  onPressed: () => _openCourse(course),
+                  child: Text(l10n.savedOpenFile),
+                ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: cs.error,
+                  minimumSize: const Size(AppSpacing.touchTarget, AppSpacing.touchTarget),
+                ),
+                onPressed: () => _unsaveCourse(course.id),
+                child: Text(l10n.courseUnsave),
+              ),
+            ] else if (isEnrolled)
+              FilledButton(
+                onPressed: () => _openCourse(course),
+                child: Text(l10n.coursePlayerStart),
+              )
+            else
+              FilledButton(
+                onPressed: () => _enrollSaved(course),
+                child: Text(l10n.browseEnroll),
+              ),
+          ],
         ),
       ),
     );

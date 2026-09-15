@@ -66,6 +66,18 @@ String? resolveAnswerOption(List<String> options, dynamic raw) {
   return raw?.toString();
 }
 
+/// Returns the multi-answer key list from a question or answer-key map.
+///
+/// The canonical key is `correct_answers`, but the web builder stores
+/// multi-select answers as a list under singular `correct_answer`, and the
+/// server's `_answer_key` echoes that shape back. Reading only the plural
+/// key silently drops the answers and every perfect multi response grades
+/// wrong. Returns null when neither key holds a list.
+List<dynamic>? multiAnswerKey(Map<dynamic, dynamic> json) {
+  final raw = json['correct_answers'] ?? json['correct_answer'];
+  return raw is List ? raw : null;
+}
+
 /// A single quiz question with its options and correct answer(s).
 class QuizQuestion {
   final String id;
@@ -113,8 +125,8 @@ class QuizQuestion {
     String? correctAnswer =
         resolveAnswerOption(options, json['correct_answer']);
     List<String>? correctAnswers;
-    final rawMulti = json['correct_answers'] ?? json['correct_answer'];
-    if (rawMulti is List) {
+    final rawMulti = multiAnswerKey(json);
+    if (rawMulti != null) {
       correctAnswers = rawMulti
           .map((e) => resolveAnswerOption(options, e) ?? e.toString())
           .toList();

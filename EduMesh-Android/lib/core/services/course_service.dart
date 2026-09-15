@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import '../models/course.dart';
 import '../network/api_client.dart';
 import '../storage/db_helper.dart';
+import 'bookmark_sync.dart';
 import '../../features/auth/data/auth_service.dart';
 import '../../shared/services/download_queue.dart';
 import 'mutation_queue.dart';
@@ -607,6 +608,11 @@ class CourseService extends ChangeNotifier {
           }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
       });
+      // Enrollment-restore converged Saved too: a fresh install may hold
+      // server bookmarks that were never downloaded to this phone.
+      try {
+        await BookmarkSync.convergeAfterLogin();
+      } catch (_) {}
     } catch (e) {
       debugPrint('CourseService: _restoreEnrollmentsFromServer failed; $e');
     }

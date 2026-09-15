@@ -20,6 +20,7 @@ import 'package:edumesh_android/features/dashboard/presentation/quiz_player_page
 import 'package:edumesh_android/features/dashboard/presentation/kiwix_view.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
 import 'package:edumesh_android/core/services/activity_tracker.dart';
+import 'package:edumesh_android/core/services/bookmark_sync.dart';
 import 'package:edumesh_android/core/services/catalog_service.dart';
 import 'package:edumesh_android/core/utils/file_utils.dart';
 import 'package:edumesh_android/core/services/recent_resources.dart';
@@ -270,7 +271,7 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
       if (bookmarked.contains(id)) {
         await db.removeBookmark(id);
         unawaited(ActivityTracker().logAction('unsave', resourceId: id, metadata: title ?? ''));
-        _syncBookmarksToServer();
+        unawaited(BookmarkSync.push());
         return false;
       }
       await db.upsertBookmark(
@@ -282,27 +283,12 @@ class _ResourceDetailPageState extends State<ResourceDetailPage> {
         pdfUrl: pdfUrl,
       );
       unawaited(ActivityTracker().logAction('save', resourceId: id, metadata: title ?? ''));
-      _syncBookmarksToServer();
+      unawaited(BookmarkSync.push());
       return true;
     } catch (e) {
       debugPrint('Error toggling bookmark: $e');
       return false;
     }
-  }
-
-  static Future<void> _syncBookmarksToServer() async {
-    try {
-      final db = DBHelper();
-      final bookmarks = await db.getBookmarkedResources();
-      final items = bookmarks.map((b) => {
-        'resource_id': b['resource_id']?.toString() ?? '',
-        'title': b['title']?.toString() ?? '',
-        'subject': b['subject']?.toString() ?? '',
-        'grade': b['grade']?.toString() ?? '',
-        'resource_type': b['type']?.toString() ?? '',
-      }).toList();
-      await ApiClient.post('/student/sync-bookmarks', data: {'bookmarks': items});
-    } catch (_) {}
   }
 
   /// Copies a view-time cached PDF (from [PdfViewerPage]'s temp cache) into

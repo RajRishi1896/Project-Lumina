@@ -8,6 +8,7 @@ import '../../../core/constants/password_strength.dart';
 import '../../../pages/app_shell.dart';
 import '../data/auth_service.dart';
 import '../../../shared/services/connectivity_service.dart';
+import '../../../core/services/bookmark_sync.dart';
 import '../../../core/network/api_client.dart';
 import '../../../widgets/connection_gate.dart';
 import 'profile_setup_page.dart';
@@ -137,6 +138,15 @@ class _LoginPageState extends State<LoginPage> {
       } else if (result == 'ok') {
         setState(() => _isLoading = false);
         if (!mounted) return;
+        // Hub-verified login while online: pull server bookmarks missing
+        // locally (never overwriting local titles), then push back only
+        // offline-created ids the server did not return.
+        if (_isConnected) {
+          try {
+            await BookmarkSync.convergeAfterLogin().timeout(const Duration(seconds: 15));
+          } catch (_) {}
+          if (!mounted) return;
+        }
         await _routeAfterLogin();
       } else if (result == 'local_only') {
         setState(() => _isLoading = false);

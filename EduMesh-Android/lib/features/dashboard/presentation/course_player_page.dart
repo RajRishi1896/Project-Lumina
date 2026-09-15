@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:edumesh_android/core/models/course.dart';
 import 'package:edumesh_android/core/models/resource_model.dart';
+import 'package:edumesh_android/core/services/bookmark_sync.dart';
 import 'package:edumesh_android/core/services/course_service.dart';
 import 'package:edumesh_android/core/services/mutation_queue.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
@@ -41,11 +42,50 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
   Map<String, String> _localPaths = {};
   bool _loadingResources = true;
   bool _loadFailedResources = false;
+  bool _isCourseSaved = false;
 
   @override
   void initState() {
     super.initState();
     _loadResources();
+    _loadSavedState();
+  }
+
+  /// Reads whether this course is bookmarked (type `course` rows only, so a
+  /// resource sharing the id can never flip the icon).
+  Future<void> _loadSavedState() async {
+    try {
+      final rows = await DBHelper().getBookmarkedResources();
+      if (!mounted) return;
+      setState(() => _isCourseSaved = rows.any((r) =>
+          (r['resource_id'] ?? '').toString() == widget.course.id &&
+          (r['type'] ?? '').toString() == 'course'));
+    } catch (_) {}
+  }
+
+  /// Saves/unsaves this course in the local `bookmarks` table as type `course`.
+  Future<void> _toggleCourseSave() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final db = DBHelper();
+      final wasSaved = _isCourseSaved;
+      if (wasSaved) {
+        await db.removeBookmark(widget.course.id);
+      } else {
+        await db.upsertBookmark(widget.course.id, widget.course.title,
+            widget.course.subject, widget.course.grade.toString(), 'course');
+      }
+      if (mounted) setState(() => _isCourseSaved = !wasSaved);
+      unawaited(BookmarkSync.push());
+      if (mounted) {
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(SnackBar(
+          content: Text(wasSaved ? l10n.snackbarRemovedFromSaved : l10n.snackbarAddedToSaved),
+          duration: const Duration(milliseconds: 600),
+        ));
+      }
+    } catch (_) {}
   }
 
   /// Loads the course's detail: server first, local cache as offline
@@ -423,6 +463,12 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
         backgroundColor: cs.surface,
         foregroundColor: cs.onSurface,
         actions: [
+          IconButton(
+            icon: Icon(_isCourseSaved ? Icons.bookmark : Icons.bookmark_border),
+            color: _isCourseSaved ? cs.primary : cs.onSurfaceVariant,
+            tooltip: _isCourseSaved ? l10n.courseUnsave : l10n.courseSave,
+            onPressed: _toggleCourseSave,
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             tooltip: l10n.unenrollButton,

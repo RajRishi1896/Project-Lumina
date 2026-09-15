@@ -1978,5 +1978,30 @@
   "@unenrollFailed": {
     "description": "SnackBar shown when clearing the local enrollment state fails (network errors are tolerated, so this means local storage failed)",
     "x_machine_translated": true
+  },
+  "courseSave": "Enregistrer",
+  "@courseSave": {
+    "description": "Bookmark toggle on a browse course card and in the course player app bar when the course is not saved. Verb-first, 1 word.",
+    "x_machine_translated": true
+  },
+  "courseUnsave": "Retirer",
+  "@courseUnsave": {
+    "description": "Bookmark toggle when the course is already saved, and the Unsave button on deleted-saved tombstone cards. Verb-first, 1 word.",
+    "x_machine_translated": true
+  },
+  "savedCoursesSection": "Cours enregistrés",
+  "@savedCoursesSection": {
+    "description": "Section header in the Saved page Courses tab listing bookmarked courses resolved through the cached catalog.",
+    "x_machine_translated": true
+  },
+  "savedDeletedMessage": "Ce contenu a été retiré du hub.",
+  "@savedDeletedMessage": {
+    "description": "Tombstone card message for a saved item deleted from the hub. Plain language, max 10 words.",
+    "x_machine_translated": true
+  },
+  "savedOpenFile": "Ouvrir",
+  "@savedOpenFile": {
+    "description": "Button on a deleted-saved tombstone card that opens the locally downloaded file. Verb-first, 1 word.",
+    "x_machine_translated": true
   }
 }
