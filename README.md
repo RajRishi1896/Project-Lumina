@@ -102,7 +102,7 @@ Two independent codebases form the system: a Flutter Android client (`EduMesh-An
 
 **UX and accessibility**
 
-- 6 languages (English, Hindi, Kannada, French, Tamil, Telugu): 414 ARB keys with ICU plurals in Flutter, 763 JSON keys on web, identical key sets across all six files.
+- 6 languages (English, Hindi, Kannada, French, Tamil, Telugu): 428 ARB keys with ICU plurals in Flutter, 782 JSON keys on web, identical key sets across all six files.
 - All fonts bundled as `.ttf` (Noto Sans per script); `GoogleFonts` is a fallback only.
 - Every tappable element meets the 48x48px minimum touch target; icon-only buttons carry `Tooltip` or `Semantics` labels.
 - `PopScope` double-back-to-exit with a 2-second window (first press shows an auto-expiring SnackBar with an Exit button; second press exits).
@@ -185,8 +185,8 @@ Design targets (cold start ≤ 4 s, cached catalog load ≤ 800 ms, 0 jank frame
 | Video streaming | HTTP Range requests | 206 Partial Content for seek |
 | Captive portal | dnsmasq + NetworkManager | DNS hijack to hub welcome page |
 | Frontend | Vanilla HTML/CSS/JS | Teacher/admin dashboard (11 pages) |
-| i18n (Flutter) | ARB files + `flutter gen-l10n` | 6 languages, ICU plurals, 414 keys |
-| i18n (Web) | JSON lang files + `lumina.js` | 6 languages, 763 keys each |
+| i18n (Flutter) | ARB files + `flutter gen-l10n` | 6 languages, ICU plurals, 428 keys |
+| i18n (Web) | JSON lang files + `lumina.js` | 6 languages, 782 keys each |
 
 All 23 direct dependencies of the Flutter app are listed in `pubspec.yaml`; all server dependencies in `requirements.txt`. No CDN-served assets and no external APIs appear in the offline-critical path.
 
