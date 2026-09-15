@@ -527,7 +527,13 @@ class _CoursesTabState extends State<_CoursesTab> {
                 : FilledButton(
                     onPressed: () async { await CourseService().enroll(course.id); if (mounted) await _loadData(); },
                     child: Text(l10n.browseEnroll))),
-            SizedBox(width: AppSpacing.sm.w),
+            SizedBox(width: AppSpacing.xs.w),
+            IconButton(
+              icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border),
+              color: isSaved ? cs.primary : cs.onSurfaceVariant,
+              tooltip: isSaved ? l10n.courseUnsave : l10n.courseSave,
+              onPressed: () => _toggleCourseSave(course),
+            ),
             if (isDownloading)
               SizedBox(width: AppSpacing.touchTarget, height: AppSpacing.touchTarget,
                 child: Center(child: SizedBox(width: AppSpacing.xxl, height: AppSpacing.xxl,
@@ -540,20 +546,6 @@ class _CoursesTabState extends State<_CoursesTab> {
                 onPressed: () => _downloadCourse(course),
               ),
           ]),
-          SizedBox(height: AppSpacing.xs.h),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton.icon(
-              icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border, size: 20.sp),
-              label: Text(isSaved ? l10n.courseUnsave : l10n.courseSave),
-              style: TextButton.styleFrom(
-                foregroundColor: isSaved ? cs.primary : cs.onSurfaceVariant,
-                minimumSize: const Size(AppSpacing.touchTarget, AppSpacing.touchTarget),
-                alignment: Alignment.centerLeft,
-              ),
-              onPressed: () => _toggleCourseSave(course),
-            ),
-          ),
         ],
       )),
     ));
