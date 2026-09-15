@@ -131,7 +131,7 @@ def init_db():
     for _ddl in (
         "ALTER TABLE courses ADD COLUMN version INTEGER DEFAULT 1",
         "ALTER TABLE topics ADD COLUMN unlock_mode TEXT DEFAULT 'all'",
-        "ALTER TABLE course_resources ADD COLUMN updated_at TEXT DEFAULT (datetime('now'))",
+        "ALTER TABLE course_resources ADD COLUMN updated_at TEXT DEFAULT ''",
     ):
         try:
             c.execute(_ddl)
@@ -168,7 +168,7 @@ def init_db():
       page_count INTEGER DEFAULT 0,
       duration_seconds INTEGER DEFAULT 0,
        position INTEGER NOT NULL DEFAULT 0,
-       updated_at TEXT DEFAULT (datetime('now')),
+       updated_at TEXT DEFAULT '',
        FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS course_progress (
