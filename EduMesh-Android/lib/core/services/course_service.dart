@@ -415,6 +415,8 @@ class CourseService extends ChangeNotifier {
           whereArgs: [studentId, courseId]);
       await db.delete('course_resources',
           where: 'course_id = ?', whereArgs: [courseId]);
+      await db.delete('course_topics',
+          where: 'course_id = ?', whereArgs: [courseId]);
       _enrolledCourses.removeWhere((e) => e.course.id == courseId);
       notifyListeners();
       return true;
