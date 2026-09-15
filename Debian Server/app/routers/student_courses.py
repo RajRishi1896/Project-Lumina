@@ -95,7 +95,7 @@ async def list_courses(  # noqa: PLR0913
     total = count_row[0] if count_row else 0
 
     rows = await db_fetch(
-        f"SELECT id, title, description, subject, grade, language, cover_image, published, teacher_username, enrollment_count, created_at, updated_at FROM courses{where_clause} ORDER BY created_at DESC LIMIT ? OFFSET ?",
+        f"SELECT id, title, description, subject, grade, language, cover_image, published, version, teacher_username, enrollment_count, created_at, updated_at FROM courses{where_clause} ORDER BY created_at DESC LIMIT ? OFFSET ?",
         tuple(params) + (per_page, offset)
     )
 
@@ -110,6 +110,7 @@ async def list_courses(  # noqa: PLR0913
             "language": r["language"] or "en",
             "cover_image": r["cover_image"] or "",
             "published": r["published"],
+            "version": r["version"] if r["version"] is not None else 1,
             "teacher_username": r["teacher_username"] or "",
             "enrollment_count": r["enrollment_count"] or 0,
             "created_at": r["created_at"] or "",
@@ -125,22 +126,29 @@ async def list_courses(  # noqa: PLR0913
             tags=["Courses"],
             responses={401: {"description": "Unauthorized"}, 404: {"description": "Course not found"}})
 async def get_course_detail(course_id: str, student_id: str = Depends(verify_student)):
-    """Get course detail including resources, similar courses, and enrollment status.
+    """Get course detail including resources, topics, similar courses, and enrollment status.
 
     Args:
         course_id: UUID of the course.
 
     Returns:
-        Course detail with resources, similar_courses, is_enrolled, and progress.
+        Course detail with version, topics (id/title/position/unlock_mode),
+        resources (each with topic_id/updated_at, plus quiz_version on quiz
+        rows), similar_courses, is_enrolled, and progress.
     Raises:
         HTTPException 404: If course not found.
     """
-    row = await db_fetch_one("SELECT id, title, description, subject, grade, language, cover_image, published, teacher_username, enrollment_count, created_at, updated_at FROM courses WHERE id = ? AND published = 1", (course_id,))
+    row = await db_fetch_one("SELECT id, title, description, subject, grade, language, cover_image, published, version, teacher_username, enrollment_count, created_at, updated_at FROM courses WHERE id = ? AND published = 1", (course_id,))
     if not row:
         raise HTTPException(status_code=404, detail="Course not found.")  # i18n: user-facing error message
 
     resources = await db_fetch(
-        "SELECT id, course_id, resource_type, title, original_name, filename, file_size, position, page_count, duration_seconds FROM course_resources WHERE course_id = ? ORDER BY position",
+        "SELECT id, course_id, resource_type, title, original_name, filename, file_size, position, page_count, duration_seconds, topic_id, updated_at FROM course_resources WHERE course_id = ? ORDER BY position",
+        (course_id,)
+    )
+
+    topics = await db_fetch(
+        "SELECT id, title, position, unlock_mode FROM topics WHERE course_id = ? ORDER BY position",
         (course_id,)
     )
 
@@ -166,6 +174,42 @@ async def get_course_detail(course_id: str, student_id: str = Depends(verify_stu
             "enrolled_at": progress_row["enrolled_at"],
         }
 
+    quiz_ids = [r["id"] for r in resources if r["resource_type"] == "quiz"]
+
+    def _quiz_versions():
+        """Read every quiz JSON version in one worker-thread call (default 1)."""
+        out = {}
+        for rid in quiz_ids:
+            try:
+                with open(os.path.join(COURSES_DIR, course_id, f"quiz_{rid}.json"), "r", encoding="utf-8") as f:
+                    quiz_data = json.load(f)
+                out[rid] = quiz_data.get("quiz", quiz_data).get("quiz_version", 1)
+            except (OSError, ValueError, AttributeError):
+                out[rid] = 1
+        return out
+
+    versions = await asyncio.to_thread(_quiz_versions) if quiz_ids else {}
+
+    resource_items = []
+    for r in resources:
+        item = {
+            "id": r["id"],
+            "course_id": r["course_id"],
+            "resource_type": r["resource_type"],
+            "title": r["title"] or "",
+            "original_name": r["original_name"] or "",
+            "filename": r["filename"] or "",
+            "file_size": r["file_size"] or 0,
+            "position": r["position"],
+            "page_count": r["page_count"] or 0,
+            "duration_seconds": r["duration_seconds"] or 0,
+            "topic_id": r["topic_id"] or "",
+            "updated_at": r["updated_at"] or "",
+        }
+        if r["resource_type"] == "quiz":
+            item["quiz_version"] = versions.get(r["id"], 1)
+        resource_items.append(item)
+
     return {
         "id": row["id"],
         "title": row["title"],
@@ -175,25 +219,21 @@ async def get_course_detail(course_id: str, student_id: str = Depends(verify_stu
         "language": row["language"] or "en",
         "cover_image": row["cover_image"] or "",
         "published": row["published"],
+        "version": row["version"] if row["version"] is not None else 1,
         "teacher_username": row["teacher_username"] or "",
         "enrollment_count": row["enrollment_count"] or 0,
         "created_at": row["created_at"] or "",
         "updated_at": row["updated_at"] or "",
-        "resources": [
+        "topics": [
             {
-                "id": r["id"],
-                "course_id": r["course_id"],
-                "resource_type": r["resource_type"],
-                "title": r["title"] or "",
-                "original_name": r["original_name"] or "",
-                "filename": r["filename"] or "",
-                "file_size": r["file_size"] or 0,
-                "position": r["position"],
-                "page_count": r["page_count"] or 0,
-                "duration_seconds": r["duration_seconds"] or 0,
+                "id": t["id"],
+                "title": t["title"] or "",
+                "position": t["position"],
+                "unlock_mode": t["unlock_mode"] or "all",
             }
-            for r in resources
+            for t in topics
         ],
+        "resources": resource_items,
         "similar_courses": [
             {
                 "course_id": similar_course_id,
@@ -248,6 +288,39 @@ async def enroll_course(course_id: str, student_id: str = Depends(verify_student
                 resource_id=course_id, resource_name=course['title'])
 
     return EnrollResponse(status="ok", course_id=course_id, message="Successfully enrolled.")  # i18n: user-facing success message
+
+
+@router.delete("/api/courses/{course_id}/enroll", response_model=dict,
+             summary="Unenroll from a course",
+             description="Deletes the caller's enrollment row and decrements the course enrollment count (floor 0). Returns 404 when not enrolled.",
+             tags=["Courses"],
+             responses={404: {"description": "Not enrolled in this course"}})
+async def unenroll_course(course_id: str, student_id: str = Depends(verify_student)):
+    """Unenroll the current student from a course.
+
+    Deletes only the caller's ``course_progress`` enrollment row and
+    decrements ``courses.enrollment_count`` (floored at 0). Quiz attempts
+    and best-score rows for the course are keyed history: they are left
+    intact, since only the enrollment row gates access.
+
+    Args:
+        course_id: UUID of the course.
+
+    Returns:
+        Dict with status and course_id.
+
+    Raises:
+        HTTPException 404: If the student is not enrolled in this course.
+    """
+    existing = await db_fetch_one("SELECT 1 FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not enrolled in this course.")  # i18n: user-facing error message
+    await db_exec("DELETE FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
+    await db_exec("UPDATE courses SET enrollment_count = MAX(0, enrollment_count - 1) WHERE id = ?", (course_id,))
+    course = await db_fetch_one("SELECT title FROM courses WHERE id = ?", (course_id,))
+    await audit(action=Action.UNENROLL_COURSE, username=student_id, resource_type="course",
+                resource_id=course_id, resource_name=course["title"] if course else course_id)
+    return {"status": "ok", "course_id": course_id}
 
 
 @router.put("/api/courses/{course_id}/progress", response_model=dict,

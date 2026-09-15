@@ -6,6 +6,7 @@ import os
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from app.database import gen_uid
 from app.async_db import db_exec, db_exec_many, db_fetch, db_fetch_one
+from app.course_meta import bump_course_version, normalize_unlock_mode
 from app.dependencies import verify_teacher
 from app.routers.teacher_courses import _ensure_course_exists
 from app.audit import audit, Action
@@ -15,7 +16,7 @@ router = APIRouter()
 
 @router.post("/api/teacher/courses/{course_id}/topics",
              summary="Create a topic (chapter)", tags=["Teacher Courses"],
-             description="Creates a new topic within a course and assigns the next position index.",
+             description="Creates a new topic within a course and assigns the next position index. Accepts an optional unlock_mode ('all' or 'sequential', default 'all').",
              response_model=dict,
              responses={201: {"description": "Topic created"}, 400: {"description": "Title required"}, 404: {"description": "Course not found"}})
 async def create_topic(course_id: str, data: dict, teacher_user: str = Depends(verify_teacher), request: Request = None):
@@ -36,8 +37,9 @@ async def create_topic(course_id: str, data: dict, teacher_user: str = Depends(v
     topic_id = gen_uid("TPC")
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     await db_exec(
-        "INSERT INTO topics (id, course_id, title, description, position, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-        (topic_id, course_id, title, data.get("description", ""), next_pos, now))
+        "INSERT INTO topics (id, course_id, title, description, position, unlock_mode, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (topic_id, course_id, title, data.get("description", ""), next_pos, normalize_unlock_mode(data.get("unlock_mode")), now))
+    await bump_course_version(course_id)
     await audit(action=Action.CREATE_TOPIC, username=teacher_user, resource_type="topic",
                 resource_id=topic_id, resource_name=title, context={"course_id": course_id})
     row = await db_fetch_one("SELECT * FROM topics WHERE id = ?", (topic_id,))
@@ -59,11 +61,11 @@ async def list_topics(course_id: str, teacher_user: str = Depends(verify_teacher
 
 @router.put("/api/teacher/courses/{course_id}/topics/{topic_id}",
             summary="Update a topic", tags=["Teacher Courses"],
-            description="Updates a topic's title and description.",
+            description="Updates a topic's title, description, and unlock_mode ('all' or 'sequential').",
             response_model=dict,
             responses={200: {"description": "Topic updated"}, 400: {"description": "Title required"}, 404: {"description": "Topic or course not found"}})
 async def update_topic(course_id: str, topic_id: str, data: dict, teacher_user: str = Depends(verify_teacher), request: Request = None):
-    """Update a topic's title and description.
+    """Update a topic's title, description, and optionally its unlock_mode.
 
     Raises:
         HTTPException: 400 if title empty, 404 if topic not found.
@@ -75,8 +77,13 @@ async def update_topic(course_id: str, topic_id: str, data: dict, teacher_user: 
     title = (data.get("title") or "").strip()
     if not title:
         raise HTTPException(status_code=400, detail="Topic title is required.")  # i18n: user-facing error message
-    await db_exec("UPDATE topics SET title = ?, description = ? WHERE id = ?",
-                  (title, data.get("description", ""), topic_id))
+    if "unlock_mode" in data:
+        await db_exec("UPDATE topics SET title = ?, description = ?, unlock_mode = ? WHERE id = ?",
+                      (title, data.get("description", ""), normalize_unlock_mode(data.get("unlock_mode")), topic_id))
+    else:
+        await db_exec("UPDATE topics SET title = ?, description = ? WHERE id = ?",
+                      (title, data.get("description", ""), topic_id))
+    await bump_course_version(course_id)
     await audit(action=Action.UPDATE_TOPIC, username=teacher_user, resource_type="topic",
                 resource_id=topic_id, resource_name=title, context={"course_id": course_id})
     updated = await db_fetch_one("SELECT * FROM topics WHERE id = ?", (topic_id,))
@@ -111,6 +118,7 @@ async def delete_topic(course_id: str, topic_id: str,  # noqa: PLR0913
             raise HTTPException(status_code=404, detail="Transfer target topic not found.")  # i18n: user-facing error message
         await db_exec("UPDATE course_resources SET topic_id = ? WHERE topic_id = ?", (transfer_to, topic_id))
         await db_exec("DELETE FROM topics WHERE id = ?", (topic_id,))
+        await bump_course_version(course_id)
         await audit(action=Action.DELETE_TOPIC, username=teacher_user, resource_type="topic",
                     resource_id=topic_id, context={"course_id": course_id, "transferred_to": target["title"]})
         return {"status": "ok", "message": f"Topic deleted. Resources transferred to '{target['title']}'.",
@@ -132,12 +140,14 @@ async def delete_topic(course_id: str, topic_id: str,  # noqa: PLR0913
         count = len(resources)
         await db_exec("DELETE FROM course_resources WHERE topic_id = ?", (topic_id,))
         await db_exec("DELETE FROM topics WHERE id = ?", (topic_id,))
+        await bump_course_version(course_id)
         await audit(action=Action.DELETE_TOPIC, username=teacher_user, resource_type="topic",
                     resource_id=topic_id, context={"course_id": course_id, "deleted_resources": count})
         return {"status": "ok", "message": f"Topic and {count} resources deleted."}  # i18n: user-facing success message
     else:
         await db_exec("UPDATE course_resources SET topic_id = '' WHERE topic_id = ?", (topic_id,))
         await db_exec("DELETE FROM topics WHERE id = ?", (topic_id,))
+        await bump_course_version(course_id)
         await audit(action=Action.DELETE_TOPIC, username=teacher_user, resource_type="topic",
                     resource_id=topic_id, context={"course_id": course_id})
         return {"status": "ok", "message": "Topic deleted. Resources moved to ungrouped."}  # i18n: user-facing success message
@@ -161,6 +171,7 @@ async def reorder_topics(course_id: str, data: dict, teacher_user: str = Depends
     await db_exec_many(
         "UPDATE topics SET position = ? WHERE id = ? AND course_id = ?",
         [(i, tid, course_id) for i, tid in enumerate(topic_ids)])
+    await bump_course_version(course_id)
     await audit(action=Action.UPDATE_TOPIC, username=teacher_user, resource_type="topic",
                 resource_name="reorder", context={"course_id": course_id, "count": len(topic_ids)})
     return {"status": "ok", "message": f"Reordered {len(topic_ids)} topics."}  # i18n: user-facing success message
@@ -189,7 +200,8 @@ async def assign_resource_topic(course_id: str, resource_id: str, data: dict, te
         tpc = await db_fetch_one("SELECT id FROM topics WHERE id = ? AND course_id = ?", (topic_id, course_id))
         if not tpc:
             raise HTTPException(status_code=404, detail="Topic not found.")  # i18n: user-facing error message
-    await db_exec("UPDATE course_resources SET topic_id = ? WHERE id = ?", (topic_id, resource_id))
+    await db_exec("UPDATE course_resources SET topic_id = ?, updated_at = datetime('now') WHERE id = ?", (topic_id, resource_id))
+    await bump_course_version(course_id)
     return {"status": "ok", "message": "Resource assigned to topic."}  # i18n: user-facing success message
 
 
@@ -209,8 +221,9 @@ async def reorder_topic_resources(course_id: str, data: dict, teacher_user: str 
     if not resource_ids:
         raise HTTPException(status_code=400, detail="resource_ids list is required.")  # i18n: user-facing error message
     await db_exec_many(
-        "UPDATE course_resources SET position = ? WHERE id = ? AND course_id = ?",
+        "UPDATE course_resources SET position = ?, updated_at = datetime('now') WHERE id = ? AND course_id = ?",
         [(i, rid, course_id) for i, rid in enumerate(resource_ids)])
+    await bump_course_version(course_id)
     await audit(action=Action.UPDATE_TOPIC, username=teacher_user, resource_type="topic",
                 resource_name="reorder-resources", context={"course_id": course_id, "count": len(resource_ids)})
     return {"status": "ok", "message": f"Reordered {len(resource_ids)} resources."}  # i18n: user-facing success message

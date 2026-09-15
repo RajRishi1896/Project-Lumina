@@ -14,6 +14,7 @@ from fastapi.responses import StreamingResponse
 from app.database import DB_PATH, gen_composite_uid
 from app.audit import audit, Action
 from app.async_db import db_fetch, db_fetch_one
+from app.course_meta import bump_course_version
 from app.dependencies import verify_teacher
 from app.routers.resources import ALLOWED_EXTENSIONS
 from app.routers.teacher_courses import (
@@ -135,8 +136,8 @@ def _extract_into_course(conn_sql, zf, course_id, next_pos,  # noqa: PLR0913
             topic_fk = old_to_new_topic.get(res_topic_map.get(orig, ""), "")
             conn_sql.execute(
                 """INSERT INTO course_resources
-                   (id, course_id, resource_type, title, original_name, filename, file_size, position, topic_id)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   (id, course_id, resource_type, title, original_name, filename, file_size, position, topic_id, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))""",
                 (rid, course_id, rtype, orig, orig, saved_name, fsize, next_pos, topic_fk)
             )
             next_pos += 1
@@ -181,11 +182,12 @@ async def upload_course_resource(  # noqa: PLR0913
 
     from app.async_db import db_exec
     await db_exec(
-        """INSERT INTO course_resources (id, course_id, resource_type, title, original_name, filename, file_size, position, topic_id)
-           SELECT ?, ?, ?, ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1, ?
+        """INSERT INTO course_resources (id, course_id, resource_type, title, original_name, filename, file_size, position, topic_id, updated_at)
+           SELECT ?, ?, ?, ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1, ?, datetime('now')
            FROM course_resources WHERE course_id = ?""",
         (resource_id, course_id, resource_type, disp_title, original_name, saved_name, total_size, topic_id, course_id)
     )
+    await bump_course_version(course_id)
     await audit(action=Action.UPLOAD_COURSE_RESOURCE, username=teacher_user, resource_type="course_resource",
                 resource_id=resource_id, resource_name=disp_title,
                 context={"course_id": course_id, "file_size": total_size})
@@ -275,6 +277,7 @@ async def upload_course_zip(
         result = await asyncio.to_thread(_process)
     except _ZipError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+    await bump_course_version(course_id)
     await audit(action=Action.IMPORT_ZIP, username=teacher_user, resource_type="course",
                 resource_id=course_id,
                 context={"resources_created": result['resources_created'],

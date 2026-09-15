@@ -7,6 +7,7 @@ from app.database import UPLOAD_DIR, gen_composite_uid
 from app.audit import audit, Action
 from app.async_db import db_exec, db_fetch, db_fetch_one, db_run
 from app.course_cover import save_course_cover
+from app.course_meta import bump_course_version
 from app.dependencies import verify_teacher
 from app.models import CourseCreate
 
@@ -21,6 +22,7 @@ def _course_to_response(row) -> dict:
         "id": row["id"], "title": row["title"], "description": row["description"],
         "subject": row["subject"], "grade": row["grade"], "language": row["language"],
         "cover_image": row["cover_image"], "published": row["published"],
+        "version": row["version"] if "version" in row.keys() and row["version"] is not None else 1,
         "teacher_username": row["teacher_username"], "enrollment_count": row["enrollment_count"],
         "resource_count": row["resource_count"] if "resource_count" in row.keys() else 0,
         "created_at": row["created_at"], "updated_at": row["updated_at"],
@@ -268,6 +270,7 @@ async def update_course(course_id: str, data: CourseCreate, teacher_user: str = 
     cover_rel = await save_course_cover(COURSES_DIR, course_id, data.cover_image)
     if cover_rel is not None:
         await db_exec("UPDATE courses SET cover_image = ? WHERE id = ?", (cover_rel, course_id))
+        await bump_course_version(course_id)
     if data.status in ("draft", "published"):
         new_val = 0 if data.status == "draft" else 1
         await db_exec(

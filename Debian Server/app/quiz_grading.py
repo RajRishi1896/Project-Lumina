@@ -126,6 +126,38 @@ def find_missing_answer_keys(questions) -> list:
     return missing
 
 
+def describe_missing_answer_keys(questions, missing=None) -> str:
+    """Build a teacher-facing 400 detail naming each answerless question.
+
+    Names every offender as ``Q<n> "<truncated text>"`` with 1-based
+    numbering and up to ~60 chars of question text (from ``question`` or
+    ``text``). Question text is teacher-authored: truncated server-side
+    so the error never echoes an unbounded payload. Pure helper (no HTTP
+    imports): routers raise it as a 400 detail.
+
+    Args:
+        questions: Quiz question dicts as submitted for creation.
+        missing: 0-based offender indexes (recomputed when omitted).
+
+    Returns:
+        Detail string naming each offender, or "" when none are missing.
+    """
+    if missing is None:
+        missing = find_missing_answer_keys(questions)
+    if not missing:
+        return ""
+    # ponytail: O(n) scan over the offender list; n is a quiz, not a dataset.
+    parts = []
+    for i in missing:
+        q = (questions or [])[i] if isinstance((questions or []), list) and 0 <= i < len(questions or []) else None
+        raw = q.get("question", q.get("text", "")) if isinstance(q, dict) else ""
+        text = " ".join(str(raw).split())
+        if len(text) > 60:
+            text = text[:57] + "..."
+        parts.append(f'Q{i + 1} "{text}"' if text else f"Q{i + 1}")
+    return "Questions with no correct answer set: " + ", ".join(parts) + "."
+
+
 def _parse_answers(raw: str) -> dict:
     """Parse answers_json into {question_id_or_index: entry}.
 

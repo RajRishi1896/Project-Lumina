@@ -127,6 +127,16 @@ def init_db():
         c.execute('ALTER TABLE subject_minutes ADD COLUMN seconds INTEGER DEFAULT 0')
     except Exception:
         pass
+    # ponytail: one guarded ALTER per new column; existing rows take the default
+    for _ddl in (
+        "ALTER TABLE courses ADD COLUMN version INTEGER DEFAULT 1",
+        "ALTER TABLE topics ADD COLUMN unlock_mode TEXT DEFAULT 'all'",
+        "ALTER TABLE course_resources ADD COLUMN updated_at TEXT DEFAULT (datetime('now'))",
+    ):
+        try:
+            c.execute(_ddl)
+        except Exception:
+            pass
     c.execute('CREATE TABLE IF NOT EXISTS refresh_tokens (token TEXT PRIMARY KEY, username TEXT, role TEXT, used INTEGER DEFAULT 0, expires_at TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
     c.execute('CREATE TABLE IF NOT EXISTS persistent_keys (token TEXT PRIMARY KEY, username TEXT, role TEXT, used INTEGER DEFAULT 0, expires_at TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)')
 
@@ -140,8 +150,9 @@ def init_db():
       cover_image TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now')),
-      published INTEGER DEFAULT 0,
-      teacher_username TEXT DEFAULT '',
+       published INTEGER DEFAULT 0,
+       version INTEGER DEFAULT 1,
+       teacher_username TEXT DEFAULT '',
       enrollment_count INTEGER DEFAULT 0,
       subject_id TEXT DEFAULT ''
     )''')
@@ -156,8 +167,9 @@ def init_db():
       file_size INTEGER DEFAULT 0,
       page_count INTEGER DEFAULT 0,
       duration_seconds INTEGER DEFAULT 0,
-      position INTEGER NOT NULL DEFAULT 0,
-      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+       position INTEGER NOT NULL DEFAULT 0,
+       updated_at TEXT DEFAULT (datetime('now')),
+       FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS course_progress (
       student_id TEXT NOT NULL,
@@ -200,8 +212,9 @@ def init_db():
       course_id TEXT NOT NULL,
       title TEXT NOT NULL,
       description TEXT DEFAULT '',
-      position INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now')),
+       position INTEGER NOT NULL DEFAULT 0,
+       unlock_mode TEXT DEFAULT 'all',
+       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS resource_topics (
