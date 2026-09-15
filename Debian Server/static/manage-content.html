@@ -185,6 +185,17 @@
                             <option value="General" data-i18n="content.upload_option_general">General</option>
                         </select>
                     </div>
+                    <div id="quizLanguageRow">
+                        <label class="form-label" data-i18n="courses.editor_language_label" for="quizLanguage">Language</label>
+                        <select id="quizLanguage" class="form-select">
+                            <option value="en">English</option>
+                            <option value="hi">हिन्दी</option>
+                            <option value="kn">ಕನ್ನಡ</option>
+                            <option value="fr">Français</option>
+                            <option value="ta">தமிழ்</option>
+                            <option value="te">తెలుగు</option>
+                        </select>
+                    </div>
                     <div style="grid-column: 1/-1;">
                         <label class="form-label" data-i18n="content.upload_label_topic">Chapter / Topic</label>
                         <select id="topicSelect" class="form-select">
@@ -558,6 +569,7 @@
             document.getElementById('title').value = '';
             document.getElementById('file').value = '';
             document.getElementById('type').value = 'textbook';
+            document.getElementById('quizLanguage').value = 'en';
             document.getElementById('uploadNotif').style.display = 'none';
             document.getElementById('uploadResourceModal').classList.remove('hidden');
             document.getElementById('title').focus();
@@ -1056,9 +1068,13 @@
                 quizWrap.style.display = 'none';
             }
 
-            if (topicRow) topicRow.style.display = (type === 'kiwix' || type === 'quiz') ? 'none' : '';
+            if (topicRow) topicRow.style.display = (type === 'kiwix') ? 'none' : '';
 
-            const disableGradeSub = (type === 'kiwix' || type === 'quiz');
+            const langRow = document.getElementById('quizLanguageRow');
+            if (langRow) langRow.style.display = (type === 'quiz') ? '' : 'none';
+
+            // Only kiwix archives force General grade/subject; quizzes keep their quiz-level choice.
+            const disableGradeSub = (type === 'kiwix');
             grade.disabled = disableGradeSub;
             if (gradeParent) gradeParent.style.opacity = disableGradeSub ? '0.5' : '';
             sub.disabled = disableGradeSub;
@@ -1308,7 +1324,7 @@
                 title: title,
                 subject: subject,
                 grade: grade,
-                language: 'en',
+                language: document.getElementById('quizLanguage')?.value || 'en',
                 topic_id: topicId,
                 max_attempts: document.getElementById('quizMaxAttempts').value === 'custom'
                     ? (parseInt(document.getElementById('quizMaxAttemptsCustom').value) || 3)
@@ -1384,7 +1400,7 @@
 
             document.getElementById('subjectSelect')?.addEventListener('change', function() {
                 const type = document.getElementById('type')?.value;
-                if (type !== 'kiwix' && type !== 'quiz') loadTopicsForSubject();
+                if (type !== 'kiwix') loadTopicsForSubject();
             });
 
             // Quiz builder events

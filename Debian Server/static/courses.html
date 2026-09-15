@@ -9,6 +9,11 @@
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
 <link rel="stylesheet" href="/static/css/lumina.css?v=25">
+<style>
+/* Cover preview: constrain huge uploads to a 16/9 frame. */
+#coverPreview{max-width:100%;aspect-ratio:16/9;}
+#coverPreview img{width:100%;height:100%;object-fit:cover;}
+</style>
 
 
 </head>
@@ -156,6 +161,8 @@
                             <option value="hi">हिन्दी</option>
                             <option value="kn">ಕನ್ನಡ</option>
                             <option value="fr">Français</option>
+                            <option value="ta">தமிழ்</option>
+                            <option value="te">తెలుగు</option>
                         </select>
                     </div>
                 </div>
@@ -249,6 +256,30 @@
                         <tr><td colspan="5" class="empty-state" data-i18n="courses.resources_empty">No resources added yet.</td></tr>
                     </tbody>
                 </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Add Resource Modal -->
+        <div id="addResourceModal" class="hidden popup modal-overlay">
+            <div class="modal creation">
+                <h3 class="modal-title creation" style="margin-bottom:1.25rem;" data-i18n="courses.add_resource">Add Resource</h3>
+                <div class="form-group">
+                    <label class="form-label" for="addResTitle" data-i18n="content.upload_label_title">Title</label>
+                    <input type="text" id="addResTitle" maxlength="120" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="addResFile" data-i18n="content.upload_label_file">File</label>
+                    <input type="file" id="addResFile" accept=".pdf,.mp4,.webm,.png,.jpg,.jpeg,.gif,.doc,.docx,.pptx,.xlsx,.zip" class="form-input">
+                    <div id="addResTypeGuess" class="text-xs text-muted mt-1" style="min-height:1rem;"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="addResChapter" data-i18n="content.upload_label_topic">Chapter / Topic</label>
+                    <select id="addResChapter" class="form-select"></select>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-cancelAddResource" class="btn btn-outline" data-i18n="content.modal_cancel">Cancel</button>
+                    <button id="btn-confirmAddResource" class="btn btn-primary"><span data-i18n="courses.add_resource">Add Resource</span></button>
                 </div>
             </div>
         </div>
@@ -425,6 +456,9 @@
         let courses = [];
         let subjects = [];
         let currentCourseId = null;
+        // True after Remove is clicked until a new cover is chosen or a
+        // course is (re)loaded: lets the save paths persist the removal.
+        let coverRemoved = false;
         const similarCourses = [];
         let courseResources = [];
         let linkedCourseIds = [];
@@ -579,11 +613,15 @@
             courseTopics = course.topics || [];
             renderCourseResources();
             renderTopics();
-            if (course.cover_url) {
+            if (course.cover_image) {
+                // Server stores a path relative to /files (or echoes back a
+                // data: URL on create); preview either form.
+                const src = course.cover_image.indexOf('data:') === 0 ? course.cover_image : '/files/' + course.cover_image;
                 const cp = document.getElementById('coverPreview');
-                cp.innerHTML = '<img src="' + esc(course.cover_url) + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
+                cp.innerHTML = '<img src="' + esc(src) + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
                 document.getElementById('btn-removeCover').style.display = '';
             }
+            coverRemoved = false;
         }
 
         /** Reset editor form */
@@ -604,6 +642,8 @@
             document.getElementById('coverPreview').innerHTML = '<span style="font-size:0.75rem;color:var(--text-muted);">' + __('courses.cover_empty') + '</span>';
             document.getElementById('btn-removeCover').style.display = 'none';
             document.getElementById('coverInput').value = '';
+            coverRemoved = false;
+            updatePublishGate();
         }
 
         /** Go back to course list */
@@ -769,17 +809,29 @@
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }
 
+        /** Disable Publish while the course has zero resources; re-evaluated after every resource change. */
+        function updatePublishGate() {
+            const btn = document.getElementById('btn-publish');
+            if (!btn) return;
+            const empty = courseResources.length === 0;
+            btn.disabled = empty;
+            if (empty) btn.setAttribute('title', __('courses.publish_needs_resources'));
+            else btn.removeAttribute('title');
+        }
+
         /** Render course resource table */
         function renderCourseResources() {
             const tbody = document.getElementById('courseResourceTable');
+            updatePublishGate();
             if (!courseResources.length) {
                 tbody.innerHTML = '<tr><td colspan="6" class="empty-state">' + __('courses.resources_empty') + '</td></tr>';
                 return;
             }
             tbody.innerHTML = courseResources.map(function(r, i) {
                 let typeIcon = '';
-                if (r.resource_type === 'quiz') typeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-                else if (r.resource_type === 'video') typeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect width="15" height="14" x="1" y="5" rx="2" ry="2"/></svg>';
+                const rtype = r.resource_type || r.type || '';
+                if (rtype === 'quiz') typeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+                else if (rtype === 'video') typeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect width="15" height="14" x="1" y="5" rx="2" ry="2"/></svg>';
                 else typeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>';
                 const sizeStr = r.file_size ? formatFileSize(r.file_size) : '-';
                 const topicOpts = '<option value="">--</option>' + courseTopics.map(function(t) {
@@ -788,8 +840,8 @@
                 return '<tr draggable="true" data-resource-index="' + i + '">' +
                     '<td style="cursor:grab;text-align:center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></td>' +
                     '<td data-label="' + __('courses.resource_th_title') + '">' + esc(r.title) + '</td>' +
-                    '<td data-label="' + __('courses.resource_th_type') + '"><span style="display:inline-flex;align-items:center;gap:0.25rem;">' + typeIcon + ' ' + esc(r.resource_type) + '</span></td>' +
-                    '<td data-label="' + __('courses.chapter_th_chapter') + '"><select class="js-assign-topic" data-resource-id="' + r.id + '" style="font-size:0.75rem;padding:0.2rem;border:1px solid var(--outline);border-radius:4px;background:var(--surface);color:var(--on-surface);">' + topicOpts + '</select></td>' +
+                    '<td data-label="' + __('courses.resource_th_type') + '"><span style="display:inline-flex;align-items:center;gap:0.25rem;">' + typeIcon + ' ' + esc(rtype) + '</span></td>' +
+                    '<td data-label="' + __('courses.chapter_th_chapter') + '"><select class="js-assign-topic" data-resource-id="' + r.id + '" data-resource-index="' + i + '" style="font-size:0.75rem;padding:0.2rem;border:1px solid var(--outline);border-radius:4px;background:var(--surface);color:var(--on-surface);">' + topicOpts + '</select></td>' +
                     '<td data-label="' + __('courses.resource_th_size') + '">' + sizeStr + '</td>' +
                     '<td data-label="' + __('courses.resource_th_actions') + '" style="text-align:right;">' +
                     '<button class="btn btn-outline js-remove-resource" data-resource-index="' + i + '" style="padding:0.3rem 0.5rem;font-size:0.75rem;color:var(--danger);border-color:var(--danger);">' + __('courses.remove') + '</button>' +
@@ -1269,53 +1321,149 @@
             e.target.value = '';
         }
 
-        // ── Resource file picker ──
+        // ── Add-resource modal ──
         /**
-         * Open a native file picker and append the chosen file to
-         * courseResources with its type guessed from the extension.
-         * The file object rides along as _file for the upload in importCourseZip.
+         * Guess a staged resource type from the file extension.
+         * Same buckets as the old native picker: video/image/archive/document.
          */
-        function addResourceFile() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.pdf,.mp4,.webm,.png,.jpg,.jpeg,.gif,.doc,.docx,.pptx,.xlsx,.zip';
-            input.onchange = function() {
-                const file = input.files[0];
-                if (!file) return;
-                const title = file.name.replace(/\.[^/.]+$/, '');
-                const ext = file.name.split('.').pop().toLowerCase();
-                let type = 'document';
-                if (['mp4', 'webm'].indexOf(ext) !== -1) type = 'video';
-                else if (['png', 'jpg', 'jpeg', 'gif'].indexOf(ext) !== -1) type = 'image';
-                else if (['zip'].indexOf(ext) !== -1) type = 'archive';
-                courseResources.push({ title: title, type: type, file_name: file.name, file_size: file.size, _file: file });
-                renderCourseResources();
-            };
-            input.click();
+        function guessResourceType(name) {
+            const ext = (name.split('.').pop() || '').toLowerCase();
+            if (['mp4', 'webm'].indexOf(ext) !== -1) return 'video';
+            if (['png', 'jpg', 'jpeg', 'gif'].indexOf(ext) !== -1) return 'image';
+            if (['zip'].indexOf(ext) !== -1) return 'archive';
+            return 'document';
+        }
+
+        /** Fill the modal chapter select from the course-topics endpoint, plus a 'No chapter' option. */
+        async function loadAddResChapters() {
+            const sel = document.getElementById('addResChapter');
+            let topics = courseTopics;
+            if (currentCourseId) {
+                try {
+                    const res = await fetch('/api/teacher/courses/' + currentCourseId + '/topics', { credentials: 'include' });
+                    if (res.ok) { topics = await res.json(); courseTopics = topics; renderTopics(); }
+                } catch (e) {}
+            }
+            sel.innerHTML = '<option value="">' + __('courses.add_resource_no_chapter') + '</option>' +
+                topics.map(function(t) { return '<option value="' + t.id + '">' + esc(t.title) + '</option>'; }).join('');
+        }
+
+        /** Open the Add Resource modal with cleared fields and fresh chapter options. */
+        function openAddResourceModal() {
+            document.getElementById('addResTitle').value = '';
+            document.getElementById('addResFile').value = '';
+            document.getElementById('addResTypeGuess').textContent = '';
+            loadAddResChapters();
+            document.getElementById('addResourceModal').classList.remove('hidden');
+        }
+
+        /** Hide the Add Resource modal. */
+        function closeAddResourceModal() {
+            document.getElementById('addResourceModal').classList.add('hidden');
+        }
+
+        /** On file choice: prefill the title when empty and show the guessed type label. */
+        function onAddResFileChange() {
+            const file = document.getElementById('addResFile').files[0];
+            const guessEl = document.getElementById('addResTypeGuess');
+            if (!file) { guessEl.textContent = ''; return; }
+            if (!document.getElementById('addResTitle').value.trim()) {
+                document.getElementById('addResTitle').value = file.name.replace(/\.[^/.]+$/, '');
+            }
+            guessEl.textContent = __('courses.add_resource_type_guess', {type: guessResourceType(file.name)});
+        }
+
+        /**
+         * Stage the chosen file client-side: push with its _file handle into
+         * the resource table. The chapter choice rides along as topic_id and
+         * applies through the existing per-row chapter assignment path.
+         */
+        function confirmAddResource() {
+            const file = document.getElementById('addResFile').files[0];
+            if (!file) { showAlert(__('content.notif.title_required'), true); return; }
+            const title = document.getElementById('addResTitle').value.trim() || file.name.replace(/\.[^/.]+$/, '');
+            const topicId = document.getElementById('addResChapter').value || '';
+            courseResources.push({ title: title, type: guessResourceType(file.name), file_name: file.name, file_size: file.size, topic_id: topicId, _file: file });
+            closeAddResourceModal();
+            renderCourseResources();
         }
 
         // ── Cover image ──
-        /** Show a data-URL preview of the chosen cover image and the remove button. */
+        /**
+         * Preview the chosen cover image, downscaled client-side (max 800px
+         * wide, JPEG ~0.8) so huge uploads don't bloat the DB/payload.
+         * The preview src is a data: URL, which the save paths already send.
+         */
         function onCoverChange() {
             const file = document.getElementById('coverInput').files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
+            const objUrl = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = function() {
+                URL.revokeObjectURL(objUrl);
+                const scale = Math.min(1, 800 / img.naturalWidth);
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+                canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                 const cp = document.getElementById('coverPreview');
-                cp.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
+                cp.innerHTML = '';
+                const preview = document.createElement('img');
+                preview.src = canvas.toDataURL('image/jpeg', 0.8);
+                preview.alt = '';
+                cp.appendChild(preview);
                 document.getElementById('btn-removeCover').style.display = '';
+                coverRemoved = false;
             };
-            reader.readAsDataURL(file);
+            img.src = objUrl;
         }
 
         /** Clear the chosen cover image and restore the empty-state preview. */
         function removeCover() {
             document.getElementById('coverInput').value = '';
+            coverRemoved = true;
             document.getElementById('coverPreview').innerHTML = '<span style="font-size:0.75rem;color:var(--text-muted);">' + __('courses.cover_empty') + '</span>';
             document.getElementById('btn-removeCover').style.display = 'none';
         }
 
         // ── Save Draft / Publish ──
+        /**
+         * Upload staged (_file) rows to the course via upload-resource, one
+         * at a time so position order is stable. Rows already on the server
+         * (quizzes, previously uploaded files) are skipped. Refreshes the
+         * table from the course detail afterwards so staged rows carry real
+         * ids. Resolves always; failures surface via showAlert only.
+         */
+        function uploadStagedFiles(courseId) {
+            const staged = courseResources.filter(function(r) { return r._file; });
+            if (!staged.length) return Promise.resolve();
+            let chain = Promise.resolve();
+            staged.forEach(function(r) {
+                chain = chain.then(function() {
+                    const fd = new FormData();
+                    fd.append('file', r._file);
+                    const url = '/api/teacher/courses/' + courseId + '/upload-resource?resource_type=' +
+                        encodeURIComponent(r.type || r.resource_type || 'document') +
+                        '&title=' + encodeURIComponent(r.title || r._file.name) +
+                        '&topic_id=' + encodeURIComponent(r.topic_id || '');
+                    return fetch(url, { method: 'POST', body: fd, credentials: 'include' }).then(function(res) {
+                        if (res.ok) {
+                            delete r._file;
+                            return res.json().then(function(row) { if (row && row.id) r.id = row.id; }).catch(function() {});
+                        }
+                        showAlert(__('courses.notif.save_failed'), true);
+                    }).catch(function() { showAlert(__('courses.notif.connection_error'), true); });
+                });
+            });
+            return chain.then(function() {
+                return fetch('/api/teacher/courses/' + courseId, { credentials: 'include' }).then(function(res) {
+                    if (res.ok) return res.json().then(function(detail) {
+                        if (detail && detail.resources) { courseResources = detail.resources; renderCourseResources(); }
+                    }).catch(function() {});
+                }).catch(function() {});
+            });
+        }
+
         /**
          * Validate the title and POST/PUT the course with its resources and
          * optional base64 cover image, then return to the course list.
@@ -1327,12 +1475,12 @@
             const payload = {
                 title: title,
                 description: document.getElementById('courseDescription').value.trim(),
-                subject: document.getElementById('courseSubject').value,
+                subject: document.getElementById('courseSubject').value || 'General',
                 grade: document.getElementById('courseGrade').value ? parseInt(document.getElementById('courseGrade').value) : 0,
                 language: document.getElementById('courseLanguage').value,
                 status: status || 'draft',
                 similar_course_ids: linkedCourseIds,
-                resources: courseResources.map(function(r) { return { title: r.title, type: r.type, file_name: r.file_name, file_size: r.file_size }; })
+                resources: courseResources.map(function(r) { return { title: r.title, type: r.type, file_name: r.file_name, file_size: r.file_size, topic_id: r.topic_id || '' }; })
             };
             const coverImg = document.getElementById('coverPreview').querySelector('img');
             if (coverImg && coverImg.src.startsWith('data:')) payload.cover_image = coverImg.src;
@@ -1350,7 +1498,7 @@
                     showAlert(__('courses.notif.saved'), false);
                     return r.json().then(function(data) {
                         currentCourseId = data.id;
-                        backToCourses();
+                        return uploadStagedFiles(currentCourseId).then(function() { backToCourses(); });
                     });
                 } else {
                     return r.json().then(function(e) { showAlert(e.detail || __('courses.notif.save_failed'), true); });
@@ -1374,15 +1522,16 @@
                 const payload = {
                     title: title,
                     description: document.getElementById('courseDescription').value.trim(),
-                    subject: document.getElementById('courseSubject').value,
+                    subject: document.getElementById('courseSubject').value || 'General',
                     grade: document.getElementById('courseGrade').value ? parseInt(document.getElementById('courseGrade').value) : 0,
                     language: document.getElementById('courseLanguage').value,
                     status: status || 'draft',
                     similar_course_ids: linkedCourseIds,
-                    resources: courseResources.map(function(r) { return { title: r.title, type: r.type, file_name: r.file_name, file_size: r.file_size }; })
+                    resources: courseResources.map(function(r) { return { title: r.title, type: r.type, file_name: r.file_name, file_size: r.file_size, topic_id: r.topic_id || '' }; })
                 };
                 const coverImg = document.getElementById('coverPreview').querySelector('img');
                 if (coverImg && coverImg.src.startsWith('data:')) payload.cover_image = coverImg.src;
+                else if (coverRemoved) payload.cover_image = '';
                 const method = currentCourseId ? 'PUT' : 'POST';
                 const url = currentCourseId ? '/api/teacher/courses/' + currentCourseId : '/api/teacher/courses';
                 fetch(url, {
@@ -1392,7 +1541,10 @@
                     credentials: 'include'
                 }).then(function(r) {
                     if (r.ok) {
-                        return r.json().then(function(data) { currentCourseId = data.id; resolve(); });
+                        return r.json().then(function(data) {
+                            currentCourseId = data.id;
+                            return uploadStagedFiles(currentCourseId).then(function() { resolve(); });
+                        });
                     } else { resolve(); }
                 }).catch(function() { resolve(); });
             });
@@ -1401,7 +1553,7 @@
         /** Save then toggle publish */
         async function publishCourse() {
             if (!currentCourseId) {
-                await saveCourse('draft');
+                await saveCourseAsync('draft');
                 if (!currentCourseId) return;
             } else {
                 const title = document.getElementById('courseTitle').value.trim();
@@ -1409,14 +1561,15 @@
                 const payload = {
                     title: title,
                     description: document.getElementById('courseDescription').value.trim(),
-                    subject: document.getElementById('courseSubject').value,
+                    subject: document.getElementById('courseSubject').value || 'General',
                     grade: document.getElementById('courseGrade').value ? parseInt(document.getElementById('courseGrade').value) : 0,
                     language: document.getElementById('courseLanguage').value,
                     similar_course_ids: linkedCourseIds,
-                    resources: courseResources.map(function(r) { return { title: r.title, type: r.type, file_name: r.file_name, file_size: r.file_size }; })
+                    resources: courseResources.map(function(r) { return { title: r.title, type: r.type, file_name: r.file_name, file_size: r.file_size, topic_id: r.topic_id || '' }; })
                 };
                 const coverImg = document.getElementById('coverPreview').querySelector('img');
                 if (coverImg && coverImg.src.startsWith('data:')) payload.cover_image = coverImg.src;
+                else if (coverRemoved) payload.cover_image = '';
                 let r = await fetch('/api/teacher/courses/' + currentCourseId, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -1424,6 +1577,7 @@
                     credentials: 'include'
                 }).catch(function() { return null; });
                 if (!r || !r.ok) { showAlert(__('courses.notif.save_failed'), true); return; }
+                await uploadStagedFiles(currentCourseId);
             }
             const pubRes = await fetch('/api/teacher/courses/' + currentCourseId + '/publish', {
                 method: 'POST',
@@ -1432,6 +1586,13 @@
             if (pubRes && pubRes.ok) {
                 showAlert(__('courses.notif.saved'), false);
                 backToCourses();
+            } else if (pubRes && pubRes.status === 400) {
+                let msg = __('courses.publish_needs_resources');
+                try {
+                    const err = await pubRes.json();
+                    if (err && err.detail) msg = err.detail;
+                } catch (e) {}
+                showAlert(msg, true);
             } else {
                 showAlert(__('courses.notif.save_failed'), true);
             }
@@ -1518,7 +1679,10 @@
             document.getElementById('btn-backToCourses')?.addEventListener('click', backToCourses);
             document.getElementById('btn-saveDraft')?.addEventListener('click', function() { saveCourse('draft'); });
             document.getElementById('btn-publish')?.addEventListener('click', publishCourse);
-            document.getElementById('btn-addResource')?.addEventListener('click', addResourceFile);
+            document.getElementById('btn-addResource')?.addEventListener('click', openAddResourceModal);
+            document.getElementById('addResFile')?.addEventListener('change', onAddResFileChange);
+            document.getElementById('btn-confirmAddResource')?.addEventListener('click', confirmAddResource);
+            document.getElementById('btn-cancelAddResource')?.addEventListener('click', closeAddResourceModal);
             document.getElementById('btn-addQuiz')?.addEventListener('click', openQuizBuilder);
             document.getElementById('btn-exportCourseZip')?.addEventListener('click', async function() {
                 if (!currentCourseId) { await saveCourseAsync('draft'); }
@@ -1646,6 +1810,10 @@
             document.getElementById('courseResourceTable')?.addEventListener('change', function(e) {
                 const sel = e.target.closest('.js-assign-topic');
                 if (sel) {
+                    // Staged rows have no server id yet: keep the chapter
+                    // locally; it uploads with the file on save.
+                    const row = courseResources[parseInt(sel.dataset.resourceIndex)];
+                    if (row && row._file) { row.topic_id = sel.value; renderTopics(); return; }
                     assignResourceTopic(sel.dataset.resourceId, sel.value);
                 }
             });
@@ -1685,6 +1853,7 @@
 
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
+                    if (!document.getElementById('addResourceModal').classList.contains('hidden')) closeAddResourceModal();
                     if (!document.getElementById('quizBuilderModal').classList.contains('hidden')) closeQuizBuilder();
                     if (!document.getElementById('quizPreviewModal').classList.contains('hidden')) closePreview();
                 }
