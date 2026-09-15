@@ -817,7 +817,14 @@
                 const opts = others.map(function(t) {
                     return '<option value="' + esc(t.id) + '">' + esc(t.title) + '</option>';
                 }).join('');
-                xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin:0.5rem 0 0.75rem;">'
+                // Consequence-first body: the message alone never reaches the
+                // modal when a body is supplied, so the body carries it plus
+                // a labelled transfer select.
+                xferHtml = '<div style="text-align:left;">'
+                    + '<p style="color:var(--on-surface);opacity:0.7;font-size:0.875rem;line-height:1.5;margin:0 0 0.75rem;">'
+                    + esc(__('courses.chapter_delete_choose', {count: count})) + '</p>'
+                    + '<label for="chapterXferTarget" style="display:block;font-size:0.75rem;font-weight:700;color:var(--on-surface);opacity:0.7;margin-bottom:0.375rem;">'
+                    + esc(__('courses.chapter_move_label')) + '</label>'
                     + '<select id="chapterXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--bg-input);color:var(--on-surface);font-size:0.875rem;">'
                     + '<option value="">' + __('content.topic_transfer.select_topic') + '</option>' + opts + '</select></div>';
             }
@@ -843,10 +850,18 @@
                     const data = await res.json().catch(function() { return {}; });
                     if (transferTo) {
                         showAlert(data.message || __('danger.transfer.done', {name: '', target: data.transferred_to || ''}), false);
+                        // Server moved its rows; staged (_file) rows move locally.
+                        courseResources.forEach(function(r) { if (r.topic_id === topicId) r.topic_id = transferTo; });
+                    } else {
+                        // Chosen Delete: staged rows go too (their files were never uploaded).
+                        courseResources = courseResources.filter(function(r) { return !(r.topic_id === topicId && r._file); });
+                        courseResources.forEach(function(r) { if (r.topic_id === topicId) r.topic_id = ''; });
                     }
-                    courseResources.forEach(function(r) { if (r.topic_id === topicId) r.topic_id = ''; });
                     await loadTopics();
                     renderCourseResources();
+                } else {
+                    const err = await res.json().catch(function() { return {}; });
+                    showAlert(err.detail || __('courses.notif.save_failed'), true);
                 }
             } catch (e) { showAlert(__('courses.notif.connection_error'), true); }
         }

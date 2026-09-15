@@ -656,12 +656,27 @@
                     const supported = data.supported || ['bg'];
                     if (btn5) btn5.disabled = supported.indexOf('a') === -1;
                     if (btn2) btn2.disabled = supported.indexOf('bg') === -1;
+                    // Highlight the live band: filled primary on active,
+                    // teal outline on idle. data.band is 'a' or 'bg'.
+                    markWifiBandButton(btn5, data.band === 'a');
+                    markWifiBandButton(btn2, data.band === 'bg');
                     if (supported.length <= 1) {
                         const note = document.getElementById('wifiBandNote');
                         if (note) note.style.display = 'block';
                     }
                 }
             } catch (e) { console.error("Error loading WiFi band", e); }
+        }
+
+        /**
+         * Marks a band button active (filled) or idle (outline).
+         * @param {HTMLElement|null} btn - the band button
+         * @param {boolean} active - true when this is the live band
+         */
+        function markWifiBandButton(btn, active) {
+            if (!btn) return;
+            btn.classList.toggle('btn-primary', !!active);
+            btn.classList.toggle('btn-outline', !active);
         }
 
         /**
@@ -681,8 +696,13 @@
                     body: JSON.stringify({band: band})
                 });
                 if (res.ok) {
-                    showNotification('wifiBandNotif', __('settings.wifi_band_rebooting', {band: label}), false);
-                    setTimeout(function() { window.location.reload(); }, 65000);
+                    const data = await res.json().catch(function() { return {}; });
+                    if (data && data.reboot === false) {
+                        showNotification('wifiBandNotif', __('settings.wifi_band_already', {band: label}), false);
+                    } else {
+                        showNotification('wifiBandNotif', __('settings.wifi_band_rebooting', {band: label}), false);
+                        setTimeout(function() { window.location.reload(); }, 65000);
+                    }
                 } else {
                     let err = await res.json();
                     showNotification('wifiBandNotif', err.detail || __('settings.wifi_band_switch_failed'), true);

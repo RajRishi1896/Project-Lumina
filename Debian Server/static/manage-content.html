@@ -842,8 +842,15 @@
                 const opts = others.map(function(t) {
                     return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>';
                 }).join('');
-                xferHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;margin:0.5rem 0 0.75rem;">'
-                    + '<select id="topicXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--surface);color:var(--on-surface);font-size:0.875rem;">'
+                // Consequence-first body: the message alone never reaches the
+                // modal when a body is supplied, so the body carries it plus
+                // a labelled transfer select.
+                xferHtml = '<div style="text-align:left;">'
+                    + '<p style="color:var(--on-surface);opacity:0.7;font-size:0.875rem;line-height:1.5;margin:0 0 0.75rem;">'
+                    + esc(__('content.topics_delete_confirm', {name: name})) + '</p>'
+                    + '<label for="topicXferTarget" style="display:block;font-size:0.75rem;font-weight:700;color:var(--on-surface);opacity:0.7;margin-bottom:0.375rem;">'
+                    + esc(__('content.topic_move_label')) + '</label>'
+                    + '<select id="topicXferTarget" style="width:100%;padding:0.6rem;border:1px solid var(--outline);border-radius:var(--radius-sm);background:var(--bg-input);color:var(--on-surface);font-size:0.875rem;">'
                     + '<option value="">' + __('content.topic_transfer.select_topic') + '</option>' + opts + '</select></div>';
             }
             const confirmed = await showConfirm(__('content.topics_delete_title'), __('content.topics_delete_confirm', {name: name}), true, __('content.confirm_delete_btn'), xferHtml,
@@ -858,25 +865,55 @@
                 }
                 transferTo = targetEl.value;
             }
+            // In-flight guard: a double tap fires two DELETEs; the second
+            // 404s after the first deletes, which used to surface as a
+            // failure banner over an actually-deleted topic.
+            if (deleteTopic._busy) return;
+            deleteTopic._busy = true;
             try {
                 let url = '/teacher/resource-topics/' + encodeURIComponent(id);
                 if (transferTo) url += '?transfer_to=' + encodeURIComponent(transferTo);
                 else url += '?delete_resources=true';
-                const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
-                if (res.ok) {
-                    const data = await res.json().catch(function() { return {}; });
+                // Clear any stale banner: the UI below reconciles against
+                // server truth instead of trusting the status code alone.
+                const notifEl = document.getElementById('topicNotif');
+                if (notifEl) notifEl.style.display = 'none';
+                let ok = false, errDetail = '', data = {};
+                try {
+                    const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+                    if (res.ok) {
+                        ok = true;
+                        data = await res.json().catch(function() { return {}; });
+                    } else {
+                        const err = await res.json().catch(function() { return {}; });
+                        errDetail = (err && err.detail) ? err.detail : '';
+                    }
+                } catch (e) {
+                    showNotification('topicNotif', __('content.notif.network_error'), true);
+                    return;
+                } finally {
+                    deleteTopic._busy = false;
+                }
+                const hadOthers = allTopics.some(function(t) { return t.id !== id; });
+                await loadAllTopics();
+                await loadResources();
+                const gone = !allTopics.some(function(t) { return t.id === id; });
+                // A failed reload empties the list: only trust "gone" when
+                // the call succeeded or surviving siblings prove the reload.
+                const reloadSane = allTopics.length > 0 || !hadOthers;
+                if (gone && (ok || reloadSane)) {
+                    // Server truth: the topic is gone, whatever the status
+                    // code said. Report success so the UI matches reality.
                     if (transferTo) {
                         showNotification('topicNotif', data.message || __('danger.transfer.done', {name: name, target: data.transferred_to || ''}), false);
                     } else {
                         showNotification('topicNotif', __('content.topics_deleted_with_resources', {name: name, count: count}), false);
                     }
-                    loadAllTopics();
-                    loadResources();
-                } else {
-                    const err = await res.json().catch(function() { return {}; });
-                    showNotification('topicNotif', err.detail || __('content.notif.topic_delete_failed'), true);
+                } else if (!ok) {
+                    showNotification('topicNotif', errDetail || __('content.notif.topic_delete_failed'), true);
                 }
             } catch (e) {
+                deleteTopic._busy = false;
                 showNotification('topicNotif', __('content.notif.network_error'), true);
             }
         }
