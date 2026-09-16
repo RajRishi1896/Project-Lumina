@@ -275,20 +275,36 @@ body {
 /* === Bare Table Styles (global table without .table class) === */
 td, th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 td:last-child, th:last-child { overflow: visible; white-space: normal; text-overflow: clip; }
+/* Outline pills mirroring the subject pill in the resource tables:
+   surface background, hairline outline, type-coloured icon + label. */
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    background: var(--surface);
+    border: 1px solid var(--outline);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
 .type-badge svg { flex: none; }
-.type-textbook { background: #DBEAFE; color: #1D4ED8; }
-.type-videos { background: #FEE2E2; color: #DC2626; }
-.type-pyq { background: #FEF3C7; color: #B45309; }
-.type-kiwix { background: #D1FAE5; color: #047857; }
-.type-notes { background: #E0F2FE; color: #0369A1; }
-.type-quiz { background: #EDE9FE; color: #7C3AED; }
-.type-default { background: var(--outline); color: var(--text-muted); }
-[data-theme="dark"] .type-textbook { background: rgba(147,197,253,0.16); color: #93C5FD; }
-[data-theme="dark"] .type-videos { background: rgba(252,165,165,0.16); color: #FCA5A5; }
-[data-theme="dark"] .type-pyq { background: rgba(252,211,77,0.16); color: #FCD34D; }
-[data-theme="dark"] .type-kiwix { background: rgba(110,231,183,0.14); color: #6EE7B7; }
-[data-theme="dark"] .type-notes { background: rgba(125,211,252,0.16); color: #7DD3FC; }
-[data-theme="dark"] .type-quiz { background: rgba(196,181,253,0.16); color: #C4B5FD; }
+.type-textbook { color: #1D4ED8; }
+.type-videos { color: #DC2626; }
+.type-pyq { color: #B45309; }
+.type-kiwix { color: #047857; }
+.type-notes { color: #0369A1; }
+.type-quiz { color: #7C3AED; }
+.type-default { color: var(--text-muted); }
+[data-theme="dark"] .type-textbook { color: #93C5FD; }
+[data-theme="dark"] .type-videos { color: #FCA5A5; }
+[data-theme="dark"] .type-pyq { color: #FCD34D; }
+[data-theme="dark"] .type-kiwix { color: #6EE7B7; }
+[data-theme="dark"] .type-notes { color: #7DD3FC; }
+[data-theme="dark"] .type-quiz { color: #C4B5FD; }
 
 /* === Icon dropdown (resource type picker) === */
 .tdrop { position: relative; }
