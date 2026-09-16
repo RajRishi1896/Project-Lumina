@@ -324,6 +324,18 @@
   "coursePlayerQuiz": "క్విజ్",
   "coursePlayerPastPaper": "పాత పేపర్",
   "coursePlayerTextbook": "పాఠ్యపుస్తకం",
+  "coursePlayerPyq": "PYQ",
+  "coursePlayerNotes": "నోట్స్",
+  "coursePlayerKiwix": "Kiwix",
+  "@coursePlayerPyq": {
+    "description": "Label for previous-year-question course resources in the course player resource list"
+  },
+  "@coursePlayerNotes": {
+    "description": "Label for notes-type course resources in the course player resource list"
+  },
+  "@coursePlayerKiwix": {
+    "description": "Label for Kiwix offline-wiki course resources in the course player resource list. Brand name, identical in all languages."
+  },
   "coursePlayerDownloadPrompt": "ఆఫ్‌లైన్ చదవడానికి అన్ని వనరులను డౌన్‌లోడ్ చేయండి",
   "coursePlayerDownloadButton": "కోర్సును డౌన్‌లోడ్ చేయండి",
   "coursePlayerCompleted": "పూర్తయింది",

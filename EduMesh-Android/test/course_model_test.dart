@@ -28,7 +28,7 @@ void main() {
       });
       expect(r.id, '42'); // ints are stringified via toString
       expect(r.courseId, '7');
-      expect(r.resourceType, CourseType.video);
+      expect(r.resourceType, CourseType.videos); // 'video' is a deprecated alias for videos
       expect(r.title, 'Photosynthesis lecture');
       expect(r.originalName, 'lecture-01.mp4');
       expect(r.filename, 'a3f2e1b0.mp4');
@@ -53,14 +53,25 @@ void main() {
       expect(r.position, 0);
     });
 
-    test('resource_type parsing: case-insensitive, past_paper alias, unknown falls back to textbook', () {
+    test('resource_type parsing: case-insensitive, aliases, pyq/pastPaper distinct', () {
       int typeOf(String raw) => CourseResource.fromJson({'resource_type': raw}).resourceType.index;
       expect(typeOf('TEXTBOOK'), CourseType.textbook.index);
-      expect(typeOf('Video'), CourseType.video.index);
+      expect(typeOf('Video'), CourseType.videos.index);
+      expect(typeOf('videos'), CourseType.videos.index);
+      expect(typeOf('khan'), CourseType.videos.index);
       expect(typeOf('quiz'), CourseType.quiz.index);
+      expect(typeOf('pyq'), CourseType.pyq.index);
+      expect(typeOf('notes'), CourseType.notes.index);
+      expect(typeOf('kiwix'), CourseType.kiwix.index);
       expect(typeOf('past_paper'), CourseType.pastPaper.index);
       expect(typeOf('pastpaper'), CourseType.pastPaper.index);
+      expect(typeOf('document'), CourseType.textbook.index);
+      expect(typeOf('image'), CourseType.textbook.index);
+      expect(typeOf('archive'), CourseType.textbook.index);
       expect(typeOf('mystery'), CourseType.textbook.index);
+      // pyq and pastPaper are DISTINCT values (manage-content maps the
+      // pastPaper badge to PYQ, but the stored types differ).
+      expect(CourseType.pyq.index, isNot(CourseType.pastPaper.index));
     });
 
     test('quiz resources report isQuiz', () {
@@ -240,9 +251,13 @@ void main() {
 
     test('type strings match ResourceType names so icons parse back', () {
       expect(courseDownloadType(CourseType.textbook), 'textbook');
-      expect(courseDownloadType(CourseType.video), 'videos');
+      expect(courseDownloadType(CourseType.videos), 'videos');
+      expect(courseDownloadType(CourseType.video), 'videos'); // deprecated alias
       expect(courseDownloadType(CourseType.quiz), 'quiz');
+      expect(courseDownloadType(CourseType.pyq), 'pyq');
+      expect(courseDownloadType(CourseType.notes), 'notes');
       expect(courseDownloadType(CourseType.pastPaper), 'pastPaper');
+      expect(courseDownloadType(CourseType.kiwix), 'kiwix');
     });
   });
 }

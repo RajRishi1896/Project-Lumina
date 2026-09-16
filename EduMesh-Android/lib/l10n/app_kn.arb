@@ -312,6 +312,9 @@
   "coursePlayerQuiz": "ಕ್ವಿಜ್",
   "coursePlayerPastPaper": "ಹಿಂದಿನ ಪೇಪರ",
   "coursePlayerTextbook": "ಪಠ್ಯಪುಸ್ತಕ",
+  "coursePlayerPyq": "PYQ",
+  "coursePlayerNotes": "ಟಿಪ್ಪಣಿಗಳು",
+  "coursePlayerKiwix": "Kiwix",
   "coursePlayerDownloadPrompt": "ಎಲ್ಲಾ ಸಂಪನ್ಮೂಲಗಳನ್ನು ಆಫ್‌ಲೈನ್ ಅಧ್ಯಯನಕ್ಕಾಗಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
   "coursePlayerDownloadButton": "ಕೋರ್ಸ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
   "coursePlayerCompleted": "ಪೂರ್ಣಗೊಳಿಸಲಾಗಿದೆ",
@@ -1276,6 +1279,15 @@
   },
   "@coursePlayerTextbook": {
     "description": "Label for textbook-type course resources"
+  },
+  "@coursePlayerPyq": {
+    "description": "Label for previous-year-question course resources in the course player resource list"
+  },
+  "@coursePlayerNotes": {
+    "description": "Label for notes-type course resources in the course player resource list"
+  },
+  "@coursePlayerKiwix": {
+    "description": "Label for Kiwix offline-wiki course resources in the course player resource list. Brand name, identical in all languages."
   },
   "@coursePlayerDownloadPrompt": {
     "description": "Message above the download button prompting offline download"

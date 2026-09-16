@@ -2,11 +2,20 @@ enum CourseType {
   /// Textbooks and reference books.
   textbook,
   /// Video lectures and recordings.
+  videos,
+  /// Deprecated alias for [videos]: old DB rows and the server still send
+  /// `'video'`, which parses to [videos]. Never constructed by new code.
   video,
+  /// Previous year question papers (distinct from [pastPaper]).
+  pyq,
+  /// Teacher-created notes and study materials.
+  notes,
+  /// Past examination papers (distinct from [pyq]).
+  pastPaper,
+  /// Kiwix offline content (ZIM articles).
+  kiwix,
   /// Interactive quizzes.
   quiz,
-  /// Past examination papers.
-  pastPaper,
 }
 
 enum QuizQuestionType {
@@ -309,17 +318,32 @@ class CourseResource {
   }
 
   /// Internal helper: maps a string to [CourseType].
+  ///
+  /// Mirrors `parseResourceType` (`video`/`videos`/`khan` collapse to video;
+  /// legacy `document`/`image`/`archive` rows are textbooks). `pyq` and
+  /// `pastPaper` stay distinct values.
   static CourseType _parseCourseType(String s) {
     switch (s.toLowerCase()) {
       case 'textbook':
+      case 'document':
+      case 'image':
+      case 'archive':
         return CourseType.textbook;
+      case 'videos':
       case 'video':
-        return CourseType.video;
-      case 'quiz':
-        return CourseType.quiz;
+      case 'khan':
+        return CourseType.videos;
+      case 'pyq':
+        return CourseType.pyq;
+      case 'notes':
+        return CourseType.notes;
       case 'pastpaper':
       case 'past_paper':
         return CourseType.pastPaper;
+      case 'kiwix':
+        return CourseType.kiwix;
+      case 'quiz':
+        return CourseType.quiz;
       default:
         return CourseType.textbook;
     }
@@ -519,16 +543,88 @@ String courseDownloadFileName(CourseResource resource) {
 /// Catalog type string stored in the `downloads` table for [type]. Pure.
 ///
 /// Matches [ResourceType] names so the offline library parses the icon back
-/// via `parseResourceType` (`video` maps to `videos`, the parsed name).
+/// via `parseResourceType` (the deprecated `video` maps to `videos`, and
+/// `RecentResources.load` only keeps these canonical strings).
 String courseDownloadType(CourseType type) {
   switch (type) {
+    case CourseType.videos:
     case CourseType.video:
       return 'videos';
     case CourseType.quiz:
       return 'quiz';
+    case CourseType.pyq:
+      return 'pyq';
+    case CourseType.notes:
+      return 'notes';
     case CourseType.pastPaper:
       return 'pastPaper';
+    case CourseType.kiwix:
+      return 'kiwix';
     case CourseType.textbook:
       return 'textbook';
   }
+}
+
+/// Profile-scoped prefs key holding the completed resource ids of [courseId].
+/// Pure.
+///
+/// Per-resource completion without a DB migration: the player unions this
+/// list with quiz passes and the legacy position watermark on load.
+String courseDonePrefsKey(String courseId) => 'course_done_$courseId';
+
+/// First incomplete position in [resources], or [resources].length when every
+/// resource is done. Pure.
+///
+/// The player stores this as `course_progress.current_position`, so all-done
+/// must yield length (not the stale pre-completion position).
+int nextCoursePosition(List<CourseResource> resources, Map<String, bool> completed) {
+  for (var i = 0; i < resources.length; i++) {
+    if (completed[resources[i].id] != true) return i;
+  }
+  return resources.length;
+}
+
+/// Merges every completion signal into the done-id set. Pure.
+///
+/// When [courseCompleted] (the DB `course_progress.completed` flag) is set,
+/// every resource id is returned. Otherwise the union of explicitly saved
+/// ids (prefs), passed quiz ids, and the legacy position watermark
+/// (non-quiz resources with `position < currentPosition`, for rows written
+/// before per-resource persistence existed). Callers prune [savedIds]
+/// against the live list first (see [pruneCourseDoneIds]).
+Set<String> mergeCourseCompletions({
+  required List<CourseResource> resources,
+  required Set<String> savedIds,
+  required Set<String> passedQuizIds,
+  required int currentPosition,
+  required bool courseCompleted,
+}) {
+  if (courseCompleted) return {for (final r in resources) r.id};
+  final done = <String>{...savedIds, ...passedQuizIds};
+  for (final r in resources) {
+    if (!r.isQuiz && r.position < currentPosition) done.add(r.id);
+  }
+  return done;
+}
+
+/// Drops saved done-ids whose resources left the course (content version
+/// bump removed them). Pure.
+List<String> pruneCourseDoneIds(List<String> savedIds, Set<String> liveIds) {
+  return savedIds.where(liveIds.contains).toList();
+}
+
+/// Clamps a (done, total) progress pair so the UI never renders done>total
+/// or x/0-with-done>0. Pure.
+///
+/// The server contract is `total == live COUNT(course_resources)`; a stale
+/// row can hold `total == 0` while `done > 0` (empty-payload wipe) or
+/// `done > total` (content shrink). A zero total with real completions is
+/// treated as the wipe (total rises to done, keeping the work visible);
+/// otherwise done clamps down to the live total, which always wins.
+({int done, int total}) displayProgress(int done, int total) {
+  var t = total < 0 ? 0 : total;
+  var d = done < 0 ? 0 : done;
+  if (t == 0 && d > 0) return (done: d, total: d);
+  if (d > t) d = t;
+  return (done: d, total: t);
 }

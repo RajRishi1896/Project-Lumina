@@ -324,6 +324,18 @@
   "coursePlayerQuiz": "வினாடி வினா",
   "coursePlayerPastPaper": "முந்தைய தாள்",
   "coursePlayerTextbook": "பாடப்புத்தகம்",
+  "coursePlayerPyq": "PYQ",
+  "coursePlayerNotes": "குறிப்புகள்",
+  "coursePlayerKiwix": "Kiwix",
+  "@coursePlayerPyq": {
+    "description": "Label for previous-year-question course resources in the course player resource list"
+  },
+  "@coursePlayerNotes": {
+    "description": "Label for notes-type course resources in the course player resource list"
+  },
+  "@coursePlayerKiwix": {
+    "description": "Label for Kiwix offline-wiki course resources in the course player resource list. Brand name, identical in all languages."
+  },
   "coursePlayerDownloadPrompt": "ஆஃப்லைன் படிப்பதற்கு அனைத்து வளங்களையும் டவுன்லோட் செய்யுங்கள்",
   "coursePlayerDownloadButton": "பாடநெறியை டவுன்லோட் செய்",
   "coursePlayerCompleted": "முடிந்தது",

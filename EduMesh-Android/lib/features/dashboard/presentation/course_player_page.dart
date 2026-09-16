@@ -323,37 +323,46 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     }
     _resolveUrl(resource).then((url) {
       if (!mounted) return;
-      unawaited(RecentResources.record(resource.id, resource.title, resource.resourceType.name));
-      if (resource.resourceType == CourseType.video) {
-        // Video completes on the playback-ended event, not on close.
-        unawaited(Navigator.push(
-          context,
-          luminaRoute(
-            builder: (_) => VideoPlayerPage(
-              title: resource.title,
-              videoUrl: url,
-              subject: widget.course.subject,
-              onEnded: () => _markCompleted(resource.id),
+      // Canonical catalog strings: RecentResources.load only keeps these.
+      unawaited(RecentResources.record(resource.id, resource.title, courseDownloadType(resource.resourceType)));
+      switch (resource.resourceType) {
+        case CourseType.videos:
+        case CourseType.video:
+          // Video completes on the playback-ended event, not on close.
+          unawaited(Navigator.push(
+            context,
+            luminaRoute(
+              builder: (_) => VideoPlayerPage(
+                title: resource.title,
+                videoUrl: url,
+                subject: widget.course.subject,
+                onEnded: () => _markCompleted(resource.id),
+              ),
             ),
-          ),
-        ));
-      } else if (resource.resourceType == CourseType.textbook ||
-          resource.resourceType == CourseType.pastPaper) {
-        // PDF completes when the last page is reached.
-        unawaited(Navigator.push(
-          context,
-          luminaRoute(
-            builder: (_) => PdfViewerPage(
-              title: resource.title,
-              pdfUrl: url,
-              subject: widget.course.subject,
-              onLastPage: () => _markCompleted(resource.id),
+          ));
+        case CourseType.textbook:
+        case CourseType.pyq:
+        case CourseType.notes:
+        case CourseType.pastPaper:
+          // PDF completes when the last page is reached.
+          unawaited(Navigator.push(
+            context,
+            luminaRoute(
+              builder: (_) => PdfViewerPage(
+                title: resource.title,
+                pdfUrl: url,
+                subject: widget.course.subject,
+                onLastPage: () => _markCompleted(resource.id),
+              ),
             ),
-          ),
-        ));
-      } else {
-        // Other types complete on open.
-        _markCompleted(resource.id);
+          ));
+        case CourseType.kiwix:
+        case CourseType.quiz:
+          // ponytail: no Kiwix renderer exists in the player, so opening a
+          // Kiwix resource counts as done (the card flips to Completed).
+          // Quiz is unreachable here (handled above) and only satisfies
+          // the exhaustive switch.
+          _markCompleted(resource.id);
       }
     });
   }
@@ -432,21 +441,42 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
 
   String _resourceTypeLabel(CourseResource r, AppLocalizations l10n) {
     switch (r.resourceType) {
-      case CourseType.video: return l10n.coursePlayerVideo;
-      case CourseType.quiz: return l10n.coursePlayerQuiz;
-
-      case CourseType.pastPaper: return l10n.coursePlayerPastPaper;
-      case CourseType.textbook: return l10n.coursePlayerTextbook;
+      case CourseType.videos:
+      case CourseType.video:
+        return l10n.coursePlayerVideo;
+      case CourseType.quiz:
+        return l10n.coursePlayerQuiz;
+      case CourseType.pyq:
+        return l10n.coursePlayerPyq;
+      case CourseType.notes:
+        return l10n.coursePlayerNotes;
+      case CourseType.pastPaper:
+        return l10n.coursePlayerPastPaper;
+      case CourseType.kiwix:
+        return l10n.coursePlayerKiwix;
+      case CourseType.textbook:
+        return l10n.coursePlayerTextbook;
     }
   }
 
   /// Maps a course resource type to the shared catalog [ResourceType].
   ResourceType _toResourceType(CourseType t) {
     switch (t) {
-      case CourseType.video: return ResourceType.videos;
-      case CourseType.quiz: return ResourceType.quiz;
-      case CourseType.pastPaper: return ResourceType.pastPaper;
-      case CourseType.textbook: return ResourceType.textbook;
+      case CourseType.videos:
+      case CourseType.video:
+        return ResourceType.videos;
+      case CourseType.quiz:
+        return ResourceType.quiz;
+      case CourseType.pyq:
+        return ResourceType.pyq;
+      case CourseType.notes:
+        return ResourceType.notes;
+      case CourseType.pastPaper:
+        return ResourceType.pastPaper;
+      case CourseType.kiwix:
+        return ResourceType.kiwix;
+      case CourseType.textbook:
+        return ResourceType.textbook;
     }
   }
 

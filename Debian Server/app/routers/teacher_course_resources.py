@@ -16,7 +16,11 @@ from app.audit import audit, Action
 from app.async_db import db_fetch, db_fetch_one
 from app.course_meta import bump_course_version
 from app.dependencies import verify_teacher
-from app.routers.resources import ALLOWED_EXTENSIONS
+from app.routers.resources import ALLOWED_EXTENSIONS, ALLOWED_RESOURCE_TYPES, _TYPE_ALIASES
+# Canonical type allowlist lives in resources.py (top-level import is cycle-free:
+# resources.py imports only from teacher_courses.py, never from this module).
+# Legacy web file buckets map onto learning types below in upload_course_resource.
+_LEGACY_COURSE_BUCKETS = {"document": "textbook", "image": "textbook", "archive": "textbook"}
 from app.routers.teacher_courses import (
     COURSES_DIR, _course_to_response, _resources_dir, _assets_dir, _ensure_course_exists, _write_chunked,
 )
@@ -132,7 +136,7 @@ def _extract_into_course(conn_sql, zf, course_id, next_pos,  # noqa: PLR0913
             with open(dest, "wb") as f:
                 f.write(zf.read(name))
             fsize = os.path.getsize(dest)
-            rtype = "video" if ext.lower() in (".mp4", ".webm", ".avi", ".mkv") else "textbook"
+            rtype = "videos" if ext.lower() in (".mp4", ".webm", ".avi", ".mkv", ".mov", ".flv") else "textbook"
             topic_fk = old_to_new_topic.get(res_topic_map.get(orig, ""), "")
             conn_sql.execute(
                 """INSERT INTO course_resources
@@ -163,12 +167,19 @@ async def upload_course_resource(  # noqa: PLR0913
 
     Writes the file in chunks to ``uploads/courses/{id}/resources/``, registers
     it in ``course_resources`` with the next position index, and optionally
-    assigns it to a topic.
+    assigns it to a topic. The ``resource_type`` query value is normalized
+    through the library alias map (``khan``/``video`` → ``videos``; legacy web
+    buckets ``document``/``image``/``archive`` → ``textbook``) and anything
+    outside the library allowlist (+ ``quiz``) is rejected with 400.
 
     Returns:
         The created course_resources row.
     """
     await _ensure_course_exists(course_id)
+    norm_type = _TYPE_ALIASES.get(resource_type.lower(), resource_type)
+    norm_type = _LEGACY_COURSE_BUCKETS.get(norm_type.lower(), norm_type)
+    if norm_type not in ALLOWED_RESOURCE_TYPES and norm_type != "quiz":
+        raise HTTPException(status_code=400, detail=f"Resource type '{resource_type}' is not supported.")  # i18n: user-facing validation message
     original_name = file.filename or "unnamed_file"
     ext = os.path.splitext(original_name)[1].lower()
     if not ext or ext not in ALLOWED_EXTENSIONS:
@@ -185,7 +196,7 @@ async def upload_course_resource(  # noqa: PLR0913
         """INSERT INTO course_resources (id, course_id, resource_type, title, original_name, filename, file_size, position, topic_id, updated_at)
            SELECT ?, ?, ?, ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1, ?, datetime('now')
            FROM course_resources WHERE course_id = ?""",
-        (resource_id, course_id, resource_type, disp_title, original_name, saved_name, total_size, topic_id, course_id)
+        (resource_id, course_id, norm_type, disp_title, original_name, saved_name, total_size, topic_id, course_id)
     )
     await bump_course_version(course_id)
     await audit(action=Action.UPLOAD_COURSE_RESOURCE, username=teacher_user, resource_type="course_resource",

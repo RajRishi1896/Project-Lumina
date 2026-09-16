@@ -312,6 +312,9 @@
   "coursePlayerQuiz": "क्विज़",
   "coursePlayerPastPaper": "पिछला पेपर",
   "coursePlayerTextbook": "पाठ्यपुस्तक",
+  "coursePlayerPyq": "PYQ",
+  "coursePlayerNotes": "नोट्स",
+  "coursePlayerKiwix": "Kiwix",
   "coursePlayerDownloadPrompt": "सभी संसाधन डाउनलोड करें ऑफ़लाइन पढ़ने के लिए",
   "coursePlayerDownloadButton": "कोर्स डाउनलोड करें",
   "coursePlayerCompleted": "पूर्ण",
@@ -1276,6 +1279,15 @@
   },
   "@coursePlayerTextbook": {
     "description": "Label for textbook-type course resources"
+  },
+  "@coursePlayerPyq": {
+    "description": "Label for previous-year-question course resources in the course player resource list"
+  },
+  "@coursePlayerNotes": {
+    "description": "Label for notes-type course resources in the course player resource list"
+  },
+  "@coursePlayerKiwix": {
+    "description": "Label for Kiwix offline-wiki course resources in the course player resource list. Brand name, identical in all languages."
   },
   "@coursePlayerDownloadPrompt": {
     "description": "Message above the download button prompting offline download"

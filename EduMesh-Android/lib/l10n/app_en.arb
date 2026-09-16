@@ -1258,6 +1258,18 @@
   "@coursePlayerTextbook": {
     "description": "Label for textbook-type course resources"
   },
+  "coursePlayerPyq": "PYQ",
+  "@coursePlayerPyq": {
+    "description": "Label for previous-year-question course resources in the course player resource list"
+  },
+  "coursePlayerNotes": "Notes",
+  "@coursePlayerNotes": {
+    "description": "Label for notes-type course resources in the course player resource list"
+  },
+  "coursePlayerKiwix": "Kiwix",
+  "@coursePlayerKiwix": {
+    "description": "Label for Kiwix offline-wiki course resources in the course player resource list. Brand name, identical in all languages."
+  },
   "coursePlayerDownloadPrompt": "Download all resources to study offline",
   "@coursePlayerDownloadPrompt": {
     "description": "Message above the download button prompting offline download"
