@@ -57,4 +57,19 @@ class ProfileScopedPrefs {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('${await _prefix()}$key', value);
   }
+
+  static Future<List<String>> getStringList(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList('${await _prefix()}$key') ?? const [];
+  }
+
+  static Future<void> setStringList(String key, List<String> value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('${await _prefix()}$key', value);
+  }
+
+  static Future<void> remove(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('${await _prefix()}$key');
+  }
 }

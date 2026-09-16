@@ -7,11 +7,14 @@
 // - FlashcardDeck has NO fromJson/toJson: persistence is SQLite row maps in
 //   flashcard_service.dart using `(row['subject'] ?? '').toString()`.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:edumesh_android/core/models/course.dart';
 import 'package:edumesh_android/core/models/flashcard_models.dart';
+import 'package:edumesh_android/core/utils/profile_scoped_prefs.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('CourseResource.fromJson (course-player local-table fallback)', () {
     test('parses every field from a full local course_resources row map', () {
       final r = CourseResource.fromJson(const {
@@ -258,6 +261,103 @@ void main() {
       expect(courseDownloadType(CourseType.notes), 'notes');
       expect(courseDownloadType(CourseType.pastPaper), 'pastPaper');
       expect(courseDownloadType(CourseType.kiwix), 'kiwix');
+    });
+  });
+
+  group('nextCoursePosition (player resume watermark)', () {
+    CourseResource cres(String id, int pos, [CourseType t = CourseType.textbook]) =>
+        CourseResource(id: id, courseId: 'c1', resourceType: t, title: id, fileSize: 0, position: pos);
+
+    test('all done yields length, not the stale pre-completion position', () {
+      final rs = [cres('a', 0), cres('b', 1), cres('c', 2)];
+      // Regression: the old for-loop never broke when everything was done,
+      // so newPos stayed at the stale _currentPosition (e.g. 0).
+      expect(nextCoursePosition(rs, {'a': true, 'b': true, 'c': true}), 3);
+      expect(nextCoursePosition(rs, {'a': true, 'b': true, 'c': true}), rs.length);
+    });
+
+    test('first incomplete index otherwise; empty course yields 0', () {
+      final rs = [cres('a', 0), cres('b', 1), cres('c', 2)];
+      expect(nextCoursePosition(rs, {'a': true}), 1);
+      expect(nextCoursePosition(rs, {}), 0);
+      expect(nextCoursePosition(const [], {}), 0);
+    });
+  });
+
+  group('mergeCourseCompletions (player progress rebuild)', () {
+    CourseResource cres(String id, int pos, [CourseType t = CourseType.textbook]) =>
+        CourseResource(id: id, courseId: 'c1', resourceType: t, title: id, fileSize: 0, position: pos);
+
+    test('DB completed==1 marks ALL resources completed', () {
+      final rs = [cres('a', 0), cres('b', 1, CourseType.quiz), cres('c', 2)];
+      final done = mergeCourseCompletions(
+        resources: rs, savedIds: const {}, passedQuizIds: const {},
+        currentPosition: 0, courseCompleted: true);
+      expect(done, {'a', 'b', 'c'});
+    });
+
+    test('last item is not dropped and out-of-order saves survive', () {
+      final rs = [cres('a', 0), cres('b', 1), cres('c', 2)];
+      // Regression: `r.position < _currentPosition` was false for the last
+      // item (2 < 2), so a fully-watched course never showed completed.
+      final done = mergeCourseCompletions(
+        resources: rs, savedIds: {'c'}, passedQuizIds: const {},
+        currentPosition: 2, courseCompleted: false);
+      expect(done, containsAll(['a', 'b', 'c']));
+      // Out-of-order completion in 'all' chapters: saved ids count even when
+      // the position watermark would not cover them.
+      final ooo = mergeCourseCompletions(
+        resources: rs, savedIds: {'c'}, passedQuizIds: const {},
+        currentPosition: 0, courseCompleted: false);
+      expect(ooo, {'c'});
+    });
+
+    test('quiz passes merge in; legacy watermark covers pre-position non-quiz', () {
+      final rs = [cres('a', 0), cres('q', 1, CourseType.quiz), cres('c', 2)];
+      final done = mergeCourseCompletions(
+        resources: rs, savedIds: const {}, passedQuizIds: {'q'},
+        currentPosition: 1, courseCompleted: false);
+      expect(done, {'a', 'q'});
+    });
+  });
+
+  group('displayProgress (never done>total or x/0-with-done>0)', () {
+    test('(2,0)->(2,2): wiped total keeps completed work visible', () {
+      expect(displayProgress(2, 0), (done: 2, total: 2));
+    });
+
+    test('(5,3)->(3,3): done clamps to a shrunk total', () {
+      expect(displayProgress(5, 3), (done: 3, total: 3));
+    });
+
+    test('(0,0)->(0,0) and healthy pairs pass through', () {
+      expect(displayProgress(0, 0), (done: 0, total: 0));
+      expect(displayProgress(1, 5), (done: 1, total: 5));
+      expect(displayProgress(5, 5), (done: 5, total: 5));
+    });
+
+    test('negatives clamp to zero', () {
+      expect(displayProgress(-1, 5), (done: 0, total: 5));
+      expect(displayProgress(2, -3), (done: 2, total: 2));
+      expect(displayProgress(-2, -3), (done: 0, total: 0));
+    });
+  });
+
+  group('course done-ids prefs (reload-safe, no migration)', () {
+    test('round-trip, prune on version bump, and key stability', () async {
+      SharedPreferences.setMockInitialValues({});
+      await ProfileScopedPrefs.setUserId('u1');
+      final key = courseDonePrefsKey('c1');
+      expect(key, 'course_done_c1');
+      await ProfileScopedPrefs.setStringList(key, ['r1', 'r2', 'stale']);
+      final loaded = await ProfileScopedPrefs.getStringList(key);
+      // Version bump removed 'stale' from the live list: prune it.
+      final pruned = pruneCourseDoneIds(loaded, {'r1', 'r2'});
+      expect(pruned, ['r1', 'r2']);
+      await ProfileScopedPrefs.setStringList(key, pruned);
+      expect(await ProfileScopedPrefs.getStringList(key), ['r1', 'r2']);
+      await ProfileScopedPrefs.remove(key); // mirrors CourseService.unenroll
+      expect(await ProfileScopedPrefs.getStringList(key), isEmpty);
     });
   });
 }

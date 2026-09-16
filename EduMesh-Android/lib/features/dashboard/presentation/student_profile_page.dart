@@ -16,6 +16,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/services/mutation_queue.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:edumesh_android/l10n/app_localizations.dart';
+import 'package:edumesh_android/core/models/course.dart';
 import '../../../core/services/course_service.dart';
 import 'course_player_page.dart';
 
@@ -857,8 +858,11 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
               itemBuilder: (context, index) {
                 final entry = enrolled[index];
                 final progress = entry.progress;
-                final total = (progress?['total_resources'] as num?)?.toInt() ?? 0;
-                final completed = (progress?['completed_count'] as num?)?.toInt() ?? 0;
+                final rawTotal = (progress?['total_resources'] as num?)?.toInt() ?? 0;
+                final rawDone = (progress?['completed_count'] as num?)?.toInt() ?? 0;
+                final shown = displayProgress(rawDone, rawTotal);
+                final total = shown.total;
+                final completed = shown.done;
                 final pct = total > 0 ? completed / total : 0.0;
                 return Padding(
                   padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),

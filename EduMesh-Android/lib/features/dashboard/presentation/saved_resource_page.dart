@@ -892,8 +892,11 @@ class _SavedCoursesTabState extends State<_SavedCoursesTab> {
 
   Widget _buildEnrolledCard(Course course, Map<String, dynamic>? progress,
       ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
-    final completedCount = (progress?['completed_count'] as num?)?.toInt() ?? 0;
-    final totalResources = (progress?['total_resources'] as num?)?.toInt() ?? 0;
+    final rawDone = (progress?['completed_count'] as num?)?.toInt() ?? 0;
+    final rawTotal = (progress?['total_resources'] as num?)?.toInt() ?? 0;
+    final shown = displayProgress(rawDone, rawTotal);
+    final completedCount = shown.done;
+    final totalResources = shown.total;
     final isCompleted = (progress?['completed'] as num?)?.toInt() == 1;
 
     return Container(
@@ -930,7 +933,7 @@ class _SavedCoursesTabState extends State<_SavedCoursesTab> {
                     style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                 if (totalResources > 0)
                   Text(
-                    '$completedCount/$totalResources',
+                    l10n.browseProgressFormat(completedCount, totalResources),
                     style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                   ),
               ],

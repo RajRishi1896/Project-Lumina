@@ -450,9 +450,16 @@ class _CoursesTabState extends State<_CoursesTab> {
           final entry = _enrolledCourses[i];
           final course = entry.course;
           final progress = entry.progress;
-          final completedCount = (progress?['completed_count'] as num?)?.toInt() ?? 0;
-          final totalResources = (progress?['total_resources'] as num?)?.toInt() ?? 0;
-          final pct = totalResources > 0 ? completedCount / totalResources : 0.0;
+          final rawDone = (progress?['completed_count'] as num?)?.toInt() ?? 0;
+          final rawTotal = (progress?['total_resources'] as num?)?.toInt() ?? 0;
+          final shown = displayProgress(rawDone, rawTotal);
+          final completedCount = shown.done;
+          final totalResources = shown.total;
+          final isCompleted = (progress?['completed'] as num?)?.toInt() == 1 ||
+              (totalResources > 0 && completedCount >= totalResources);
+          final pct = isCompleted
+              ? 1.0
+              : totalResources > 0 ? completedCount / totalResources : 0.0;
           return SizedBox(width: 200.w, child: Card(
             child: InkWell(
               onTap: () => Navigator.push(context, luminaRoute(builder: (_) => CoursePlayerPage(course: course))),
@@ -468,13 +475,25 @@ class _CoursesTabState extends State<_CoursesTab> {
                   SizedBox(height: AppSpacing.xs.h),
                   LinearProgressIndicator(value: pct, backgroundColor: cs.surfaceContainerHighest),
                   SizedBox(height: AppSpacing.xs.h),
-                  Text(l10n.browseProgressFormat(completedCount, totalResources),
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                  Row(
+                    children: [
+                      if (isCompleted)
+                        Padding(
+                          padding: EdgeInsets.only(right: AppSpacing.xs.w),
+                          child: Icon(Icons.check_circle,
+                              color: LuminaColors.successGreen, size: 16.sp),
+                        ),
+                      Expanded(
+                        child: Text(l10n.browseProgressFormat(completedCount, totalResources),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                      ),
+                    ],
+                  ),
                   const Spacer(),
                   SizedBox(width: double.infinity, child: FilledButton(
                     onPressed: () => Navigator.push(context, luminaRoute(builder: (_) => CoursePlayerPage(course: course))),
-                    child: Text(l10n.buttonContinue),
+                    child: Text(isCompleted ? l10n.coursePlayerCompleted : l10n.buttonContinue),
                   )),
                 ],
               )),

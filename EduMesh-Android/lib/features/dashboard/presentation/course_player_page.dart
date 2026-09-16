@@ -8,6 +8,7 @@ import 'package:edumesh_android/core/services/bookmark_sync.dart';
 import 'package:edumesh_android/core/services/course_service.dart';
 import 'package:edumesh_android/core/services/mutation_queue.dart';
 import 'package:edumesh_android/core/storage/db_helper.dart';
+import 'package:edumesh_android/core/utils/profile_scoped_prefs.dart';
 import 'package:edumesh_android/core/network/api_client.dart';
 import 'package:edumesh_android/core/constants/lumina_colors.dart';
 import 'package:edumesh_android/core/constants/app_spacing.dart';
@@ -177,12 +178,38 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
         .map((r) => r['resource_id']?.toString() ?? '')
         .toSet();
 
-      for (final r in _resources) {
-        if (r.isQuiz) {
-          if (passedQuizIds.contains(r.id)) _completed[r.id] = true;
-        } else {
-          if (r.position < _currentPosition) _completed[r.id] = true;
-        }
+      // Reload-safe non-quiz completions live in profile-scoped prefs (no DB
+      // migration): union them with quiz passes and the legacy position
+      // watermark. A set DB completed flag marks every resource done.
+      final courseCompletedFlag = progressRows.isNotEmpty &&
+          ((progressRows.first['completed'] as num?)?.toInt() ?? 0) == 1;
+      List<String> savedIds = const [];
+      try {
+        savedIds = await ProfileScopedPrefs.getStringList(courseDonePrefsKey(widget.course.id));
+      } catch (_) {}
+      final liveIds = _resources.map((r) => r.id).toSet();
+      final prunedIds = pruneCourseDoneIds(savedIds, liveIds);
+      if (prunedIds.length != savedIds.length) {
+        try {
+          await ProfileScopedPrefs.setStringList(courseDonePrefsKey(widget.course.id), prunedIds);
+        } catch (_) {}
+      }
+      final doneIds = mergeCourseCompletions(
+        resources: _resources,
+        savedIds: prunedIds.toSet(),
+        passedQuizIds: passedQuizIds,
+        currentPosition: _currentPosition,
+        courseCompleted: courseCompletedFlag,
+      );
+      _completed
+        ..clear()
+        ..addEntries(doneIds.map((id) => MapEntry(id, true)));
+      // Heal stale positions (e.g. rows written before per-resource
+      // persistence): all done means position == length.
+      if (_resources.isNotEmpty && doneIds.length >= _resources.length) {
+        _currentPosition = _resources.length;
+      } else if (_currentPosition > _resources.length) {
+        _currentPosition = _resources.length;
       }
       _unlocked = computeUnlockedResourceIds(
         topics: _topics,
@@ -247,17 +274,16 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       resources: _resources,
       completedIds: _completed.entries.where((e) => e.value).map((e) => e.key).toSet(),
     );
-    int newPos = _currentPosition;
-    for (int i = 0; i < _resources.length; i++) {
-      if (_completed[_resources[i].id] != true) {
-        newPos = i;
-        break;
-      }
-    }
-    if (newPos >= _resources.length) newPos = _resources.length;
+    // ponytail: nextCoursePosition returns _resources.length when nothing is
+    // left incomplete; the old loop kept the stale pre-completion position.
+    final newPos = nextCoursePosition(_resources, _completed);
     final doneCount = _completed.values.where((v) => v).length;
     final allDone = _resources.isNotEmpty && doneCount == _resources.length;
     _currentPosition = newPos;
+    try {
+      final doneIds = _completed.entries.where((e) => e.value).map((e) => e.key).toList();
+      await ProfileScopedPrefs.setStringList(courseDonePrefsKey(widget.course.id), doneIds);
+    } catch (_) {}
     if (mounted) setState(() {});
     try {
       final db = await DBHelper().database;
@@ -485,6 +511,8 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
     final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final allDone = _resources.isNotEmpty &&
+        _completed.values.where((v) => v).length == _resources.length;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -519,6 +547,7 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       body: Column(
         children: [
           if (!_isDownloaded) _buildDownloadBanner(cs, tt, l10n),
+          if (allDone) _buildCompletedBanner(cs, tt, l10n),
           Expanded(
             child: Center(
               child: ConstrainedBox(
@@ -555,6 +584,24 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
                   : _buildGroupedList(cs, tt, l10n),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletedBanner(ColorScheme cs, TextTheme tt, AppLocalizations l10n) {
+    return Container(
+      width: double.infinity,
+      color: cs.primaryContainer,
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w, vertical: AppSpacing.md.h),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle, color: LuminaColors.successGreen, size: 24.sp),
+          SizedBox(width: AppSpacing.sm.w),
+          Expanded(
+            child: Text(l10n.coursePlayerCompleted,
+                style: tt.bodyMedium?.copyWith(color: cs.onPrimaryContainer)),
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import '../models/course.dart';
 import '../network/api_client.dart';
 import '../storage/db_helper.dart';
+import '../utils/profile_scoped_prefs.dart';
 import 'bookmark_sync.dart';
 import '../../features/auth/data/auth_service.dart';
 import '../../shared/services/download_queue.dart';
@@ -218,6 +219,21 @@ class CourseService extends ChangeNotifier {
       await txn.update('course_progress', {'total_resources': resourceMaps.length},
           where: 'course_id = ?', whereArgs: [courseId]);
     });
+    // Prune per-resource completion prefs for resources this version removed
+    // (prune here too: the player only prunes on open, and a bumped course
+    // may never be reopened before its progress row is read elsewhere).
+    // Skipped when local rows were kept on an empty payload: liveIds is empty
+    // there and pruning would wipe every saved completion.
+    if (!keepLocalOnEmpty) {
+      try {
+        final liveIds = resourceMaps.map((r) => (r['id'] ?? '').toString()).toSet();
+        final saved = await ProfileScopedPrefs.getStringList(courseDonePrefsKey(courseId));
+        final pruned = pruneCourseDoneIds(saved, liveIds);
+        if (pruned.length != saved.length) {
+          await ProfileScopedPrefs.setStringList(courseDonePrefsKey(courseId), pruned);
+        }
+      } catch (_) {}
+    }
     // Drop stale quiz payloads for bumped quizzes so the next open refetches.
     for (final r in resourceMaps) {
       final id = (r['id'] ?? '').toString();
@@ -398,8 +414,9 @@ class CourseService extends ChangeNotifier {
   ///
   /// Issues `DELETE /api/courses/{courseId}/enroll` but tolerates a 404 or an
   /// unreachable hub: local state is cleared regardless. Drops the student's
-  /// `course_progress` row and the cached `course_resources` rows for the
-  /// course; quiz-attempt history and the shared `courses` catalog row stay.
+  /// `course_progress` row, the cached `course_resources` rows, and the
+  /// per-resource completion prefs for the course; quiz-attempt history and
+  /// the shared `courses` catalog row stay.
   Future<bool> unenroll(String courseId) async {
     try {
       await ApiClient.ensureInitialized();
@@ -417,6 +434,9 @@ class CourseService extends ChangeNotifier {
           where: 'course_id = ?', whereArgs: [courseId]);
       await db.delete('course_topics',
           where: 'course_id = ?', whereArgs: [courseId]);
+      try {
+        await ProfileScopedPrefs.remove(courseDonePrefsKey(courseId));
+      } catch (_) {}
       _enrolledCourses.removeWhere((e) => e.course.id == courseId);
       notifyListeners();
       return true;
