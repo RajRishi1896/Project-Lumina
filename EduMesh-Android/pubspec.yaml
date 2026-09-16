@@ -1,7 +1,7 @@
 name: edumesh_android
 description: "A self-hosted, offline educational ecosystem for Project Lumina."
 publish_to: 'none'
-version: 1.0.0+7
+version: 1.0.0+9
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
