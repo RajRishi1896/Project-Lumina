@@ -310,16 +310,16 @@ td:last-child, th:last-child { overflow: visible; white-space: normal; text-over
 .tdrop { position: relative; }
 .tdrop-trigger {
     width: 100%;
-    min-height: 44px;
+    min-height: 48px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
     background: var(--bg-input);
     border: 1px solid var(--outline);
-    border-radius: var(--radius-sm);
+    border-radius: 10px;
     font-family: inherit;
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-primary);
     cursor: pointer;
@@ -369,26 +369,27 @@ td:last-child, th:last-child { overflow: visible; white-space: normal; text-over
 .tdrop-option:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
 .tdrop-option[aria-selected="true"] { background: rgba(0,112,131,0.08); }
 .tdrop-ico {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex: none;
 }
+.tdrop-ico svg { width: 16px; height: 16px; }
 .tint-textbook { background: #DBEAFE; color: #1D4ED8; }
 .tint-videos { background: #FEE2E2; color: #DC2626; }
 .tint-pyq { background: #FEF3C7; color: #B45309; }
 .tint-kiwix { background: #D1FAE5; color: #047857; }
 .tint-notes { background: #E0F2FE; color: #0369A1; }
 .tint-quiz { background: #EDE9FE; color: #7C3AED; }
-[data-theme="dark"] .tint-textbook { background: rgba(147,197,253,0.16); color: #93C5FD; }
-[data-theme="dark"] .tint-videos { background: rgba(252,165,165,0.16); color: #FCA5A5; }
-[data-theme="dark"] .tint-pyq { background: rgba(252,211,77,0.16); color: #FCD34D; }
-[data-theme="dark"] .tint-kiwix { background: rgba(110,231,183,0.14); color: #6EE7B7; }
-[data-theme="dark"] .tint-notes { background: rgba(125,211,252,0.16); color: #7DD3FC; }
-[data-theme="dark"] .tint-quiz { background: rgba(196,181,253,0.16); color: #C4B5FD; }
+[data-theme="dark"] .tint-textbook { background: rgba(147,197,253,0.24); color: #BFDBFE; }
+[data-theme="dark"] .tint-videos { background: rgba(252,165,165,0.24); color: #FECACA; }
+[data-theme="dark"] .tint-pyq { background: rgba(252,211,77,0.24); color: #FDE68A; }
+[data-theme="dark"] .tint-kiwix { background: rgba(110,231,183,0.22); color: #A7F3D0; }
+[data-theme="dark"] .tint-notes { background: rgba(125,211,252,0.24); color: #BAE6FD; }
+[data-theme="dark"] .tint-quiz { background: rgba(196,181,253,0.24); color: #DDD6FE; }
 
 /* === Type Badges (round) === */
 .badge {
