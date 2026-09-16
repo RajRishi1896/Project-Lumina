@@ -12,6 +12,321 @@ function esc(str) {
     return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/`/g,'&#96;');
 }
 
+/* ── Resource types: shared metadata, badges, icon dropdown ─────────────── */
+
+/**
+ * Canonical learning-resource types shared by the content manager and the
+ * course resource picker. `value` is the stored type string, `tint` selects
+ * the icon-chip palette in lumina.css, `badge` the table badge class, and
+ * `labelKey` the translated option label (existing content.upload_option_*
+ * keys: no new strings needed).
+ */
+const RESOURCE_TYPE_META = [
+    { value: 'textbook', tint: 'textbook', badge: 'type-textbook', labelKey: 'content.upload_option_textbook', icon: 'book' },
+    { value: 'khan', tint: 'videos', badge: 'type-videos', labelKey: 'content.upload_option_video', icon: 'play' },
+    { value: 'pyq', tint: 'pyq', badge: 'type-pyq', labelKey: 'content.upload_option_pyq', icon: 'file' },
+    { value: 'kiwix', tint: 'kiwix', badge: 'type-kiwix', labelKey: 'content.upload_option_zim', icon: 'archive' },
+    { value: 'notes', tint: 'notes', badge: 'type-notes', labelKey: 'content.upload_option_notes', icon: 'note' },
+    { value: 'quiz', tint: 'quiz', badge: 'type-quiz', labelKey: 'content.upload_option_quiz', icon: 'quiz' }
+];
+
+/**
+ * Small stroke icon for a resource type (14px, currentColor, no text).
+ * @param {string} name - Icon name from RESOURCE_TYPE_META
+ * @returns {string} Inline SVG string
+ */
+function resourceTypeIcon(name) {
+    const open = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+    switch (name) {
+        case 'book':
+            return open + '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+        case 'play':
+            return open + '<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>';
+        case 'file':
+            return open + '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>';
+        case 'archive':
+            return open + '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>';
+        case 'note':
+            return open + '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+        case 'quiz':
+            return open + '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+        default:
+            return open + '<circle cx="12" cy="12" r="10"/></svg>';
+    }
+}
+
+/**
+ * Map any stored/legacy type string onto a canonical RESOURCE_TYPE_META value.
+ * @param {*} raw - Stored type (e.g. 'video', 'pastPaper', 'document')
+ * @returns {string} Canonical value ('khan', 'pyq', 'textbook', ...)
+ */
+function normalizeResourceType(raw) {
+    const v = (raw === null || raw === undefined) ? '' : String(raw).toLowerCase();
+    if (v === 'video' || v === 'videos' || v === 'khan') return 'khan';
+    if (v === 'pastpaper' || v === 'past_paper') return 'pyq';
+    if (v === 'document' || v === 'image' || v === 'archive') return 'textbook';
+    return v;
+}
+
+/**
+ * Find the metadata row for a stored type string.
+ * @param {*} raw - Stored type string
+ * @returns {Object|null} Meta row or null when unknown
+ */
+function resourceTypeMeta(raw) {
+    const v = normalizeResourceType(raw);
+    for (let i = 0; i < RESOURCE_TYPE_META.length; i++) {
+        if (RESOURCE_TYPE_META[i].value === v) return RESOURCE_TYPE_META[i];
+    }
+    return null;
+}
+
+/**
+ * Render a coloured type badge (icon + uppercase translated label).
+ * @param {*} raw - Stored type string
+ * @returns {string} HTML span string
+ */
+function typeBadgeHtml(raw) {
+    const m = resourceTypeMeta(raw);
+    if (!m) {
+        const fallback = raw === null || raw === undefined ? '' : String(raw).toUpperCase();
+        return '<span class="type-badge type-default">' + esc(fallback) + '</span>';
+    }
+    return '<span class="type-badge ' + m.badge + '">' + resourceTypeIcon(m.icon) +
+        '<span>' + esc(__(m.labelKey)) + '</span></span>';
+}
+
+/** Registry of icon-dropdown instances by hidden-input id. */
+const _iconDropdowns = {};
+
+/** Whether the shared click-outside closer is bound. */
+let _tdropDocBound = false;
+
+/** Chevron shown at the end of every dropdown trigger. */
+const TDROP_CHEV = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
+
+/**
+ * Render one dropdown trigger (icon chip + translated label + chevron).
+ * @param {Object} inst - Dropdown instance from _iconDropdowns
+ */
+function renderTdropTrigger(inst) {
+    const m = resourceTypeMeta(inst.input.value) || inst.metas[0];
+    inst.trigger.innerHTML =
+        '<span class="tdrop-ico tint-' + m.tint + '">' + resourceTypeIcon(m.icon) + '</span>' +
+        '<span class="tdrop-label">' + esc(__(m.labelKey)) + '</span>' +
+        '<span class="tdrop-chev">' + TDROP_CHEV + '</span>';
+}
+
+/**
+ * Refresh one dropdown's trigger, option labels, and selected states.
+ * Never touches the hidden input value.
+ * @param {Object} inst - Dropdown instance from _iconDropdowns
+ */
+function renderTdropOptions(inst) {
+    const current = normalizeResourceType(inst.input.value);
+    const btns = inst.list.querySelectorAll('.tdrop-option');
+    for (let i = 0; i < btns.length; i++) {
+        const btn = btns[i];
+        const m = resourceTypeMeta(btn.getAttribute('data-value'));
+        if (!m) continue;
+        btn.innerHTML =
+            '<span class="tdrop-ico tint-' + m.tint + '">' + resourceTypeIcon(m.icon) + '</span>' +
+            '<span class="tdrop-label">' + esc(__(m.labelKey)) + '</span>';
+        const selected = normalizeResourceType(btn.getAttribute('data-value')) === current;
+        btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+        const li = btn.parentElement;
+        if (li) li.setAttribute('aria-selected', selected ? 'true' : 'false');
+    }
+}
+
+/**
+ * Open or close one dropdown.
+ * @param {Object} inst - Dropdown instance from _iconDropdowns
+ * @param {boolean} open - True to open, false to close
+ */
+function setTdropOpen(inst, open) {
+    if (open) {
+        for (const id in _iconDropdowns) {
+            if (_iconDropdowns[id] !== inst) setTdropOpen(_iconDropdowns[id], false);
+        }
+        inst.wrap.classList.add('open');
+        inst.list.classList.remove('hidden');
+        inst.trigger.setAttribute('aria-expanded', 'true');
+    } else {
+        inst.wrap.classList.remove('open');
+        inst.list.classList.add('hidden');
+        inst.trigger.setAttribute('aria-expanded', 'false');
+    }
+}
+
+/**
+ * Focus the option at an offset from the focused one (arrow-key navigation).
+ * @param {Object} inst - Dropdown instance from _iconDropdowns
+ * @param {number} dir - +1 (down) or -1 (up)
+ */
+function tdropMoveFocus(inst, dir) {
+    const btns = inst.list.querySelectorAll('.tdrop-option');
+    if (btns.length === 0) return;
+    let idx = -1;
+    for (let i = 0; i < btns.length; i++) {
+        if (btns[i] === document.activeElement) { idx = i; break; }
+    }
+    const next = idx === -1 ? (dir > 0 ? 0 : btns.length - 1) : (idx + dir + btns.length) % btns.length;
+    btns[next].focus();
+}
+
+/**
+ * Choose a value: update the hidden input, refresh the UI, close, refocus
+ * the trigger, and fire a bubbling change event so existing page listeners
+ * (e.g. the upload form's type toggle) keep working.
+ * @param {string} inputId - Hidden input id
+ * @param {string} value - Canonical type value
+ */
+function selectIconOption(inputId, value) {
+    const inst = _iconDropdowns[inputId];
+    if (!inst) return;
+    inst.input.value = value;
+    renderTdropTrigger(inst);
+    renderTdropOptions(inst);
+    setTdropOpen(inst, false);
+    inst.trigger.focus();
+    inst.input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+/**
+ * Turn a hidden input into an icon dropdown (trigger button + listbox).
+ * Labels render via __() on every sync, so language switches only need
+ * refreshIconDropdowns(). Safe to call twice (second call is a no-op).
+ * Keyboard: arrows move between options, Escape closes and refocuses the
+ * trigger, Tab closes. The trigger is a real button (44px+, focusable).
+ * @param {string} inputId - Id of the hidden input holding the value
+ * @param {Array<string>} values - Canonical type values in display order
+ */
+function initIconDropdown(inputId, values) {
+    const input = document.getElementById(inputId);
+    if (!input || input.dataset.tdropInit || typeof values === 'undefined') return;
+    const metas = [];
+    for (let i = 0; i < values.length; i++) {
+        const m = resourceTypeMeta(values[i]);
+        if (m && metas.indexOf(m) === -1) metas.push(m);
+    }
+    if (metas.length === 0) return;
+    input.dataset.tdropInit = '1';
+    const start = resourceTypeMeta(input.value);
+    input.value = start ? start.value : metas[0].value;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'tdrop';
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'tdrop-trigger';
+    trigger.id = inputId + '-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    const lab = document.querySelector('label[for="' + inputId + '-trigger"]');
+    if (lab && lab.textContent.trim()) trigger.setAttribute('aria-label', lab.textContent.trim());
+    const list = document.createElement('ul');
+    list.className = 'tdrop-list hidden';
+    list.setAttribute('role', 'listbox');
+    list.id = inputId + '-listbox';
+    trigger.setAttribute('aria-controls', list.id);
+    for (let i = 0; i < metas.length; i++) {
+        const m = metas[i];
+        const li = document.createElement('li');
+        li.setAttribute('role', 'option');
+        li.dataset.value = m.value;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tdrop-option';
+        btn.tabIndex = -1;
+        btn.setAttribute('data-value', m.value);
+        btn.setAttribute('aria-selected', 'false');
+        btn.addEventListener('click', function() { selectIconOption(inputId, m.value); });
+        li.appendChild(btn);
+        list.appendChild(li);
+    }
+    const inst = { input: input, metas: metas, wrap: wrap, trigger: trigger, list: list };
+    _iconDropdowns[inputId] = inst;
+    renderTdropTrigger(inst);
+    renderTdropOptions(inst);
+
+    trigger.addEventListener('click', function() {
+        setTdropOpen(inst, !wrap.classList.contains('open'));
+    });
+    trigger.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            setTdropOpen(inst, true);
+            tdropMoveFocus(inst, e.key === 'ArrowDown' ? 1 : -1);
+        } else if (e.key === 'Tab') {
+            setTdropOpen(inst, false);
+        } else if (e.key === 'Escape' && wrap.classList.contains('open')) {
+            // Swallow so page-level Escape handlers (modal close) don't fire.
+            e.preventDefault();
+            e.stopPropagation();
+            setTdropOpen(inst, false);
+        }
+    });
+    list.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            tdropMoveFocus(inst, e.key === 'ArrowDown' ? 1 : -1);
+        } else if (e.key === 'Home') {
+            e.preventDefault();
+            const btns = list.querySelectorAll('.tdrop-option');
+            if (btns.length > 0) btns[0].focus();
+        } else if (e.key === 'End') {
+            e.preventDefault();
+            const btns = list.querySelectorAll('.tdrop-option');
+            if (btns.length > 0) btns[btns.length - 1].focus();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            setTdropOpen(inst, false);
+            trigger.focus();
+        } else if (e.key === 'Tab') {
+            setTdropOpen(inst, false);
+        }
+    });
+    if (input.parentElement) input.parentElement.insertBefore(wrap, input.nextSibling);
+    wrap.appendChild(trigger);
+    wrap.appendChild(list);
+
+    if (!_tdropDocBound) {
+        _tdropDocBound = true;
+        document.addEventListener('click', function(e) {
+            for (const id in _iconDropdowns) {
+                const other = _iconDropdowns[id];
+                if (!other.wrap.contains(e.target)) setTdropOpen(other, false);
+            }
+        });
+        document.addEventListener('languageChanged', function() { refreshIconDropdowns(); });
+    }
+}
+
+/**
+ * Re-render one icon dropdown from its hidden input value. Call after
+ * programmatic value changes (modals set .value directly, which fires no
+ * events). Never fires change itself.
+ * @param {string} inputId - Hidden input id
+ */
+function syncIconDropdown(inputId) {
+    const inst = _iconDropdowns[inputId];
+    if (!inst) return;
+    renderTdropTrigger(inst);
+    renderTdropOptions(inst);
+}
+
+/**
+ * Re-render every registered icon dropdown (labels follow the active
+ * language). Runs automatically on the global languageChanged event.
+ */
+function refreshIconDropdowns() {
+    for (const id in _iconDropdowns) {
+        if (Object.prototype.hasOwnProperty.call(_iconDropdowns, id)) syncIconDropdown(id);
+    }
+}
+
 /**
  * Debounce a function call.
  * @param {Function} fn - Function to debounce

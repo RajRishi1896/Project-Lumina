@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/assets/Favicon.svg">
     <!-- Theme detection: prevent flash of wrong theme by applying stored/device preference before render -->
     <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('lumina-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'))</script>
-<link rel="stylesheet" href="/static/css/lumina.css?v=25">
+<link rel="stylesheet" href="/static/css/lumina.css?v=26">
 <style>
 /* Cover preview: constrain huge uploads to a 16/9 frame. */
 #coverPreview{max-width:100%;aspect-ratio:16/9;}
@@ -281,13 +281,10 @@
                     <div id="addResTypeGuess" class="text-xs text-muted mt-1" style="min-height:1rem;"></div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="addResType" data-i18n="courses.add_resource_type_label">Type</label>
-                    <select id="addResType" class="form-select">
-                        <option value="document" data-i18n="courses.add_resource_type_document">Document</option>
-                        <option value="video" data-i18n="courses.add_resource_type_video">Video</option>
-                        <option value="image" data-i18n="courses.add_resource_type_image">Image</option>
-                        <option value="archive" data-i18n="courses.add_resource_type_archive">Archive</option>
-                    </select>
+                    <label class="form-label" for="addResType-trigger" data-i18n="courses.add_resource_type_label">Type</label>
+                    <!-- Same learning-type buckets as manage-content.html. No quiz option:
+                         course quizzes are built via the quiz builder, not file upload. -->
+                    <input type="hidden" id="addResType" value="textbook">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="addResChapter" data-i18n="content.upload_label_topic">Chapter / Topic</label>
@@ -470,7 +467,7 @@
     <!-- Section: Toast Container -->
     <div id="globalToastContainer" class="toast-container"></div>
 
-    <script src="/static/js/lumina.js?v=15"></script>
+    <script src="/static/js/lumina.js?v=16"></script>
     <!-- Section: Inline Scripts: course CRUD, editor, quiz builder -->
     <script>
         let courses = [];
@@ -913,11 +910,9 @@
                 return;
             }
             tbody.innerHTML = courseResources.map(function(r, i) {
-                let typeIcon = '';
                 const rtype = r.resource_type || r.type || '';
-                if (rtype === 'quiz') typeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-                else if (rtype === 'video') typeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect width="15" height="14" x="1" y="5" rx="2" ry="2"/></svg>';
-                else typeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>';
+                // ponytail: badge markup (icon + translated label) lives in
+                // lumina.js typeBadgeHtml(); legacy/alias types normalise there.
                 const sizeStr = r.file_size ? formatFileSize(r.file_size) : '-';
                 const topicOpts = '<option value="">--</option>' + courseTopics.map(function(t) {
                     return '<option value="' + t.id + '"' + (r.topic_id === t.id ? ' selected' : '') + '>' + esc(t.title) + '</option>';
@@ -925,7 +920,7 @@
                 return '<tr draggable="true" data-resource-index="' + i + '">' +
                     '<td style="cursor:grab;text-align:center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></td>' +
                     '<td data-label="' + __('courses.resource_th_title') + '">' + esc(r.title) + '</td>' +
-                    '<td data-label="' + __('courses.resource_th_type') + '"><span style="display:inline-flex;align-items:center;gap:0.25rem;">' + typeIcon + ' ' + esc(rtype) + '</span></td>' +
+                    '<td data-label="' + __('courses.resource_th_type') + '">' + typeBadgeHtml(rtype) + '</td>' +
                     '<td data-label="' + __('courses.chapter_th_chapter') + '"><select class="js-assign-topic" data-resource-id="' + r.id + '" data-resource-index="' + i + '" style="font-size:0.75rem;padding:0.2rem;min-width:9rem;border:1px solid var(--outline);border-radius:4px;background:var(--surface);color:var(--on-surface);">' + topicOpts + '</select></td>' +
                     '<td data-label="' + __('courses.resource_th_size') + '">' + sizeStr + '</td>' +
                     '<td data-label="' + __('courses.resource_th_actions') + '" style="text-align:right;">' +
@@ -1546,16 +1541,20 @@
         }
 
         // ── Add-resource modal ──
+        // Same learning-type buckets as manage-content.html (textbook/khan/pyq/kiwix/notes).
+        // Extension can only distinguish video from the rest: pyq/notes/kiwix need a
+        // human choice, so they default to textbook. A zip here is a document bundle,
+        // not a kiwix archive (library ZIM uploads go via /teacher/upload-zim).
+        // Type labels/badges render via the shared lumina.js helpers (no local maps).
         /**
          * Guess a staged resource type from the file extension.
-         * Same buckets as the old native picker: video/image/archive/document.
+         * Video extensions map to khan (the library alias for videos);
+         * everything else maps to textbook for the teacher to adjust.
          */
         function guessResourceType(name) {
             const ext = (name.split('.').pop() || '').toLowerCase();
-            if (['mp4', 'webm'].indexOf(ext) !== -1) return 'video';
-            if (['png', 'jpg', 'jpeg', 'gif'].indexOf(ext) !== -1) return 'image';
-            if (['zip'].indexOf(ext) !== -1) return 'archive';
-            return 'document';
+            if (['mp4', 'webm', 'mov', 'mkv', 'avi', 'flv'].indexOf(ext) !== -1) return 'khan';
+            return 'textbook';
         }
 
         /** Fill the modal chapter select from the course-topics endpoint, plus a 'No chapter' option. */
@@ -1578,7 +1577,8 @@
             document.getElementById('addResFile').value = '';
             document.getElementById('addResTypeGuess').textContent = '';
             const typeSel = document.getElementById('addResType');
-            if (typeSel) typeSel.value = 'document';
+            if (typeSel) typeSel.value = 'textbook';
+            syncIconDropdown('addResType');
             loadAddResChapters();
             document.getElementById('addResourceModal').classList.remove('hidden');
         }
@@ -1600,7 +1600,9 @@
             const guess = guessResourceType(file.name);
             const typeSel = document.getElementById('addResType');
             if (typeSel) typeSel.value = guess;
-            guessEl.textContent = __('courses.add_resource_type_guess', {type: __('courses.add_resource_type_' + guess)});
+            syncIconDropdown('addResType');
+            const guessMeta = resourceTypeMeta(guess);
+            guessEl.textContent = __('courses.add_resource_type_guess', {type: guessMeta ? __(guessMeta.labelKey) : guess});
         }
 
         /**
@@ -1676,7 +1678,7 @@
                     const fd = new FormData();
                     fd.append('file', r._file);
                     const url = '/api/teacher/courses/' + courseId + '/upload-resource?resource_type=' +
-                        encodeURIComponent(r.type || r.resource_type || 'document') +
+                        encodeURIComponent(r.type || r.resource_type || 'textbook') +
                         '&title=' + encodeURIComponent(r.title || r._file.name) +
                         '&topic_id=' + encodeURIComponent(r.topic_id || '');
                     return fetch(url, { method: 'POST', body: fd, credentials: 'include' }).then(function(res) {
@@ -1916,6 +1918,12 @@
             document.getElementById('addResFile')?.addEventListener('change', onAddResFileChange);
             document.getElementById('btn-confirmAddResource')?.addEventListener('click', confirmAddResource);
             document.getElementById('btn-cancelAddResource')?.addEventListener('click', closeAddResourceModal);
+            // Icon dropdown replaces the native type select (same values, same
+            // hidden-input id, so all .value reads/writes keep working).
+            initIconDropdown('addResType', ['textbook', 'khan', 'pyq', 'kiwix', 'notes']);
+            // Dynamic table content is JS-rendered: re-render on language switch
+            // (the dropdown label refreshes itself via lumina.js).
+            document.addEventListener('languageChanged', function() { renderCourseResources(); });
             document.getElementById('btn-addQuiz')?.addEventListener('click', openQuizBuilder);
             document.getElementById('btn-exportCourseZip')?.addEventListener('click', async function() {
                 if (!currentCourseId) { await saveCourseAsync('draft'); }
