@@ -239,11 +239,18 @@ class _CoursePlayerPageState extends State<CoursePlayerPage> {
       }
       // Keep total_resources equal to the live resource count so progress
       // fractions (completed/total) stay meaningful after content updates.
-      try {
-        await db.update('course_progress', {'total_resources': _resources.length},
-            where: 'course_id = ? AND student_id = ?',
-            whereArgs: [widget.course.id, studentId]);
-      } catch (_) {}
+      // The position write heals stale pre-persistence rows (see above).
+      // ponytail: never reinforce a 0 total from an empty load.
+      if (_resources.isNotEmpty) {
+        try {
+          await db.update('course_progress', {
+            'total_resources': _resources.length,
+            'current_position': _currentPosition,
+          },
+              where: 'course_id = ? AND student_id = ?',
+              whereArgs: [widget.course.id, studentId]);
+        } catch (_) {}
+      }
     } catch (e) {
       debugPrint('CoursePlayerPage: _loadProgress failed; $e');
     }

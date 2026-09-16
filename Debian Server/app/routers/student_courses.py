@@ -165,10 +165,11 @@ async def get_course_detail(course_id: str, student_id: str = Depends(verify_stu
     is_enrolled = progress_row is not None
     progress = None
     if progress_row:
+        # total_resources is always the live resource count, not the stored cache.
         progress = {
             "current_position": progress_row["current_position"],
             "completed_count": progress_row["completed_count"],
-            "total_resources": progress_row["total_resources"],
+            "total_resources": len(resources),
             "completed": progress_row["completed"],
             "last_synced": progress_row["last_synced"],
             "enrolled_at": progress_row["enrolled_at"],
@@ -337,7 +338,7 @@ async def sync_progress(course_id: str, data: ProgressSync, student_id: str = De
             and completed (1 once the whole course is finished).
 
     Returns:
-        Updated progress dict.
+        Updated progress dict with total_resources as the authoritative live count.
     """
     # Verify course exists and is published: unpublished courses are invisible to students
     course = await db_fetch_one("SELECT id FROM courses WHERE id = ? AND published = 1", (course_id,))
@@ -345,21 +346,23 @@ async def sync_progress(course_id: str, data: ProgressSync, student_id: str = De
         raise HTTPException(status_code=404, detail="Course not found or not published.")  # i18n: user-facing error message
 
     # Progress only ever updates an existing enrollment; never auto-enrolls.
-    # Grab total_resources/enrolled_at here so the response can be built from
+    # Grab enrolled_at here so the response can be built from
     # the payload without re-SELECTing the row we just updated.
-    enrolled = await db_fetch_one("SELECT total_resources, enrolled_at FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
+    enrolled = await db_fetch_one("SELECT enrolled_at FROM course_progress WHERE student_id = ? AND course_id = ?", (student_id, course_id))
     if not enrolled:
         raise HTTPException(status_code=404, detail="Not enrolled in this course.")  # i18n: user-facing error message
 
+    live_row = await db_fetch_one("SELECT COUNT(*) FROM course_resources WHERE course_id = ?", (course_id,))
+    live = live_row[0] if live_row else 0
     await db_exec(
-        "UPDATE course_progress SET current_position = ?, completed_count = ?, completed = ?, last_synced = datetime('now') WHERE student_id = ? AND course_id = ?",
-        (data.current_position, data.completed_count, data.completed, student_id, course_id)
+        "UPDATE course_progress SET current_position = ?, completed_count = ?, completed = ?, total_resources = ?, last_synced = datetime('now') WHERE student_id = ? AND course_id = ?",
+        (data.current_position, data.completed_count, data.completed, live, student_id, course_id)
     )
 
     return {
         "current_position": data.current_position,
         "completed_count": data.completed_count,
-        "total_resources": enrolled["total_resources"] or 0,
+        "total_resources": live,
         "completed": data.completed,
         "last_synced": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
         "enrolled_at": enrolled["enrolled_at"],
@@ -503,7 +506,11 @@ async def submit_quiz_attempt(course_id: str, resource_id: str, data: QuizAttemp
             tags=["Courses"],
             responses={401: {"description": "Unauthorized"}})
 async def get_enrolled_courses(student_id: str = Depends(verify_student)):
-    """Return every course the student is enrolled in with its saved progress."""
+    """Return every course the student is enrolled in with its saved progress.
+
+    total_resources is the live course_resources count per course; the stored
+    column is only a defensive fallback when a course has no count row.
+    """
     rows = await db_fetch("""
         SELECT c.id, c.title, c.description, c.subject, c.grade, c.language, c.cover_image,
                c.published, c.teacher_username, c.enrollment_count, c.created_at, c.updated_at,
@@ -513,8 +520,18 @@ async def get_enrolled_courses(student_id: str = Depends(verify_student)):
         WHERE cp.student_id = ?
         ORDER BY cp.enrolled_at DESC
     """, (student_id,))
+    counts = {}
+    if rows:
+        placeholders = ",".join("?" for _ in rows)
+        for crow in await db_fetch(
+            f"SELECT course_id, COUNT(*) AS n FROM course_resources WHERE course_id IN ({placeholders}) GROUP BY course_id",
+            tuple(r["id"] for r in rows),
+        ):
+            counts[crow["course_id"]] = crow["n"]
     courses = []
     for r in rows:
+        stored = r["total_resources"] or 0
+        total = counts.get(r["id"], stored if stored > 0 else 0)
         courses.append(EnrolledCourseItem(
             course_id=r["id"], title=r["title"] or "", description=r["description"] or "",
             subject=r["subject"] or "", grade=r["grade"] or 0, language=r["language"] or "en",
@@ -522,7 +539,7 @@ async def get_enrolled_courses(student_id: str = Depends(verify_student)):
             teacher_username=r["teacher_username"] or "", enrollment_count=r["enrollment_count"] or 0,
             created_at=r["created_at"] or "", updated_at=r["updated_at"] or "",
             current_position=r["current_position"] or 0, completed_count=r["completed_count"] or 0,
-            total_resources=r["total_resources"] or 0, completed=r["completed"] or 0,
+            total_resources=total, completed=r["completed"] or 0,
             enrolled_at=r["enrolled_at"] or "",
         ))
     return {"courses": courses}

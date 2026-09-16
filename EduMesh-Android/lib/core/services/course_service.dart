@@ -181,11 +181,20 @@ class CourseService extends ChangeNotifier {
         oldResources[(r['id'] ?? '').toString()] = r;
       }
     } catch (_) {}
+    // ponytail: an empty 200 with local rows is a glitch, not a wipe; keep
+    // local resources/topics and the stored total (completed_count survives,
+    // so deleting here zeroes the denominator -> "2/0").
+    final keepLocalOnEmpty =
+        resourceMaps.isEmpty && topicMaps.isEmpty && oldResources.isNotEmpty;
+    if (keepLocalOnEmpty) {
+      debugPrint('CourseService: empty detail for $courseId; keeping local resources');
+    }
     await db.transaction((txn) async {
       await txn.update('courses', {
         'version': version,
         if (data['updated_at'] != null) 'updated_at': data['updated_at'].toString(),
       }, where: 'id = ?', whereArgs: [courseId]);
+      if (keepLocalOnEmpty) return;
       await txn.delete('course_topics', where: 'course_id = ?', whereArgs: [courseId]);
       for (final t in topicMaps) {
         final rawMode = (t['unlock_mode']?.toString() ?? 'all').toLowerCase();
@@ -566,6 +575,35 @@ class CourseService extends ChangeNotifier {
         for (final r in courseRows) {
           coursesById[(r['id'] ?? '').toString()] = r;
         }
+        // ponytail: heal stale totals in one GROUP BY instead of per-row
+        // COUNT queries; patch the in-memory rows too so the UI heals now.
+        try {
+          final countRows = await db.rawQuery(
+              'SELECT course_id, COUNT(*) AS n FROM course_resources WHERE course_id IN ($placeholders) GROUP BY course_id',
+              ids);
+          final liveById = <String, int>{
+            for (final r in countRows)
+              (r['course_id'] ?? '').toString(): (r['n'] as num?)?.toInt() ?? 0,
+          };
+          for (final pRow in progressRows) {
+            final cid = (pRow['course_id'] ?? '').toString();
+            if (cid.isEmpty) continue;
+            final live = liveById[cid] ?? 0;
+            final storedTotal = (pRow['total_resources'] as num?)?.toInt() ?? 0;
+            final storedDone = (pRow['completed_count'] as num?)?.toInt() ?? 0;
+            final healedDone =
+                (live > 0 && storedDone > live) ? live : storedDone;
+            if (live != storedTotal || healedDone != storedDone) {
+              await db.update(
+                  'course_progress',
+                  {'total_resources': live, 'completed_count': healedDone},
+                  where: 'course_id = ? AND student_id = ?',
+                  whereArgs: [cid, studentId]);
+              pRow['total_resources'] = live;
+              pRow['completed_count'] = healedDone;
+            }
+          }
+        } catch (_) {}
       }
       for (final pRow in progressRows) {
         final courseId = (pRow['course_id'] ?? '').toString();
