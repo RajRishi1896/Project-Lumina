@@ -15,7 +15,7 @@ FAIL = []
 
 
 def check(cond, msg):
-    print(("GREEN " if cond else "RED   ") + msg)
+    sys.stderr.write(("GREEN " if cond else "RED   ") + msg + "\n")
     if not cond:
         FAIL.append(msg)
 
@@ -62,5 +62,5 @@ check("token" in edit_mc.lower() or "abort" in edit_mc.lower(),
 check(".checked" not in new_ch,
       "courses: new-quiz does not use .checked on the shuffle select")
 
-print("RESULT:", "GREEN" if not FAIL else f"RED ({len(FAIL)} vectors)")
+sys.stderr.write("RESULT: " + ("GREEN" if not FAIL else f"RED ({len(FAIL)} vectors)") + "\n")
 sys.exit(1 if FAIL else 0)
