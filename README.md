@@ -39,9 +39,9 @@ A repurposed laptop runs a WiFi hotspot, a FastAPI content server, and a captive
 
 ## Overview
 
-Project Lumina is a proof of concept: an offline-first learning platform for schools where broadband, stable power, and student-owned devices cannot be assumed. One low-cost server laptop hosts all content and services. Android phones on a local hotspot consume the content through a Flutter app that remains fully usable when the hub is unreachable. The PoC is complete and shipped.
+Project Lumina is a proof of concept: an offline-first learning platform for schools where broadband, stable power, and student-owned devices cannot be assumed. One low-cost server laptop hosts all content and services. Android phones on a local hotspot consume the content through a Flutter app that remains fully usable when the hub is unreachable. The PoC is complete and shipped. Built for a college project. It won first place in the Innovation Open House at the college.
 
-Two independent codebases form the system: a Flutter Android client (`EduMesh-Android/`, 67 hand-written Dart files plus generated localizations) and a FastAPI server (`Debian Server/`, 23 router modules plus a ZIM handler). They share no code, no dependencies, and no toolchain. They communicate over plain HTTP on the local network, with the laptop acting as gateway (NetworkManager shared mode, by default `10.42.0.1`).
+Two independent codebases form the system: a Flutter Android client (`EduMesh-Android/`, 67 written Dart files plus generated localizations) and a FastAPI server (`Debian Server/`, 23 router modules plus a ZIM handler). They share no code, no dependencies, and no toolchain. They communicate over plain HTTP on the local network, with the laptop acting as gateway (NetworkManager shared mode, by default `10.42.0.1`).
 
 **Why it exists.** Existing LMS platforms assume always-on broadband and one device per student. The environment this target provides neither. The project instead assumes nothing: no internet, one laptop for an entire school, content delivered by USB stick, and progress synchronized in the brief window a phone is near the hub. The PoC proved the architecture works; it is not a product roadmap.
 
